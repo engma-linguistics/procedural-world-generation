@@ -155,6 +155,8 @@ def test_root_families_allophone_table_and_case_clash():
     fx["roots"] = {"p0:DOG": {"node": 1, "lect": "p0", "kyr": 20.0, "concept": "DOG", "gloss": "dog", "ipa": "pa1", "pos": "N"}}
     for c in ("DOG", "BIG", "PERSON"):
         l["lexicon"][c]["roots"] = ["p0:DOG"]
+        if c != "DOG":   # (a felt family's members must still sound like the root: grammar B)
+            l["lexicon"][c]["ipa"] = l["lexicon"]["DOG"]["ipa"] + "ka"
     page = sketch.render(sketch.Doc(fx), l)
     assert "| allophone | phoneme | where |" in page and "| [b] | /p/ | between vowels only |" in page
     assert "The largest: **dog**" in page and "| roots (main first) |" in page

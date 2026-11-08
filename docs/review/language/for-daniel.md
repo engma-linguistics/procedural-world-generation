@@ -12,11 +12,11 @@ Everything here has a working default in the code already. Nothing is blocked; c
 
 ## Weirdness noticed
 - **The demo page has glitches** (a full read before publishing found them). Merchants are glossed as things in two languages, a dual marker is described but missing from its example, one note quotes the wrong verb, and some agent jargon shows. None is in the data model's core. All are queued as the first item of grammar B in queue.md.
-- **Scholars' horizon jumped from about 11 to 16-18 thousand years** in both the grammar A and lexicon lanes' passes. Grammar A doesn't touch the words, so the measure may swing with any change to the random draws. The lexicon lane is checking that before it tunes anything.
+- **Scholars' horizon: mostly noise in the measure, and your call on how to read it.** The same code read 10.7 or 17.6 thousand years depending only on the random seed. The lexicon lane traced it (see its section, decision 7).
 - See each lane's section below for more.
 
 ## Demos waiting
-- **Languages demo page** (10 languages, 255 audio clips, complexity tab): https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs (private). Live viewer: `uv run python -m planet langserve a24559 --host 0.0.0.0 --port 8790`.
+- **Languages demo page** (version 2, 11-08 morning: grammar B, 10 languages, 294 audio clips, complexity tab; a full read found a few remaining slips, now with grammar C): https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs (private). Live viewer: `uv run python -m planet langserve a24559 --host 0.0.0.0 --port 8790`.
 
 ## Finish lane (lang-finish, 2026-11-07)
 
@@ -154,6 +154,135 @@ hand. Your call.
 - Demo candidates: d191 (split ergativity by person, VSO: 'see-3SG ERG-man DEF ACC-1SG'), d10 (inclusive/exclusive),
   d1 (whole-stem continuous reduplication), d2 (serial 'take ... come'), from the scratch pass, not the shipped run.
 
+
+## Grammar phase B (branch lang-gram-b, 2026-11-08)
+
+### Demo-page bugs fixed (the full read of the 11-08 demo)
+Each was fixed where it arose, with a test where the fix is mechanical:
+- **Merchants glossed as things.** Role and trade nouns (merchant, soldier, teacher, thief, king, servant and so on)
+  had no semantic field that says 'person', so they took the 'abstract' class. They are people now.
+- **Class numbers with gaps and twins** (tabaxi: no class 1, two class 3s). The engine gave a new class the number
+  "count + 1", so after a class was lost the next one took a number still in use. It now takes the next unused number,
+  and the pages number classes 1..n.
+- **The dual named in prose but missing from the examples.** The page showed only two examples per note. It now shows
+  up to four, and the Number note has a 'two dogs' example with the dual.
+- **The correlative note quoted 'sings' for a 'dance' sentence**, and **the 'have' note said dog for a boat sentence.**
+  Both now quote their own sentence.
+- **Classifier examples without the classifier.** A free classifier is now shown after a numeral ('two CLF dogs'),
+  and a free class marker in a bound system stands beside its noun. The example noun is not the marker's own source
+  noun when another will do.
+- **Prose forms that differ from the examples** (cloud giant PST iŋ vs in=, human e̞˧ʔ vs =je̞˧ʔ). The joining rules
+  change a marker next to its neighbour. The note now names both: "(e̞˧ʔ; je̞˧ʔ after a vowel; from …)", "(iŋ; in
+  before a stop)", or "where it has merged with the stem" for a stored word form.
+- **ᴖ in IPA.** It is not a leak: it is the house mark for a second simultaneous voice (the avian syrinx), from
+  `symbols.tsv`. In this pass only aarakocra and kenku lects have it. The kobold case would have been an old root
+  reconstructed from an avian ancestor. Each language section now has a key for any non-IPA mark it shows (‼ ᵣ ᴖ ˯
+  ˰ ʞ).
+- **'Felt' word families whose members do not share the root.** The lexicon keeps a felt root on a word after its
+  form has drifted away (aarakocra 'knee' wja˦ under 'head' le˧). The pages now list a felt family member only if the
+  root can still be heard in it. The lexicon's own `roots` field is the lexicon lane's (lexicon.py), so its data are
+  unchanged.
+- **A language listed as its own ancestor** (a split that kept its deme carries the same name). Such stages are now
+  folded into one. **The sea elves were "an elvish language" while descended from a gnome proto.** The elvish and
+  dwarvish picks now need the people's own proto-language.
+- **The relatives line dropped percentages.** The file keeps intelligibility only from 5% up, so a missing value
+  now reads "under 5% understood".
+- **Mixed gram labels** (PAST/PST, PERF/PRF, EVID.REP/REP): the complexity tab now uses the gloss labels too.
+  **"Likely cause." with a lowercase sentence** is capitalized. **Tool and agent jargon** is gone from the pages
+  ("(sketch.py)", "the lane picked…", bare "G055"/"G056", `cx`, the file-name footer). Path ids stay in the code.
+
+### Engine: what phase B added, with the defaults I chose
+- **Mood grams.** Four new functions, from the written paths and a few built-in ones:
+  - IMP (imperative);
+  - HORT ('let us': G034 'let, leave'; 'come, go'; 'give' as Russian *davai*);
+  - OBLG ('must': G007 'have', read as HOLD);
+  - APPR ('lest': G035 'fear').
+  - The imperative's own sources are my guess, since the catalogue has none: an attention word 'look!, come!' (X29),
+    or a hortative widened to commands (X30). Most languages use the bare stem (WALS 70A), and the bare stem stays
+    the default.
+  - None of these has a typology feature, so they come with the ordinary recruitment draw, with no pull.
+- **Object agreement** (1SG.O … 3PL.O, glossed 1SG.OBJ). It comes from the object pronouns (Givón). One lead path
+  (3rd person 'him/her' > 3SG.O). The rest of the series binds with it as a set, like subject agreement (`SERIES`,
+  `PERSON_JOIN`). The `object_agreement` aim pulls it. Its side follows the aim (prefix/suffix), and
+  `realised_value('object_agreement')` now reads the live grams.
+- **The genitive has sources now.**
+  - Ablative > genitive (X31, Latin *de* > French *de*).
+  - A demonstrative linker (X32, Albanian, Persian ezafe).
+  - A case language is pulled toward a genitive of its own (`PULL_GROUP['GEN']`).
+  - Patronymics will switch to the genitive automatically where one exists (names lane).
+- **The inclusive 'we' in agreement.** A 1PL.INCL marker joins a binding subject series when the lexicon has an
+  inclusive 'we' (join chance 0.7, `PERSON_JOIN['INCL']`). The old 1PL marker is then the exclusive.
+- **Possessor marking on the possessed noun** (1SG.POSS …, slot after number and before case, as Turkish
+  *ev-ler-im-de*). The lead path is 'I' > 1SG.POSS (X39), and the series binds as a set. Its side follows the
+  genitive order. There is no typology feature for it, so the ordinary draw brings it.
+- **'Set' paths** (frequency class `set`, weight 0). These paths are never drawn on their own; only a series' set
+  binding uses them. Without them, twelve more pronoun paths would dilute the draw for every other target.
+- **Sentences.**
+  - The imperative takes IMP where it lives.
+  - New 'Let us eat the fish!' (hortative) and 'The woman sees you.' (object agreement).
+  - Every transitive clause puts the object's marker on the verb when it is bound.
+  - The 'we (you and I)' sentence uses 1PL.INCL.
+  - Possessed nouns carry the possessor marker, and the possessor pronoun is dropped in pro-drop lects.
+  - New notes: Object agreement, Possessor marking. Mood markers go under "Mood and evidentiality", and the Commands
+    note names the imperative marker.
+
+### Measured (isolated-lect harness, 300 human protos, ~20 kyr, before = lang-design 7f10e12f)
+| | before | after | reference |
+| --- | --- | --- | --- |
+| genitive gram (any / bound) | 0% / 0% | 63% / 27% | (no single figure; most case languages mark the possessor) |
+| object agreement shown | 0% | 51% (suffix 34%, prefix 18%) | GB093 34% suffix, GB094 22% prefix |
+| object markers bound, of lects with any | n/a | median 3 of 6 | n/a |
+| possessor markers (clitic or tighter) | 0% | 19% of lects | GB430/431: roughly a quarter to a third |
+| inclusive subject marker (any) | 0% | 32% of lects (of 57% with an inclusive 'we') | n/a |
+| IMP / HORT / OBLG / APPR (any) | 0% | 17% / 39% / 30% / 19% | WALS 70A: 78% have a dedicated imperative (this counts the bare stem against a marked indicative, too) |
+| verb synthesis 0-1 bound categories (WALS 22A bins, harness) | 37% | 25% | about 3% |
+
+**Full pass** (a24559, 620 living lects; before = phase A's final pass on the same base, after = this branch):
+- genitive gram 0% > 56% (14% bound);
+- object agreement shown 0% > 35% (suffix 19%, prefix 16%; Grambank 34% and 22%);
+- possessor markers (clitic or tighter) 0% > 8% of lects;
+- inclusive subject marker 0% > 17%;
+- IMP 11%, HORT 26%, OBLG 16%, APPR 8%;
+- verb synthesis, WALS 22A bins: 0-1 categories 58% > 55%, 2-3 28% > 26%, 4-5 13% > 15%, 6-7 1% > 4%, 8+ 0%
+  (WALS about 3 / 17 / 36 / 21 / 23%).
+
+The full pass moves much less than the harness. Most living lects carry a high adult-learner share, and new grams
+stay free words there.
+
+Checks:
+- all pass except the scholars' horizon, which reads 11.0 kyr for human lects (phase A's pass: 16.0). Another lane is
+  on it. This branch changes no sound or lexicon code, so the move is run-to-run variation plus the grammar's effect
+  on intelligibility.
+- "Typology agrees with the live grams" is ok.
+
+**Synthesis (your decision, not tuned).** Mood and object agreement add bound verb categories. The harness's 0-1
+bin falls from 37% to 25%, but the full pass only from 58% to 55%, against WALS's 3%. So adding categories does not
+close the gap: the grams exist but stay free.
+
+Phase A's advice stands: the lever is `FUSE` (0.012 → about 0.02) and the L2 exponent on fusion ((1 - l2)^2). I did
+not touch FUSE.
+
+### Odd or worth a look
+- The genitive is now common (63% of harness lects, about half of them still a free word, an adposition). That
+  follows from the pull. Lower or remove `PULL_GROUP['GEN']` if you want fewer.
+- HORT (39%) outnumbers IMP (17%). This is plausible, since many languages have a 'let's' particle and a bare-stem
+  imperative, but it rests on my guessed IMP sources.
+- Possessor marking has no aim behind it, so its share is set by the draw alone.
+
+### Demo page
+- The regenerated demo (not published; the coordinator publishes it) uses this branch's pass of a24559 with the
+  sentences and notes rewritten by today's sentences.py (`demo_page.py --re-enrich`, new).
+- After the pass I fixed two small note slips:
+  - an inalienable note said "no marker" beside a possessor marker;
+  - 'I' was written as 'i' in "from 'i'".
+
+### Not done (left for the next grammar lane)
+- **Concord** (item 8): class or gender markers copied onto adjectives, demonstratives and the verb.
+- **Constructions as grams** (item 10): Q, COP, REL, COMP, FOC. These are still lexical stand-ins, and the notes
+  say so in plain words now.
+
+Both are queued in grammar-gaps.md (phase B progress).
+
 ## Lexicon & contact lane (lang-lexcon, 2026-11-08)
 
 **What changed, in plain words**
@@ -178,3 +307,34 @@ hand. Your call.
 **Weirdness noticed**
 - Hawaiian-type lects call cousins by the BROTHER word only; there is one word per sibling sex, and the sex split of cousins is not modelled.
 - A colour or kin category changes its word only when its focus (WHITE, GREEN, FATHER ...) is renewed; a hit on a non-focus member is kept.
+
+### Pass 2 (lang-lexcon, 2026-11-08)
+
+**Your call when you are back**
+7. **How to read the scholars' horizon.** The check takes the first two 2-kyr windows in a row where fewer than half of the true splits are recovered. Past 10 kyr each window holds only 3-6 splits and recovery hovers near one half, so one split more or less moves the reading by about 6 kyr: the same code reads 10.7 or 17.6 on two seeds, and a bootstrap of the shipped run spans 9.7-16.7. A logistic fit of "recovered" against split age, with every split counted once, stays put (17.9 and 17.1 on those two seeds). It is now reported beside the old reading as `human_logistic`; it does not decide pass or fail yet. My recommendation: make the logistic reading the check's value. The other option is a median over three pass seeds, which costs about 1.5 hours of compute per measurement.
+   - On the logistic reading the human horizon was about 13.5 thousand years before this lane, about 17.5 after pass 1, and **12.8 now**. The 6-10 target was never met on a robust reading; the shipped 10.7 was a lucky draw.
+8. **Fresh roots for meanings nothing can renew** (`lexicon.KEEP_COIN`, `KEEP_COIN_FREQ`). Round 5 let a replacement that no source could make keep the old word. Frequent meanings with no derivation, compound or semantic shift (EGG, STAR, LEAF, SLEEP, FISH) were therefore renewed only by loans. With little contact they never changed: 83-92% of them kept the proto word for 12 thousand years. Such a draw now takes a fresh root (a word of unknown origin) for frequency classes 1-2. Pronouns, numerals, deixis and question words still keep their word.
+   - Fresh roots are 4.6% of replacements in the full pass, up from 2.9%.
+   - The Swadesh rate is held by `KEEP_COMPENSATION` 1.08 → 1.0. The full pass replaced 16% of the human core per thousand years at the old value.
+   - The coinage test bound moved from 6% to 8% (reason in the test).
+9. **Kinship follows the culture's marriage rules** (`lexsys.KIN_PULL`). Clan exogamy weights Iroquois, Crow and Omaha by 2. Cross-cousin marriage weights Iroquois by 3 and Crow and Omaha by 1.5. A culture with neither weights Hawaiian and Eskimo by 1.5. A disfavoured system changes up to 3 times faster. These weights are my reading of Murdock 1949, not fitted.
+   - a24559's stored taboos.json predates the kinship and speech rules, so the pass re-derives it in memory (read-only) with the lineages code.
+10. **Name taboos speed word loss** (`lexsys.SPEECH_TABOO_X`): +30% on the open-class replacement rate for "words like a dead person's name" and +20% for the ruler's name. Dixon describes the effect in Australia as large but gives no rate, so these numbers are guesses.
+11. **Avoidance registers.** Where the culture has the mother-in-law or in-law word rules, the living lect gets a second word for 20 everyday meanings. Half are a neighbour's word, as Dyirbal Jalnguy often is; the rest are paraphrases ('the black one') or derivations. They are built for today only: they are not inherited and have no sound-change history. They appear in the sketches under "Avoidance words".
+12. **Areal rate ×10** (`AREAL_K` 0.0015 → 0.015). See the pass-2 numbers in calibration.md for whether the near/far signal appears.
+
+**Changed in the sound lane's files (minimal, flagged)**
+- New rule S218: the labialized coronals tʷ dʷ nʷ sʷ zʷ lʷ rʷ lose their labialization. nʷ had a source (S068, labialization before a lost rounded vowel) and no way out, so it built up to 10.5% of lects; PHOIBLE has 1.2%. It is now at 1.7%.
+  - I did not check one attested case. The rule rests on labialization being commonest on velars and uvulars (Ladefoged & Maddieson 1996).
+- Backness harmony in `rules._produce`: a front e going back now opens to ɑ, as in Turkish -ler/-lar and Hungarian -nek/-nak. Before, it became ɤ, and a rounded o after an unrounded back root also unrounded to ɤ. ɤ reached 11.7% of lects on one seed (PHOIBLE 2.2%) and is now at 1.0%. Central ə and ɐ are neutral.
+- `lect.py` passes two more context values to `lexicon.step`: `kin_weights` and `speech_taboo`.
+
+**Odd output noticed**
+- The overused-segment check also swings with the seed: one seed failed on nʷ, the other on ɤ. Both are fixed at the cause.
+- The counting base now drives the numeral words directly. Grammar A's proto numerals and the lexicon's numeral systems used to build twenty and the rest separately, and the lexicon's overwrote grammar A's. A decimal lect no longer renews six as 'five one' (`lexsys.recipe_fits`).
+- The sentence lane's numeral note still builds 11/15/30/40 as phrases even where the lect has its own word for ELEVEN or THIRTY.
+
+**Not done**
+- Liturgical language and god names from gods.json (contact-gaps rec. 5).
+- Segment borrowing at high contact intensity (contact-gaps 3d).
+- Polities: they need a polities document in the run.

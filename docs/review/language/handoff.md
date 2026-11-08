@@ -238,6 +238,28 @@ The in-memory doc is unchanged (/1 shape).
 2. The scholars' horizon still fails (10.7 kyr against 6-10).
 3. The complexity tab of the demo reads today's L2, population and isolation. A per-snapshot `l2`/`pop` would let causes be dated.
 
+## Continuation: grammar phase B (lang-gram-b, 2026-11-08)
+
+Done on `lang-gram-b`: the demo-page bugs, then mood (IMP, HORT, OBLG, APPR), object agreement, genitive sources,
+the inclusive subject marker and possessor marking. See for-daniel.md "Grammar phase B" and architecture.md section 7.
+Left for the next grammar lane, in this order:
+1. **Concord** (grammar-gaps item 8). Proposed shape:
+   - a process `Grammar.processes["concord"]`, a sorted list drawn from "dem", "adj", "verb", grown at a small
+     hazard while a class marker is bound at affix level, and dropped when none is;
+   - `sentences.noun_phrase` copies the noun's class marker (same form and side) onto the adjective and the
+     demonstrative;
+   - `verb()` takes the subject's class marker in place of 3SG when "verb" is in the list (Bantu subject concord).
+2. **Constructions as grams** (item 10): Q (from IF/'or'/'not'), COP (G056, map 'COPULA'), REL (G055), COMP (G023
+   SAY), FOC (G057 COP > FOC).
+   - They would need `_wanted` entries from `polar_question`, `copula` and `relative`, realised values, and
+     `sentences.py` using the gram where one lives (the lexical stand-in stays as the fallback).
+   - Watch the complexity score: free grams lower `mean_level`.
+- Measuring: the isolated harness is
+  `/tmp/claude-1000/-data-personal-repos-procedural-world-generation/78e89d74-f837-4b74-a7da-25a178d37d96/scratchpad/gramb/sim.py`.
+  - Run it with `PYTHONPATH=. NP=10 .venv/bin/python <sim.py> 300 out.json` from the worktree. It takes about
+    2 minutes.
+  - `shares.py` in the same folder reads it and also counts the phase B series. Copy both rather than editing them.
+
 ## Continuation (lexicon & contact lane, 2026-11-08)
 
 **State.** Branch `lang-lexcon` (worktree `.claude/worktrees/lang-lexcon`, from `lang-design` at 8871eb3f). Nothing merged or pushed. What changed and the defaults taken are in `for-daniel.md` "Lexicon & contact lane"; numbers in `calibration.md` "Lexicon & contact lane". New module `planet/language/lexsys.py` (numeral systems, colour stages, kinship systems, sound symbolism); new table `data/borrowability.tsv` (WOLD borrowed scores, `build_reference_tables.py --only borrowability`); new checks `borrowability` (WOLD rho, pronoun loans) and `areal` in `checks.py`. Lexicon entries can carry the process `colex:<focus>` (a system's shared word); lects carry `systems` {numeral, colour, kin, intensity, areal} in the document. `lect.py` passes `contact_weights`, `numeral_base` and `population` to `lexicon.step` (a three-line change in the sound lane's file).

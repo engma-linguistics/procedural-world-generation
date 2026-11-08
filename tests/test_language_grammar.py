@@ -819,3 +819,64 @@ def test_degrammaticalization_is_rare_and_prefers_orphaned_edge_markers():
         G.DEGRAM, G.FUSE_LEVEL, G.L2_STRIP = old
     assert gen.level == G.CLITIC and any("degrammaticalization" in e[1] for e in g.events)
     assert any("degrammaticalized: affix > clitic" in h[1] for h in gen.history)
+
+
+# --- grammar phase B (2026-11-08) -------------------------------------------------------------------------------------
+
+def test_phase_b_paths_mood_genitive_object_possessor():
+    T = G.load_tables()
+    by = {}
+    for p in T.paths:
+        by.setdefault(p.target, []).append(p)
+    assert {"OBLG", "HORT", "APPR", "IMP"} <= set(by)
+    assert any(p.id == "G007" for p in by["OBLG"]) and any(p.id == "G034" for p in by["HORT"])
+    assert any(p.from_gram and p.sources == ("ABL",) for p in by["GEN"])
+    assert any(not p.from_gram and "THAT" in p.sources for p in by["GEN"])
+    lead = [p for f in G.OBJ_FNS + G.POSS_FNS for p in by.get(f, []) if p.weight > 0]
+    assert sorted(p.target for p in lead) == ["1SG.POSS", "3SG.O"]   # (one lead path per series, the rest bind with it)
+    assert all(p.weight == 0 for p in by["1PL.INCL"])
+
+
+def test_object_and_possessor_series_bind_as_sets_and_show_in_the_typology():
+    sizes = []
+    for s in range(8):
+        rng, g = _grammar(90 + s, object_agreement="suffix", verb_agreement="suffix")
+        G.aims(g)["object_agreement"] = "suffix"
+        g.grams = [_gram("3SG.O", "jesu", level=G.FREE, side="post", src=("HE OR SHE OR IT", "X33"))]
+        g.grams[0].age_gens = 400
+        old = G.FUSE
+        G.FUSE = 0.3
+        try:
+            G.step(rng, g, 30, inv=Inv(), lexicon=lex(), l2_share=0.0)
+        finally:
+            G.FUSE = old
+        obj = {x.function for x in g.grams if x.live and x.function in G.OBJ_FNS and x.level >= G.CLITIC}
+        sizes.append(len(obj))
+        assert all(x.host == "V" for x in g.grams if x.function in G.OBJ_FNS)
+        if obj:
+            assert g.typology["object_agreement"] == "suffix"
+    assert np.median(sizes) >= 3, sizes   # (the lexicon has no 'you all': at most 5 of 6)
+    rng, g = _grammar(92, genitive="NG")
+    g.grams = [_gram("1SG.POSS", "ani", level=G.CLITIC, side="post", src=("I", "X39"))]
+    G._person_set(g, g.grams[0], np.random.default_rng(0), lex(), 3.0, G.load_tables())
+    poss = [x for x in g.grams if x.function in G.POSS_FNS]
+    assert len(poss) >= 3 and all(x.host == "N" for x in poss)
+
+
+def test_inclusive_subject_marker_joins_only_with_an_inclusive_we():
+    rng, g = _grammar(93, verb_agreement="suffix")
+    gr = _gram("1SG", "ani", level=G.CLITIC, src=("I", "X06"))
+    g.grams = [gr]
+    old = dict(G.PERSON_JOIN)
+    G.PERSON_JOIN.update({k: 1.0 for k in G.PERSON_JOIN})
+    try:
+        G._person_set(g, gr, rng, lex(), 3.0, G.load_tables())
+        assert G.INCL_FN not in {x.function for x in g.grams}
+        g.grams = [gr]
+        G._person_set(g, gr, rng, lex(**{"WE (INCLUSIVE)": ("tuso", "FUNC")}), 3.0, G.load_tables())
+        incl = [x for x in g.grams if x.function == G.INCL_FN]
+        assert len(incl) == 1 and incl[0].source[0] == "WE (INCLUSIVE)"
+    finally:
+        G.PERSON_JOIN.clear()
+        G.PERSON_JOIN.update(old)
+    assert G.feature_of(G.INCL_FN) == ("verb_agreement",)

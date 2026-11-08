@@ -1092,14 +1092,41 @@ HISTORIAN = ("### Families a historian reconstructs",
              "however opaque it has become since (per-word `etym_roots`, the *bher- 'carry' > burden view).")
 
 
+def _bare(ipa: str) -> str:
+    """IPA without tone letters, length and stress marks, for comparing forms by ear."""
+    return re.sub(r"[˥˦˧˨˩ːˑˈˌ\u0300-\u036f]", "", ipa)
+
+
+def audibly_shares(root: str, word: str) -> bool:
+    """Does `word` contain the root word's form (tones and length aside), or for a long root its first or last two
+    sounds? A semantic shift or old derivation whose form has drifted away from the root's is not felt."""
+    a, b = _bare(root), _bare(word)
+    if not a:
+        return True
+    if a in b:
+        return True
+    return len(a) >= 3 and (a[:2] in b or a[-2:] in b)
+
+
+def felt_members(doc: Doc, lex: dict, rid: str, members: list) -> list:
+    """The words of a felt root family a speaker can still hear it in (all of them when the root's own word is gone)."""
+    anchor = lex.get(((doc.d.get("roots") or {}).get(rid) or {}).get("concept") or "")
+    if not anchor or rid not in (anchor.get("roots") or ()):
+        return members
+    return [c for c in members if audibly_shares(anchor["ipa"], lex[c]["ipa"])]
+
+
 def _root_family(doc: Doc, l: dict, lex: dict, field: str = "roots", head: tuple = FELT) -> list[str]:
     """The family of the root with most living words in this lect (per-word `roots` or `etym_roots`, main first; the
     document-level `roots` table)."""
     roots = doc.d.get("roots") or {}
     count: Counter = Counter()
-    for e in lex.values():
+    by: dict = {}
+    for c, e in lex.items():
         for r in (e.get(field) or [])[:1]:
-            count[r] += 1
+            by.setdefault(r, []).append(c)
+    for r, cs in by.items():
+        count[r] = len(felt_members(doc, lex, r, cs) if field == "roots" else cs)
     cands = [(n, r) for r, n in count.items()]
     fam_n = sum(1 for n, _r in cands if n >= 3)
     share = sum(n for n, _r in cands if n >= 2) / max(1, len(lex))
@@ -1112,6 +1139,8 @@ def _root_family(doc: Doc, l: dict, lex: dict, field: str = "roots", head: tuple
         return out + ["Every root here has a single word.", ""]
     members = sorted((c for c, e in lex.items() if rid in (e.get(field) or [])),
                      key=lambda c: (((lex[c].get(field) or []).index(rid)), c))
+    if field == "roots":
+        members = felt_members(doc, lex, rid, members)
     r = roots.get(rid) or _root_from_id(rid)
     out.append(f"The largest: **{r.get('gloss') or cname(r.get('concept', '?'))}** *{r.get('ipa') or '?'}* "
                f"({r.get('pos', '?')}, coined {kyr(r.get('kyr'))} in {doc.label(r.get('lect'), True)}); {n} words have it "

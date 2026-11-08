@@ -398,6 +398,23 @@ new one (Jespersen). Writes into `g.typology` from outside (calques on shift) be
   climbs one level; a grammar event.
 - `Grammar.processes` is copied to daughters and kept in `to_json`/`from_json`.
 
+**Grammar phase B (2026-11-08, branch `lang-gram-b`; `grammar-gaps.md` Queue).**
+- *Mood* (`MOOD_FNS`: IMP, HORT, OBLG, APPR; slot 'mood'): G007 > OBLG, G034 > HORT, G035 > APPR mapped; built in
+  'come, go' > HORT (X27), 'give' > HORT (X28), 'look!, come!' > IMP (X29, a guess), HORT > IMP (X30). No typology
+  feature: the ordinary draw only.
+- *Person series* (`SERIES`: S = the six subject persons + 1PL.INCL; O = 1SG.O ... 3PL.O on the verb, side rule 'oagr'
+  from `object_agreement`; P = 1SG.POSS ... 3PL.POSS on the noun, slot 'poss' after number, side rule 'gen' from the
+  genitive order). `_person_set` binds a series as a set when one member reaches clitic; `_person_fill` fills each
+  series' gaps. One lead path per series (X33 'he' > 3SG.O, X39 'I' > 1SG.POSS); the other members' paths have the
+  frequency class `set` (weight 0: never drawn alone). `object_agreement` is realised from the O grams and pulled by
+  its aim. 1PL.INCL (X45) joins only when the lexicon has WE (INCLUSIVE).
+- *Genitive sources*: ABL > GEN (X31), THAT/THIS > GEN linker (X32); `PULL_GROUP['GEN']` pulls a case lect toward one.
+- *Class numbers* are never reused (`add_class` takes 1 + the highest CLASS number ever used); pages number classes
+  1..n (`sentences.View.cl_num`). Role and trade nouns (MERCHANT, SOLDIER ...) are in the person group (`_PERSONS`).
+- *Sentences*: `object_marker` on every transitive verb; `subject_marker` (1PL.INCL); possessor markers on possessed
+  nouns (`noun_phrase`); `s_imperative` with IMP; `s_hortative`, `s_object`; notes Object agreement, Possessor marking,
+  mood markers; `_shown_forms` makes a note name the joined shape of a marker its examples show.
+
 **Grams** (`Gram`): `function` (PL, DU, DEF, INDEF, GEN, LOC, ABL, DAT, ACC, ERG, PAST, PERF, FUT, PROG, HAB, NEG, 1SG..3PL,
 CLASS:n, ...), `form` (segments, may be empty when lost), `host` (N | V | NP | VP), `side` (pre | post, from typology),
 `level` (0 free, 1 clitic, 2 affix, 3 fused, 4 lost), `source` (the lexical word and the path id), `born_kyr`, `history`.
