@@ -21,7 +21,8 @@ level (harmony is a word-domain process).
 a new process is phrasal and phonetic; as it ages its domain narrows (phrase -> word -> stem), and in the end it dies,
 leaving lexicalized alternations. Ages: `PHRASE_KYR`, `WORD_KYR`, and a death age drawn per rule (lognormal around
 `LIFE_KYR`). A rule also dies when later changes make it opaque (`OPAQUE_MAX` of the forms it could apply to it would
-change: the stored words no longer obey it), or when the lect holds more than `MAX_LIVE` (the oldest go).
+change: the stored words no longer obey it), or when the lect holds more than `MAX_LIVE` (those nearest their own
+death age go).
 
 **Order.** Lexical rules (stem, word) in the order they were born (rule addition at the end of the grammar: Halle 1962;
 King 1969), then phrase-level rules, then the allophone rules (phonetic implementation comes last).
@@ -49,11 +50,13 @@ LEVELS = ("phrase", "word", "stem")
 PHRASE_KYR = 1.0      # a new rule applies across word joins for about this long ...
 WORD_KYR = 3.0        # ... then inside words (affixes, compounds) until this age, then only where words are made
 LIFE_KYR = 6.0        # median age at death (lexicalization), lognormal sigma LIFE_SIGMA per rule
-LIFE_SIGMA = 0.5
+LIFE_SIGMA = 0.8      # (0.5 -> 0.8, owner ruling 11-08, PW-1539 A: a long tail, so a few rules live 15+ kyr as Celtic
+#                       mutations and Sanskrit sandhi did; P(life > 15 kyr) 3% -> 13%, the median unchanged)
 OPAQUE_MAX = 0.2      # a rule dies when it would change more than this share of the frequent forms it could apply to
 OPAQUE_SAMPLE = 60     # frequent forms the opacity test looks at
 OPAQUE_MIN_HITS = 5   # ... counted only once it could apply to at least this many forms
-MAX_LIVE = 8          # live rules a lect keeps (allophone and sandhi rules aside); the oldest die first
+MAX_LIVE = 8          # live rules a lect keeps (allophone and sandhi rules aside); those nearest their own death age go
+#                       first (until 11-08 the oldest, which cut every long-lived rule down to the eight youngest)
 DEAD_KEEP = 6         # most recent deaths kept for the page
 SANDHI_SHARE = 0.7    # share of tonal lect lines with a tone-sandhi rule (Chen 2000: sandhi is the rule in tone languages
 #                       of East and Southeast Asia, Meeussen-type OCP effects common in Bantu; not universal)
@@ -240,7 +243,7 @@ def update(lect, kyr: float) -> None:
         keep.append(x)
     changes = [x for x in keep if x.ref.startswith("c:")]
     if len(changes) > MAX_LIVE:
-        changes.sort(key=lambda x: -x.born)
+        changes.sort(key=lambda x: (x.age(kyr) / max(x.life, 1e-6), -x.born, x.ref))
         for x in changes[MAX_LIVE:]:
             dead.append([x.ref, round(x.born, 3), round(float(kyr), 3), "crowded out by younger rules"])
         old = {id(x) for x in changes[MAX_LIVE:]}
