@@ -1996,7 +1996,10 @@ def _build_demo() -> tuple[Rule, ...]:
         _demo("tone2.final_rise", "[V source2=1 tone2=0] > Vᴖ˨˦ / _C*#", "prosody", "syrinx, hear:tone2", 1,
               "a phrase-final rise frozen onto the second voice of the last syllable, as Swedish accent 2 grew out of "
               "word prosody (fantasy analogue)", family="tone"),
-        _demo("tone2.contour_level", "[V source2=1 tone2=4..5] > [tone2=3]", "perception", "syrinx, hear:tone2", 2,
+        # (weight 1, not S227's 3: the duration argument for levelling short contours (Zhang 2002) is weaker for a voice
+        # that sweeps an octave in tens of milliseconds, as a syrinx does; at 2 it was the commonest second-voice change
+        # of pass B, 18 firings, and the drawn contour sets levelled to all-high and were stripped)
+        _demo("tone2.contour_level", "[V source2=1 tone2=4..5] > [tone2=3]", "perception", "syrinx, hear:tone2", 1,
               "as S227/S228 for the first voice: a contour simplifies to its high end (Yip 2002, ch. 2)", family="tone"),
         _demo("tone2.low_parallel", "Vᴖ˨ > [tone2=0]", "perception", "syrinx, hear:tone2", 2,
               "a category merger (as S230): the low second voice falls in with parallel motion", family="tone"),
