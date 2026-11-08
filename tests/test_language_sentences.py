@@ -404,3 +404,105 @@ def test_no_tool_jargon_in_notes_or_sentences():
         blob = json.dumps(lj["sentences"]) + json.dumps(lj["grammar_notes"])
         for bad in ("G05", "G06", "the lane", "sketch.py", "Grambank marks"):
             assert bad not in blob, (kw, bad)
+
+
+# --- grammar phase C (2026-11-08) -------------------------------------------------------------------------------------
+
+def test_question_copula_relativizer_grams_replace_the_stand_ins():
+    lj = lect(polar_question="final_particle")
+    lj["grams"] = [gram("Q", "ma", 0, "post", "VP", ("NOT", "X47", "concept")),
+                   gram("COP", "da", 2, "post", "VP", ("STAND", "X49", "concept")),
+                   gram("REL", "ju", 0, "pre", "VP", ("WHO", "G058", "concept"))]
+    s = by_id(lj)
+    assert line(s["polar"])[1].endswith(" Q") and line(s["polar"])[0].endswith(" ma")
+    assert line(s["copula"])[1] == "man that hunter-COP"
+    assert line(s["relative"]) == ("mi tau kana ju lan", "1SG know woman REL sing")
+
+
+def test_concord_on_adjective_demonstrative_and_verb():
+    lj = lect(gender="sex")
+    lj["grams"] = [gram("CLASS:1", "o", 2, "pre", "N", ("MAN", "G066", "concept")),
+                   gram("CLASS:2", "e", 2, "pre", "N", ("WOMAN", "G066", "concept")),
+                   gram("3SG", "a", 2, "pre", "V")]
+    lj["processes"] = {"concord": ["adj", "dem", "verb"]}
+    s = by_id(lj)
+    assert line(s["transitive"])[1] == "F-woman F-see M-dog"
+    assert line(s["copula"])[1].startswith("M-man M-that")
+    assert "concord" in s["transitive"]["note"]
+
+
+def test_complement_topic_focus_sentences():
+    lj = lect(word_order="free", head_direction="initial")
+    lj["lexicon"]["SAY"] = {"ipa": "sema", "roman": "sema", "pos": "V"}
+    lj["grams"] = [gram("COMP", "ko", 0, "pre", "VP", ("SAY", "G023", "concept")),
+                   gram("FOC", "nu", 1, "post", "NP", ("COP", "G057", "gram"))]
+    s = by_id(lj)
+    assert line(s["complement"])[1] == "man say COMP dog sleep"
+    assert line(s["topic"])[1] == "fish man eat"
+    assert line(s["focus"])[1] == "man=FOC see dog"
+
+
+def test_valence_chain_incorporation_and_voice_sentences():
+    lj = lect(word_order="VSO")
+    lj["lexicon"].update({"COME": {"ipa": "datan", "roman": "datan", "pos": "V"},
+                          "BUILD": {"ipa": "bina", "roman": "bina", "pos": "V"}})
+    lj["grams"] = [gram("APPL", "i", 2, "post", "V"), gram("RECP", "an", 2, "post", "V"), gram("SS", "ta", 2, "post", "V"),
+                   gram("PV", "in", 2, "post", "V"), gram("DEF", "aŋ", 0, "pre", "NP")]
+    lj["processes"] = {"incorp": True}
+    s = by_id(lj)
+    assert line(s["applicative"])[1] == "build-APPL DEF man DEF child house"
+    assert line(s["reciprocal"])[1].startswith("see-RECP")
+    assert "SS" in line(s["chain"])[1] and s["chain"]["en"].startswith("The man comes and")
+    assert line(s["incorp"])[1] == "eat-fish DEF man"
+    assert line(s["voice_pv"])[1] == "eat-PV man PIV fish"
+
+
+def test_infix_stem_change_inflection_class_portmanteau_second_position():
+    lj = lect(word_order="SOV", head_direction="final")
+    lj["grams"] = [gram("PAST", "um", 2, "pre", "V"), gram("PL", "s", 2, "post", "N"),
+                   gram("LOC", "ta", 2, "post", "NP"), gram("PL+LOC", "sat", 3, "post", "NP"),
+                   gram("NEG", "ne", 1, "pre", "VP")]
+    lj["grams"][1]["alt_ipa"] = "n"
+    lj["processes"] = {"infix": {"fn": "PAST"}, "iclass": {"PL": {"salt": 7, "share": 0.5}},
+                       "stem_change": {"FUT": [["a", "e"]]}, "second": True}
+    v = SN.View(lj)
+    w = [SN.Word("lis", "see", "SEE")]
+    SN.attach(v, w, 0, "PAST")
+    assert SN.render_word(v, w[0])[:2] == ("l<um>is", "<PST>see")
+    w = [SN.Word("kum", "eat", "EAT")]
+    assert not SN.attach(v, w, 0, "FUT")
+    w = [SN.Word("nam", "x", "X")]
+    assert SN.attach(v, w, 0, "FUT") and w[0].form == "nem" and w[0].gloss == "x\\FUT"
+    forms = {c: SN.render_word(v, SN.noun_phrase(v, c, plural=True).words[0])[0] for c in ("DOG", "FISH", "HOUSE", "BIRD")}
+    assert {f.split("-")[1] for f in forms.values()} <= {"s", "n"}
+    np_ = SN.noun_phrase(v, "HOUSE", plural=True)
+    SN._np_gram(v, np_, "LOC")
+    assert SN.render_word(v, np_.words[0])[1] == "house-PL.LOC"
+    neg = by_id(lj)["negation"]
+    assert line(neg)[1].split()[0].endswith("=NEG") and "second position" in neg["note"]
+
+
+def test_second_read_sentence_fixes():
+    """Grammar C, from the read of phase B's demo: object agreement shown on a transitive verb; reduplication a copy of
+    today's stem; a stored cell whose stem alternates shown unsegmented; 'DAT' kept in capitals; the genitive named;
+    numerals say which is times and which plus; an imperative with an object marker says so."""
+    lj = lect(word_order="SOV", head_direction="final", numeral="NNum", numeral_base="decimal")
+    lj["lexicon"].update({c: {"ipa": f, "roman": f, "pos": "N"} for c, f in
+                          (("TEN", "pu"), ("ONE", "sa"), ("THREE", "tiga"), ("AND", "dan"), ("GIVE", "beri"))})
+    lj["lexicon"]["GIVE"]["pos"] = "V"
+    lj["grams"] = [gram("3SG.O", "nja", 2, "post", "V"), gram("DAT", "ke", 0, "post", "NP"),
+                   gram("GEN", "nu", 1, "post", "NP")]
+    lj["processes"] = {"redup": {"fn": "ITER", "shape": "CV", "side": "pre"}}
+    lj["paradigms"] = {"verbs": {"rows": [{"concept": "SEE", "cells": {"lemma": {"ipa": "lis"}},
+                                            "segmented": {"ITER": "la-lus"}}]}}
+    notes = {n["topic"]: n for n in SN.grammar_notes(lj)}
+    assert "see" in notes["Object agreement"]["ex"][0][1]
+    assert notes["Giving (two objects)"]["text"].startswith("DAT ")
+    assert "genitive marker, a clitic" in notes["Possession"]["text"]
+    ex = {e[2].split(" (")[0]: e for e in notes["Numerals"]["ex"]}
+    assert ex["30"][1] == "ten three" and ex["11"][1] == "ten and one" and "3 × 10" in ex["30"][2]
+    v = SN.View(lj)
+    w = SN.verb(v, "SEE", redup=True)[0]
+    assert SN.render_word(v, w[0])[0] == "li-lis"
+    imp = by_id(lj)["imperative"]
+    assert "marks its object" in imp["note"]

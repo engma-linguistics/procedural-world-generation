@@ -459,6 +459,33 @@ new one (Jespersen). Writes into `g.typology` from outside (calques on shift) be
   nouns (`noun_phrase`); `s_imperative` with IMP; `s_hortative`, `s_object`; notes Object agreement, Possessor marking,
   mood markers; `_shown_forms` makes a note name the joined shape of a marker its examples show.
 
+**Grammar phase C (2026-11-08, branch `lang-gram-c`; `grammar-gaps.md` Queue).**
+- *Constructions as grams* (slot 'clause', outermost): Q (X46 'if', X47 negator), COP (G056, X48 'he/she/it', X49
+  posture verb), REL (G055, G058 'who, what'), COMP (G023 'say', X50 REL > COMP), TOP (X51 'if, when', X52
+  demonstrative), FOC (G057 COP > FOC). `polar_question` and `copula` are realised features now (a free or clitic Q by
+  its side, a bound one 'verb_morph'; COP live = yes), pulled by their aims; REL is wanted unless RelN; COMP, TOP, FOC
+  come with the ordinary draw. Side rules 'q', 'rel', 'comp'. `COPY_PATHS`: a gram path whose source keeps its function
+  (COP > FOC, REFL > RECP, COM > APPL ...): the new gram splits off with the source's form.
+- *Valence, switch-reference, voice*: APPL (X53 'give', X54 COM), RECP (X55 REFL, X56 'other'), ANTIP (X57 REFL; wanted
+  only in ergative/split lects), SS/DS (X58-X61; wanted only in OV lects), PV (X62 PASS > PV, reanalysis) and AV (X63
+  'do', a guess; both wanted only in verb-initial lects).
+- *Processes* (`Grammar.processes`, deep-copied to daughters): `concord` (sorted subset of dem/adj/verb, `_concord`,
+  `CONCORD_GROW` while a class marker is bound at clitic+); `iclass` ({fn: {salt, share}}, `_iclass`: a bound marker gets a
+  second form `Gram.alt` for a lexically arbitrary class, `iclass_member` = crc32 of concept and salt; levelled at
+  `ICLASS_LEVEL`); portmanteau grams `A+B` (`_cumulate`, level fused, built into cells as one part, lost with either part);
+  `stem_change` ({fn: [[v, v'], ...]}, recorded by `_stem_change` when a fused marker with no form still shows in its
+  cells); `infix` ({fn}, `_infix`: a vowel-initial verb prefix goes after the stem's onset; cells carry two stem parts);
+  `second` (`_second`: verbal clitics after the clause's first word); `incorp` (`_incorp`). Syncretic same-slot grams
+  are kept half the time (before: the rarer always lost).
+- *Sentences*: concord on adjective, demonstrative and the verb's third-person slot (`_verb_concord`); `cop_phrase`;
+  Q, COP and REL grams before the lexical stand-ins (kept as fallbacks for older files); new `s_complement`, `s_topic`,
+  `s_focus`, `s_applicative`, `s_reciprocal`, `s_antipassive`, `s_chain`, `s_incorp`, `s_voice` (two sentences, pivot
+  marked by the article glossed PIV); infixes shown as k<um>ain / <PST>eat, stem changes as stem\PL, portmanteaus as one
+  morph PL.GEN (`_portmanteaus`), second-position clitics moved in `clause`. A stored cell whose stem piece is not today's
+  stem is shown unsegmented; reduplication is always a fresh copy of today's stem. Notes: Concord, Valence, Voice and
+  pivot, Linking clauses, Topic and focus, Word shapes. Gram records carry `alt_ipa` for a second class form.
+- `complexity`: free clause particles are left out of `mean_level`; new counts `portmanteaus`, `inflection_classes`.
+
 **Grams** (`Gram`): `function` (PL, DU, DEF, INDEF, GEN, LOC, ABL, DAT, ACC, ERG, PAST, PERF, FUT, PROG, HAB, NEG, 1SG..3PL,
 CLASS:n, ...), `form` (segments, may be empty when lost), `host` (N | V | NP | VP), `side` (pre | post, from typology),
 `level` (0 free, 1 clitic, 2 affix, 3 fused, 4 lost), `source` (the lexical word and the path id), `born_kyr`, `history`.
@@ -813,6 +840,45 @@ roman, gloss, lect, named_by, kyr, substrate_of, pattern (P2 or null), tautology
   individuation). No polity or state data reaches the language pass yet, so E11 confederations and X6 dynasty exonyms are
   still missing.
 - Shown in the viewer's Names tab (with play buttons) and on the sketch pages ("Names of people and places").
+
+### 13c. Faiths: god names, liturgies, learned loans (`faiths.py`, faiths & contact pass 3, 2026-11-08)
+
+- **Input.** `inputs.Run.gods_doc()`: the run's gods.json; one from before the faith records (procgen-gods/1, as
+  a24559's) is re-derived in memory with `planet.lineages.gods.derive` (read-only, ~2 min). `faiths.Plan` reads it once
+  before the history: each living deme's culture (cultures.json `deme_culture`), its faith (`faith_now`) and its first
+  `GODS_PER_CULTURE` living beings (high god first, then devotion).
+- **God names are lexicon words** `name:god:<key>` (pos NAME), key = the root of the being's `parent` chain. The line
+  takes the god at its first `converted` copy up the chain (a conversion: the name is borrowed from a lect that has it,
+  most in contact first), else at the root's birth (a coinage; older than 20 kyr: in the proto-language, so daughters
+  inherit one word). The coinage (`coin_name`) is a kin or rank title on the domain word ('sky-father', 'lord of the
+  sea'), an agent noun from the domain's verb ('the one who burns'), a kenning ('eye of the sky') or the domain word
+  itself; never the same form as another god's name in the lect. Every step in the chain is an ordinary etymology step
+  (`name:god`, gloss = the name's English). Sound change, inheritance and shift (NAME words always kept as substrate)
+  act on it like on any word; `lexicon.step` skips NAME words; instead `faiths.step` renames a name by an epithet at
+  `NAME_HALF_KYR` per reference generation (the old name avoided; the note keeps it). `lexicon.stats` and the
+  borrowability check leave NAME words out.
+- **Liturgy.** A faith whose seat people (the largest holder deme of its founding culture, else of any holder) knows
+  `temples` gets a canon at min(founding, temples), older than `LIT_MIN_KYR`: the seat's ancestor lect then is copied
+  (`lit<faith>`, `how="liturgy"`, never stepped, not in `lects`). From the canon on, the lects of the holders' ancestor
+  demes take learned loans of the SACRED words from it (`LEARNED_RATE` per generation; step `borrow:lit<faith>`, note
+  "learned, from the liturgy of ..."). At the end each living holder lect gets `systems.learned` {concept: [the
+  liturgy's form as the lect hears it, doublet | synonym | only, the liturgy's form]}.
+- **Document.** `faiths` {faith id: {name, core, how, parent, founded_kyr, peoples, holders: [lect], gods: [{key,
+  domain, label, high, names: [[lect, ipa, roman, gloss, coined [kyr, lect]]], plain}], liturgy: {lect_from, deme, kyr,
+  people, words {concept: [ipa, roman]}, gods {key: [ipa, roman, gloss]}, formulas: [sentence records as in 7b]}}}.
+  Two names with the same `coined` are one word (cognates or a loan). The formulas (invocation, praise, petition) are
+  built with sentences.py on the frozen lect. The sketch's "Gods and liturgy" section (`sketch.faith_section`) shows
+  them.
+- **New concepts** PRIEST and TEMPLE come with the `temples` technology (TECH_CONCEPT), with recipes 'god person',
+  'god house', 'one who prays', 'place of prayer'.
+- **E10 faith endonyms** use the god's own name when the lect has one ('the people of <name>').
+
+### 13d. Segment borrowing (`lexicon.borrow`, contact-gaps 3d)
+
+A contact loan under intensity above `SEG_BORROW_MIN` keeps each donor consonant the receiver lacks with chance
+`SEG_BORROW_K` x (I - min) / (1 - min) when the receiver's voice hears and makes it, at most `SEG_BORROW_MAX` per line;
+logged in `systems.seg_loans` [ipa, donor, kyr, concept]. The driver (`history.take_segments`) adds it to the line's
+`base_segs` (so `cap_inventory`'s rare-unit fold leaves it) and re-reads the inventory (`lect._sync_inventory`).
 
 ## 14. Work split for tonight
 

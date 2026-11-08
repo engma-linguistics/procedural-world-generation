@@ -72,7 +72,7 @@ a{color:var(--acc)}
 <p>There are two derived features as well. <b>Head direction</b> (final 60%, initial 40%) comes from basic word order, or from adpositions and genitives when the order is free. <b>Tone</b> (38% tonal) comes from the sound system, not the grammar. <code>grammar.py:759 _derive</code></p>
 
 <h2 id="grams">What can be marked (gram functions)</h2>
-<p>There are 36 functions, plus noun classes. A gram for one of these is a real marker with a form, and it has a side (before or after its host) fixed by an order feature. Affixes stack in a fixed order, innermost first: derivation, class, number, determiner, case, valence, aspect, tense, mood, polarity, person (after Bybee 1985). <code>grammar.py:85 FUNCS</code> · <code>:125 SLOT_ORDER</code></p>
+<p>There are 65 functions (phases A-C), plus noun classes and portmanteaus. A gram for one of these is a real marker with a form, and it has a side (before or after its host) fixed by an order feature. Affixes stack in a fixed order, innermost first: derivation, class, number, determiner, case, valence, aspect, tense, mood, polarity, person (after Bybee 1985). <code>grammar.py:85 FUNCS</code> · <code>:125 SLOT_ORDER</code></p>
 <div class="tw"><table>
 <thead><tr><th>Slot</th><th>Functions</th><th>Wanted when</th></tr></thead>
 <tbody>
@@ -88,6 +88,9 @@ a{color:var(--acc)}
 <tr><td>polarity</td><td><span class="sc">neg</span></td><td>always</td></tr>
 <tr><td>person</td><td><span class="sc">1sg 2sg 3sg 1pl 2pl 3pl</span></td><td>verb agreement ≠ none, or pro-drop. When one binds, the rest of the pronoun series binds with it (a zero 3SG the commonest gap); gaps fill by analogy</td></tr>
 <tr><td>derivation (process)</td><td><span class="sc">iter</span>, <span class="sc">ints</span>, <span class="sc">cont</span>: verbal reduplication (a copy of the stem, not a gram)</td><td>verb reduplication = yes</td></tr>
+<tr><td>valence (phase C)</td><td><span class="sc">appl</span>, <span class="sc">recp</span>, <span class="sc">antip</span>; <span class="sc">av</span>, <span class="sc">pv</span> (actor / patient voice)</td><td>applicative and reciprocal always (ordinary draw); antipassive only in ergative or split lects; voice only in verb-initial lects. Sources: 'give' and comitative &gt; applicative, reflexive and 'other' &gt; reciprocal, reflexive &gt; antipassive, passive &gt; patient voice, 'do' &gt; actor voice (a guess)</td></tr>
+<tr><td>clause (phase C, outermost)</td><td><span class="sc">q</span> (question), <span class="sc">cop</span>, <span class="sc">rel</span>, <span class="sc">comp</span>, <span class="sc">top</span>, <span class="sc">foc</span>; <span class="sc">ss</span>, <span class="sc">ds</span> (switch-reference)</td><td>question particle when polar question ≠ intonation (pulled); copula when copula = yes (pulled); relativizer unless relatives precede the noun; complementizer, topic and focus always (ordinary draw); switch-reference only in OV lects. Polar question and copula are now read from these grams</td></tr>
+<tr><td>processes (phase C)</td><td>concord; inflection classes; portmanteaus; stem change; infix; second-position clitics; noun incorporation</td><td>concord while a class marker is bound; a second inflection-class form for a bound number, case, tense, aspect or person marker; two bound neighbours fused into one ending; a marker worn to nothing becomes a vowel change across the lexicon; a vowel-initial verb prefix moves inside the stem; verbal clitics to second position (3x under free order); incorporation in head-marking lects with 3+ bound verb categories</td></tr>
 </tbody></table></div>
 
 <h2 id="social">Who speeds it up or slows it down</h2>

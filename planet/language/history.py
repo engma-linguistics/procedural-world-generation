@@ -30,6 +30,7 @@ from pathlib import Path
 
 import numpy as np
 
+from . import faiths as FT
 from . import inputs as I
 from . import lect as LC
 from . import lexicon as LX
@@ -258,6 +259,9 @@ class History:
         R = self.R
         t0, t1 = R.kyr(i - 1), R.kyr(i)
         tm = time.perf_counter()
+        FT.step(self, i)   # (god names and canons of the frame before, renaming, learned loans: faiths.py)
+        self.timing["faiths"] = self.timing.get("faiths", 0.0) + time.perf_counter() - tm
+        tm = time.perf_counter()
         ev = R.events_in(i)
         for child, parent in sorted(ev["buds"]):
             self.birth(child, parent, i)
@@ -286,6 +290,7 @@ class History:
                    "kin": LS.kin_pull(R.culture_rules(l.deme)), "speech_taboo": LS.speech_taboo(R.culture_rules(l.deme))}
             tasks.append((l.id, i, n, t1, ctx, self.pending.pop(l.id, [])))
         fired = self.run_steps(tasks)
+        self.take_segments(living, t1)
         self.timing["steps"] = self.timing.get("steps", 0.0) + time.perf_counter() - tm
         # wave: decide the adoptions now, apply them at the start of the receiver's next step
         tm = time.perf_counter()
@@ -367,6 +372,27 @@ class History:
         tm = time.perf_counter()
         self.observe(i)
         self.timing["observe"] = self.timing.get("observe", 0.0) + time.perf_counter() - tm
+
+    def take_segments(self, living: list, kyr: float) -> None:
+        """Segment borrowing (lexicon.SEG_BORROW_MIN; contact-gaps 3d): a consonant a heavy-contact loan kept (logged in
+        the lexicon's systems "seg_loans") joins the lect's inventory. It counts as one of the line's own sounds
+        (`base_segs`), so the rare-unit fold of `cap_inventory` does not take it straight back out (English /ʒ/ lives in a
+        handful of words); the inventory is re-read from the forms (lect._sync_inventory: the sound lane's call)."""
+        from .percepts import from_ipa
+        for x in living:
+            l = self.lects[x.id]
+            sl = l.lexicon.systems.get("seg_loans") if l.lexicon is not None else None
+            if not sl:
+                continue
+            used = set(l.segments())
+            new = []
+            for ipa, *_r in sl:
+                for q in from_ipa(ipa):
+                    if q not in l.base_segs and q in used and q not in new:
+                        new.append(q)
+            if new:
+                l.base_segs = frozenset(l.base_segs) | frozenset(new)
+                LC._sync_inventory(l, kyr)
 
     def loan_weights(self, l: LC.Lect, contacts: dict, i: int) -> dict:
         """{donor lect id: pull} for `l`'s lexical borrowing this interval (LOAN_CONTACT, MINORITY_PULL)."""
@@ -1148,6 +1174,9 @@ def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse
             cw = {y.id: y.lexicon for y in (h.lect_of(o) for o in sorted(R.contacts_of(l.deme, last, CONTACT_BORROW)))
                   if y is not None and y.alive and y.id != l.id}
             LS.avoidance(rng_for(h.seed, "avoid", l.id), l.lexicon, l.inventory, R.kyr(last), l.id, cw, l.profile)
+        lr = FT.learned_register(h, l)   # (the liturgy's sacred words beside the lect's own: faiths.py)
+        if lr:
+            l.lexicon.systems["learned"] = lr
     out = {"history": h, "run": R, "seed": h.seed, "lects": list(h.lects.values()), "shifts": h.shifts,
            "food_routes": [r for r in h.routes.values()], "log": h.log, "timing": h.timing}
     if analyse:

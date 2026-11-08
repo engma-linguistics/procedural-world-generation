@@ -1142,16 +1142,22 @@ def audibly_shares(root: str, word: str) -> bool:
     a, b = _bare(root), _bare(word)
     if not a:
         return True
-    if a in b:
-        return True
-    return len(a) >= 3 and (a[:2] in b or a[-2:] in b)
+    if len(a) <= 2:   # (a two-sound root heard only at a word's edge: 'ma' inside any word is chance)
+        return b.startswith(a) or b.endswith(a)
+    return a in b or a[:3] in b or a[-3:] in b
 
 
 def felt_members(doc: Doc, lex: dict, rid: str, members: list) -> list:
     """The words of a felt root family a speaker can still hear it in (all of them when the root's own word is gone)."""
     anchor = lex.get(((doc.d.get("roots") or {}).get(rid) or {}).get("concept") or "")
     if not anchor or rid not in (anchor.get("roots") or ()):
-        return members
+        # (the root's own word is gone: a member is felt only if it shares three sounds, or two at the start, with
+        # another member)
+        def near(a: str, b: str) -> bool:
+            a, b = _bare(a), _bare(b)
+            return a[:2] == b[:2] and len(a) >= 2 or any(a[i:i + 3] in b for i in range(max(0, len(a) - 2)))
+        keep = [c for c in members if any(near(lex[c]["ipa"], lex[o]["ipa"]) for o in members if o != c)]
+        return keep if len(keep) >= 2 else []
     return [c for c in members if audibly_shares(anchor["ipa"], lex[c]["ipa"])]
 
 
@@ -1510,6 +1516,50 @@ def personal_names(doc: Doc, l: dict) -> list[str]:
     return out
 
 
+def faith_section(doc: Doc, l: dict) -> list[str]:
+    """The lect's faith (languages.json `faiths`, faiths & contact pass 3): its gods' names in this language with their
+    histories and the same names in the faith's other languages, and the liturgy (the frozen sacred register, its
+    formulas, and this language's learned words from it: lects' `systems.learned`)."""
+    fa = doc.d.get("faiths") or {}
+    fid = next((k for k, f in sorted(fa.items(), key=lambda t: int(t[0])) if l["id"] in (f.get("holders") or [])), None)
+    if fid is None:
+        return []
+    F = fa[fid]
+    out = ["## Gods and liturgy", "",
+           f"**Faith.** {F['name'][0].upper() + F['name'][1:]}"
+           + (f", founded {kyr(F['founded_kyr'])} ago" if F.get("founded_kyr") is not None else "")
+           + (f", held by {len(F['holders'])} languages" if len(F.get("holders") or []) > 1 else "") + ".", ""]
+    rows = []
+    for g in F.get("gods") or []:
+        mine = next((n for n in g.get("names") or [] if n[0] == l["id"]), None)
+        if mine is None:
+            continue
+        same = [n for n in g["names"] if n[0] != l["id"] and n[4] == mine[4]]
+        cog = ", ".join(f"{n[2]} ({doc.label(n[0], True)})" for n in same[:3]) + (" ..." if len(same) > 3 else "")
+        rows.append(f"| {g['label']} | **{mine[2]}** | /{mine[1]}/ | '{mine[3]}' | {cog or '—'} |")
+    if rows:
+        out += ["| god | name | IPA | meaning | the same name elsewhere |", "| --- | --- | --- | --- | --- |"] + rows + [""]
+        g0 = next((g for g in F["gods"] if any(n[0] == l["id"] for n in g.get("names") or [])), None)
+        if g0 is not None and g0.get("plain"):
+            out += [f"How the first name came about: {g0['plain']}.", ""]
+    L = F.get("liturgy")
+    if L:
+        out += [f"**Liturgy.** The faith's rites are kept in the {people(L['people'])} speech of {doc.label(L['lect_from'], True)} "
+                f"as it was {kyr(L['kyr'])} ago, frozen since (as Latin, Sanskrit or Ge'ez are).", ""]
+        learned = ((l.get("systems") or {}).get("learned") or {})
+        lex = l.get("lexicon") or {}
+        out += ["| meaning | liturgy | today | learned form | |", "| --- | --- | --- | --- | --- |"]
+        for c, (ipa, rom) in L.get("words", {}).items():
+            le = learned.get(c)
+            out.append(f"| {cname(c)} | {rom} /{ipa}/ | {lex.get(c, {}).get('ipa', '—')} | {('/' + le[0] + '/') if le else ''} "
+                       f"| {le[1] if le else ''} |")
+        out.append("")
+        for f in L.get("formulas") or []:
+            out += interlinear(" ".join(w[0] for w in f["w"]), " ".join(w[1] for w in f["w"]))
+            out += ["", f"'{f['en']}' ({f.get('roman', '')})", ""]
+    return out
+
+
 def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] | None = None) -> str:
     roots_cache = {} if roots_cache is None else roots_cache
     nm = doc.deme_name(l)
@@ -1528,6 +1578,7 @@ def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] 
     out += grammar(doc, l)
     out += vocabulary(doc, l)
     out += personal_names(doc, l)
+    out += faith_section(doc, l)
     out += sample_sentences(l)
     out += comparison(doc, l, roots_cache)
     return "\n".join(out).rstrip() + "\n"
@@ -1712,7 +1763,7 @@ def fname(l: dict) -> str:
 def index_page(doc: Doc, picks, ranking, src: str) -> str:
     clashes = sum(bool(_typology_clashes(l.get("typology") or {}, l.get("grams") or [])) for l in doc.living)
     out = [MARKER, "", "# Language sketches", "",
-           f"Wikipedia-style pages for six living languages of run {doc.d.get('run', '?')} ({len(doc.living)} living lects), "
+           f"Wikipedia-style pages for six living languages of one simulated world ({len(doc.living)} living lects), "
            f"written by `tools/language/sketch.py` from `{src}` alone. Regenerate with:", "",
            f"    uv run python tools/language/sketch.py {src} --out docs/review/language/sketches --auto", "",
            "The languages are chosen by criteria, never by id, so a new run picks its own. Each pick must differ from the "

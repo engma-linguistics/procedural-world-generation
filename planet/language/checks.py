@@ -411,6 +411,8 @@ def borrowability(result: dict) -> dict:
     for l in living:
         n = b = 0
         for k, w in l.lexicon.words.items():
+            if w.pos == "NAME":   # (god names: faiths.py)
+                continue
             x = _is_loan(w)
             loans.setdefault(k, []).append(x)
             n += 1

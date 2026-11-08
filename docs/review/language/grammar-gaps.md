@@ -564,5 +564,24 @@ Against Wikipedia's grammatical-category list, after A-C:
 - [x] clusivity in agreement: 1PL.INCL joins a binding subject series when an inclusive 'we' exists (X45).
 - [x] 9 possessor marking on the possessed noun: 1SG.POSS-3PL.POSS (slot 'poss'), lead path X39; used in the 'my
   mother' and 'my brother' sentences. Harness: 19% of lects.
-- [ ] 8 concord (class/gender on adjectives, demonstratives, the verb): not started.
-- [ ] 10 Q, COP, REL, COMP, TOP/FOC as grams: not started (the notes now describe the stand-ins without path ids).
+- [x] 8 concord: done in phase C (below).
+- [x] 10 Q, COP, REL, COMP, TOP/FOC as grams: done in phase C (below).
+
+### Phase C progress (branch `lang-gram-c`, 2026-11-08)
+
+Numbers are in for-daniel.md "Grammar phase C"; the code in architecture.md section 7.
+- [x] 8 concord (phase B leftover): `processes["concord"]` (dem, adj, verb) while a class marker is bound; sentences copy
+  the marker onto the adjective and demonstrative and put it in the verb's third-person slot.
+- [x] 10 Q, COP, REL, COMP, TOP, FOC as grams with sources; `polar_question` and `copula` read from the grams; the
+  lexical stand-ins stay only as fallbacks for older files. New sentences: complement clause, topic, focus.
+- [x] 13 inflection classes (`Gram.alt`, lexically arbitrary membership) and cumulative exponence (portmanteau grams
+  `A+B`); syncretic markers kept half the time instead of always losing the rarer.
+- [x] 14 applicative, reciprocal, antipassive (grams with sources; sentences).
+- [x] 15 infixes (from vowel-initial verb prefixes), stem change across the lexicon (from a fused marker worn to
+  nothing; the page applies the vowel change to any word), reduplication now always a fresh copy of today's stem. The
+  lexicon itself is untouched (the change is applied where a word is inflected).
+- [x] 16 second-position clitics (`processes["second"]`) and topic fronting (topic sentence where TOP lives or order
+  is free).
+- [x] 17 switch-reference (SS, DS on a medial verb; OV lects; a chained sentence).
+- [x] 18 noun incorporation (`processes["incorp"]` in head-marking lects with rich verb morphology).
+- [x] 19 Austronesian-style voice (AV, PV in verb-initial lects; the pivot marked by the old article, glossed PIV).

@@ -180,6 +180,25 @@ def test_borrowing_nativizes_foreign_segment(concepts):
     assert w.etym[-1].process == "borrow:D" and w.etym[-1].lect == "R" and w.etym[:-1] == word.etym
 
 
+def test_heavy_contact_keeps_a_foreign_segment(concepts):
+    """Segment borrowing (contact-gaps 3d): at full contact intensity a loan may keep a donor consonant the receiver lacks
+    (logged in systems.seg_loans), never more than SEG_BORROW_MAX per line, and never under SEG_BORROW_MIN."""
+    _rng, inv, lex = _proto(21, concepts, "R", size_hint=(10, 3))
+    _d, _dinv, donor = _proto(22, concepts, "D")
+    foreign = tuple(from_ipa("ʃaθa"))
+    lacks = [s for s in foreign if s.kind == "C" and s not in inv.consonants]
+    assert lacks
+    word = replace(donor["DOG"], form=foreign)
+    low = L.borrow(word, "D", lex, None, inv, 9.0, store=False, rng=np.random.default_rng(1), intensity=L.SEG_BORROW_MIN)
+    assert not any(s in lacks for s in low.form) and not lex.systems.get("seg_loans")
+    kept = 0
+    for k in range(40):
+        w = L.borrow(word, "D", lex, None, inv, 9.0, store=False, rng=np.random.default_rng(k), intensity=1.0)
+        kept += any(s in lacks for s in w.form)
+    assert kept > 0
+    assert 0 < len({r[0] for r in lex.systems["seg_loans"]}) <= L.SEG_BORROW_MAX
+
+
 def test_substrate_keeps_river_word(concepts):
     _, inv_old, old = _proto(31, concepts, "OLD")
     _, inv_new, new = _proto(32, concepts, "NEW")

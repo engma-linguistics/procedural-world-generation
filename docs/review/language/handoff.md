@@ -328,3 +328,42 @@ are in `scratchpad/lexcon/`:
 3. Faiths: a liturgical lect frozen at the founding, learned loans for GOD/SPIRIT/PRIEST/TEMPLE, and god names (gods.json; contact-gaps rec. 5).
 4. Segment borrowing at high intensity (contact-gaps 3d): the inventory areal signal is still ~0 (-0.003).
 5. The sentence lane's numeral note could use the lect's own ELEVEN/THIRTY words.
+
+## Continuation: grammar phase C (lang-gram-c, 2026-11-08)
+
+Done on `lang-gram-c` (from lang-design 3d239669): concord, constructions as grams (Q, COP, REL, COMP, TOP, FOC),
+phase C items 13-19, and the fixes from the coordinator's read of phase B's demo. See for-daniel.md "Grammar phase C"
+(defaults, measures, odd output) and architecture.md ("Grammar phase C" block, for the code). Not merged or pushed.
+
+Left for the next grammar lane (phase D is next in grammar-gaps.md):
+1. Intonation-only polar questions are 51% of the full pass (WALS about 14%): the Q pull is weak under high L2.
+2. Antipassive near 0% (one gram source only).
+3. Concord copies the class marker's own form; no separate agreement series. Daniel's call whether `gender` needs
+   concord to show.
+4. Synthesis is unchanged (55% in the 0-1 bin); FUSE is Daniel's decision.
+- Measuring: copy `scratchpad/gramc/sim.py`, `shares.py` and `shares_c.py` (the last counts the phase C grams and
+  processes). Run `PYTHONPATH=. NP=10 .venv/bin/python sim.py 300 out.json` from the worktree (about 1-2 minutes).
+- Commits: use `git -c user.name="Daniel Bishop" -c user.email=lolologist@gmail.com commit`.
+
+## Continuation (faiths & contact pass 3, lang-lexcon, 2026-11-08)
+
+**State.** Branch `lang-lexcon` (lang-design 63cf15ee merged in), committed locally, not merged anywhere. Not-slow
+suite 1739 passed; `-k language` 677 passed + the piper speech test, which failed once under load and passes alone (34/34,
+also on lang-design). Numbers: calibration.md "Faiths & contact pass 3"; defaults and odd output: for-daniel.md
+"Faiths & contact pass 3"; design: architecture.md §13c (faiths) and §13d (segment borrowing). Last passes:
+`scratchpad/lexcon/p4/a24559/a24559/` and `scratchpad/lexcon/p5/a24559/` (session scratchpad; delete when done).
+`scratchpad/lexcon/meas_faith.py <languages.json>` prints the faith, learned-loan and seg-loan measures, the checks
+and sample faiths.
+
+**Where things are.** `planet/language/faiths.py` holds everything faith-side: `Plan` (reads `Run.gods_doc()`, which
+re-derives gods.json in memory when the stored one has no faiths, ~130 s), `coin_name`, `step` (called at the top of
+`History.interval`), `learned_step`, `learned_register`, `formulas`, `faiths_json` (the doc's `faiths`). God names are
+lexicon words `name:god:<root being id>` with pos NAME (lexicon.step and stats skip NAME). Liturgies are frozen lect
+copies `lit<fid>` in `h.liturgy`, not in `h.lects`. Segment borrowing: `lexicon._kept_segments` / `borrow(rng,
+intensity)`, logged in `systems.seg_loans`, applied by `History.take_segments`.
+
+**Next steps.**
+1. Daniel's calls 1-8 in for-daniel.md (half-life, freeze point, segment borrowing rate).
+2. River names through each lect's sound-change history (`name:river:<id>` words, as for gods), then X9 and P1/P3/P5-P7.
+3. The horizon now reads low on the window (4.3) and 11.0 on the logistic fit; decision 7 of pass 2 still open.
+4. Domain words for desert and sun gods (they borrow fire and sky).

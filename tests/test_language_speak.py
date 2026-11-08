@@ -113,16 +113,35 @@ def test_server_route_caches_wav():
 
 # ---- whole sentences (round 5) -------------------------------------------------------------------------------------------
 
-def _f0(x: np.ndarray, sr: int = S.SR) -> float:
-    """A crude pitch estimate (autocorrelation, 70-400 Hz) over the loudest 120 ms of a clip."""
+def _f0_end(x: np.ndarray, sr: int = S.SR, frames: int = 8) -> float:
+    """The pitch at the end of a clip: the median f0 (70-400 Hz, YIN) of its last `frames` voiced 40 ms frames (10 ms hop;
+    voiced = 15%+ of the loudest frame's energy and a clear periodicity dip). The final rise or fall sits
+    there; the loudest-window estimate (_f0) often caught the start of the last word, before the glide, where a question and
+    a statement are at the same pitch, so Piper's run-to-run variation decided the test about 1 time in 4."""
     x = x.astype(np.float64)
-    n = int(0.12 * sr)
-    e = np.convolve(x * x, np.ones(n), "valid")
-    a = int(np.argmax(e))
-    seg = x[a:a + n] - x[a:a + n].mean()
-    ac = np.correlate(seg, seg, "full")[n - 1:]
+    n, hop = int(0.04 * sr), int(0.01 * sr)
     lo, hi = int(sr / 400), int(sr / 70)
-    return sr / (lo + int(np.argmax(ac[lo:hi])))
+    starts = range(0, max(1, len(x) - n), hop)
+    en = np.array([float(np.sum(x[a:a + n] ** 2)) for a in starts])
+    out = []
+    for a, e in zip(starts, en):
+        if e < 0.15 * en.max():
+            continue
+        # YIN (de Cheveigné & Kawahara 2002): the first lag whose cumulative-mean-normalized difference dips under 0.15,
+        # which avoids the octave-low picks a plain autocorrelation peak makes on Piper's voice
+        w = x[a:a + n + hi]
+        if len(w) < n + hi:
+            continue
+        d = np.array([np.sum((w[:n] - w[t:t + n]) ** 2) for t in range(hi + 1)])
+        cm = d[1:] * np.arange(1, hi + 1) / np.maximum(np.cumsum(d[1:]), 1e-12)
+        below = np.nonzero(cm[lo - 1:] < 0.15)[0]
+        if not len(below):
+            continue
+        k = lo + int(below[0])
+        while k + 1 <= hi and cm[k] < cm[k - 1]:
+            k += 1   # (down to the bottom of that dip)
+        out.append(sr / k)
+    return float(np.median(out[-frames:])) if out else 0.0
 
 
 def test_intonation_shapes():
@@ -143,8 +162,11 @@ def test_speak_utterance(backend):
     q = _check_wav(S.speak_utterance("ta kalima nu sopa", backend=backend, question=True))
     assert len(st) > 2 * len(one) and len(st) <= S.MAX_UTTER_S * S.SR
     assert not np.array_equal(st, q)
-    tail = int(0.35 * S.SR)
-    assert _f0(q[-tail:]) > _f0(st[-tail:])                          # the question ends higher
+    # the question ends higher: the median over 5 renders of each, since Piper's sampling noise moves a single render's
+    # final pitch by up to ~30 Hz (one render in about 20 had the statement end higher; the median of 5 settles it)
+    ends = [(_f0_end(_check_wav(S.speak_utterance("ta kalima nu sopa", backend=backend, question=True))),
+             _f0_end(_check_wav(S.speak_utterance("ta kalima nu sopa", backend=backend)))) for _ in range(5)]
+    assert np.median([a for a, _ in ends]) > np.median([b for _, b in ends]), ends
     tonal = _check_wav(S.speak_utterance("ma˥ ka˩ nu˧", S.profile_for_people("red_dragon"), backend=backend))
     assert len(tonal) > len(one)
     with pytest.raises(ValueError):

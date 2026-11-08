@@ -881,3 +881,26 @@ kyr fell to 0.825 in p3 (target 0.86): the name taboos add +20-30% hazard in the
 KEEP_COMPENSATION could go to ~0.95 if the untabooed lects should sit at 0.86 exactly. Colour stages and kin shares
 look plausible against the WCS and Murdock shares, so COLOUR_SPLIT and KIN_CHANGE were left. The areal signal appears at
 AREAL_K 0.015 (5.3 copies of a feature per line over 20 kyr; drift is ~1e-3 per feature per generation).
+
+## Faiths & contact pass 3 (2026-11-08)
+
+a24559, 8 workers, scratch output. p4 = god names and liturgies (NAME_HALF_KYR 6) on lang-design 63cf15ee; p5 = p4 plus
+segment borrowing, substrate river/lake tautologies, PRIEST/TEMPLE sem classes, E10 via the god name, NAME_HALF_KYR 12,
+mountain gift WATER. p3 numbers from pass 2 above.
+
+| measure (living lects unless noted) | p3 | p4 | p5 |
+|---|---|---|---|
+| lects (living) / shifts | - | 1179 (622) / 144 | 1172 (618) / 137 |
+| horizon, window read (the check; FAIL in all three) | 4.46 | 12.0 | 4.33 |
+| horizon, logistic (`human_logistic`) | 13.7 | 13.24 | 10.96 |
+| sisters / cross-family strict share | - | 0.564 / 0.0005 | 0.591 / 0.0005 |
+| areal: typology diff / inventory diff | - | 0.018 / -0.0036 | 0.020 / **+0.0026** |
+| hub / isolated complexity | - | 3.69 / 6.44 | 3.45 / 6.50 |
+| WOLD rho / pronoun loans | - | 0.441 / 0.052 | 0.443 / 0.056 |
+| faiths held / with liturgy | - | 107 / 96 | 107 / 96 |
+| god-name words (all lects) / renamed by epithet / borrowed / substrate | - | 2497 / 1791 / 919 / 441 | 2480 / 1306 / 618 / 485 |
+| god-name cognate sets (living, ≥2 lects) | - | 81 (208 names) | 107 (286 names) |
+| learned loans in living lexicons | - | 872 | 824 |
+| lects with a segment-loan log / at the cap 4 / logged consonants still in the inventory | - | 0 | 205 / 142 / 266 of 697 |
+
+All other checks pass in both. Run time 1644 s (p4, 10-core load) and 2087 s (p5, tests running beside it).
