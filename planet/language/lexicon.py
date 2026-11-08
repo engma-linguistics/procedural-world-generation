@@ -1581,8 +1581,8 @@ def shift_candidates(lex: Lexicon, concept: str, kyr: float, min_families: int |
     if not _shift_ok(lex, c.id):
         return []
     edges = dict(clics_neighbours(c.id, 3))
-    for b, t in shift_paths():
-        if t == c.id and b not in edges:
+    for b, t in sorted(shift_paths()):   # (sorted: a frozenset of strings iterates in hash-seed order, and the candidates'
+        if t == c.id and b not in edges:   # order picks among equal weights; two runs differed by it until 2026-11-08)
             edges[b] = 0
     shared = None   # (the homophones, worked out only when some neighbour passes the cheaper tests: ~8% of the steps'
     out = []        # time went on building them for calls that found no candidate)

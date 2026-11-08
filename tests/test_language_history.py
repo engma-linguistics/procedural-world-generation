@@ -598,3 +598,30 @@ def test_overuse_check_counts_every_lect_but_respects_the_voice():
     import dataclasses
     fond = dataclasses.replace(human, make_cost={**human.make_cost, "approximant": 0.7})
     assert CK.living_overuse({"lects": lects(fond)})["pass"]
+
+
+_SEED_RUN = """
+import hashlib, json, sys
+sys.path.insert(0, "tests")
+import test_language_history as T
+from planet.language import history as H, output as OU
+H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 8.0, 1.0, 1
+doc = OU.document(H.generate(None, run=T.TinyRun()))
+doc.pop("timing", None)
+print(hashlib.sha256(json.dumps(doc, sort_keys=True).encode()).hexdigest())
+"""
+
+
+@pytest.mark.slow
+def test_deterministic_across_hash_seeds():
+    """Two processes with different str hash seeds give the same document: nothing may depend on the iteration order
+    of a set or frozenset of strings (a run.json and its rerun differed by shift_paths' order until 2026-11-08)."""
+    import os
+    import subprocess
+    import sys
+    out = []
+    for seed in ("1", "2"):
+        env = dict(os.environ, PYTHONHASHSEED=seed)
+        r = subprocess.run([sys.executable, "-c", _SEED_RUN], env=env, capture_output=True, text=True, check=True)
+        out.append(r.stdout.strip().splitlines()[-1])
+    assert out[0] == out[1]
