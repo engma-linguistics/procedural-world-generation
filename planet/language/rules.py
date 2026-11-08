@@ -729,7 +729,7 @@ def _weighted_choice(rng, rules, weights):
     return rules[-1]
 
 
-PICK_REDRAWS = 8  # draws pick_rule makes before giving up when the drawn rules would change no form
+PICK_REDRAWS = 16  # (8 until the sound lane's line drift, 2026-11-08: strongly preferred no-op rows exhausted 8) draws pick_rule makes before giving up when the drawn rules would change no form
 PICK_STATS = {"picks": 0, "noop_draws": 0, "exhausted": 0, "vetoed": 0}  # diagnostics, per process
 
 
