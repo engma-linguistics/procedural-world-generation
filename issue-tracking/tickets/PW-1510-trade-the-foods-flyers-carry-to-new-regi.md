@@ -1,4 +1,5 @@
 ---
+id: PW-1510
 title: "Trade: the foods flyers carry to new regions is an empty record on all three judge runs (no flying people knows a crop)"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lane 213
 blocked_by: []
 relates: [PW-1501, PW-1503, PW-1505, PW-912]
-refs: ["planet/lineages/trade_flow.py::flyer_foods", docs/review/culture/trade/step2.md, "planet/lineages/crops.py", "run 0141d1", "run 3e0eb4", "run 07c755"]
+refs: ["planet/lineages/trade_flow.py::flyer_foods", docs/review/culture/trade/step2.md, planet/lineages/crops.py, "run 0141d1", "run 3e0eb4", "run 07c755"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -25,3 +28,6 @@ What to try: a flyer that forages also carries the wild plants of its range. The
 grows wild. Record a crop that is wild or known in the flyer's range and unknown where neighbouring farmers live. Check it on the three
 runs, and say which flyer kinds (aarakocra, kenku, ...) carry what.
 - [ ] the record is non-empty on at least one D&D run, and every entry points to a crop the flyer's range has
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-trade-flyer-foods-empty.md (found by lane 213).

@@ -332,3 +332,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-07: lane 211 merged (docs: trade review1/design1, ~340 sources). PW-1499..1501 decisions (desk D63-65, leans A/B/A stand by default), PW-1502..1505 steps. Lane 212 (step 1 goods ledger) started.
 - 2026-11-07: Daniel D63 A (read-out now, feed back once worked out), D64 B, D65 A + flyers spread foods, giants tribute/trade by kind, dragons' kobolds trade.
 - 2026-11-08: lane 212 merged (PW-1502 goods ledger; suite 1075). Scout 209 merged docs-only (PW-1497 strike 1: shortening stand-ins break volume/area thermostats; PW-1509 wontdo, B for now). PW-1506..1508 trade follow-ups.
+- 2026-11-08: lane 213 merged (PW-1503 trade step 2 exchange, PW-1507 giants by kind; suite 1085). Grain overland ~100 km median, spices 1.5-3k km by sea; herders' grain mostly unmet (PW-1511 decision, lean B), flyer foods empty (PW-1510).

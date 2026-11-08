@@ -1,4 +1,5 @@
 ---
+id: PW-1511
 title: "Trade: herders get almost no grain from farmers (0.5-5% of their need), because the herders live far from farmland"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane 213
 blocked_by: []
 relates: [PW-1503, PW-1504, PW-1505]
 refs: [docs/review/culture/trade/step2.md, docs/review/culture/trade/review1.md, "planet/lineages/trade_flow.py::FALL_KM", "planet/lineages/trade_flow.py::flows_at", "planet/lineages/trade.py::NEED", "run 0141d1", "run 3e0eb4", "run 07c755"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -35,3 +38,6 @@ Options:
 - C. Wait for step 3 (PW-1504). Frontier towns where steppe meets farmland become market hubs, and herders buy there.
 
 **My lean: B, then check it against C once step 3 has hubs.** B is a mechanism the source names. It costs nothing at runtime.
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-trade-herders-grain-far.md (found by lane 213).
