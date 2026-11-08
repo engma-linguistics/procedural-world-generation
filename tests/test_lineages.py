@@ -3689,13 +3689,13 @@ def test_polities_in_the_history_seat_claim_and_conquer_with_the_winners_toleran
     cells = np.flatnonzero((h.p[kb] > 0) | (h.p[fk] > 0))
     R.k += 1
     fates = R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])
-    assert fates["kob"][0] == "expelled" and fates["kob"][1] > 0 and "folk" not in fates
+    assert fates["kob"][0] in ("expelled", "razed") and fates["kob"][1] > 0 and "folk" not in fates  # (no other land: lost either way, PW-1496)
     lost = 1.0 - h.p[kb].sum() / kob0.sum()
     assert 0 < lost <= PL.FATE_MAX + 1e-9 and np.array_equal(h.p[fk], folk0)
     monkeypatch.setattr(PL, "FATE_AT", (2.0, 3.0))  # (a tolerant winner keeps them)
     R.k += 1
     kob1 = h.p[kb].copy()
-    assert R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"] == ["kept", 0] and np.array_equal(h.p[kb], kob1)
+    assert R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"] == ["kept", 0, 0] and np.array_equal(h.p[kb], kob1)
     # the seam reads the live polities: pacified where a state rules, not on unruled land
     G = R.pacification(fk, types.SimpleNamespace(ago=0.9))
     ruled = R.owner >= 0
@@ -3729,16 +3729,63 @@ def test_live_conquest_harshness_reads_the_winners_attitudes(faketz, monkeypatch
         R.att.x[fk] = np.array(ta)
         R.k += 1
         out[ta] = R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"]
-    assert out[(0.95, 0.3)] == ["kept", 0]
-    assert out[(0.1, 0.3)][0] == "expelled" and out[(0.1, 0.6)][0] == "expelled"
+    assert out[(0.95, 0.3)] == ["kept", 0, 0]
+    assert out[(0.1, 0.3)][0] == "expelled" and out[(0.1, 0.6)][0] == "razed"  # (PW-1496: a martial winner razes)
     assert 0 < out[(0.1, 0.3)][1] < out[(0.1, 0.6)][1]
     R.hostility[fk, kb] = 0.5  # (an old quarrel: a very tolerant winner keeps them, a middling plain one thins as the old rule, an
     # intolerant one expels; a middling martial one expels too, PW-1487)
-    for ta, want in (((0.95, 0.5), "kept"), ((0.5, 0.3), "thinned"), ((0.1, 0.5), "expelled"), ((0.5, 0.5), "expelled")):
+    for ta, want in (((0.95, 0.5), "kept"), ((0.5, 0.3), "thinned"), ((0.1, 0.4), "expelled"), ((0.1, 0.5), "razed"), ((0.5, 0.5), "razed")):
         h.p[kb][cells] = p0
         R.att.x[fk] = np.array(ta)
         R.k += 1
         assert R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"][0] == want
+
+
+def test_expelled_peoples_move_to_their_nearest_free_land_and_a_martial_winner_razes(faketz, monkeypatch):
+    """PW-1496 (Daniel D61 C, round12.md): an expulsion by a winner below the martial mark (aggression AGG_MID) moves the cut share to
+    the same people's nearest land the winner does not rule, by its existing density, so the people keeps its heads; at or above the
+    mark the share is lost (razed); with no such land the expelled are lost; a thinning is always a loss."""
+    import types
+    from planet.lineages.history import polity_live as PL
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    for ago in (1.2, 1.1, 1.0):
+        R.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
+        _sync_pm(h)
+    R.hostility[fk, kb] = 0.0
+    monkeypatch.setattr(PL, "FATE_MAX", 1.0)
+    kob = np.flatnonzero(h.p[kb] >= PL.EST)
+    assert len(kob) >= 4
+    h.p[kb] = np.where(h.p[kb] >= PL.EST, np.minimum(h.p[kb], 0.3), h.p[kb])  # (room to take the refugees in)
+    p0 = h.p[kb].copy()
+    cells = kob[: len(kob) // 2]
+    ruled = np.zeros(h.grid.n, bool)
+    ruled[cells] = True
+
+    def run(ta):
+        h.p[kb] = p0.copy()
+        R.att.x[fk] = np.array(ta)
+        R.k += 1
+        hd = R._heads()[2]
+        before = float(hd[kb].sum())
+        f = R._fates({"line": fk, "people": "folk"}, cells, hd, ruled)["kob"]
+        return f, before, float(R._heads()[2][kb].sum())
+
+    f, b, a = run((0.1, 0.4))  # (intolerant, plain: drives them out)
+    assert f[0] == "expelled" and f[2] > 0 and f[1] <= 1 and abs(a - b) <= 1e-6 * b + 1
+    assert np.all(h.p[kb][cells] <= p0[cells]) and (h.p[kb][~ruled] >= p0[~ruled]).all() and (h.p[kb][~ruled] > p0[~ruled]).any()
+    f, b, a = run((0.1, 0.6))  # (intolerant, martial: razes)
+    assert f[0] == "razed" and f[1] > 0 and f[2] == 0 and a < b and np.array_equal(h.p[kb][~ruled], p0[~ruled])
+    ruled[:] = False
+    ruled[kob] = True  # (the winner rules all its land: nowhere to go, the expelled are lost)
+    f, b, a = run((0.1, 0.4))
+    assert f[0] == "expelled" and f[1] > 0 and f[2] == 0 and a < b
+    R.hostility[fk, kb] = 0.3  # (a thinning is a loss, whatever the aggression)
+    ruled[:] = False
+    ruled[cells] = True
+    f, b, a = run((0.5, 0.3))
+    assert f[0] == "thinned" and f[1] > 0 and f[2] == 0
 
 
 def test_aggression_makes_an_intolerant_conqueror_harsher_not_a_tolerant_one():
