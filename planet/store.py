@@ -908,6 +908,8 @@ def _world_item(p: Path) -> dict:
         item.update({k: m.get(k) for k in ("source_run", "source_run_name", "t_myr")})
     if m.get("timezoom"):  # a finished world (finish.py): the time zoom and its frame
         item.update({k: m.get(k) for k in ("timezoom", "timezoom_kyr", "sea_level_change_m")})
+    if (m.get("refined_from") or {}).get("world"):  # a world refined onto a finer grid (refine.py): its source world
+        item["refined_from"] = m["refined_from"]["world"]
     return item
 
 

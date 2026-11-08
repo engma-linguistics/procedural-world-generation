@@ -56,6 +56,35 @@ CORR_SIGMA = 0.3  # the correction's smoothing, in coarse cells (the zoom uses 0
 #   leaves the alternating residuals in place: inland RMS 25 m against 3.5 m at 0.3, L6 -> L7 of world 4360a3)
 WARP = 0.35  # the geology's boundary warp, in coarse cells
 
+# How far along a refine is as each stage starts (a job's progress, PW-1438): rough shares of the L8 refine's time
+# (docs/review/refine-l8/report.md: of 266 s, wave power 129, tides 39, the coarse climate 22, terrain 5), plus loading
+# and saving. W.finish's stages (its step callback) by name, the rest by refine_world's own names.
+STEPS = {"loading": 0.0, "grids": 0.03, "terrain": 0.05, "records": 0.09, "climate": 0.12, "erosion": 0.17,
+         "climate again": 0.2, "rivers and lakes": 0.25, "waves": 0.29, "tides": 0.68, "the sea and the land's layers": 0.8,
+         "soils and plants": 0.83, "coasts and resources": 0.9, "saving": 0.94}
+
+# What a refine costs, fitted to the two measured refines of an L7 world (lane 104, Threadripper under load): to L8
+# (655,362 cells) ~7 min in all and 10.8 GB peak, to L9 (2,621,442) 38 min and 38.8 GB; the files 440 MB and
+# 1.76 GB + a 370 MB grid. Time grows a little faster than the cell count (wave power), memory about with it.
+COST_REF_CELLS = 655_362
+COST_REF_MIN = 7.0
+COST_TIME_EXP = 1.22  # 38 / 7 for 4x the cells
+COST_GB = (1.5, 14.2)  # peak GB = a + b x million fine cells
+COST_FILE_GB_PER_MCELL = 0.85  # the world's JSON plus its grid file
+
+
+def cells(level: int) -> int:
+    """Cells of the level-`level` icosphere (10 x 4^level + 2)."""
+    return 10 * 4 ** int(level) + 2
+
+
+def cost(level: int) -> dict:
+    """The expected minutes, peak memory (GB) and file size (GB) of a refine onto level `level` (fitted to refines
+    of an L7 world; the work is per fine cell, so a coarser source costs about the same)."""
+    n = cells(level)
+    return {"cells": n, "minutes": round(COST_REF_MIN * (n / COST_REF_CELLS) ** COST_TIME_EXP, 2),
+            "peak_gb": round(COST_GB[0] + COST_GB[1] * n / 1e6, 1), "file_gb": round(COST_FILE_GB_PER_MCELL * n / 1e6, 2)}
+
 
 class Nest:
     """A coarse grid g and a finer nested grid G: each fine cell's candidate coarse cells (the one it lies in and
@@ -259,9 +288,10 @@ def _held_orbit(meta: dict, log=print):
     return F.orbit_dt(run, st)
 
 
-def refine(world: dict, level: int, erosion: float = EROSION, seed: int = 1, log=print) -> dict:
+def refine(world: dict, level: int, erosion: float = EROSION, seed: int = 1, log=print, progress=None) -> dict:
     """The world (world.load's shape: a tectonic world on its grid) refined onto the level-`level` grid: a new
-    world dict for world.save."""
+    world dict for world.save. progress(fraction, stage) as each stage starts (STEPS)."""
+    step = (lambda name: progress(STEPS[name], name)) if progress else (lambda name: None)
     t0 = time.time()
     g: Grid = world["grid"]
     L, m0 = world["layers"], world["meta"]
@@ -269,10 +299,12 @@ def refine(world: dict, level: int, erosion: float = EROSION, seed: int = 1, log
         raise SystemExit("refine needs a world from a run (method tectonics)")
     if level <= g.level:
         raise SystemExit(f"--level must be finer than the world's ({g.level})")
+    step("grids")
     G = build_grid(level)
     nest = Nest(g, G)
     sp = g.spacing * R_KM
     log(f"  grids L{g.level} -> L{level}: {g.n} -> {G.n} cells [{time.time() - t0:.1f}s]")
+    step("terrain")
     tr = terrain(nest, L, seed, log)
     elev, land, land7 = tr["elevation"], tr["land"], tr["land7"]
     pick = nest.pick(tr["warped"], land, land7)
@@ -301,6 +333,7 @@ def refine(world: dict, level: int, erosion: float = EROSION, seed: int = 1, log
 
     # the run's records, on the coarse grid, mapped onto the fine cells: the soils' climate memory and the
     # resources' history
+    step("records")
     memory = hist = None
     sr = m0.get("source_run")
     run_dir = S.find_run(sr) if sr and S.exists("run", sr) else None
@@ -342,7 +375,7 @@ def refine(world: dict, level: int, erosion: float = EROSION, seed: int = 1, log
     tilt = float(pm.get("tilt", 23.4))
     out = W.finish(G, elev, extra, meta, erosion=erosion, params={"tectonics": pm.get("tectonics", {})}, dT=dT,
                    tilt=tilt, ice=ice, veg=veg, orbit_dt=od, soil_memory=memory, climate_level=g.level,
-                   history=hist, t0=t0)
+                   history=hist, t0=t0, step=step)
     out["meta"]["refined_from"]["seconds"] = round(time.time() - t0, 1)
     log(f"  finished [{time.time() - t0:.1f}s]")
     return out
@@ -352,15 +385,20 @@ def _log(*a):
     print(*a, flush=True)
 
 
-def refine_world(ref: str, level: int, erosion: float = EROSION, seed: int = 1, log=_log):
-    """`planet refine`: load the world ref (id or path), refine it, save the new world; returns its path."""
+def refine_world(ref: str, level: int, erosion: float = EROSION, seed: int = 1, log=_log, progress=None):
+    """`planet refine`: load the world ref (id or path), refine it, save the new world; returns its path.
+    progress(fraction, stage): as refine's, from loading to saving (the viewer's refine job, api.refine_job)."""
+    if progress:
+        progress(STEPS["loading"], "loading")
     path = S.find_world(ref)
     t = time.time()
     world = W.load(path)
     world["id"] = path.stem
     log(f"  loaded {path.name} (L{world['meta']['level']}) [{time.time() - t:.1f}s]")
-    out = refine(world, level, erosion, seed, log)
+    out = refine(world, level, erosion, seed, log, progress)
     name = f"{world.get('name') or path.stem} refined to L{level}"
+    if progress:
+        progress(STEPS["saving"], "saving")
     t = time.time()
     p = W.save(out, name)
     log(f"  saved {p.name} [{time.time() - t:.1f}s]")

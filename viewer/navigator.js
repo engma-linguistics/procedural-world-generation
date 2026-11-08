@@ -27,6 +27,11 @@ const CSS = `
 #navTree .pp { margin: 8px 0; padding-top: 6px; border-top: 1px solid var(--border); font-size: 12px; }
 #navTree .pplist { margin: 3px 0 0; padding-left: 18px; }
 #navTree h3 { margin: 0 0 6px; font-size: 13px; }
+#navTree .rf { margin-top: 4px; font-size: 11px; }
+#navTree .rfbox { margin: 4px 0 2px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--ctl); font-size: 12px; }
+#navTree .rfbox ul { margin: 3px 0; padding-left: 16px; }
+#navTree .rfbox .warn { color: var(--star); }
+#navTree .rfbox .no { color: #ff8a80; }
 @media (max-width: 700px) {
   #navBar { left: 12px; right: 12px; top: 60px; }
   #navBar .crumb:not(.cur) span { display: none; }
@@ -67,6 +72,7 @@ export function createNavigator(host) {
     if (n.kind === 'peoples') return `Peoples${n.world ? ` on world ${n.world}` : ''}`;
     if (n.phase) return 'Recent pass (last kyr)';
     if (n.kind === 'timezoom') return `Time zoom${v && keyOf(v) === n.key && v.t != null ? ` +${v.t} kyr` : ` ${n.kyr} kyr`}`;
+    if (n.kind === 'world' && n.refined_from) return `Refined world L${n.level}`;
     if (n.kind === 'world') return n.timezoom_kyr != null ? `Finished world +${n.timezoom_kyr} kyr` : `World ${n.t_myr ?? ''} Myr`;
     return n.kind === 'fine' ? `Fine zoom ${n.size_km} km` : `Zoom ${n.size_km} km`;
   };
@@ -128,7 +134,54 @@ export function createNavigator(host) {
       <select class="pl-btn sm" data-hln="${esc(n.key)}">${[2, 4, 6, 8].map((k) => `<option value="${k}"${k === hlN ? ' selected' : ''}>${k}</option>`).join('')}</select> <span class="sub">highlights</span>
       <div class="zf" data-form="${esc(n.key)}">Zoom a region: lat <input data-f="lat" value="${f.lat ?? ''}" placeholder="${pk || !here ? 'lat' : 'pick a cell'}"> lon <input data-f="lon" value="${f.lon ?? ''}" placeholder="lon">
         <select data-f="size">${SIZES.map((k) => `<option value="${k}"${k === +(f.size || 1000) ? ' selected' : ''}>${k} km</option>`).join('')}</select>
-        <button class="pl-btn sm" data-do="zoomRegion" data-id="${esc(n.id)}" ${dis}>Zoom</button>${here ? ` <button class="pl-btn sm" data-do="usePicked" data-key="${esc(n.key)}" title="Take the cell picked on the globe">use picked cell</button>` : ''}</div>`;
+        <button class="pl-btn sm" data-do="zoomRegion" data-id="${esc(n.id)}" ${dis}>Zoom</button>${here ? ` <button class="pl-btn sm" data-do="usePicked" data-key="${esc(n.key)}" title="Take the cell picked on the globe">use picked cell</button>` : ''}</div>
+      ${refineForm(n, dis)}`;
+  }
+  // a world from a run, below L9: refine it onto a finer global grid (POST /api/refine, PW-1438). "Check the cost"
+  // first asks the server what it costs and whether there is room (GET /api/refine/estimate); Start is offered then.
+  const RF_MAX = 9, VIEWER_MAX_LEVEL = 8;  // (api.REFINE_MAX_LEVEL; api.VIEWER_MAX_LEVEL: an L9 world is too big for the browser, PW-1209)
+  function refineForm(n, dis) {
+    const lv = +n.level;
+    if (!(lv < RF_MAX) || (n.t_myr == null && !n.timezoom)) return '';
+    const f = forms[n.key] ||= {}, levels = [];
+    for (let k = Math.max(lv + 1, 8); k <= RF_MAX; k++) levels.push(k);
+    if (lv + 1 < 8) levels.unshift(lv + 1);  // (a coarse world: the next level too, cheap)
+    const to = levels.includes(f.rfLevel) ? f.rfLevel : levels[0];
+    return `<div class="zf rf" data-form="${esc(n.key)}">Refine the whole world to <select data-rflevel="${esc(n.key)}">${levels.map((k) => `<option value="${k}"${k === to ? ' selected' : ''}>L${k}</option>`).join('')}</select>
+      <button class="pl-btn sm" data-do="refineCost" data-id="${esc(n.id)}" data-key="${esc(n.key)}" title="What it costs in time and memory, before anything starts">Check the cost&hellip;</button></div>
+      ${f.est ? refineBox(n, f.est, dis) : ''}`;
+  }
+  function refineBox(n, e, dis) {
+    if (e.pending) return '<div class="rfbox muted">Asking the server&hellip;</div>';
+    if (e.error) return `<div class="rfbox"><span class="no">${esc(e.error)}</span></div>`;
+    const gb = (x) => (x == null ? '?' : `${Math.round(x)} GB`);
+    const list = (a, cls) => (a.length ? `<ul>${a.map((t) => `<li class="${cls}">${esc(t)}</li>`).join('')}</ul>` : '');
+    return `<div class="rfbox"><b>Refine ${esc(n.id)} from L${e.from_level} to L${e.level}</b> (${(e.cells / 1e6).toFixed(e.cells < 1e6 ? 2 : 1)} million cells)<br>
+      Takes about <b>${fmtDuration(60 * e.minutes)}</b>, needs about <b>${gb(e.peak_gb)}</b> of memory at its peak, and saves a ${e.file_gb < 1 ? `${Math.round(1000 * e.file_gb)} MB` : `${e.file_gb.toFixed(1)} GB`} world.<br>
+      <span class="muted">Free now: memory ${gb(e.free_ram_gb)}, /tmp ${gb(e.free_tmp_gb)}, disk ${gb(e.free_disk_gb)}.</span>
+      ${list(e.warn, 'warn')}${list(e.refuse, 'no')}
+      <div style="margin-top:4px">${e.ok ? `<button class="pl-btn sm primary" data-do="refineStart" data-id="${esc(n.id)}" data-key="${esc(n.key)}" ${dis}>Start refine to L${e.level}</button>` : ''}
+        ${e.busy ? `<button class="pl-btn sm" data-do="refineFollow" data-job="${esc(e.busy)}">Show the running refine</button>` : ''}
+        ${e.existing ? `<button class="pl-btn sm" data-open="world:${esc(e.existing)}"${e.opens_in_viewer ? '' : ' disabled'}>Open world ${esc(e.existing)}</button>` : ''}
+        <button class="pl-btn sm" data-do="refineClose" data-key="${esc(n.key)}">Close</button></div></div>`;
+  }
+  async function refineCost(id, key, level) {
+    const f = forms[key] ||= {};
+    f.est = { pending: true }; renderTree();
+    try {
+      const r = await fetch(`../api/refine/estimate?world=${encodeURIComponent(id)}&level=${level}`, { cache: 'no-store' });
+      const out = await r.json().catch(() => ({}));
+      f.est = r.status === 404 && !out.error ? { error: 'The server has no refine API. Restart it: uv run python -m planet serve' } : out;
+    } catch (err) { f.est = { error: 'The server is not reachable: ' + err.message }; }
+    renderTree();
+  }
+  // the time left of a running job with an estimate (minutes): from its progress once that says something, else the estimate
+  function eta(j) {
+    const est = j.request?.estimate_min;
+    if (!est || !j.started || j.status !== 'running') return '';
+    const el = Math.max(0, Date.now() / 1000 - j.started), p = j.progress || 0;
+    const left = p >= 0.1 ? el * (1 - p) / p : Math.max(60 * est - el, 30);
+    return ` · ${fmtDuration(el)} so far, about ${fmtDuration(left)} left`;
   }
   // a zoom: a fine zoom inside it, at a point (default: its centre) and a size (default: 25-50 km at 50-100 m)
   function fineForm(n, dis) {
@@ -193,7 +246,7 @@ export function createNavigator(host) {
   function jobHtml() {
     if (!job) return '';
     return `<div style="margin:6px 0"><b>${esc(job.label)}</b>: ${job.status === 'error' ? (job.cancelled ? '<span class="muted">cancelled</span>' : `<span class="pl-err">${esc(job.error)}</span>`)
-      : job.status === 'done' ? 'done' : `<span class="muted">${esc(job.message || job.status)}</span><div class="pl-bar"><div style="width:${Math.round(100 * (job.progress || 0))}%"></div></div>
+      : job.status === 'done' ? `done${job.note ? ` <span class="muted">${esc(job.note)}</span>` : ''}` : `<span class="muted">${esc(job.message || job.status)}${eta(job)}</span><div class="pl-bar"><div style="width:${Math.round(100 * (job.progress || 0))}%"></div></div>
       <button class="pl-btn sm danger" data-do="cancel">Cancel</button>`}</div>`;
   }
 
@@ -240,6 +293,17 @@ export function createNavigator(host) {
       return start('highlight-zooms', { world: e.target.dataset.id, n }, `Zoom the top ${n} highlights`, 'zoom');
     }
     if (d === 'highlights') { tree.hidden = true; return host.findHighlights(); }
+    if (d === 'refineCost') {
+      const k = e.target.dataset.key, sel = e.target.parentElement.querySelector("[data-rflevel]");
+      return refineCost(e.target.dataset.id, k, +sel.value);
+    }
+    if (d === 'refineClose') { delete forms[e.target.dataset.key].est; return renderTree(); }
+    if (d === 'refineFollow') return follow(e.target.dataset.job, 'Refine', 'world');
+    if (d === 'refineStart') {
+      const f = forms[e.target.dataset.key] || {}, lv = f.est?.level;
+      delete f.est;
+      return start('refine', { world: e.target.dataset.id, level: lv }, `Refine ${e.target.dataset.id} to L${lv}`, 'world');
+    }
     if (d === 'timezoom') return start('timezoom', { run: view.id, t: view.t, kyr: forms.kyr || 300 }, `Time zoom from ${view.t} Myr (${forms.kyr || 300} kyr)`, 'timezoom');
     if (d === 'finishRun') return start('finish', { run: view.id, t: view.t }, `World at ${view.t} Myr`, 'world');
     if (d === 'finishIg' || d === 'finishGl') {
@@ -277,6 +341,7 @@ export function createNavigator(host) {
     if (box && k) (forms[box.dataset.form] ||= {})[k] = e.target.value;
     if (e.target.dataset.hln) (forms[e.target.dataset.hln] ||= {}).hl = +e.target.value;
     if (e.target.dataset.kyr !== undefined) forms.kyr = +e.target.value;
+    if (e.target.dataset.rflevel) { const f = forms[e.target.dataset.rflevel] ||= {}; f.rfLevel = +e.target.value; delete f.est; renderTree(); }
   });
 
   async function start(path, req, label, result) {
@@ -285,9 +350,16 @@ export function createNavigator(host) {
     renderAll();
     const out = await postJob(path, req);
     if (out.error) { Object.assign(job, { status: 'error', finished: true, error: out.error }); return renderAll(); }
-    job.id = out.job;
+    job = null;
+    return follow(out.job, label, result);
+  }
+  // track a job (one this page started, or a refine already running: "Show the running refine") and open what it made
+  async function follow(id, label, result) {
+    if (busy()) return;
+    job = { label, status: 'starting', progress: 0, id };
+    renderAll();
     cancelBtn.hidden = false; cancelBtn.disabled = false;
-    const res = await trackJob(out.job, (j) => {
+    const res = await trackJob(id, (j) => {
       Object.assign(job, j);
       jobEl.textContent = j.status === 'error' || j.status === 'done' ? '' : `${label}: ${Math.round(100 * (j.progress || 0))}%`;
       if (!tree.hidden) renderTree();
@@ -296,7 +368,8 @@ export function createNavigator(host) {
     jobEl.textContent = '';
     cancelBtn.hidden = true;
     await refresh(true);
-    if (res.status === 'done') {
+    if (res.status === 'done' && res.level > VIEWER_MAX_LEVEL) job.note = `World ${res.world} is saved; the viewer cannot open an L${res.level} world yet.`;
+    else if (res.status === 'done') {
       const [p, n] = find(result === 'world' ? `world:${res.world}` : result === 'zoom' ? `zoom:${res.zoom}` : `run:${res.run}`);
       if (n) await host.openNode(n, p, null);
     }
