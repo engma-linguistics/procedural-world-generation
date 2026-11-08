@@ -56,6 +56,7 @@ export function nodeWhen(n) {
   if (n.kind === 'run') return `${n.myr} Myr · seed ${n.seed} · level ${n.level}`;
   if (n.kind === 'peoples') return `peoples${n.world ? ` on world ${n.world}` : ''}`;
   if (n.kind === 'timezoom') return `${n.kyr} kyr of ice ages after ${n.at_myr} Myr`;
+  if (n.kind === 'world' && n.refined_from) return `refined to level ${n.level} from world ${n.refined_from}`;
   if (n.kind === 'world') return n.timezoom_kyr != null ? `+${n.timezoom_kyr} kyr, sea ${n.sea_level_change_m > 0 ? '+' : ''}${Math.round(n.sea_level_change_m)} m`
     : n.t_myr != null ? `at ${n.t_myr} Myr` : 'generated directly';
   const c = n.center || {};

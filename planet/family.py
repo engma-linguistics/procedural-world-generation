@@ -84,6 +84,7 @@ def build(runs: list[dict], worlds: list[dict], zooms: list[dict]) -> list[dict]
         where[f"run:{r['dir']}"] = p["key"]
         if p["key"] == "earth":
             p["name"] = "Earth (ETOPO1)"
+    world_ids = {w["id"] for w in worlds}
     for w in worlds:
         p = home(w.get("source_run"), w["id"], w["name"], w)
         parent = None
@@ -91,12 +92,14 @@ def build(runs: list[dict], worlds: list[dict], zooms: list[dict]) -> list[dict]
             parent = f"run:{run_by[w['timezoom']]['dir']}"
         elif w.get("source_run") and root_of(w["source_run"]):
             parent = f"run:{root_of(w['source_run'])}"
+        if w.get("refined_from") in world_ids:  # a refined world (refine.py): under the world it was refined from
+            parent = f"world:{w['refined_from']}"
         p["nodes"].append({"key": f"world:{w['id']}", "kind": "world", "id": w["id"], "file": w["file"], "name": w["name"],
                            "parent": parent, "created": w["created"], "t_myr": w.get("t_myr"),
                            "timezoom": w.get("timezoom"), "timezoom_kyr": w.get("timezoom_kyr"), "sea_level_change_m": w.get("sea_level_change_m"),
-                           "level": w.get("level"), "thumb": THUMB.format(kind="world", id=w["id"])})
+                           "level": w.get("level"), "refined_from": w.get("refined_from"),
+                           "thumb": THUMB.format(kind="world", id=w["id"])})
         where[f"world:{w['id']}"] = p["key"]
-    world_ids = {w["id"] for w in worlds}
     zoom_ids = {z["id"] for z in zooms}
     for z in zooms:
         pz = z.get("parent_zoom")

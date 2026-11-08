@@ -6,8 +6,9 @@
   DELETE /runs/<id>, /worlds/<id>, /zooms/<id>
                                       delete one item (store.delete; a world
                                       takes its zooms and highlights with it)
-  POST   /api/zoom, /api/timezoom, /api/finish, /api/make, /api/highlight-zooms
+  POST   /api/zoom, /api/timezoom, /api/finish, /api/make, /api/highlight-zooms, /api/refine
                                       start a job (api.py; make.py: seed to finished world) -> {"job": id}
+  GET    /api/refine/estimate?world=<id>&level=8   a refine's cost and whether there is room for it (api.refine_estimate)
   GET    /api/presence?run=&frame=    one frame of a peoples run's presence table + demes_all (binary; the demes picker, PW-1269)
   DELETE /api/jobs/<id>               cancel a queued or running job (api.Jobs.cancel)
   GET    /api/planets                 runs, time zooms, worlds and zooms grouped by provenance (family.py)
@@ -101,6 +102,16 @@ def make_estimate(query: str) -> tuple[dict, int]:
     except (ValueError, api.BadRequest) as e:
         return {"error": str(e)}, 400
     return {"spec": spec, **make.estimate(spec)}, 200
+
+
+def refine_estimate(jobs: api.Jobs | None, query: str) -> tuple[dict, int]:
+    """GET /api/refine/estimate?world=&level=: api.refine_estimate, with the refine already queued or running."""
+    try:
+        return api.refine_estimate(dict(parse_qsl(query)), busy=jobs.active("refine") if jobs else None), 200
+    except (ValueError, api.BadRequest) as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
 
 
 def highlights(query: str, compute=None) -> tuple[dict, int]:
@@ -755,6 +766,11 @@ def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
             req = api.parse_enrich_request(req)
         elif path == "/api/finish":  # kyr snaps to a frame, t to a keyframe
             req = api.parse_finish_request(req)
+        elif path == "/api/refine":  # one at a time, and only with room for it (PW-1438)
+            est = api.refine_estimate(req, busy=jobs.active("refine"))
+            if est["refuse"]:
+                return {"error": "not started: " + "; ".join(est["refuse"]), "estimate": est}, 409
+            req = {**{k: est[k] for k in ("type", "world", "level")}, "estimate_min": est["minutes"]}  # (the viewer's ETA)
         else:  # t snaps to a keyframe
             req = api.parse_timezoom_request(req)
     except (ValueError, api.BadRequest) as e:
@@ -934,6 +950,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(make.options())
         if url.path == "/api/make/estimate":
             return self.send_json(*make_estimate(url.query))
+        if url.path == "/api/refine/estimate":
+            return self.send_json(*refine_estimate(self.jobs, url.query))
         if url.path == "/api/thumb":
             q = dict(parse_qsl(url.query))
             w = q.get("w", "")
@@ -1029,7 +1047,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.path == "/api/authored":
             return self.send_json(*authored_set(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make", "/api/highlight-zooms",
-                         "/api/enrich"):
+                         "/api/enrich", "/api/refine"):
             return self.send_error(404)
         self.send_json(*submit(self.jobs, self.path, self.rfile.read(int(self.headers.get("Content-Length", 0)))))
 
