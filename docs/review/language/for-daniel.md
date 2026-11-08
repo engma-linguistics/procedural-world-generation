@@ -95,6 +95,61 @@ Everything here has a working default in the code already. Nothing is blocked; c
 - **Paradigm cells don't run the live rules.** Grammar paradigm cells (`grammar.py`, grammar A's file) don't apply them yet. Only new coinages, derivations, compounds, loans, names (`realize`) and sentences do.
 - **Viewer speech uses the selected lect's stress** pattern. Per-word stress is not stored.
 
+### Sound lane pass 2 (lang-sound, 2026-11-08 afternoon)
+
+Pass 1's notes above are kept as they were; this is what changed since. Numbers are from scratch passes on a24559 (never
+written into runs/); passes E, F and G are in calibration.md "Pass 2". Baseline: pass D, the same code without this pass.
+
+**Done**
+- **Overused vowels fixed at the cause.** PHOIBLE counts long and nasal vowels in a language's vowel total, but the
+  number of distinct vowel *qualities* hardly depends on them (median 6 with or without a long series). The draw now
+  gives vowel series their slots: with a long series, about half the vowel count goes to qualities and half to their long
+  partners. Qualities are also weighted by their PHOIBLE odds instead of their share, so i, a, u are near-universal and
+  rare ones stay rare. In proto draws ɑ went 0.18 → 0.13 (PHOIBLE 0.08); mean qualities 7.2 → 6.6 (PHOIBLE 6.4).
+- **Vowel harmony keeps to the language's own vowels.** A suffix vowel that harmony would turn into a vowel the language
+  lacks takes the nearest vowel it has on the right side (front or back); with none near, it stays as it is (a neutral
+  vowel, like Finnish e and i). Before, harmony coined new vowels (e > ɑ, o > ɤ) that spread through whole families.
+- **lʲ and the palatalized series.** lʲ was in 17% of living lects (PHOIBLE 2%). It came from S221, which palatalizes
+  every consonant before i and had no way back. New rows: S233 and S234 lose the palatalization before other vowels and
+  in the coda (Ukrainian hardening before e; Czech), S235 lʲ > ʎ (then the old S029 ʎ > j, yeísmo). S221's weight went
+  1 → 0.4, because a whole palatalized series is an areal rarity (Slavic, Irish, Saami). This is a judgement call, below.
+- **Paradigm cells run the live rules.** When grammar builds a new cell (a stem with a new affix), the lect's live rules
+  run at the join, as they already did for new words, loans and sentences. Cells that only went through sound change are
+  left alone. Hook: one call in `lect.grammar_step`; grammar.py is untouched.
+- **Tone systems shrink as well as grow.** New rows S227-S232: rising and falling tones level to high, mid merges with
+  high or with low, the extra-high and extra-low levels merge inward. The usual functional-load veto protects busy tones.
+  Human-voiced tonal living lects with 2/3/4/5 tones: 2/6/37/51% before (pass E, plus 4% with 7), 5/13/53/26% after
+  (pass G, plus 3% with 6); over all tonal living lects 8/14/60/16%. Five is no longer the commonest count; four is now,
+  and WALS 13A has simple (two-tone) systems commonest.
+- **Merge fixes on the way:** an onset cut down to a geminate (pʰrː- > rː-) is now repaired; the lexicon lane's S218
+  is renumbered S226; the flaky Piper question test now compares the final pitch (YIN, last voiced frames) as a median
+  over five renders (15 runs clean; it failed about 1 in 4 before).
+
+**Checks (pass G, the final code)**
+- Overused segments: **PASS**, none overused (pass D: ɑ, lʲ, ɤ, ä, ɘ). Now ɑ 6%, lʲ 3%, rʲ 6%, ɤ 6% of living lects.
+- Scholars' horizon (human lects): 10.3 kyr by the check's reading, 12.4 by the lexicon lane's logistic fit (target 6-10),
+  FAIL; 14.4 over all lects. Swings between passes on unrelated changes, as the lexicon lane found; not
+  tuned for.
+- Every other check passes (sisters 0.62, long generations change 3.75x less, inventory sizes and segment frequencies vs
+  PHOIBLE, loans, areal signal). Pass G ran on the code before the last lang-design merge (grammar D and texts); the
+  merged code passed the test suite, and the coordinator's in-place pass is the one to read.
+
+**Your call when you are back**
+- **S221 at weight 0.4.** That makes whole palatalized series rarer instead of giving them more exits. The alternative is
+  to count a palatalized consonant that only occurs before i as an allophone even after a later i appears elsewhere. I
+  took the weight because real languages do let these series phonemicize.
+- **Four-tone systems are now the commonest** among tonal lects (53-60%; two- and three-tone systems together 18-22%).
+  The proto draw is fine (2-5 tones at 28/31/23/18%); history adds tones faster than it merges them. More merger weight would push toward WALS's picture; I stopped at one nudge.
+
+**Odd output noticed**
+- **Most living lects end almost every word in a vowel.** In 64-70% of living lects fewer than 5% of core words end in a
+  consonant, against WALS 12A's 12% of languages with simple (C)V syllables. This is upstream of this pass (final
+  consonant loss outweighs the ways codas come back). I wrote a phonotactics re-check (the lect's templates re-read from
+  its words) and dropped it: it moved 419 of 620 lects to "no codas" and so fed this drift. It should come back after
+  the coda balance is fixed.
+- **Not done:** stress stored per word, lexical diffusion, stress marks in demo_page.py's IPA (that file is grammar C's
+  now).
+
 ## Names & spelling lane (2026-11-08)
 
 ### Choices made for you (reasonable guesses)

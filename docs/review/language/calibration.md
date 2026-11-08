@@ -780,6 +780,25 @@ Pass D also had:
 
 RATE_SCALE does not restore the rate on its own: from 5 to 7 moved the rate only from 10.1 to 11.4, because exhausted picks dominate. PICK_REDRAWS does better.
 
+### Pass 2 (2026-11-08, lang-sound after merging lang-design with grammar A/B, names, lexicon & contact)
+
+| Pass | Code | human rules/kyr | horizon human (kyr): reading / logistic | sisters | overused segments | tonal 2/3/4/5/6-7 tones (all living tonal lects) | wall (s) |
+|---|---|---|---|---|---|---|---|
+| E | merges + vowel series take slots, odds-weighted qualities, structure-preserving harmony | 12.5 | 16.0 / 14.6 FAIL | 0.64 | lʲ 17% | human-voiced: 2/6/37/51/4% | 1855 |
+| F | E + S233-S235 (exits for the palatalized series), paradigm cells under live rules, tone mergers S227-S232, phonotactic re-templating (dropped after F) | 12.3 | 14.8 / 15.0 FAIL | 0.62 | rʲ 15%, bʲ 13%, nʲ 12% | 11/18/47/22/1% | 1887 |
+| G | F without re-templating (code of commit 9f71705c, before the grammar D merge), S221 weight 1 -> 0.4, merged faiths lane (segment borrowing) | 13.1 | 10.3 / 12.4 FAIL (all lects 14.4) | 0.62 | PASS (none; ɑ 6%, lʲ 3%, rʲ 6%, ɤ 6%) | 8/14/60/16/1% (human-voiced 5/13/53/26/3%) | 1609 |
+
+- The vowel fix worked at once: ɑ, ɤ, ä, ɘ left the overused list in pass E (proto draws: ɑ 0.18 -> 0.13, mean
+  qualities 7.2 -> 6.6 against PHOIBLE 6.4).
+- lʲ was S221 (secondary palatalization of every consonant before i: 79 living lects in E, 71 of them with lʲ), which had
+  no way out. The exits in F removed lʲ but rʲ, bʲ, nʲ rose: once later changes put a plain consonant before i again,
+  Cʲ contrasts and stays. A whole phonemic palatalized series is an areal rarity, hence weight 0.4 in G.
+- Phonotactic re-templating (templates re-read from the words) was dropped after F: it is right in itself, but 64-70%
+  of living lects already end almost no words in a consonant (final-coda share under 5%; WALS 12A puts simple CV
+  syllable structure at 12%), so it moved 419 of 620 lects to max coda 0 and fed that drift. The coda-loss drift comes
+  first (for-daniel.md, Sound lane pass 2).
+- The horizon readings move by 1-3 kyr between passes on unrelated changes, as the lexicon lane found; not tuned for.
+
 ## Lexicon & contact lane (2026-11-08)
 
 One full pass of a24559 (10 workers, scratch output, a loaded machine: 1924 s) on the lane's task-1 code: intensity borrowing, WOLD borrowability, closed classes kept, numeral systems, colour stages, sound symbolism, substrate calibration, areal diffusion. The food/technology words and the kinship systems came after it and are not in these numbers. **Areal diffusion did not fire in this pass** (a bug: with workers the step wrote to the pre-step lect objects; fixed after), so the areal row is the old null. Baseline: the final run (finish lane).

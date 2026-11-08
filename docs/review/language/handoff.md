@@ -375,3 +375,26 @@ the fable (texts.py), recipe, faith myth (texts.myth + sketch.myth_of), phase D 
 MIR, HON, OBV, polite address, comparison following the `comparative` aim, DOM), the question-particle pull
 (PULL_BOOST/KEEP). Write-up: for-daniel.md "Grammar phase D and texts". Left: the species-leanings table (proposal
 only), sketches not regenerated (they track runs/a24559; regenerate after the merge rebuild), the cold-review agent.
+
+## Continuation (sound lane pass 2, 2026-11-08 afternoon)
+
+**State.** Branch `lang-sound`, everything committed, nothing pushed or merged into lang-design. lang-design is merged in
+up to grammar D and texts (aad150bf). Pass G (scratch, a24559, code before the grammar D merge) passes every check but the
+horizon: overused segments PASS, horizon 10.3 kyr (logistic 12.4). Numbers: calibration.md "Pass 2"; plain-words
+summary and Daniel's calls: for-daniel.md "Sound lane pass 2". Not-slow suite: 1783 passed on the final merge.
+
+**New since pass 1.**
+- `inventory._pick_vowels`: vowel series take slots (`v_ratios()`, rows `v_ratio` in phoible_series.tsv); qualities are
+  odds-weighted (`V_ODDS_CAP`).
+- `rules.harmony_onto` (`HARMONY_SNAP_MAX`): harmony is structure-preserving; called from `rules.apply` when an
+  inventory is given and the rule's family is harmony.
+- `phonology.cell_parts` / `apply_new_cells`, called once in `lect.grammar_step`: new paradigm cells run the live rules.
+- Catalogue rows S226 (lexcon's S218), S227-S232 tone mergers, S233-S235 exits for the palatalized series; S221 weight 0.4.
+- `inventory.repair` handles an onset cut down to a geminate.
+
+**Next steps.**
+1. The coda balance: 64-70% of living lects end under 5% of core words in a consonant (WALS 12A: 12% simple). Then
+   re-add the phonotactics re-check (re-read the templates from the words: written and dropped in this pass, see
+   calibration.md pass F).
+2. Tone: four-tone systems are 53-60% of tonal lects; tonogenesis outpaces the mergers.
+3. Stress per word, lexical diffusion, stress marks in demo_page.py (grammar C/D's file).
