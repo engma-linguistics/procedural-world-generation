@@ -16,7 +16,7 @@ Everything here has a working default in the code already. Nothing is blocked; c
 - See each lane's section below for more.
 
 ## Demos waiting
-- **Languages demo page** (10 languages, 255 audio clips, complexity tab): https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs (private). Live viewer: `uv run python -m planet langserve a24559 --host 0.0.0.0 --port 8790`.
+- **Languages demo page** (version 2, 11-08 morning: grammar B, 10 languages, 294 audio clips, complexity tab; a full read found a few remaining slips, now with grammar C): https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs (private). Live viewer: `uv run python -m planet langserve a24559 --host 0.0.0.0 --port 8790`.
 
 ## Finish lane (lang-finish, 2026-11-07)
 
