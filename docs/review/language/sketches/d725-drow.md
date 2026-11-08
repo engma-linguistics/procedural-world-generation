@@ -196,6 +196,122 @@ Person markers among the grammatical markers (agreement, or pronouns on their wa
 | 3SG | ja | ya | affix | after the verb | he or she or it, 16.5 kyr ago |
 | 1PL | tata | tata | clitic | after the verb | person, 1 kyr ago |
 
+### Grammar sketch
+
+Built from the typology and the live markers above (planet/language/sentences.py); where the engine tracks no marker for a construction, the form is the word such markers commonly grow from, and the text says so. Examples are glossed by the Leipzig rules (abbreviations under Sample sentences).
+
+**Number.** Nouns mark number: plural: a clitic after the noun (ə, from 'all').
+
+| *ǂe* |
+| --- |
+| dog |
+
+‘dog’
+
+| *ǂe=jə* |
+| --- |
+| dog=PL |
+
+‘dogs’
+
+**Case.** Nouns have no case marking. The typology leans nom-acc in alignment, but no case marker shows it yet: word order tells subject from object. Place and company are said with the plain words 'in' (ed̪efe), 'at' (ela), 'with' (ȵaβane) as adpositions.
+
+**Gender and noun classes.** There is no gender or noun class.
+
+**Tense and aspect.** Verbs mark tense and aspect. Perfect (PRF): a clitic after the verb (epe, from 'hold'); habitual (HAB): a separate word after the verb (fa, from 'do'). Unmarked: past, future, progressive (left to context).
+
+| *latʃe=jepe* |
+| --- |
+| go=PRF |
+
+‘(it) has gone’
+
+| *latʃe* | *fa* |
+| --- | --- |
+| go | HAB |
+
+‘(it) usually goes’
+
+**Mood and evidentiality.** Speakers mark how they know: reported (evidential) (REP): a separate word after the verb phrase (kaʔe, from 'say').
+
+| *latʃe* | *kaʔe* |
+| --- | --- |
+| go | REP |
+
+‘(it) goes, they say’
+
+**Person agreement.** Verbs agree with the subject: 3SG: a suffix (ja, from 'he'); 1PL: a clitic after the verb (tata, from 'person'). Subject pronouns are dropped when the marker is there. No marker yet for 1SG, 2SG, 2PL, 3PL (zero).
+
+| *latʃe-ja* |
+| --- |
+| go-3SG |
+
+‘he/she goes’
+
+| *latʃe=tata* |
+| --- |
+| go=1PL |
+
+‘we go’
+
+**Negation.** Negation is a clitic before the verb phrase (a, a coined form); the typology calls it preverbal.
+
+| *feme̞* | *a-kəᵑǃəmä* | *a=lɛpe* |
+| --- | --- | --- |
+| 1SG | DEF-water | NEG=drink |
+
+‘I do not drink the water.’ (sentence 6 below)
+
+**Questions.** Yes/no questions use rising intonation alone. Question words stay where the questioned phrase would stand: who tataʘʼaβa, what ʘʼaβa, where pja, when ʃə, how tale.
+
+| *kewe̞ne* | *a-mataǃʼe* | *efe̞βɛ.ᵑʘe* |
+| --- | --- | --- |
+| 2SG | DEF-fire | see |
+
+‘Do you see the fire?’ (sentence 4 below)
+
+| *a-kaᵑǀete* | *ʘʼaβa* | *ekejɛ-ja* |
+| --- | --- | --- |
+| DEF-child | what | eat-3SG |
+
+‘What does the child eat?’ (sentence 5 below)
+
+**Possession.** The possessor stands before the possessed noun, with no marker. 'Having' is said with a 'have' verb ('my mother has a dog').
+
+| *a-ǃaǃʼafɛȶe* | *ǂe* |
+| --- | --- |
+| DEF-man | dog |
+
+‘the man's dog’
+
+| *feme̞* | *ǀare* | *ǂe* | *me* | *tʃeʒeta-ja* |
+| --- | --- | --- | --- | --- |
+| 1SG | mother | dog | INDF | have-3SG |
+
+‘My mother has a dog.’ (sentence 7 below)
+
+**Relative clauses.** Relative clause before the noun, no relativizer.
+
+| *fafe-ja* | *a-je* |
+| --- | --- |
+| sing-3SG | DEF-woman |
+
+‘the woman who sings’
+
+**Copula.** The copula is the word for 'he, she, it' (G056).
+
+| *aʃejaʃe* | *ǃaǃʼafɛȶe* | *fo̞ǃʼo* | *me* | *aʃe* |
+| --- | --- | --- | --- | --- |
+| that | man | hunter | INDF | COP |
+
+‘That man is a hunter.’ (sentence 9 below)
+
+| *a-kəᵑǃəmä* | *fakeɹe* | *aʃe* |
+| --- | --- | --- |
+| DEF-water | cold | COP |
+
+‘the water is cold’
+
 ## Vocabulary
 
 ### Core sample
@@ -321,9 +437,11 @@ Person markers among the grammatical markers (agreement, or pronouns on their wa
 
 Counting base: decimal. Several numerals began as other words: eight < 'hand'; ten < 'hand'.
 
-### A word family
+### Families a speaker feels
 
-Words built on one root: **river** *ɡətᵑǃəmaː* (N, coined 20 kyr ago in the elf proto-language); 3 of this language's 365 recorded words have it as their main root, 3 contain it (from the root-family record of the output).
+The roots a speaker still feels: a derivation or compound younger than 3 kyr whose parts are still in use (per-word `roots`). 1 families of 3+ words; 9% of the 365 words share a root with another word.
+
+The largest: **river** *ɡətᵑǃəmaː* (N, coined 20 kyr ago in the elf proto-language); 3 words have it as their main root, 3 contain it.
 
 | meaning | IPA | spelling | roots (main first) | how it was built |
 | --- | --- | --- | --- | --- |
@@ -331,16 +449,115 @@ Words built on one root: **river** *ɡətᵑǃəmaː* (N, coined 20 kyr ago in t
 | sea | eɹokəᵑǃə | eroken!e | river, big | \*ᵑǃəmaː 'flow' (the elf proto-language, 20 kyr) → colexified with RIVER + 'thing' = 'water' (20) → WATER + BIG = 'sea' (0) |
 | water | kəᵑǃəmä | ken!ema | river | \*ᵑǃəmaː 'flow' (the elf proto-language, 20 kyr) → colexified with RIVER + 'thing' = 'water' (20) |
 
-## Sample phrases
+### Families a historian reconstructs
 
-Assembled from the lexicon, the word-order features and the live markers; no sound change is applied across word or morpheme boundaries here, so these are what the grammar data implies, not attested sentences.
+This run's file stores no `etym_roots` (it predates them), so only the speaker's view is shown.
 
-| English | IPA | spelling | how |
+## Sample sentences
+
+Built from this language's own words, word order, markers and agreement (planet/language/sentences.py). Each has the form line (‘-’ an affix boundary, ‘=’ a clitic boundary), a morpheme-by-morpheme gloss, the free translation, then the whole sentence in IPA (after the simple joining rules: a glide between two vowels, a nasal taking the place of a following stop) and in the book spelling. Nothing here is attested speech; it is what the grammar data implies.
+
+**(1)** ‘The woman sees the dog.’
+
+| *a-je* | *a-ǂe* | *efe̞βɛ.ᵑʘe-ja* |
+| --- | --- | --- |
+| DEF-woman | DEF-dog | see-3SG |
+
+/aje aǂe efe̞βɛ.ᵑʘeja/ · ‹Aye aǂe efevenpxeya.›
+
+<sub>SOV order; the verb carries the subject's 3SG marker</sub>
+
+**(2)** ‘The big dog sleeps in the house.’
+
+| *a-ǂe* | *eɹoʔo* | *a-ʃa* | *ed̪efe* | *ketʃe-ja* |
+| --- | --- | --- | --- | --- |
+| DEF-dog | big | DEF-house | in | sleep-3SG |
+
+/aǂe eɹoʔo aʃa ed̪efe ketʃeja/ · ‹Aǂe ero'o asha edefe kecheya.›
+
+<sub>'in' as a postposition (no LOC gram); adjective after the noun; the verb carries the subject's 3SG marker</sub>
+
+**(3)** ‘The man has eaten the fish.’
+
+| *a-ǃaǃʼafɛȶe* | *a-ʃɛke̞me* | *ekejɛ-ja=jepe* |
+| --- | --- | --- |
+| DEF-man | DEF-fish | eat-3SG=PRF |
+
+/aǃaǃʼafɛȶe aʃɛke̞me ekejɛjajepe/ · ‹A!a!'afeťe ashekeme ekeyeyayepe.›
+
+<sub>PRF is a clitic after the verb; the verb carries the subject's 3SG marker</sub>
+
+**(4)** ‘Do you see the fire?’
+
+| *kewe̞ne* | *a-mataǃʼe* | *efe̞βɛ.ᵑʘe* |
+| --- | --- | --- |
+| 2SG | DEF-fire | see |
+
+/kewe̞ne amataǃʼe efe̞βɛ.ᵑʘe/ · ‹Kewene amata!'e efevenpxe?› · rising intonation
+
+<sub>a yes/no question by rising intonation alone</sub>
+
+**(5)** ‘What does the child eat?’
+
+| *a-kaᵑǀete* | *ʘʼaβa* | *ekejɛ-ja* |
+| --- | --- | --- |
+| DEF-child | what | eat-3SG |
+
+/akaᵑǀete ʘʼaβa ekejɛja/ · ‹Akan|ete px'ava ekeyeya?›
+
+<sub>the question word stays where the object stands; the verb carries the subject's 3SG marker</sub>
+
+**(6)** ‘I do not drink the water.’
+
+| *feme̞* | *a-kəᵑǃəmä* | *a=lɛpe* |
+| --- | --- | --- |
+| 1SG | DEF-water | NEG=drink |
+
+/feme̞ akəᵑǃəmä alɛpe/ · ‹Feme aken!ema alepe.›
+
+<sub>negation is a clitic before the verb phrase</sub>
+
+**(7)** ‘My mother has a dog.’
+
+| *feme̞* | *ǀare* | *ǂe* | *me* | *tʃeʒeta-ja* |
+| --- | --- | --- | --- | --- |
+| 1SG | mother | dog | INDF | have-3SG |
+
+/feme̞ ǀare ǂe me tʃeʒetaja/ · ‹Feme |arre ǂe me chezhetaya.›
+
+<sub>a 'have' verb (the word for 'hold')</sub>
+
+**(8)** ‘My brother sees two birds.’
+
+| *feme̞* | *tʃɛ* | *ne* | *aŋeʃe* | *efe̞βɛ.ᵑʘe-ja* |
+| --- | --- | --- | --- | --- |
+| 1SG | brother | bird | two | see-3SG |
+
+/feme̞ tʃɛ ne aŋeʃe efe̞βɛ.ᵑʘeja/ · ‹Feme che ne angeshe efevenpxeya.›
+
+<sub>no plural marker after a numeral (the marker is not yet obligatory); numeral after the noun</sub>
+
+**(9)** ‘That man is a hunter.’
+
+| *aʃejaʃe* | *ǃaǃʼafɛȶe* | *fo̞ǃʼo* | *me* | *aʃe* |
+| --- | --- | --- | --- | --- |
+| that | man | hunter | INDF | COP |
+
+/aʃejaʃe ǃaǃʼafɛȶe fo̞ǃʼo me aʃe/ · ‹Asheyashe !a!'afeťe fo!'o me ashe.›
+
+<sub>the copula is the word for 'he, she, it' (G056), in the verb's place (after the predicate); demonstrative before the noun</sub>
+
+**(10)** ‘I know the woman who sings.’
+
+| *feme̞* | *fafe-ja* | *a-je* | *əkota* |
 | --- | --- | --- | --- |
-| a big dog | ǂe eɹoʔo | ǂe eřo'o | adjective order NA |
-| the person's dog | tatapɛte ǂe | tatapète ǂe | possessor order GN; the output records no genitive marker, so this is juxtaposition |
-| (does) not eat | a ekejɛ | a ekeyè | negator as a clitic before the verb |
-| dogs | ǂe-ə | ǂeë | plural clitic |
+| 1SG | sing-3SG | DEF-woman | know |
+
+/feme̞ fafeja aje əkota/ · ‹Feme fafeya aye ekota.›
+
+<sub>relative clause before the noun, no relativizer</sub>
+
+Abbreviations: 1 first person; 2 second person; 3 third person; COP copula; DEF definite; INDF indefinite; NEG negation; PRF perfect; SG singular.
 
 ## Relatives and intelligibility
 

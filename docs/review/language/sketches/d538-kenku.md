@@ -221,6 +221,146 @@ Person markers among the grammatical markers (agreement, or pronouns on their wa
 | 3SG | i‼˨i˨ | irhi | free word | before the verb | he or she or it, 1 kyr ago |
 | 1PL | naː˦ | naa | free word | before the verb | person, 0.5 kyr ago |
 
+### Grammar sketch
+
+Built from the typology and the live markers above (planet/language/sentences.py); where the engine tracks no marker for a construction, the form is the word such markers commonly grow from, and the text says so. Examples are glossed by the Leipzig rules (abbreviations under Sample sentences).
+
+**Number.** Nouns mark number: plural: a suffix fused with the stem (i‼˨, from 'many').
+
+| *i˦˨-i‼˨ʌ̞˨* |
+| --- |
+| CL4-dog |
+
+‘dog’
+
+| *i˦˨-i‼˨ʌ̞˨-i‼˨* |
+| --- |
+| CL4-dog-PL |
+
+‘dogs’
+
+**Case.** Nouns take 2 case markers: locative (LOC): a suffix (ɜ̠‼˨, from 'head'); accusative (ACC): a suffix (t̪i˦, from 'take'). Adpositions (free words, not yet case): dative (DAT): a separate word after the noun phrase (ly˧hɨ̠˦, from 'give'); comitative (COM): a separate word after the noun phrase (tʃi˧ɹi˧, from 'with'). Alignment is accusative: the object is marked (ACC), subjects are not.
+
+| *i˦˨-jʌ̞˧i‼˧-jɜ̠‼˨* |
+| --- |
+| CL4-house-LOC |
+
+‘in the house’
+
+| *mjʌ̞˦-wu‼˧i˧* | *ly˧hɨ̠˦* |
+| --- | --- |
+| CL2-man | DAT |
+
+‘to/for the man’
+
+| *i˦˨-ji‼˨ʌ̞˨-t̪i˦* |
+| --- |
+| CL4-dog-ACC |
+
+‘the dog (as object)’
+
+**Gender and noun classes.** Nouns are counted with classifiers: class 2 for a single person, a prefix (mjʌ̞˦, from 'person'); class 3 for people (plural of persons), a prefix (i‼˨, from 'people'); class 4 for lands, qualities and abstractions, a prefix (i˦˨, from 'name').
+
+| *mjʌ̞˦-e˧hi‼˧ti‼˧* |
+| --- |
+| CL2-person |
+
+‘person’
+
+| *i˦˨-li˧ʂi˨* |
+| --- |
+| CL4-name |
+
+‘name’
+
+**Tense and aspect.** Verbs mark tense and aspect. Past (PST): a suffix (y˦, from the perfect marker); perfect (PRF): a suffix (ly˨˦, from 'hold'); future (FUT): a separate word after the verb (y˧ʂi˧, from 'come'); progressive (PROG): a suffix (ly˧, from 'sit'). Unmarked: habitual (left to context).
+
+| *ʂi˧ly˧-y˦* |
+| --- |
+| go-PST |
+
+‘(it) went’
+
+| *ʂi˧ly˧-ly˨˦* |
+| --- |
+| go-PRF |
+
+‘(it) has gone’
+
+| *ʂi˧ly˧* | *y˧ʂi˧* |
+| --- | --- |
+| go | FUT |
+
+‘(it) will go’
+
+**Mood and evidentiality.** No evidential or mood marker is live; statements are unmarked.
+
+**Person agreement.** Verbs agree with the subject: 1SG: a prefix (ɾ‼ɜ̠‼˨, from 'i'). No marker yet for 2SG, 3SG, 1PL, 2PL, 3PL (zero).
+
+| *ɾ‼ɜ̠‼˨-ʂi˧ly˧* |
+| --- |
+| 1SG-go |
+
+‘I go’
+
+**Negation.** Negation is a separate word before the verb phrase (a˧, a coined form); the typology calls it preverbal.
+
+| *ɾ‼ɜ̠‼˨* | *ʌ̞˨˦li‼˧* | *i˦˨-hy˦˨-t̪i˦* | *a˧* | *ɾ‼ɜ̠‼˨-ly˨˦i˦˨* |
+| --- | --- | --- | --- | --- |
+| 1SG | DEF | CL4-water-ACC | NEG | 1SG-drink |
+
+‘I do not drink the water.’ (sentence 6 below)
+
+**Questions.** Yes/no questions use a particle at the end of the clause. Question words move to the front: who ʂi˧li‼˧, what te˨˦i˨˦wi˨˦, where ɨ̠˨, when ɨ̠˧, how pu‼˦te˨˦i˨˦wi˨˦.
+
+| *i˧* | *ʌ̞˨˦li‼˧* | *i˦˨-jɜ̠‼˧ɛ˧vi˧ɦi˧-t̪i˦* | *ly˧wi‼˨i˦* | *ʂaː˦˨kjɛ˦˨t* |
+| --- | --- | --- | --- | --- |
+| 2SG | DEF | CL4-fire-ACC | see | Q |
+
+‘Do you see the fire?’ (sentence 4 below)
+
+| *te˨˦i˨˦wi˨˦-t̪i˦* | *ʌ̞˨˦li‼˧* | *mjʌ̞˦-wi˧tɨ̠˧* | *i‼˧* |
+| --- | --- | --- | --- |
+| what-ACC | DEF | CL2-child | eat |
+
+‘What does the child eat?’ (sentence 5 below)
+
+**Possession.** The possessor stands before the possessed noun, with no marker. 'Having' is said with a 'have' verb ('my mother has a dog').
+
+| *ʌ̞˨˦li‼˧* | *mjʌ̞˦-wu‼˧i˧* | *i˦˨-i‼˨ʌ̞˨* |
+| --- | --- | --- |
+| DEF | CL2-man | CL4-dog |
+
+‘the man's dog’
+
+| *ɾ‼ɜ̠‼˨* | *mjʌ̞˦-ŋa˧ɹi˧ɜ̠‼˧* | *i˦˨-ji‼˨ʌ̞˨-pɨ̠˧-t̪i˦* | *y˦˨wɛ˧* |
+| --- | --- | --- | --- |
+| 1SG | CL2-mother | CL4-dog-INDF-ACC | have |
+
+‘My mother has a dog.’ (sentence 7 below)
+
+**Relative clauses.** Relative clause before the noun, no relativizer.
+
+| *ly˧mi‼˨ʌ̞˨* | *ʌ̞˨˦li‼˧* | *mjʌ̞˦-hje˨* |
+| --- | --- | --- |
+| sing | DEF | CL2-woman |
+
+‘the woman who sings’
+
+**Copula.** There is no copula: a predicate noun stands beside its subject. Adjectives behave like verbs: 'the water is cold' is said as 'the water colds', with the verb's markers.
+
+| *ʌ̞˨˦li‼˧* | *mjʌ̞˦-wu‼˧i˧* | *mjʌ̞˦-ʂi˦˨pa˨-pɨ̠˧* |
+| --- | --- | --- |
+| that | CL2-man | CL2-hunter-INDF |
+
+‘That man is a hunter.’ (sentence 9 below)
+
+| *ʌ̞˨˦li‼˧* | *i˦˨-hy˦˨* | *i‼˧tɜ̠‼˧i‼˧* |
+| --- | --- | --- |
+| DEF | CL4-water | cold |
+
+‘the water is cold’
+
 ## Vocabulary
 
 ### Core sample
@@ -346,9 +486,11 @@ Person markers among the grammatical markers (agreement, or pronouns on their wa
 
 Counting base: decimal. Several numerals began as other words: five < 'hand'; six < 'hand'; seven < 'hand'; eight < 'hand'; nine < 'hand'; ten < 'hand'.
 
-### A word family
+### Families a speaker feels
 
-Words built on one root: **sun** *i‼ː˨ɻji‼˨i˦* (N, coined 3.5 kyr ago in kenku 21); 4 of this language's 378 recorded words have it as their main root, 4 contain it (from the root-family record of the output).
+The roots a speaker still feels: a derivation or compound younger than 3 kyr whose parts are still in use (per-word `roots`). 9 families of 3+ words; 26% of the 378 words share a root with another word.
+
+The largest: **sun** *i‼ː˨ɻji‼˨i˦* (N, coined 3.5 kyr ago in kenku 21); 4 words have it as their main root, 4 contain it.
 
 | meaning | IPA | spelling | roots (main first) | how it was built |
 | --- | --- | --- | --- | --- |
@@ -357,16 +499,115 @@ Words built on one root: **sun** *i‼ː˨ɻji‼˨i˦* (N, coined 3.5 kyr ago i
 | sun | jɻi‼˨i˦ | yḻirhi | sun | coined kʲekaːl̪ 'eye' (17) → … → EYE + 'little' = 'eye' (9) → EYE + SKY = 'sun' (3.5) |
 | west | ly˧t̪i‼˦˨jɻi‼˨i˦ | lütirhylirhi | sun, fall | coined kʲekaːl̪ 'eye' (17) → … → EYE + SKY = 'sun' (3.5) → SUN + FALL = 'west' (0.5) |
 
-## Sample phrases
+### Families a historian reconstructs
 
-Assembled from the lexicon, the word-order features and the live markers; no sound change is applied across word or morpheme boundaries here, so these are what the grammar data implies, not attested sentences.
+This run's file stores no `etym_roots` (it predates them), so only the speaker's view is shown.
 
-| English | IPA | spelling | how |
+## Sample sentences
+
+Built from this language's own words, word order, markers and agreement (planet/language/sentences.py). Each has the form line (‘-’ an affix boundary, ‘=’ a clitic boundary), a morpheme-by-morpheme gloss, the free translation, then the whole sentence in IPA (after the simple joining rules: a glide between two vowels, a nasal taking the place of a following stop) and in the book spelling. Nothing here is attested speech; it is what the grammar data implies.
+
+**(1)** ‘The woman sees the dog.’
+
+| *ʌ̞˨˦li‼˧* | *mjʌ̞˦-hje˨* | *ʌ̞˨˦li‼˧* | *i˦˨-ji‼˨ʌ̞˨-t̪i˦* | *ly˧wi‼˨i˦* |
+| --- | --- | --- | --- | --- |
+| DEF | CL2-woman | DEF | CL4-dog-ACC | see |
+
+/ʌ̞˨˦li‼˧ mjʌ̞˦hje˨ ʌ̞˨˦li‼˧ i˦˨ji‼˨ʌ̞˨t̪i˦ ly˧wi‼˨i˦/ · ‹Eolirh myeohye eolirh iyirheoti lüwirhi.›
+
+<sub>SOV order</sub>
+
+**(2)** ‘The big dog sleeps in the house.’
+
+| *ʌ̞˨˦li‼˧* | *sy˧lʌ̞˧* | *i˦˨-i‼˨ʌ̞˨* | *ʌ̞˨˦li‼˧* | *i˦˨-jʌ̞˧i‼˧-jɜ̠‼˨* | *ly˧hi˨ɨ̠˦* |
+| --- | --- | --- | --- | --- | --- |
+| DEF | big | CL4-dog | DEF | CL4-house-LOC | sleep |
+
+/ʌ̞˨˦li‼˧ sy˧lʌ̞˧ i˦˨i‼˨ʌ̞˨ ʌ̞˨˦li‼˧ i˦˨jʌ̞˧i‼˧jɜ̠‼˨ ly˧hi˨ɨ̠˦/ · ‹Eolirh süleo iirheo eolirh iyeoirhyerh lühii.›
+
+<sub>LOC is a case suffix; adjective before the noun</sub>
+
+**(3)** ‘The man ate the fish.’
+
+| *ʌ̞˨˦li‼˧* | *mjʌ̞˦-wu‼˧i˧* | *ʌ̞˨˦li‼˧* | *i˦˨-kje˨˦-t̪i˦* | *i‼˧-y˦* |
+| --- | --- | --- | --- | --- |
+| DEF | CL2-man | DEF | CL4-fish-ACC | eat-PST |
+
+/ʌ̞˨˦li‼˧ mjʌ̞˦wu‼˧i˧ ʌ̞˨˦li‼˧ i˦˨kje˨˦t̪i˦ i‼˧y˦/ · ‹Eolirh myeowurhi eolirh ikyeti irhü.›
+
+<sub>PST is a suffix</sub>
+
+**(4)** ‘Do you see the fire?’
+
+| *i˧* | *ʌ̞˨˦li‼˧* | *i˦˨-jɜ̠‼˧ɛ˧vi˧ɦi˧-t̪i˦* | *ly˧wi‼˨i˦* | *ʂaː˦˨kjɛ˦˨t* |
+| --- | --- | --- | --- | --- |
+| 2SG | DEF | CL4-fire-ACC | see | Q |
+
+/i˧ ʌ̞˨˦li‼˧ i˦˨jɜ̠‼˧ɛ˧vi˧ɦi˧t̪i˦ ly˧wi‼˨i˦ ʂaː˦˨kjɛ˦˨t/ · ‹I eolirh iyerhevihhiti lüwirhi ṣaakyet?› · rising intonation
+
+<sub>a clause-final question particle, the word for 'if, whether' (as Russian li is both); no question gram is tracked</sub>
+
+**(5)** ‘What does the child eat?’
+
+| *te˨˦i˨˦wi˨˦-t̪i˦* | *ʌ̞˨˦li‼˧* | *mjʌ̞˦-wi˧tɨ̠˧* | *i‼˧* |
 | --- | --- | --- | --- |
-| a big dog | sy˧lʌ̞˧ i‼˨ʌ̞˨ | süle̞o ìrhè̞o | adjective order AN |
-| the person's dog | e˧hi‼˧ti‼˧ i‼˨ʌ̞˨ | ehirhtirh ìrhè̞o | possessor order GN; the output records no genitive marker, so this is juxtaposition |
-| (does) not eat | a˧ i‼˧ | a irh | negator as a free word before the verb |
-| dogs | ʌ̞˨i‼˨ | è̞oìrh | plural fused |
+| what-ACC | DEF | CL2-child | eat |
+
+/te˨˦i˨˦wi˨˦t̪i˦ ʌ̞˨˦li‼˧ mjʌ̞˦wi˧tɨ̠˧ i‼˧/ · ‹Teiwiti eolirh myeowitï irh?›
+
+<sub>the question word moves to the front</sub>
+
+**(6)** ‘I do not drink the water.’
+
+| *ɾ‼ɜ̠‼˨* | *ʌ̞˨˦li‼˧* | *i˦˨-hy˦˨-t̪i˦* | *a˧* | *ɾ‼ɜ̠‼˨-ly˨˦i˦˨* |
+| --- | --- | --- | --- | --- |
+| 1SG | DEF | CL4-water-ACC | NEG | 1SG-drink |
+
+/ɾ‼ɜ̠‼˨ ʌ̞˨˦li‼˧ i˦˨hy˦˨t̪i˦ a˧ ɾ‼ɜ̠‼˨ly˨˦i˦˨/ · ‹Rrherh eolirh ihüti a rrherh-lüi.›
+
+<sub>the verb carries the subject's 1SG marker; negation is a free word (preverbal)</sub>
+
+**(7)** ‘My mother has a dog.’
+
+| *ɾ‼ɜ̠‼˨* | *mjʌ̞˦-ŋa˧ɹi˧ɜ̠‼˧* | *i˦˨-ji‼˨ʌ̞˨-pɨ̠˧-t̪i˦* | *y˦˨wɛ˧* |
+| --- | --- | --- | --- |
+| 1SG | CL2-mother | CL4-dog-INDF-ACC | have |
+
+/ɾ‼ɜ̠‼˨ mjʌ̞˦ŋa˧ɹi˧ɜ̠‼˧ i˦˨ji‼˨ʌ̞˨pɨ̠˧t̪i˦ y˦˨wɛ˧/ · ‹Rrherh myeongarierh iyirheopïti üwe.›
+
+<sub>a 'have' verb (the word for 'hold')</sub>
+
+**(8)** ‘My brother sees two birds.’
+
+| *ɾ‼ɜ̠‼˨* | *mjʌ̞˦-wi˦i‼˨* | *i˦˨-wi‼˧i˧-ji‼˨-t̪i˦* | *ty˧* | *ly˧wi‼˨i˦* |
+| --- | --- | --- | --- | --- |
+| 1SG | CL2-brother | CL4-bird-PL-ACC | two | see |
+
+/ɾ‼ɜ̠‼˨ mjʌ̞˦wi˦i‼˨ i˦˨wi‼˧i˧ji‼˨t̪i˦ ty˧ ly˧wi‼˨i˦/ · ‹Rrherh myeowiirh iwirhiyirhti tü lüwirhi.›
+
+<sub>numeral after the noun</sub>
+
+**(9)** ‘That man is a hunter.’
+
+| *ʌ̞˨˦li‼˧* | *mjʌ̞˦-wu‼˧i˧* | *mjʌ̞˦-ʂi˦˨pa˨-pɨ̠˧* |
+| --- | --- | --- |
+| that | CL2-man | CL2-hunter-INDF |
+
+/ʌ̞˨˦li‼˧ mjʌ̞˦wu‼˧i˧ mjʌ̞˦ʂi˦˨pa˨pɨ̠˧/ · ‹Eolirh myeowurhi myeoṣipapi.›
+
+<sub>no copula: subject and predicate noun stand side by side; demonstrative before the noun</sub>
+
+**(10)** ‘I know the woman who sings.’
+
+| *ɾ‼ɜ̠‼˨* | *ly˧mi‼˨ʌ̞˨* | *ʌ̞˨˦li‼˧* | *mjʌ̞˦-hje˨-t̪i˦* | *ɾ‼ɜ̠‼˨-ni˨ħaː˦˨hɛ˨˦* |
+| --- | --- | --- | --- | --- |
+| 1SG | sing | DEF | CL2-woman-ACC | 1SG-know |
+
+/ɾ‼ɜ̠‼˨ ly˧mi‼˨ʌ̞˨ ʌ̞˨˦li‼˧ mjʌ̞˦hje˨t̪i˦ ɾ‼ɜ̠‼˨ni˨ħaː˦˨hɛ˨˦/ · ‹Rrherh lümirheo eolirh myeohyeti rrherhniḥaahe.›
+
+<sub>relative clause before the noun, no relativizer; the verb carries the subject's 1SG marker</sub>
+
+Abbreviations: 1 first person; 2 second person; ACC accusative; CL2 noun class 2; CL4 noun class 4; DEF definite; INDF indefinite; LOC locative; NEG negation; PL plural; PST past; Q question particle; SG singular.
 
 ## Relatives and intelligibility
 

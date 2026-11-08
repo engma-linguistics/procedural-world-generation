@@ -97,7 +97,7 @@ def test_render_page_sections_and_charts():
     assert page.startswith(sketch.MARKER)
     assert "# Inglish language" in page
     for h in ("## History", "## Phonology", "### Consonants", "### Vowels", "## Orthography", "## Grammar",
-              "### Pronouns", "## Vocabulary", "### Numerals", "## Sample phrases", "## Relatives and intelligibility"):
+              "### Pronouns", "## Vocabulary", "### Numerals", "### Grammar sketch", "## Sample sentences", "## Relatives and intelligibility"):
         assert h in page, h
     assert "| **Plosive** | p · b |" in page  # voiceless left, voiced right, bilabial first
     assert "| **Close** | i |" in page and "ɪ" in page
@@ -108,8 +108,11 @@ def test_render_page_sections_and_charts():
     assert "k became h between vowels" in page  # the proto stage's change
     assert "(from" in page  # an adopted change names its source
     assert "dɔɡ-s" in page  # segmented paradigm cell
-    assert "a big dog | bɪɡ dɔɡ" in page  # AN order
-    assert "nɑ it" in page  # free preverbal negator
+    assert "| *pɛɹsən* | *ta16-z* | *dɔɡ* |" in page and "| person | see-3SG | dog |" in page  # interlinear, SVO
+    assert "| 1SG | NEG | see | water |" in page  # free preverbal negator
+    assert "/ju ta16 ta7/" in page and "rising intonation" in page  # whole-sentence IPA, polar question
+    assert "Abbreviations: 1 first person" in page
+    assert "**Person agreement.** Verbs agree with the subject: 3SG: a suffix" in page
     assert "a coined particle" in page
     assert "Words built on **dog**" in page  # word family from compounds
 
@@ -154,9 +157,27 @@ def test_root_families_allophone_table_and_case_clash():
         l["lexicon"][c]["roots"] = ["p0:DOG"]
     page = sketch.render(sketch.Doc(fx), l)
     assert "| allophone | phoneme | where |" in page and "| [b] | /p/ | between vowels only |" in page
-    assert "Words built on one root: **dog**" in page and "| roots (main first) |" in page
+    assert "The largest: **dog**" in page and "| roots (main first) |" in page
     # a free locative is an adposition, not case; a clitic one is case
     t = {"case": "none"}
     free = [{"function": "LOC", "form_ipa": "ka", "level": 0}]
     assert sketch._typology_clashes(t, free) == []
     assert sketch._typology_clashes(t, [dict(free[0], level=1)])
+
+
+def test_word_families_both_views():
+    fx = _fixture()
+    d1 = next(l for l in fx["lects"] if l["id"] == "d1")
+    for c, e in d1["lexicon"].items():
+        e["roots"] = ["d1:DOG@0"] if c in ("DOG", "HOUSE") else [f"d1:{c}@0"]
+    fx["roots"] = {"d1:DOG@0": {"node": None, "lect": "p0", "kyr": 20.0, "concept": "DOG", "gloss": "dog", "ipa": "pa8",
+                                "pos": "N"}}
+    page = sketch.render(sketch.Doc(json.loads(json.dumps(fx))), sketch.Doc(fx).lects["d1"])
+    assert "### Families a speaker feels" in page and "### Families a historian reconstructs" in page
+    assert "predates them" in page
+    for c, e in d1["lexicon"].items():
+        e["etym_roots"] = ["d1:DOG@0"] if c in ("DOG", "HOUSE", "BARN", "BIG") else [f"d1:{c}@0"]
+    doc = sketch.Doc(fx)
+    page = sketch.render(doc, doc.lects["d1"])
+    hist = page[page.index("### Families a historian reconstructs"):]
+    assert "predates them" not in page and "4 words have it as their main root" in hist

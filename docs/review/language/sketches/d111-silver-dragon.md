@@ -170,6 +170,122 @@ Person markers among the grammatical markers (agreement, or pronouns on their wa
 | --- | --- | --- | --- | --- | --- |
 | 3SG | ʃi˦ʃɛ˦ | shishe | clitic | after the verb | he or she or it, 20 kyr ago |
 
+### Grammar sketch
+
+Built from the typology and the live markers above (planet/language/sentences.py); where the engine tracks no marker for a construction, the form is the word such markers commonly grow from, and the text says so. Examples are glossed by the Leipzig rules (abbreviations under Sample sentences).
+
+**Number.** Nouns mark number: plural: a separate word before the noun (xa˦ri˨, from 'all').
+
+| *ni‼˦kʷɨ˦* |
+| --- |
+| dog |
+
+‘dog’
+
+| *xa˦ri˨* | *ni‼˦kʷɨ˦* |
+| --- | --- |
+| PL | dog |
+
+‘dogs’
+
+**Case.** Nouns have no case marking. Subject and object are not marked apart: word order tells them. Place and company are said with the plain words 'in' (kʷi˦li˨), 'at' (ti‼˦xa˦j‼a˦), 'with' (i˧lɨ˨ʃi˧) as adpositions.
+
+**Gender and noun classes.** Nouns are counted with classifiers (free words, not yet bound to the noun): class 1 for a single person, a separate word after the noun (n̪ɛ˨xa˦, from 'person'); class 2 for people (plural of persons), a separate word after the noun (ŋi‼˨ŋi˨, from 'people'); class 3 for languages, ways and tools, a separate word after the noun (ɹa˦l‼i˧, from 'tongue').
+
+| *kʷi˨θi˧* |
+| --- |
+| person |
+
+‘person’
+
+| *ɹa˦l‼i˧l‼a˨* |
+| --- |
+| tongue |
+
+‘tongue’
+
+**Tense and aspect.** Verbs mark tense and aspect. Past (PST): a separate word before the verb (n̪i˦xa˨, from 'yesterday'); perfect (PRF): a separate word before the verb (xa˦, from 'hold'). Unmarked: future, progressive, habitual (left to context).
+
+| *n̪i˦xa˨* | *kʷa˦xa˦i‼˧* |
+| --- | --- |
+| PST | go |
+
+‘(it) went’
+
+| *xa˦* | *kʷa˦xa˦i‼˧* |
+| --- | --- |
+| PRF | go |
+
+‘(it) has gone’
+
+**Mood and evidentiality.** No evidential or mood marker is live; statements are unmarked.
+
+**Person agreement.** Verbs agree with the subject: 3SG: a clitic after the verb (ʃi˦ʃɛ˦, from 'he'). Subject pronouns are dropped when the marker is there. No marker yet for 1SG, 2SG, 1PL, 2PL, 3PL (zero).
+
+| *kʷa˦xa˦i‼˧=ʃi˦ʃɛ˦* |
+| --- |
+| go=3SG |
+
+‘he/she goes’
+
+**Negation.** Negation is a separate word before the verb phrase (ti‼˦, a coined form); the typology calls it preverbal.
+
+| *ɹi˨ci˦* | *ti‼˦* | *ŋa˨ʃa˦xi‼˨* | *kʷi‼˦wa˧θi‼˦* |
+| --- | --- | --- | --- |
+| 1SG | NEG | drink | water |
+
+‘I do not drink the water.’ (sentence 6 below)
+
+**Questions.** Yes/no questions use rising intonation alone. Question words stay where the questioned phrase would stand: who ʔi˦ci˦, what ʃɛ˦θi˦, where ɨ˦ʃɛ˦θi˦, when ʃi˧, how ʃɛ˦θi˦.
+
+| *ʃi‼˦* | *n̪i‼˨a˦* | *tʰi˦ʂi˦* |
+| --- | --- | --- |
+| 2SG | see | fire |
+
+‘Do you see the fire?’ (sentence 4 below)
+
+| *i˧ʈɨ˨* | *ŋa˨ʃa˦xi‼˨=ʃi˦ʃɛ˦* | *ʃɛ˦θi˦* |
+| --- | --- | --- |
+| child | eat=3SG | what |
+
+‘What does the child eat?’ (sentence 5 below)
+
+**Possession.** The possessor stands before the possessed noun, with no marker. 'Having' is said with a 'have' verb ('my mother has a dog').
+
+| *kʷi‼˦ɳa˨kʼa˦ri˨* | *ni‼˦kʷɨ˦* |
+| --- | --- |
+| man | dog |
+
+‘the man's dog’
+
+| *ɹi˨ci˦* | *i˨ʃa˦* | *xa˦=ʃi˦ʃɛ˦* | *tɛ˧i˧* | *ni‼˦kʷɨ˦* |
+| --- | --- | --- | --- | --- |
+| 1SG | mother | have=3SG | INDF | dog |
+
+‘My mother has a dog.’ (sentence 7 below)
+
+**Relative clauses.** Relative clause after the noun, introduced by the word for 'that' (G055).
+
+| *la˦n̪i˦* | *w‼i‼˨ɛ˨ci‼˦* | *ŋa˨rɨ˨=ʃi˦ʃɛ˦* |
+| --- | --- | --- |
+| woman | REL | sing=3SG |
+
+‘the woman who sings’
+
+**Copula.** There is no copula: a predicate noun stands beside its subject. Adjectives behave like verbs: 'the water is cold' is said as 'the water colds', with the verb's markers.
+
+| *kʷi‼˦ɳa˨kʼa˦ri˨* | *w‼i‼˨ɛ˨ci‼˦* | *tɛ˧i˧* | *ɛ˦xɨ˦ʔa˦* |
+| --- | --- | --- | --- |
+| man | that | INDF | hunter |
+
+‘That man is a hunter.’ (sentence 9 below)
+
+| *kʷi‼˦wa˧θi‼˦* | *ʈɛ˨ra˨ʃi˨=ʃi˦ʃɛ˦* |
+| --- | --- |
+| water | cold=3SG |
+
+‘the water is cold’
+
 ## Vocabulary
 
 ### Core sample
@@ -295,9 +411,11 @@ Person markers among the grammatical markers (agreement, or pronouns on their wa
 
 Counting base: decimal. Several numerals began as other words: ten < 'hand'.
 
-### A word family
+### Families a speaker feels
 
-Words built on one root: **stick** *nɨ˨ka˧jɛ˦* (N, coined 20 kyr ago in the silver dragon proto-language); 3 of this language's 363 recorded words have it as their main root, 3 contain it (from the root-family record of the output).
+The roots a speaker still feels: a derivation or compound younger than 3 kyr whose parts are still in use (per-word `roots`). 3 families of 3+ words; 13% of the 363 words share a root with another word.
+
+The largest: **stick** *nɨ˨ka˧jɛ˦* (N, coined 20 kyr ago in the silver dragon proto-language); 3 words have it as their main root, 3 contain it.
 
 | meaning | IPA | spelling | roots (main first) | how it was built |
 | --- | --- | --- | --- | --- |
@@ -305,16 +423,115 @@ Words built on one root: **stick** *nɨ˨ka˧jɛ˦* (N, coined 20 kyr ago in the
 | tree | nɨ˨xa˦ɛ˦ | nïxae | stick | \*nɨ˨ka˧jɛ˦ 'tree' (the silver dragon proto-language, 20 kyr) |
 | twig | nɨ˨xa˦w‼i˦ | nïxawrhi | stick | \*nɨ˨ka˧jɛ˦ 'tree' (the silver dragon proto-language, 20 kyr) → TREE + 'little' = 'twig' (0) |
 
-## Sample phrases
+### Families a historian reconstructs
 
-Assembled from the lexicon, the word-order features and the live markers; no sound change is applied across word or morpheme boundaries here, so these are what the grammar data implies, not attested sentences.
+This run's file stores no `etym_roots` (it predates them), so only the speaker's view is shown.
 
-| English | IPA | spelling | how |
+## Sample sentences
+
+Built from this language's own words, word order, markers and agreement (planet/language/sentences.py). Each has the form line (‘-’ an affix boundary, ‘=’ a clitic boundary), a morpheme-by-morpheme gloss, the free translation, then the whole sentence in IPA (after the simple joining rules: a glide between two vowels, a nasal taking the place of a following stop) and in the book spelling. Nothing here is attested speech; it is what the grammar data implies.
+
+**(1)** ‘The woman sees the dog.’
+
+| *la˦n̪i˦* | *n̪i‼˨a˦=ʃi˦ʃɛ˦* | *ni‼˦kʷɨ˦* |
+| --- | --- | --- |
+| woman | see=3SG | dog |
+
+/la˦n̪i˦ n̪i‼˨a˦ʃi˦ʃɛ˦ ni‼˦kʷɨ˦/ · ‹Lani nirhashishe nirhkwï.›
+
+<sub>SVO order; the verb carries the subject's 3SG marker</sub>
+
+**(2)** ‘The big dog sleeps in the house.’
+
+| *ni‼˦kʷɨ˦* | *l‼a˦ʃɛ˦i˦* | *lɛ˨=ʃi˦ʃɛ˦* | *kʷi˦li˨* | *tʃʰa˦* |
+| --- | --- | --- | --- | --- |
+| dog | big | sleep=3SG | in | house |
+
+/ni‼˦kʷɨ˦ l‼a˦ʃɛ˦i˦ lɛ˨ʃi˦ʃɛ˦ kʷi˦li˨ tʃʰa˦/ · ‹Nirhkwï lrhashei leshishe kwili chha.›
+
+<sub>'in' as a preposition (no LOC gram); adjective after the noun; the verb carries the subject's 3SG marker</sub>
+
+**(3)** ‘The man ate the fish.’
+
+| *kʷi‼˦ɳa˨kʼa˦ri˨* | *n̪i˦xa˨* | *ŋa˨ʃa˦xi‼˨=ʃi˦ʃɛ˦* | *i˦* |
 | --- | --- | --- | --- |
-| a big dog | ni‼˦kʷɨ˦ l‼a˦ʃɛ˦i˦ | nírhkwḯ lrhášéí | adjective order NA |
-| the person's dog | kʷi˨θi˧ ni‼˦kʷɨ˦ | kwìþi nírhkwḯ | possessor order GN; the output records no genitive marker, so this is juxtaposition |
-| (does) not eat | ti‼˦ ŋa˨ʃa˦xi‼˨ | tírh ngàšáxìrh | negator as a free word before the verb |
-| dogs | xa˦ri˨ ni‼˦kʷɨ˦ | xárrì nírhkwḯ | plural free word |
+| man | PST | eat=3SG | fish |
+
+/kʷi‼˦ɳa˨kʼa˦ri˨ n̪i˦xa˨ ŋa˨ʃa˦xi‼˨ʃi˦ʃɛ˦ i˦/ · ‹Kwirhṇak'arri nixa ngashaxirhshishe i.›
+
+<sub>PST is a separate word before the verb; the verb carries the subject's 3SG marker</sub>
+
+**(4)** ‘Do you see the fire?’
+
+| *ʃi‼˦* | *n̪i‼˨a˦* | *tʰi˦ʂi˦* |
+| --- | --- | --- |
+| 2SG | see | fire |
+
+/ʃi‼˦ n̪i‼˨a˦ tʰi˦ʂi˦/ · ‹Shirh nirha thiṣi?› · rising intonation
+
+<sub>a yes/no question by rising intonation alone</sub>
+
+**(5)** ‘What does the child eat?’
+
+| *i˧ʈɨ˨* | *ŋa˨ʃa˦xi‼˨=ʃi˦ʃɛ˦* | *ʃɛ˦θi˦* |
+| --- | --- | --- |
+| child | eat=3SG | what |
+
+/i˧ʈɨ˨ ŋa˨ʃa˦xi‼˨ʃi˦ʃɛ˦ ʃɛ˦θi˦/ · ‹Iṭi ngashaxirhshishe sheþi?›
+
+<sub>the question word stays where the object stands; the verb carries the subject's 3SG marker</sub>
+
+**(6)** ‘I do not drink the water.’
+
+| *ɹi˨ci˦* | *ti‼˦* | *ŋa˨ʃa˦xi‼˨* | *kʷi‼˦wa˧θi‼˦* |
+| --- | --- | --- | --- |
+| 1SG | NEG | drink | water |
+
+/ɹi˨ci˦ ti‼˦ ŋa˨ʃa˦xi‼˨ kʷi‼˦wa˧θi‼˦/ · ‹Rikyi tirh ngashaxirh kwirhwaþirh.›
+
+<sub>negation is a free word (preverbal)</sub>
+
+**(7)** ‘My mother has a dog.’
+
+| *ɹi˨ci˦* | *i˨ʃa˦* | *xa˦=ʃi˦ʃɛ˦* | *tɛ˧i˧* | *ni‼˦kʷɨ˦* |
+| --- | --- | --- | --- | --- |
+| 1SG | mother | have=3SG | INDF | dog |
+
+/ɹi˨ci˦ i˨ʃa˦ xa˦ʃi˦ʃɛ˦ tɛ˧i˧ ni‼˦kʷɨ˦/ · ‹Rikyi isha xashishe tei nirhkwï.›
+
+<sub>a 'have' verb (the word for 'hold')</sub>
+
+**(8)** ‘My brother sees two birds.’
+
+| *ɹi˨ci˦* | *i˨xa˦* | *n̪i‼˨a˦=ʃi˦ʃɛ˦* | *i‼˦ŋa˦* | *ɹa˦l‼i˧* | *ta˦ŋa˦ʔa˦* |
+| --- | --- | --- | --- | --- | --- |
+| 1SG | brother | see=3SG | two | CLF | bird |
+
+/ɹi˨ci˦ i˨xa˦ n̪i‼˨a˦ʃi˦ʃɛ˦ i‼˦ŋa˦ ɹa˦l‼i˧ ta˦ŋa˦ʔa˦/ · ‹Rikyi ixa nirhashishe irhnga ralrhi tanga'a.›
+
+<sub>no plural marker after a numeral (the marker is not yet obligatory); numeral before the noun; a numeral classifier follows the numeral</sub>
+
+**(9)** ‘That man is a hunter.’
+
+| *kʷi‼˦ɳa˨kʼa˦ri˨* | *w‼i‼˨ɛ˨ci‼˦* | *tɛ˧i˧* | *ɛ˦xɨ˦ʔa˦* |
+| --- | --- | --- | --- |
+| man | that | INDF | hunter |
+
+/kʷi‼˦ɳa˨kʼa˦ri˨ w‼i‼˨ɛ˨ci‼˦ tɛ˧i˧ ɛ˦xɨ˦ʔa˦/ · ‹Kwirhṇak'arri wrhirhekyirh tei exï'a.›
+
+<sub>no copula: subject and predicate noun stand side by side; demonstrative after the noun</sub>
+
+**(10)** ‘I know the woman who sings.’
+
+| *ɹi˨ci˦* | *ʈa˨ʂa˦˨* | *la˦n̪i˦* | *w‼i‼˨ɛ˨ci‼˦* | *ŋa˨rɨ˨=ʃi˦ʃɛ˦* |
+| --- | --- | --- | --- | --- |
+| 1SG | know | woman | REL | sing=3SG |
+
+/ɹi˨ci˦ ʈa˨ʂa˦˨ la˦n̪i˦ w‼i‼˨ɛ˨ci‼˦ ŋa˨rɨ˨ʃi˦ʃɛ˦/ · ‹Rikyi ṭasa lani wrhirhekyirh ngarrïshishe.›
+
+<sub>relative clause after the noun, introduced by the word for 'that' (G055)</sub>
+
+Abbreviations: 1 first person; 2 second person; 3 third person; CLF classifier; INDF indefinite; NEG negation; PST past; REL relativizer; SG singular.
 
 ## Relatives and intelligibility
 

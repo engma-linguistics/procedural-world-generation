@@ -181,6 +181,116 @@ Hyphens show the morpheme boundary where the engine segments the form; † marks
 
 A separate word for 'he' is recorded: l‼iziŋ‼ ‹lrhizingrh›. Subject pronouns are usually dropped.
 
+### Grammar sketch
+
+Built from the typology and the live markers above (planet/language/sentences.py); where the engine tracks no marker for a construction, the form is the word such markers commonly grow from, and the text says so. Examples are glossed by the Leipzig rules (abbreviations under Sample sentences).
+
+**Number.** Nouns do not mark number: one noun form serves for one or many; a numeral or 'many' says how many.
+
+**Case.** Nouns have no bound case. Adpositions (free words, not yet case): locative (LOC): a separate word after the noun phrase (lɑ, from 'in'). The typology leans split in alignment, but no case marker shows it yet: word order tells subject from object.
+
+| *hin* | *lɑ* |
+| --- | --- |
+| house | LOC |
+
+‘in the house’
+
+**Gender and noun classes.** Nouns are counted with classifiers (free words, not yet bound to the noun): class 1 for men and male things, a separate word before the noun (lətʃʼ, from 'man'); class 2 for women and female things, a separate word before the noun (ha‼, from 'woman').
+
+| *lətʃʼɘz* |
+| --- |
+| man |
+
+‘man’
+
+| *ha‼* |
+| --- |
+| woman |
+
+‘woman’
+
+**Tense and aspect.** Verbs mark tense and aspect. Past (PST): a separate word after the verb (ʃe, from 'yesterday'); perfect (PRF): a suffix (zyŋ‼, from 'hold'); future (FUT): a separate word after the verb (han, from 'go'); habitual (HAB): a separate word after the verb (hidz, from 'do'). Unmarked: progressive (left to context).
+
+| *han* | *ʃe* |
+| --- | --- |
+| go | PST |
+
+‘(it) went’
+
+| *hanɨ‼-zyŋ‼* |
+| --- |
+| go-PRF |
+
+‘(it) has gone’
+
+| *han* | *han* |
+| --- | --- |
+| go | FUT |
+
+‘(it) will go’
+
+**Mood and evidentiality.** No evidential or mood marker is live; statements are unmarked.
+
+**Person agreement.** Verbs do not agree with the subject.
+
+**Negation.** Negation is a clitic after the verb phrase (ho‼n, a coined form); the typology calls it postverbal.
+
+| *w‼in* | *tʰizeizi‼n‼* | *iɦiȴ=ho‼n* |
+| --- | --- | --- |
+| 1SG | water | drink=NEG |
+
+‘I do not drink the water.’ (sentence 6 below)
+
+**Questions.** Yes/no questions use a particle at the start of the clause. Question words stay where the questioned phrase would stand: who lu‼, what ɟe̞l, where w‼ɨ‼, when l‼ɨ‼nɨ‼ɟ, how ʈaːɟe̞l.
+
+| *hyl* | *ho‼ɟyŋ‼* | *n‼ydz* | *hetʰ* |
+| --- | --- | --- | --- |
+| Q | 2SG | fire | see |
+
+‘Do you see the fire?’ (sentence 4 below)
+
+| *ãːb* | *ɟe̞l* | *tʃʰein* |
+| --- | --- | --- |
+| child | what | eat |
+
+‘What does the child eat?’ (sentence 5 below)
+
+**Possession.** The possessor stands before the possessed noun, with no marker. Kin and body parts (inalienable) take no genitive marker. 'Having' is said with 'with' ('my mother is with a dog'; the lane's pick for Grambank's 'neither').
+
+| *lətʃʼɘz* | *jez* |
+| --- | --- |
+| man | dog |
+
+‘the man's dog’
+
+| *w‼in* | *hãj‼* | *jez* | *lɔ‼* |
+| --- | --- | --- | --- |
+| 1SG | mother | dog | with |
+
+‘My mother has a dog.’ (sentence 7 below)
+
+**Relative clauses.** Relative clause before the noun, no relativizer.
+
+| *tʰiɟɛ‼n* | *ha‼* |
+| --- | --- |
+| sing | woman |
+
+‘the woman who sings’
+
+**Copula.** There is no copula: a predicate noun stands beside its subject. Adjectives behave like verbs: 'the water is cold' is said as 'the water colds', with the verb's markers.
+
+| *ho̞n‼* | *lətʃʼɘz* | *aŋ‼i‼lətʃʼ* |
+| --- | --- | --- |
+| that | man | hunter |
+
+‘That man is a hunter.’ (sentence 9 below)
+
+| *tʰizeizi‼n‼* | *ʈadze̞w‼* |
+| --- | --- |
+| water | cold |
+
+‘the water is cold’
+
 ## Vocabulary
 
 ### Core sample
@@ -306,9 +416,11 @@ A separate word for 'he' is recorded: l‼iziŋ‼ ‹lrhizingrh›. Subject pro
 
 Counting base: vigesimal.
 
-### A word family
+### Families a speaker feels
 
-Words built on one root: **seed** *i‼nloŋ‼* (N, coined 20 kyr ago in the blue dragon proto-language); 3 of this language's 373 recorded words have it as their main root, 3 contain it (from the root-family record of the output).
+The roots a speaker still feels: a derivation or compound younger than 3 kyr whose parts are still in use (per-word `roots`). 2 families of 3+ words; 9% of the 373 words share a root with another word.
+
+The largest: **seed** *i‼nloŋ‼* (N, coined 20 kyr ago in the blue dragon proto-language); 3 words have it as their main root, 3 contain it.
 
 | meaning | IPA | spelling | roots (main first) | how it was built |
 | --- | --- | --- | --- | --- |
@@ -316,15 +428,115 @@ Words built on one root: **seed** *i‼nloŋ‼* (N, coined 20 kyr ago in the bl
 | seed | i‼ːdiŋ‼ | iirhdingrh | seed | \*i‼nloŋ‼ 'seed' (the blue dragon proto-language, 20 kyr) |
 | seed (sown) | he̞hii‼ːd | hehiiirhd | seed, earth (soil) | \*i‼nloŋ‼ 'seed' (the blue dragon proto-language, 20 kyr) → elaborate:farmer (2) |
 
-## Sample phrases
+### Families a historian reconstructs
 
-Assembled from the lexicon, the word-order features and the live markers; no sound change is applied across word or morpheme boundaries here, so these are what the grammar data implies, not attested sentences.
+This run's file stores no `etym_roots` (it predates them), so only the speaker's view is shown.
 
-| English | IPA | spelling | how |
+## Sample sentences
+
+Built from this language's own words, word order, markers and agreement (planet/language/sentences.py). Each has the form line (‘-’ an affix boundary, ‘=’ a clitic boundary), a morpheme-by-morpheme gloss, the free translation, then the whole sentence in IPA (after the simple joining rules: a glide between two vowels, a nasal taking the place of a following stop) and in the book spelling. Nothing here is attested speech; it is what the grammar data implies.
+
+**(1)** ‘The woman sees the dog.’
+
+| *ha‼* | *jez* | *hetʰ* |
+| --- | --- | --- |
+| woman | dog | see |
+
+/ha‼ jez hetʰ/ · ‹Harh yez heth.›
+
+<sub>SOV order</sub>
+
+**(2)** ‘The big dog sleeps in the house.’
+
+| *jez* | *houŋ‼yn* | *hin* | *lɑ* | *hɛ‼ɲ* |
+| --- | --- | --- | --- | --- |
+| dog | big | house | LOC | sleep |
+
+/jez houŋ‼yn hin lɑ hɛ‼ɲ/ · ‹Yez houngrhün hin la herhny.›
+
+<sub>LOC is an adposition; adjective after the noun</sub>
+
+**(3)** ‘The man ate the fish.’
+
+| *lətʃʼɘz* | *aŋ‼* | *tʃʰein* | *ʃe* |
 | --- | --- | --- | --- |
-| a big dog | jez houŋ‼yn | yez houngrhün | adjective order NA |
-| the person's dog | u‼ jez | urh yez | possessor order GN; the output records no genitive marker, so this is juxtaposition |
-| (does) not eat | tʃʰein ho‼n | čhein horhn | negator as a clitic after the verb |
+| man | fish | eat | PST |
+
+/lətʃʼɘz aŋ‼ tʃʰein ʃe/ · ‹Lech'ez angrh chhein she.›
+
+<sub>PST is a separate word after the verb</sub>
+
+**(4)** ‘Do you see the fire?’
+
+| *hyl* | *ho‼ɟyŋ‼* | *n‼ydz* | *hetʰ* |
+| --- | --- | --- | --- |
+| Q | 2SG | fire | see |
+
+/hyl ho‼ɟyŋ‼ n‼ydz hetʰ/ · ‹Hül horhgyüngrh nrhüdz heth?› · rising intonation
+
+<sub>a clause-initial question particle, the word for 'if, whether' (as Russian li is both); no question gram is tracked</sub>
+
+**(5)** ‘What does the child eat?’
+
+| *ãːb* | *ɟe̞l* | *tʃʰein* |
+| --- | --- | --- |
+| child | what | eat |
+
+/ãːb ɟe̞l tʃʰein/ · ‹Aanb gyel chhein?›
+
+<sub>the question word stays where the object stands</sub>
+
+**(6)** ‘I do not drink the water.’
+
+| *w‼in* | *tʰizeizi‼n‼* | *iɦiȴ=ho‼n* |
+| --- | --- | --- |
+| 1SG | water | drink=NEG |
+
+/w‼in tʰizeizi‼n‼ iɦiȴho‼n/ · ‹Wrhin thizeizirhnrh ihhiľhorhn.›
+
+<sub>negation is a clitic after the verb phrase</sub>
+
+**(7)** ‘My mother has a dog.’
+
+| *w‼in* | *hãj‼* | *jez* | *lɔ‼* |
+| --- | --- | --- | --- |
+| 1SG | mother | dog | with |
+
+/w‼in hãj‼ jez lɔ‼/ · ‹Wrhin han-yrh yez lorh.›
+
+<sub>kin are inalienably possessed: the possessor stands beside the noun with no marker; possession with 'with' ('my mother (is) with a dog'; Grambank marks neither a 'have' verb nor locational possession, and the lane picked the conjunctional type); 'with' as a postposition (no COM gram)</sub>
+
+**(8)** ‘My brother sees two birds.’
+
+| *w‼in* | *a‼l* | *ɪɹi‼n* | *ʃʷɨ* | *lətʃʼ* | *hetʰ* |
+| --- | --- | --- | --- | --- | --- |
+| 1SG | brother | bird | two | CLF | see |
+
+/w‼in a‼l ɪɹi‼n ʃʷɨ lətʃʼ hetʰ/ · ‹Wrhin arhl irirhn shwï lech' heth.›
+
+<sub>kin are inalienably possessed: the possessor stands beside the noun with no marker; numeral after the noun; a numeral classifier follows the numeral</sub>
+
+**(9)** ‘That man is a hunter.’
+
+| *ho̞n‼* | *lətʃʼɘz* | *aŋ‼i‼lətʃʼ* |
+| --- | --- | --- |
+| that | man | hunter |
+
+/ho̞n‼ lətʃʼɘz aŋ‼i‼lətʃʼ/ · ‹Honrh lech'ez angrhirhlech'.›
+
+<sub>no copula: subject and predicate noun stand side by side; demonstrative before the noun</sub>
+
+**(10)** ‘I know the woman who sings.’
+
+| *w‼in* | *tʰiɟɛ‼n* | *ha‼* | *hʊdzo̞ŋ‼* |
+| --- | --- | --- | --- |
+| 1SG | sing | woman | know |
+
+/w‼in tʰiɟɛ‼n ha‼ hʊdzo̞ŋ‼/ · ‹Wrhin thigyerhn harh hudzongrh.›
+
+<sub>relative clause before the noun, no relativizer</sub>
+
+Abbreviations: 1 first person; 2 second person; CLF classifier; LOC locative; NEG negation; PST past; Q question particle; SG singular.
 
 ## Relatives and intelligibility
 
