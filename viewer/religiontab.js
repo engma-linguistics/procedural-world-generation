@@ -47,7 +47,7 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmt = NumFmt.kyr;
   const ago = (k) => NumFmt.ago(k);  // a date: '12,400 years ago', or 'year 1400' once the run's present is set (numfmt.js, PW-1429)
-  const VIEWS = [['trees', 'God trees'], ['map', 'Map'], ['timeline', 'Timeline'], ['taboos', 'Taboos'], ['yours', 'Your faiths']];
+  const VIEWS = [['trees', 'God trees'], ['map', 'Map'], ['timeline', 'Timeline'], ['minorities', 'Minorities'], ['taboos', 'Taboos'], ['yours', 'Your faiths']];
   const MODES = [['faith_made', 'faith-made (gods exist while worshipped)'], ['belief_only', 'belief only (no gods are real)'], ['absolute', 'absolute (gods outlive their worshippers)']];
   const yours = (f) => (f && f.authored != null ? '<span class="rl-yours" title="a faith you wrote">✎ yours</span>' : '');
   const fname = (f) => esc(f?.name) + yours(f);
@@ -66,6 +66,9 @@
       a faith that only spreads wins neighbours slowly, over a millennium or two, and only from temples; a closed one takes no converts. Wherever its
       cultures rule a state, they push it on their subjects: within a generation for a harsh ruler, hardly at all for a tolerant one (each culture's
       tolerance is on its taboos card). The result column says whether it took hold, how it spread, and why not. Saved with the run; nothing in the peoples history is re-run.`,
+    minorities: `Each culture holds a share of each faith (PW-1489). Its faith, the one named in the other views, is the one held by more than half;
+      a culture converts when a newcomer passes half, and the old faith stays on as a minority that fades over a millennium or two (slower in a tolerant culture).
+      States and peoples add up their cultures by land. Hover a row for the rule.`,
     taboos: `Each living culture's taboos by kind. Food taboos come from its herds, crops, neighbours and gods; the other kinds from its way of life, its techs
       and its gods' domains (the tags shown). Every rule names its source; the catalogue below lists the sources and how far each was read.`,
   };
@@ -105,6 +108,9 @@
   const faithOpts = (cur) => D.F.filter((f) => f.beings.length).sort((a, b) => b.beings.length - a.beings.length)
     .map((f) => `<option value="${f.id}" ${f.id === cur ? 'selected' : ''}>${f.authored != null ? '✎ ' : ''}${esc(f.name)} · ${f.beings.length} gods${f.ended_kyr != null ? ' (gone)' : ''}</option>`).join('');
   const sw = (c) => `<span class="sw" style="background:${c}"></span>`;
+  // a culture's (or state's) faiths with their shares, PW-1489: [[faith id or null (the rest), share], ...] -> 'Dwarf creed 78%, Sun cult 15%, others 7%'
+  const pct = (v) => (v >= 0.995 ? '100%' : v < 0.01 ? '<1%' : `${Math.round(100 * v)}%`);
+  const sharesHtml = (rows) => (rows || []).map(([f, v]) => (f == null ? `<span class="muted">others ${pct(v)}</span>` : `${sw(D.F[f]?.color || '#888')}${fname(D.F[f])} ${pct(v)}`)).join(', ');
   const logX = (oldest, x0, x1) => { const lo = Math.log10(0.05), hi = Math.log10(Math.max(oldest, 0.1) * 1.05); x0 += 14;
     return (k) => x0 + (1 - (Math.log10(Math.max(k, 0.05)) - lo) / (hi - lo)) * (x1 - x0); };
   const TICKS = [0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000];
@@ -227,6 +233,27 @@
     main.innerHTML = h + '</table>' + `<p class="muted" style="max-width:900px">The rule (a judgement call, readout only): ${esc(D.gods.faiths.rule)}</p>`;
   }
 
+  // ---- 3b. minorities (PW-1489) ----
+  function minMount(bar) {
+    const S = D.gods.shares?.summary || {};
+    bar.innerHTML = `<span class="muted">${S.cultures ?? 0} cultures with a faith now: ${S.with_minority ?? 0} hold a minority faith, ${S.minority_over_10 ?? 0} one above 10%</span>`;
+  }
+  function minDraw(main) {
+    const SH = D.gods.shares;
+    if (!SH) { main.innerHTML = '<p class="muted">This run\'s faiths were worked out before minorities were tracked.</p>'; return; }
+    const L = Object.fromEntries((D.result.lineages || []).map((l) => [l.id, l.name.split(' (')[0]]));
+    const rule = `title="${esc(SH.rule)}"`;
+    let h = `<h3 ${rule}>States now</h3>`;
+    h += SH.states.length ? `<table class="t"><tr><th>state</th><th>kind</th><th>cells</th><th>ruled by</th><th>faiths</th></tr>${SH.states.map((s) => `<tr><td>${sw(s.color || '#888')}${esc(s.name)}</td><td>${esc(s.tier)}</td><td class="n">${s.cells}</td><td>${esc(D.cname(s.ruler))}</td><td>${sharesHtml(s.faiths)}</td></tr>`).join('')}</table>`
+      : '<p class="muted">No states, empires or dragon realms rule now (or this run has no settlements).</p>';
+    const cu = Object.entries(D.gods.cultures).filter(([, c]) => c.faith_now != null && (c.shares || []).length > 1)
+      .map(([id, c]) => [id, c, c.shares.slice(1).reduce((a, r) => a + r[1], 0)]).sort((a, b) => b[2] - a[2]);
+    h += `<h3 style="margin-top:16px" ${rule}>Cultures with minorities <span class="muted" style="font-weight:normal">(${cu.length}, the largest minorities first)</span></h3>
+      <table class="t"><tr><th>culture</th><th>people</th><th>faiths</th></tr>${cu.slice(0, 150).map(([id, c]) => `<tr><td>${esc(c.name)}</td><td class="muted">${esc(L[c.people] || c.people)}</td><td>${sharesHtml(c.shares)}</td></tr>`).join('')}</table>`;
+    h += `<h3 style="margin-top:16px" ${rule}>Peoples</h3><table class="t"><tr><th>people</th><th>faiths</th></tr>${Object.entries(SH.peoples).map(([p, r]) => `<tr><td>${esc(L[p] || p)}</td><td>${sharesHtml(r)}</td></tr>`).join('')}</table>`;
+    main.innerHTML = h + `<p class="muted" style="max-width:900px">The rule (a judgement call, readout only): ${esc(SH.rule)}</p>`;
+  }
+
   // ---- 4. taboos ----
   function tabMount(bar) {
     const T = D.taboos;
@@ -244,7 +271,7 @@
     const fn = D.gods.cultures?.[st.culture]?.faith_now, cf = fn != null ? D.F[fn] : null;
     const at = D.gods.attitudes?.cultures?.[st.culture]?.now;  // (PW-904: [tolerance, aggression] now, 0..1)
     const atx = at ? `tolerance ${at[0].toFixed(2)}, aggression ${at[1].toFixed(2)} <span title="${esc(D.gods.attitudes.rule || '')}">(?)</span> · ` : '';
-    let h = `<h3>${esc(c.name)}</h3><p class="muted">${cf ? `faith: ${sw(cf.color)}${fname(cf)}${cf.missionary ? ' (missionary)' : ''} · ` : ''}${atx}tags:${esc((c.tags || []).join(', '))}</p><table class="t"><tr><th>kind</th><th>taboo</th><th>who</th><th>why</th><th>source</th></tr>`;
+    let h = `<h3>${esc(c.name)}</h3><p class="muted">${cf ? `faiths: ${sharesHtml(D.gods.cultures[st.culture].shares) || sw(cf.color) + fname(cf)}${cf.missionary ? ' (its faith is missionary)' : ''} · ` : ''}${atx}tags:${esc((c.tags || []).join(', '))}</p><table class="t"><tr><th>kind</th><th>taboo</th><th>who</th><th>why</th><th>source</th></tr>`;
     for (const t of c.taboos) h += `<tr><td>${esc(K[t.kind]?.name || t.kind)}</td><td>${esc(t.kind === 'food' ? 'not eaten: ' + t.label : t.label)}</td><td>${esc(t.scope)}</td><td class="muted" style="max-width:360px">${esc(t.why)}</td><td>${t.kind === 'food' ? '<span class="muted">taboos.py (food)</span>' : src(t.source)}</td></tr>`;
     h += '</table><h3 style="margin-top:16px">The catalogue: kinds across all living cultures</h3><table class="t"><tr><th>kind</th><th>what</th><th>cultures with one</th><th>rules</th><th>sources</th></tr>';
     const all = Object.values(T.cultures);
@@ -373,8 +400,8 @@
   }
   function setMode(m) { post({ gods_mode: m }).then(() => reload()).catch((e) => { st.err = `gods mode not saved: ${e.message}`; update(); }); }
 
-  const MOUNT = { trees: treesMount, map: mapMount, timeline: tlMount, taboos: tabMount, yours: yoursMount };
-  const DRAW = { trees: treesDraw, map: mapDraw, timeline: tlDraw, taboos: tabDraw, yours: yoursDraw };
+  const MOUNT = { trees: treesMount, map: mapMount, timeline: tlMount, minorities: minMount, taboos: tabMount, yours: yoursMount };
+  const DRAW = { trees: treesDraw, map: mapDraw, timeline: tlDraw, minorities: minDraw, taboos: tabDraw, yours: yoursDraw };
   function update() { if ($('rl-main')) DRAW[st.view]($('rl-main')); }
   function setView(v) { if (st.playing) { clearInterval(st.playing); st.playing = null; } st.view = v; mounted = ''; history.replaceState(null, '', `${location.search}#religion/${v}`); window.ReligionTab.draw(D.root, D.result); }
   window.ReligionTab = {
