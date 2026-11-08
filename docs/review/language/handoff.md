@@ -237,3 +237,35 @@ The in-memory doc is unchanged (/1 shape).
 1. Speed. The wall clock did not fall: steps are about 920 s at 12 workers. The next lever is the worker side (`rules._apply_one`, the Pattern memo dict, `dataclasses.replace`). Each interval forks a fresh Pool; a persistent pool would only save the fork, not the stepping.
 2. The scholars' horizon still fails (10.7 kyr against 6-10).
 3. The complexity tab of the demo reads today's L2, population and isolation. A per-snapshot `l2`/`pop` would let causes be dated.
+
+## Continuation (sound lane, 2026-11-08)
+
+**State.** Branch `lang-sound` (worktree `.claude/worktrees/lang-sound`). All work is committed: tasks 1-3 of the sound row in queue.md, plus the series-based draw from task 4. The helper branch `lang-sound-sc` is merged into it. Nothing is merged into lang-design or pushed. The defaults taken are in `for-daniel.md` "Sound lane".
+
+**New module.** `planet/language/phonology.py` holds the synchronic rule layer (architecture.md 5b). Its hooks:
+- `lect.Lect` fields `live`, `dead_rules` and `sandhi_drawn`;
+- `_apply_rule` calls `on_change`, and `step` calls `update`;
+- `inventory.realize` applies `apply_word`;
+- `sentences.View` gets `render_word` and `finish`;
+- `output.lect_json["phonology"]`.
+
+Readers use `phonology.rules_from_json`.
+
+**Still to do (task 4 and leftovers).**
+1. Tone evolution. Tonogenesis rules put contours on short vowels, so 5-tone systems are still the commonest living count. Tonemes are counted right in protos, but history inflates them. A tone-merger/simplification pressure is needed.
+2. Phonotactics re-check after history.
+3. Stress stored per form (now only the lect's pattern).
+4. Lexical diffusion.
+5. Grammar paradigm cells (`grammar.py`) do not run the live rules yet. Only realize and sentences do. That belongs to grammar A's file.
+6. `demo_page.py` IPA is not stress-marked yet.
+7. The scholars' horizon still fails. The overused-segments check: see below.
+
+**Checks on a24559** (pass D, scratch output; base = runs/a24559):
+- horizon (human): 12 kyr, FAIL (base 10.7, also FAIL);
+- overused segments: ɑ, lʲ, ɤ, ä, ɘ, FAIL (base PASS). Cause and next fix are in for-daniel.md "Sound lane";
+- every other check passes;
+- sisters 0.60 (base 0.55).
+
+**Worktrees.**
+- The helper branch `lang-sound-sc` is merged and deleted.
+- A duplicate helper's branch `worktree-agent-a394b320cf12664f2` was NOT merged. Its worktree is removed. It holds an alternative take on SC items 1-4 plus a draft on structural catalogue saturation. Delete it once nothing from it is wanted.

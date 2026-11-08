@@ -759,3 +759,23 @@ The full pass did not get faster on the wall clock. The non-human ease drag adds
 - p is rare overall because beaked and lipless mouths find labials dear (aarakocra labial cost 5, reptilian 4). In human lects p is 0.77 (PHOIBLE 0.85), so nothing was forced.
 
 **Sentences.** The templates now draw on the WOLD verbs (build, carve, bring, find, catch, sell, buy, dance, shout), kin terms (older brother, younger sibling), numbers (three, four), motion to a goal with the allative, and objects (boat, basket, pot). The English for the polar question now reads "Do you hear the thunder?".
+
+## Sound lane passes (2026-11-08, lang-sound; a24559, seed default, 10 workers, scratch output)
+
+| Pass | Code | human rules/kyr | horizon human (kyr) | sisters | overused segments | wall (s, machine load 60-130) |
+|---|---|---|---|---|---|---|
+| base | runs/a24559 (finish lane) | 14.6 | 10.7 FAIL | 0.55 | PASS | 1263 |
+| A | sound tasks 1 + 3 (series draw, tonemes, live rules) | 12.5 | 12.0 FAIL | 0.60 | i̠, tʷ, lʷ | 1716 |
+| B | + SC helper (line drift, one-offs, REFIRE_KYR 4, staged chains, S218-S225) | 10.1 | 17.0 FAIL | 0.62 | ɑ, lʲ, lʷ, tʷ, ä | 2395 |
+| C | B + S142/S221 weight 1, LANG_RATE_SCALE=7 | 11.4 | 13.5 FAIL | 0.61 | 9 segments | 1640 |
+| D | B + S142/S221/S068 weight 1, S221 before i only, PICK_REDRAWS 16 (committed) | 11.2 | 12.0 FAIL | 0.60 | ɑ, lʲ, ɤ, ä, ɘ | 2058 |
+
+Pass D also had:
+- living human lects with a series (PHOIBLE in brackets):
+  - prenasal 0.27 (0.13), labialized 0.26 (0.17), palatalized 0.35 (0.26);
+  - retroflex 0.56 (0.28), long vowels 0.49 (0.37), implosive 0.07 (0.12), aspirated 0.08 (0.19);
+- tonal 0.44, with tone counts 2/3/4/5/7 at 4/4/35/53/4%;
+- dragons with sub-bass 110/173;
+- live rules: 8.1 a lect (stem 2307, word 1718, phrase 798, phonetic 262), 46% with a worked example, 165 lects with tone sandhi.
+
+RATE_SCALE does not restore the rate on its own: from 5 to 7 moved the rate only from 10.1 to 11.4, because exhausted picks dominate. PICK_REDRAWS does better.
