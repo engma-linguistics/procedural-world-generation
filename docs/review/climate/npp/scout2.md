@@ -99,8 +99,26 @@ Reading it:
   raingreen tree too (TrBR, as lane 123 screened) shrinks savanna to 15.7 and has no tower LUE behind it; not done.
 - Land NPP 60.0 -> 61.9 Pg C/yr (MOD17 ~56): +3%, all in the tropics, where the model was low.
 
-## 5. Coupled-climate screen
-PENDING
+## 5. Coupled-climate screen (8 L6 draws, not the judge)
+The change moves every planet's rainforest, so it moves the run. The full 36-draw judge (72 runs, ~4-5 h at this
+scout's 8 cores) did not fit, so this is a small screen: v1-finish-16's `paired.sh`, tags l6fix + l6c_0 (8 draws), roll
+0.0005, 1 Gyr, THREADS 1, frozen code (main = e6cb463c, cand = 419d5055), outputs `exports/scout210/judge/`. Main's 8th
+draw (l6c_0 958504) was still running at the write-up, so the paired numbers are over 7 draws.
+
+| check | main | cand |
+|---|---|---|
+| hard: frozen over at the end / boiled / ocean loss / CO2 crash (`tools/hard_bar.py`) | 0/7 | **0/8** |
+| soft pass (`tools/judge.py paired`) | 5/7 | 7/7 (both 5, cand only 2, main only 0; McNemar p 0.5) |
+| learnt yardstick y, L6 (`tools/yardstick.py`; YARDSTICK 1.377) | 1.435 (se 0.059) | 1.430 (se 0.075) |
+
+Paired cand - main over the 7 (median, bootstrap 95% CI): late dT +0.90 C [-0.64, +3.42], end T +0.60 [-1.72, +5.23],
+late CO2 +0.18 [-0.07, +0.47], trees +2.5 pt [-1.3, +6.0], land rain +108 mm [-16, +132], arid +1.7 pt [-0.9, +3.7],
+**hot desert +2.0 pt [+0.7, +2.7]** (6 of 7 up, sign p 0.125). The only interval off zero is hot desert; on 7 draws
+with the sign test at 0.125 it is not a finding, but it is the measure to watch on the full judge. The yardstick does not
+move (1.430 against main's 1.435 on the same draws), so no re-fit is needed for this change.
+
+Not run: the 36-draw judge, `tools/earth_check.py` (the change touches no climate code; lane 181 found the Koppen
+check unchanged for KN), `tools/scorecard.py`.
 
 ## 6. Open
 - The full 36-draw paired judge (lane 181's way) before merging; plus `tools/yardstick.py` on the candidate arm (plant
