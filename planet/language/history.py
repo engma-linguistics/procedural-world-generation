@@ -182,7 +182,7 @@ class History:
         gram = None
         GR = LC._gr_mod()
         if GR is not None and hasattr(GR, "proto_grammar"):
-            gram = proto_grammar(GR, rng, lex, inv, prof, kyr, pid)
+            gram = proto_grammar(GR, rng, lex, inv, prof, kyr, pid, self.R.generation_yr(people))
             hf = head_first_of(GR, gram)
             if hf is not None:
                 lex.head_first = hf
@@ -1026,7 +1026,8 @@ def snapshot_full(snaps: list, upto: int | None = None) -> list:
 
 
 def typology_summary(g) -> dict:
-    """{order, adp, case, number, gender (typology values), n_case, n_number, n_class (live grams in those slots)}."""
+    """{order, adp, case, number, gender (typology values; gender as the pages label it, grammar.gender_label), n_case,
+    n_number, n_class (live grams in those slots)}."""
     if g is None:
         return {}
     from . import grammar as GR
@@ -1042,7 +1043,8 @@ def typology_summary(g) -> dict:
         if slot in n:
             n[slot] += 1
     return {"order": t.get("word_order"), "adp": t.get("adposition"), "case": t.get("case"), "number": t.get("number"),
-            "gender": t.get("gender"), "n_case": n["case"], "n_number": n["number"], "n_class": n["class"]}
+            "gender": GR.gender_label(t.get("gender"), (getattr(g, "processes", None) or {}).get("concord")),
+            "n_case": n["case"], "n_number": n["number"], "n_class": n["class"]}
 
 
 def change_generations(years: float, gen_yr: float) -> float:
@@ -1120,8 +1122,9 @@ MOUNTAIN_M = 1500.0
 COLD_LAT = 50.0
 
 
-def proto_grammar(GR, rng, lex, inv, prof, kyr, lid):
-    return GR.proto_grammar(rng, inv, lex, kyr=kyr)
+def proto_grammar(GR, rng, lex, inv, prof, kyr, lid, gen_yr=None):
+    deep = GR.deep_past_gens(gen_yr) if hasattr(GR, "deep_past_gens") else 0.0
+    return GR.proto_grammar(rng, inv, lex, kyr=kyr, deep_gens=deep) if deep else GR.proto_grammar(rng, inv, lex, kyr=kyr)
 
 
 def head_first_of(GR, gram):

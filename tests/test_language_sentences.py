@@ -605,3 +605,37 @@ def test_phase_d_sentences_and_notes():
         lj["processes"]["compare"] = kind
         lj["lexicon"]["SMALL"] = {"ipa": "kecil", "roman": "kecil", "pos": "A"}
         assert want in line(by_id(lj)["comparative"])[1], kind
+
+
+def test_rulings_class_labels_animate_fallback_and_own_sentence():
+    """Owner rulings 11-08 (PW-1538): a class marked on the noun with nothing agreeing is 'noun class marking (no
+    agreement)', not gender; an animate noun with no class of its own takes the person class before the inanimate
+    default; one per-lect sentence from the people's own life (faith, home, food); no 'rank' claim for politeness."""
+    from planet.language import grammar as GR
+    assert GR.gender_label("sex", []) == GR.GENDER_NO_AGREEMENT and GR.gender_label("sex", ["adj"]) == "sex"
+    assert GR.gender_label("none", ["adj"]) == "none"
+    assert GR.fallback_groups("animal")[0] == "person" and GR.fallback_groups("liquid") == GR.CLASS_FALLBACK
+    lj = lect(gender="classes")
+    lj["grams"] = [gram("CLASS:1", "mu", 2, "pre", "N"), gram("CLASS:2", "ki", 2, "pre", "N")]
+    lj["classes"] = {"kind": "classes", "classes": [[1, "person", "CLASS:1"], [2, "abstract", "CLASS:2"]]}
+    txt = next(n["text"] for n in SN.grammar_notes(lj) if n["topic"] == "Gender and noun classes")
+    assert GR.GENDER_NO_AGREEMENT in txt and "animals" in txt
+    assert by_id(lj)["transitive"]["w"][-1][1] == "CL1-dog"   # (the dog takes the person class, not the default)
+    lj["processes"] = {"concord": ["adj"]}
+    txt = next(n["text"] for n in SN.grammar_notes(lj) if n["topic"] == "Gender and noun classes")
+    assert GR.GENDER_NO_AGREEMENT not in txt
+    lj = lect()
+    lj["lexicon"]["WE"] = {"ipa": "kami", "roman": "kami", "pos": "FUNC"}
+    lj["lexicon"]["crop:millet"] = {"ipa": "dawa", "roman": "dawa", "pos": "N"}
+    own = by_id(lj).get("own")
+    assert own is not None and own["en"] == "We eat millet."
+    lj["home"] = "RIVER"
+    lj["lexicon"]["RIVER"] = {"ipa": "sunai", "roman": "sunai", "pos": "N"}
+    lj["lexicon"]["DWELL (LIVE, RESIDE)"] = {"ipa": "tingal", "roman": "tingal", "pos": "V"}
+    lj["lexicon"]["PRAY"] = {"ipa": "doa", "roman": "doa", "pos": "V"}
+    lj["lexicon"]["name:god:7"] = {"ipa": "lato", "roman": "lato", "pos": "NAME"}
+    ens = set()
+    for k in range(12):
+        lj["id"] = f"d{k}"
+        ens.add(by_id(lj)["own"]["en"])
+    assert ens == {"We eat millet.", "We live by the river.", "We pray to Lato."}

@@ -291,9 +291,9 @@ def parse_body(v, lid: str = "") -> dict:
 
 # voice (PW-1423, planet/language/profiles.py): how a people makes and hears speech sounds, a table of
 # `modality`, `articulators`, `make_cost` (percept key -> x the human cost, "inf" = cannot), `hear` (axis -> resolution),
-# `register`, `notes`, `sources`, `same_as_human`. Inherited from the first parent key by key like `body`; the language pass
+# `register`, `pitch_range`, `notes`, `sources`, `same_as_human`. Inherited from the first parent key by key like `body`; the language pass
 # merges it over planet/language/data/voice_profiles.toml (the spec wins). Only what a line gives is written back.
-VOICE_KEYS = ("modality", "articulators", "make_cost", "hear", "register", "notes", "sources", "same_as_human")
+VOICE_KEYS = ("modality", "articulators", "make_cost", "hear", "register", "pitch_range", "notes", "sources", "same_as_human")
 
 
 def parse_voice(v, lid: str = "") -> dict:

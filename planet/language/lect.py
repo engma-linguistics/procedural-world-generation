@@ -1044,7 +1044,10 @@ def grammar_step(GR, rng, lect: Lect, n: float, gctx: dict) -> None:
     before = PH.cell_parts(lect.grammar)
     GR.step(rng, lect.grammar, n, inv=lect.inventory, lexicon=lect.lexicon, l2_share=gctx["l2"],
             population=gctx["population"], isolation=gctx["isolation"], kyr=gctx["kyr"], drift_typology=True,
-            rate=getattr(lect, "rate", 1.0), lect=getattr(lect, "id", None))
+            rate=lect.rate_now(gctx["kyr"]) if hasattr(lect, "rate_now") else getattr(lect, "rate", 1.0),
+            lect=getattr(lect, "id", None),
+            lean=GR.leanings(getattr(lect, "gen_yr", None), getattr(lect.profile, "pitch_range", None))
+            if hasattr(GR, "leanings") else None)
     PH.apply_new_cells(lect.grammar, lect.inventory, before)   # (new cells join under the live rules: phonology.py)
 
 

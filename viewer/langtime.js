@@ -122,7 +122,7 @@
       const typ = snap.typ || {};
       const tl = [typ.order && `word order <b>${esc(typ.order)}</b>`, typ.adp && `${{ pre: 'prepositions', post: 'postpositions' }[typ.adp] || esc(typ.adp) + ' adpositions'}`,
         typ.case != null && `case: ${esc(typ.case)}${typ.n_case ? ` (${typ.n_case} live)` : ''}`, typ.number != null && `number: ${esc(typ.number)}${typ.n_number ? ` (${typ.n_number})` : ''}`,
-        typ.gender != null && `gender/class: ${esc(typ.gender)}${typ.n_class ? ` (${typ.n_class})` : ''}`].filter(Boolean).join(' · ');
+        typ.gender != null && `${/no agreement/.test(typ.gender) ? 'class' : 'gender/class'}: ${esc(typ.gender)}${typ.n_class ? ` (${typ.n_class})` : ''}`].filter(Boolean).join(' · ');
       // complexity over time
       const cx = cxChart(H, S.f);
       // the change log

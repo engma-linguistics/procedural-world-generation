@@ -535,8 +535,9 @@ def test_l2_share_varies():
     R = TinyRun()
     assert R.l2_share(0, 3) == 0.0  # (humans among humans only)
     v1, v2 = R.l2_share(1, 3), R.l2_share(2, 3)  # (human deme 1 and orc deme 2 share cells)
-    assert 0.0 < v1 <= I.L2_MAX and v1 == pytest.approx(I.L2_SHARED * 1.2 / 4)
-    assert v2 == pytest.approx(I.L2_SHARED * 1.2 / 4)
+    want = I.L2_MAX * (1.0 - math.exp(-I.L2_K * I.L2_SHARED * 1.2 / 4))
+    assert 0.0 < v1 < I.L2_MAX and v1 == pytest.approx(want)
+    assert v2 == pytest.approx(want)
 
 
 def test_root_families_in_the_document(result):
