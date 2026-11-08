@@ -57,13 +57,21 @@ GEN_YR_HUMAN = 27.7
 FREQ_SPREAD = 3.0
 RATE_BY_FREQ = {c: FREQ_SPREAD ** ((c - 1) / 4) for c in range(1, 6)}
 SWADESH_RETENTION_1KYR = 0.86
-BASE_REPLACE = 0.0026726   # per generation; re-solve with calibrate_base_replace() if the table or RATE_BY_FREQ change
+# (2026-11-07, round 5) A replacement draw that no source can fill keeps the old word (KEEP), so the hazard is the chance a
+# competitor arises, not the outcome. KEEP_COMPENSATION restores the calibrated outcome: Swadesh-100 retention 86% per
+# millennium with a contact lect (the driver's usual case; isolated-lect harness `retention` in calibration.md), measured
+# 0.115 replaced without it, 0.132 at x1.15, 0.150 at x1.24.
+KEEP_COMPENSATION = 1.2
+BASE_REPLACE = 0.0026726 * KEEP_COMPENSATION   # per generation; re-solve with calibrate_base_replace() (x KEEP_COMPENSATION) if the table or RATE_BY_FREQ change
 
 # Where a replacement comes from. A fresh root ("coin", origin unknown) keeps a real share: in attested histories a good
 # part of the basic vocabulary has no known etymology, and without it every new word is built from old ones and words
 # only grow. Only nouns compound (for the rest the compound share goes to the rest); borrow needs a contact lect, taboo a taboo
 # concept, shift a CLICS neighbour with a word.
-SOURCES = {"derive": 0.36, "compound": 0.22, "shift": 0.10, "renew": 0.12, "coin": 0.03, "borrow": 0.12, "taboo": 0.05}
+SOURCES = {"derive": 0.36, "compound": 0.22, "shift": 0.10, "renew": 0.06, "coin": 0.03, "borrow": 0.12, "taboo": 0.05}
+# (2026-11-07, round 5: renew 0.12 -> 0.06 and out of the fallback chain; a replacement no source can make is not made:
+# the old word lives on (KEEP). A hazard is the chance a competitor arises; with no productive way to make one, none
+# does. Coinage had reached 10.6% of replacements as the fallback of last resort against a design weight of 3%.)
 # (2026-11-04, word families round: coin 0.15 -> 0.03, shift 0.15 -> 0.10, "renew" (a word replaced by its own diminutive or frequentative,
 # RENEW_LITTLE / RENEW_INTENS) and the fallback chain derive > compound > shift > renew > borrow > coin. In
 # etymological dictionaries most "unknown origin" basic words turn out to be loans from unattested neighbours or obscured
@@ -151,7 +159,12 @@ OPAQUE_KYR = 3.0
 # 2026-11-04 (compounds and shifts round): tools, plants and kin terms too (Latin cultellus > French couteau 'knife',
 # martellus > marteau 'hammer', feniculum > fenouil 'fennel', aviolus > Spanish abuelo 'grandfather', avunculus 'uncle'
 # < avus), now that compounds come only from recipes and a noun with none would otherwise fall to a fresh root.
-RENEW_LITTLE = frozenset({"body", "animal", "nature", "quality", "tool", "plant", "kin"})
+# 2026-11-07 (round 5): back to the classes where the renewal is attested often (body parts, small animals, kin), since
+# 9% of all living words had become 'X + little' meaning X and one lect's diminutive stood on ear, eye, blood, new and
+# tooth at once. A renewal now counts against AFFIX_CAP like any derivation (its affix is as visible), and renewals with
+# one affix stop at RENEW_CAP of the words: Romance has a few dozen such words, not a tenth of the lexicon.
+RENEW_LITTLE = frozenset({"body", "animal", "kin"})
+RENEW_CAP = 0.02
 RENEW_INTENS = frozenset({"verb"})
 RENEW_WEIGHT = 1.0
 # Proto-languages grow from a root stock (PIE-style word families): a proto concept that derivations.tsv lets be built
@@ -413,7 +426,7 @@ def _core_concepts() -> tuple[Concept, ...]:
         g = r["gloss"]
         lists = frozenset(x for x in r["lists"].split(",") if x)
         sc = int(r["stability_class"] or 0) or 3
-        pos = "V" if g in _VERBS else "A" if g in _ADJS else "FUNC" if g in _FUNC else "N"
+        pos = r.get("pos") or ("V" if g in _VERBS else "A" if g in _ADJS else "FUNC" if g in _FUNC else "N")
         local = r["semantic_field"] in _LOCAL_FIELDS or g in _LOCAL_CORE
         taboo = r["semantic_field"] == "Animals" or g in _TABOO_CORE
         dom = "god" if g in GOD_DOMAIN_CONCEPT.values() else "core"
@@ -1230,19 +1243,31 @@ def is_renewal(st: EtymStep) -> bool:
 
 def affix_share(lex: Lexicon, meaning: str) -> float:
     """The share of the lexicon's words whose outermost word-formation step is the derivational affix for `meaning`
-    (renewals aside): the affix a word visibly ends or starts with. Cached per (generation, size) of the lexicon: within
+    (renewals included since 2026-11-07): the affix a word visibly ends or starts with. Cached per (generation, size) of the lexicon: within
     one batch of replacements the share is the batch's starting one."""
+    return _shares(lex)[0].get(meaning, 0.0)
+
+
+def renewal_share(lex: Lexicon, meaning: str) -> float:
+    """The share of the lexicon's words that are renewals with the affix for `meaning` (SUN + 'little' = 'sun')."""
+    return _shares(lex)[1].get(meaning, 0.0)
+
+
+def _shares(lex: Lexicon) -> tuple[dict, dict]:
     key = (lex.gen, len(lex.words))
     if lex.share_cache.get("key") != key:
         c: dict = {}
+        r: dict = {}
         for w in lex.words.values():
             st = _lexical_last(w)
-            if st is not None and st.process.startswith("derive:") and not is_renewal(st):
+            if st is not None and st.process.startswith("derive:"):
                 m = st.process[7:]
                 c[m] = c.get(m, 0) + 1
+                if is_renewal(st):
+                    r[m] = r.get(m, 0) + 1
         n = max(1, len(lex.words))
-        lex.share_cache = {"key": key, **{m: v / n for m, v in c.items()}}
-    return lex.share_cache.get(meaning, 0.0)
+        lex.share_cache = {"key": key, "all": {m: v / n for m, v in c.items()}, "renew": {m: v / n for m, v in r.items()}}
+    return lex.share_cache["all"], lex.share_cache["renew"]
 
 
 def _attach(lex: Lexicon, base: Form, meaning: str) -> Form:
@@ -1349,11 +1374,12 @@ def derive(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None
             continue
         if r.base != r.target and _worn(b, c.gloss):
             continue   # no round trips: a base once worn by this meaning (SING > SONG > SING, KNIFE > CUT > KNIFE)
-        if r.base != r.target:   # (a renewal keeps its root, so it fakes no cognates: no cap)
-            if r.relation not in share:
-                share[r.relation] = affix_share(lex, r.relation)
-            if share[r.relation] + 1.0 / max(1, len(lex.words)) > AFFIX_CAP:
-                continue
+        if r.relation not in share:
+            share[r.relation] = affix_share(lex, r.relation)
+        if share[r.relation] + 1.0 / max(1, len(lex.words)) > AFFIX_CAP:
+            continue
+        if r.base == r.target and renewal_share(lex, r.relation) + 1.0 / max(1, len(lex.words)) > RENEW_CAP:
+            continue
         aff, morph = word_layers(lex, b, kyr)
         if aff + 1 > MAX_AFFIXES or morph + 1 > MAX_MORPHEMES:
             continue
@@ -1768,7 +1794,7 @@ def _renew_affixes(rng, lex: Lexicon, inv, n_generations: float, kyr: float) -> 
 
 
 LONGER_RENEWAL = 2.0   # a homophone's replacement: derivation and compounding weights x this (lexical expansion)
-BORROW_FALLBACK = 0.5  # a replacement no word-building source could make is a loan with this chance when a contact
+BORROW_FALLBACK = 0.35  # (0.5 -> 0.35, 2026-11-07: with renewal out of the chain, 0.5 made 37% of replacements loans) a replacement no word-building source could make is a loan with this chance when a contact
                        # lect has the concept (else a fresh root): loans fill gaps, but not every gap
 DERIVE_TRIES = 3   # a derivation that clashes (homophone) or finds no base is retried this often with another base or affix
 
@@ -1788,13 +1814,16 @@ def _derive_tries(rng, lex: Lexicon, k: str, c: Concept, inv, kyr: float, lect_i
 
 
 def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, inv, kyr: float, lect_id: str,
-                  head_first, have: list, contact_words, profile) -> tuple[str, Word]:
+                  head_first, have: list, contact_words, profile, repair: bool = False) -> tuple[str, Word | None]:
     """The replacement for `k` from the drawn source, falling back to the next plausible one in the order derive
-    (DERIVE_TRIES bases), compound, colexification shift, a loan from a contact lect, and only then a fresh root: a
-    derivation the table has no fitting row for, or that would make a homophone, is not by itself a reason to coin.
+    (DERIVE_TRIES bases), compound, colexification shift, the word's own diminutive when it is a homophone being
+    repaired (`repair`, Gilliéron's abeille), a loan from a contact lect (BORROW_FALLBACK); a fresh root only when it was
+    the drawn source. When nothing can be made the old word lives on: returns ("keep", None).
     Returns (process actually used, word)."""
-    order = [src] + [x for x in ("derive", "compound", "shift", "renew") if x in opts and x != src]
-    order += (["borrow"] if have and "borrow" not in order and rng.random() < BORROW_FALLBACK else []) + ["coin"]
+    order = [src] + [x for x in ("derive", "compound", "shift") if x in opts and x != src]
+    if repair and "renew" in opts and "renew" not in order:   # (a homonymic clash is repaired by the word's own
+        order.append("renew")                                  # diminutive too: Latin apis > apicula > French abeille)
+    order += (["borrow"] if have and "borrow" not in order and rng.random() < BORROW_FALLBACK else [])
     for s in order:
         new = None
         if s == "borrow":
@@ -1826,7 +1855,7 @@ def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, i
                     break
         if new is not None:
             return s, new
-    raise AssertionError("coin always returns a word")
+    return "keep", None
 
 
 def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, Lexicon] | None = None,
@@ -1890,7 +1919,10 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
             w = np.array([opts[s] for s in names])
             src = names[int(rng.choice(len(names), p=w / w.sum()))]
             src, new = _replace_word(rng, lex, k, c, src, opts, inv, kyr, lect_id, head_first, have, contact_words,
-                                     profile)
+                                     profile, repair=k in boost)
+            if new is None:   # (no competitor could be made: the old word lives on)
+                lex.counts["keep"] = lex.counts.get("keep", 0) + 1
+                continue
             lex.set(new)
             lex.counts[src] = lex.counts.get(src, 0) + 1
             events.append((k, src))

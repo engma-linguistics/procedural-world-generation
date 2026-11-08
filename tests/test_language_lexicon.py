@@ -71,21 +71,23 @@ def test_proto_lexicon_shape(concepts):
 
 
 def test_calibration_constant():
-    assert abs(L.BASE_REPLACE / L.calibrate_base_replace() - 1) < 0.01
+    assert abs(L.BASE_REPLACE / (L.calibrate_base_replace() * L.KEEP_COMPENSATION) - 1) < 0.01
     assert L.RATE_BY_FREQ[5] / L.RATE_BY_FREQ[1] == pytest.approx(L.FREQ_SPREAD) and 3 <= L.FREQ_SPREAD <= 10
 
 
 def test_replacement_rate_matches_calibration(concepts):
-    """Swadesh-100 retention over 1000 simulated years at 27.7-yr generations is 86% (replacement 14% within 10%)."""
+    """Swadesh-100 retention over 1000 simulated years at 27.7-yr generations is 86% (replacement 14% within 10%), with a
+    contact lect as the driver usually has (a draw no source can fill keeps the old word: KEEP_COMPENSATION)."""
     n_gen = 1000 / GEN
     kept = total = 0
     by_class = collections.defaultdict(lambda: [0, 0])
     for seed in range(60):
         rng, inv, lex = _proto(100 + seed, concepts, f"L{seed}")
+        other = L.proto_lexicon(np.random.default_rng(900 + seed), inv, concepts, 20.0, "M")
         orig = dict(lex.words)
         # two 500-yr intervals, as the driver batches frame intervals
         for t in (20.0, 19.5):
-            L.step(rng, lex, n_gen / 2, inv, kyr=t)
+            L.step(rng, lex, n_gen / 2, inv, contact_words={"M": other}, kyr=t)
         for c in L.CORE100:
             same = lex.words[c].etym is orig[c].etym   # (roots may be re-read, `refresh_roots`)
             kept += same
@@ -155,7 +157,9 @@ def test_etymology_append_only_oldest_first(concepts):
     for p in ("derive", "compound", "shift", "borrow", "taboo", "elaborate"):
         assert events[p] > 0, (p, events)
     # (derivation and compounding about even: a derivation whose affix does not fit its base is refused, lexicon.affix_fits)
-    assert min(events["derive"], events["compound"]) > events["taboo"] and events["derive"] > events["borrow"] > events["taboo"]
+    # (with a contact lect that has every word, loans run about even with derivations since 2026-11-07: a draw nothing
+    # else can fill is borrowed with BORROW_FALLBACK or kept, no longer coined)
+    assert min(events["derive"], events["compound"]) > events["taboo"] and events["derive"] + events["compound"] > events["borrow"] > events["taboo"]
     assert events["coin"] > 0
     assert "MILK (SOURED)" in lex and "FISH (SEA)" in lex
 
@@ -279,7 +283,9 @@ def test_homophone_share_low(long_runs):
     between draws, not accidental mergers; 2026-11-04: 10% -> 12% with the shift fallback of the word-families round,
     which turns would-be coinages into CLICS-attested polysemies)."""
     sh = [L.stats(lex)["homophone_share"] for lex in long_runs]
-    assert sum(sh) / len(sh) < 0.12 and max(sh) < 0.14, sh
+    # (2026-11-07: 0.12 / 0.14 -> 0.16 / 0.18: a homophone no source can renew keeps its form instead of a fresh root;
+    # colexifications such as TREE / WOOD are 10-15% of a basic list in real languages too)
+    assert sum(sh) / len(sh) < 0.16 and max(sh) < 0.18, sh
     for lex in long_runs:
         assert all(len(v) <= 3 for v in lex.homophones().values())
 
@@ -488,9 +494,11 @@ def test_coinage_does_not_swamp_derivation(long_runs):
             # affix in their history too)
             assert L.affix_share(lex, m) <= L.AFFIX_CAP + 0.04, (m, L.affix_share(lex, m))
     n = sum(tot.values())
-    assert 0.0 < tot["coin"] / n < 0.12, tot
+    n -= tot["keep"]   # (draws no source could fill: the old word lives on)
+    assert 0.0 < tot["coin"] / n < 0.06, tot   # (2026-11-07: only a drawn fresh root, about SOURCES["coin"])
     assert tot["borrow"] / n < 0.35, tot   # (loans fill gaps, not every gap: BORROW_FALLBACK)
-    assert tot["derive"] + tot["renew"] + tot["compound"] + tot["shift"] > 3 * tot["coin"], tot
+    assert tot["derive"] + tot["renew"] + tot["compound"] + tot["shift"] > 6 * tot["coin"], tot
+    assert tot["renew"] / n < 0.06, tot
 
 
 def test_derive_retry_avoids_homophone(concepts):
@@ -628,7 +636,8 @@ def test_derivation_table_is_sound():
     assert L.affix_fits("agent", "HUNTER", "HUNT") and L.affix_fits("little", "STREAM", "RIVER")
     assert L.affix_fits("place", "BED", "SLEEP") and L.affix_fits("thing", "KNIFE", "CUT")
     assert L.affix_fits("like", "RED", "BLOOD") and L.affix_fits("do", "SALT (FOOD)", "SALT")
-    assert L.affix_fits("cause", "KILL", "DIE") and L.affix_fits("little", "SUN", "SUN")   # (the diminutive renewal)
+    assert L.affix_fits("cause", "KILL", "DIE") and L.affix_fits("little", "EAR", "EAR")   # (the diminutive renewal)
+    assert not L.affix_fits("little", "SUN", "SUN")   # (2026-11-07: body parts, small animals and kin only)
     assert not L.affix_fits("agent", "MALE PERSON", "CARRY") and not L.affix_fits("do", "CARRY", "VOMIT")
     assert not L.affix_fits("agent", "HUNTER", "WITH") and not L.affix_fits("thing", "DAY (NOT NIGHT)", "THINK")
 
