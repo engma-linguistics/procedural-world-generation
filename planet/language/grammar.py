@@ -50,7 +50,11 @@ RECRUIT = 0.025        # new periphrasis per generation, before social factors (
                        # from 0.015 after run a24559 (median 2 live grams): over 700 generations with the driver's sound
                        # change, 30 human lects hold a median 5 live grams at l2 0.5 / 160k speakers, 7.5 at l2 0.3, 12 at
                        # l2 0.1 / 20k speakers
-FUSE = 0.012           # one step down the ladder per generation for an average gram (~80 gens ~ 2 kyr per step)
+FUSE = 0.02            # one step down the ladder per generation for an average gram (~50 gens ~ 1.4 kyr per step).
+                       # Synthesis lane (2026-11-08): raised from 0.012 with the L2 damping of fusion made linear and
+                       # adult-learner stripping cubed (`social_factors`); 58% of living lects bound 0-1 verb categories
+                       # against WALS 22A's ~3%, because grams were recruited but stayed free or were stripped in the
+                       # median lect (adult-L2 proxy 0.54, 31% at the 0.7 ceiling). calibration.md "Synthesis lane"
 FUSE_LEVEL = (1.0, 0.7, 0.06)   # multiplier for 0->1, 1->2, 2->3 (binding is fast; true fusion with the stem is slow)
 AGE_SCALE = 200.0      # generations; fusion hazard x (1 + age/AGE_SCALE), capped at AGE_CAP
 AGE_CAP = 2.0
@@ -66,7 +70,10 @@ KEEP = {"Q": 0.25, "DIST": 0.25, "RECPST": 0.4, "REMPST": 0.4}
 ABANDON = 0.0005       # an optional periphrasis (level 0-1) falls out of use; x4 when the typology no longer wants it
                        # (0.002 abandoned 44% of new periphrases before they bound when L2 learners slow fusion; now ~16%)
 LOSS = 0.002          # a fused gram (level 3) is lost outright
-L2_STRIP = 0.012       # bound gram (level >= 2) dropped by adult learners, x l2_share^2
+L2_STRIP = 0.008       # bound gram (level >= 2) dropped by adult learners, x l2_share^3 (was 0.012 x l2^2: at the
+                       # proxy's 0.7 ceiling a bound gram then lived ~170 generations, so a third of lects shed every
+                       # affix as fast as it formed for 20 kyr; real contact simplification is strongest where adult
+                       # learners are the majority, Trudgill 2011, so the cube keeps it there: 0.0027/gen at 0.7, 0.001 at 0.5)
 ANALOGY = 0.003        # one irregular cell levelled per generation (high-frequency exemplars: half-life ~ 230 gens)
 CLASS_GROW = 0.5       # chance a fusing class marker recruits a further class
 PRESSURE = 0.03        # per generation (x social recruit factor), for each category the aims mark and no live gram
@@ -2123,9 +2130,11 @@ def social_factors(l2_share: float, population: float | None, isolation: float) 
     iso = float(np.clip(isolation, 0.0, 1.0))
     return {
         "recruit": (1.0 - l2) * (1.0 + 0.4 * sg) * (0.8 + 0.4 * iso),
-        "fuse": (1.0 - l2) ** 2 * (1.0 + 0.3 * sg) * (0.6 + 0.8 * iso),
+        # (fusion falls linearly with the adult-L2 share, as recruitment does; it was (1 - l2)^2, x0.09 at the proxy's 0.7
+        # ceiling, so grams in contact lects never bound: synthesis lane 2026-11-08)
+        "fuse": (1.0 - l2) * (1.0 + 0.3 * sg) * (0.6 + 0.8 * iso),
         "loss": (1.0 + 4.0 * l2) * (1.0 - 0.3 * sg) * (1.2 - 0.4 * iso),
-        "strip": l2 ** 2,
+        "strip": l2 ** 3,
         "analogy": (1.0 + 2.0 * l2) * (1.0 - 0.3 * sg),
         "large": max(0.0, -sg),   # (0 up to ~10^4 speakers, 1 from ~10^6: state-sized societies; politeness, phase D)
     }

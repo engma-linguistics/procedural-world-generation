@@ -3,7 +3,7 @@
 Everything here has a working default in the code already. Nothing is blocked; change any of them in one place.
 
 ## Decisions (defaults taken)
-1. **Synthesis level** (how affix-heavy languages are). Grammar A measured it: 58% of our lects mark 0-1 verb categories with affixes, against about 3% in WALS 22A, so ours are far more isolating than real languages. Default: unchanged until grammar B adds mood and it's measured again. Then raise `FUSE` (0.012 to about 0.02) if it's still over about 25%. Details in the Grammar phase A section.
+1. **Synthesis level** (how affix-heavy languages are). Done by the synthesis lane (your ruling 11-08): 0-1 bound verb categories fell from 58% to 29% of living lects, 10% for short-lived peoples; dragons and other long-lived peoples stay isolating (a draft asks you). See "Synthesis lane" at the end.
 2. **Species leanings in grammar** (like kenku → tone): the lane's guessed table, marked as guesses.
 3. **Letters for non-human sounds** in book spellings (the purr vs trill rr): names lane's guess.
 4. **Merger veto / homophony; spread of change rates between lects:** current settings kept.
@@ -803,3 +803,53 @@ All 14 checks as before: 13 pass; the horizon check still fails (target 6-10 kyr
 passes on its own (bootstrap noise, calibration.md), so neither reading is a regression I can pin on the repair.
 Demo: `scratchpad/polish/languages-demo.html` (12 languages, 8.4 MB) and `languages-demo-stripped.html`. The fable now
 uses the triton proto-language, last spoken about 6,000 years ago, with 4 daughters ('bird' betʰi > bitʰi, biɾ, pini).
+
+## Synthesis lane (lang-synth, 2026-11-08)
+
+Your ruling: "The heavy affix use [problem] does [concern me]. Let's make the change you have in mind and see what
+happens."
+
+**What was wrong.** Not too few grams: every language recruits 4-5 verb categories (tense, aspect, mood, negation,
+voice, person ...). They stayed free words, or adult learners stripped them as fast as they bound. Both effects scaled
+with the adult-learner share, which is a co-presence estimate with a median of 0.54 and a third of living languages at
+its 0.7 cap. Fusion was multiplied by (1 - share)^2 (x0.21 at 0.54, x0.09 at 0.7), and stripping by share^2: at 0.7 a
+bound marker was stripped four times faster than a clitic became an affix. In the 0.7 band, 91% of languages had 0-1
+bound categories; in the low-share band, 25%.
+
+**What changed** (`grammar.py`, three numbers):
+- `FUSE` 0.012 -> 0.02 per generation (your phase A/C lever);
+- the learner damping of fusion is linear, (1 - share), like recruitment, instead of squared;
+- learner stripping is 0.008 x share^3 (was 0.012 x share^2): strong only where learners are the majority (0.0027 per
+  generation at 0.7, 0.001 at 0.5).
+
+The damping was the larger lever: in the isolated-language harness the FUSE rise alone moved the 0-1 bin 14 points, the
+linear damping alone 26 (full grid in calibration.md, "Synthesis lane").
+
+**Numbers** (WALS 22A bins 0-1 / 2-3 / 4-5 / 6-7 / 8+; WALS about 3 / 17 / 36 / 21 / 23%):
+
+| | before | after |
+| --- | --- | --- |
+| harness (240 isolated languages, learner shares drawn as in the full pass) | 44 / 26 / 21 / 9 / 0 | 7 / 39 / 42 / 12 / 0 |
+| full pass, all living languages | 58 / 26 / 13 / 4 / 0 | **29 / 34 / 29 / 9 / 0** |
+| full pass, peoples with generations under 60 years | 43 / 36 / 17 / 4 / 0 | **10 / 41 / 37 / 11 / 0** |
+| full pass, human languages | 52 / 35 / 13 / 0 / 0 | 19 / 40 / 35 / 6 / 0 |
+| full pass, generations of 150+ years (dragons ...) | 97 / 3 / 0 / 0 / 0 | 93 / 6 / 1 / 0 / 0 |
+
+Before = the same grammar code on today's base (sound pass 3's pass I; the polish pass reads the same within two points).
+
+Checks (full pass): all pass except the scholars' horizon as before: window read 10.67 kyr, `human_logistic` 13.22
+(before: 4.77 / 12.72). Hubs simpler: hub 8.35 vs isolated 10.56 (before 4.11 vs 7.31; still clearly ordered, the gap
+narrows because contact languages now bind too). Typology agrees with the grams: 0 clashes. Complexity over time:
+482 living languages grew more complex over their recorded span and 41 grew simpler (before: 437 and 35),
+so both directions still show. Gram ladder: bound grams 26% -> 53% of live grams, fused (stem-changing) 15% of bound
+ones (before 13%): no slide into unreadable stems.
+
+**Left for you (two drafts).**
+- *Long-lived peoples stay isolating* (93%): grammar changes count per generation, as sound changes do, so a people with
+  200-year generations gets under 100 generations in 20 kyr. Maybe a world fact; or their proto-languages could start
+  with a richer grammar so slowness keeps inflection rather than preventing it.
+- *The learner share is an estimate that sits at its cap for a third of languages.* The softer response fixed the
+  synthesis numbers, but the estimate itself still makes ordinary border languages look like trade hubs.
+- The 8+ bin cannot fill: we count at most 7 categories (10 if evidential, voice and switch-reference are counted apart,
+  as WALS does; on that count 28 / 30 / 28 / 12 / 2%). Not drafted: it closes only when grammar grows more verb
+  categories.
