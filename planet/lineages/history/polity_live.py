@@ -61,7 +61,7 @@ NEED_X = 4.0  # cost (lane 201b): on an expedition's miss, how far the history l
 # away"), in multiples of the largest budget tried; past it the why-not says "more than N km". The read-out (derive) still looks without limit
 SUBJECT_SHARE = PO.SUBJECT_SHARE
 SEDENTARY_MIN = 1.0  # (heads: a cell with fewer sedentary heads is not settled land a dragon can take tribute from)
-REVOLT = False  # switch (PW-1513, desk D67 option B; off until Daniel rules): a people that submitted to a ruler and later rises against
+REVOLT = True  # switch (PW-1513, desk D67 B, Daniel 11-08: on, 'as long as the rulers haven't softened': the fate is read from the winner's attitudes at the retaking, so a ruler grown tolerant keeps them): a people that submitted to a ruler and later rises against
 # it (seats a polity of its own on land that ruler held last step, while that ruler still stands) has broken its terms: when the same
 # ruler next takes land it lives on, it may not submit again and meets the fate the winner's attitudes then give it (Herat, 1222).
 # No new number: the trigger is the polities' own seats and claims, the fate is _fates' own. Off: output byte-identical to before

@@ -3791,6 +3791,7 @@ def test_expelled_peoples_move_to_their_nearest_free_land_and_a_martial_winner_r
     f, b, a = run((0.5, 0.3))
     assert f[0] == "thinned" and f[1] > 0 and f[2] == 0
     R.att.x[kb] = np.array([0.5, 0.2])  # (a less warlike people submits and is kept, even by a martial, intolerant winner)
+    monkeypatch.setattr(PL, "REVOLT", False)
     f, b, a = run((0.1, 0.6))
     assert f == ["submitted", 0, 0] and a == b and np.array_equal(h.p[kb], p0)
     assert R.submissions == [] and R.revolts == []  # (REVOLT off: nothing kept)
