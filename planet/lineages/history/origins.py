@@ -300,7 +300,11 @@ class OriginsMixin:
         P = self.p[pk] > EST
         if not P.any():  # (PW-1184: near the parent's last land, not at the best habitat anywhere)
             last = self._last_held.get(pk)
-            return self._origin_fallback(line, step, env, tags, K, "parent gone: near its last land", last)
+            par = self.tree.lines[line.parents[0]]
+            why = "parent gone: near its last land"
+            if line.marine and not par.marine:  # (by design, not a fallback: a sea child never holds a land stem's end back, PW-779)
+                why = "by its land stem's last land (a sea people; the stem ended before it)"
+            return self._origin_fallback(line, step, env, tags, K, why, last)
         if self.tree.lines[line.parents[0]].megafauna and not line.megafauna:
             return self._origin_off_megafauna(line, step, env, tags, K, noise, P)
         lab, n = g.components(P)
@@ -346,8 +350,16 @@ class OriginsMixin:
         # (owner 10-30 and D20, PW-1152, PW-1181: a new people emerges at one spot and spreads from there; it takes neither the cut-off
         # part of the parent's range it arises in nor patches across it, so a split of a worldwide stem, the kobolds of the dragons, starts
         # as one people of one country)
-        self.p[pk][blob & P] = 0.0
+        self._take(pk, blob, P)
         return cell, why
+
+    def _take(self, pk, blob, P):
+        """A daughter takes the stem's land under its founding blob (D20). Where that is the last of it, the stem's land is kept as its
+        last land (lane 228, PW-1184): a sibling due at the same step then arises by it, not at the best habitat anywhere. (The stem's
+        own refuge, _hold_out, still searches the whole world when it holds nothing: see docs/review/peoples/origins-spread.md.)"""
+        if not (P & ~blob).any():
+            self._last_held[pk] = P.copy()
+        self.p[pk][blob & P] = 0.0
 
     def _origin_off_megafauna(self, line, step, env, tags, K, noise, P):
         """A people split from a megafauna stem (lane 83b: the kobolds and the dragonborn of the dragons). The stem is a handful of
@@ -374,7 +386,7 @@ class OriginsMixin:
         cell = int(np.argmax(score))
         r = max(2, int(round(FOUNDER_KM / self.cell_km)))
         blob, _ = self._found_spread(line, k, cell, score, K, K > EST, r, env)  # (a few sites over its own country, D27)
-        self.p[pk][blob & P] = 0.0
+        self._take(pk, blob, P)
         return cell, "where its own country lies, within the stem's range (a people of a megafauna stem)"
 
     def _origin_hybrid(self, line, K, noise):
