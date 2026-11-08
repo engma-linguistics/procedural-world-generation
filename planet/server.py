@@ -24,7 +24,7 @@
   GET    /api/faithmap?run=<id>&frame=<f>[&w=1024][&only=<faith>]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
   GET    /api/polities?run=<id>[&ago=<kyr>]   who rules where (lineages/polities.py, PW-1431): the polities and per-step counts; with ago, the nearest century step's map
   GET    /api/techspread?run=<id>[&tech=writing]   how fast one tech spread (lineages/techspread.py): who knew it when and how, the share of settled people over time
-  GET    /api/trade?run=<id>[&culture=<id>]   the goods ledger (lineages/trade.py, PW-1502): per way of life, or one culture's surplus and lacks per era
+  GET    /api/trade?run=<id>[&culture=<id>]   the goods ledger (lineages/trade.py, PW-1502): per way of life, or one culture's surplus and lacks per era; &flows=1: where its goods come from and go (trade_flow.py, PW-1503)
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -503,10 +503,39 @@ def trade_doc(d: Path) -> dict:
         return _trade_cache[key]
 
 
+_trade_flow_cache: dict = {}  # (run id, run.json mtime, versions, authored keys) -> exchange doc
+_trade_flow_lock = threading.Lock()
+
+
+def trade_flow_doc(d: Path) -> dict:
+    """A run's exchange (lineages/trade_flow.py, PW-1503): goods moving between neighbours, read after the run from the goods ledger, the
+    world's rivers and coasts, the techs, the polities' wars (polities_doc) and the cultures' tolerance (the gods doc's attitudes); a
+    minute or two at L7 the first time, kept in memory and on disk under <data root>/.godscache, never in the run folder."""
+    from .lineages import trade as TR
+    from .lineages import trade_flow as TF
+    key = (d.name, (d / "run.json").stat().st_mtime, TF.VERSION, TR.VERSION, _authored_key(d, "invasions"), _authored_key(d))
+    with _trade_flow_lock:
+        if key not in _trade_flow_cache:
+            def make():
+                try:
+                    pol = polities_doc(d)
+                except Exception:  # (a run without settlements has no polities: no border is closed by war)
+                    pol = None
+                try:
+                    att = gods_doc(d).get("attitudes")
+                except Exception:
+                    att = None
+                return TF.derive(d, pol=pol, att=att)
+            _trade_flow_cache.clear()
+            _trade_flow_cache[key] = disk_cached("tradeflow", d, key, make)
+        return _trade_flow_cache[key]
+
+
 def trade(query: str) -> tuple[dict, int]:
-    """GET /api/trade?run=<id>[&culture=<id>]: a peoples run's goods ledger (lineages/trade.py, PW-1502). Without culture: per way of life,
-    the goods most often in surplus and lacking, and the frames; with culture: that culture's surplus and lacks at each frame of the
-    land-use window (the last ~12.5 kyr), its "has / lacks" line, and what every good is made from."""
+    """GET /api/trade?run=<id>[&culture=<id>[&flows=1]]: a peoples run's goods ledger (lineages/trade.py, PW-1502). Without culture: per way
+    of life, the goods most often in surplus and lacking, and the frames; with culture: that culture's surplus and lacks at each frame of the
+    land-use window (the last ~12.5 kyr), its "has / lacks" line, and what every good is made from; with flows=1 instead: per frame where
+    each good it lacks comes from, where each good it spares goes, and its trading partners (lineages/trade_flow.py, PW-1503)."""
     q = dict(parse_qsl(query))
     try:
         from .lineages import trade as TR
@@ -519,6 +548,14 @@ def trade(query: str) -> tuple[dict, int]:
         if not meta.get("eraq") or not meta.get("world"):
             raise ValueError("this run has no land-use window or no world (made before PW-742): no goods ledger")
         doc = trade_doc(d)
+        if q.get("culture") not in (None, "") and q.get("flows"):
+            from .lineages import trade_flow as TF
+            c = int(q["culture"])
+            if not 0 <= c < len(doc["cultures"]):
+                raise ValueError(f"no culture {c} in this run")
+            fd = trade_flow_doc(d)
+            return {"culture": c, "rows": TF.culture_view(fd, c, doc["cultures"]), "constants": fd["constants"], "seconds": fd["seconds"],
+                    "had_polities": fd["had_polities"], "had_attitudes": fd["had_attitudes"]}, 200
         if q.get("culture") not in (None, ""):
             return TR.culture_view(doc, int(q["culture"])), 200
         return TR.summary(doc), 200

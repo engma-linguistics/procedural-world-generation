@@ -2,7 +2,7 @@
 id: PW-1507
 title: "Trade: which giant kinds trade and which take tribute (the ledger uses a placeholder: a way of life of their own means trade)"
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -35,6 +35,7 @@ Trade-offs:
 **My lean: B, as a trait on each giant kind**, because the ruling says "depending on the kind". It matters only for step 2.
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 213: lean B taken as trade.GIANT_MODE (a mode per giant kind, set by hand in trade.py rather than the trees so existing runs read it): hill, stone, cloud, storm giants trade; frost, fire giants take tribute (a judgement, docs/review/culture/trade/step2.md).
 - 2026-11-08: Status needs-decision -> todo. Coordinator: Daniel's D65 said giants tribute and/or trade 'depending on the type'; take the lane's lean (a hand-set trait per giant kind) in step 2.
 - 2026-11-08: Created from inbox draft draft-trade-giant-kinds-trade-or-tribute.md (found by lane 212).
 - 2026-11-07: Drafted by lane 212.
