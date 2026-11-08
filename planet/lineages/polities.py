@@ -44,7 +44,7 @@ The one rule of a step (step()):
      over plain war; the doc's "invasions" reads each row out (it happened: what was taken, when, how much land; or why not).
      A strong row also reaches (PW-1450, owner D50; invasions.REACH_RULE): if its invaders rule only chiefdoms, the largest that stood
      last century rules as a state in the window (a war band, _war_bands, before the claims); if no state of theirs borders the
-     victims, the nearest sends an expedition (_expedition) across unruled land within its own reach x its people's mobility
+     victims, the nearest sends an expedition (_expedition) across unruled land within its campaign budget (invasions.campaign_budget: 1,000 km or its own radius, the larger) x its people's mobility
      (invasions.mobility: nomads and pastoral nomads x2, from the model's own spec.TRAITS and spec.WAY_MOBILE; a mobile people may
      also ride through a third polity's land), claims that corridor for the century and attacks the first polity of the victims it
      meets. Plain war never uses an expedition's pair, and a doc with no rows is unchanged.
@@ -869,7 +869,8 @@ def _war_bands(R: _Run, seats: list, rows: list, ago: float, prev_cap: dict, ope
 
 def _expedition(R: _Run, F: dict, ruling: list, owner: np.ndarray, st: list, vic: set, ago: float, wide: set, off, idx, need_x=None):
     """D50 B and the mobile peoples (PW-1450): of the invaders' states `st`, the one whose expedition reaches a victim polity for the
-    least share of its budget (invasions.campaign_budget: its own reach, _reach, or CAMPAIGN_KM, x its people's mobility). Returns (the war_v0 hook's
+    least share of its budget (invasions.campaign_budget: CAMPAIGN_KM or the state's own radius, the larger, x its people's mobility; _reach
+    gives the cost of a land and a sea km). Returns (the war_v0 hook's
     (winner, loser, corridor cells, foot-km, km, mobility) or None, the largest budget tried in foot-km, whether any was mobile, and on a
     miss how far the nearest victim polity lay in foot-km, the read-out's "why not"). `need_x` bounds that last search: None (the
     read-out, once after the run) searches without limit; a number (the history, every century) searches only need_x budgets out
@@ -879,11 +880,11 @@ def _expedition(R: _Run, F: dict, ruling: list, owner: np.ndarray, st: list, vic
     tried = []
     for p in st:
         s = ruling[p]
-        b, lx, sx = _reach(R, s, ago, s["key"] in wide)
+        _b, lx, sx = _reach(R, s, ago, s["key"] in wide)
         mob = IV.mobility(R.lines[R.lidx[s["people"]]] if s["people"] in R.lidx else None)
-        bud = IV.campaign_budget(b, mob)
-        top, mobile = max(top, bud), mobile or mob > 1.0
         seeds = np.flatnonzero(owner == p)
+        bud = IV.campaign_budget(len(seeds) * R.cell_km2, mob)
+        top, mobile = max(top, bud), mobile or mob > 1.0
         tried.append((seeds, bud, lx, sx, mob > 1.0, p))
         got = IV.expedition(seeds, bud, lx, sx, mob > 1.0, owner, p, vic, off, idx, R.ekm, F["edz"], F["sea"], F["ice"], CLIMB_M)
         if got is not None and (best is None or got[2] / bud < best[0]):

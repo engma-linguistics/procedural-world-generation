@@ -2,7 +2,7 @@
 id: PW-1487
 title: With live attitudes, the history's conquerors are almost never harsh (no razing winner on seeds 7 or 10)
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -45,5 +45,6 @@ Lean: C, with A's TOL_X. It gives the razing conqueror a cause in the model, ins
 - [ ] Daniel picks; then re-measure the fates by winner on seeds 7 and 10 (round10/measure.py)
 
 ## Updates
+- 2026-11-07: Status todo -> done. Lane 204 (round11.md): aggression raises harshness, gated by intolerance: harshness = enmity + TOL_X(0.5 - tol) + TOL_X(agg - AGG_HARSH 0.3)(1 - tol) (polity_live.harshness; reuses TOL_X; a plain winner unchanged). Against main 330b021b, switch on, world 899985, seeds 7/10/3: intolerant martial winners expelled 48 of 56 on seed 10 (main 0 of 9) and kept 0 of 15 on seed 3 (main 7 of 8); tolerant winners kept 99/94/92% (main 98/99/97%). Seed 7 had no intolerant martial winner on either side.
 - 2026-11-07: Status needs-decision -> todo. Daniel 11-07: D59 C. Let aggression make conquest harsher too, not just more frequent; a martial, intolerant winner expels or razes in any era.
 - 2026-11-05: Created from inbox draft draft-live-conquerors-rarely-harsh.md (found by lane201b).

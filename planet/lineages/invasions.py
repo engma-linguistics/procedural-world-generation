@@ -22,7 +22,7 @@ import math
 
 import numpy as np
 
-VERSION = 2  # (bump when what a row does changes: the server's cached polities docs with rows are remade; polities.VERSION keys the rest)
+VERSION = 3  # (bump when what a row does changes: the server's cached polities docs with rows are remade; polities.VERSION keys the rest)
 MAX_ROWS = 40  # (a sane cap per run)
 STRENGTHS = ("light", "strong")
 FROM_KM = 1000.0  # judgement: "from where" holds when the invading state has land within 1,000 km of the place picked (a state's reach is
@@ -34,18 +34,25 @@ WAR_BAND = True  # (C) a strong row whose invaders rule only chiefdoms seats a s
 EXPEDITION = True  # (B) a strong row whose invaders' states border no victim polity sends the nearest one across the gap
 FOREIGN_X = 2.0  # judgement: a km through a third people's polity costs a mobile people twice an open km (riding round its towns);
 # a settled people's expedition crosses only unruled land (and sea, with boats), as D50's B reads
-CAMPAIGN_KM = None  # OPEN (PW-1478, desk D56): an expedition's budget in foot-km before mobility. None: the state's own reach again
-# (option A, now); a number (D56's lean B: 1000.0) is a fixed campaign range. The one place both paths read it (campaign_budget):
+CAMPAIGN_KM = 1000.0  # owner D56 B (PW-1478, 2026-11-07): an expedition's budget in foot-km before mobility, at least "from that part of
+# the continent" (FROM_KM's range), whatever the state's size; x2 for nomads and pastoral nomads (mobility)
+EXTENT_X = 1.0  # sourced (PW-1478, D56's "Rome campaigned far too"): a large state campaigns beyond its land as far as its own radius
+# (sqrt(area / pi)). Rome at its peak, AD 117: 5.0 million km2 (Taagepera 1979, Social Science History 3(3/4) 115-138, via Wikipedia's
+# List of largest empires), radius ~1,260 km; that year's campaign went from the Euphrates crossing at Zeugma (37.06 N, 37.87 E) to the
+# Persian Gulf at Charax Spasinu (30.89 N, 47.58 E; Wikipedia, Trajan's Parthian campaign: Trajan "sailed downriver to the Persian
+# Gulf", 116), ~1,130 km great-circle: 0.9 of its radius. The organisation is in the size (an empire got large by ruling at a distance:
+# polities.WIDE_BY), and roads and riding already make each km cheaper (polities.ROAD_X, RIDE_X). Both paths read campaign_budget:
 # the read-out (polities.derive) and the polities inside the history (history.polity_live)
 
 
-def campaign_budget(reach: float, mob: float) -> float:
-    """An expedition's budget in foot-km: the state's own reach (or CAMPAIGN_KM, PW-1478) x its people's mobility (mobility)."""
-    return (reach if CAMPAIGN_KM is None else float(CAMPAIGN_KM)) * mob
+def campaign_budget(area_km2: float, mob: float) -> float:
+    """An expedition's budget in foot-km (PW-1478, D56 B plus Rome): the larger of CAMPAIGN_KM and EXTENT_X x the state's own radius
+    (sqrt(area / pi), its land in km2), x its people's mobility (mobility: x2 nomads and pastoral nomads)."""
+    return max(float(CAMPAIGN_KM), EXTENT_X * math.sqrt(max(0.0, float(area_km2)) / math.pi)) * mob
 
 
 def mobility(line: dict | None) -> float:
-    """How far a people's expedition reaches, as a multiple of its state's own reach: the model's own mobility numbers, nothing new.
+    """How far a people's expedition reaches, as a multiple of its campaign budget (campaign_budget): the model's own mobility numbers, nothing new.
     The best of its traits' speed in the spread (spec.TRAITS: nomadic x2, the history's own pace for them) and 1 + its way's
     mobility (spec.WAY_MOBILE: pastoral nomads 1, transhumants 0.6, agro-pastoralists 0.3, owner on PW-936). A settled people: 1.
     Riding is not here: _reach already makes a ridden km cost two thirds (RIDE_X), so a mounted horde has both."""
@@ -324,7 +331,8 @@ def readout(rows: list, logs: list, polities: list, agos: list, R, anc: dict | N
 
 REACH_RULE = ("A strong invasion also reaches (owner D50). If the invaders rule only chiefdoms, their largest town rules as a state for "
               "the window (a war band). If none of their states borders the victims, the one nearest sends an expedition: it "
-              "crosses unruled land (and sea, with boats) within its own reach again, claims that corridor for the century and "
+              "crosses unruled land (and sea, with boats) up to 1,000 km, or as far as its own radius if it is larger (an empire "
+              "the size of Rome's campaigned some 1,200 km past its border), claims that corridor for the century and "
               "attacks the first polity of the victims it meets. Mobile peoples reach further: nomads and pastoral nomads twice as "
               "far (transhumant herders 1.6 times), and they may ride through other peoples' states at half pace; riding and roads "
               "make every km cheaper on top. A light invasion still needs a shared border.")
