@@ -901,3 +901,24 @@ ones (before 13%): no slide into unreadable stems.
 - The 8+ bin cannot fill: we count at most 7 categories (10 if evidential, voice and switch-reference are counted apart,
   as WALS does; on that count 28 / 30 / 28 / 12 / 2%). Not drafted: it closes only when grammar grows more verb
   categories.
+
+## Dark l and y
+
+**What was wrong.** After codas came back, dark l (ɫ) was a phoneme in 16.5% of living languages and ü (y) in 20%
+(PHOIBLE: 0.7% and 5%). Nearly all of the surplus was in the lipless peoples (kobolds, dragonborn, aarakocra, kenku): half
+or more of their languages had one or both. Each sound change lists the parts of the mouth it needs, and a people
+without lips never gets a change that needs them. "y > i" (unrounding) and "ɫ > w" (dark l vocalized) were both tagged
+as needing lips, so those peoples could gain y and ɫ (by u > y, umlaut, and l > ɫ in the coda, which need only the
+tongue) but had no way to lose them. Contact between neighbours was not the cause.
+
+**What changed.** Those two changes need only the tongue body now. Default taken: unrounding needs no lips (it takes
+a gesture away), and a lipless people's "w" is their own stand-in sound, the same stand-in their proto-languages are
+already drawn with.
+
+**Numbers** (same world a24559, pass K = today's code before the change): ɫ 16.5% -> 4.5% of living languages, y 19.9%
+-> 4.0%; the overused-segments check passes; w 79% -> 86%. All other checks pass; the scholars' horizon still fails
+(14.4 kyr read, 12.8 kyr logistic). ɫ is still six times PHOIBLE's share, now mostly in human and halfling languages.
+
+**Left for you (one draft).** The same filter bars other "way out" changes for peoples without lips or a soft palate
+(losing nasal vowels, labialized consonants, w, final m). Nothing fails today, but the rule should probably be that a
+change needs only what its result needs.

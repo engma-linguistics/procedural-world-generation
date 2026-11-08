@@ -1091,3 +1091,34 @@ band (all lects): 0-0.25: 8% in 0-1; 0.25-0.45: 20%; 0.45-0.65: 24%; >= 0.65: 47
 All other checks pass (pass I's two segment FAILs are sound pass 3 work in progress, not on this branch). The hub /
 isolated gap narrows (ratio 0.56 to 0.79) because hubs now bind too, but stays clearly ordered. Allomorphy is the sound
 lane's paradigm-cell rules (pass I carries sound pass 3); this lane does not move it (polish p1 0.364, after 0.364).
+
+## Dark l and y (2026-11-08, lang-dark)
+
+Pass K failed the overused-segments check on ɫ (16.5% of living lects, PHOIBLE 0.7%) and y (19.9%, PHOIBLE 5.1%).
+
+**Where they were.** Not contact. In pass K's etymology sidecar the word-steps that first bring ɫ or y into a form are
+S152 (l > ɫ in the coda) and S073 (u > y) / umlaut.i inside each line; wave adoption and borrowing are a small part. The
+carriers were the lipless voices: ɫ in 26/53 kobold, 24/55 dragonborn, 15/25 aarakocra, 10/27 kenku lects against 9/102
+human; y in 41/53 kobold, 25/55 dragonborn, 15/25 aarakocra, 12/27 kenku against 15/102 human. The sound-lane harness
+(codah.py) draws human protos only, which is why it showed 2-3%. A species harness (scratchpad dark/sph.py: 6 protos
+per voice, budding, 20 kyr isolated) reproduced it with no contact at all: leaves with ɫ / y human 0 / 6%, kobold 44 /
+67%, aarakocra 29 / 52%.
+
+**Cause.** `rules.catalogue` keeps only rows whose needs a voice has. S074 (y > i) needed lips and S212 (ɫ > w) needed
+lips, so every lipless voice (reptilian and avian lines) could make y and ɫ (S073, umlaut, S152 need only the tongue
+body) but had no row to take them out. The ease drag was not the problem: species costs make u > y as dear for a kobold
+as for a human (both at the 0.25 floor) and l > ɫ costs the same for all.
+
+**Fix.** S074 and S212 need `tongue_body` only (sound_changes.tsv and tools/language/knowledge_tables.py). Unrounding
+removes a gesture rather than making one; a lipless voice makes w by its own substitute, as its proto-inventory draw
+already does (w costs a kobold 3.7 against ɫ's 4.9, so the ease drag favours the exit). Species harness after: kobold
+0 / 0%, aarakocra 2 / 2%, human unchanged.
+
+| Pass | Code | ɫ all living (lipless lects) | y all living (lipless lects) | w all living | overused | horizon human: reading / logistic | sisters |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| K | sound pass 3 | 0.165 (80 of 171) | 0.199 (99 of 171) | 0.79 | FAIL (y, ɫ) | 14.6 / 12.1 | 0.56 |
+| dark | K + S074, S212 need tongue_body only | 0.045 (7 of 171) | 0.040 (14 of 171) | 0.86 | pass (worst ratio c 2.7x) | 14.4 / 12.8 | 0.58 |
+
+All other checks pass in the dark pass; the scholars' horizon fails as before. Left: ɫ is still 6x PHOIBLE's share
+(4.5%, under the 10% floor), now mostly human (9/100) and halfling (6/35) lects; and the same needs filter bars other
+exits for voices without lips or a velum (inbox draft-language-missing-articulator-exits).
