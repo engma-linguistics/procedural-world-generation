@@ -68,7 +68,9 @@ KOINE_LEVEL = 0.1  # per interval, chance each differing core word of a koine re
 # ʔ-prothesis is rare; tonogenesis (which needs the conditioning coda/onset contrast lost) and vowel reduction are not drawn in
 # every lect; the onset-voicing split, never vetoed (it merges nothing), was the tone source of nearly every lect at 0.3
 RULE_WEIGHT = {"S042": 0.15, "family:tone": 0.3, "tone.onset_voicing_split": 0.05, "family:reduction": 0.5,
-               "S073": 0.1}  # (u > y: with y > i after it, the u of every lect drained into i)
+               "S073": 0.1,  # (u > y: with y > i after it, the u of every lect drained into i)
+               "family:chain_shift": 0.5}  # (sound lane, 2026-11-08: a whole staged chain shift, Grimm or the Great Vowel
+# Shift, is a branch's signature; at weight 2 each still fired in ~45% and ~63% of the isolated-lect harness lines)
 
 
 def rng_for(seed: int, *key) -> np.random.Generator:

@@ -86,7 +86,8 @@ LIFETIME_CAP_FAMILIES = frozenset({"epenthesis", "harmony", "tone"})  # families
 LIFETIME_CAP_IDS = frozenset({"S042"})  # ʔ-prothesis before initial vowels
 # One-off rows (sound lane, 2026-11-08): named laws that are the signature of one branch fire at most ONE_OFF_MAX times per
 # line (wave adoptions included): every chain shift (family "chain_shift": Grimm S177, High German S178, the Great Vowel
-# Shift S179-S181, Northern Cities S182, the demo raise_mid; not the dispersion pushes made on the fly), and these named
+# Shift S179 and its diphthongs' opening S181, Northern Cities S182, the demo raise_mid; not the dispersion pushes made on
+# the fly; history.RULE_WEIGHT also halves the family), and these named
 # changes: S097 the merger of the voiced and voiceless stops (Tocharian), S098 loss of breathy voice, S173 Verner, S093
 # Grassmann, S046 West Germanic gemination, S047 raddoppiamento, S063 First Slavic palatalization, S064 French a > ɛ, S128
 # Slavic liquid metathesis, S139 Old English breaking, S148 uvular r, S174 Romance diphthongization, S176 high-vowel

@@ -228,6 +228,13 @@ class Rule:
   ("pl, kl, fl > pj, kj, fj") is a staged rule, a step per pair. 7 of 217 rows stay refused: haplology (S106, identity),
   suffix harmony (S132, S133, morphology), pitch accent (S170), tone loss (S172) and analogy (S183, S184). A staged rule
   `applies` when any step can act, and `_single` runs its steps in order on a lone segment (the steers see every step).
+  A chain "a > b > c" is staged, a > b then b > c (feeding). The famous chain shifts are single staged events written in
+  drag order, so no two series merge: Grimm S177 (p t k > f θ x after a sonorant or initially, then b d g > p t k, then
+  the breathy stops lose breath), High German S178, the Great Vowel Shift S179 (iː uː > ei ou, then eː oː > iː uː, then
+  ɛː ɔː > eː oː, then aː > ɛː), its diphthongs opening S181 (ei ou > ai au), Northern Cities S182. S097 is a plain
+  voiced/voiceless merger (Tocharian), S180 a plain raising of long mid vowels (iotacism). Chain shifts weigh half
+  (`history.RULE_WEIGHT` "family:chain_shift" 0.5) and fire once a line; harness: Grimm in ~25% of lines, the whole GVS in
+  ~30% (before: T > F 44%, D > T 90%, the three GVS rows all in 50%, in arbitrary order).
 - Rules run on *inflected forms* too: the lect hands `apply` every stored form (stems, paradigm exemplar forms, gram forms,
   names).
 

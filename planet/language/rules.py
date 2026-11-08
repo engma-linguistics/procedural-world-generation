@@ -17,7 +17,7 @@ edge, ``_`` the focus, ``∅`` zero, ``(X)`` optional, ``X*`` any number, ``{a, 
 ``[coda]``, ``[onset]``, ``[final]``, ``[nonfinal]``, ``[open]``, ``[closed]``, and ``X`` any segment (``_X*r``: an r
 later in the word, for dissimilation and harmony at a distance). Comma lists are parallel changes; a parallel list of
 clusters ("pl, kl > pj, kj") becomes a staged rule, a step per pair (refused when a step would feed a later one); a chain
-``a > b > c`` keeps its first step. What the parser cannot express it refuses with a reason, never by raising.
+``a > b > c`` is staged, a > b then b > c (a drag chain is written in drag order with "then"). What the parser cannot express it refuses with a reason, never by raising.
 """
 
 from __future__ import annotations
@@ -1485,7 +1485,12 @@ def _parse(src, **meta) -> Rule:
     if len(parts) > 2:
         if any("," in p for p in parts[1:-1]) and "," not in parts[0]:
             raise ParseError("several rules in one row")
-        notes.append("first step of a chain")
+        # a chain "a > b > c" is staged: a > b, then b > c (feeding: a ends as c, and an old b goes with it); every step
+        # takes the environment. A chain that must not merge is written in drag order by hand ("b > c ; then a > b").
+        env = f" / {envtxt}" if envtxt.strip() else ""
+        steps = [_parse(dict(row, id=f"{rid}~{k + 1}", rule=f"{a} > {b}{env}"))
+                 for k, (a, b) in enumerate(zip(parts, parts[1:]))]
+        return replace(steps[0], id=rid, then=tuple(steps[1:]), notation=(row.get("rule") or "").strip())
     lhs, rhs = parts[0], parts[1]
     if not lhs or not rhs:
         raise ParseError("empty side")
