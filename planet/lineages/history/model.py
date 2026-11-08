@@ -42,9 +42,8 @@ from .tags import _tags, needs_chains
 class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin, GroupsMixin, CompetitionMixin, DispersalMixin,
               ContactMixin, PeoplesMixin, FrameMixin, GrowthMixin):
     def __init__(self, tree: SP.Tree, ps: R.Pass, seed: int, deep_every: int = 1, glacial_every: float = 4.0,
-                 goods: dict | None = None, knobs: dict | None = None):
+                 goods: dict | None = None):
         self.tree, self.ps, self.grid = tree, ps, ps.grid
-        self.knobs = knobs or {}  # lane 78: {people id: {"density": x}}, the share bands' nudges (history.bands)
         self.goods = goods  # the world's goods (land.goods), or None: the [[use]] table then has no effect
         self._land_m: dict[str, tuple] = {}
         self._pres = None  # (the present epoch's env and tags, for the land-use normaliser)
@@ -104,13 +103,9 @@ class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, O
         self.cohab = CP.cohabitation(tree, self.lines, self.idx)  # (who lives beside whom: the cells' composition, PW-689)
         self.share_traits = {k: np.array([float(l.body[k]) for l in self.lines]) for k in tree.share_traits()}
         # (PW-1275: a people's density comes from the density ladder, lineages.ladder: its kind factor x the rung of the way it lives in
-        # each cell. self.kx is the kind factor (x a share band's nudge); self.dens the line's one number, its mean density over the land
+        # each cell. self.kx is the kind factor; self.dens the line's one number, its mean density over the land
         # it holds (the deep epoch, a run without a world, the cells' composition): foragers' at the reference land until the ladder runs)
         self.kx = np.array([1.0 if (l.megafauna or l.overlay) else l.demo("kind") for l in self.lines])
-        for lid, kn in self.knobs.items():  # (a share band's nudge: the people's own kind factor, its groups' with it; history.bands)
-            if kn.get("kind", 1.0) != 1.0 and lid in self.idx:
-                for j in [self.idx[lid], *self._groups.get(lid, [])]:
-                    self.kx[j] *= kn["kind"]
         self.dens = np.array([MG.pressed_density(l, tree) if l.megafauna else self.kx[k] * LD.ref_density(l)
                               for k, l in enumerate(self.lines)])
         # (dragons, the flying megafauna: one per meta.dragon_km2 where peoples press them, owner PW-923, PW-957; the true giants, the rest
@@ -240,6 +235,7 @@ class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, O
             self._note_eras(step)  # (each people's mortality schedule: forager, horticulturalist, agrarian; history.growth)
             self._waves(step, env, tags, Ks)  # (an arrival's later waves, and the wandering portals: history.portals)
             mix = self._mix_ramp(step.ago)
+            self.rule.begin_step(step)  # (polities in the history, when switched on: their century step, PW-1434; history.rule)
             self._pm = self.p >= EST  # (who holds what at the start of the step, and the count over the natives: kept up to date as each line moves, _sync)
             self._cnt = self._pm[self._native].sum(0, dtype=np.int16)
             self._cntp = self._pm[sorted(self._ppl_set)].sum(0, dtype=np.int16)

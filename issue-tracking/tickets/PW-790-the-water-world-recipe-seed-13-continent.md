@@ -4,7 +4,7 @@ title: The water-world recipe (seed 13, continental_start 0.1, heat_start 2) is 
 type: task
 status: todo
 parent: null
-milestone: v3
+milestone: later
 subsystem: climate
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-780, PW-564, PW-202, PW-576]
 refs: [planet/make.py, planet/tectonics/earth.py, docs/review/base-climate/v1-finish-8/]
 created: 2026-10-24
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -49,6 +49,7 @@ curve turns out to be right and the owner wants the preset to show emerging land
 - [ ] the preset reads as intended (not an always-icebox unless the owner picks C)
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v3 -> later: v3 is now states and war v0; this waits for after v1.0
 - 2026-10-26: Milestone v2 -> v3: other planet kind. (PW-900 backlog reorg).
 - 2026-10-24: v2-climate-1 (docs/review/base-climate/v2-climate-1/): the heat_start 2 decline is within the literature. The heat-only outgassing step over 300-1000 Myr is x0.68, against x0.66-0.82, and the 600 Myr half-life is at the fast end. A heat_start 1 control is just as cold (dT -8.5 at 1 Gyr), so the mantle is not the cause. The cause is the 300 Myr reference freeze locking a ~1.3x sink surplus while the land emerges (draft-co2-ref-freeze-emerging-land). Recipe at L6: offset +8 passes 2/2, while +4 and +6 fail after 1 Gyr. The L7 check was stopped for the benchmark (draft-water-world-offset-l7-check). No physics change.
 - 2026-10-24: Status needs-decision -> todo. Coordinator (geophysics delegated): check the outgassing decline (heat_start=2 mantle cooling) first; recipe re-pick only after.

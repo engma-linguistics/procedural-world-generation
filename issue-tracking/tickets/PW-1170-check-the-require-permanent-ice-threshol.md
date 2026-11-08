@@ -4,7 +4,7 @@ title: Check the "require permanent ice" threshold (0.5% of the surface) and the
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1164]
 refs: [planet/highlights.py, planet/tectonics/output.py, planet/make.py, viewer/start.js]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -34,4 +34,5 @@ Two things to know:
 - [ ] Decide whether the 1% land-ice floor of the standard finish should stay now that the setting exists
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics, not a side-track pick; no tag waits on physics before v1.0
 - 2026-10-30: Created from inbox draft draft-permanent-ice-threshold.md (found by lane81).

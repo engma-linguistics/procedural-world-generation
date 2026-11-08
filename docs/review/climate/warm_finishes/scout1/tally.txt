@@ -1,0 +1,22 @@
+main: n 36; end T median +1.17 mean +1.18 p10 -2.67 p90 +5.28
+   end T > +3: 11, > +3.5: 9, > +5: 5, < -6: 2
+   end CO2 index median +0.17; end pCO2 median 593; end land ice median 7.1%
+   warm-side fails 3: 0.00025 l6c_m  53669 +4.9 (land ice, ice 0.8%); 0.00025 l6fix 583167 +5.1 (temperature, ice 2.7%); 0.00075 l6c_p 639472 +6.8 (temperature, ice 1.3%)
+   cold-side fails 1: 0.00075 l6c_p 957317 -6.4 (temperature,land ice, ice 29.0%)
+cap: n 36; end T median +0.11 mean +0.19 p10 -4.27 p90 +3.40
+   end T > +3: 5, > +3.5: 3, > +5: 2, < -6: 1
+   end CO2 index median -0.29; end pCO2 median 376; end land ice median 8.6%
+   warm-side fails 2: 0.00075 l6c_p  53669 +2.6 (land ice, ice 0.6%); 0.00075 l6fix 583167 +6.7 (temperature, ice 1.4%)
+   cold-side fails 2: 0.00025 l6c_0 958504 -4.5 (land ice, ice 27.2%); 0.00025 l6c_m  53669 -6.3 (temperature, ice 24.1%)
+twins (36): corr(end T main, end T cap) -0.07; sd of twin difference 4.61 C
+   0.00025 l6c_0 958504: main +0.4 pass | cap -4.5 FAIL | drift -0.15
+   0.00025 l6c_m  53669: main +4.9 FAIL | cap -6.3 FAIL | drift -0.80
+   0.00025 l6c_m 958504: main +5.4 pass | cap -1.7 pass | drift -0.15
+   0.00025 l6c_p 583167: main +5.8 pass | cap -2.3 pass | drift +1.26
+   0.00025 l6fix 583167: main +5.1 FAIL | cap -0.1 pass | drift +1.26
+   0.00075 l6c_0 733847: main +6.6 pass | cap +6.1 pass | drift +0.66
+   0.00075 l6c_p  53669: main -7.0 pass | cap +2.6 FAIL | drift -0.80
+   0.00075 l6c_p 639472: main +6.8 FAIL | cap -1.6 pass | drift -0.04
+   0.00075 l6c_p 957317: main -6.4 FAIL | cap -0.2 pass | drift -0.36
+   0.00075 l6fix 583167: main -2.9 pass | cap +6.7 FAIL | drift +1.26
+   corr(drift, end T) main +0.20, cap +0.38; drift values: [np.float64(-1.06), np.float64(-0.8), np.float64(-0.36), np.float64(-0.15), np.float64(-0.04), np.float64(0.66), np.float64(0.72), np.float64(1.26)]

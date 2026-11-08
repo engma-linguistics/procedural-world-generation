@@ -4,7 +4,7 @@ title: "Base-climate v2 plan: overturning, then the sea's air, then summer heat,
 type: epic
 status: in-progress
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: xs
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-458, PW-346, PW-352, PW-457, PW-558, PW-559, PW-564, PW-568, PW-569, PW-555]
 refs: [docs/review/base-climate-review.md, tools/climate_bias.py]
 created: 2026-10-22
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -49,6 +49,7 @@ mechanisms and proposes a staged plan (its section 4). Decisions for the owner:
 - [ ] the owner picks the order and the stop bars
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics, not a side-track pick; no tag waits on physics before v1.0 (status unchanged)
 - 2026-10-26: Promoted to a top-level epic for base climate (ocean overturning, sea air, rain patchiness, regional biases); 15 base-climate tickets moved here from PW-470. Owner: physics lane early in v2 (PW-900).
 - 2026-10-26: Owner: put this base-climate work on the physics lane early in v2 (ocean overturning, sea air, rain patchiness, regional biases). (PW-900 backlog reorg).
 - 2026-10-23: Milestone v1 -> v2 (owner approved shrinking v1 to its real gates, 2026-10-24; docs/review/board/triage-2026-10-24.md).

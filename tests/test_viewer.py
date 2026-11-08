@@ -241,6 +241,8 @@ def test_brief_endpoint_rejects_bad_requests():
     assert server.brief("people=x")[1] == 400
     assert server.brief("run=nope")[1] == 400
     assert server.brief("run=no-such-run-xyz&people=orc")[1] == 404
+    assert server.brief("run=no-such-run-xyz&culture=x")[1] == 400  # (PW-1391: a culture id is a number)
+    assert server.brief("run=no-such-run-xyz&culture=3")[1] == 404
 
 
 def test_cultures_endpoint_rejects_bad_requests():

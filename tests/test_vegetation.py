@@ -74,7 +74,7 @@ def test_npp_and_types_on_ideal_climates(ideal):
     assert 600 < np.median(npp[rf]) < 1600 and np.median(tree[rf]) > 0.6
     assert (nu[V.IDX["TrBE"], rf] > nu[V.IDX["C4G"], rf]).mean() > 0.8
     assert np.isin(v["types"][rf], [1, 2, 3]).mean() > 0.8  # tropical forests
-    de = _cells(ideal, "desert")
+    de = _cells(ideal, "desert", (0, 45))  # a hot desert (24 C) keeps to hot-desert daylight, as the others keep to theirs
     assert np.median(npp[de]) < 120 and (cover[de] < 0.3).all()
     bo = _cells(ideal, "boreal", (45, 75))
     assert 100 < np.median(npp[bo]) < 600 and np.median(tree[bo]) > 0.5
@@ -197,7 +197,7 @@ def test_fire_rate_fuel_age():
     shrubs' slowly built dead fuel adds the years to rebuild it."""
     w = 0.1
     assert V.fire_rate(0.0, 0.0, 0.3, w) == 0.0 and V.fire_rate(800.0, 0.0, 0.3, 0.0) == 0.0
-    assert V.fire_rate(200.0, 40.0, 0.3, w) == 0.0  # never enough fuel
+    assert V.fire_rate(V.FUEL_MIN - 50.0, 40.0, 0.3, w) == 0.0  # never enough fuel (fast + slow under FUEL_MIN)
     assert np.isclose(V.fire_rate(800.0, 0.0, 0.3, w), w)  # fully fuelled grass: the weather's rate
     assert np.isclose(V.fire_rate(V.FUEL_MIN + 0.5 * V.FUEL_SPAN, 0.0, 0.3, w), 0.5 * w)
     # a shrubland whose fuel is mostly its own dead wood burns less often than a

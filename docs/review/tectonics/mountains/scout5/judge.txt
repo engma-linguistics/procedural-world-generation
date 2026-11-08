@@ -1,0 +1,59 @@
+# paired judge: main (A) vs cap (B), 36 paired draws (A has 36, B 36), rolls 0.00025 0.00075, late window 600-1000 Myr
+
+  roll    tag        seed |    A  endT  arid  land   co2 |    B  endT  arid  land   co2
+0.00025  l6c_0   seed53669 | PASS  -1.1  28.1  34.3 +1.02     | PASS  -5.5  23.3  34.4 +0.55    
+0.00025  l6c_0  seed733847 | PASS  +1.8  21.7  34.9 +0.65     | PASS  -0.2  20.1  34.6 +0.60    
+0.00025  l6c_0  seed819014 | PASS  +0.6  22.8  34.6 +0.32     | PASS  +3.4  19.3  34.5 +0.73    
+0.00025  l6c_0  seed958504 | PASS  +0.4  21.2  34.4 +0.12     | fail  -4.5  19.3  33.9 +0.50    
+0.00025  l6c_m   seed53669 | fail  +4.9  26.0  34.3 +1.02     | fail  -6.3  23.8  34.6 +0.31    
+0.00025  l6c_m  seed958504 | PASS  +5.4  27.4  34.9 +0.83     | PASS  -1.7  17.0  33.8 +0.17    
+0.00025  l6c_p   seed53669 | PASS  -0.5  22.6  34.3 +0.65     | PASS  -3.1  21.4  34.5 +0.39    
+0.00025  l6c_p  seed583167 | PASS  +5.8  19.2  34.3 +0.56     | PASS  -2.3  20.8  34.3 +0.60    
+0.00025  l6c_p  seed619496 | PASS  +1.3  25.0  33.7 +1.05     | PASS  +0.3  23.6  33.9 +0.63    
+0.00025  l6c_p  seed639472 | PASS  +1.1  21.6  34.6 +0.89     | PASS  -0.2  19.1  34.7 +0.61    
+0.00025  l6c_p  seed733847 | PASS  +4.6  25.0  35.4 +1.06     | PASS  +1.5  26.8  34.5 +0.83    
+0.00025  l6c_p  seed819014 | PASS  +1.2  24.0  34.0 +0.63     | PASS  -0.0  21.5  33.9 +0.78    
+0.00025  l6c_p  seed957317 | PASS  -0.5  21.4  34.9 +0.28     | PASS  -1.6  19.3  33.2 +0.58    
+0.00025  l6c_p  seed958504 | PASS  +2.8  22.0  34.9 +0.53     | PASS  +2.0  20.7  34.1 +0.38    
+0.00025  l6fix  seed583167 | fail  +5.1  29.0  35.1 +0.61     | PASS  -0.1  18.6  35.5 +0.70    
+0.00025  l6fix  seed619496 | PASS  -1.3  22.7  35.2 +0.66     | PASS  -0.5  22.8  33.6 +0.68    
+0.00025  l6fix  seed639472 | PASS  +1.1  23.8  33.6 +0.27     | PASS  -4.0  22.7  33.9 +0.54    
+0.00025  l6fix  seed957317 | PASS  -0.5  25.2  35.1 +0.48     | PASS  +2.6  20.1  34.0 +0.99    
+0.00075  l6c_0   seed53669 | PASS  +2.6  23.6  34.4 +0.74     | PASS  +0.8  20.1  34.1 +0.58    
+0.00075  l6c_0  seed733847 | PASS  +6.6  22.8  34.2 +0.47     | PASS  +6.1  23.1  33.7 +0.74    
+0.00075  l6c_0  seed819014 | PASS  -3.8  22.3  34.8 +0.21     | PASS  +3.4  22.8  34.0 +0.65    
+0.00075  l6c_0  seed958504 | PASS  +0.5  26.2  34.5 +0.40     | PASS  +1.4  20.5  34.8 +0.52    
+0.00075  l6c_m   seed53669 | PASS  +3.5  25.9  34.4 +0.42     | PASS  +1.9  27.2  34.4 +0.92    
+0.00075  l6c_m  seed958504 | PASS  -1.9  23.0  35.1 +0.64     | PASS  +0.7  28.2  34.2 +0.66    
+0.00075  l6c_p   seed53669 | PASS  -7.0  21.0  33.8 +0.27     | fail  +2.6  26.2  34.6 +0.77    
+0.00075  l6c_p  seed583167 | PASS  -1.6  21.6  34.5 +0.15     | PASS  -0.4  22.0  34.9 +0.43    
+0.00075  l6c_p  seed619496 | PASS  -2.5  23.1  34.7 +0.62     | PASS  -1.9  25.2  33.4 +0.90    
+0.00075  l6c_p  seed639472 | fail  +6.8  28.6  35.3 +0.87     | PASS  -1.6  21.3  33.9 +0.22    
+0.00075  l6c_p  seed733847 | PASS  +4.0  24.0  34.3 +0.70     | PASS  +2.0  26.0  34.7 +0.76    
+0.00075  l6c_p  seed819014 | PASS  +1.3  22.9  34.2 +0.67     | PASS  +4.6  22.7  34.1 +0.70    
+0.00075  l6c_p  seed957317 | fail  -6.4  21.3  35.0 +0.54     | PASS  -0.2  22.8  34.0 +0.82    
+0.00075  l6c_p  seed958504 | PASS  +4.6  24.4  34.5 +0.59     | PASS  +1.9  22.7  35.0 +0.39    
+0.00075  l6fix  seed583167 | PASS  -2.9  22.9  34.1 +0.14     | fail  +6.7  24.6  34.8 +0.80    
+0.00075  l6fix  seed619496 | PASS  +3.3  21.6  35.0 +0.82     | PASS  +1.6  21.7  34.2 +0.48    
+0.00075  l6fix  seed639472 | PASS  +1.9  22.7  35.2 +0.54     | PASS  +1.9  23.4  35.8 +0.76    
+0.00075  l6fix  seed957317 | PASS  +1.2  21.4  35.2 +0.46     | PASS  -4.5  19.6  35.1 +0.37    
+
+## Continuous measures (the judge): median of each arm, and of the paired B - A differences
+| measure | A median | B median | median B-A | 95% CI | B>A / B<A | sign p | moved |
+|---|---|---|---|---|---|---|---|
+| end T | 1.170 | 0.110 | -1.255 | [-2.325, +0.040] | 12 / 24 | 0.065 |  |
+| moment T | 1.170 | 0.110 | -1.255 | [-2.325, +0.275] | 13 / 23 | 0.132 |  |
+| late dT | 1.240 | 1.476 | +0.232 | [-0.691, +1.445] | 18 / 18 | 1.000 |  |
+| late CO2 | 0.602 | 0.617 | +0.051 | [-0.103, +0.269] | 22 / 14 | 0.243 |  |
+| land % | 34.567 | 34.261 | -0.093 | [-0.561, +0.134] | 14 / 22 | 0.243 |  |
+| sink ref | 6.616 | 6.631 | +0.002 | [-0.038, +0.049] | 18 / 18 | 1.000 |  |
+| src ref | 7.993 | 8.008 | +0.002 | [-0.038, +0.049] | 18 / 18 | 1.000 |  |
+| arid % | 22.887 | 22.337 | -1.205 | [-1.906, +0.274] | 15 / 21 | 0.405 |  |
+| hot desert % | 8.094 | 7.480 | -0.304 | [-1.680, +0.741] | 17 / 19 | 0.868 |  |
+| land rain | 1115.142 | 1136.630 | +35.537 | [-18.136, +64.892] | 22 / 14 | 0.243 |  |
+| trees % | 39.102 | 39.915 | +0.801 | [-1.158, +2.912] | 19 / 17 | 0.868 |  |
+
+## Pass count (the check): pass = good finish moment, no hellhouse, not frozen over
+- main: r0.00025 16/18, r0.00075 16/18; pooled 32/36; icehouse 34, glacial maximum 13, frozen over at the end 0 (reported: 40%+ at some moment of the hard window 0, at some moment after 300 Myr but not at the end 0), hellhouse 0
+- cap: r0.00025 16/18, r0.00075 16/18; pooled 32/36; icehouse 36, glacial maximum 12, frozen over at the end 0 (reported: 40%+ at some moment of the hard window 1, at some moment after 300 Myr but not at the end 3), hellhouse 0
+- both 29, A only 3, B only 3, neither 1; McNemar exact p 1.000 (lane 24's null change: 7 vs 8 discordant of 36)

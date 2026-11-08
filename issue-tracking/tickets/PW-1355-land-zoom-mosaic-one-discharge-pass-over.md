@@ -4,7 +4,7 @@ title: Land zoom mosaic, one discharge pass over all sections after the sweep
 type: task
 status: todo
 parent: PW-1299
-milestone: v2
+milestone: later
 subsystem: zoom
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1302, PW-1296]
 refs: [planet/zoom/match.py, "planet/zoom/match.py::inflows", "planet/zoom/match.py::walls", "planet/zoom/stage_landscape.py::final_drainage", docs/review/land-zoom/rivers.py, docs/review/land-zoom/rivers-round1.md, docs/review/land-zoom/rivers1/, docs/review/land-zoom/seams-round2.md, "zoom:683193", "zoom:83b0b1", "zoom:a3a793", "zoom:3580b7", "zoom:fe600a", "zoom:e2313a", "world:dba204"]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -42,4 +42,5 @@ re-match of the earlier section to the later (`--match` both ways in a second sw
 - [ ] no change to any section's ground or coast
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: owner 11-03: no whole-planet fine map is fine; the L7->L9 refine of the chosen world is v5
 - 2026-11-02: Created from inbox draft draft-land-zoom-mosaic-discharge-pass.md (found by lane129).

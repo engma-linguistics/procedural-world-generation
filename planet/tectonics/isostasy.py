@@ -241,6 +241,18 @@ def sediment_km(cover, extra):
     return np.maximum(cover - extra[:, LAVA], 0)
 
 
+def max_km(cont, cover, extra):
+    """km of crust each cell can hold (PW-1446): MAX_KM, less what its light sediment (sediment_lift) and plume swell
+    already hold the column up by, as km of crust at ISO_LAND. What stops a thickened crust is how high its column
+    stands, not its thickness: a high, isostatically held-up plateau spreads under its own weight and extends
+    (Dewey 1988; England & Houseman 1989, where ~2 km of thermal uplift is enough to turn Tibet's stress to
+    extension). So continent can stand no higher than MAX_KM of plain crust would (7 km); sediment and swell on a
+    column at the cap thin its crust instead of raising it. Ocean cells: MAX_KM. Never below the cover."""
+    lift = sediment_lift(cont, None, np.ascontiguousarray(sediment_km(cover, extra), dtype=np.float64))
+    over = (lift + np.maximum(extra[:, LIFT], 0.0)) / ISO_LAND
+    return np.where(cont, np.maximum(MAX_KM - over, cover), MAX_KM)
+
+
 @njit(cache=True, parallel=True)
 def _elevation_k(thick, age, cont, rock, swell, sw0, use_sw, sed, out):
     for i in prange(thick.shape[0]):

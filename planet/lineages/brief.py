@@ -29,6 +29,7 @@ from .. import timeline as T
 from .. import world as W
 from ..geo import R_KM
 from ..grid import shared_grid
+from . import cuisine as CZ
 from . import mining as MN
 from .history import megafauna as MG
 from . import salt_reach as SR
@@ -37,7 +38,7 @@ from ..geo import is_land, world_land
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 17  # 17: names and words per people from languages.json where the run has one (endonym, glossonym, two exonyms, three etymologies, food words with their routes; PW-972, PW-986); 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 19  # 19: names and words per people from languages.json where the run has one (lang lane, PW-972, PW-986); 18: gods and taboos are the Religion tab's docs, authored faiths and saved gods mode included (PW-1440); 17: a culture's brief and its cuisine sheet (fuel, staple, drink, who eats together, what outsiders get wrong, what it won't eat; PW-1391, PW-1312); 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -148,9 +149,16 @@ class Ctx:
         return self._overlap
 
     def religion(self) -> tuple[dict | None, dict | None]:
-        """(gods.json, taboos.json) of the run, each None where the run has no such file (never derived here: PW-1306, PW-1305)."""
+        """(gods doc, taboos doc) of the run as the Religion tab shows them: its authored faiths and saved gods mode included (server.gods_doc /
+        taboos_doc, with the .godscache disk cache; PW-1440). Each None where the run has no cultures to derive from."""
         if self._religion is False:
-            self._religion = tuple(json.loads((self.dir / f).read_text()) if (self.dir / f).exists() else None for f in ("gods.json", "taboos.json"))
+            from .. import server
+            try:
+                gd = server.gods_doc(self.dir)
+                tb = server.taboos_doc(self.dir)
+            except (SystemExit, FileNotFoundError, KeyError):
+                gd = tb = None
+            self._religion = (gd, tb)
         return self._religion
 
     def cultures(self) -> dict | None:
@@ -253,18 +261,32 @@ def _centre(ctx: Ctx, sel: np.ndarray) -> tuple:
     return round(lat, 1), round(lon, 1), round(float(dist_km(ctx.g, lat, lon)[sel].max()), 0)
 
 
-def build(run_ref, region: tuple | None = None, people: str | None = None, era_kyr: float = 0.0, ctx: Ctx | None = None) -> dict:
+def build(run_ref, region: tuple | None = None, people: str | None = None, era_kyr: float = 0.0, ctx: Ctx | None = None,
+          culture: int | None = None) -> dict:
+    """The brief of a region (a circle), a people's range or a culture's land at an era. With `culture` (an id in cultures.json) the
+    region is the culture's cells at the era (a merged culture's heir's), and the brief carries its cuisine sheet (cuisine.py, PW-1391)."""
     ctx = ctx or Ctx(run_ref)
     g, m = ctx.g, ctx.meta
     i = ctx.frame_at(era_kyr)
     era = round(-float(ctx.ts[i]), 3) + 0.0
-    if people:
+    if culture is not None:
+        asked = int(culture)
+        culture = CZ.resolve(ctx, asked, era)
+        sel = CZ.mask_of(ctx, i, era, culture)
+        if not sel.any():
+            raise SystemExit(f"culture {asked} has no land at {SP.years_ago(era)}")
+        cname = ctx.cultures()["cultures"][culture]["name"]
+        lat, lon, rad = _centre(ctx, sel)
+        place = {"lat": lat, "lon": lon, "radius_km": rad,
+                 "basis": f"the land of the culture {cname} (culture {culture}" + (f", heir of culture {asked}" if culture != asked else "")
+                          + f") at {SP.years_ago(era)} (its cells; the radius is the farthest one from the centre)"}
+    elif people:
         if people not in ctx.idx:
             raise SystemExit(f"no people {people!r} in this run (ids: {', '.join(ctx.idx)})")
         sel, cen, basis = region_of_people(ctx, people, i)
         lat, lon, rad = cen or _centre(ctx, sel)
         place = {"lat": lat, "lon": lon, "radius_km": rad,
-                 "basis": f"{basis} at {era} kyr ago (its cells; the radius is the farthest one from the centre)"}
+                 "basis": f"{basis} at {SP.years_ago(era)} (its cells; the radius is the farthest one from the centre)"}
     else:
         lat, lon, rad = region if region else (0.0, 0.0, DEFAULT_RADIUS_KM)
         if region is None:
@@ -296,6 +318,8 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
         "tree": f"{m.get('tree_name')}@{_tree_hash(m)}", "mode": m.get("mode"), "seed": m.get("try_seed"),
         "code": m.get("code"), "era_kyr": era, "era_asked_kyr": era_kyr, "place": place,
     }
+    if culture is not None:
+        brief["culture"] = culture
     brief["land"] = _land(ctx, i, land, sel)
     brief["bad_years"] = _bad_years(ctx, place, era)
     brief["fuels"] = _fuels(ctx, land, era, i)
@@ -315,12 +339,14 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["substrate"] = _substrate(ctx, brief["peoples"])
     brief["neighbours"] = _neighbours(ctx, i, sel, place)
     brief["mining"] = _mining(ctx, i, sel, land, brief)
-    brief["settlements"] = _settlements(ctx, sel, era, people)
+    brief["settlements"] = _settlements(ctx, sel, era, people if culture is None else None)
     brief["trade_reach"] = None
     brief["events"] = _events(ctx, place, era)
     brief["reputation"] = _reputation(ctx, brief)
-    brief["suggested"] = _suggested(brief)
-    if people:
+    brief["suggested"] = CZ.suggested(brief)
+    if culture is not None:
+        brief["cuisine"] = CZ.sheet(ctx, brief, culture, i, era)
+    elif people:
         brief["people"] = _people(ctx, people)
     brief["not_modelled"] = {k: NOT_MODELLED for k in ("trade_reach", "honey", "mast", "fungi")}
     if brief["reputation"] is None:
@@ -417,7 +443,7 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
             mines[h] = mines.get(h, 0) + 1
             if s.get("colony") and h == s["holder"]:  # (D12: a mining town of incomers; the flag is the present's)
                 colonies.append({**row(s, p), "district": s.get("district"), "size": "town" if p >= doc["tiers"]["town_min_by_stage"][1] else "village"})
-    out = {"basis": f"the settlement ledger (settlements.py, PW-1011) at {era:g} kyr ago: living places in the region's cells; "
+    out = {"basis": f"the settlement ledger (settlements.py, PW-1011) at {SP.years_ago(era)}: living places in the region's cells; "
                     f"size classes follow what the holding people knows (a town from {min(doc['tiers']['town_min_by_stage'][1:]):,} to {town:,} people, a city from {city:,})",
            "counts": count, "people_in_places": int(sum(p for s, p in places)),
            "largest": [row(s, p) for s, p in big],
@@ -539,8 +565,8 @@ def _fuels_at(ctx: Ctx, i: int, land: np.ndarray) -> dict | None:
     out = {k: _mean(v, land) for k, v in sh.items()}
     stack = np.stack([sh[k] for k in FU.FUELS])
     lead = np.where(stack.sum(0) > 0, stack.argmax(0), 255).astype(int)
-    out["lead"] = _shares(lead, {k: n for k, n in enumerate(FU.FUELS)}, land, 3)
-    out["basis"] = (f"this era (the frame {eq['ago_kyr'][j]} kyr ago): its settlement, ways of life, tree cover, herds and crops known; "
+    out["lead"] = _shares(lead, {k: n for k, n in enumerate(FU.FUELS)}, land & (lead != 255), 3)  # (cells with no fuel left out, not named "255")
+    out["basis"] = (f"this era (the frame {SP.years_ago(eq['ago_kyr'][j])}): its settlement, ways of life, tree cover, herds and crops known; "
                     "the world's own goods (peat, coal, grazing, sea mammals) are those of its slice moment")
     return out
 
@@ -556,7 +582,7 @@ def _fuels(ctx: Ctx, land: np.ndarray, era: float, i: int | None = None) -> dict
     names = (ctx.meta.get("fuels") or {}).get("names") or []
     if "lead" in ctx.fuels and names and land.any():
         lead = ctx.fuels["lead"].astype(int)
-        out["lead"] = _shares(lead, {k: n for k, n in enumerate(names)}, land, 3)
+        out["lead"] = _shares(lead, {k: n for k, n in enumerate(names)}, land & (lead < len(names)), 3)
     out["basis"] = "the run's present (fuels.py), not this era" if era > 0 else "the run's present (fuels.py)"
     return out
 
@@ -1105,67 +1131,6 @@ def _events(ctx: Ctx, place: dict, era: float) -> list:
     return out[:EVENT_CAP]
 
 
-def _suggested(brief: dict) -> dict:
-    notes = []
-    f = brief.get("fuels") or {}
-    lead = f.get("lead") or {}
-    top = next(iter(lead), None)
-    if top == "dung":
-        notes.append("dung is the commonest cooking fuel: low slow fires, so boiling, stewing and baking in embers before searing")
-    elif top == "wood":
-        notes.append("wood is the commonest cooking fuel: open flame is available (roasting, grilling, smoking)")
-    elif top == "peat":
-        notes.append("peat is the commonest cooking fuel: smoky, steady heat; peat smoke flavours what hangs over it")
-    elif top == "straw":
-        notes.append("straw and stalks are the commonest cooking fuel: quick hot flashes, poor for slow cooking")
-    elif top == "grass":
-        notes.append("dry grass and brush are the fuel of last resort here: food is boiled or eaten raw before fuel is spent")
-    elif top == "drift":
-        notes.append("driftwood and dried seaweed are the commonest fuel: fuel is scarce, so little is cooked long")
-    elif top:
-        notes.append(f"the commonest cooking fuel is {top}")
-    sa, fi = brief.get("salt") or {}, brief.get("fish") or {}
-    if sa.get("poor"):
-        notes.append(f"salt is far ({sa['km_to_salt']['mean']} km on average" + (f"; {round(100 * sa['reach']['cut_off_share'])}% of the land is out of trade's reach" if sa.get("reach") else "") + ("; only the coast itself makes it" if sa['source_share_of_land'].get('sea', 0) > 0 else "") + "): inland it is traded in, dear and rationed; cure with smoke and sour ferments, and "
-                     "season with plant ash before salt")
-    elif sa and sa["within_100km_share"] >= 0.5 and sa["source_share_of_land"].get("sea", 0) >= 0.3:
-        notes.append("the sea is the salt: cheap, so curing, brining and fish sauce are possible")
-    for m in (brief.get("mining") or {}).get("list", []):
-        if "salt" not in m["kind"]:
-            continue
-        also = " and ore" if m["kind"] == "salt and ore" else ""
-        notes.append(f"{m['name']} ({m['id']}) mine rock salt{also}: salt is their trade good, so their halls cure and brine freely (salt pork, brined cheese, "
-                     f"pickles) and the neighbours ({', '.join(m['trades_with']) or 'whoever comes to trade'}) buy it; they buy back {', '.join(m['gets_back'])}")
-    if fi.get("fish_mix") and fi.get("coast_fish") is not None and fi["coast_fish"] >= 0.6:
-        notes.append("a rich fishery on this coast: fish is a staple, salted or dried for the lean months")
-    grown = [c["id"] for c in brief.get("crops") or []]
-    for cid, text in (("olive", "olives are grown here: olive oil is the cooking fat, and the fruit is cured"),
-                      ("vine", "vines are grown here: wine and vinegar are within reach"),
-                      ("chili", "chili-like peppers are grown here: heat is a local seasoning"),
-                      ("spice_tree", "tropical spice trees grow here: pepper-like and cinnamon-like spices are local, and trade goods elsewhere"),
-                      ("cane", "sugar cane is grown here: sugar and cane syrup sweeten, and ferment"),
-                      ("tea", "tea- and coffee-like plants are grown here: infusions are the everyday drink")):
-        if cid in grown:
-            notes.append(text)
-    if "sap_sugar" in grown and "cane" not in grown:
-        notes.append("sap sugar (maple and birch) is the local sweetener: spring boiling, syrups")
-    ways = brief["peoples"].get("ways_of_life") or {}
-    herd = sum(ways.get(w, 0.0) for w in ("pastoral_nomad", "transhumant", "agro_pastoral"))
-    if herd >= 0.25:
-        notes.append("herding is a main way of life here (" + ", ".join(w.replace("_", " ") for w in ways if w in ("pastoral_nomad", "transhumant", "agro_pastoral"))
-                     + "): the herd is the larder (meat, milk, blood, fat), grain and salt come by trade or the season's move; a feast is a slaughter")
-    if ways.get("fisher_forager", 0.0) + ways.get("sea_nomad", 0.0) >= 0.25:
-        notes.append("fisher-foragers live here: the catch and the shore are the staples, often settled where the water is rich")
-    if ways.get("forager", 0.0) >= 0.5:
-        notes.append("foraging is the main way of life here: a broad wild menu by season, little stored")
-    dairy = [p["id"] for p in brief["peoples"]["list"] if p.get("dairy")]
-    if dairy:
-        notes.append(f"dairy herders here ({', '.join(dairy)}): what ferments follows what is stored, so soured milk and cheese before beer")
-    elif grown and any(c in grown for c in ("wheat", "foxtail_millet")):
-        notes.append("grain is grown here: what ferments follows what is stored, so beer or bread before wine")
-    return {"basis": "rule-based from this brief only; the culinary side overrules", "notes": notes, "drink": None}
-
-
 CULTURES_TOP = 6  # cultures listed in the brief (the most land in the region first)
 
 
@@ -1338,22 +1303,22 @@ def _settlements_md(st: dict | None) -> list[str]:
          f"{st['people_in_places']:,} people in them; {st['ruins']['count']} ruins"]
     for r in st["largest"]:
         t += [f"- {r['tier']} of the {nm(r['people'])}" + (" (their own place among another people)" if r["kind"] == "minority" else "")
-              + f", {r['place'] or f'{r['lat']}, {r['lon']}'}: ~{r['pop']:,} people, founded ~{r['founded_kyr']:g} kyr ago by the {nm(r['founded_by'])}"
+              + f", {r['place'] or f'{r['lat']}, {r['lon']}'}: ~{r['pop']:,} people, founded {SP.years_ago(r['founded_kyr'])} by the {nm(r['founded_by'])}"
               + ("; " + ", ".join(f"{nm(k)} {v}%" for k, v in r["who"].items()) if r.get("who") else "")]
     if st["taken"]["count"]:
         t += [f"- {st['taken']['count']} towns and cities held by another people than their founders: " + "; ".join(
-              f"a {r['tier']} of the {nm(r['founded_by'])} held by the {nm(r['people'])} since ~{r['held_since_kyr']:g} kyr ago" for r in st["taken"]["list"])]
+              f"a {r['tier']} of the {nm(r['founded_by'])} held by the {nm(r['people'])} since {SP.years_ago(r['held_since_kyr'])}" for r in st["taken"]["list"])]
     if st["own_places_of_second_peoples"]:
         t += ["- Places of their own among another people: " + ", ".join(f"{nm(k)} {v}" for k, v in st["own_places_of_second_peoples"].items())]
     if st["mines"]:
         t += ["- Mining districts worked by: " + ", ".join(f"{nm(k)} {v}" for k, v in st["mines"].items())]
     for r in st.get("mining_colonies") or []:
         t += [f"  - a mining {r.get('size', 'town')} of {nm(r['people'])}, {r['pop']:,} incomers working the {r.get('district') or 'ore'} district"
-              + (f" ({r['place']})" if r.get("place") else "") + f", since {r['founded_kyr']:g} kyr ago"]
+              + (f" ({r['place']})" if r.get("place") else "") + f", since {SP.years_ago(r['founded_kyr'])}"]
     if st["ruins"]["count"]:
         t += ["- Ruins, why abandoned: " + ", ".join(f"{k} {v}" for k, v in sorted(st["ruins"]["why"].items(), key=lambda kv: -kv[1]))]
         t += [f"  - the ruin of a {r['tier']} of the {nm(r['people'])} (at most ~{r['peak_pop']:,} people), {r['lat']}, {r['lon']}: "
-              f"founded ~{r['founded_kyr']:g} kyr ago, abandoned ~{r['abandoned_kyr']:g} kyr ago ({r['why']})" for r in st["ruins"]["largest"]]
+              f"founded {SP.years_ago(r['founded_kyr'])}, abandoned {SP.years_ago(r['abandoned_kyr'])} ({r['why']})" for r in st["ruins"]["largest"]]
     pp = st.get("people")
     if pp:
         pc = pp["counts"]
@@ -1368,9 +1333,11 @@ def _settlements_md(st: dict | None) -> list[str]:
 
 def markdown(b: dict) -> str:
     pl, land = b["place"], b["land"]
-    t = [f"# Culinary brief: {pl['lat']}, {pl['lon']} (r {pl['radius_km']:g} km), {b['era_kyr']:g} kyr ago", "",
+    t = [f"# Culinary brief: {pl['lat']}, {pl['lon']} (r {pl['radius_km']:g} km), {SP.years_ago(b['era_kyr'])}", "",
          f"Run {b['run']} on world {b['world']}, tree {b['tree']} ({b['mode']}), seed {b['seed']}, brief_version {b['brief_version']}. "
          f"Region: {pl['basis']}; {pl['land_cells']} land cells, {pl['land_mkm2']} Mkm2 of land" + (f", on {pl['landmass']}" if pl.get("landmass") else "") + ".", ""]
+    if b.get("cuisine"):
+        t += CZ.markdown(b["cuisine"], b["era_kyr"])
     t += ["## Land", "",
           f"- Climate: {_kv(land['koppen'], _pc)}; {land['temperature_c']} C mean, {land['precipitation_mm']} mm rain, tree cover {land["tree_cover_pct"]}%, "
           f"elevation {land['elevation_m']['mean']} m (max {land['elevation_m']['max']}), ice {land['ice_share']}"]
@@ -1385,7 +1352,7 @@ def markdown(b: dict) -> str:
               f"fire months {land['fire_months']}, flood month {land['flood_month']}, mud months {land['mud_months']}",
               f"- Resources: {_kv(land['resources'])} (the world's own moment, not this era)"]
     t += ["", "## Bad years", ""]
-    t += [f"- {r['kind']} {r['kyr_ago']} kyr ago for {r['years']} years" + (f", rain x{r['rain_x']}" if "rain_x" in r else f", {r['temperature_c']} C") for r in b["bad_years"]] or ["- none in the window"]
+    t += [f"- {r['kind']} {SP.years_ago(r['kyr_ago'])} for {r['years']} years" + (f", rain x{r['rain_x']}" if "rain_x" in r else f", {r['temperature_c']} C") for r in b["bad_years"]] or ["- none in the window"]
     t += ["", "## Fuels", ""]
     f = b["fuels"]
     t += [f"- {_kv({k: v for k, v in f.items() if k not in ('lead', 'basis')})}", f"- Commonest: {_kv(f.get('lead'), _pc)}", f"- ({f['basis']})"] if f else ["- not in this run"]
@@ -1422,8 +1389,8 @@ def markdown(b: dict) -> str:
     for key, title, kind in (("crops", "Crops known (staples)", "staple"), ("crops", "Cuisine plants known (fruit, oil, spice, sugar, infusions, greens)", "cuisine"),
                              ("animals", "Animals known", None)):
         t += ["", f"## {title}", ""]
-        t += [f"- {c['label']}: {_pc(c['known_share'])} of the land, here since {c['since_kyr']} kyr ago" + (
-              f" (first tamed {c['origin']['kyr_ago']} kyr ago by {c['origin']['people']} at {c['origin']['lat']}, {c['origin']['lon']})" if c["origin"] else "")
+        t += [f"- {c['label']}: {_pc(c['known_share'])} of the land, here since {SP.years_ago(c['since_kyr'])}" + (
+              f" (first tamed {SP.years_ago(c['origin']['kyr_ago'])} by {c['origin']['people']} at {c['origin']['lat']}, {c['origin']['lon']})" if c["origin"] else "")
               for c in b[key] or [] if kind is None or c.get("kind") == kind] or ["- none"]
     p = b["peoples"]
     t += ["", "## Peoples", "", f"- {p['peopled_cells']} peopled cells, {_pc(p['empty_share'])} empty",
@@ -1463,7 +1430,7 @@ def markdown(b: dict) -> str:
                   + (f"; sea foods: {', '.join(r['foods'])}" if r["foods"] else "; no sea food above the floor"),
                   f"  - body: {'; '.join(SP.body_notes(r['body'])) or 'the human-like baseline'}",
                   "  - sea goods: " + _kv({k: v for k, v in gd.items() if k not in ("sea_cells", "coast_cells")})]
-            t += [f"  - meets {c['id']}: {c['tier']}, since {c['first_contact_kyr']} kyr ago ({c['years_in_contact']} yr), border {c['border_km_now']} km now"
+            t += [f"  - meets {c['id']}: {c['tier']}, since {SP.years_ago(c['first_contact_kyr'])} ({c['years_in_contact']} yr), border {c['border_km_now']} km now"
                   + (f", along {c['kind']}" if c.get("kind") else "") for c in r["land_contacts"]]
     if b["mixing_zones"]:
         t += ["", "Mixing zones (where peoples meet): " + "; ".join(f"{z['lat']}, {z['lon']} ({', '.join(map(str, z['peoples']))})" for z in b["mixing_zones"])]
@@ -1478,12 +1445,12 @@ def markdown(b: dict) -> str:
         t += ["- not in this run"]
     t += ["", "## Neighbours", ""]
     t += [f"- {n['id']}: {n['ring_cells']} ring cells" + (", also inside" if n["also_in_region"] else "")
-          + (f"; with {n['with_people']}: {n['tier']}, in contact since {n['since_kyr']} kyr ago ({n['years_in_contact']} yr), "
+          + (f"; with {n['with_people']}: {n['tier']}, in contact since {SP.years_ago(n['since_kyr'])} ({n['years_in_contact']} yr), "
              f"border {n['border_km']} km now" + (f", along {n['kind']}" if n.get("kind") else "") if n.get("with_people") else "")
           for n in b["neighbours"]["list"]] or ["- none"]
     if b.get("substrate"):
         t += ["", "## Substrate (who held the land before)", ""]
-        t += [f"- {pid}: " + ("; ".join(f"{r['id']} until {r['held_until_kyr']} kyr ago ({_pc(r['share'])} of its cells)" for r in v["held_before"])
+        t += [f"- {pid}: " + ("; ".join(f"{r['id']} until {SP.years_ago(r['held_until_kyr'])} ({_pc(r['share'])} of its cells)" for r in v["held_before"])
                              or "no other people held its cells") + f" ({_pc(v['first_here_share'])} first held by itself)"
               for pid, v in b["substrate"]["by_people"].items()] or ["- none"]
     if b.get("reputation"):
@@ -1492,10 +1459,10 @@ def markdown(b: dict) -> str:
             t += [f"- {o}:"] + [f"  - {r['id']} ({r['actually']['name']}, {r['actually']['way'] or 'no set way'}"
                                 + (f", {r['actually']['display']}" if r['actually']['display'] not in (None, 'none') else "")
                                 + f") is called \"{r['called']}\": {r['valence']}, {r['basis']}"
-                                + (f", {r['since_kyr']:g} kyr ago" if r["valence"] in ("feared", "despised") else "") + f", strength {r['strength']}"
+                                + (f", {SP.years_ago(r['since_kyr'])}" if r["valence"] in ("feared", "despised") else "") + f", strength {r['strength']}"
                                 + (f"; lumped with {', '.join(r['lumped_with'])}" if r["lumped_with"] else "") for r in rs]
     t += ["", "## Events", ""]
-    t += [f"- {e['kyr_ago']} kyr ago ({e['kind']}, {e['km']} km): {e['text']}" for e in b["events"]] or ["- none"]
+    t += [f"- {SP.years_ago(e['kyr_ago'])} ({e['kind']}, {e['km']} km): {e['text']}" for e in b["events"]] or ["- none"]
     if "people" in b:
         q = b["people"]
         t += ["", f"## The people: {q['name']}", "", "- Lineage: " + " <- ".join(f"{c['id']} ({c['origin']}, {c['ago_kyr']} kyr)" for c in q["lineage_chain"]),
@@ -1506,11 +1473,11 @@ def markdown(b: dict) -> str:
             t += ["- Children with other peoples (by how long ago they split, PW-752): "
                   + ("; ".join(f"{k} ({c['stage_notes'][k]}): {', '.join(v)}" for k, v in bs.items() if k != "impossible") or "none")
                   + ("; impossible with the rest" if "impossible" in bs else "")]
-            t += [f"- Met {m['id']} ({m['tier']}) {m['first_contact_kyr']} kyr ago, {m['years_in_contact']} yr in contact, border {m['border_km_now']} km now "
+            t += [f"- Met {m['id']} ({m['tier']}) {SP.years_ago(m['first_contact_kyr'])}, {m['years_in_contact']} yr in contact, border {m['border_km_now']} km now "
                   f"(peak {m['border_km_peak']}), mixed {m['mixed_pct_now']}%, along {m['kind']}" for m in c["met"]]
             sb = c.get("substrate")
             if sb:
-                t += ["- Held land before it: " + ("; ".join(f"{r['id']} until {r['held_until_kyr']} kyr ago ({_pc(r['share'])})" for r in sb["held_before"])
+                t += ["- Held land before it: " + ("; ".join(f"{r['id']} until {SP.years_ago(r['held_until_kyr'])} ({_pc(r['share'])})" for r in sb["held_before"])
                                                    or "nobody (first on its ground)")]
     if "people" in b and (b["people"].get("reputation") or {}).get("calls") is not None:
         rp = b["people"]["reputation"]

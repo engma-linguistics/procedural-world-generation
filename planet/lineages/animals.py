@@ -50,6 +50,18 @@ BOAT_EVERY_KYR = 0.5  # how often the crossings are tried
 BOAT_RATE = 0.6  # per kyr at no gap, per landmass, for a people with a sea share of 0.6 (scaled by share / 0.6)
 BOAT_FULL = 0.6
 BOAT_KEEP = 40  # crossings listed per animal in the summary
+# crops over the sea (lane 157, docs/review/food/crops-origins/round1.md): before ocean-going ships, a crop passed between peoples only over
+# a strait or a coastal hop (the canoe's reach: Indian Ocean millets and sorghum went hop by hop, Fuller & Boivin 2009) and crossed long
+# open sea only with colonists to land they settled (Lapita, East Polynesia). Ocean-going ships that cross and come back (Columbus 1492:
+# 0.53 kyr before the present, which the crop anchors date from) carry every crop everywhere within decades (Crosby 1972; Nunn & Qian 2010),
+# in a present of the renaissance or later (spec.ERAS); in an earlier present the oceans stay shut to crops.
+STRANGER_KM = 300.0  # = the canoe's reach (spec.BOATS[1])
+OCEAN_SHIP, OCEAN_SHIP_KYR, OCEAN_ERAS = "ocean-going ship", 0.53, ("renaissance", "industrial")
+
+
+def ocean_ships(era: str, ago_kyr: float) -> bool:
+    """Whether ocean-going ships carry crops across any ocean at that time in a present of that era."""
+    return era in OCEAN_ERAS and ago_kyr <= OCEAN_SHIP_KYR + 1e-9
 
 
 class Stock:
@@ -117,8 +129,10 @@ class Stock:
             self._front(step, env, tags, peopled)
             self.boat_dt += step.dt
             if self.boat_dt >= BOAT_EVERY_KYR:
-                self._sail(step, env, tags, p, peopled, sea, self.boat_dt)
+                (self._sail_crop if self.a.plant else self._sail)(step, env, tags, p, peopled, sea, self.boat_dt)
                 self.boat_dt = 0.0
+            if self.a.plant and ocean_ships(self.h.tree.era, step.ago):  # (every step: the exchange is quick once the ships go)
+                self._ocean(step, env, tags, p, peopled, sea)
             lab = self.h.cross.label  # (the present's landmasses, as the summary names them: the step's own land components are numbered
             for c in np.unique(lab[(self.rd >= EST) & (lab >= 0)]):  # otherwise, and a glacial bridge's merged label read as another landmass, lane 73)
                 self.reached.setdefault(int(c), round(step.ago, 3))
@@ -214,13 +228,77 @@ class Stock:
         if not src.any():
             return
         strength = min(1.0, float(max(sea[k] for k in crew if (p[k][src] >= EST).any())) / BOAT_FULL)
+        for c, (lam, cell, km, name_, target, _) in sorted(self._options(env, tags, src, peopled, name, reach, strength, dt).items()):
+            if self.rng.random() < 1 - np.exp(-lam):
+                self._drop(step, cell, km, name_, target)
+
+    def _sail_crop(self, step, env, tags, p, peopled, sea, dt) -> None:
+        """A crop's crossings by boat (lane 157). Seed, tubers and cuttings keep for a voyage, so the craft is not the limit; who
+        sails is. Before the ocean-going ships (`_ocean`) a crop crossed long open sea only with colonists who took their own
+        gardens to land they settled (the Lapita and East Polynesian voyages: taro, yam, banana, breadfruit, sweet potato), and
+        passed between peoples over a strait or a hop along a coast (Crowther et al. 2016: traded crops reached others' coasts and
+        stayed minor): so a seafaring people carries a crop it has taken up, in the best craft it mans, to a coast it holds itself, and
+        any people (canoes) carries it to anyone's coast within STRANGER_KM. Each landmass gets one draw a try, at the best of
+        these chances (more seafaring peoples do not add up to more voyages). The best-craft-only rule of the animals (`_sail`)
+        is not used: a canoe people still trades over a strait once planked boats exist."""
+        ladder = [(name, reach, need) for name, since, reach, big, need in craft_ladder() if big >= 0 and step.ago <= since + 1e-9]
+        if not ladder:
+            return
+        h = self.h
+        coast = (self.rd >= EST) & tags["coast"]
+        if not coast.any():
+            return
+        best: dict = {}
+
+        def keep(opts):
+            for c, o in opts.items():
+                if c not in best or o[0] > best[c][0]:
+                    best[c] = o
+        for k in h._native:  # (colonists)
+            k = int(k)
+            craft = max((c for c in ladder if sea[k] >= c[2]), key=lambda c: c[1], default=None)
+            if craft is None or craft[1] <= STRANGER_KM or k not in self.took_up:  # (colonists take the gardens they keep: a people that
+                continue  # has taken the crop up, crops.Crops.step; tortles fishing two shores do not carry a farmer's grain between them)
+            own = p[k] >= EST
+            if (coast & own).any():
+                keep(self._options(env, tags, coast & own, own & peopled, craft[0], craft[1], min(1.0, float(sea[k]) / BOAT_FULL), dt, h.lines[k].id))
+        crew = [int(k) for k in h._native if sea[k] >= ladder[0][2]]  # (the smallest craft that carries seed: anyone with a canoe)
+        src = coast & (p[crew] >= EST).any(0) if crew else coast & False
+        if src.any():
+            strength = min(1.0, float(max(sea[k] for k in crew if (p[k][src] >= EST).any())) / BOAT_FULL)
+            keep(self._options(env, tags, src, peopled, ladder[0][0], min(STRANGER_KM, ladder[0][1]), strength, dt, "trade"))
+        for c in sorted(best):
+            lam, cell, km, name, target, by = best[c]
+            if self.rng.random() < 1 - np.exp(-lam):
+                self._drop(step, cell, km, name, target, by)
+
+    def _ocean(self, step, env, tags, p, peopled, sea) -> None:
+        """The ocean-going ships (OCEAN_SHIP_KYR on, in a renaissance or later present): once ships cross the open ocean and come
+        back, every crop known on a coast reaches every peopled landmass within decades (Crosby 1972; Nunn & Qian 2010), whoever
+        holds it. Needs a people somewhere that mans a sailing ship and holds a coast."""
+        h = self.h
+        need = max(c[4] for c in craft_ladder())
+        crew = [int(k) for k in h._native if sea[k] >= need]
+        if not crew or not ((p[crew] >= EST).any(0) & tags["coast"]).any():
+            return
+        src = (self.rd >= EST) & tags["coast"] & peopled
+        if src.any():
+            for c, (_, cell, km, name, target, by) in sorted(self._options(env, tags, src, peopled, OCEAN_SHIP, np.inf, 1.0, 0.0, "ocean trade").items()):
+                self._drop(step, cell, km, name, target, by)
+
+    def _options(self, env, tags, src, target, name, reach, strength, dt, by=None) -> dict:
+        """The landings open from the src coast cells, over the sea only: per landmass without the stock with a target cell within
+        reach, (chance per try BOAT_RATE x strength x dt x exp(-gap / (reach / 2)), its nearest target cell, the gap km, the craft,
+        the target, who carries it)."""
+        h = self.h
+        known = self.rd >= EST
         lab = tags["label"]
         has = np.unique(lab[known & (lab >= 0)])
-        land = env["land"]
-        d = sea_gap(src, land, h.grid.nbr_off, h.grid.nbr_idx, int(reach / h.cell_km) + 1)
-        cand = peopled & ~known & (d > 0) & (lab >= 0) & ~np.isin(lab, has)
+        d = sea_gap(src, env["land"], h.grid.nbr_off, h.grid.nbr_idx, h.grid.n if not np.isfinite(reach) else int(reach / h.cell_km) + 1)
+        cand = target & ~known & (d > 0) & (lab >= 0) & ~np.isin(lab, has)
+        out = {}
         if not cand.any():
-            return
+            return out
         km = d * h.cell_km
         for c in np.unique(lab[cand]):
             sel = cand & (lab == c)
@@ -228,23 +306,29 @@ class Stock:
                 continue
             cell = int(np.flatnonzero(sel)[np.argmin(km[sel])])
             lam = BOAT_RATE * strength * dt * np.exp(-km[cell] / (reach / 2.0))
-            if self.rng.random() >= 1 - np.exp(-lam):
-                continue
-            blob = rings(cell, peopled, 2, h.grid.nbr_off, h.grid.nbr_idx) & peopled
-            blob[cell] = True
-            self.route[blob & (self.rd < EST)] = 3
-            self.rd[blob] = 1.0
-            self.n_crossed += 1
-            pl = int(h.cross.label[cell])
-            rec = {"ago_kyr": round(step.ago, 3), "landmass": pl, "landmass_name": h.cross.names[pl]["name"] if pl >= 0 else "?",
-                   "craft": name, "gap_km": round(float(km[cell]))}
-            if len(self.crossings) < BOAT_KEEP:
-                self.crossings.append(rec)
-            if pl >= 0 and pl not in self.landed and h.cross.names[pl]["area_mkm2"] >= 0.05:
-                self.landed.add(pl)
-                h.events.append({"ago_kyr": rec["ago_kyr"], "kind": "crops" if self.a.plant else "animals", "line": None,
-                                 "text": f"{self.a.label} cross the sea to {rec['landmass_name']} in {'an' if name[0] in 'aeiou' else 'a'} {name} "
-                                         f"({rec['gap_km']} km of open sea)", "lat": round(float(h.grid.lat[cell]), 2), "lon": round(float(h.grid.lon[cell]), 2)})
+            out[int(c)] = (lam, cell, float(km[cell]), name, target, by)
+        return out
+
+    def _drop(self, step, cell, km, name, target, by=None) -> None:
+        """The stock lands at cell (and the target cells within 2 of it) after km of open sea in a `name`."""
+        h = self.h
+        blob = rings(cell, target, 2, h.grid.nbr_off, h.grid.nbr_idx) & target
+        blob[cell] = True
+        self.route[blob & (self.rd < EST)] = 3
+        self.rd[blob] = 1.0
+        self.n_crossed += 1
+        pl = int(h.cross.label[cell])
+        rec = {"ago_kyr": round(step.ago, 3), "landmass": pl, "landmass_name": h.cross.names[pl]["name"] if pl >= 0 else "?",
+               "craft": name, "gap_km": round(km)}
+        if by is not None:  # (crops, lane 157: the colonist people that took it to its own land, "trade" over a strait, or "ocean trade")
+            rec["by"] = by
+        if len(self.crossings) < BOAT_KEEP:
+            self.crossings.append(rec)
+        if pl >= 0 and pl not in self.landed and h.cross.names[pl]["area_mkm2"] >= 0.05:
+            self.landed.add(pl)
+            h.events.append({"ago_kyr": rec["ago_kyr"], "kind": "crops" if self.a.plant else "animals", "line": None, **({"by": by} if by else {}),
+                             "text": f"{self.a.label} cross the sea to {rec['landmass_name']} in {'an' if name[0] in 'aeiou' else 'a'} {name} "
+                                     f"({rec['gap_km']} km of open sea)", "lat": round(float(h.grid.lat[cell]), 2), "lon": round(float(h.grid.lon[cell]), 2)})
 
     # -- results ------------------------------------------------------------------------------------
     def summary(self, P: np.ndarray, pres_open: float = 0.0) -> dict:
@@ -367,14 +451,16 @@ class Animals:
     def summary(self, P: np.ndarray) -> dict:
         h = self.h
         stocks = {s.a.id: s.summary(P) for s in self.stocks}
-        # dairy (PW-784): which dairy animals a people keeps (known on its land) x its way of life (herders milk, by their herd share; so do peoples with lactase)
-        # unless its body says `milks = false`; the lactase share (body.milk) only decides fresh milk or fermented (brief.py)
+        # dairy (PW-784): which dairy animals a people keeps (known on its land) x its way of life (herders milk, by their herd share)
+        # unless its body says `milks = false`; the lactase share (body.milk) only decides fresh milk or fermented (brief.py). PW-834:
+        # lactase alone no longer makes a dairy people (a forager with an authored lactase share kept dairy herds); cuisine.py lets the
+        # share rise with the herding a culture does (PW-1372)
         dairy = {}
         for k, l in enumerate(h.lines):
             f = l.body.get("milk")
             lac = 1.0 if f is True else float(f or 0.0)
             herd = float(self.stocks[0].sh["herd"][k]) if self.stocks else 0.0
-            milks = max(herd, lac)  # (herders milk by their herd share; a people with lactase milks, that is how it came to have it)
+            milks = herd  # (herders milk by their herd share; PW-834: not by their lactase)
             if l.overlay or not l.body.get("milks", True) or milks <= 0:
                 continue
             best = [(s.share[k], s.a.id) for s in self.stocks if s.a.dairy and s.share[k] > 0.05]

@@ -1,0 +1,1190 @@
+{
+ "run": "/data/personal/repos/procedural-world-generation/runs/a2b637",
+ "peoples": [
+  "human",
+  "orc",
+  "gnome",
+  "hobgoblin",
+  "kobold",
+  "drow"
+ ],
+ "year": {
+  "human": 0.0,
+  "orc": 3.0,
+  "gnome": 0.4,
+  "hobgoblin": 2.6,
+  "kobold": 2.2,
+  "drow": 0.0
+ },
+ "centuries": {
+  "human": 74,
+  "orc": 72,
+  "gnome": 69,
+  "hobgoblin": 69,
+  "kobold": 66,
+  "drow": 64
+ },
+ "plain_wars_base": 3069,
+ "base_sha": "552623dd24b1f75f2db84bfc1f1c43477686ae69",
+ "rows": [
+  {
+   "row": {
+    "id": "human>orc",
+    "who": {
+     "people": "human"
+    },
+    "whom": {
+     "people": "orc"
+    },
+    "from_kyr": 0.0,
+    "to_kyr": 0.0,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the humans bordered a polity of the orcs then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 257 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    51,
+    51,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "human>gnome",
+    "who": {
+     "people": "human"
+    },
+    "whom": {
+     "people": "gnome"
+    },
+    "from_kyr": 0.0,
+    "to_kyr": 0.0,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 90279,
+   "took": [
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 216",
+     "winner_id": 26143,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 275",
+     "loser_id": 26314,
+     "km2": 49810
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 216",
+     "winner_id": 26143,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 280",
+     "loser_id": 26344,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 216",
+     "winner_id": 26143,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 282",
+     "loser_id": 26366,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 216",
+     "winner_id": 26143,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 296",
+     "loser_id": 26700,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 216",
+     "winner_id": 26143,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 298",
+     "loser_id": 26818,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 216",
+     "winner_id": 26143,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 299",
+     "loser_id": 26822,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 216",
+     "winner_id": 26143,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 313",
+     "loser_id": 27089,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 216",
+     "winner_id": 26143,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 304",
+     "loser_id": 26833,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 220",
+     "winner_id": 26184,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 267",
+     "loser_id": 24673,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 220",
+     "winner_id": 26184,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 310",
+     "loser_id": 26989,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 220",
+     "winner_id": 26184,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 297",
+     "loser_id": 26815,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 220",
+     "winner_id": 26184,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 301",
+     "loser_id": 26824,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 220",
+     "winner_id": 26184,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 306",
+     "loser_id": 26838,
+     "km2": 3113
+    },
+    {
+     "ago_kyr": 0.0,
+     "winner": "West of Trojanel (humans) 228",
+     "winner_id": 26941,
+     "loser": "Chiefdom in west of Trojanel (gnomes) 285",
+     "loser_id": 26409,
+     "km2": 3113
+    }
+   ],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    49,
+    49,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3067
+   ]
+  },
+  {
+   "row": {
+    "id": "human>hobgoblin",
+    "who": {
+     "people": "human"
+    },
+    "whom": {
+     "people": "hobgoblin"
+    },
+    "from_kyr": 0.0,
+    "to_kyr": 0.0,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the humans bordered a polity of the hobgoblins then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 286 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    51,
+    51,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "human>kobold",
+    "who": {
+     "people": "human"
+    },
+    "whom": {
+     "people": "kobold"
+    },
+    "from_kyr": 0.0,
+    "to_kyr": 0.0,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 308202,
+   "took": [
+    {
+     "ago_kyr": 0.0,
+     "winner": "East of Ratal (humans) 155",
+     "winner_id": 23761,
+     "loser": "Ratal (kobolds) 9",
+     "loser_id": 25150,
+     "km2": 308202
+    }
+   ],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    51,
+    51,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "human>drow",
+    "who": {
+     "people": "human"
+    },
+    "whom": {
+     "people": "drow"
+    },
+    "from_kyr": 0.0,
+    "to_kyr": 0.0,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the humans bordered a polity of the drow then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 183 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    51,
+    51,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "orc>human",
+    "who": {
+     "people": "orc"
+    },
+    "whom": {
+     "people": "human"
+    },
+    "from_kyr": 3.0,
+    "to_kyr": 3.0,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 3113,
+   "took": [
+    {
+     "ago_kyr": 3.0,
+     "winner": "West of Simath (orcs) 2",
+     "winner_id": 5617,
+     "loser": "Chiefdom in north-east of Trojanel (humans) 29",
+     "loser_id": 4036,
+     "km2": 3113
+    }
+   ],
+   "reach": [
+    {
+     "ago_kyr": 3.0,
+     "km": 115.3,
+     "foot_km": 69.3,
+     "corridor_cells": 1,
+     "mobility": 2.0,
+     "winner_id": 5617,
+     "loser_id": 4036,
+     "winner": "West of Simath (orcs) 2",
+     "loser": "Chiefdom in north-east of Trojanel (humans) 29"
+    }
+   ],
+   "war_band": null,
+   "plain_wars_window": [
+    27,
+    27,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "orc>gnome",
+    "who": {
+     "people": "orc"
+    },
+    "whom": {
+     "people": "gnome"
+    },
+    "from_kyr": 3.0,
+    "to_kyr": 3.0,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 71602,
+   "took": [
+    {
+     "ago_kyr": 3.0,
+     "winner": "West of Simath (orcs) 2",
+     "winner_id": 5617,
+     "loser": "West of Simath (gnomes) 91",
+     "loser_id": 7629,
+     "km2": 71602
+    }
+   ],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    27,
+    27,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3070
+   ]
+  },
+  {
+   "row": {
+    "id": "orc>hobgoblin",
+    "who": {
+     "people": "orc"
+    },
+    "whom": {
+     "people": "hobgoblin"
+    },
+    "from_kyr": 3.0,
+    "to_kyr": 3.0,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 1014886,
+   "took": [
+    {
+     "ago_kyr": 3.0,
+     "winner": "North of Tobrosal (orcs) 3",
+     "winner_id": 8264,
+     "loser": "North of Tobrosal (hobgoblins) 2",
+     "loser_id": 7199,
+     "km2": 152544
+    },
+    {
+     "ago_kyr": 3.0,
+     "winner": "North of Tobrosal (orcs) 3",
+     "winner_id": 8264,
+     "loser": "Tobrosal (hobgoblins) 9",
+     "loser_id": 7929,
+     "km2": 168110
+    },
+    {
+     "ago_kyr": 3.0,
+     "winner": "North-east of Tobrosal (orcs) 5",
+     "winner_id": 7359,
+     "loser": "North-east of Tobrosal (hobgoblins) 6",
+     "loser_id": 7186,
+     "km2": 694232
+    }
+   ],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    26,
+    26,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3068
+   ]
+  },
+  {
+   "row": {
+    "id": "orc>kobold",
+    "who": {
+     "people": "orc"
+    },
+    "whom": {
+     "people": "kobold"
+    },
+    "from_kyr": 3.0,
+    "to_kyr": 3.0,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the orcs bordered a polity of the kobolds then, and none reached one on an expedition (the furthest went 800 km on foot over flat ground, more with riding and roads, across unruled land or through others' land; the nearest polity of theirs lay 5,343 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    27,
+    27,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "orc>drow",
+    "who": {
+     "people": "orc"
+    },
+    "whom": {
+     "people": "drow"
+    },
+    "from_kyr": 3.0,
+    "to_kyr": 3.0,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the orcs bordered a polity of the drow then, and none reached one on an expedition (the furthest went 800 km on foot over flat ground, more with riding and roads, across unruled land or through others' land; the nearest polity of theirs lay 6,304 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    27,
+    27,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "gnome>human",
+    "who": {
+     "people": "gnome"
+    },
+    "whom": {
+     "people": "human"
+    },
+    "from_kyr": 0.4,
+    "to_kyr": 0.4,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 709798,
+   "took": [
+    {
+     "ago_kyr": 0.4,
+     "winner": "South-west of Trojanel (gnomes) 151",
+     "winner_id": 24275,
+     "loser": "South-west of Trojanel (humans) 122",
+     "loser_id": 23762,
+     "km2": 619517
+    },
+    {
+     "ago_kyr": 0.4,
+     "winner": "South-west of Trojanel (gnomes) 151",
+     "winner_id": 24275,
+     "loser": "South-west of Trojanel (humans) 123",
+     "loser_id": 24268,
+     "km2": 90281
+    }
+   ],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    29,
+    29,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3068
+   ]
+  },
+  {
+   "row": {
+    "id": "gnome>orc",
+    "who": {
+     "people": "gnome"
+    },
+    "whom": {
+     "people": "orc"
+    },
+    "from_kyr": 0.4,
+    "to_kyr": 0.4,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 3113,
+   "took": [
+    {
+     "ago_kyr": 0.4,
+     "winner": "West of Simath (gnomes) 251",
+     "winner_id": 20851,
+     "loser": "Chiefdom in south-west of Simath (orcs) 11",
+     "loser_id": 24471,
+     "km2": 3113
+    }
+   ],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    29,
+    29,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "gnome>hobgoblin",
+    "who": {
+     "people": "gnome"
+    },
+    "whom": {
+     "people": "hobgoblin"
+    },
+    "from_kyr": 0.4,
+    "to_kyr": 0.4,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the gnomes (from the feywild) bordered a polity of the hobgoblins then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 773 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    29,
+    29,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "gnome>kobold",
+    "who": {
+     "people": "gnome"
+    },
+    "whom": {
+     "people": "kobold"
+    },
+    "from_kyr": 0.4,
+    "to_kyr": 0.4,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the gnomes (from the feywild) bordered a polity of the kobolds then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 1,331 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    29,
+    29,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "gnome>drow",
+    "who": {
+     "people": "gnome"
+    },
+    "whom": {
+     "people": "drow"
+    },
+    "from_kyr": 0.4,
+    "to_kyr": 0.4,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the gnomes (from the feywild) bordered a polity of the drow then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 7,396 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    29,
+    29,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "hobgoblin>human",
+    "who": {
+     "people": "hobgoblin"
+    },
+    "whom": {
+     "people": "human"
+    },
+    "from_kyr": 2.6,
+    "to_kyr": 2.6,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 3113,
+   "took": [
+    {
+     "ago_kyr": 2.6,
+     "winner": "West of Tobrosal (hobgoblins) 22",
+     "winner_id": 10024,
+     "loser": "Chiefdom in Sakur (humans) 8",
+     "loser_id": 10348,
+     "km2": 3113
+    }
+   ],
+   "reach": [
+    {
+     "ago_kyr": 2.6,
+     "km": 342.2,
+     "foot_km": 171.1,
+     "corridor_cells": 5,
+     "mobility": 1.3,
+     "winner_id": 10024,
+     "loser_id": 10348,
+     "winner": "West of Tobrosal (hobgoblins) 22",
+     "loser": "Chiefdom in Sakur (humans) 8"
+    }
+   ],
+   "war_band": null,
+   "plain_wars_window": [
+    47,
+    47,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "hobgoblin>orc",
+    "who": {
+     "people": "hobgoblin"
+    },
+    "whom": {
+     "people": "orc"
+    },
+    "from_kyr": 2.6,
+    "to_kyr": 2.6,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 410935,
+   "took": [
+    {
+     "ago_kyr": 2.6,
+     "winner": "North of Tobrosal (hobgoblins) 3",
+     "winner_id": 8207,
+     "loser": "Chiefdom in Cell 33047 (orcs)",
+     "loser_id": 8151,
+     "km2": 149431
+    },
+    {
+     "ago_kyr": 2.6,
+     "winner": "Tobrosal (hobgoblins) 12",
+     "winner_id": 4004,
+     "loser": "West of Tobrosal (orcs) 3",
+     "loser_id": 9664,
+     "km2": 261504
+    }
+   ],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    47,
+    47,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3072
+   ]
+  },
+  {
+   "row": {
+    "id": "hobgoblin>gnome",
+    "who": {
+     "people": "hobgoblin"
+    },
+    "whom": {
+     "people": "gnome"
+    },
+    "from_kyr": 2.6,
+    "to_kyr": 2.6,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the hobgoblins bordered a polity of the gnomes (from the feywild) then, and none reached one on an expedition (the furthest went 520 km on foot over flat ground, more with riding and roads, across unruled land or through others' land; the nearest polity of theirs lay 1,416 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    47,
+    47,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "hobgoblin>kobold",
+    "who": {
+     "people": "hobgoblin"
+    },
+    "whom": {
+     "people": "kobold"
+    },
+    "from_kyr": 2.6,
+    "to_kyr": 2.6,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the hobgoblins bordered a polity of the kobolds then, and none reached one on an expedition (the furthest went 520 km on foot over flat ground, more with riding and roads, across unruled land or through others' land; the nearest polity of theirs lay 2,083 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    47,
+    47,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "hobgoblin>drow",
+    "who": {
+     "people": "hobgoblin"
+    },
+    "whom": {
+     "people": "drow"
+    },
+    "from_kyr": 2.6,
+    "to_kyr": 2.6,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the hobgoblins bordered a polity of the drow then, and none reached one on an expedition (the furthest went 520 km on foot over flat ground, more with riding and roads, across unruled land or through others' land; the nearest polity of theirs lay 6,724 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    47,
+    47,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "kobold>human",
+    "who": {
+     "people": "kobold"
+    },
+    "whom": {
+     "people": "human"
+    },
+    "from_kyr": 2.2,
+    "to_kyr": 2.2,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 143205,
+   "took": [
+    {
+     "ago_kyr": 2.2,
+     "winner": "Ratal (kobolds) 2",
+     "winner_id": 10942,
+     "loser": "Ratal (humans) 24",
+     "loser_id": 8448,
+     "km2": 143205
+    }
+   ],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    39,
+    39,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "kobold>orc",
+    "who": {
+     "people": "kobold"
+    },
+    "whom": {
+     "people": "orc"
+    },
+    "from_kyr": 2.2,
+    "to_kyr": 2.2,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the kobolds bordered a polity of the orcs then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 6,606 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    39,
+    39,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "kobold>gnome",
+    "who": {
+     "people": "kobold"
+    },
+    "whom": {
+     "people": "gnome"
+    },
+    "from_kyr": 2.2,
+    "to_kyr": 2.2,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the kobolds bordered a polity of the gnomes (from the feywild) then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 2,583 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    39,
+    39,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "kobold>hobgoblin",
+    "who": {
+     "people": "kobold"
+    },
+    "whom": {
+     "people": "hobgoblin"
+    },
+    "from_kyr": 2.2,
+    "to_kyr": 2.2,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the kobolds bordered a polity of the hobgoblins then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 6,864 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    39,
+    39,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "kobold>drow",
+    "who": {
+     "people": "kobold"
+    },
+    "whom": {
+     "people": "drow"
+    },
+    "from_kyr": 2.2,
+    "to_kyr": 2.2,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the kobolds bordered a polity of the drow then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 1,276 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    39,
+    39,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "drow>human",
+    "who": {
+     "people": "drow"
+    },
+    "whom": {
+     "people": "human"
+    },
+    "from_kyr": 0.0,
+    "to_kyr": 0.0,
+    "strength": "strong"
+   },
+   "happened": true,
+   "why": null,
+   "km2": 3113,
+   "took": [
+    {
+     "ago_kyr": 0.0,
+     "winner": "Ratal (drow) 23",
+     "winner_id": 23283,
+     "loser": "Chiefdom in Ratal (humans) 439",
+     "loser_id": 23517,
+     "km2": 3113
+    }
+   ],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    51,
+    51,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "drow>orc",
+    "who": {
+     "people": "drow"
+    },
+    "whom": {
+     "people": "orc"
+    },
+    "from_kyr": 0.0,
+    "to_kyr": 0.0,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the drow bordered a polity of the orcs then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 13,254 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    51,
+    51,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "drow>gnome",
+    "who": {
+     "people": "drow"
+    },
+    "whom": {
+     "people": "gnome"
+    },
+    "from_kyr": 0.0,
+    "to_kyr": 0.0,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the drow bordered a polity of the gnomes (from the feywild) then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 5,287 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    51,
+    51,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "drow>hobgoblin",
+    "who": {
+     "people": "drow"
+    },
+    "whom": {
+     "people": "hobgoblin"
+    },
+    "from_kyr": 0.0,
+    "to_kyr": 0.0,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the drow bordered a polity of the hobgoblins then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 12,995 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    51,
+    51,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  },
+  {
+   "row": {
+    "id": "drow>kobold",
+    "who": {
+     "people": "drow"
+    },
+    "whom": {
+     "people": "kobold"
+    },
+    "from_kyr": 0.0,
+    "to_kyr": 0.0,
+    "strength": "strong"
+   },
+   "happened": false,
+   "why": "no state of the drow bordered a polity of the kobolds then, and none reached one on an expedition (the furthest went 400 km on foot over flat ground, more with riding and roads, across unruled land; the nearest polity of theirs lay 1,730 km away on the same terms)",
+   "km2": 0,
+   "took": [],
+   "reach": null,
+   "war_band": null,
+   "plain_wars_window": [
+    51,
+    51,
+    true
+   ],
+   "plain_wars_before_same": true,
+   "plain_wars_total": [
+    3069,
+    3069
+   ]
+  }
+ ]
+}

@@ -4,7 +4,7 @@ title: "Star anchor: re-pick the recipe offsets measured on the old star (hothou
 type: task
 status: todo
 parent: null
-milestone: v3
+milestone: later
 subsystem: climate
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-791, PW-799, PW-798, PW-790]
 refs: [planet/make.py, README.md, docs/coordination.md, docs/review/base-climate/star-anchor-audit/]
 created: 2026-10-24
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
@@ -32,5 +32,6 @@ Audit items 8 and 9 (docs/review/base-climate/star-anchor-audit/README.md).
 - [ ] water-world offset re-measured after PW-798 and the anchor
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v3 -> later: v3 is now states and war v0; this waits for after v1.0
 - 2026-10-26: Parent PW-244 -> none. (PW-900 backlog reorg). Milestone v2 -> v3: other planet kind. (PW-900 backlog reorg).
 - 2026-10-24: Created from inbox draft draft-recipe-offsets-after-anchor.md (found by star-anchor-audit).

@@ -33,6 +33,7 @@ Merged known issues (Earth on our climate):
 Check with `tools/earth_check.py` and the scorecard; don't chase parity.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: stays later: physics side track, ranked 5; gates no tag (rain inland, with PW-1363)
 - 2026-11-03: Triage 11-03: v2 -> later: rain kernel is calibration polish and three strikes sends it to the back of the line (PW-1363)
 - 2026-11-02: Status in-progress -> todo. 11-02 lane 120: three strikes (C1 inversions too small, C2 dry-column showers wrong way, C3 land friction partial and shifts B share wrong way); back of the line. The model over-rains 40-60 N interiors (1.6-1.8x) and under-rains humid coasts (~0.5x); supply from the adjacent seas is the lever. docs/review/base-climate/rain-inland/diagnosis.md
 - 2026-11-02: Status todo -> in-progress. 11-02: lane 120, diagnosis + cheap screens first (top v2 physics pick).

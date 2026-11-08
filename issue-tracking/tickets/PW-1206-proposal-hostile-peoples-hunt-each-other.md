@@ -4,7 +4,7 @@ title: "Proposal: hostile peoples hunt each other down locally, by the dragons' 
 type: task
 status: needs-decision
 parent: PW-917
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1172, PW-1169, PW-1068, PW-661]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/history/competition.py, planet/lineages/compose.py, docs/review/peoples-counterpressures/design.md, docs/review/peoples-why/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -40,5 +40,6 @@ Options:
 Lean: B first (cheap, readable, shows on the map), A with the war ticket.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: peoples tuning or owner call that no milestone theme needs
 - 2026-10-31: Daniel 10-31 (D26): B (enemy pairs, as visible story) first, then A inside the war ticket PW-1172.
 - 2026-10-31: Created from inbox draft draft-peoples-persecute-peoples.md (found by lane84).

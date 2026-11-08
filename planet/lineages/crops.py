@@ -1,11 +1,13 @@
-"""Domesticated plants (PW-721): the staple crops, each first cultivated somewhere, carried by farmers (and by canoe) and
+"""Domesticated plants (PW-721): the staple crops, each first cultivated somewhere, carried by farmers (and by boat: see below) and
 adding to what farming can feed. The constants are one table, `crop_defs.TABLE`, in the animals' row shape; the machinery
 (`animals.Stock`: a drawn date, a homeland on the wild range, a front over peopled land, crossings by boat) is the same,
 so this is `Animals` with another table and these differences:
   - who first cultivates a crop: farmers (their farm share) and hunters / foragers on the range (the `forage` share, PW-718);
   - several homelands per world: a landmass that already has a first cultivation is less likely to get another
     (`PENALTY` per crop already there), so wheat, rice, maize and the tubers come from different lands where there are any;
-  - seed goes by every craft (size 0), faster over land (about 1 km/yr);
+  - over the sea (lane 157, animals.Stock._sail_crop): between peoples only over a strait (the canoe's reach); over long open sea
+    only with seafaring colonists to land they hold themselves; across any ocean, to anyone, once ocean-going ships go there and back
+    (the last 0.53 kyr, in a renaissance or later present: the Columbian exchange). Over land, about 1 km/yr;
   - a people takes a crop up (knows it) once the crop has stood on a fifth of its land for LAG_KYR / propensity (PW-1373 B): farming
     peoples at once, hunting peoples ~10x slower, its first cultivators at once (the share of its land it then farms is the land's:
     lineages.ladder);

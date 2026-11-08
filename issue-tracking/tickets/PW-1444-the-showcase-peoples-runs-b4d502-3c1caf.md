@@ -1,0 +1,34 @@
+---
+id: PW-1444
+title: "The showcase peoples runs (b4d502, 3c1caf, a24559) no longer parse: the viewer's whole-people Culinary brief fails on them"
+type: task
+status: done
+parent: null
+milestone: v2
+subsystem: peoples
+effort: xs
+impact: high
+found_by: lane164
+blocked_by: []
+relates: [PW-1275, PW-1391, PW-728]
+refs: ["planet/lineages/brief.py::_people_contacts (SP.parse of meta.tree)", "planet/lineages/spec.py::build (ValueError: density and band_km2 are no longer given)", "runs b4d502 3c1caf a24559 (the v0.1.0 showcases)", "run a2b637 (the one D&D run on current code)", docs/wiki/state.md]
+created: 2026-11-03
+updated: 2026-11-04
+---
+
+## Description
+In plain words: the v0.1.0 showcase peoples runs (b4d502 and a24559 D&D, 3c1caf Seven Meals) were made before the density ladder
+(PW-1275). Their stored tree still gives `density`/`band_km2`, which today's spec parser refuses, so the brief's per-people block
+(`_people_contacts` parses the tree) raises and the viewer's Culinary brief for a whole people shows "Could not build the brief" on
+those runs. The new per-culture sheet (PW-1391) does not parse the tree and works on them. Every Seven Meals peoples run in runs/ has
+the same problem; only a2b637 (D&D) parses. What breaks if never done: Daniel opens the showcase in the viewer, picks a people, and the
+brief fails.
+
+Fix (no code): re-run the showcase peoples on current code (minutes each) and point state.md at the new ids; delete the old ones
+(no backward compatibility).
+- [ ] a Seven Meals and a D&D showcase peoples run on current code; the whole-people brief builds on both
+
+## Updates
+- 2026-11-04: Status todo -> done. Re-run on current code from finished worlds: Seven Meals 07c755 and D&D 0141d1 on 899985, D&D 3e0eb4 on dba204. Each has settlements, polities (empires, states, dragon realms) and a whole-people brief that returns 200. Old b4d502, a24559 and 3c1caf kept (Daniel's language run reads a24559).
+- 2026-11-04: Showcase re-runs restarted from finished world ids (899985 for A, dba204 for B); the first try passed the time zoom id, which skips the world's goods (no towns). cb0e0a deleted. delete --orphans also cleared 7 interrupted/orphan run folders and an orphan goods cache.
+- 2026-11-03: Created from inbox draft draft-showcase-peoples-runs-no-longer-parse.md (found by lane164).

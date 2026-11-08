@@ -4,7 +4,7 @@ title: "Proposal: continental blocs need peoples born apart and a home-ground ed
 type: story
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1180, PW-1181, PW-1184, PW-888]
 refs: [planet/lineages/history/origins.py, planet/lineages/history/dispersal.py, planet/lineages/crossing.py, planet/lineages/samples/dnd.toml, docs/review/peoples-why/report.md]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## In plain words
@@ -48,4 +48,5 @@ Options (they stack):
 Lean: A + B as rules (general for any tree), then check whether C is needed; D only for the preset's story.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: peoples tuning or owner call that no milestone theme needs
 - 2026-10-31: Created from inbox draft draft-continental-blocs-cradle-and-sea.md (found by lane84).

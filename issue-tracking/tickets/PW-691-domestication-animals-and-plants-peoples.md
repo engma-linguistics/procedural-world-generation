@@ -4,7 +4,7 @@ title: "Domestication: animals and plants peoples tame, from wild ranges to herd
 type: epic
 status: in-progress
 parent: null
-milestone: v2
+milestone: later
 subsystem: food
 effort: xl
 impact: high
@@ -13,13 +13,14 @@ blocked_by: []
 relates: [PW-688, PW-103, PW-675]
 refs: []
 created: 2026-10-23
-updated: 2026-10-23
+updated: 2026-11-03
 ---
 
 ## Description
 Owner (2026-10-24), with horses (PW-688): nomads and herders need something to herd. Wild ranges derived from the land (no fauna is simulated, PW-184): grazers of steppe and grassland (horse-, cattle-, sheep-, goat-, camel-, reindeer-, llama-like), fowl, dogs; and crops from the vegetation (grains, tubers, rice-like, fruit trees). Each has a homeland and date of taming (Earth anchors: dog ~15+ kyr, sheep/goat ~11 kyr, cattle ~10.5 kyr, horse ~5.5 kyr) and spreads with the peoples who take it up, setting what herders herd and farmers grow. Optionally, as a rare possibility, domestications Earth never made (zebra-, elk-, giant-bird-, lizard-mount-like, fantasy beasts), off by default, forceable for tests. Feeds land use (PW-662), transport (PW-688) and the culinary ethnography goal.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: v0 shipped; the rest is not a must-have (status unchanged)
 - 2026-10-24: Plants (crops) built on branch fun7 (PW-721), tamers by trait (PW-718) and the peoples' craft ladder (PW-720); camels/reindeer/llamas and separate stocks still open.
 - 2026-10-23: Status todo -> in-progress. Animals merged (dog, sheep/goat, cattle, fowl, horse; Animal table). Plants (crops) next.
 - 2026-10-24: Animals built on branch fun6: one `Animal` table, bit-flag layers animal_wild / animal_known, dog, sheep and goat, cattle (dairy, plough), fowl, two rare fantasy rows; see docs/proposals/lineages.md 'Animals (PW-691) and boats'. Plants, camels/reindeer/llamas, separate stocks and per-cell goods for PW-692 remain (drafts).

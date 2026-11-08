@@ -40,7 +40,7 @@ from ..geo import is_land
 from ..grid import Grid
 from . import crust, earth, events, mantle, motion, output, record, volcanism
 from .crust import Column
-from .isostasy import EXTRA, LAVA, LIFT, MAX_KM, MIX, VALLEY, elevation, sediment_km, subsidence
+from .isostasy import EXTRA, LAVA, LIFT, MIX, VALLEY, elevation, max_km, sediment_km, subsidence
 from .params import Params
 from .plate_kernels import cleanup_ghosts, resolve, world_view, write_back
 from .plates import Plates
@@ -77,10 +77,10 @@ class Simulation:
         "veg",  # ground cover by plants 0..1 per cell (vegetation.ground_cover; 0.0 before the first step)
         "veg_frac", "veg_lai",  # (NP, n) float32: cover and LAI of each plant functional type (None before)
         "npp",  # g C/m2/yr per cell
-        "npp_pot", "pot_frac", "pot_lai",  # during the spin-up: the potential vegetation (every group, the
+        "cover_pot", "pot_frac", "pot_lai",  # during the spin-up: the potential vegetation (every group, the
         # balance's CO2) the weathering reference is learnt with (earth.global_temperature; None after it)
-        "npp_w", "wv_frac", "wv_lai",  # the run's plants grown at the balance's CO2: the NPP the weathering sink's
-        # plant factor reads (PW-880: the CO2 reaches the sink only through GEOCARB's FERT, earth.co2_law)
+        "cover_w", "wv_frac", "wv_lai",  # the run's plants grown at the balance's CO2: the rooted cover the weathering
+        # sink's plant factor reads (PW-880: the CO2 reaches the sink only through GEOCARB's FERT, earth.co2_law; PW-1424 C)
         "veg_type", "tree_cover",  # named vegetation type (vegetation.TYPES id), tree cover 0..1
         "flora",  # Myr each plant group appeared (vegetation.GROUPS; NaN: not yet)
         "veg_niche",  # each group's niche at the last climate update (vegetation.niches)
@@ -162,8 +162,8 @@ class Simulation:
         self.veg = 0.0
         self.veg_frac = self.veg_lai = None
         self.npp = np.zeros(n)
-        self.npp_pot = self.pot_frac = self.pot_lai = None
-        self.npp_w, self.wv_frac, self.wv_lai = np.zeros(n), None, None
+        self.cover_pot = self.pot_frac = self.pot_lai = None
+        self.cover_w, self.wv_frac, self.wv_lai = np.zeros(n), None, None
         self.veg_type = np.zeros(n, np.uint8)
         self.tree_cover = np.zeros(n)
         self.flora = [float("nan")] * 6
@@ -375,12 +375,12 @@ class Simulation:
 
     def _write_back(self, col, born):
         """Make the column the new world view and copy it to the plates.
-        Crust is kept between 1 km and MAX_KM, and the sediment cover can't
+        Crust is kept between 1 km and isostasy.max_km (MAX_KM less its sediment's and swell's lift), and the sediment cover can't
         be thicker than the crust (its rock mix shrinks with it). The strata
         are made to add up to the final cover (record.reconcile)."""
         x = col.x
         self.w_cont = col.cont | born
-        self.w_thick = np.clip(col.t, 1.0, MAX_KM)
+        self.w_thick = np.clip(col.t, 1.0, max_km(self.w_cont, col.cover, x))
         self.book("clip", col.t, self.w_thick, self.w_cont)
         self.w_cover = np.clip(col.cover, 0, self.w_thick)
         shrink = self.w_cover / np.maximum(col.cover, 1e-9)

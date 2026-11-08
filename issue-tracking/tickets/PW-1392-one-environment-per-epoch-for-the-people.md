@@ -4,7 +4,7 @@ title: "One environment per epoch for the peoples: an epoch-environment provider
 type: story
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: m
 impact: high
@@ -25,4 +25,5 @@ Proposal (fresh-eyes R2): one epoch-environment provider that every peoples modu
 Not decided here: how to rescale (judgement; measure against the time-zoom frames first).
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: peoples tuning or owner call that no milestone theme needs
 - 2026-11-03: Created.

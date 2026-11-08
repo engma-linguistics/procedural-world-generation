@@ -2,7 +2,7 @@
 id: PW-1372
 title: "Humans lost their lactase share with the herder groups (PW-1357): derive it from the herding the ladder finds"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v2
 subsystem: food
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1357, PW-1275, PW-784, PW-723]
 refs: ["planet/lineages/animals.py::Animals.summary (dairy, PW-784)", "planet/lineages/ladder.py::Ladder.line (herd share per cell)", "planet/lineages/ladder.py::Ladder.sh", planet/lineages/samples/dnd.toml, "git show 5849cae3:planet/lineages/samples/dnd.toml (lines 643, 751, 766: milk 0.1 steppe_orc, 0.6 the human herder groups)", planet/lineages/brief.py, docs/review/peoples/density-ladder/build.md]
 created: 2026-11-02
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Description
@@ -28,4 +28,5 @@ since herding was taken up) instead of an authored number; or, simpler, author `
 population frequency (a share, PW-723).
 
 ## Updates
+- 2026-11-03: Status todo -> done. Lane 164: a culture's lactase share = max(authored body.milk, herd share x min(1, years since milking was known / 5 kyr)) in cuisine.py::dairy_of (LACTASE_KYR, a JUDGEMENT placeholder shape, not a fitted selection rate); fresh milk at >= 0.6. Herding humans get fresh milk again after long dairying, without an authored number.
 - 2026-11-02: Created from inbox draft draft-human-lactase-without-herder-groups.md (found by lane 136 / lane 137 (density ladder build)).

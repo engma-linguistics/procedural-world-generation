@@ -80,14 +80,17 @@ def test_ice_terms_icehouse_glacial_max_frozen_over():
     assert warm["icehouse"] and not warm["glacial_max"] and not warm["frozen_over"]
     lgm = C.ice_terms(si, np.array([0.02, 0.25, 0.1, 0.03]))
     assert lgm["glacial_max"] and not lgm["frozen_over"]
-    frozen = C.ice_terms(si, np.array([0.02, 0.3, 0.4, 0.03]))
-    assert frozen["frozen_over"] and frozen["glacial_max"] and frozen["land_ice_peak"] == 40.0
+    peak = C.ice_terms(si, np.array([0.02, 0.3, 0.4, 0.03]))  # (40% at a moment, not at the end: reported, PW-1425)
+    assert not peak["frozen_over"] and peak["frozen_peak"] and peak["glacial_max"] and peak["land_ice_peak"] == 40.0
+    frozen = C.ice_terms(si, np.array([0.02, 0.3, 0.4, 0.41]))
+    assert frozen["frozen_over"] and frozen["frozen_end_n"] == 2
     assert C.ice_terms(np.zeros(4), None)["never_ice"] and C.ice_terms(si, None)["frozen_over"] is None
 
 
-def test_frozen_over_counts_only_under_a_near_final_star():
-    """Owner 2026-10-30 (PW-1142): frozen over fails only where the star's forcing is within FINAL_STAR_C of the
-    finish's and within the run's last FINAL_MYR, whichever starts later; earlier frozen spells are reported."""
+def test_frozen_peak_counts_only_under_a_near_final_star():
+    """Owner 2026-10-30 (PW-1142): the hard window is where the star's forcing is within FINAL_STAR_C of the finish's
+    and within the run's last FINAL_MYR, whichever starts later; the window's peak is reported (frozen_peak), earlier
+    frozen spells too (frozen_over_any); frozen over itself is the end (PW-1425)."""
     t = np.arange(300.0, 1001.0, 4.0)
     star = -11.0 * (1000.0 - t) / 1000.0  # (brightening to 0 at the end: within 2 C from ~818 Myr)
     hard, start, which = C.hard_window(t, star)
@@ -100,7 +103,7 @@ def test_frozen_over_counts_only_under_a_near_final_star():
     il = np.full(len(t), 0.1)
     il[(t >= 600) & (t < 640)] = 0.45  # a dim-star frozen spell
     terms = C.ice_terms(si, il, hard=C.hard_window(t, star)[0])
-    assert not terms["frozen_over"] and terms["frozen_over_any"]
+    assert not terms["frozen_over"] and not terms["frozen_peak"] and terms["frozen_over_any"]
     il[-3:] = 0.42  # frozen at the end, under a near-final star
     terms = C.ice_terms(si, il, hard=C.hard_window(t, star)[0])
-    assert terms["frozen_over"] and terms["frozen_over_any"]
+    assert terms["frozen_over"] and terms["frozen_peak"] and terms["frozen_over_any"] and terms["frozen_end_n"] == 3

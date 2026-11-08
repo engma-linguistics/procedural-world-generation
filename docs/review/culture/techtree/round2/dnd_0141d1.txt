@@ -1,0 +1,30 @@
+world first (any people): tech | main: median, min-max; peoples inventing it themselves, median | R.p4: median, min-max; peoples inventing it themselves, median | R.p8: median, min-max; peoples inventing it themselves, median | R.p11: median, min-max; peoples inventing it themselves, median | R.p11.F: median, min-max; peoples inventing it themselves, median | R.p16: median, min-max; peoples inventing it themselves, median
+  writing | 4,153, 2,797-4,795; 2 | 7,514, 5,340-8,832; 2.5 | 6,278, 3,728-8,219; 3 | 5,843, 3,005-8,219; 2 | 6,994, 4,795-8,219; 3 | 5,344, 2,175-7,929; 2
+  towns | 7,649, 6,625-8,832; 6.5 | 9,490, 8,832-10,570; 4.5 | 8,994, 7,929-10,570; 4 | 8,369, 7,649-10,570; 4 | 8,832, 8,219-10,570; 4.5 | 8,074, 7,119-10,197; 3
+  cities | 5,061, 3,597-6,391; 3 | 7,119, 5,738-7,929; 4.5 | 6,166, 4,625-7,379; 4 | 5,843, 4,305-6,868; 3.5 | 6,994, 6,166-7,929; 4 | 5,340, 3,115-6,625; 3
+  kingship | 4,153, 1,953-5,948; 6 | 6,994, 5,340-7,649; 6 | 5,738, 4,305-6,625; 5 | 5,246, 3,865-6,166; 4.5 | 6,391, 5,152-7,379; 5.5 | 4,305, 2,603-5,738; 4
+world first (any people): tech | R.p24: median, min-max; peoples inventing it themselves, median | R.p32: median, min-max; peoples inventing it themselves, median | R.p16.F: median, min-max; peoples inventing it themselves, median | R.p24.F: median, min-max; peoples inventing it themselves, median | R.p32.F: median, min-max; peoples inventing it themselves, median
+  writing | 4,716, 1,574-7,119; 2 | 3,875, 1,269-7,119; 1 | 6,746, 4,006-7,929; 2 | 6,166, 2,797-7,929; 2 | 5,637, 2,098-7,649; 1.5
+  towns | 7,789, 6,625-10,197; 3 | 7,258, 5,948-9,490; 3 | 8,520, 7,379-10,570; 4 | 8,074, 6,625-10,570; 4 | 7,929, 6,625-9,837; 4
+  cities | 4,465, 1,817-6,166; 3 | 3,940, 1,023-5,536; 2 | 6,508, 5,738-7,649; 3 | 5,948, 4,795-6,868; 3 | 5,340, 4,006-6,625; 2.5
+  kingship | 3,599, 1,099-5,152; 4 | 2,848, 182-4,462; 3 | 5,738, 4,305-6,625; 5 | 4,970, 2,899-6,166; 5 | 4,305, 2,175-5,536; 5
+world first (any people): tech | R.p20: median, min-max; peoples inventing it themselves, median
+  writing | 4,889, 1,953-7,929; 2
+  towns | 7,934, 6,868-10,197; 3
+  cities | 4,882, 2,698-6,166; 3
+  kingship | 3,865, 2,098-5,340; 4
+world first (any people): tech | R.Y.a5.p20: median, min-max; peoples inventing it themselves, median | R.Y.a5.p32: median, min-max; peoples inventing it themselves, median | R.Y.a8.p20: median, min-max; peoples inventing it themselves, median | R.Y.a8.p32: median, min-max; peoples inventing it themselves, median
+  writing | 6,170, 3,347-8,219; 2 | 5,644, 2,175-7,929; 2 | 5,644, 1,953-7,929; 2 | 4,625, 1,315-7,119; 1
+  towns | 8,676, 8,219-10,570; 5 | 8,219, 7,649-10,570; 4 | 8,676, 7,119-10,197; 4 | 8,219, 6,166-9,490; 3
+  cities | 6,391, 3,728-7,119; 3 | 5,738, 3,115-6,625; 3 | 5,843, 3,005-7,119; 2.5 | 4,974, 1,632-6,625; 2
+  kingship | 5,445, 3,115-6,625; 4.5 | 4,710, 2,255-5,948; 4 | 5,344, 2,423-6,391; 3.5 | 4,389, 824-5,948; 3
+world first (any people): tech | R.Y.a12.p24: median, min-max; peoples inventing it themselves, median | R.Y.a16.p24: median, min-max; peoples inventing it themselves, median | R.Y.a24.p24: median, min-max; peoples inventing it themselves, median | R.Y.a32.p24: median, min-max; peoples inventing it themselves, median
+  writing | 4,999, 1,574-7,119; 2 | 4,901, 1,574-7,119; 2 | 4,716, 1,574-7,119; 2 | 4,716, 1,574-7,119; 2
+  towns | 7,789, 6,625-10,197; 3 | 7,789, 6,625-10,197; 3 | 7,789, 6,625-10,197; 3 | 7,789, 6,625-10,197; 3
+  cities | 4,710, 1,817-6,166; 3 | 4,710, 1,817-6,166; 3 | 4,465, 1,817-6,166; 3 | 4,465, 1,817-6,166; 3
+  kingship | 3,599, 1,099-5,152; 4 | 3,599, 1,099-5,152; 4 | 3,599, 1,099-5,152; 4 | 3,599, 1,099-5,152; 4
+world first (any people): tech | main: median, min-max; peoples inventing it themselves, median | R.Y.a24.p24: median, min-max; peoples inventing it themselves, median | R.Y.a24.p24.F: median, min-max; peoples inventing it themselves, median | R.Y.a24.p24.B: median, min-max; peoples inventing it themselves, median | R.Y.a24.p24.T: median, min-max; peoples inventing it themselves, median
+  writing | 4,153, 2,797-4,795; 2 | 4,716, 1,574-7,119; 2 | 6,166, 2,797-7,929; 2 | 4,716, 1,574-7,119; 1 | 4,716, 1,574-7,119; 1.5
+  towns | 7,649, 6,625-8,832; 6.5 | 7,789, 6,625-10,197; 3 | 8,074, 6,625-10,570; 4 | 7,789, 6,625-10,197; 3 | 7,789, 6,625-10,197; 3
+  cities | 5,061, 3,597-6,391; 3 | 4,465, 1,817-6,166; 3 | 5,948, 4,795-6,868; 3 | 4,465, 1,817-6,166; 1.5 | 4,465, 1,817-6,166; 2
+  kingship | 4,153, 1,953-5,948; 6 | 3,599, 1,099-5,152; 4 | 4,970, 2,899-6,166; 5 | 3,796, 1,099-5,738; 2 | 3,728, 1,099-5,340; 3

@@ -448,6 +448,17 @@ def lineages_job(req: dict, progress=lambda f, msg: None) -> dict:
     return LR.job({k: v for k, v in req.items() if k != "type"}, progress)
 
 
+def _gods_mode(req: dict) -> dict:
+    """{"gods_mode": m} when the request asks for one (PW-1309: faith_made | belief_only | absolute), else {}; BadRequest on another."""
+    from .lineages import spec as SP
+    m = req.get("gods_mode")
+    if m in (None, ""):
+        return {}
+    if m not in SP.GODS_MODES:
+        raise BadRequest(f"gods_mode must be one of {list(SP.GODS_MODES)}")
+    return {"gods_mode": m}
+
+
 def parse_lineages_request(req: dict) -> dict:
     """Check a POST /api/lineages {world | timezoom, tree | raw, tries} now, so a bad one fails at once."""
     from .lineages import recent as R
@@ -469,6 +480,7 @@ def parse_lineages_request(req: dict) -> dict:
     out = {"type": "lineages", "tries": tries, **({"world": str(req["world"])} if req.get("world") else
                                                   {"timezoom": str(req["timezoom"])})}
     out.update({"raw": req["raw"]} if req.get("raw") else {"tree": str(req["tree"])})
+    out.update(_gods_mode(req))
     return out
 
 

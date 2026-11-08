@@ -67,6 +67,8 @@ import tomllib
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
+from .years import years_ago  # noqa: F401  (PW-1429: dates as text; also SP.years_ago)
+
 # movement and behaviour (docs/proposals/lineages.md section 2). sea: share of the carried
 # pressure kept per sea cell crossed (0: can't cross; establishment needs spread.EST, so 0.55 ~ 3 cells);
 # relief: share kept per 1000 m climbed between cells is exp(-relief) (walkers 0.6); speed: x the base
@@ -429,8 +431,6 @@ class Lineage:
     survival: str = "normal"  # ...normal | harsh (life_history.HARSH: few reach adulthood, more adult deaths)
     mortality: tuple | None = None  # ...annual mortality per stage (infancy, childhood, adulthood, elder), overriding the schedules
     raids: bool = False  # lane 97 (D25): a raider people (default: survival 'harsh'), whose canon losses rise on hostile borders and with in-fighting (history.counter)
-    disease_resist: float = 0.0  # lane 97 (D25, PW-1192): 0..1, the share of plague and epidemic losses it shrugs off (dwarves 0.75); it still carries them
-    band_pct: tuple[float, float] = (0.0, 100.0)  # lane 78: soft target for its share of the world's people, percent [min, max] (history.bands)
     founders: float | None = None  # arrival (PW-1150): how many people come through, in all its waves (None: today's founding patch)
     waves: int = 1  # arrival: how many waves they come in (history.params.WAVE_KYR apart, or as its plane's thinnings open)
     portal_n: int | None = None  # arrival: how many portals it comes through (None: meta.portals)
@@ -540,6 +540,7 @@ class Use:
 
 
 ERAS = ("stone age", "bronze age", "classical", "medieval", "renaissance", "industrial")
+GODS_MODES = ("faith_made", "belief_only", "absolute")  # meta.gods_mode (PW-1304, PW-1309); techtree.GODS_MODES is the same tuple
 ERA_DEFAULT = "renaissance"  # meta.era: the vague D&D-default present (PW-690). The technology tree (techtree.py) caps what
 # the peoples know by the present at it; the history is not run forward past the present for it.
 
@@ -550,7 +551,6 @@ PORTAL_MODES = ("off", "random", "sites", "wandering")  # wandering (lane 78): t
 WAVE_KYR = 2.0  # default meta.wave_kyr: an arrival's waves come this far apart (a judgement: a few kyr between the waves of a migration)
 PORTAL_OPEN_KYR = 5.0  # default meta.portal_open_kyr: a wandering thinning stays open about this long (x U(0.4, 1.6), as volcanism.hotspots draws a plume's life)
 PORTAL_DRIFT_KMKYR = 100.0  # default meta.portal_drift_kmkyr: how fast a plane's frame slides over the world (a judgement: ~500 km over an opening)
-BAND_ROUNDS = 3  # default meta.band_rounds: re-runs of the best try that nudge peoples into their share bands (history.bands)
 PORTAL_SITES = ("forest", "desert", "reef", "volcano")  # (history.History.portal_sites: deepest forest, middle of a desert, a coral reef, the foot of a volcano)
 LAND_PULL = 0.5  # default: habitat x(1 - pull + pull G), G the best of a line's goods (mean 1 over its country)
 BRAKE_X = (0.0, 0.5, 1.0, 2.0, 4.0)  # the choices of meta.raiders and meta.war (lane 97, D25; history.counter): how hard the raiders are
@@ -582,6 +582,7 @@ class Tree:
     crops: list[str] | None = None  # meta.crops: the cultivated plants (crop_defs.IDS) of the world; None: every real one; [] none
     crops_force: list[str] = field(default_factory=list)  # meta.crops_force: fantasy crops whose rare domestication is certain (tests)
     crops_at: dict = field(default_factory=dict)  # meta.crops_at: id -> anchor time of the first cultivation, kyr ago
+    gods_mode: str = "faith_made"  # meta.gods_mode (PW-1309): faith_made | belief_only (no divine magic) | absolute; saved with the run, read by techtree.build
     mode: str = MODE_DEFAULT  # meta.mode: 'fantasy' (all the peoples, the fantasy goods) or 'real' (only the lines marked real, real goods; PW-695)
     portal_mode: str = "off"  # meta.portal_mode: arrivals from outside: 'off' (each at its best habitat), 'random' or 'sites' (PW-697)
     portals: int = 1  # meta.portals: how many portals the arrivals come through (portal_mode random / sites)
@@ -592,7 +593,6 @@ class Tree:
     wave_kyr: float = WAVE_KYR  # meta.wave_kyr: years between an arrival's waves, kyr
     portal_open_kyr: float = PORTAL_OPEN_KYR  # meta.portal_open_kyr: a wandering thinning's mean opening, kyr
     portal_drift_kmkyr: float = PORTAL_DRIFT_KMKYR  # meta.portal_drift_kmkyr: a plane's drift over the world, km per kyr
-    band_rounds: int = BAND_ROUNDS  # meta.band_rounds: calibration re-runs for the share bands (history.bands)
     dragon_km2: float = DRAGON_KM2  # dragons (megafauna that fly): one per this many km2, nominal (PW-923, PW-957; PW-1068: competition and viable numbers only)
     forager_km2: float = FORAGER_KM2  # human foragers per km2, the giants' natural-density baseline (PW-976)
     giant_km2: float = GIANT_KM2  # giants (megafauna that do not fly): one per this many km2, nominal (PW-963; PW-1068: competition and viable numbers only)
@@ -814,16 +814,6 @@ def _life(r: dict, base, origin: str, lid: str) -> dict:
         out["mortality"] = base.mortality if inh else None
     rd = r.get("raids")
     out["raids"] = bool(rd) if rd not in (None, "") else out["survival"] == "harsh"  # (a raider is a people living by its losses, whatever its parent)
-    dr = r.get("disease_resist")
-    out["disease_resist"] = float(dr) if dr not in (None, "") else (base.disease_resist if inh else 0.0)
-    if not 0.0 <= out["disease_resist"] <= 1.0:
-        raise ValueError(f"{lid}: disease_resist must be within 0..1")
-    bp = r.get("band_pct")
-    out["band_pct"] = _pair(bp, "band_pct") if bp not in (None, "", []) else (0.0, 100.0)
-    if not 0 <= out["band_pct"][0] <= out["band_pct"][1] <= 100:
-        raise ValueError(f"{lid}: band_pct must be [min, max] within 0..100")
-    if bp not in (None, "", []) and origin in ("group", "template", "hybrid"):
-        raise ValueError(f"{lid}: band_pct is for a people (a root, split or arrival; its groups count in its share)")
     fo = r.get("founders")
     out["founders"] = float(fo) if fo not in (None, "") else None
     out["waves"] = int(r.get("waves", 1) or 1)
@@ -839,19 +829,6 @@ def _life(r: dict, base, origin: str, lid: str) -> dict:
         raise ValueError(f"{lid}: waves must be within 1..20")
     if out["portal_n"] is not None and not 1 <= out["portal_n"] <= 12:
         raise ValueError(f"{lid}: portals must be within 1..12")
-    return out
-
-
-def band_warnings(t) -> list[str]:
-    """The share bands' sums (lane 78): the minimums past 100% or the maximums under it can't all be met."""
-    peoples = [l for l in t.lines.values() if not l.overlay and not l.megafauna and l.origin != "group"]
-    lo = sum(l.band_pct[0] for l in peoples)
-    hi = sum(l.band_pct[1] for l in peoples)
-    out = []
-    if lo > 100 + 1e-9:
-        out.append(f"the peoples' minimum shares add up to {lo:g}% (over 100%): not all can be met")
-    if hi < 100 - 1e-9:
-        out.append(f"the peoples' maximum shares add up to {hi:g}% (under 100%): not all can be met")
     return out
 
 
@@ -1002,8 +979,6 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
                     raise ValueError(f"{lid}: {key} names an unknown line {q!r}")
             hints[key] = ids
         life = _life(r, base, origin, lid)
-        if origin == "hybrid" and r.get("disease_resist") in (None, "") and bases:  # (a mixed people: its parents' mean, PW-1192)
-            life["disease_resist"] = sum(b.disease_resist for b in bases) / len(bases)
         l = replace(base, id=lid, name=str(r.get("name", lid)), origin=origin, parents=pars, ago_kyr=ago,
                     temp_c=_pair(r.get("temp_c"), "temp_c") or temp,
                     rain_mm=_pair(r.get("rain_mm"), "rain_mm") or rain,
@@ -1115,9 +1090,6 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         setattr(t, key, float(meta.get(key, dflt)))
         if getattr(t, key) < 0 or (key != "portal_drift_kmkyr" and getattr(t, key) <= 0):
             raise ValueError(f"meta.{key} must be > 0")
-    t.band_rounds = int(meta.get("band_rounds", BAND_ROUNDS))
-    if not 0 <= t.band_rounds <= 8:
-        raise ValueError("meta.band_rounds must be within 0..8")
     tk = tuple(float(parse_ago(x)) for x in meta.get("tier_kyr", TIER_KYR))
     if len(tk) != 3 or list(tk) != sorted(tk) or tk[0] <= 0:
         raise ValueError("meta.tier_kyr must be three rising split depths (T0, T1, T2 limits)")
@@ -1170,6 +1142,9 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
     t.era = str(meta.get("era") or ERA_DEFAULT).strip().lower()
     if t.era not in ERAS:
         raise ValueError(f"meta.era must be one of {list(ERAS)}")
+    t.gods_mode = str(meta.get("gods_mode") or "faith_made").strip().lower()
+    if t.gods_mode not in GODS_MODES:
+        raise ValueError(f"meta.gods_mode must be one of {list(GODS_MODES)}")
     t.viable_pop = float(meta.get("viable_pop", VIABLE_POP))
     if t.viable_pop < 0:
         raise ValueError("meta.viable_pop must be >= 0")
@@ -1279,10 +1254,6 @@ def to_raw(t: Tree) -> dict:
             r["mortality"] = list(l.mortality)
         if l.raids != (l.survival == "harsh"):
             r["raids"] = l.raids
-        if l.disease_resist:
-            r["disease_resist"] = l.disease_resist
-        if tuple(l.band_pct) != (0.0, 100.0):
-            r["band_pct"] = list(l.band_pct)
         if l.origin == "arrival":
             if l.founders is not None:
                 r["founders"] = l.founders
@@ -1295,11 +1266,11 @@ def to_raw(t: Tree) -> dict:
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
                      "surge_early": t.surge_early, "surge_late": t.surge_late, "raiders": t.raiders, "war": t.war,
-                     "era": t.era, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
+                     "era": t.era, "gods_mode": t.gods_mode, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
                      "press_early": t.press_early, "press_late": t.press_late, "rivals": t.rivals, "dragon_abundance": t.dragon_abundance, "game_share": t.game_share, "overkill": t.overkill, "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites, "growth_rates": t.growth_rates, "draw_ranges": t.draw_ranges, "wave_kyr": t.wave_kyr,
-                     "portal_open_kyr": t.portal_open_kyr, "portal_drift_kmkyr": t.portal_drift_kmkyr, "band_rounds": t.band_rounds,
+                     "portal_open_kyr": t.portal_open_kyr, "portal_drift_kmkyr": t.portal_drift_kmkyr,
                      **({"reputation": t.reputation} if t.reputation else {}),
                      **({"animals": t.animals} if t.animals is not None else {}),
                      **({"animals_force": t.animals_force} if t.animals_force else {}),

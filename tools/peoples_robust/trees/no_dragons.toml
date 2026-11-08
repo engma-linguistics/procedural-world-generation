@@ -1,0 +1,7 @@
+# A peoples-robustness tree (tools/peoples_robust.py): see native_fey.toml for the keys.
+# Owner 11-04: dnd with its biggest outside pressure taken away. The dragons' kinds are off (the draconic stem stays, so the
+# kobolds and dragonborn keep their parent); nothing in the peoples should lean on dragons to stay in range.
+rationale = "No dragons: dnd with the ten dragon kinds and their two great branches off."
+base = "dnd"
+off = ["chromatic_dragon", "metallic_dragon", "red_dragon", "blue_dragon", "green_dragon", "black_dragon", "white_dragon",
+       "gold_dragon", "silver_dragon", "bronze_dragon", "copper_dragon", "brass_dragon"]

@@ -528,3 +528,12 @@ Against Wikipedia's grammatical-category list, after A-C:
 - **A glossed short text per demo language** (a few connected sentences: a small story or a recipe, in keeping with
   the culinary end-goal), not just isolated sentences.
 - **A last-pass "reviewing linguist" agent** reads the regenerated sketches cold and lists what looks fake.
+
+### Texts (Daniel, 11-07 night)
+- Every glossed text shows four lines: book spelling (romanized), IPA, gloss and English.
+- **A Schleicher-style fable.** One fixed short English fable, in the spirit of Schleicher's "The Sheep and the Horses",
+  rendered in each proto-language and in its daughters. Like Schleicher's, it shows the same text through sound
+  change and grammar change: the proto version and 2–4 descendants side by side, each with audio.
+- **An origin myth from the faith data.** For a people whose culture has gods (`planet/lineages/gods.py`, `taboos.py`,
+  merged from main 11-07), a short creation or origin myth built from that faith's gods and taboos, told in the people's
+  language and glossed. If the faith data is too thin for that, say so rather than inventing lore.

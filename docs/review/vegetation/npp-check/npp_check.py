@@ -1,6 +1,6 @@
 """Lane 123 (PW-1261): the vegetation's NPP and above-ground NPP against sourced NPP-climate relations, on Earth's observed climate.
 
-PYTHONPATH=<worktree> PLANET_DATA=<main repo> uv run python npp_check.py [--world 506694] [--json out.json] [--tag base]
+PYTHONPATH=<worktree> PLANET_DATA=<main repo> uv run python npp_check.py [--world 506694] [--json out.json] [--tag base] [--kn 0.4]
 """
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import json
 import sys
 from pathlib import Path
 
-WT = Path("/data/personal/repos/procedural-world-generation/.claude/worktrees/agent-aefe19dd8197a7ce6")
+WT = Path(__file__).resolve().parents[4]  # the checkout this script sits in
 sys.path.insert(0, str(WT))
 import planet  # noqa: E402,F401
 import numpy as np  # noqa: E402
@@ -47,7 +47,11 @@ def main():
     ap.add_argument("--herb-rl", type=float, default=1.0, help="x the herbs' leaf (and root) maintenance respiration rate")
     ap.add_argument("--eps", type=float, default=1.0, help="x all light-use efficiencies (EPS_SCALE 0.8 -> 0.8 x this)")
     ap.add_argument("--trop-eps", type=float, default=1.0, help="x the tropical trees' efficiency")
+    ap.add_argument("--kn", type=float, default=None, help="canopy leaf-respiration depth constant for the non-herbs "
+                    "(vegetation.KN_RESP; None: as the code has it, 0: every leaf respires alike)")
     a = ap.parse_args()
+    if a.kn is not None:
+        V._KP[~V.HERBS, 20] = a.kn
     V._KP[[V.IDX["TrBE"], V.IDX["TrBR"]], 0] *= a.trop_eps
     herbs = [V.IDX[c] for c in ("C4G", "C3G", "TunH", "WetH")]
     V._KP[herbs, 9] *= a.herb_rl

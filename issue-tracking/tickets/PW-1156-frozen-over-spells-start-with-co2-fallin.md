@@ -4,7 +4,7 @@ title: Frozen-over spells start with CO2 falling about 8-fold in ~12 Myr, deep e
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-865]
 refs: [planet/tectonics/earth.py, tools/ice_diag.py]
 created: 2026-10-30
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -39,5 +39,6 @@ Question: are swings of 2 e-folds of CO2 in 12 Myr from a source dip plausible (
 - [ ] A written read of the source's variance per 10 Myr against Earth's record, sent to the coordinator
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 6; gates no tag (re-check after D47)
 - 2026-10-31: Milestone v1 -> v2 (v1 cut plan, docs/review/v1-cut/plan.md): not a tag blocker; v1 tags the planet, peoples ship as a preview.
 - 2026-10-30: Created from inbox draft draft-fast-co2-drops-start-frozen-spells.md (found by lane71).

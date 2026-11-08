@@ -9,6 +9,7 @@ import pytest
 from planet import highlights as H
 from planet import timeline as T
 from planet import world as W
+from planet.summit import summit_m
 from planet.geo import R_KM
 
 
@@ -38,7 +39,9 @@ def check(world, feats):
                 assert d > 300, (a["title"], b["title"])
     json.dumps(feats, default=W._np)  # what the cache and the API send
     by = {f["kind"]: f for f in feats}
-    assert elev[by["highest_peak"]["cell"]] == elev.max()
+    c = by["highest_peak"]["cell"]
+    summit = summit_m(g, elev)  # PW-846: ranked by summit height, not the cell average
+    assert summit[c] == summit.max() and by["highest_peak"]["stats"]["summit_m"] >= elev[c]
     assert elev[by["trench"]["cell"]] == elev.min()
     return by
 
@@ -132,7 +135,7 @@ def test_plateau_canyon_waterfall(gen4):
 def test_ice_capped_peak(gen4):
     L = gen4["layers"]
     L["ice"] = np.zeros(gen4["grid"].n)
-    top = int(np.argmax(L["elevation"]))
+    top = int(np.argmax(summit_m(gen4["grid"], L["elevation"])))
     L["ice"][top] = 600
     by = check(gen4, H.find(gen4))
     free = by["ice_free_peak"]

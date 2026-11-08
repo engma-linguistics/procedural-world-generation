@@ -4,7 +4,7 @@ title: "The wild herds are 2-3x thinner than Africa's measured herds at the same
 type: task
 status: in-progress
 parent: null
-milestone: v2
+milestone: later
 subsystem: food
 effort: m
 impact: med
@@ -50,6 +50,8 @@ Options:
 Lean: B, as a cheap diagnosis first (one savanna NPP source read against the model's NPP by rain band), before any change.
 
 ## Updates
+- 2026-11-05: Scout 202 (docs/review/climate/grazing/scout1.md): herds at 0.74x Coe's rich-soil parks (3.07 vs 3.78-4.39 t/km2 at 550-700 mm) are inside the scatter (-1.1 to -1.4 sd); accepted, no change.
+- 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 3; gates no tag (plant growth; status unchanged)
 - 2026-11-03: Lane 144 (fork judge, merged 558ce440): PW-1261's 2 frozen-over draws are the same two where a forked do-nothing change also froze over (PW-1404). Still parked on D45.
 - 2026-11-03: Lane 140d (5f5d6ddf, round1.md s8): main's cold-tail fragility is the carbon-cycle yardstick learnt from ~5 samples of the spin-up (carries 1.5 of 1.7 C within-seed late-dT sd); the herb change's own push ~-0.1 to -0.15 C. Parked pending D45 (judge from a shared spin-up?); harness being built in lane 144.
 - 2026-11-03: Lane 140c (95761e73, round1.md s7): null-nudge screen moves main's 6 coldest by 3-27 pt (one crosses 40% before the window); herb change stays above the null on 6/6 (sign test p~0.03): small real cold push. Weathering reference on spin-up climate: negligible (~+0.01 C), lean close. Held on branch; lane 140d diagnoses the cold-tail margin (spin-up dT vs late dT r=-0.39) and the in-window push.

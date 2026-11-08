@@ -4,11 +4,14 @@
 
 ## Milestones
 - **v1** (epic PW-244; done, tagged v0.1.0 on 2026-11-01): a reliable, finished, usable planet from a seed. `planet make` / the start screen, export, human-use layers, glacial imprint, fine-zoom redraws, then the showcase remake (PW-202) and the final calibration pass. `board.py milestones v1` lists what is open.
-- **v2:** features before more physics fidelity. Always one lane on the peoples layer (subsystems `peoples`, `culture`, `food` on the board; PW-692, the culinary ethnography, frames the end goal; D44 on the owner's desk asks whether food comes before languages and polities). Also speed (PW-247/252), resources (PW-155 with PW-474), planet settings (PW-481; the viewer is PC-only, so the phone layout PW-483 is out of v2 and v3), fine-zoom and zoom landform quality (PW-516 and the zoom tickets), and the base-climate and ocean follow-ups. `board.py milestones v2`.
-- **v3:** deliberately far off, each a system of its own: the civilization epic (PW-661: warfare and displacement, culture fracture PW-670, unifying pressure PW-676), technology (PW-675), weather (PW-156), moons and planet bodies (PW-216), weird worlds (PW-443), whole-world L8/L9 finish (PW-490).
-- **v4:** ground level and asset-heavy: a walkable setting or city-sized view (PW-1199), after v3.
-- **later:** maybe, unscheduled: polish, quality-pass items (epic PW-649) and ideas nobody has pulled for. Ice ages done properly (epic PW-470; v1 uses the glacial index kludge PW-471) is run-physics work in the v2 lane.
-- The base-climate v2 plan (overturning, sea's air, summer heat, thermostat; PW-570) is tracked in `docs/review/base-climate/stages.md`.
+Milestone vN is tag v0.N.0; v1.0 (tag v1.0.0) is 1 December, after v5. Plan, must-haves and "done when" checks per milestone: `docs/review/board/milestones-v2-v5.md` (2026-11-03). Milestones hold non-physics must-haves only.
+- **v2** (~10 Nov): faiths you write, a culture's food sheet (PW-1391), dates in years. `board.py milestones v2`.
+- **v3** (~17 Nov): states and war v0 (PW-661), invasions you schedule (PW-756), the Seven Meals empires (PW-785).
+- **v4** (~23 Nov): polities inside the history, war's toll on land (PW-1172), culture-founded calendars, a names slot for the languages work.
+- **v5** (~28 Nov): the December campaign world, refined L7 to L9 (PW-1209), every Seven Meals people right.
+- **v1.0** (1 Dec): freeze, checklist walk, tag.
+- **Physics side track:** gates no tag; ranked tickets in `later` (D47 first: PW-1424, PW-1425), one 1-3 pass lane each.
+- **later:** the backlog, including the old v3/v4 systems (weather, moons, weird worlds, technology epic, walkable setting PW-1199). Ice ages done properly (epic PW-470; v1 uses the glacial index kludge PW-471) and the base-climate v2 plan (PW-570, `docs/review/base-climate/stages.md`) wait there.
 
 Defaults: level 7 for showcases, level 6 for quick large-scale tests.
 

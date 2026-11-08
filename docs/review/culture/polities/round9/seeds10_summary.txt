@@ -1,0 +1,12 @@
+# seeds 10000-10011 on run 052319 (seed 10 history): km, now+retime
+
+writing: known in /12, median yr ago [min-max]; first writer of any people
+  km          first med 3117 | human 10 1869 | halfl 9 3005 | hobgo 10 2758 | elf 10 2178 | kenku 9 2511 | orc 9 2797 | leoni 9 2698 | tabax 11 1953 | gnome 10 2822 | half_ 11 1953 | bugbe 11 2337 | firbo 9 1753
+  now+retime  first med 3229 | human 10 2350 | halfl 10 2714 | hobgo 10 2758 | elf 10 2650 | kenku 10 2557 | orc 9 2797 | leoni 12 2343 | tabax 11 1953 | gnome 10 2975 | half_ 10 1988 | bugbe 11 2337 | firbo 9 1817
+  after       first med 3229 | human 10 2567 | halfl 10 2714 | hobgo 10 2758 | elf 11 2603 | kenku 10 2557 | orc 10 2307 | leoni 10 2705 | tabax 11 1953 | gnome 11 2603 | half_ 11 2024 | bugbe 12 2343 | firbo 10 1753
+
+# per-variant lines, draw 10000
+km             vs after (243.0, 486.0, 10)  vs live (0.0, 429.0, 5)  writing: human=170 hobgoblin=714 leonin=- bugbear=- orc=- elf=- tabaxi=767 gnome=-
+now+retime     vs after (0.0, 110.0, 5)  vs live (0.0, 12.0, 0)  writing: human=281 hobgoblin=714 leonin=291 bugbear=189 orc=- elf=- tabaxi=767 gnome=-
+live           writing: human=301 hobgoblin=714 leonin=252 bugbear=147 orc=- elf=- tabaxi=767 gnome=-
+after          writing: human=536 hobgoblin=1315 leonin=1632 bugbear=1518 orc=918 elf=336 tabaxi=1363 gnome=234
