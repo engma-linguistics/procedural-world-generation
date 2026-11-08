@@ -384,7 +384,7 @@ def test_compounds_only_from_templates(long_runs):
                 if ": counting " in st.note:   # (a composite numeral: its recipe is the numeral system's, lexsys)
                     rows |= {(h, m) for sy in ("decimal", "hybrid", "vigesimal", "quinary", "restricted")
                              for c, (h, m, _) in LS._recipes(sy, True).items() if c == k}
-                assert (head, mod) in rows or head == k and mod in dict(L.reinforcers().get(k, ())), (k, head, mod)
+                assert (head, mod) in rows or head == k and mod in dict(L.repair_rows().get(k, ())), (k, head, mod)
                 n += 1
             procs = [st.process for st in w.etym if st.process.startswith("compound:")]
             assert len(procs) == len(set(procs)), (w.concept, procs)   # (no 'deer-animal-animal', 'they-that-that')
@@ -823,3 +823,65 @@ def test_speech_taboos_and_avoidance_register():
     assert len(reg) >= 10 and lex.systems["avoidance"] is reg
     assert all(lex.words[k].form != tuple(L.from_ipa(v[0])) for k, v in reg.items())
     assert {v[1].split(" ")[0] for v in reg.values()} >= {"loan", "paraphrase"}
+
+
+# --- paradigm repair of the core closed sets (polish lane, 2026-11-08) ---------------------------------------------------
+
+def _merge(lex, a, b, kyr=1.0):
+    """Give `b` the form of `a`, as a sound change would."""
+    w = lex.words[b]
+    lex.set(replace(w, form=lex.words[a].form))
+
+
+@pytest.mark.parametrize("a,b,renewed", [("I", "WE", "WE"), ("THOU", "WE", "WE"), ("THOU", "HE OR SHE OR IT", "HE OR SHE OR IT"),
+                                         ("I", "THOU", "THOU"), ("WHAT", "WHO", "WHO"), ("TEN", "HUNDRED", "HUNDRED"),
+                                         ("THREE", "FIVE", "FIVE"), ("THIS", "THAT", "THAT")])
+def test_core_merger_is_repaired(concepts, a, b, renewed):
+    rng, inv, lex = _proto(71, concepts)
+    if a not in lex.words or b not in lex.words:
+        pytest.skip("concept not on the list")
+    keep = lex.words[a].form if renewed == b else lex.words[b].form
+    _merge(lex, a, b)
+    assert (a, b) in L.core_mergers(lex) or (b, a) in L.core_mergers(lex)
+    ev = L.core_repair(rng, lex, inv, 1.0, "L")
+    assert ev and ev[0][0] == renewed and ev[0][1].startswith("repair:")
+    assert lex.words[a].form != lex.words[b].form
+    other = a if renewed == b else b
+    assert lex.words[other].form == keep   # (the less marked member keeps the form)
+    assert not L.core_mergers(lex)
+
+
+def test_core_repair_leaves_open_pairs(concepts):
+    rng, inv, lex = _proto(72, concepts)
+    _merge(lex, "THOU", "YOU")   # (English you: 2SG = 2PL is common, not repaired)
+    assert not [p for p in L.core_mergers(lex) if set(p) == {"THOU", "YOU"}]
+
+
+def test_core_repair_reinforces_plural_pronoun(concepts):
+    """'we' fallen together with 'I' is renewed as 'we others' / 'we all' (Spanish nosotros) when the lect has the word."""
+    rng, inv, lex = _proto(73, concepts)
+    _merge(lex, "I", "WE")
+    L.core_repair(rng, lex, inv, 1.0, "L")
+    last = lex.words["WE"].etym[-1]
+    assert last.process in ("compound:WE+OTHER", "compound:WE+ALL"), last
+
+
+def test_step_leaves_no_core_mergers(concepts):
+    """Over many steps with sound change stand-ins (forced mergers), no living core pair stays merged after a step."""
+    rng, inv, lex = _proto(74, concepts)
+    for i, (a, b) in enumerate([("I", "WE"), ("TWO", "FOUR"), ("WHO", "WHAT"), ("THOU", "THEY")]):
+        _merge(lex, a, b)
+        L.step(rng, lex, 10, inv, kyr=19.5 - i)
+        assert not L.core_mergers(lex)
+
+
+def test_twelve_and_twenty_differ_in_any_order(concepts):
+    """The addend stands on the other side of the base from the multiplier, so 'ten two' (12) and 'two ten' (20) never
+    meet, whatever the grammar's numeral order (an NNum lect put both after the base before)."""
+    for mf in (True, False):
+        for hf in (True, False):
+            rng, inv, lex = _proto(75, concepts)
+            lex.head_first = hf
+            LS.set_numerals(rng, lex, "decimal", inv, 1.0, "L", system={"label": "decimal", "system": "decimal",
+                                                                           "quinary": False}, mul_first=mf)
+            assert lex.words["TWELVE"].form != lex.words["TWENTY"].form, (mf, hf)

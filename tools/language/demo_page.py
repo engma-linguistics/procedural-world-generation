@@ -263,23 +263,28 @@ def fable_section(doc, k: int, au: "Audio", picks: list) -> str | None:
     tells = [TX.fable(l) for l in lects]
 
     def name(l):
+        if l is proto:
+            return f"their common ancestor ({doc.label(l['id'], short=True)})"
         nm = doc.deme_name(l)
         return nm["roman"] if nm and l.get("parent") else doc.label(l["id"], short=True)
+    age = f"{int(round(float(proto.get('died_kyr') or 0) * 10)) * 100:,} years"
     heads = []
     for j, l in enumerate(lects):
-        when = (f"spoken about {SK.kyr(l.get('born_kyr'))}" if l.get("died_kyr") is not None else
-                f"spoken today by {SK.people(l['people'])}, about {_pop(l)}")
+        when = (f"spoken by {SK.people(l['people'])} until about {age} ago, when it split into the lines below"
+                if l is proto else f"spoken today by {SK.people(l['people'])}, about {_pop(l)}")
         first = next((c for c in (au.clip(s["ipa"], l["people"], True) for s in tells[j][:1]) if c), None)
         heads.append(f"<li><b>{E(name(l))}</b> <span class='muted'>({E(when)})</span> "
                      + (f"<button class='say lab all' data-sel='.fx{j}'>&#9654; the whole fable</button>" if first else "")
                      + "</li>")
     h = [f"<section class='lang' id='L{k}' data-k='{k}'><h2>A fable: {E(TX.FABLE_TITLE)}</h2>",
-         "<p>One short fable, the same in every language, told here in a proto-language and in three of its living "
-         "daughters, in the way August Schleicher wrote his fable of the sheep and the horses in reconstructed "
-         "Proto-Indo-European (1868). Side by side, the same sentence shows what thousands of years of sound change did to "
-         "the words and what grammaticalization did to the grammar: markers that are separate words in the proto-language "
-         "can be clitics or endings in the daughters, and new ones appear. Each sentence has four lines: the book "
-         "spelling, the IPA with its morph breaks, the gloss and the English.</p>",
+         f"<p>One short fable, the same in every language, told here in an ancestor language and in {len(ds)} of its "
+         "living daughters, in the way August Schleicher wrote his fable of the sheep and the horses in reconstructed "
+         f"Proto-Indo-European (1868). The ancestor was last spoken about {E(age)} ago"
+         + (" (about as far back as Proto-Indo-European is from its daughters)" if 3.0 <= float(proto.get("died_kyr") or 0)
+            <= 7.0 else "") + ", so many words are still shared: side by side, the same sentence shows what "
+         "sound change did to them and what grammaticalization did to the grammar: markers that are separate words in "
+         "the ancestor can be clitics or endings in the daughters, and new ones appear. Each sentence has four lines: "
+         "the book spelling, the IPA with its morph breaks, the gloss and the English.</p>",
          "<p class='muted'>The English: " + E(" ".join(TX.FABLE_EN)) + "</p>",
          "<ul>" + "".join(heads) + "</ul>"]
     for i, en in enumerate(TX.FABLE_EN):
@@ -315,18 +320,27 @@ def families(doc, l, field: str, au: Audio) -> str:
     if field == "roots":   # (a speaker feels a family only while the shared part can be heard in each member)
         for r, f in fam.items():
             f["main"] = SK.felt_members(doc, lex, r, f["main"])
-    big = sorted((x for x in fam.items() if len(x[1]["main"]) >= 2), key=lambda x: (-len(x[1]["main"]), str(x[0])))
+    # (polish lane: one word with several meanings, uncle = father's brother = mother's brother, is one word, not a
+    # family; a family counts its distinct words, and the header counts what the cards show)
+    for f in fam.values():
+        by_form: dict = {}
+        for c in sorted(f["main"]):
+            by_form.setdefault(lex[c]["ipa"], []).append(c)
+        f["forms"] = sorted(by_form.items(), key=lambda x: SK.cname(x[1][0]))
+    big = sorted((x for x in fam.items() if len(x[1]["forms"]) >= 2), key=lambda x: (-len(x[1]["forms"]), str(x[0])))
     inside = {c for _r, f in big for c in f["main"]}
-    n3 = sum(len(f['main']) >= 3 for _r, f in big)
-    out = [f"<p class='muted'>{n3} {'family' if n3 == 1 else 'families'} of 3+ words; "
+    n3 = sum(len(f["forms"]) >= 3 for _r, f in big)
+    n2 = len(big) - n3
+    out = [f"<p class='muted'>{n3} {'family' if n3 == 1 else 'families'} of 3+ words and {n2} of two; "
            f"{round(100 * len(inside) / max(1, len(lex)))}% of the {len(lex)} words share a root with another.</p>"]
     for r, f in big[:5]:
         info = R.get(r) or {}
         head = info.get("gloss") or SK.cname(str(r).split(":", 1)[-1].split("@")[0])
-        words = ", ".join(f"{E(SK.cname(c))} <span class='ipa'>{E(lex[c]['ipa'])}</span>" for c in sorted(f["main"])[:8])
-        more = f" <span class='muted'>+{len(f['main']) - 8}</span>" if len(f["main"]) > 8 else ""
+        words = ", ".join(" / ".join(E(SK.cname(c)) for c in cs) + f" <span class='ipa'>{E(ipa)}</span>"
+                          for ipa, cs in f["forms"][:8])
+        more = f" <span class='muted'>+{len(f['forms']) - 8}</span>" if len(f["forms"]) > 8 else ""
         star = f" <span class='ipa'>*{E(info['ipa'])}</span>" if info.get("ipa") else ""
-        out.append(f"<div class='fam'><b>{E(str(head))}</b>{star} <span class='muted'>· {len(f['main'])} words</span>"
+        out.append(f"<div class='fam'><b>{E(str(head))}</b>{star} <span class='muted'>· {len(f['forms'])} words</span>"
                    f"<br>{words}{more}</div>")
     if not big:
         out.append("<p class='muted'>Every root has a single word here.</p>")

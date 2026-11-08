@@ -823,14 +823,35 @@ roman, gloss, lect, named_by, kyr, substrate_of, pattern (P2 or null), tautology
   "learned, from the liturgy of ..."). At the end each living holder lect gets `systems.learned` {concept: [the
   liturgy's form as the lect hears it, doublet | synonym | only, the liturgy's form]}.
 - **Document.** `faiths` {faith id: {name, core, how, parent, founded_kyr, peoples, holders: [lect], gods: [{key,
-  domain, label, high, names: [[lect, ipa, roman, gloss, coined [kyr, lect]]], plain}], liturgy: {lect_from, deme, kyr,
-  people, words {concept: [ipa, roman]}, gods {key: [ipa, roman, gloss]}, formulas: [sentence records as in 7b]}}}.
+  domain, label, high, names: [[lect, ipa, roman, gloss, coined [kyr, lect]]], plain}], taboos: [[god key, target,
+  label]], liturgy: {lect_from, deme, kyr, people, words {concept: [ipa, roman]}, gods {key: [ipa, roman, gloss]},
+  formulas: [sentence records as in 7b]}}}.
+- **One faith, one pantheon** (polish lane, 2026-11-08). `Plan` gives each faith a `pantheon`: the seat culture's
+  ranked gods, topped up to GODS_PER_CULTURE with the gods most holders share; every holder deme names exactly these
+  (a culture whose gods.json entry lacks one takes it as a convert, when it took the faith's other gods, else at the
+  founding), with the seat's domain and label. `taboos` are the faith's divine food taboos over its holders' cultures
+  (taboos.json, origin divine, god in the pantheon), the most characteristic of this faith first (share among its
+  cultures over share among all). The myth (texts.myth) reads only the faith record, so every holder tells the same
+  myth. God names are spelled in the book register.
   Two names with the same `coined` are one word (cognates or a loan). The formulas (invocation, praise, petition) are
   built with sentences.py on the frozen lect. The sketch's "Gods and liturgy" section (`sketch.faith_section`) shows
   them.
 - **New concepts** PRIEST and TEMPLE come with the `temples` technology (TECH_CONCEPT), with recipes 'god person',
   'god house', 'one who prays', 'place of prayer'.
 - **E10 faith endonyms** use the god's own name when the lect has one ('the people of <name>').
+
+### 13e. Paradigm repair of the core closed sets (`lexicon.core_repair`, polish lane 2026-11-08)
+
+At the end of every `lexicon.step` (after sound change in `lect.step`), `core_mergers` finds pairs of one core set
+(CORE_SETS: pronouns, numerals, interrogatives, this/that, here/there) that share a form, except CONTRAST_OPEN pairs
+(thou = you, he = she) and a system's own colexifications (`lexsys.system_colex`). The more marked member (plural over
+singular, 3rd over 2nd over 1st person; a composite numeral, else the higher; WHO over WHAT; far over near) is renewed
+by: its counting recipe; a `repair` or `reinforce` row of data/derivations.tsv (`repair_rows`: 'we others', 'you all',
+'that one' for 3SG/3PL, 'ten tens' for 100, 'what person' for who); a loan from a contact lect; a derivation; a fresh
+root. Never twice by one reinforcer, never on a word that took a new form at this very date (its root id would blur).
+Events `repair:<how>`, counts `repair`. `grammar._polite` makes T-V only where the polite form differs from THOU
+(`polite_contrast`) and drops it when they fall together. `lexsys._num_word` puts an addend on the other side of the
+base from a multiplier, so 'ten two' (12) and 'two ten' (20) never meet.
 
 ### 13d. Segment borrowing (`lexicon.borrow`, contact-gaps 3d)
 

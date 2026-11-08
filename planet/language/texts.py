@@ -14,6 +14,8 @@ and plain words otherwise. The myth tells what the run's faith data holds and no
 domain, what the high god gives, which foods are forbidden because they belong to a god, and a closing invocation."""
 from __future__ import annotations
 
+import re
+
 from . import grammar as GR
 from . import sentences as SN
 
@@ -72,11 +74,21 @@ def tclause(v: SN.View, S: SN.NP | None, Vc: str, O: SN.NP | None = None, X: SN.
     return SN.clause(v, S, vw, O, X, transitive=O is not None, tam=tam)
 
 
-def locative(v: SN.View, concept: str, known: bool) -> SN.NP:
-    """'in the N': the locative case or an adposition ('in', 'at'); a bare noun when the lect has neither."""
+def locative(v: SN.View, concept: str, known: bool, words: tuple = ("IN", "AT")) -> SN.NP:
+    """'in the N': the locative case or an adposition ('in', 'at': `words`, in order of preference); a bare noun when
+    the lect has neither."""
     np_ = SN.noun_phrase(v, concept, _det(v, known))
-    x = SN.oblique(v, np_, "LOC", ("IN", "AT"))
+    x = SN.oblique(v, np_, "LOC", words)
     return x[0] if x else np_
+
+
+def _prep_en(np_: SN.NP, default: str) -> str:
+    """The English preposition for a locative phrase as the lect said it: the adposition's own meaning ('in', 'at')
+    when it used one, else `default` (a locative case covers on / in / at)."""
+    for w in np_.words:
+        if w.gloss in ("in", "at"):
+            return w.gloss
+    return default
 
 
 def quote(v: SN.View, S: SN.NP, said: list, tam: str | None) -> list:
@@ -228,17 +240,30 @@ def pick_daughters(lects: dict, pid: str, n: int = 3, intel: dict | None = None)
     return out
 
 
+#: how long ago the fable's ancestor was last spoken (polish lane, 2026-11-08): the root proto-languages are ~20 kyr
+#: older than their daughters, too deep for shared words to survive (bird, tree, water, 2SG were all replaced: demo read
+#: 4); an ancestor of 3-6 kyr shows the same words worn by sound change (Latin to the Romance languages is ~2 kyr, Proto-
+#: Indo-European to its daughters ~5-6)
+FABLE_DEPTH_KYR = (3.0, 6.0)
+FABLE_DAUGHTERS = (2, 4)
+
+
 def pick_family(lects: dict, intel: dict | None = None, prefer: tuple = ()) -> tuple[dict, list[dict]] | None:
-    """(proto, daughters): a proto-language that tells the whole fable with 3 daughters that do too, preferring the
-    peoples in `prefer` (the demo's languages), then the most daughters; None when no family can."""
+    """(ancestor, daughters): a lect last spoken FABLE_DEPTH_KYR ago (it split then) that tells the whole fable, with 2-4
+    living daughters that do too, preferring the peoples in `prefer` (the demo's languages), then 3+ daughters, then an
+    age near the middle of the window; outside the window, the nearest age. None when no family can."""
+    lo, hi = FABLE_DEPTH_KYR
+    mid = (lo + hi) / 2.0
     best = None
     for p in sorted(lects.values(), key=lambda x: x["id"]):
-        if p.get("parent") is not None or not complete(fable(p), len(FABLE_EN)):
+        age = p.get("died_kyr")
+        if age is None or not complete(fable(p), len(FABLE_EN)):
             continue
-        ds = pick_daughters(lects, p["id"], 3, intel)
-        if len(ds) < 2:
+        ds = pick_daughters(lects, p["id"], FABLE_DAUGHTERS[1], intel)
+        if len(ds) < FABLE_DAUGHTERS[0]:
             continue
-        key = (p["people"] in prefer, len(ds), len(descendants(lects, p["id"])), p["id"])
+        off = max(0.0, lo - age, age - hi)
+        key = (-round(off, 3), p["people"] in prefer, len(ds) >= 3, -round(abs(age - mid), 3), len(ds), p["id"])
         if best is None or key > best[0]:
             best = (key, p, ds)
     return None if best is None else (best[1], best[2])
@@ -270,18 +295,22 @@ def staple(lj: dict) -> tuple[str, str] | None:
     return (c, "plain") if c else None
 
 
-def _it(v: SN.View) -> SN.NP | None:
-    """'it' as an object: the verb's 3SG object marker carries it where bound (nothing else said), else the pronoun."""
-    g = v.g("3SG.O")
+def _it(v: SN.View, many: bool = False) -> SN.NP | None:
+    """'it' ('them' for a plural food) as an object: the verb's object marker carries it where bound (nothing else
+    said), else the pronoun."""
+    p = "3PL" if many else "3SG"
+    g = v.g(f"{p}.O")
     if g is not None and (g.get("level") or 0) >= GR.CLITIC:
-        return SN.NP([], 0)
-    return SN.pronoun(v, "HE OR SHE OR IT")
+        np_ = SN.NP([], 0)
+        np_.person = p
+        return np_
+    return SN.pronoun(v, "THEY" if many else "HE OR SHE OR IT")
 
 
 def _imp(v: SN.View, Vc: str, O: SN.NP | None, X: SN.NP | None = None) -> list:
     vw = SN.verb(v, Vc, mood="IMP")
     if O is not None and not O.words:   # (a bound object marker alone)
-        SN.object_marker(v, vw[0], vw[0][vw[1]], "3SG")
+        SN.object_marker(v, vw[0], vw[0][vw[1]], getattr(O, "person", None) or "3SG")
         O = None
     return SN.clause(v, None, vw, O, X, transitive=O is not None)
 
@@ -295,6 +324,8 @@ def recipe(lj: dict) -> tuple[str, list[dict]]:
     food, kind = st
     prep, tool = _PREP[kind]
     fen = ANIMAL_EN.get(SN.en(food), SN.en(food) + " meat") if kind == "animal" else SN.en(food)
+    many = kind != "animal" and fen.endswith("s") and not fen.endswith("ss")   # (alliums, beans: 'them', not 'it')
+    it_en, It_en = ("them", "They are") if many else ("it", "It is")
     out = []
 
     def has(*cs):   # (View.w is "the first it has"; a step needs every word)
@@ -308,22 +339,25 @@ def recipe(lj: dict) -> tuple[str, list[dict]]:
     if has(prep, tool):
         x = SN.oblique(v, SN.noun_phrase(v, tool, SN._a(v)), "INS", ("WITH",))
         if x:
-            add(2, _imp(v, prep, _it(v), x[0]), f"{SN.en(prep).capitalize()} it with a {SN.en(tool)}.", [x[1]])
+            add(2, _imp(v, prep, _it(v, many), x[0]), f"{SN.en(prep).capitalize()} {it_en} with a {SN.en(tool)}.",
+                [x[1]])
     if has("PUT", "POT"):
-        add(3, _imp(v, "PUT", _it(v), locative(v, "POT", True)), "Put it in the pot.")
+        loc = locative(v, "POT", True)
+        add(3, _imp(v, "PUT", _it(v, many), loc), f"Put {it_en} {_prep_en(loc, 'in')} the pot.")
     if has("COOK", "FIRE"):
-        add(4, _imp(v, "COOK", _it(v), locative(v, "FIRE", True)), "Cook it on the fire.")
+        loc = locative(v, "FIRE", True, ("AT", "IN"))
+        add(4, _imp(v, "COOK", _it(v, many), loc), f"Cook {it_en} {_prep_en(loc, 'on')} the fire.")
     if has("EAT", "SALT"):
         x = SN.oblique(v, SN.noun_phrase(v, "SALT"), "COM", ("WITH",))
         if x:
-            add(5, _imp(v, "EAT", _it(v), x[0]), "Eat it with salt.", [x[1]])
+            add(5, _imp(v, "EAT", _it(v, many), x[0]), f"Eat {it_en} with salt.", [x[1]])
     if has("GOOD"):
-        subj = SN.pronoun(v, "HE OR SHE OR IT")
+        subj = SN.pronoun(v, "THEY" if many else "HE OR SHE OR IT")
         if subj is not None:
             pred = SN.NP([SN.Word(v.ipa("GOOD"), "good", "GOOD")], 0)
-            words = (subj.words + SN.verb(v, "GOOD", "3SG")[0]) if v.t.get("adjective_verb_like") == "yes" else \
-                subj.words + SN.cop_phrase(v, pred)
-            add(6, words, "It is good.")
+            words = (subj.words + SN.verb(v, "GOOD", "3PL" if many else "3SG")[0]) \
+                if v.t.get("adjective_verb_like") == "yes" else subj.words + SN.cop_phrase(v, pred)
+            add(6, words, f"{It_en} good.")
     return f"How to cook {fen}", out
 
 
@@ -339,11 +373,12 @@ def _god(v: SN.View, g: dict, lid: str) -> tuple[str, str] | None:
     return con, mine[2]
 
 
-def myth(lj: dict, faith: dict | None, taboos: list | None = None) -> tuple[str, list[dict]]:
-    """(title, sentences): what the faith holds, told in this lect. Only what the data says: each god's first domain
-    (gods.json `first_domain`), the high god's gift (faiths.GIFT), the foods forbidden because they belong to a god's
-    domain (taboos.json, origin 'divine': `taboos` = [(god label, target, English label)]), and the faith's invocation.
-    No creation story, kinship or deeds: gods.json has none."""
+def myth(lj: dict, faith: dict | None) -> tuple[str, list[dict]]:
+    """(title, sentences): what the faith holds, told in this lect. Only what the data says, and all of it the faith's
+    (polish lane: one faith, one pantheon, so every holder tells the same myth in its own words): each god's first
+    domain (gods.json `first_domain`), the high god's gift (faiths.GIFT), the foods forbidden because they belong to a
+    god's domain (the faith's `taboos` = [[god key, target, English label]], from taboos.json, origin 'divine'), and the
+    faith's invocation. No creation story, kinship or deeds: gods.json has none."""
     from . import faiths as FA
     if not faith:
         return "", []
@@ -360,8 +395,9 @@ def myth(lj: dict, faith: dict | None, taboos: list | None = None) -> tuple[str,
     def add(words, en, notes=()):
         x = SN.finish(v, f"myth{len(out) + 1}", en, words, list(notes))
         rs = x["roman"].split(" ")
-        if len(rs) == len(x["w"]):   # (a name is spelled with its capital, as the faith's own records spell it)
-            x["roman"] = " ".join(r[:1].upper() + r[1:] if w[1] in names else r for r, w in zip(rs, x["w"]))
+        if len(rs) == len(x["w"]):   # (a word holding a name is spelled with a capital, clitics and all, the same
+            x["roman"] = " ".join(r[:1].upper() + r[1:]   # rule in every language: CL2=name is Nobe...)
+                                  if any(p in names for p in re.split(r"[-=]", w[1])) else r for r, w in zip(rs, x["w"]))
         out.append(x)
 
     def god_np(x):
@@ -380,11 +416,11 @@ def myth(lj: dict, faith: dict | None, taboos: list | None = None) -> tuple[str,
         if we is not None:
             add(give(v, god_np(x0), we, SN.noun_phrase(v, gift), None, "3SG"),
                 f"{x0[1]} gives us {SN.en(gift)}.")
-    by_label = {g["label"]: x for g, x in gods}
+    by_key = {g["key"]: x for g, x in gods}
     seen = set()
-    for glabel, target, label in taboos or []:
+    for key, target, label in faith.get("taboos") or []:
         con = TABOO_CONCEPT.get(target)
-        x = by_label.get(glabel)
+        x = by_key.get(key)
         if x is None or con is None or con in seen or not _need(v, con, "EAT", "WE"):
             continue
         if v.g("NEG") is None and not v.w("NOT"):
@@ -398,8 +434,7 @@ def myth(lj: dict, faith: dict | None, taboos: list | None = None) -> tuple[str,
     if _need(v, "HEAR", "WE"):
         we = pron(v, "WE")
         if we is not None:
-            vw = SN.verb(v, "HEAR", mood="IMP")
-            SN.object_marker(v, vw[0], vw[0][vw[1]], we.person)
+            vw = SN.verb(v, "HEAR", mood="IMP")   # (clause() marks the object on the verb: once, not twice)
             name = god_np(x0)
             add(name.words + SN.clause(v, None, vw, we, transitive=True), f"{x0[1]}, hear us!",
                 ["the invocation that ends the rites"])

@@ -301,3 +301,14 @@ def test_no_ipa_marks_in_full_spellings(cs):
         if set(sp) & IPA_MARKS:
             leaks[x] = sp
     assert not leaks, sorted(leaks.items())
+
+
+def test_no_placeholder_spellings():
+    """No word is spelled like a software placeholder (null, none, undefined): kenku /nuɫ/ 'small' was 'null'."""
+    from planet.language import romanize as RO
+    from planet.language.percepts import from_ipa
+    inv = from_ipa("nuɫlie")
+    for ipa in ("nuɫ", "inuɫ"):
+        sp = RO.romanize_word(from_ipa(ipa), inventory=inv, book=True)
+        assert not any(sp.lower().endswith(t) for t in RO.RESERVED_SPELLINGS), sp
+    assert RO._unreserve("none") == "non·e" and RO._unreserve("inull") == "inulh"

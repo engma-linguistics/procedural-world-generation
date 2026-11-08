@@ -1517,30 +1517,15 @@ def faith_label(name: str) -> str:
     return m.group(1) + ("the earliest " if m.group(2) else ("" if rest.startswith("the ") else "the ")) + rest
 
 
-def _run_doc(doc: Doc, name: str) -> dict:
-    """runs/<run>/<name>.json beside the languages (cultures, gods, taboos), {} when absent; cached on the doc."""
-    cache = doc.__dict__.setdefault("_run_docs", {})
-    if name not in cache:
-        p = Path("runs") / str(doc.d.get("run") or "") / f"{name}.json"
-        cache[name] = json.loads(p.read_text(encoding="utf-8")) if doc.d.get("run") and p.is_file() else {}
-    return cache[name]
-
-
 def myth_of(doc: Doc, l: dict) -> tuple[str, list]:
-    """The lect's faith myth (texts.myth): its faith from languages.json `faiths`, the divine food taboos of its culture
-    from the run's taboos.json (each taboo's god by its label, from gods.json)."""
+    """The lect's faith myth (texts.myth): its faith from languages.json `faiths` (pantheon and divine food taboos are
+    the faith's, so every holder tells the same myth)."""
     from planet.language import texts as TX
     fa = doc.d.get("faiths") or {}
     F = next((f for _k, f in sorted(fa.items(), key=lambda t: int(t[0])) if l["id"] in (f.get("holders") or [])), None)
     if F is None:
         return "", []
-    dc = _run_doc(doc, "cultures").get("deme_culture") or []
-    c = dc[l["deme"]] if l.get("deme") is not None and l["deme"] < len(dc) else None
-    beings = {b["id"]: b for b in _run_doc(doc, "gods").get("beings") or []}
-    tb = ((_run_doc(doc, "taboos").get("cultures") or {}).get(str(c)) or {}).get("taboos") or []
-    taboos = [((beings.get(t["god"]) or {}).get("label"), t["target"], t["label"]) for t in tb
-              if t.get("origin") == "divine" and t.get("god") is not None]
-    return TX.myth(l, dict(F, name=faith_label(F["name"])), taboos)
+    return TX.myth(l, dict(F, name=faith_label(F["name"])))
 
 
 def faith_section(doc: Doc, l: dict) -> list[str]:

@@ -62,12 +62,53 @@ def test_myth_tells_only_the_faith_data():
     faith = {"name": "the faith of the sea", "gods": [
         {"key": 7, "domain": "sea", "label": "god of sea and rain", "high": True,
          "names": [["d1", "laut", "Laut", "lord of the sea", None]]},
-        {"key": 9, "domain": "fire", "label": "spirit of fire", "high": False, "names": []}]}
-    title, sents = TX.myth(lj, faith, [("god of sea and rain", "swine", "wild swine"), ("nobody", "swine", "x"),
-                                       ("god of sea and rain", "eels", "eels")])
+        {"key": 9, "domain": "fire", "label": "spirit of fire", "high": False, "names": []}],
+        "taboos": [[7, "swine", "wild swine"], [99, "swine", "x"], [7, "eels", "eels"]]}   # (the faith's own taboos)
+    title, sents = TX.myth(lj, faith)
     en = [s["en"] for s in sents]
     assert title.startswith("What the gods hold") and en[0] == "Laut holds the sea."
     assert "Laut gives us fish." in en and "We do not eat wild swine." in en and en[-1] == "Laut, hear us!"
     assert not any("eels" in e or "fire" in e for e in en)   # (no word for eels; the fire god has no name here)
     assert "Laut" in " ".join(w[1] for w in sents[0]["w"]) and all(s["roman"] for s in sents)
     assert TX.myth(lj, None) == ("", [])
+
+
+def test_gods_are_persons():
+    """A god, its name and spirits take the person class (not things or abstractions)."""
+    from planet.language import grammar as GR
+    for c in ("name:god:7", "GOD", "SPIRIT", "god:sky"):
+        assert GR.semantic_group(c) == "person", c
+
+
+def test_fable_prefers_a_shallow_ancestor():
+    """A 20 kyr root keeps few shared words; the fable takes an ancestor last spoken 3-6 kyr ago (polish lane)."""
+    root = _fable_lect()
+    root.update(id="p1", parent=None, died_kyr=20.0, deme=0, people="human")
+    mid = copy.deepcopy(root)
+    mid.update(id="m1", parent="p1", died_kyr=4.5, deme=1)
+    other = copy.deepcopy(root)
+    other.update(id="m2", parent="p1", died_kyr=12.0, deme=2)
+    kids = []
+    for i, par in enumerate(("m1", "m1", "m1", "m2", "m2")):
+        k = copy.deepcopy(root)
+        k.update(id=f"d{i}", parent=par, died_kyr=None, deme=10 + i, population=100 * (i + 1))
+        kids.append(k)
+    lects = {x["id"]: x for x in [root, mid, other] + kids}
+    anc, ds = TX.pick_family(lects)
+    assert anc["id"] == "m1" and {d["id"] for d in ds} == {"d0", "d1", "d2"}
+    assert TX.FABLE_DAUGHTERS[0] <= len(ds) <= TX.FABLE_DAUGHTERS[1]
+
+
+def test_invocation_marks_the_object_once():
+    """'X, hear us!' in a lect with a bound 1PL object marker: one =1PL.OBJ, not two (frost giant, demo read 4)."""
+    lj = _fable_lect()
+    lj["lexicon"].update({c: {"ipa": f, "roman": f, "pos": p} for c, f, p in (
+        ("name:god:7", "laut", "NAME"), ("SEA", "samudra", "N"), ("HOLD", "pegan", "V"), ("HEAR", "dengar", "V"),
+        ("WE", "kami", "PRON"))})
+    lj["grams"] = [gram("1PL.O", "mi", 1, "post", "V")]
+    faith = {"name": "f", "gods": [{"key": 7, "domain": "sea", "label": "g", "high": True,
+                                    "names": [["d1", "laut", "Laut", "x", None]]}], "taboos": []}
+    _t, sents = TX.myth(lj, faith)
+    inv = next(s for s in sents if s["en"].endswith("hear us!"))
+    gl = " ".join(w[1] for w in inv["w"])
+    assert gl.count("1PL.OBJ") == 1, gl

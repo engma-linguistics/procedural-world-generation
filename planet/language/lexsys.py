@@ -90,7 +90,11 @@ def _num_word(rng, lex, k: str, rec: tuple, system: str, inv, kyr: float, lect_i
     # from an addend, so twelve and twenty never meet: Mandarin shi-er 'ten two' 12 vs er-shi 'two ten' 20)
     hd = bool(lex.head_first) if lex.head_first is not None else True
     mf = (lex.systems.get("numeral") or {}).get("mul_first")
-    hf = hd if op == "add" else (not mf if mf is not None else not hd)
+    # (polish lane, 2026-11-08: the addend now always stands on the other side from the multiplier. With the grammar's
+    # order given, an NNum lect put both after the base, 'ten two' for 12 and for 20: TWELVE = TWENTY in 83 of 612
+    # living lects of a24559. Swahili keeps them apart with a linker, kumi na mbili; the order contrast does it here.)
+    mul_hf = not mf if mf is not None else not hd
+    hf = mul_hf if op == "mul" else not mul_hf
     said = f"{h} {m}" if hf else f"{m} {h}"
     return LX.compound(rng, lex, k, inv, kyr, lect_id, head_first=hf, head=h, modifier=m, process=f"compound:{h}+{m}",
                        note=f"{said.lower()}: counting {system} ({h.lower()} {sign} {m.lower()})")

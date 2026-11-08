@@ -101,3 +101,22 @@ def test_liturgy_and_document(faith_result):
     learned = [st for l in res["lects"] if l.alive for w in l.lexicon.words.values() for st in w.etym
                if st.process == f"borrow:{lit.id}"]
     assert learned, "the holders took learned loans from the liturgy"
+
+
+def test_one_faith_one_pantheon():
+    """Every holder of a faith names the same gods, the seat culture's (polish lane): the orc culture of the sky faith
+    lists only its sky god in gods.json, but it holds the human founders' river god too, taken with the faith."""
+    P = FT.Plan(FaithRun())
+    assert P.faiths[0]["pantheon"] == [0, 1]
+    assert all(P.deme_gods[d] == [0, 1] for d, f in P.deme_faith.items() if f == 0)
+    kinds = {(d, k): kind for v in P.events.values() for d, k, kind in v}
+    assert kinds[(2, 1)] == "convert"
+
+
+def test_pantheon_in_document(faith_result):
+    res, doc, _ = faith_result
+    F = doc["faiths"]["0"]
+    assert [g["key"] for g in F["gods"]] == [0, 1]
+    named = {n[0] for n in F["gods"][1]["names"]}
+    assert set(F["holders"]) <= named, "every holder names every god of the pantheon"
+    assert "taboos" in F

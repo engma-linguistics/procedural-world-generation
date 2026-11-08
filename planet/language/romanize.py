@@ -486,19 +486,46 @@ def _tokens(contrasts: frozenset, segs: frozenset | None, book: bool = False, fo
     return frozenset(out)
 
 
-def _join(parts: list[str], toks: frozenset) -> str:
+#: the separator that keeps two letters from reading as one (n-g where the lect has ŋ). The book register uses the
+#: middle dot (Catalan l·l): a hyphen inside a root read as an affix break on the pages (demo read 4: irh-ll)
+GUARD, BOOK_GUARD = "-", "·"
+
+
+def _join(parts: list[str], toks: frozenset, sep: str = GUARD) -> str:
     out = ""
     for p in parts:
         if not p:
             continue
         if out and any(out[-i:] + p[:j] in toks for i in range(1, min(4, len(out)) + 1) for j in range(1, min(4, len(p)) + 1)):
-            out += "-"
+            out += sep
         out += p
     return out
 
 
+#: spellings a reader takes for a software placeholder (demo read 4: kenku 'small' /nuɫ/ spelled null, 'child' inull);
+#: a word ending in one is re-spelled by `_unreserve`
+RESERVED_SPELLINGS = ("null", "none", "undefined")
+
+
+def _unreserve(sp: str) -> str:
+    """A spelling that ends in a RESERVED_SPELLINGS token is re-spelled at that end: a doubled letter (ll for ɫ, hh for
+    ɦ) as the letter + h (nulh), else a middle dot before the last letter (non·e)."""
+    low = sp.lower()
+    for tok in RESERVED_SPELLINGS:
+        if low.endswith(tok):
+            if len(sp) >= 2 and sp[-1] == sp[-2]:
+                return sp[:-1] + "h"
+            return sp[:-1] + BOOK_GUARD + sp[-1]
+    return sp
+
+
 def romanize_word(word: Iterable[Segment], contrasts: set[str] | None = None, inventory: Iterable[Segment] | None = None,
                   book: bool = False, folds: dict | None = None) -> str:
+    return _unreserve(_romanize_word(word, contrasts, inventory, book, folds))
+
+
+def _romanize_word(word: Iterable[Segment], contrasts: set[str] | None = None, inventory: Iterable[Segment] | None = None,
+                   book: bool = False, folds: dict | None = None) -> str:
     """Segments -> house spelling. contrasts: the lect's contrast set; inventory: the lect's segments (decides where a hyphen
     is needed: n-g only if the lect has ŋ). Both None: derived from the word itself. With contrasts but no inventory, every
     possible digraph is guarded (hyphens where any lect could misread). book: the book-mode spelling (module docstring);
@@ -532,7 +559,7 @@ def romanize_word(word: Iterable[Segment], contrasts: set[str] | None = None, in
             if mk == NH_MARKS["growl"] and parts[n].endswith("r"):
                 mk = "h"  # (a growled r is rrh, not rrrh: Welsh rh)
             parts[n] += mk
-    return _join(parts, _tokens(cs, inv, True, frozenset(folds.items())))
+    return _join(parts, _tokens(cs, inv, True, frozenset(folds.items())), BOOK_GUARD)
 
 
 def _apply_folds(sp: str, folds: dict) -> str:

@@ -87,6 +87,23 @@ def _domain_word(dom: str) -> str:
     return LX.GOD_DOMAIN_CONCEPT.get(dom, "GOD")
 
 
+def _taboos_doc(R) -> dict:
+    """The run's taboos.json (read once, read-only); {} without one or for a run held in memory."""
+    if "_taboos_doc" not in R.__dict__:
+        doc = {}
+        d = getattr(R, "dir", None)
+        if d is not None:
+            import json
+            from pathlib import Path
+            tp = Path(d) / "taboos.json"
+            try:
+                doc = json.loads(tp.read_text()) if tp.exists() else {}
+            except (OSError, ValueError):
+                doc = {}
+        R.__dict__["_taboos_doc"] = doc
+    return R.__dict__["_taboos_doc"]
+
+
 # ------------------------------------------------------------------------------------------------- the plan
 class Plan:
     """What the history needs from the faith readout, worked out once before it runs: which god enters which line when
@@ -118,6 +135,7 @@ class Plan:
         k_last = R.kyr(last)
         start = R.kyr(0)
         fby = {f["id"]: f for f in fl}
+        arr: dict[int, dict] = {}   # deme now -> {god key: (kyr the line took it, kind, today's being)}
         for d in R.demes_alive(last):
             c = dc[d] if d < len(dc) else None
             cu = cults.get(str(c)) if c is not None else None
@@ -127,31 +145,58 @@ class Plan:
             self.deme_faith[d] = fid
             live = [beings[i] for i in cu.get("living") or [] if i in beings]
             live.sort(key=lambda b: (not b.get("high"), -float(b.get("devotion") or 0), -float(b.get("individuation") or 0), b["id"]))
-            keys = []
+            keys = arr[d] = {}
             for b in live:
                 key, t, kind = self._arrival(b, beings)
                 if key in keys:
                     continue
-                keys.append(key)
-                if key not in self.gods:
-                    root = beings.get(key) or b
-                    dom = b.get("first_domain") or ((b.get("top") or [["ancestors"]])[0][0])
-                    self.gods[key] = {"domain": dom, "domains": [x[0] for x in b.get("top") or []][:3],
-                                      "ind": float(b.get("individuation") or 0.0), "high": bool(b.get("high")),
-                                      "label": b.get("label") or b.get("role") or "", "faith": fid,
-                                      "name": b.get("name") or root.get("name"), "born_kyr": float(root.get("born_kyr") or start)}
-                j, dthen = self._frame_deme(d, t)
-                if j is not None:
-                    self.events.setdefault(j, []).append((dthen, key, kind))
+                keys[key] = (t, kind, b)
                 if len(keys) >= GODS_PER_CULTURE:
                     break
-            self.deme_gods[d] = keys
+        # One faith, one pantheon (polish lane, 2026-11-08). gods.json lists each holding culture's own living beings, so
+        # the holders of one faith named different gods (a drow and an elvish lect of one sky faith told of different
+        # gods, domains and gifts). The faith's pantheon is now its seat culture's gods (the founding culture's, by rank),
+        # topped up with the gods most of its holders share; every holder names exactly these, a culture lacking one
+        # taking it with the faith (when it took the faith's other gods, else at the founding), and each god's domain and
+        # label are the seat's. The holders' divine food taboos are the faith's too (`taboos`, ranked by how
+        # characteristic they are of this faith against all cultures).
+        tcount_all = self._taboo_counts(None, R, dc, beings)
         for fid in sorted(set(self.deme_faith.values())):
             f = fby.get(fid) or {}
             hold = sorted(d for d, x in self.deme_faith.items() if x == fid)
             org = f.get("origin_culture")
             seat_pool = [d for d in hold if org is not None and d < len(dc) and dc[d] == org] or hold
             seat = max(seat_pool, key=lambda d: (R.deme_population(d, last), -d))
+            pan = list(arr.get(seat) or {})
+            cnt: dict[int, int] = {}
+            for d in hold:
+                for k in arr.get(d) or {}:
+                    cnt[k] = cnt.get(k, 0) + 1
+            for k in sorted(cnt, key=lambda k: (-cnt[k], k)):
+                if len(pan) >= GODS_PER_CULTURE:
+                    break
+                if k not in pan:
+                    pan.append(k)
+            founded = min(float(f.get("founded_kyr") if f.get("founded_kyr") is not None else start), start)
+            for k in pan:
+                src = (arr.get(seat) or {}).get(k) or next(arr[d][k] for d in hold if k in (arr.get(d) or {}))
+                b = src[2]
+                root = beings.get(k) or b
+                dom = b.get("first_domain") or ((b.get("top") or [["ancestors"]])[0][0])
+                self.gods.setdefault(k, {"domain": dom, "domains": [x[0] for x in b.get("top") or []][:3],
+                                         "ind": float(b.get("individuation") or 0.0), "high": bool(b.get("high")),
+                                         "label": b.get("label") or b.get("role") or "", "faith": fid,
+                                         "name": b.get("name") or root.get("name"),
+                                         "born_kyr": float(root.get("born_kyr") or start)})
+            for d in hold:
+                own = arr.get(d) or {}
+                took = max([own[k][0] for k in own] + [founded]) if own else founded
+                for k in pan:
+                    t, kind = (own[k][0], own[k][1]) if k in own else (min(took, start), "convert")
+                    j, dthen = self._frame_deme(d, t)
+                    if j is not None:
+                        self.events.setdefault(j, []).append((dthen, k, kind))
+                self.deme_gods[d] = list(pan)
             people = R.people_of(seat)
             known = (((R.meta.get("techtree") or {}).get("known") or {}).get(people) or {})
             tk = known.get("temples")
@@ -164,7 +209,8 @@ class Plan:
             self.faiths[fid] = {"name": f.get("name") or f"faith {fid}", "core": f.get("core"),
                                 "founded_kyr": f.get("founded_kyr"), "how": f.get("how"), "parent": f.get("parent"),
                                 "holders": hold, "seat": seat, "canon_kyr": canon,
-                                "peoples": sorted({R.people_of(d) for d in hold})}
+                                "peoples": sorted({R.people_of(d) for d in hold}), "pantheon": pan,
+                                "taboos": self._faith_taboos(hold, pan, R, dc, beings, tcount_all)}
             if canon is not None:
                 j, dthen = self._frame_deme(seat, canon)
                 if j is not None:
@@ -187,6 +233,40 @@ class Plan:
         if conv is not None:
             return x["id"], conv, "convert"
         return x["id"], float(x.get("born_kyr") or 0.0), "coin"
+
+    def _taboo_counts(self, demes, R, dc, beings) -> dict:
+        """{taboo target: number of cultures} with a divine food taboo on it, over the cultures of `demes` (None: every
+        culture of the run's taboos.json)."""
+        td = _taboos_doc(R).get("cultures") or {}
+        cs = sorted(td, key=int) if demes is None else sorted({str(dc[d]) for d in demes if d < len(dc)}, key=int)
+        out: dict[str, int] = {}
+        for c in cs:
+            for t in (td.get(c) or {}).get("taboos") or []:
+                if t.get("origin") == "divine" and t.get("god") is not None:
+                    out[t["target"]] = out.get(t["target"], 0) + 1
+        return out
+
+    def _faith_taboos(self, hold, pan, R, dc, beings, all_counts) -> list:
+        """The faith's divine food taboos: [[god key, target, English label]] over its holders' cultures whose god is a
+        god of the pantheon, one per target, the ones most characteristic of this faith first (share among the holders'
+        cultures over the share among all cultures), then by target."""
+        td = _taboos_doc(R).get("cultures") or {}
+        cs = sorted({str(dc[d]) for d in hold if d < len(dc)}, key=int)
+        n_all = max(1, len(td))
+        got: dict[str, list] = {}
+        cnt: dict[str, int] = {}
+        for c in cs:
+            for t in (td.get(c) or {}).get("taboos") or []:
+                if t.get("origin") != "divine" or t.get("god") is None or t["god"] not in beings:
+                    continue
+                key = self._arrival(beings[t["god"]], beings)[0]
+                if key not in pan:
+                    continue
+                cnt[t["target"]] = cnt.get(t["target"], 0) + 1
+                got.setdefault(t["target"], [key, t["target"], t.get("label") or t["target"]])
+        nc = max(1, len(cs))
+        lift = {k: (cnt[k] / nc) / max(all_counts.get(k, 1) / n_all, 1e-9) for k in got}
+        return [got[k] for k in sorted(got, key=lambda k: (-round(lift[k], 6), k))]
 
     def ancestor(self, d: int, kyr: float) -> tuple[int, bool]:
         """(the deme of d's line alive at kyr, True) or (the oldest deme of the line, False) when the line starts later."""
@@ -495,9 +575,15 @@ def learned_register(h, l) -> dict:
 
 # ------------------------------------------------------------------------------------------------- the document
 def _spell(lect, form) -> str:
+    """A god's name as the lect's books spell names (book mode: no tone marks, the lect's planned diacritics only; demo
+    read 4 had Nị́dérrìnù and D̮ï from the full register), capitalised."""
     from . import output as OU
     from . import romanize as RO
-    return RO.title_name(OU.Speller(lect).form(tuple(form)))
+    sp = OU.Speller(lect)
+    try:
+        return RO.title_name(sp.orth.word(tuple(form), book=True))
+    except Exception:   # noqa: BLE001 - (the full register's fallback, as Speller.form)
+        return RO.title_name(sp.form(tuple(form)))
 
 
 def _coined(w) -> list:
@@ -603,13 +689,9 @@ def faiths_json(result: dict) -> dict:
             l = h.lect_of(d)
             if l is not None and l.alive and l.id not in lects:
                 lects.append(l.id)
-        keys = []
-        for d in F["holders"]:
-            for k in P.deme_gods.get(d) or ():
-                if k not in keys:
-                    keys.append(k)
+        keys = list(F.get("pantheon") or [])   # (one faith, one pantheon: every holder names these)
         gods = []
-        for k in keys[:GODS_PER_CULTURE + 2]:
+        for k in keys:
             con = god_concept(k)
             names, plain = [], None
             for lid in lects:
@@ -624,7 +706,8 @@ def faiths_json(result: dict) -> dict:
             gods.append({"key": k, "domain": g["domain"], "label": g["label"], "high": g["high"], "names": names,
                          "plain": plain or ""})
         rec = {"name": F["name"], "core": F["core"], "how": F["how"], "parent": F["parent"],
-               "founded_kyr": F["founded_kyr"], "peoples": F["peoples"], "holders": lects, "gods": gods}
+               "founded_kyr": F["founded_kyr"], "peoples": F["peoples"], "holders": lects, "gods": gods,
+               "taboos": [list(t) for t in F.get("taboos") or []]}
         L = h.liturgy.get(fid)
         if L is not None:
             lit = L["lect"]
