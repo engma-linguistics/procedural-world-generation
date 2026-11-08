@@ -410,6 +410,11 @@ _EXTRA = [
         ("SMITHING", None, False, ("FIRE", "STRIKE OR BEAT")), ("DEATH", "DEATH", True, ("DIE",)),
         ("WAR", "WAR", False, ("FIGHT",)), ("ANCESTORS", "ANCESTORS", False, ("OLD", "FATHER")),
     ]],
+    # a priesthood's words, once the people knows temples (TECH_CONCEPT; faiths pass 3, 2026-11-08: the liturgy's
+    # sacred vocabulary, with GOD, SPIRIT, SOUL, HOLY, PRAY, SACRIFICE)
+    *[(g, "N", 4, "social", c, False, False, False, b) for g, c, b in [
+        ("PRIEST", "PRIEST", ("GOD", "PERSON")), ("TEMPLE", "TEMPLE", ("GOD", "HOUSE")),
+    ]],
 ]
 
 # concept -> the techtree technologies (any of them) that bring it (history.tech_step); BREAD and BEER had no way in
@@ -421,7 +426,7 @@ TECH_CONCEPT = {
     "OVEN": ("bread_oven", "earth_oven", "mud_oven_hearth", "sealed_bake", "ceramic_stove"),
     "QUERN": ("saddle_quern", "rotary_quern"), "SUGAR": ("sugar_making", "sugar_refining", "maple_syrup"),
     "STEAM (FOOD)": ("steaming",), "PICKLE": ("pickling",), "YEAST": ("leavened_bread",), "GRIDDLE": ("griddle_bread",),
-    "FISH SAUCE": ("fish_sauce",), "PORRIDGE": ("wild_cereal_harvest", "cultivation"), "DOUGH": ("bread", "griddle_bread"),
+    "PRIEST": ("temples",), "TEMPLE": ("temples",), "FISH SAUCE": ("fish_sauce",), "PORRIDGE": ("wild_cereal_harvest", "cultivation"), "DOUGH": ("bread", "griddle_bread"),
     "CURD": ("cheese", "fermented_dairy"),
 }
 
@@ -959,7 +964,7 @@ _DERIVED_CLASS = {
     # WOLD meanings (round 5) whose IDS field puts them in the wrong coarse class
     **dict.fromkeys(("BOAT", "RAFT", "CART", "WHEEL", "POT", "BOWL", "JUG", "MORTAR"), "tool"),
     **dict.fromkeys(("PATH", "BRIDGE", "FIELD", "FURROW", "FENCE", "COUNTRY", "SHORE", "PRECIPICE", "MUD", "CLAY"), "land"),
-    "MARKET": "settlement", "WEDDING": "abstract", "PEACE": "abstract", "WORK (LABOUR)": "abstract", "DEMON": "god",
+    "MARKET": "settlement", "PRIEST": "person", "TEMPLE": "settlement", "WEDDING": "abstract", "PEACE": "abstract", "WORK (LABOUR)": "abstract", "DEMON": "god",
     "WOOL": "animal", "FUR": "animal", "SCALE": "animal",
 }
 
@@ -1771,15 +1776,53 @@ def shift_word(rng, lex: Lexicon, concept: str, kyr: float, lect_id: str | None 
                 etym_roots(src))
 
 
+# Segment borrowing (faiths & contact pass 3, contact-gaps 3d; Thomason & Kaufman 1988's borrowing scale: new phonemes
+# come in with loans from "more intense contact" on, as English /ʒ/ with French loans, Swahili /θ ð ɣ/ with Arabic ones):
+# under contact intensity I above SEG_BORROW_MIN a loan keeps each donor consonant the receiver lacks with chance
+# SEG_BORROW_K x (I - SEG_BORROW_MIN) / (1 - SEG_BORROW_MIN), when the receiver's voice can make and hear it. The kept
+# segment is logged in the lexicon's systems ("seg_loans": [ipa, donor lect, kyr, concept]); the driver adds it to the
+# lect's inventory (history.take_segments). Consonants only (vowel systems are borrowed far less: Matras 2009 ch. 9).
+SEG_BORROW_MIN = 0.5
+SEG_BORROW_K = 0.15
+SEG_BORROW_MAX = 4   # borrowed consonants per line at most (Swahili's θ ð ɣ x from Arabic is about the most)
+
+
+def _kept_segments(rng, word: Word, inv, profile, intensity: float, lex: "Lexicon | None" = None) -> list:
+    if rng is None or intensity <= SEG_BORROW_MIN or inv is None:
+        return []
+    if lex is not None and len({r[0] for r in lex.systems.get("seg_loans") or ()}) >= SEG_BORROW_MAX:
+        return []
+    from . import profiles
+    have = set(_inv.segments(inv)) | set(getattr(inv, "allophones", {}) or {})
+    p = SEG_BORROW_K * (intensity - SEG_BORROW_MIN) / (1.0 - SEG_BORROW_MIN)
+    out = []
+    for x in dict.fromkeys(word.form):
+        if x.kind != "C" or x in have:
+            continue
+        if not profile.hears(x) or not math.isfinite(profiles.species_cost(profile, x)):
+            continue
+        if rng.random() < p:
+            out.append(x)
+    return out
+
+
 def borrow(word: Word, from_lect_id: str, to_lex: Lexicon, profile, inv, kyr: float, note: str = "",
-           drop_distance: float | None = None, store: bool = True) -> Word:
+           drop_distance: float | None = None, store: bool = True, rng=None, intensity: float = 0.0) -> Word:
     """Borrow `word` into `to_lex`: hear it through the receiver's profile and inventory (`profiles.hear_word`), repair
-    it to the receiver's phonotactics, append `borrow:<lect>` to the donor's chain, store and return it."""
+    it to the receiver's phonotactics, append `borrow:<lect>` to the donor's chain, store and return it. With `rng` and
+    a contact `intensity` past SEG_BORROW_MIN some donor consonants the receiver lacks are kept (segment borrowing)."""
     from . import profiles
 
     if profile is None:
         profile = profiles.HUMAN
     kw = {} if drop_distance is None else {"drop_distance": drop_distance}
+    keep = _kept_segments(rng, word, inv, profile, intensity, to_lex)
+    if keep:
+        inv = replace(inv, consonants=list(inv.consonants) + [x for x in keep if x not in inv.consonants])
+        sl = to_lex.systems.setdefault("seg_loans", [])
+        for x in keep:
+            sl.append([word_ipa((x,)), from_lect_id, round(float(kyr), 3), word.concept])
+        note = (note + "; " if note else "") + "keeps " + " ".join(word_ipa((x,)) for x in keep)
     heard = tuple(profiles.hear_word(word.form, profile, _inv.segments(inv), **kw))
     form = _inv.repair(heard, inv)
     if not form:
@@ -1988,7 +2031,8 @@ def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, i
             if have:
                 wd = np.array([max((weights or {}).get(x, CONTACT_DEFAULT), 1e-9) for x in have])
                 d = have[int(rng.choice(len(have), p=wd / wd.sum()))]
-                return s, borrow(contact_words[d][k], d, lex, profile, inv, kyr, "contact", store=False)
+                return s, borrow(contact_words[d][k], d, lex, profile, inv, kyr, "contact", store=False, rng=rng,
+                                 intensity=intensity)
         elif s in ("derive", "renew"):
             new = _derive_tries(rng, lex, k, c, inv, kyr, lect_id, renew=s == "renew")
         elif s == "compound":
@@ -2051,7 +2095,7 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
     if inv is not None:
         lex.length_scale, lex.syllable_space = scale, syllable_space(inv)
     if n_generations > 0 and lex.words:
-        keys = list(lex.words)
+        keys = [k for k, w in lex.words.items() if w.pos != "NAME"]   # (names are renamed, not replaced: faiths.py)
         boost = _renewal_boost(lex)
         h = np.array([min(1.0, hazard(lex.words[k].freq_class) * boost.get(k, 1.0)
                           * (speech_taboo if not closed_class(k) else 1.0)) for k in keys])   # (name taboos: lexsys)
@@ -2264,7 +2308,7 @@ def stats(lex: Lexicon) -> dict:
     `inherited_core_share`: the share of the Swadesh-100 words that are still the proto word (`inherited`)."""
     import collections
 
-    words = list(lex.words.values())
+    words = [w for w in lex.words.values() if w.pos != "NAME"]   # (god names are names: faiths.py)
     if not words:
         return {"words": 0, "mean_segments": 0.0, "max_segments": 0, "mean_syllables": 0.0, "replacements": {},
                 "roots": 0, "root_family_max": 0, "words_in_families": 0.0,

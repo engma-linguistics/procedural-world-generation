@@ -351,6 +351,7 @@ def landscape_json(R) -> dict:
 
 
 def document(result: dict, thin_dead: int = 1) -> dict:
+    from . import faiths as FT
     from . import history as HI
     Speller.failures.clear()
     R = result["run"]
@@ -404,6 +405,7 @@ def document(result: dict, thin_dead: int = 1) -> dict:
         "names": NM.build_names(result, R, landscape=land),
         "shifts": result["shifts"],
         "food_routes": routes,
+        "faiths": FT.faiths_json(result),   # (god names, liturgies: faiths.py, 2026-11-08)
         "families": fam,
         "intelligibility": intel,
         "continua": result.get("continua") or [],
