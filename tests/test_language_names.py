@@ -82,7 +82,19 @@ def test_pattern_choice_deterministic():
         assert v["endonym"]["pattern"] in NM.PATTERNS and v["endonym"]["roman"][0].isupper()
         assert v["endonym"]["etym"][-1][2].startswith("name:")
     pats = {NM._Pass(res, run, s, None).endonym_pattern("human")[0] for s in range(40)}
-    assert {"E1", "E2"} <= pats  # (the commonest patterns turn up over seeds)
+    assert {"people", "real"} <= pats  # (the commonest variants turn up over seeds)
+    assert {NM.VARIANT_CODE[v] for v in pats} <= set(NM.PATTERNS)
+
+
+def test_pattern_codes_follow_the_owners_taxonomy():
+    """Codes mean what the owner's doc says (rev 7): E4 free/noble, E6 land or river, E9 trait or custom, X7 observed
+    appearance or dwelling; the river people are E6, the totem people E9, a relayed exonym X4, the scholars' name 'scholarly'."""
+    assert "free" in NM.PATTERNS["E4"] and "river" in NM.PATTERNS["E6"] and "trait" in NM.PATTERNS["E9"]
+    assert "dynasty" in NM.PATTERNS["X6"] and "misattributed" in NM.PATTERNS["X9"]
+    V = NM.VARIANT_CODE
+    assert V["river_people"] == V["river_name"] == "E6" and V["totem"] == "E9" and V["body"] == "E9" and V["relay"] == "X4"
+    assert V["by_dwelling"] == "X7" and V["original"] == "E2" and V["many"] == "E11"
+    assert set(V.values()) <= set(NM.PATTERNS)
 
 
 def test_five_class_grammar_gives_four_forms_on_one_root():
@@ -142,7 +154,7 @@ def test_speakers_call_others_mutes():
     rows = {"human": {"orc": {"valence": "exotic", "basis": "x", "since_kyr": 1.0, "strength": 0.5, "from_dir": "north"}}}
     res, run = _world(rows)
     P = NM._Pass(res, run, 11, None)
-    P.patterns["human"] = "E3"
+    P.patterns["human"] = "speakers"
     P.endonyms = {}
     x = P.exonym("human", "orc", rows["human"]["orc"])
     assert x["pattern"] == "X3" and "MUTE" in x["parts"]
