@@ -1,7 +1,7 @@
 # English slurs a book spelling must not contain (romanize.offensive). Matched as substrings, case-folded,
 # with diacritics stripped (nïgi = nigi), against both registers; the word separators of the house spelling (space, hyphen,
 # middle dot) and the apostrophe (a letter here: ʔ, ejectives) break a match, so k'ik'e does not read as one.
-# Keep it short and to slurs: plain swearing inside a word (shit, fuck) is fine, owner ruling 2026-11-08. Cold review 2026-11-08 (naziguluni, shitayoo'ï,
+# Keep it short: slurs, plus rape, whore and slut; plain swearing inside a word (shit, fuck) is fine (owner rulings 2026-11-08). Cold review 2026-11-08 (naziguluni, shitayoo'ï,
 # nige/nigi, lifukuwu).
 nazi
 hitler
@@ -17,3 +17,6 @@ gook
 spic
 coon
 dyke
+rape
+whore
+slut
