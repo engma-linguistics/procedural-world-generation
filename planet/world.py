@@ -92,7 +92,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
            veg: dict | None = None, orbit_dt: np.ndarray | None = None, soil_memory: dict | None = None,
            outlet: np.ndarray | None = None, closed: np.ndarray | None = None,
            valley: np.ndarray | None = None, climate_level: int | None = None,
-           history: dict | None = None) -> dict:
+           history: dict | None = None, step=None) -> dict:
     """Shared back half of the pipeline: climate -> a first vegetation on
     it -> erosion -> the climate again with the vegetation's feedbacks ->
     rivers -> waves, tides, the sea -> coastal life (coastal.py) -> vegetation
@@ -113,8 +113,11 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     climate_level: run the climate on that coarser nested grid and bring it down to this one
     (nest.climate_coarse: temperatures through the lapse rate on each cell's own height; orbit_dt is then the
     coarse grid's); a world refined onto a finer grid (planet/refine.py). history: the resources' history pass
-    for this grid, made by the caller (refine: the source run's, on its grid, mapped onto this one)."""
+    for this grid, made by the caller (refine: the source run's, on its grid, mapped onto this one).
+    step: called with each stage's name as it starts (refine.STEPS: a long refine's progress and cancel points)."""
     t0 = t0 or time.time()
+    step = step or (lambda name: None)
+    step("climate")
     veg = veg or {}
     # (a time zoom's plants, PW-213: the trees stay where they are and the rest settles on this climate)
     held = dict(migrate=vegetation.HELD, steps=vegetation.HELD_STEPS) if veg.get("held") else {}
@@ -132,10 +135,13 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
                           unlocked=veg.get("unlocked"), cheap=True, **held)
     fb = vegetation.feedback(v0["eq"]["nu"], v0["pot"]["lai"])
     if erosion > 0 and erosion_iterations > 0:
+        step("erosion")
         elev = hydrology.erode(grid, elev, c, erosion_iterations, erosion, ice=ice)
+    step("climate again")
     c = clim(elev, fb)
     temp, precip = c["temp"], c["precip"]
     extra = {"climate": c["koppen"], "warm_month": c["t_warm"], "cold_month": c["t_cold"], **extra}
+    step("rivers and lakes")
     flow, down, lk = hydrology.rivers_and_lakes(grid, elev, c, ice, outlet=outlet, closed=closed, valley=valley)
     land = is_land(elev, ice, grid)
     sea = ~land
@@ -144,6 +150,12 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     # > 0 is land), while the soil, plants and rivers here were made on it as land (PW-348)
     elev_m = np.round(elev).astype(int)
     elev_m = np.where(elev > 0, np.maximum(elev_m, 1), np.minimum(elev_m, 0))
+    # at sea (0 on land; coast.py): mean wave power arriving, kW per m of wave crest, and the tidal range, m
+    step("waves")
+    wave = np.round(coast.wave_power(grid, elev, c, ice), 1)
+    step("tides")
+    tide = np.round(coast.tide_range(grid, elev, ice_share=coast.sea_ice_share(grid, elev, c, ice).mean(0), ice=ice), 2)
+    step("the sea and the land's layers")
 
     layers = {
         "elevation": elev_m,
@@ -165,11 +177,8 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         "evaporation": np.round(c["aet"]).astype(int),  # mm/yr, actual
         "pet": np.round(c["pet"]).astype(int),  # mm/yr, potential (what a wet surface would evaporate)
         "lake_evap": np.round(c["lake_evap"]).astype(int),  # mm/yr, open water's (climate.open_water_evap)
-        # at sea (0 on land; coast.py): mean wave power arriving, kW per m of
-        # wave crest, and the tidal range, m
-        "wave_power": np.round(coast.wave_power(grid, elev, c, ice), 1),
-        "tide_range": np.round(coast.tide_range(grid, elev, ice_share=coast.sea_ice_share(grid, elev, c, ice).mean(0),
-                                                ice=ice), 2),
+        "wave_power": wave,  # (above)
+        "tide_range": tide,
         # the sea (0 on land): surface temperature, annual and July / January (C), surface
         # salinity (psu) and deep water sinking (Sv per cell; ocean.py's overturning)
         **{k: np.round(np.where(sea, c[k], 0.0), 1) for k in ("sst", "sst_jul", "sst_jan")},
@@ -202,6 +211,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
         layers[k] = np.round(v, 3) if np.asarray(v).dtype.kind == "f" else v
     # coastal and shallow-sea life (coastal.py, PW-188), from the layers as stored: % of each
     # cell, and the sea's turbidity (mg/L)
+    step("soils and plants")
     reef_ok = bool(veg.get("reef_builders", True))  # (skeletal reef builders by now: the run's calendar, PW-892)
     cl = coastal.world_layers(grid, layers, {**meta, "params": params or {}, "reef_builders": reef_ok},
                               veg.get("unlocked"))
@@ -253,6 +263,7 @@ def finish(grid: Grid, elev: np.ndarray, extra: dict, meta: dict, erosion: float
     # the coast-form layers (coastform.py, PW-097, PW-620) and, for a world from a stored run, the resource layers
     # with the run's history pass (resources.py, PW-155, PW-609); the history is kept beside the world (save()) for
     # its zooms' deposits (PW-618)
+    step("coasts and resources")
     layers.update(coastform.world_layers(grid, layers, meta))
     meta["coast"] = {"created": meta["created"]}
     hist = None

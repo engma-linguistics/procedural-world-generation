@@ -236,20 +236,24 @@
   // ---- 3b. minorities (PW-1489) ----
   function minMount(bar) {
     const S = D.gods.shares?.summary || {};
-    bar.innerHTML = `<span class="muted">${S.cultures ?? 0} cultures with a faith now: ${S.with_minority ?? 0} hold a minority faith, ${S.minority_over_10 ?? 0} one above 10%</span>`;
+    bar.innerHTML = `<span class="muted">${S.cultures ?? 0} cultures with a faith now: ${S.with_minority ?? 0} hold a minority faith, ${S.minority_over_10 ?? 0} one above 10%${S.with_town_faith ? `, ${S.with_town_faith} one that came through towns` : ''}</span>`;
   }
   function minDraw(main) {
     const SH = D.gods.shares;
     if (!SH) { main.innerHTML = '<p class="muted">This run\'s faiths were worked out before minorities were tracked.</p>'; return; }
     const L = Object.fromEntries((D.result.lineages || []).map((l) => [l.id, l.name.split(' (')[0]]));
     const rule = `title="${esc(SH.rule)}"`;
+    const AC = D.gods.attitudes?.cultures || {};
+    const rtol = (c) => { const a = AC[c]?.now; return a && a.length > 2 ? a[2].toFixed(2) : ''; };  // (PW-1520: religious tolerance now)
+    const tolTip = 'title="Religious tolerance (0..1, PW-1520): how this culture, and a state it rules, bears other faiths. A tolerant ruler pushes its faith slowly, so its subjects keep theirs; a tolerant culture absorbs its own minorities slowly. Raised by wide contact, ruling many peoples and living in towns; lowered by an exclusive, missionary faith."';
+    const townTip = 'title="Came through towns (PW-1528): of each minority faith, the part that settled through the culture\'s towns from the other cultures of its realm (merchants, craftsmen, migrants who keep their faith) and spread from there. It grows with the culture\'s share of people in towns and with the ruler\'s and the culture\'s religious tolerance; an intolerant ruler allows almost none."';
     let h = `<h3 ${rule}>States now</h3>`;
-    h += SH.states.length ? `<table class="t"><tr><th>state</th><th>kind</th><th>cells</th><th>ruled by</th><th>faiths</th></tr>${SH.states.map((s) => `<tr><td>${sw(s.color || '#888')}${esc(s.name)}</td><td>${esc(s.tier)}</td><td class="n">${s.cells}</td><td>${esc(D.cname(s.ruler))}</td><td>${sharesHtml(s.faiths)}</td></tr>`).join('')}</table>`
+    h += SH.states.length ? `<table class="t"><tr><th>state</th><th>kind</th><th>cells</th><th>ruled by</th><th ${tolTip}>ruler's religious tolerance</th><th>faiths</th></tr>${SH.states.map((s) => `<tr><td>${sw(s.color || '#888')}${esc(s.name)}</td><td>${esc(s.tier)}</td><td class="n">${s.cells}</td><td>${esc(D.cname(s.ruler))}</td><td class="n">${rtol(s.ruler)}</td><td>${sharesHtml(s.faiths)}</td></tr>`).join('')}</table>`
       : '<p class="muted">No states, empires or dragon realms rule now (or this run has no settlements).</p>';
     const cu = Object.entries(D.gods.cultures).filter(([, c]) => c.faith_now != null && (c.shares || []).length > 1)
       .map(([id, c]) => [id, c, c.shares.slice(1).reduce((a, r) => a + r[1], 0)]).sort((a, b) => b[2] - a[2]);
     h += `<h3 style="margin-top:16px" ${rule}>Cultures with minorities <span class="muted" style="font-weight:normal">(${cu.length}, the largest minorities first)</span></h3>
-      <table class="t"><tr><th>culture</th><th>people</th><th>faiths</th></tr>${cu.slice(0, 150).map(([id, c]) => `<tr><td>${esc(c.name)}</td><td class="muted">${esc(L[c.people] || c.people)}</td><td>${sharesHtml(c.shares)}</td></tr>`).join('')}</table>`;
+      <table class="t"><tr><th>culture</th><th>people</th><th ${tolTip}>religious tolerance</th><th>faiths</th><th ${townTip}>came through towns</th></tr>${cu.slice(0, 150).map(([id, c]) => `<tr><td>${esc(c.name)}</td><td class="muted">${esc(L[c.people] || c.people)}</td><td class="n">${rtol(id)}</td><td>${sharesHtml(c.shares)}</td><td>${sharesHtml(c.towns)}</td></tr>`).join('')}</table>`;
     h += `<h3 style="margin-top:16px" ${rule}>Peoples</h3><table class="t"><tr><th>people</th><th>faiths</th></tr>${Object.entries(SH.peoples).map(([p, r]) => `<tr><td>${esc(L[p] || p)}</td><td>${sharesHtml(r)}</td></tr>`).join('')}</table>`;
     main.innerHTML = h + `<p class="muted" style="max-width:900px">The rule (a judgement call, readout only): ${esc(SH.rule)}</p>`;
   }
@@ -269,8 +273,8 @@
     const c = T.cultures[st.culture], K = T.kinds || {}, S = T.sources || {};
     const src = (k) => (S[k] ? `<a href="${esc(S[k].url)}" target="_blank" title="${esc(S[k].title)} (${esc(S[k].level)})">${esc(k)}</a>` : esc(k || ''));
     const fn = D.gods.cultures?.[st.culture]?.faith_now, cf = fn != null ? D.F[fn] : null;
-    const at = D.gods.attitudes?.cultures?.[st.culture]?.now;  // (PW-904: [tolerance, aggression] now, 0..1)
-    const atx = at ? `tolerance ${at[0].toFixed(2)}, aggression ${at[1].toFixed(2)} <span title="${esc(D.gods.attitudes.rule || '')}">(?)</span> · ` : '';
+    const ac = D.gods.attitudes?.cultures?.[st.culture], at = ac?.now;  // (PW-904: [tolerance, aggression, religious tolerance (PW-1520)] now, 0..1)
+    const atx = at ? `tolerance ${at[0].toFixed(2)}${at.length > 2 ? `, of other faiths ${at[2].toFixed(2)}` : ''}, aggression ${at[1].toFixed(2)}${ac.urban ? `, ${(100 * ac.urban).toFixed(1)}% in towns` : ''} <span title="${esc(D.gods.attitudes.rule || '')}">(?)</span> · ` : '';
     let h = `<h3>${esc(c.name)}</h3><p class="muted">${cf ? `faiths: ${sharesHtml(D.gods.cultures[st.culture].shares) || sw(cf.color) + fname(cf)}${cf.missionary ? ' (its faith is missionary)' : ''} · ` : ''}${atx}tags:${esc((c.tags || []).join(', '))}</p><table class="t"><tr><th>kind</th><th>taboo</th><th>who</th><th>why</th><th>source</th></tr>`;
     for (const t of c.taboos) h += `<tr><td>${esc(K[t.kind]?.name || t.kind)}</td><td>${esc(t.kind === 'food' ? 'not eaten: ' + t.label : t.label)}</td><td>${esc(t.scope)}</td><td class="muted" style="max-width:360px">${esc(t.why)}</td><td>${t.kind === 'food' ? '<span class="muted">taboos.py (food)</span>' : src(t.source)}</td></tr>`;
     h += '</table><h3 style="margin-top:16px">The catalogue: kinds across all living cultures</h3><table class="t"><tr><th>kind</th><th>what</th><th>cultures with one</th><th>rules</th><th>sources</th></tr>';

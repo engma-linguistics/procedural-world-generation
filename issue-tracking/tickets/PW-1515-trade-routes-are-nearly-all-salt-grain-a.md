@@ -2,7 +2,7 @@
 id: PW-1515
 title: "Trade routes are nearly all salt: grain and metal make no routes, and no caravan town appears on the judge runs"
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -35,5 +35,7 @@ caravan-town rule's inputs (Koppen B cells beside farmed towns on a land route).
 - [ ] the overlay shows at least food and one other kind besides salt in most eras with towns, or the doc explains why the worlds do not trade them far
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 222: long-haul / local layers built (Daniel 11-08 dropped the trunk bar); food routes in every era with towns.
 - 2026-11-08: Created from inbox draft draft-trade-routes-mostly-salt.md (found by lane 214).
 - 2026-11-08: Lane 216 (docs/review/culture/trade/step3b.md): routes are now judged per good against the volume that travels (5%), with a hold and a span at half the bar; the caravan rule no longer needs an unfarmed dry cell. Every era with towns now shows two or more kinds besides salt (14/14, 14/16, 18/18; main cb8374b0: 6/14, 0/14, 13/18); metal routes in 9-12 eras (0-1); caravan towns 12/19/23 town-eras (0); ports 34/23/65 (0/6/0). Food in 5/2/10 of 14/16/18 eras with towns: bar not met. Grain is local exchange (median 1-2 stretches, R§6), and step 2's 3-round allocation leaves 62-73% of the grain lack unmet (draft-trade-allocation-rounds-cut-grain.md). Herders' grain unchanged (0.73/3.81/5.13% vs 0.73/3.88/4.63%). Stays open.
+- 2026-11-08: Lane 218 (docs/review/culture/trade/step3c.md): with market pools, food routes in 12/14, 12/18, 15/18 eras with towns (main c2e54f2b: 7/14, 3/16, 12/18): food bar met; kinds besides salt kept (14/14, 18/18, 18/18). Worn ways (a land stretch up to 40% cheaper with traffic, Tobler 1993 off-path 3/5; Helbing et al. 1997 trail reinforcement; switch `trade_flow.TRUNK`, iterated up to 3 walks a frame, half the wear carried to the next era) did not thin the mesh: 531 / 331 / 533 stretches an era against 536 / 327 / 530 without (main 410 / 281 / 359), steadiness fell, time doubled; left off. The trunk-count bar was dropped mid-lane (Daniel via the coordinator: the local web is real; draw long-haul (precious, or carried over ~500 km) by default and local exchange as a toggle); that overlay split is not built. Stays open.

@@ -32,6 +32,9 @@ if os.environ.get('RSHARE'): RT.ROUTE_SHARE = float(os.environ['RSHARE'])
 if os.environ.get('RHOLD'): RT.ROUTE_HOLD = float(os.environ['RHOLD'])
 if os.environ.get('RSPAN'): RT.SPAN = os.environ['RSPAN'] == '1'
 if os.environ.get('RROUNDS'): TF.ROUNDS = int(os.environ['RROUNDS'])
+for _k, _v in os.environ.items():
+    if _k.startswith('TF_'):
+        _o = getattr(TF, _k[3:]); setattr(TF, _k[3:], (_v == '1') if isinstance(_o, bool) else type(_o)(_v))
 TAG = os.environ.get('TAG') or ('base' if base else 'new')
 
 d = S.find_run(run)

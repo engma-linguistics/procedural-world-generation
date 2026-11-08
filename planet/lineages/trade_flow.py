@@ -17,6 +17,10 @@ How (design1.md step 2; numbers and sources in review1.md section 6, cited R§n)
   century, polities.py). The modes open with techs the tree already has, known by the culture that holds the cell.
 - L, the fall-off length, is one per value class (FALL_KM), each from a sourced distance; the class is the ledger's (trade.GOODS), except
   that tin falls off as a precious good (R§6: tin is among the light, valuable goods that go thousands of km; Kanesh, R§3).
+- At sea and on rivers a km also costs a share of the cargo's value (HAND_KM per class, lanes 225 and 226, step4b.md and step4c.md): the
+  hands, time and risk of a water haul, which on land are in FALL_KM and the border tolls, while ORBIS's per-km water cost is freight alone.
+  RIVER_COURSE (off): a river boat following only its own river's course (the world's downstream links; lane 226).
+- Herd animals and horses walk (DROVE_GOODS, lane 226): a drove's cost on land, no river boat.
 - The kind of exchange is a label from the two sides (kind_of); it does not change the physics (R§1: fall-off curves separate valuable
   goods from bulky ones, not reciprocity from markets; review1.md "what the model takes" 4).
 - Peoples by body (D65 A + Daniel's additions, PW-1501): flyers carry only light (precious) goods, at a flat cost over any ground or sea
@@ -44,9 +48,11 @@ from numba import njit
 from ..geo import R_KM
 from . import trade as TR
 
-VERSION = 4  # (2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
+VERSION = 9  # (9: boats follow the river's course, the hands on river hauls, herds and horses walk as droves, lane 226, step4c.md; 8: the hands, time and risk of a sea haul, HAND_KM, lane 225, step4b.md; 7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
+# PW-1530; lane 224, step4a.md. 2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
 # 3: a route is judged per good against its carried volume, and last era's routes hold down to half the bar, PW-1515 and PW-1514;
-# 4: grain takers look on until a round finds no more, SEEK_GOODS, lane 216b)
+# 4: grain takers look on until a round finds no more, SEEK_GOODS, lane 216b; 5: market pools and worn ways, lane 218;
+# 6: every good looks on until none is left, in one shared walk, and the routes split into long-haul and local, lane 222)
 FORMAT = "procgen-trade-flows/1"
 
 # --- cost per km of each mode, a pack animal = 1 (R§6). ORBIS (Scheidel, Meeks & Weiland 2012, from Diocletian's Price Edict), denarii per kg
@@ -60,8 +66,58 @@ HILL = 0.452 / 0.213  # porter and pack animal in hills against the flat (Cheng 
 RIVER_DOWN = 0.0034 / 0.028  # river boat downstream (`canoes` on a river navigable by small boats, river_nav >= 1): ORBIS
 RIVER_UP = 0.0068 / 0.028  # upstream: ORBIS
 SEA = 0.001 / 0.028  # ship along any coast (`sails` or `plank_boats`), over open sea (`navigation`, or ocean ships, animals.ocean_ships): ORBIS
+RIVER_COURSE = False  # True: a river boat goes only from a cell to the next one down its river's course (the world's `downstream`) or up
+# it (lane 226, step4c.md). Off (as main d8152d53): any two neighbouring cells with navigable rivers, so a boat also crosses between
+# tributaries and over watersheds (on the judge runs two thirds of those edges are not along a river). On, it cut herders' grain met by a
+# tenth to a quarter on all three judge runs (grain went by those crossings), and the river hands bound spices as well without it: an inbox draft
+# --- droves (lane 226, step4c.md): herd animals and horses walk to market, driven by their herders over any ground, so on land they cost a
+# drove's way, not a pack animal's load; they take no river boat; at sea they ship as middling cargo (freight and the hands)
+DROVES = True  # False: carried as any middling cargo, by river boat too (main d8152d53)
+DROVE_GOODS = ("livestock", "horses")
+DROVE = 0.25  # a drove's cost per km, a pack animal = 1. Texas to Kansas, "as much as a thousand miles" (~1,600 km): "the cost of sending
+# cattle over the trail ... was about $1.25 per head; the cost of railway is about $4.00 a head" (Lytle in Freeman 1905, p. 660, quoted in J. Econ. Hist.,
+# "End of the Chisholm Trail"); a head was worth $2 in Texas after the war, up to $40 in the north (Wikipedia, Cattle drives in the United
+# States). $1.25 against $2-4 at the start is 31-63% of the value over ~1,600 km, an e-fold per ~1,700-4,300 km, which against the middling
+# fall-off (433 pack-km) is 0.10-0.25 of a pack animal per km. JUDGEMENT: the dear end (at 0.10 horses' far tenth went 7,400 km overland on
+# 3e0eb4, past the sourced ~1,000-3,000 km)
 CANOE_COAST = RIVER_UP  # a canoe along the coast, one cell out (`canoes`). JUDGEMENT: paddled, as against a current; no coastal canoe cost
 # was found
+# --- a port call (PW-1529, step4a.md section 2): loading and unloading, and the harbour's dues, on top of the per-km cost, so a sea haul is
+# not almost free over distance. ORBIS prices sea carriage at 0.1 denarii per kg of wheat per day under sail (Scheidel, Meeks & Weiland
+# 2012, ORBIS v1 paper) and ~0.001 per km, so a day of a ship's time is ~100 sea-km; and ORBIS has no transshipment cost (Page 2026, J.
+# Maritime Archaeology 21: the price edict "does not include transhipment fees"). Page 2026, from P.Lond. 3.948: 9.5 t took 2 days to
+# load and 4 to unload. So loading costs 2 ship-days (200 sea-km) where goods go from land onto the sea, unloading 4 (400 sea-km) where
+# they come ashore. Page's papyri put harbour operations at 5-10% of a voyage's cost (P.Oxy. 3.522): 600 sea-km is that share of a
+# 6,000-12,000 km voyage, more of a short one (as P.Oxy. 14.1650's 51.5%)
+DAY_KM = 0.1 / 0.001  # sea-km per ship-day (ORBIS: per day / per km)
+LOAD_DAYS, UNLOAD_DAYS = 2.0, 4.0  # Page 2026, P.Lond. 3.948
+HARBOUR_DUE = 0.025  # share of the cargo's value paid where it comes ashore: the Roman portorium, the quadragesima of 2.5% (2% earlier;
+# De Laet 1949 via ostia-antica.org; the Red Sea's 25% tetarte was a frontier tax, not a harbour's: the toll at a border stands for it)
+# --- the hands, time and risk of a sea haul (lane 225, step4b.md): a ship's freight per km is ORBIS's 1/28 of a donkey's, but what a long
+# sea haul cost a dear good was not freight. Each stage of it (a season's sail between emporia) passed the cargo to another merchant, who
+# was paid for a season of capital, the voyage's risk and his margin. On land these are in the fall-off length (FALL_KM is set from whole
+# overland markups, Cato's mill and Kanesh's tin, hands included) and in the toll at every border crossed, rivers included (a river runs
+# through the cultures' land). But the per-km cost at sea is ORBIS's freight alone, and a sea haul crosses no border. So a sea km also
+# takes a share of the cargo's value (value, not weight, like the toll): the value e-folds every HAND_KM km at sea, on top of the freight.
+# Sources (fetched; step4b.md section 1): pepper cost 1-2 g of silver a kilo where it grew, 10-14 at Alexandria, 14-18 at Venice, 20-30
+# in Europe's consumer lands (Pearson 1987, The Portuguese in India, p. 41): x8 over Malabar to Alexandria, ~6,000 km mostly by sea
+# [est.], one e-fold per ~2,900 km; x1.3 over Alexandria to Venice (~2,400 km, one hand: ~8,300 km); Pliny NH 6.101: India's wares sell
+# in Rome "at fully one hundred times their prime cost" (~8,200 km [est.]: ~1,800 km); an Athenian sea loan on a cargo of wine for the
+# Pontus round trip, capital and risk alone, 22.5% (30% late in the season; Dem. 35.10: ~3,600 km [est.]: ~17,700 km)
+HANDS = True  # False: freight alone at sea (main fe063817)
+RIVER_HANDS = True  # the same hands on a river haul (lane 226, step4c.md): both price chains above ran by river as well as by sea (Pliny's
+# goods went up the Nile from Juliopolis to Coptos, Pearson's pepper down it to Alexandria), and on a river, as at sea, the per-km cost is
+# ORBIS's freight alone. False: freight alone on rivers (main d8152d53)
+HAND_KM = {
+    # (bulk: none. A bulk cargo went in one hull from port to port, and its sourced sea cost is freight: wheat by sea ~1.3% of its value
+    # per 100 Roman miles (Duncan-Jones, review1.md section 6), which ORBIS's freight already gives (~1.8% here). JUDGEMENT: the sea
+    # loan's capital and risk (Dem. 35.10, ~17,700 km) left out for bulk; with it, herders' grain met fell by a tenth on 0141d1, step4b.md)
+    # JUDGEMENT: Pearson's relayed Indian Ocean haul (~2,900), within the sourced 1,800 (Pliny, polemical) to 8,300 (Alexandria to Venice, one
+    # leg); middling goods with the dear ones, as cloth, glass and porcelain crossed the Indian Ocean by the same emporia (Zhao 2015,
+    # step4a.md section 1: porcelain reached the Swahili coast "primarily ... indirectly")
+    "middling": 3000.0,
+    "precious": 3000.0,
+}
 AIR = PACK  # a flyer's load per km over any ground, mountain or sea. JUDGEMENT (D65 A): a flying people carries a light load as a pack
 # animal does; no source
 ROUTE = 1.3  # path km per straight km between cell centres (as salt_reach.ROUTE and seafood.ROUTE)
@@ -92,26 +148,31 @@ FOODS = ("grain", "livestock", "dried_fish")  # the goods that are food (for ste
 QUARTERS = True  # step 3 (PW-1504): a merchant quarter lifts its border's toll in the next frame (design1.md steps 2-3); False: no carry-over
 FETCH = False  # PW-1511 B (needs-decision): True: herders fetch grain with their own animals. Off: it met no more of their need on the judge runs (step3.md)
 FETCH_GOODS = ("grain",)  # PW-1511 B: what herders fetch with their own animals (Khazanov 2019: grain from the frontier markets)
-ROUNDS = 3  # a taker cut short by an emptied source looks for the next best source up to this many times (a compute bound)
-SEEK_GOODS = ("grain",)  # ... but grain's takers look on, round after round, until a round finds no more (no taker cut short reaches a
-# live source); SEEK_CAP is only a safety cap. Lane 216 (step3b.md): 3 rounds left 62-73% of the world's grain lack unmet; grain needs
-# 40-150 rounds to settle. Each round re-walks only the land the emptied sources had supplied (_rewalk). The other goods keep the
-# compute bound: run to the end they need up to 200 rounds each and the derive takes ~6x as long (step3b.md, pass 2)
-SEEK_CAP = 400
-
-
-@njit(cache=True)
-def _allocate(order, org, ask, avail):
-    """Shares out each source's supply (avail, per source cell; reduced in place) to its takers in `order` (best supplied first): each
-    gets min(what it asks, what is left)."""
-    got = np.zeros(ask.shape[0])
-    for k in order:
-        o = org[k]
-        x = min(ask[k], avail[o])
-        if x > 0.0:
-            got[k] = x
-            avail[o] -= x
-    return got
+HANDLE = True  # PW-1529: a port call costs loading, unloading and the harbour's dues (above); False: the per-km cost only
+SEEK_CAP = 400  # every good's takers look on, from source to next best source, until none is left (PW-1519): one shared walk in which an
+# emptied source stops spreading and the land it held is walked again from the live sources (_seek, lane 222, step3d.md). This caps the
+# sources one taker draws from, a safety cap only. Before: grain ran round after round (lane 216b) and the other goods stopped after 3
+# rounds, a compute bound (step3b.md, step3c.md: run to the end with rounds, or with each cell's 8 best sources, they took ~5-30 times as long)
+# --- market pools (PW-1514, step3c.md; D64: towns are the hubs). A town's market gathers its hinterland's spare goods and its wants: inside
+# the pool the spare goods meet the wants first (a market, no road drawn), and only what is left over travels, from the town, or is
+# fetched, to the town. A marginal cell turning from giver to taker then moves a pool's total a little instead of a source in or out
+POOL = True
+POOL_HOPS = 1.5  # a cell joins its nearest town's pool when the way there is at most this many cell spacings. JUDGEMENT: the town's
+# cell and its neighbours (60-80 km at L7), the grid's smallest reach beyond a cell; a market's own reach is smaller (a day's walk,
+# ~30 km for Kanesh's cities, review1.md section 4; Skinner's standard areas ~4-5 km), and it is the town spacing that sets the pool
+# --- worn ways (PW-1515, step3c.md): a road gets cheaper once traffic uses it, for every good, so goods share trunks
+TRUNK = False  # off: on the judge runs worn ways drew as many stretches (531 / 331 / 533 an era against 536 / 327 / 530 without) and
+# made them less steady under the land nudge (0.65 / 0.51 / 0.48 against 0.64 / 0.60 / 0.50), at twice the time (step3c.md)
+TRAIL = 0.4  # the most a worn way takes off a land edge's cost. Tobler's hiking function (Tobler 1993, from Imhof 1950): off a path one
+# walks at 3/5 of the speed on it, so a path costs 0.6 of the open ground. Helbing et al. 1997 (Phys. Rev. E 56: 2527): "frequently
+# used trails become more developed, making them more attractive", with a saturating clarity (their eq. 15)
+WEAR_HALF = 0.002  # the share of the frame's carried goods over a stretch that wears it halfway. JUDGEMENT (step3c.md): no source gives the
+# traffic a track needs; the busiest 1% of carried stretches carry 0.2-0.5% each (3e0eb4), so these are worn most
+WEAR_KEEP = 0.5  # the share of last era's wear that is still there (roads persist: Bleakley & Lin 2012, Dalgaard et al. 2022; step3b.md).
+# JUDGEMENT: half over an era of 500 years
+TRUNK_ITERS = 3  # walks per frame at most: walk, wear the ways the goods took, walk again; it stops sooner once the wear changes by
+# less than WEAR_TOL anywhere (a compute bound)
+WEAR_TOL = 0.02
 
 
 @njit(cache=True)
@@ -159,64 +220,238 @@ def _walk(src, d0, nbr_off, nbr_idx, ecost, ekm, emode, ebord, limit):
 
 
 @njit(cache=True)
-def _rewalk(dead, seed, d, org, km, mkm, nb, pe, nbr_off, nbr_idx, ecost, ekm, emode, ebord, limit):
-    """_walk again, in place, after the sources marked `dead` (per cell) stop giving: only the cells they had supplied are walked again,
-    from the live cells bordering them and the live sources among them (seed: a live source's starting cost, else inf). The other cells
-    keep their cost and path, since taking sources away lowers no cost and leaves a live source's own paths as they were. Returns the
-    number of cells walked again."""
-    n = d.shape[0]
-    bad = np.zeros(n, np.bool_)
-    cnt = 0
-    for j in range(n):
-        o = org[j]
-        if o >= 0 and dead[o]:
-            bad[j] = True
-            d[j] = np.inf
-            org[j] = -1
-            pe[j] = -1
-            km[j] = 0.0
-            for m in range(4):
-                mkm[j, m] = 0.0
-            nb[j] = 0
-            cnt += 1
-    if cnt == 0:
-        return 0
+def _grow(a, m):
+    """a with room for at least m rows (doubled), the first rows kept."""
+    if m <= a.shape[0]:
+        return a
+    b = np.empty((max(m, 2 * a.shape[0]),) + a.shape[1:], a.dtype)
+    b[:a.shape[0]] = a
+    return b
+
+
+@njit(cache=True)
+def _seek(src, d0, nbr_off, nbr_idx, ecost, ekm, emode, ebord, esrc, limit, L, tk_off, tk_pair, rem, hc, seeking, cap, avail, avail0, S,
+          gT, gC, gF, sc, tcul, inner_km, long_good, long_km, grp, through, tix, tdict, eall, ex, exl):
+    """One shared walk in which every taker takes from the best live supply that reaches it, and a source that runs empty stops
+    spreading (PW-1519, lane 218's idea). The walk is _walk's (Dijkstra from every source at once, a source starting at d0), and a cell's
+    takers (tk_pair[tk_off[c]:tk_off[c+1]], best supplied first as in step 2) are served when the walk settles the cell: each takes
+    min(its lack rem x hc, the supply there x hc, what is left at the source). A source emptied this way is dead: the cells it held are
+    walked again at once from the live cells bordering them and the live sources among them (as a fresh walk from the live sources would
+    reach them: taking a source away lowers no other cost), so a taker it cut short takes from its next best live source. A taker that got
+    all it asked (the supply there was its limit) looks no further. It runs until no taker is left seeking; `cap` (sources per taker) is
+    only a safety cap.
+
+    Each delivery is traced back to its source along the walk's edges as it happens (the edges change when a source dies): its amount is
+    added to every cell passed (through[grp], and at a town (tix >= 0) to tdict per (town, group, giver)), and to every directed edge passed
+    (eall; ex for its part between cultures; exl for that part when it is long-haul: long_good, or carried at least long_km). Givers: a
+    pooled source (a town in gT) splits among its pool's cultures gC by shares gF, else the source cell's culture sc.
+
+    Returns the deliveries (pair, source cell, amount, km, km per mode, borders, cost-km of carrying, carried?, part between cultures,
+    long-haul?),
+    the most sources any taker drew from, the number of sources emptied, and the takers the cap stopped while still short."""
+    n = nbr_off.shape[0] - 1
+    d = np.full(n, np.inf)
+    org = np.full(n, -1, np.int64)
+    pe = np.full(n, -1, np.int64)
+    km = np.zeros(n)
+    mkm = np.zeros((n, 4))
+    nb = np.zeros(n, np.int32)
+    seed = np.full(n, np.inf)
+    alive = np.zeros(n, np.bool_)
+    head = np.full(n, -1, np.int64)  # (per source: its cells, a linked list, checked against org when read)
+    ncell = np.zeros(1024, np.int64)
+    nnext = np.zeros(1024, np.int64)
+    nn = 0
+    stamp = np.zeros(n, np.int64)
+    pstamp = np.zeros(n, np.int64)
+    serves = np.zeros(tk_pair.shape[0], np.int64)
+    m0 = tk_pair.shape[0] + 16
+    dp = np.zeros(m0, np.int64)
+    do = np.zeros(m0, np.int64)
+    dg = np.zeros(m0)
+    dkm = np.zeros(m0)
+    dmkm = np.zeros((m0, 4))
+    dnb = np.zeros(m0)
+    dcar = np.zeros(m0)
+    dcr = np.zeros(m0, np.bool_)
+    dx = np.zeros(m0)
+    dl = np.zeros(m0, np.bool_)
+    nd = 0
+    deaths = 0
     h = [(0.0, np.int64(0))]
     h.pop()
-    pushed = np.zeros(n, np.bool_)
-    for j in range(n):
-        if bad[j] and seed[j] < np.inf:  # (a live source that a dead one had outbid on its own cell)
-            d[j] = seed[j]
-            org[j] = j
-            heapq.heappush(h, (d[j], np.int64(j)))
-    for j in range(n):
-        if bad[j]:
-            for e in range(nbr_off[j], nbr_off[j + 1]):
-                i = nbr_idx[e]
-                if not bad[i] and not pushed[i] and d[i] < np.inf:
-                    pushed[i] = True
-                    heapq.heappush(h, (d[i], np.int64(i)))
+    for k in range(src.shape[0]):
+        s = src[k]
+        alive[s] = True
+        seed[s] = d0[k]
+        if d0[k] < d[s]:
+            d[s] = d0[k]
+            org[s] = s
+        heapq.heappush(h, (d0[k], s))
+    for s in range(n):
+        if org[s] == s:
+            ncell = _grow(ncell, nn + 1)
+            nnext = _grow(nnext, nn + 1)
+            ncell[nn] = s
+            nnext[nn] = head[s]
+            head[s] = nn
+            nn += 1
     while len(h) > 0:
         di, i = heapq.heappop(h)
-        if di > d[i]:
+        if di != d[i]:
             continue
+        o = org[i]
+        if o < 0 or not alive[o]:
+            continue
+        # --- serve the takers here
+        sup = math.exp(-min(di, 700.0) / L)
+        died = False
+        for q in range(tk_off[i], tk_off[i + 1]):
+            p = tk_pair[q]
+            if not seeking[q] or rem[p] <= 0.0:
+                continue
+            ask = min(rem[p], sup) * hc[q]
+            if ask <= 0.0:
+                seeking[q] = False
+                continue
+            got = min(ask, avail[o])
+            serves[q] += 1
+            seeking[q] = got < ask * (1 - 1e-9) and serves[q] < cap
+            if got <= 0.0:
+                continue
+            avail[o] -= got
+            rem[p] -= got / max(hc[q], 1e-12)
+            # (the delivery's givers)
+            lo = np.searchsorted(gT, o)
+            hi = np.searchsorted(gT, o, side="right")
+            cross = 0.0
+            tc = tcul[p]
+            if hi > lo:
+                for r in range(lo, hi):
+                    if gC[r] >= 0 and gC[r] != tc:
+                        cross += got * gF[r]
+            elif sc[o] >= 0 and sc[o] != tc:
+                cross = got
+            m1 = nd + 1
+            if m1 > dp.shape[0]:
+                dp = _grow(dp, m1)
+                do = _grow(do, m1)
+                dg = _grow(dg, m1)
+                dkm = _grow(dkm, m1)
+                dmkm = _grow(dmkm, m1)
+                dnb = _grow(dnb, m1)
+                dcar = _grow(dcar, m1)
+                dcr = _grow(dcr, m1)
+                dx = _grow(dx, m1)
+                dl = _grow(dl, m1)
+            dp[nd] = p
+            do[nd] = o
+            dg[nd] = got
+            dkm[nd] = km[i]
+            for m in range(4):
+                dmkm[nd, m] = mkm[i, m]
+            dnb[nd] = nb[i]
+            dcar[nd] = di + L * math.log(max(S[o], 1e-300))
+            dcr[nd] = pe[i] >= 0
+            dx[nd] = cross
+            lng = long_good or km[i] + inner_km[p] >= long_km
+            dl[nd] = lng
+            nd += 1
+            # (trace it back along the walk's edges as they are now)
+            j = i
+            while True:
+                through[grp, j] += got
+                t = tix[j]
+                if t >= 0:
+                    if hi > lo:
+                        for r in range(lo, hi):
+                            if gC[r] >= 0:
+                                key = (t * 8 + grp) * 1_000_003 + gC[r]
+                                tdict[key] = tdict.get(key, 0.0) + got * gF[r]
+                    elif sc[o] >= 0:
+                        key = (t * 8 + grp) * 1_000_003 + sc[o]
+                        tdict[key] = tdict.get(key, 0.0) + got
+                e = pe[j]
+                if e < 0:
+                    break
+                eall[e] += got
+                ex[e] += cross
+                if lng:
+                    exl[e] += cross
+                j = esrc[e]
+            if avail[o] <= 1e-9 * max(avail0[o], 1e-12):
+                died = True
+                break
+        if died:  # --- the source is empty: it stops spreading, and the land it held is walked again from the live sources
+            alive[o] = False
+            deaths += 1
+            tag = deaths
+            seed[o] = np.inf
+            bad = []
+            x = head[o]
+            while x >= 0:
+                j = ncell[x]
+                if org[j] == o and stamp[j] != tag:
+                    stamp[j] = tag
+                    bad.append(j)
+                x = nnext[x]
+            head[o] = -1
+            for j in bad:
+                d[j] = np.inf
+                org[j] = -1
+                pe[j] = -1
+                km[j] = 0.0
+                for m in range(4):
+                    mkm[j, m] = 0.0
+                nb[j] = 0
+            for j in bad:
+                if alive[j] and seed[j] < np.inf:  # (a live source that the dead one had outbid on its own cell)
+                    d[j] = seed[j]
+                    org[j] = j
+                    ncell = _grow(ncell, nn + 1)
+                    nnext = _grow(nnext, nn + 1)
+                    ncell[nn] = j
+                    nnext[nn] = head[j]
+                    head[j] = nn
+                    nn += 1
+                    heapq.heappush(h, (d[j], np.int64(j)))
+            for j in bad:
+                for e in range(nbr_off[j], nbr_off[j + 1]):
+                    b = nbr_idx[e]
+                    if stamp[b] != tag and pstamp[b] != tag and d[b] < np.inf:
+                        pstamp[b] = tag
+                        heapq.heappush(h, (d[b], np.int64(b)))
+            continue
+        # --- spread
         for e in range(nbr_off[i], nbr_off[i + 1]):
             c = ecost[e]
             if c < 0.0:
                 continue
             j = nbr_idx[e]
-            nd = di + c
-            if nd < d[j] and nd <= limit:
-                d[j] = nd
-                org[j] = org[i]
+            nd2 = di + c
+            if nd2 < d[j] and nd2 <= limit:
+                d[j] = nd2
+                org[j] = o
                 pe[j] = e
                 km[j] = km[i] + ekm[e]
                 for m in range(4):
                     mkm[j, m] = mkm[i, m]
                 mkm[j, emode[e]] += ekm[e]
                 nb[j] = nb[i] + ebord[e]
-                heapq.heappush(h, (nd, j))
-    return cnt
+                ncell = _grow(ncell, nn + 1)
+                nnext = _grow(nnext, nn + 1)
+                ncell[nn] = j
+                nnext[nn] = head[o]
+                head[o] = nn
+                nn += 1
+                heapq.heappush(h, (nd2, j))
+    mx = 0
+    capped = 0
+    for q in range(serves.shape[0]):
+        mx = max(mx, serves[q])
+        if serves[q] >= cap and not seeking[q] and rem[tk_pair[q]] > 1e-12:
+            capped += 1
+    return dp[:nd], do[:nd], dg[:nd], dkm[:nd], dmkm[:nd], dnb[:nd], dcar[:nd], dcr[:nd], dx[:nd], dl[:nd], mx, deaths, capped
 
 
 def _knows(kn: set, techs) -> bool:
@@ -229,7 +464,7 @@ def _tolerance(att: dict | None, c: int, era: float) -> float:
     if not r:
         return TOL_MID
     best = None
-    for kyr, tol, _ in r.get("track") or []:
+    for kyr, tol, *_ in r.get("track") or []:
         if kyr >= era - 1e-9 and (best is None or kyr < best[0]):
             best = (kyr, tol)
     return float(best[1]) if best else float((r.get("now") or [TOL_MID])[0])
@@ -362,14 +597,23 @@ class _Frame:
         W = ctx.world or {}
         nav = np.asarray(W.get("river_nav", np.zeros(n))).astype(int)
         rv = land[a] & land[b] & (nav[a] >= 1) & (nav[b] >= 1) & canoes[a]
-        rf = np.where(elev[b] < elev[a], M["down"], M["up"])
+        if RIVER_COURSE:  # (a boat follows its river: a cell to the next one down its course or up it, lane 226, step4c.md)
+            dn = np.asarray(W.get("downstream", np.full(n, -1))).astype(np.int64)
+            down = dn[a] == b
+            rv &= down | (dn[b] == a)
+            rf = np.where(down, M["down"], M["up"])
+        else:
+            rf = np.where(elev[b] < elev[a], M["down"], M["up"])
 
-        def edges(fc):  # (open, factor per km, mode) per edge from the cells' factors
+        def edges(fc, boats=True):  # (open, factor per km, mode) per edge from the cells' factors
             fa, fb = fc[a], fc[b]
             fac = 0.5 * (fa + fb)
-            use = rv & (rf < fac)
+            use = rv & (rf < fac) & boats
             return (fa > 0) & (fb > 0), np.where(use, rf, fac), np.where(use, 1, np.where(sea[a] | sea[b], 2, 0))
         open_, fac, mode = edges(fcell)
+        # herds and horses walk (lane 226, step4c.md): on land a drove's cost, over any ground (the herders drive them), never by river
+        # boat; at sea as any middling cargo
+        drove_e = edges(np.where(land, np.minimum(f_land, DROVE * mx.get("drove", 1.0) * hm), np.where(sea, f_sea, -1.0)), False)
         fetch_e = None
         if fetch:  # (PW-1511 B: herders fetch grain with their own animals, Khazanov: nomads drove their own herds to frontier markets;
             # pack-animal cost on the land a herding culture carries for, and one cell beyond it, the farmers' edge, tech or not)
@@ -398,6 +642,7 @@ class _Frame:
             open_ &= ~closed
             if fetch_e is not None:
                 fetch_e = (fetch_e[0] & ~closed, *fetch_e[1:])
+            drove_e = (drove_e[0] & ~closed, *drove_e[1:])
             self.war_edges = int(closed.sum())
         else:
             self.war_edges = 0
@@ -406,33 +651,79 @@ class _Frame:
         fly[cell[fl]] = True
         self.fly = fly
         self.e = {"a": a, "b": b, "hop": hop, "open": open_, "fac": fac, "mode": mode, "bord": bord, "toll": toll,
-                  "fly": fly[a] | fly[b], "fetch": fetch_e}
+                  "fly": fly[a] | fly[b], "fetch": fetch_e, "drove": drove_e, "load": land[a] & sea[b], "unload": sea[a] & land[b], "sea_f": M["sea"]}
         self.costs: dict = {}
         self.nbr_off, self.nbr_idx = g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64)
+        # the stretches (each pair of neighbouring cells, both ways as one): esrc per directed edge, ukey (a * n + b, a < b), uid per edge
+        self.esrc = srcs.astype(np.int64)
+        lo, hi = np.minimum(self.esrc, self.nbr_idx), np.maximum(self.esrc, self.nbr_idx)
+        self.ukey, self.uid = np.unique(lo * n + hi, return_inverse=True)
+        self.wear = None  # (per directed edge: the factor a worn way leaves of a land edge's cost, PW-1515; None: no way worn)
+        self.nope = np.full(n, -1, np.int64)  # (no edges: deliveries inside a market's pool travel no road of the walk)
 
-    def cost(self, cl: str, fetch: bool = False):
-        """(edge cost, edge mode, edge km) for a value class (cached); fetch: with the herders' own animals (PW-1511 B)."""
-        if (cl, fetch) not in self.costs:
+    def set_wear(self, traffic: np.ndarray | None):
+        """Ways worn by traffic (PW-1515): a land stretch carrying `traffic` people's worth of goods (per stretch, as Loads.traffic) costs
+        1 - TRAIL x traffic / (traffic + WEAR_HALF) of its unworn cost, for every good. The cached costs are remade."""
+        self.costs = {}
+        if traffic is None or not traffic.any():
+            self.wear = None
+            return
+        u = traffic[self.uid]
+        self.wear = 1.0 - TRAIL * u / (u + WEAR_HALF)
+
+    def pools(self) -> dict | None:
+        """The market pools (PW-1514, D64: towns as hubs): every cell joins the settlement-ledger town nearest it by carrying cost (bulk
+        goods' costs, tolls included) if that town lies within POOL_HOPS cell spacings along the way. Christaller and Skinner (review1.md
+        section 5): market areas tile the settled land and their size follows settled density, not a fixed walk, so the nearest town
+        takes the cell; the cap only keeps a lone town from drawing in empty country. {"org": town cell per cell (-1: none), "km", "mkm",
+        "nb": the way to it, "heads": the pool's people per town cell}, or None without towns."""
+        from .trade_routes import towns_at
+        T = towns_at(self.ctx, self.era)
+        tc = np.array(sorted(c for c in T if self.own[c] >= 0), np.int64)
+        if not len(tc):
+            return None
+        c, mode, km = self.cost("bulk")
+        d, org, kmv, mkm, nb, pe = _walk(tc, np.zeros(len(tc)), self.nbr_off, self.nbr_idx, c, km, mode, self.e["bord"].astype(np.int32),
+                                         np.inf)
+        org = np.where((org >= 0) & (kmv <= POOL_HOPS * self.e["hop"] + 1e-6), org, -1)
+        heads = TR.cells_at(self.ctx, self.i)["heads"]
+        return {"org": org, "km": kmv, "mkm": mkm, "nb": nb,
+                "heads": np.bincount(org[org >= 0], weights=heads[org >= 0], minlength=len(org))}
+
+    def cost(self, cl: str, fetch: bool = False, drove: bool = False):
+        """(edge cost, edge mode, edge km) for a value class (cached); fetch: with the herders' own animals (PW-1511 B); drove: animals
+        that walk (DROVE_GOODS, lane 226)."""
+        if (cl, fetch, drove) not in self.costs:
             e, L = self.e, self.L[cl]
-            op, fac, mode = e["fetch"] if fetch and e["fetch"] is not None else (e["open"], e["fac"], e["mode"])
+            op, fac, mode = (e["drove"] if drove else e["fetch"] if fetch and e["fetch"] is not None else (e["open"], e["fac"], e["mode"]))
             c = np.where(op, e["hop"] * fac, -1.0)
             mode = mode.copy()
+            if self.wear is not None:  # (a worn way is cheaper on land, PW-1515; rivers and seas are not worn)
+                c = np.where((c > 0) & (mode == 0), c * self.wear, c)
             if cl == "precious":  # (flyers carry light goods over anything)
                 air = e["hop"] * AIR
                 use = e["fly"] & ((c < 0) | (air < c))
                 c = np.where(use, air, c)
                 mode = np.where(use, 3, mode)
+            if HANDLE:  # (a port call, PW-1529: loading where goods leave the land, unloading and the harbour's dues where they land)
+                c = np.where((c >= 0) & e["load"] & (mode == 2), c + LOAD_DAYS * DAY_KM * e["sea_f"], c)
+                c = np.where((c >= 0) & e["unload"] & (mode == 2), c + UNLOAD_DAYS * DAY_KM * e["sea_f"] - L * math.log1p(-HARBOUR_DUE), c)
+            if HANDS and cl in HAND_KM:  # (the hands, time and risk of a sea haul, per km, as a share of value: lane 225; and of a river
+                # haul, lane 226)
+                water = (mode == 2) | ((mode == 1) & RIVER_HANDS)
+                c = np.where((c >= 0) & water, c + e["hop"] * L / HAND_KM[cl], c)
             c = np.where((c >= 0) & e["bord"], c - L * np.log1p(-e["toll"]), c)
-            self.costs[(cl, fetch)] = (np.ascontiguousarray(c), mode.astype(np.int64), np.full(len(c), e["hop"]))
-        return self.costs[(cl, fetch)]
+            self.costs[(cl, fetch, drove)] = (np.ascontiguousarray(c), mode.astype(np.int64), np.full(len(c), e["hop"]))
+        return self.costs[(cl, fetch, drove)]
 
-    def walk(self, good: str, live: np.ndarray | None = None):
-        """The supply of a good over the map from its surplus cells (only the `live` ones, if given): (supply 0..1 per cell, origin cell,
-        km, km per mode, borders crossed, source culture per cell, carrying cost-km, source surplus per cell, the edge each cell was reached by,
-        each edge's mode)."""
-        P = self.P
+    def cost_of(self, good: str):
+        """cost() for a good: its value class, the herders' fetch, a drove."""
         cl = FALL_CLASS.get(good, TR.GOODS[good][1])
-        L = self.L[cl]
+        return self.cost(cl, self.fetch and good in FETCH_GOODS, DROVES and good in DROVE_GOODS)
+
+    def sources(self, good: str):
+        """(surplus per cell 0..1, the culture whose surplus it is): a cell's biggest surplus of the good among its cultures."""
+        P = self.P
         sur = P["surplus"][good]
         cell, cu = P["cell"], P["culture"]
         n = self.ctx.g.n
@@ -441,8 +732,19 @@ class _Frame:
         order = np.argsort(sur, kind="stable")
         S[cell[order]] = sur[order]
         sc[cell[order]] = cu[order]
-        src = np.flatnonzero((S >= TR.SHOW_MIN) & (True if live is None else live))
-        c, mode, km = self.cost(cl, self.fetch and good in FETCH_GOODS)
+        return S, sc
+
+    def walk(self, good: str, live: np.ndarray | None = None, S: np.ndarray | None = None, sc: np.ndarray | None = None):
+        """The supply of a good over the map from its surplus cells (only the `live` ones, if given; S, sc: the surplus per cell and its
+        culture, else sources(good)): (supply 0..1 per cell, origin cell, km, km per mode, borders crossed, source culture per cell,
+        carrying cost-km, source surplus per cell, the edge each cell was reached by, each edge's mode)."""
+        cl = FALL_CLASS.get(good, TR.GOODS[good][1])
+        L = self.L[cl]
+        n = self.ctx.g.n
+        if S is None:
+            S, sc = self.sources(good)
+        src =np.flatnonzero((S >= TR.SHOW_MIN) & (True if live is None else live))
+        c, mode, km = self.cost_of(good)
         g = self.ctx.g
         bord = self.e["bord"].astype(np.int32)
         d0 = -L * np.log(S[src])
@@ -459,19 +761,6 @@ class _Frame:
         sup = np.where(np.isfinite(d), np.exp(-np.minimum(d, 700.0) / L), 0.0)
         carry = np.where(org >= 0, d + L * np.log(np.maximum(S[np.maximum(org, 0)], 1e-300)), 0.0)  # (the carrying cost alone, cost-km)
         return sup, org, w["km"], w["mkm"], w["nb"], w["sc"], carry, S, w["pe"], w["edges"][2]
-
-    def rewalk(self, good: str, dead: np.ndarray, view: bool = True):
-        """The last walk of this good again with the source cells marked `dead` (per cell) taken out: as walk(good, live=~dead and the
-        earlier live mask), re-walking only the land the dead sources had supplied (_rewalk). Returns walk's tuple; the edge each cell was
-        reached by is a new array (an earlier round's routes keep theirs)."""
-        w = self._last
-        assert w["good"] == good
-        w["pe"] = w["pe"].copy()
-        c, km, mode, bord = w["edges"]
-        w["seed"][dead] = np.inf
-        _rewalk(dead, w["seed"], w["d"], w["org"], w["km"], w["mkm"], w["nb"], w["pe"], self.nbr_off, self.nbr_idx, c, km, mode, bord,
-                w["L"] * math.log(1.0 / FLOOR))
-        return self._view() if view else None
 
 
 def kind_of(fr: _Frame, giver: int, taker: int, borders: float) -> str:
@@ -503,100 +792,211 @@ def _sum_by(keys: np.ndarray, vals: np.ndarray) -> dict:
     return {int(a): float(b) for a, b in zip(u.tolist(), s.tolist()) if b > 0}
 
 
-def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scale: dict | None = None, quarters: set | None = None,
-             fetch: bool = False, routes: bool = True, last_routes: set | None = None) -> dict | None:
-    """Frame i's exchange: {"flows": [[giver, taker, good, share of the taker's people, people supplied, km, cost-km, mode, kind, via]],
-    "home": {culture: {good: share met from its own land elsewhere}}, "unmet": {culture: {good: share}}, "war_edges", "flyer_foods"}; with
-    routes (step 3, trade_routes.py) also "routes", "hubs", "quarters" and "volume". quarters: last era's merchant quarters (host, merchant
-    culture), whose borders charge no toll; fetch: herders fetch grain with their own animals (PW-1511 B); last_routes: last era's route
-    stretches (a * n + b), which stay routes down to trade_routes.ROUTE_HOLD of the bar (PW-1514)."""
-    if TR.pairs_at(ctx, i) is None:
-        return None
-    fr = _Frame(ctx, i, pol, att, scale, quarters=quarters, fetch=fetch)
+class _Ledger:
+    """One walk's bookkeeping: per (giver, taker, good) the flow and its ways, home deliveries, the loads for the routes."""
+
+    def __init__(self, fr: _Frame, loads):
+        self.fr, self.loads = fr, loads
+        P = fr.P
+        self.cell, self.cu, self.w = P["cell"], P["culture"], P["w"]
+        nc = len(fr.ctx.cultures()["cultures"])
+        self.wsum = np.ones(nc)
+        for c, x in P["wsum"].items():
+            self.wsum[c] = x
+        self.heads = TR.cells_at(fr.ctx, fr.i)["heads"]
+        self.agg: dict = {}
+        self.home: dict = {}
+
+    def record(self, good, p, at, o, got, km, carry, mkm, nb, pe, emode, split, traced: bool = False):
+        """Deliveries to the pairs p (arriving at cells `at`) from source cells o, `got` people's worth each; their ways (km, cost-km,
+        km per mode, borders); split: the givers of a pooled source (town cell -> cultures, shares) as (towns, cultures, shares) sorted by
+        town, else the source cell's culture (split[3], per cell). traced: the routes have them already (_seek traces as it goes)."""
+        T, Cg, F, sc = split
+        lo = np.searchsorted(T, o, "left")
+        hi = np.searchsorted(T, o, "right")
+        k = hi - lo
+        cnt = np.maximum(k, 1)
+        row = np.repeat(np.arange(len(p)), cnt)
+        off = np.arange(len(row)) - np.repeat(np.cumsum(cnt) - cnt, cnt)
+        pooled = k[row] > 0
+        q = np.where(pooled, lo[row] + off, 0)
+        giver = np.where(pooled, Cg[q] if len(Cg) else -1, sc[o[row]])
+        amt = got[row] * np.where(pooled, F[q] if len(F) else 1.0, 1.0)
+        p, at = p[row], at[row]
+        t = self.cu[p]
+        if self.loads is not None and not traced:
+            self.loads.add(good, at, amt, giver, t, pe, emode)
+        cp = self.cell[p]
+        v = amt / np.maximum(self.heads[cp], 1e-12) * self.w[p] / self.wsum[t]
+        hm = (v > 0) & (giver == t)
+        for c, x in _sum_by(t[hm], v[hm]).items():
+            self.home.setdefault(c, {})[good] = self.home.get(c, {}).get(good, 0.0) + x
+        fl = (v > 0) & (giver >= 0) & (giver != t)
+        if fl.any():
+            nw = len(self.wsum)
+            key = giver[fl] * nw + t[fl]
+            u, inv = np.unique(key, return_inverse=True)
+            vv = v[fl]
+            r = row[fl]
+            cols = [vv, vv * km[r], vv * carry[r], *(vv * mkm[r, m] for m in range(4)), vv * nb[r]]
+            sums = [np.bincount(inv, weights=x, minlength=len(u)) for x in cols]
+            for j, kk in enumerate(u.tolist()):
+                a = self.agg.setdefault((kk // nw, kk % nw, good), [0.0, 0.0, 0.0, np.zeros(4), 0.0])
+                a[0] += sums[0][j]
+                a[1] += sums[1][j]
+                a[2] += sums[2][j]
+                a[3] = a[3] + np.array([sums[3 + m][j] for m in range(4)])
+                a[4] += sums[7][j]
+
+
+def _exchange(fr: _Frame, pools: dict | None, loads) -> tuple:
+    """Every good's allocation over one walk of the frame (with the frame's worn ways): (ledger, unmet, the most sources a taker drew from,
+    and the takers SEEK_CAP stopped while still short, per good)."""
     from . import trade_routes as RT
-    loads = RT.Loads(fr) if routes else None
     P = fr.P
     cell, cu, w = P["cell"], P["culture"], P["w"]
-    wsum = P["wsum"]
-    nc = len(ctx.cultures()["cultures"])
-    wsum_arr = np.ones(nc)
-    for c, x in wsum.items():
-        wsum_arr[c] = x
-    heads = TR.cells_at(ctx, i)["heads"]
+    led = _Ledger(fr, loads)
+    heads, wsum_arr = led.heads, led.wsum
+    n = fr.ctx.g.n
     trading = np.array([fr.info[c]["mode"] == "trade" for c in cu.tolist()], bool) if len(cu) else np.zeros(0, bool)
-    agg: dict = {}
-    home: dict = {}
     unmet: dict = {}
     rounds: dict = {}
+    capped: dict = {}
+    nw = len(wsum_arr)
+    empty = (np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0))
     for good in TR.GOODS:
         lack = P["lack"].get(good)
         if lack is None or not (lack > 0).any():
             continue
-        # the supply is shared: a source gives at most its surplus (in people's worth, like for like, as the ledger), the nearest takers
-        # first (best supply first); a taker cut short by an emptied source tries the next best source in the next round
+        S0, sc0 = fr.sources(good)
         rem = lack.copy()
-        avail = avail0 = None
         want = (lack > 0) & trading
-        nr = 0
-        for _ in range(SEEK_CAP if good in SEEK_GOODS else ROUNDS):
-            p = np.flatnonzero(want & (rem > 0))
-            if not len(p):
-                break
-            if avail is None:
-                sup, org, km, mkm, nb, sc, carry, S, pe, emode = fr.walk(good)
-                avail0 = S * heads
-                avail = avail0.copy()
-                alive = np.ones(len(avail), bool)
-            else:  # (the sources emptied last round give no more: walk again where they had reached)
-                gone = alive & ~(avail > 1e-9 * np.maximum(avail0, 1e-12))
-                alive &= ~gone
-                fr.rewalk(good, gone, view=False)
-                W = fr._last
-                org, km, mkm, nb, pe, d = W["org"], W["km"], W["mkm"], W["nb"], W["pe"], W["d"]
-            cp, t = cell[p], cu[p]
-            o = org[cp]
-            if avail0 is not None and nr > 0:  # (supply and carrying cost at the asking cells only)
-                sup_p = np.where(np.isfinite(d[cp]), np.exp(-np.minimum(d[cp], 700.0) / W["L"]), 0.0)
-            else:
-                sup_p = sup[cp]
-            ask = np.minimum(rem[p], sup_p) * heads[cp]
-            ok = (o >= 0) & (ask > 0)
-            p, cp, t, o, ask, sup_p = p[ok], cp[ok], t[ok], o[ok], ask[ok], sup_p[ok]
-            if not len(p):
-                break
-            carry_p = d[cp] + W["L"] * np.log(np.maximum(S[o], 1e-300)) if nr > 0 else carry[cp]  # (the carrying cost alone)
-            order = np.argsort(sup_p * -1.0, kind="stable")
-            got = _allocate(order, o, ask, avail)
-            nr += 1
-            cut = got < ask * (1 - 1e-9)
-            rem[p] -= got / np.maximum(heads[cp], 1e-12)
-            giver = sc[o]
-            if loads is not None:
-                loads.add(good, cp, got, giver, t, pe, emode)
-            v = got / np.maximum(heads[cp], 1e-12) * w[p] / wsum_arr[t]
-            hm = (v > 0) & (giver == t)
-            for c, x in _sum_by(t[hm], v[hm]).items():
-                home.setdefault(c, {})[good] = home.get(c, {}).get(good, 0.0) + x
-            fl = (v > 0) & (giver >= 0) & (giver != t)
-            if fl.any():
-                key = giver[fl] * len(wsum_arr) + t[fl]
+        at = cell.copy()  # (where each pair's goods arrive: its own cell, or its market's town)
+        T, Cg, F = empty
+        if pools is not None:
+            # the market: inside each pool its spare goods meet its wants first, every want met in the same share (a market, no road)
+            po = pools["org"]
+            amt = S0 * heads
+            inp = po >= 0
+            supp = np.bincount(po[inp], weights=amt[inp], minlength=n)
+            lp = np.flatnonzero(want & (po[cell] >= 0))
+            tw = po[cell[lp]]
+            ask = rem[lp] * heads[cell[lp]]
+            dem = np.bincount(tw, weights=ask, minlength=n)
+            f = np.minimum(1.0, np.divide(supp, dem, out=np.zeros(n), where=dem > 0))
+            cc = np.flatnonzero(inp & (amt > 0))  # (the givers per town: each culture's share of its pool's spare goods)
+            if len(cc):
+                key = po[cc] * nw + sc0[cc]
                 u, inv = np.unique(key, return_inverse=True)
-                vv = v[fl]
-                cols = [vv, vv * km[cp[fl]], vv * carry_p[fl], *(vv * mkm[cp[fl], m] for m in range(4)), vv * nb[cp[fl]]]
-                sums = [np.bincount(inv, weights=x, minlength=len(u)) for x in cols]
-                for k, kk in enumerate(u.tolist()):
-                    a = agg.setdefault((kk // len(wsum_arr), kk % len(wsum_arr), good), [0.0, 0.0, 0.0, np.zeros(4), 0.0])
-                    a[0] += sums[0][k]
-                    a[1] += sums[1][k]
-                    a[2] += sums[2][k]
-                    a[3] = a[3] + np.array([sums[3 + m][k] for m in range(4)])
-                    a[4] += sums[7][k]
-            want = np.zeros(len(rem), bool)
-            want[p[cut]] = True  # (only those cut short by an emptied source look further)
+                s = np.bincount(inv, weights=amt[cc], minlength=len(u))
+                T = u // nw
+                Cg = u % nw
+                F = s / supp[T]
+            sc = sc0.copy()
+            split = (T, Cg, F, sc)
+            got = f[tw] * ask
+            g_ok = got > 0
+            if g_ok.any():
+                lpg = lp[g_ok]
+                led.record(good, lpg, tw[g_ok], tw[g_ok], got[g_ok], pools["km"][cell[lpg]], np.zeros(len(lpg)), pools["mkm"][cell[lpg]],
+                           pools["nb"][cell[lpg]].astype(float), fr.nope, np.zeros(len(fr.esrc), np.int64), split)
+            rem[lp] -= f[tw] * rem[lp]
+            # what is left of each pool travels from its town (its spare goods per head of the pool) or is fetched to its town
+            net = np.maximum(0.0, supp - dem)
+            S = np.where(inp, 0.0, S0)
+            tws = np.flatnonzero(net > 0)
+            S[tws] = np.minimum(1.0, net[tws] / np.maximum(pools["heads"][tws], 1e-12))
+            avail0 = np.where(inp, 0.0, S0 * heads)
+            avail0[tws] = net[tws]
+            at = np.where(po[cell] >= 0, po[cell], cell)
+            # (the walk names one culture per source; the split above names the pool's givers)
+        else:
+            S, sc = S0, sc0
+            split = (T, Cg, F, sc)
+            avail0 = S * heads
+        want &= rem > 1e-12
+        nr = ncap = 0
+        p = np.flatnonzero(want)
+        if len(p):
+            # one shared walk: every taker takes from its best live source, and on to the next when that one runs empty (_seek)
+            cl = FALL_CLASS.get(good, TR.GOODS[good][1])
+            L = fr.L[cl]
+            src = np.flatnonzero(S >= TR.SHOW_MIN)
+            c, emode, ekm = fr.cost_of(good)
+            ac = at[p]
+            o_ = np.argsort(ac, kind="stable")
+            p, ac = p[o_], ac[o_]
+            tk_off = np.searchsorted(ac, np.arange(n + 1)).astype(np.int64)
+            cp = cell[p]
+            inner = ac != cp  # (the way on from the town to the pair's own cell)
+            ikm = np.zeros(len(cell))
+            if pools is not None:
+                ikm[p] = np.where(inner, pools["km"][cp], 0.0)
+            avail = avail0.copy()
+            tr = loads.seek_arrays(good) if loads is not None else RT.seek_dummy(n, len(fr.esrc))
+            dp, do, dg, dkm, dmkm, dnb, dcar, dcr, dx, dl, nr, _, ncap = _seek(
+                src.astype(np.int64), -L * np.log(S[src]), fr.nbr_off, fr.nbr_idx, c, ekm, emode, fr.e["bord"].astype(np.int32), fr.esrc,
+                L * math.log(1.0 / FLOOR), L, tk_off, p.astype(np.int64), rem, heads[cp].astype(float), np.ones(len(p), np.bool_),
+                SEEK_CAP, avail, avail0, S, T.astype(np.int64), Cg.astype(np.int64), F.astype(float), split[3].astype(np.int64),
+                cu.astype(np.int64), ikm, cl == "precious", RT.LONG_KM, *tr)
+            if len(dp):
+                ac2, cp2 = at[dp], cell[dp]
+                inn = ac2 != cp2
+                if pools is not None:
+                    dkm = dkm + np.where(inn, pools["km"][cp2], 0.0)
+                    dmkm = dmkm + np.where(inn[:, None], pools["mkm"][cp2], 0.0)
+                    dnb = dnb + np.where(inn, pools["nb"][cp2], 0)
+                led.record(good, dp, ac2, do, dg, dkm, dcar, dmkm, dnb.astype(float), None, None, split, traced=True)
+                if loads is not None:
+                    loads.seek_done(good, tr, dg, dx, dcr, dl, emode)
         rounds[good] = nr
+        if nr and ncap:
+            capped[good] = ncap
         q = np.flatnonzero((lack > 0) & trading)
         for c, x in _sum_by(cu[q], rem[q] * w[q] / wsum_arr[cu[q]]).items():
             unmet.setdefault(c, {})[good] = x
+    return led, unmet, rounds, capped
+
+
+def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scale: dict | None = None, quarters: set | None = None,
+             fetch: bool = False, routes: bool = True, last_routes: set | None = None, last_wear: tuple | None = None) -> dict | None:
+    """Frame i's exchange: {"flows": [[giver, taker, good, share of the taker's people, people supplied, km, cost-km, mode, kind, via]],
+    "home": {culture: {good: share met from its own land elsewhere}}, "unmet": {culture: {good: share}}, "war_edges", "flyer_foods"}; with
+    routes (step 3, trade_routes.py) also "routes", "hubs", "quarters" and "volume". quarters: last era's merchant quarters (host, merchant
+    culture), whose borders charge no toll; fetch: herders fetch grain with their own animals (PW-1511 B); last_routes: last era's route
+    stretches (a * n + b), which stay routes down to trade_routes.ROUTE_HOLD of the bar (PW-1514); last_wear: last era's worn ways (stretch
+    keys, traffic), WEAR_KEEP of which is still there (PW-1515). "_wear" (for the next era; derive does not keep it in the doc): this
+    frame's worn ways."""
+    if TR.pairs_at(ctx, i) is None:
+        return None
+    fr = _Frame(ctx, i, pol, att, scale, quarters=quarters, fetch=fetch)
+    from . import trade_routes as RT
+    pools = fr.pools() if POOL else None
+    P = fr.P
+    cell, cu, w = P["cell"], P["culture"], P["w"]
+    wsum = P["wsum"]
+    nu = len(fr.ukey)
+    worn = np.zeros(nu)
+    if TRUNK and last_wear is not None and len(last_wear[0]):
+        k = np.searchsorted(fr.ukey, last_wear[0])
+        k = np.minimum(k, nu - 1)
+        hit = fr.ukey[k] == last_wear[0]
+        worn[k[hit]] = WEAR_KEEP * np.asarray(last_wear[1], float)[hit]
+    walks = 0
+    while True:
+        fr.set_wear(worn if TRUNK else None)
+        loads = RT.Loads(fr)
+        led, unmet, rounds, capped = _exchange(fr, pools, loads)
+        walks += 1
+        if not TRUNK:
+            break
+        new = np.maximum(worn, loads.traffic())
+        f0 = TRAIL * worn / (worn + WEAR_HALF)
+        f1 = TRAIL * new / (new + WEAR_HALF)
+        worn = new
+        if walks >= TRUNK_ITERS or float(np.max(f1 - f0, initial=0.0)) < WEAR_TOL:
+            break
+    agg, home = led.agg, led.home
     # tribute-takers: the realm takes food and its hoard from the peoples on its land (no walk: they live there)
     tcul = {c for c, r in fr.info.items() if r["mode"] == "tribute"}
     if tcul:
@@ -628,10 +1028,14 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
     flows.sort(key=lambda f: -f[3])
     rnd = lambda d: {str(c): {g: round(x, 4) for g, x in v.items() if x >= FLOW_MIN} for c, v in d.items()}  # noqa: E731
     out = {"flows": flows, "home": rnd(home), "unmet": rnd(unmet), "war_edges": fr.war_edges, "flyer_foods": flyer_foods(ctx, fr),
-           "rounds": rounds}
-    if loads is not None:
+           "rounds": rounds, "capped": capped}
+    out["walks"] = walks
+    if routes:
         out.update(loads.finish(last_routes))
         out["quarter_edges"] = fr.quarter_edges
+    if TRUNK:
+        k = np.flatnonzero(worn > 1e-9)
+        out["_wear"] = (fr.ukey[k], worn[k])
     return out
 
 
@@ -702,13 +1106,15 @@ def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, 
     fetch = FETCH if fetch is None else fetch
     last_q: set = set()
     last_r: set = set()
+    last_w = None
     if eq and ctx.goods is not None and ctx.cultures() is not None and ctx.world is not None:
         for i, ago in zip(eq["frames"], eq["ago_kyr"]):  # (oldest first: a frame reads the merchant quarters of the one before)
             if frames is not None and i not in frames:
                 continue
             f = flows_at(ctx, i, pol, att, scale, quarters=last_q if quarters and routes else None, fetch=fetch, routes=routes,
-                         last_routes=last_r)
+                         last_routes=last_r, last_wear=last_w)
             if f is not None:
+                last_w = f.pop("_wear", None)
                 out.append({"frame": i, "ago_kyr": round(abs(float(ago)), 3), **f})
                 last_q = {(int(h), int(m)) for h, m in f.get("quarters") or []}
                 last_r = {int(a) * ctx.g.n + int(b) for a, b, *_ in f.get("routes") or []}
@@ -723,7 +1129,12 @@ def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, 
                                            "river_down": round(RIVER_DOWN, 3), "river_up": round(RIVER_UP, 3), "sea": round(SEA, 3),
                                            "canoe_coast": round(CANOE_COAST, 3), "air": AIR},
                           "fall_km": FALL_KM, "toll": TOLL, "tol_mid": TOL_MID, "toll_max": TOLL_MAX, "floor": FLOOR, "flow_min": FLOW_MIN,
-                          "town_min": TOWN_MIN, "tribute_goods": list(TRIBUTE_GOODS), "quarters": bool(quarters and routes), "fetch": bool(fetch)},
+                          "town_min": TOWN_MIN, "tribute_goods": list(TRIBUTE_GOODS), "quarters": bool(quarters and routes), "fetch": bool(fetch),
+                          "pool": POOL, "pool_hops": POOL_HOPS, "trunk": TRUNK, "trail": TRAIL, "wear_half": WEAR_HALF, "wear_keep": WEAR_KEEP,
+                          "trunk_iters": TRUNK_ITERS, "seek_cap": SEEK_CAP,
+                          "handle": HANDLE, "load_days": LOAD_DAYS, "unload_days": UNLOAD_DAYS, "day_km": DAY_KM, "harbour_due": HARBOUR_DUE,
+                          "hands": HANDS, "hand_km": HAND_KM, "river_course": RIVER_COURSE, "river_hands": RIVER_HANDS,
+                          "droves": DROVES, "drove_goods": list(DROVE_GOODS), "drove": DROVE},
             "basis": "trade_flow.py (PW-1503, design1.md step 2): per good one least-cost walk from its surplus cells; supply = surplus x "
                      "exp(-cost / L) by value class; a cell takes min(its lack, the best supply reaching it); summed to cultures. Read-out only."}
 

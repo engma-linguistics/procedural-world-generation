@@ -19,13 +19,14 @@ def sal(**kw):
 S0, S1 = sal(sea=0.9, storm=0.8, hunt=0.7), sal(mountain=0.9, sky=0.8, herd=0.7)
 
 
-def two(P, know0, know1, frames, contacts=None, rule_steps=None, people=("human", "human"), dt=0.5, start=10.0):
-    """Two cultures for `frames` frames dt kyr apart; rule_steps(ago, prev) -> the polity steps between."""
+def two(P, know0, know1, frames, contacts=None, rule_steps=None, people=("human", "human"), dt=0.5, start=10.0, lands=None):
+    """Two cultures for `frames` frames dt kyr apart; rule_steps(ago, prev) -> the polity steps between. lands: their saliences (S0, S1)."""
+    s0, s1 = lands or (S0, S1)
     prev = None
     for k in range(frames):
         ago = start - k * dt
         rs = rule_steps(ago, prev) if (rule_steps and prev is not None) else ()
-        P.frame(ago, {0: {"sal": S0, "know": know0, "people": people[0]}, 1: {"sal": S1, "know": know1, "people": people[1]}},
+        P.frame(ago, {0: {"sal": s0, "know": know0, "people": people[0]}, 1: {"sal": s1, "know": know1, "people": people[1]}},
                 contacts=contacts, rule_steps=rs)
         prev = ago
 
@@ -42,12 +43,28 @@ def test_a_missionary_faith_wins_a_less_organised_neighbour_within_centuries():
     waits = []
     for seed in range(12):
         P = G.Pantheons(seed=seed)
-        two(P, KNOW, TEMPLE, 2, contacts={(0, 1)})
+        two(P, KNOW, TEMPLE, 2, contacts={(0, 1)}, lands=(S0, S0))
         P.faiths[P.faith_of[1]].missionary = P.faiths[P.faith_of[1]].decided = True
-        two(P, KNOW, TEMPLE, 12, contacts={(0, 1)}, start=9.0)
+        two(P, KNOW, TEMPLE, 12, contacts={(0, 1)}, start=9.0, lands=(S0, S0))
         e = first_conversion(P)
         waits.append(9.0 - e["ago_kyr"] if e else 99.0)
-    assert np.median(waits) < 1.0  # (a link's mean wait is TAU_MISSION / receptiveness: centuries)
+    assert np.median(waits) < 1.0  # (a link's mean wait is TAU_MISSION / receptiveness / appeal: centuries; same land, so the fit is even)
+
+
+def test_appeal_rises_with_organisation_and_fit():
+    """PW-1520: a neighbour's pull is x its faith's appeal: its leading god's individuation over the top tier, x its settled fit to the
+    taker's land against the taker's own god's (1 -/+ FIT_W)."""
+    P = G.Pantheons(seed=1)
+    two(P, KNOW, TEMPLE, 2, contacts={(0, 1)})
+    lx, ly = P.lead(0), P.lead(1)
+    a = P.appeal(0, lx, ly)
+    assert 0.0 < a < 1.0  # (a temple faith whose god fits the sea folk's land worse than their own)
+    ly.ind = G.ORG_REF
+    b = P.appeal(0, lx, ly)
+    assert a < b <= 1.0 + G.FIT_W
+    ly.w = lx.w.copy()
+    assert abs(P.appeal(0, lx, ly) - 1.0) < 1e-9  # (the best-organised faith, fitting alike: the sourced pace)
+    assert 1.0 - G.FIT_W - 1e-9 <= P.appeal(0, lx, P.lead(1)) <= 1.0 + G.FIT_W
 
 
 def test_an_ordinary_faith_spreads_slowly_and_never_to_an_equal():
@@ -123,7 +140,8 @@ def test_conquest_raises_aggression_and_wide_rule_tolerance():
     A.ruled(0, 10)
     t1 = A.target(0, 3, False)
     assert t1[1] - t0[1] > 0.1 and t1[0] > t0[0]
-    assert A.target(1, 3, True)[0] < A.target(1, 3, False)[0]  # (a missionary faith: a little less tolerant)
+    assert A.target(1, 3, True)[2] < A.target(1, 3, False)[2]  # (a missionary faith: a little less tolerant of other faiths, PW-1520)
+    assert A.target(1, 3, True)[0] == A.target(1, 3, False)[0]  # (but no less tolerant of outsiders)
 
 
 # ---- minority faiths (PW-1489)
@@ -185,3 +203,51 @@ def test_daughters_carry_minorities_and_merges_pool_them_by_land():
     _ok(P)
     assert P.share_counts["merge_capped"] == 1
     assert P.shares_doc(0)[0][0] == f0
+
+
+# ---- religious tolerance and towns (PW-1520)
+def test_towns_raise_both_tolerances_and_a_missionary_faith_only_lowers_the_religious_one():
+    A = AT.Attitudes({}, seed=4)
+    A.ensure(0, "x")
+    rural = A.target(0, 3, False).copy()
+    A.urban = {0: AT.URBAN_FULL}
+    city = A.target(0, 3, False)
+    assert abs(city[0] - rural[0] - AT.URBAN_TOL) < 1e-9 and abs(city[2] - rural[2] - AT.URBAN_TOL) < 1e-9 and city[1] == rural[1]
+    A.urban = {0: 10 * AT.URBAN_FULL}
+    assert abs(A.target(0, 3, False)[0] - city[0]) < 1e-9  # (full at URBAN_FULL)
+    for k in range(40):  # (the religious axis wanders on its own draws; the other two draw exactly as before)
+        A.step(10.0 - 0.5 * k, 0.5 if k else 0.0, {0: "x"}, {}, {0}, {0: 0.0})
+    B = AT.Attitudes({}, seed=4)
+    B.ensure(0, "x")
+    for k in range(40):
+        B.step(10.0 - 0.5 * k, 0.5 if k else 0.0, {0: "x"}, {}, {0})
+    assert A.get(0) == B.get(0) and A.religious(0) != A.tolerance(0)
+
+
+def test_a_ruler_pushes_its_faith_by_its_religious_tolerance():
+    P = G.Pantheons(seed=1)
+    two(P, KNOW, TEMPLE, 2)
+    rule = [(1, [(0, 1.0)], False)]
+    push = lambda: [r for r, x, f, y, how in P._links(None, rule) if how == "rulers"][0]  # noqa: E731
+    P.att.rel[1] = 0.0
+    hard = push()
+    P.att.rel[1] = 1.0
+    soft = push()
+    assert hard > 10 * soft
+    P.att.x[1][0] = 0.0  # (its tolerance of outsiders does not set the push)
+    assert push() == soft
+
+
+def test_a_tolerant_ruler_shields_its_subjects_minorities():
+    P = G.Pantheons(seed=1)
+    two(P, KNOW, KNOW, 2)
+    f0, f1 = P.faith_of[0], P.faith_of[1]
+    P.comp[0] = {f0: 0.8, f1: 0.2}
+    P.att.rel[0] = 0.1
+    own = P._pulls(None, None)[0]
+    P.att.rel[1] = 0.9
+    half = P._pulls(None, [(1, [(0, 0.5)], False)])[0]
+    full = P._pulls(None, [(1, [(0, 1.0)], False)])[0]
+    assert own > half > full  # (the subject's own faith presses its minority more slowly where the tolerant ruler rules)
+    P.att.rel[1] = 0.0
+    assert P._pulls(None, [(1, [(0, 1.0)], False)])[0] == own  # (an intolerant ruler adds no pressure here: its push is its own link)

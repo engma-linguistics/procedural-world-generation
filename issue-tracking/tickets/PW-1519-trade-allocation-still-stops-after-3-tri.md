@@ -2,7 +2,7 @@
 id: PW-1519
 title: Trade allocation still stops after 3 tries for every good but grain, so their unmet shares are overstated
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: later
 subsystem: culture
@@ -35,4 +35,6 @@ moves to its next source without walking again; re-walk only when its K are all 
 - [ ] derive within ~3 minutes per D&D run (judge: docs/review/culture/trade/step3b/judge.py --quick)
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 222: one shared seek walk per good; every good seeks to the end (SEEK_CAP 400 hit by 2 of 78 frame-runs); derive 82/89/153 s light machine.
 - 2026-11-08: Created from inbox draft draft-trade-other-goods-cut-at-three-rounds.md (found by lane 216b).
+- 2026-11-08: Lane 218 (docs/review/culture/trade/step3c.md): every good run to the end with the existing rounds: rounds hit the 400 cap (mean 220-240), 306 s for 8 frames of 3e0eb4, and 2,400-3,100 route stretches an era (fine goods 1,300-1,800). The 8-best-sources walk (single greedy pass, re-walk only when all 8 are dry): the walk is ~30x a plain walk (1.6-1.9 s vs 0.06 s) and goods still need up to 50 walks (cap), one frame 615 s. Neither kept; allocation unchanged. Not done. Next: one shared walk in which an emptied source stops spreading (a competitive Dijkstra), and a ruling on how far fine goods' routes should be drawn once they travel to the end.

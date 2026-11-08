@@ -4,6 +4,7 @@ test_trade_flow's hand-made line of six cells, no run needed."""
 import json
 
 import numpy as np
+import pytest
 
 from planet.lineages import trade_flow as TF
 from planet.lineages import trade_routes as RT
@@ -40,8 +41,9 @@ def test_the_big_flows_become_routes_along_the_way_they_took(tmp_path):
     assert TF.flows_at(_line_ctx(tmp_path), 0, routes=False)["flows"] == f["flows"]  # (a read-out: tracing changes no flow)
 
 
-def test_a_town_on_a_route_is_a_trading_town_and_its_kind_follows_the_modes(tmp_path):
+def test_a_town_on_a_route_is_a_trading_town_and_its_kind_follows_the_modes(tmp_path, monkeypatch):
     """A ledger town on a route is a market town; on a river route a river port (review1.md section 5: central places)."""
+    monkeypatch.setattr(RT, "LONG_KM", 0.0)  # (PW-1530: a trading town needs a long-haul route; on this short line every haul counts as one)
     h = TF.flows_at(_with_town(_line_ctx(tmp_path), tmp_path), 0)["hubs"]
     assert len(h) == 1 and h[0]["cell"] == 2 and h[0]["kind"] == "market town" and h[0]["place"] == "the ford"
     know = {"herder": ["herding", "animal_cattle", "salting", "copper", "native_copper", "bronze", "quarrying", "canoes"],
@@ -51,8 +53,9 @@ def test_a_town_on_a_route_is_a_trading_town_and_its_kind_follows_the_modes(tmp_
     assert h and h[0]["kind"] == "river port" and "river" in h[0]["modes"]
 
 
-def test_a_caravan_town_stands_where_pack_routes_leave_farmland_for_steppe(tmp_path):
+def test_a_caravan_town_stands_where_pack_routes_leave_farmland_for_steppe(tmp_path, monkeypatch):
     """review1.md section 4 (the Sahel towns, the Silk Road oases): pack animals, a farmed town, an unfarmed desert or steppe beyond."""
+    monkeypatch.setattr(RT, "LONG_KM", 0.0)  # (PW-1530: a trading town needs a long-haul route; on this short line every haul counts as one)
     know = {"herder": ["herding", "animal_cattle", "salting", "pack_animals"], "farmer": ["cultivation", "crop_wheat", "salting", "pack_animals"],
             "forager": ["ornament"]}
     ctx = _with_town(_line_ctx(tmp_path, know=know), tmp_path)
@@ -70,9 +73,10 @@ def test_a_caravan_town_stands_where_pack_routes_leave_farmland_for_steppe(tmp_p
     assert TF.flows_at(ctx, 0)["hubs"][0]["kind"] == "caravan town"
 
 
-def test_a_merchant_quarter_lifts_its_border_toll_next_era(tmp_path):
+def test_a_merchant_quarter_lifts_its_border_toll_next_era(tmp_path, monkeypatch):
     """Curtin's trade diasporas (review1.md section 5); design1.md step 2: a quarter of the giver's people in the taker's town removes the
     border's crossing cost."""
+    monkeypatch.setattr(RT, "LONG_KM", 0.0)  # (PW-1530: a trading town needs a long-haul route; on this short line every haul counts as one)
     ctx = _line_ctx(tmp_path)
     fr0 = TF._Frame(ctx, 0, None, None)
     fr1 = TF._Frame(ctx, 0, None, None, quarters={(0, 1)})  # (the farmers' merchants in a herders' town)
@@ -141,11 +145,16 @@ def test_last_eras_route_holds_down_to_the_lower_bar(tmp_path, monkeypatch):
     r = TF.flows_at(ctx, 0)["routes"]
     a, b, s = r[-1][0], r[-1][1], r[-1][2]  # (the weakest route stretch)
     monkeypatch.setattr(RT, "SPAN", False)
+    monkeypatch.setattr(RT, "LOCAL_SHARE", RT.ROUTE_SHARE)  # (one bar for both layers here)
+    r = TF.flows_at(ctx, 0)["routes"]
+    a, b, s = r[-1][0], r[-1][1], r[-1][2]  # (the weakest route stretch)
     monkeypatch.setattr(RT, "ROUTE_SHARE", s * 1.5)  # (now it sits between the two bars)
+    monkeypatch.setattr(RT, "LOCAL_SHARE", s * 1.5)
     key = min(a, b) * ctx.g.n + max(a, b)
     assert (min(a, b), max(a, b)) not in _edges(TF.flows_at(_line_ctx(tmp_path), 0)["routes"])
     assert (min(a, b), max(a, b)) in _edges(TF.flows_at(_line_ctx(tmp_path), 0, last_routes={key})["routes"])
     monkeypatch.setattr(RT, "ROUTE_SHARE", s * 2.5)  # (under the lower bar: last era's route does not hold it)
+    monkeypatch.setattr(RT, "LOCAL_SHARE", s * 2.5)
     assert (min(a, b), max(a, b)) not in _edges(TF.flows_at(_line_ctx(tmp_path), 0, last_routes={key})["routes"])
 
 
@@ -157,29 +166,240 @@ def test_a_route_is_judged_per_good_against_its_carried_volume(tmp_path):
     assert max(r[2] for r in f["routes"]) > 0.5  # (a six-cell line: one road carries the whole of some good)
 
 
-def test_rewalk_matches_a_fresh_walk_without_the_dead_sources(tmp_path):
-    """Grain's rounds (trade_flow.SEEK_GOODS) re-walk only the land of the emptied sources (_rewalk); the costs and origins must be those
-    of a fresh walk from the live sources alone."""
-    ctx = _line_ctx(tmp_path)
-    fr = TF._Frame(ctx, 0, None, None)
-    fr.walk("grain")
-    src = np.unique(fr._last["org"][fr._last["org"] >= 0])
-    dead = np.zeros(N, bool)
-    dead[src[:1]] = True
-    fr.rewalk("grain", dead, view=False)
-    fr2 = TF._Frame(ctx, 0, None, None)
-    fr2.walk("grain", live=~dead)
-    for k in ("d", "org"):
-        a, b = fr._last[k], fr2._last[k]
-        assert np.array_equal(np.isfinite(a), np.isfinite(b)) and np.allclose(a[np.isfinite(a)], b[np.isfinite(b)])
+def _seek_line(avail, ask=10.0, cap=400, taker=1):
+    """trade_flow._seek on a bare line of five cells 0-1-2-3-4 (each step costs 1), sources at both ends with `avail` people's worth each,
+    one taker at `taker` asking `ask`; every edge's mode land, no borders, no towns."""
+    n = 5
+    off, idx = [0], []
+    for i in range(n):
+        idx += [j for j in (i - 1, i + 1) if 0 <= j < n]
+        off.append(len(idx))
+    off, idx = np.array(off, np.int64), np.array(idx, np.int64)
+    esrc = np.repeat(np.arange(n), np.diff(off)).astype(np.int64)
+    ne = len(idx)
+    src = np.array([0, 4], np.int64)
+    S = np.zeros(n)
+    S[src] = 1.0
+    av = np.zeros(n)
+    av[src] = avail
+    tk_off = np.searchsorted(np.array([taker]), np.arange(n + 1)).astype(np.int64)
+    rem = np.array([1.0])
+    tr = RT.seek_dummy(n, ne)
+    out = TF._seek(src, np.zeros(2), off, idx, np.ones(ne), np.full(ne, 50.0), np.zeros(ne, np.int64), np.zeros(ne, np.int32), esrc,
+                   1e9, 1e9, tk_off, np.array([0], np.int64), rem, np.array([ask]), np.ones(1, np.bool_), cap, av, av.copy(), S,
+                   np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0), np.array([0, -1, -1, -1, 1], np.int64), np.array([2], np.int64),
+                   np.zeros(1), False, RT.LONG_KM, *tr)
+    return out, rem, tr
 
 
-def test_grain_takers_look_on_until_a_round_finds_no_more(tmp_path, monkeypatch):
-    """Lane 216b: grain's allocation runs until no taker cut short reaches a live source (SEEK_GOODS); with it the grain still unmet is
-    never more than with the old 3-round bound, and the rounds used are recorded."""
+def test_a_taker_looks_on_to_the_next_source_when_its_own_runs_dry():
+    """PW-1519 (one shared walk): a taker takes from its nearest source; when that one runs dry it stops spreading, and the taker draws on
+    the next best live source, along that source's own way, until its lack is met or no source is left."""
+    (dp, do, dg, dkm, *_, mx, deaths, _), rem, tr = _seek_line(np.array([3.0, 100.0]))
+    assert do.tolist() == [0, 4] and np.allclose(dg, [3.0, 7.0]) and abs(rem[0]) < 1e-9
+    assert mx == 2 and deaths == 1
+    assert np.allclose(dkm, [50.0, 150.0])  # (the second delivery came the long way, from cell 4)
+    eall = tr[4]
+    assert eall.sum() == pytest.approx(3.0 * 1 + 7.0 * 3)  # (each delivery traced over the edges it crossed when it was made)
+    (dp, do, dg, *_), rem, _ = _seek_line(np.array([3.0, 4.0]))
+    assert np.allclose(dg, [3.0, 4.0]) and rem[0] == pytest.approx(0.3)  # (both dry: what is left stays unmet)
+    (dp, do, dg, *_, mx, _, capped), rem, _ = _seek_line(np.array([3.0, 100.0]), cap=1)
+    assert len(dg) == 1 and mx == 1 and capped == 1  # (the safety cap: sources per taker)
+
+
+def test_every_good_looks_on_until_none_is_left(tmp_path):
+    """PW-1519: every good's allocation runs to the end in one shared walk; the most sources a taker drew from is recorded per good."""
     f = TF.flows_at(_line_ctx(tmp_path), 0)
-    assert f["rounds"]["grain"] >= 1
-    monkeypatch.setattr(TF, "SEEK_GOODS", ())
-    g = TF.flows_at(_line_ctx(tmp_path), 0)
-    un = lambda x: sum(v.get("grain", 0.0) for v in x["unmet"].values())  # noqa: E731
-    assert un(f) <= un(g) + 1e-9 and g["rounds"]["grain"] <= TF.ROUNDS
+    assert all(0 <= v <= TF.SEEK_CAP for v in f["rounds"].values()) and f["rounds"]["grain"] >= 1
+
+
+def test_a_town_pools_its_hinterland_and_its_goods_leave_from_the_town(tmp_path, monkeypatch):
+    """PW-1514 (D64: towns are the hubs): cells within POOL_HOPS spacings join their nearest town's market; inside the pool spare goods
+    meet wants first, and what is left travels from the town. A pool ends at the cap."""
+    ctx = _with_town(_line_ctx(tmp_path), tmp_path, cell=2)
+    fr = TF._Frame(ctx, 0, None, None)
+    po = fr.pools()
+    assert po is not None and po["org"][2] == 2 and po["org"][1] == 2 and po["org"][3] == 2  # (the town and its neighbours)
+    assert po["org"][5] == -1  # (three spacings away: beyond the cap)
+    f = TF.flows_at(ctx, 0)
+    monkeypatch.setattr(TF, "POOL", False)
+    g = TF.flows_at(ctx, 0)
+    vol = lambda x: sum(r[3] for r in x["flows"]) + sum(sum(v.values()) for v in x["home"].values())  # noqa: E731
+    assert vol(f) > 0 and vol(g) > 0
+    # goods from the pool that travel leave from the town: no route stretch inside the pool except those touching the town
+    assert all(2 in (a, b) or max(a, b) > 3 or min(a, b) < 1 for a, b, *_ in f["routes"])
+
+
+def test_a_worn_way_is_cheaper_on_land_for_every_good(tmp_path):
+    """PW-1515 (Tobler 1993: off a path one walks at 3/5 of the pace on it; Helbing et al. 1997): a land stretch worn by traffic costs
+    up to TRAIL less, for every class of goods, and rivers and seas are not worn."""
+    fr = TF._Frame(_line_ctx(tmp_path), 0, None, None)
+    c0 = {cl: fr.cost(cl)[0].copy() for cl in ("bulk", "middling", "precious")}
+    fr.set_wear(np.full(len(fr.ukey), 1e6 * TF.WEAR_HALF))  # (saturated)
+    for cl, c in c0.items():
+        c1, mode, _ = fr.cost(cl)
+        land = (c > 0) & (mode == 0) & ~fr.e["bord"]
+        assert land.any() and np.allclose(c1[land], c[land] * (1 - TF.TRAIL), rtol=1e-4)
+    fr.set_wear(None)
+    assert np.array_equal(fr.cost("bulk")[0], c0["bulk"])
+
+
+def test_the_walks_wear_the_ways_and_pass_the_wear_on(tmp_path, monkeypatch):
+    """PW-1515 (switch TRUNK, off by default, step3c.md): a frame walks at most TRUNK_ITERS times, wearing the ways its goods took; its
+    worn ways (as shares of its carried goods) reach the next era at WEAR_KEEP."""
+    monkeypatch.setattr(TF, "TRUNK", True)
+    ctx = _line_ctx(tmp_path)
+    f = TF.flows_at(ctx, 0)
+    k, v = f["_wear"]
+    assert 1 <= f["walks"] <= TF.TRUNK_ITERS and len(k) and (v > 0).all() and v.max() <= 1 + 1e-9
+    g = TF.flows_at(ctx, 0, last_wear=(k, v))
+    assert g["routes"] and g["walks"] >= 1
+
+
+def test_routes_split_into_long_haul_and_local(tmp_path, monkeypatch):
+    """PW-1515 (Daniel 11-08: the dense web is real local exchange): the long-haul layer (precious goods, or goods carried LONG_KM or
+    more) and the local one are each judged against their own volume; a stretch may be a route of either or both (layers 1, 2, 3)."""
+    ctx = _with_town(_line_ctx(tmp_path), tmp_path, cell=2)
+    f = TF.flows_at(ctx, 0)
+    assert f["routes"] and all(len(r) == 10 and r[5] in (1, 2, 3) for r in f["routes"])
+    assert all((r[6] > 0) == bool(r[5] & 1) and (r[8] > 0) == bool(r[5] & 2) and r[2] == max(r[6], r[8]) for r in f["routes"])
+    monkeypatch.setattr(RT, "LONG_KM", 0.0)  # (everything carried is long-haul: no local layer)
+    g = TF.flows_at(ctx, 0)
+    assert g["routes"] and all(r[5] == 1 for r in g["routes"])
+    monkeypatch.setattr(RT, "LONG_KM", 1e9)  # (only the precious goods are long-haul)
+    h = TF.flows_at(ctx, 0)
+    longs = {k for k in RT.GROUP_OF if RT.long_good(k)}
+    assert all(not r[5] & 1 or any(RT.GROUP_OF[k] == r[7] for k in longs) for r in h["routes"])
+    assert all(isinstance(x["long"], bool) for x in f["hubs"])
+    for x in f["hubs"]:
+        assert all(len(y) == 7 for y in RT.culture_hubs(f, x["culture"]))
+
+
+def test_a_town_only_the_local_web_passes_is_a_market_town_without_quarters(tmp_path):
+    """PW-1530 (ruling A): a trading town needs a long-haul route through it, and merchant quarters follow it; a town on local routes only
+    stays a market town."""
+    ctx = _line_ctx(tmp_path)
+    town = _with_town(_line_ctx(tmp_path), tmp_path, cell=1)
+    h = TF.flows_at(town, 0)["hubs"]
+    assert h and all(not x["trading"] and x["kind"] == "market town" and not x["quarters"] for x in h)
+    del ctx
+
+
+def test_a_port_call_costs_loading_unloading_and_dues(tmp_path, monkeypatch):
+    """PW-1529: where goods go from land onto the sea they pay LOAD_DAYS of a ship's time, where they come ashore UNLOAD_DAYS and the
+    harbour's due; without HANDLE the per-km cost alone."""
+    import planet.lineages.trade_flow as TF2
+    from planet.lineages import trade as TR
+    monkeypatch.setattr(TR, "is_land", lambda e, ice: (np.asarray(e) > 0) & ~np.asarray(ice))  # (six cells are no sphere grid)
+    know = {"herder": ["herding", "animal_cattle", "salting", "sails"], "farmer": ["cultivation", "crop_wheat", "salting", "sails"],
+            "forager": ["ornament", "sails"]}
+    fr = TF._Frame(_line_ctx(tmp_path, elev=[100.0, 100.0, -200.0, 100.0, 100.0, 100.0], know=know), 0, None, None)  # (cell 2 is sea)
+    e = fr.e
+    assert not (e["load"] & e["unload"]).any()
+    c1 = fr.cost("bulk")[0].copy()
+    TF2.HANDLE = False
+    try:
+        fr.costs = {}
+        c0 = fr.cost("bulk")[0]
+    finally:
+        TF2.HANDLE = True
+    sea_e = (fr.cost("bulk")[1] == 2) & (c1 >= 0)
+    ld, ul = sea_e & e["load"], sea_e & e["unload"]
+    assert ld.any() and ul.any()
+    if ld.any():
+        assert np.allclose(c1[ld] - c0[ld], TF2.LOAD_DAYS * TF2.DAY_KM * TF2.SEA)
+    if ul.any():
+        assert np.allclose(c1[ul] - c0[ul], TF2.UNLOAD_DAYS * TF2.DAY_KM * TF2.SEA - fr.L["bulk"] * np.log1p(-TF2.HARBOUR_DUE))
+    assert np.array_equal(c1[~(ld | ul)], c0[~(ld | ul)])
+
+
+def test_a_sea_km_costs_a_share_of_value_for_the_hands(tmp_path, monkeypatch):
+    """Lane 225 (step4b.md): every km at sea also costs the cargo's value e-folding every HAND_KM km (the hands, time and risk of a sea
+    haul), a share of value per class (bulk: none); land and river edges are untouched; without HANDS the freight alone."""
+    import planet.lineages.trade_flow as TF2
+    from planet.lineages import trade as TR
+    monkeypatch.setattr(TR, "is_land", lambda e, ice: (np.asarray(e) > 0) & ~np.asarray(ice))  # (six cells are no sphere grid)
+    know = {"herder": ["herding", "animal_cattle", "salting", "sails"], "farmer": ["cultivation", "crop_wheat", "salting", "sails"],
+            "forager": ["ornament", "sails"]}
+    fr = TF._Frame(_line_ctx(tmp_path, elev=[100.0, 100.0, -200.0, 100.0, 100.0, 100.0], know=know), 0, None, None)  # (cell 2 is sea)
+    on = {cl: fr.cost(cl)[0].copy() for cl in ("bulk", "middling", "precious")}
+    monkeypatch.setattr(TF2, "HANDS", False)
+    fr.costs = {}
+    off = {cl: fr.cost(cl)[0] for cl in ("bulk", "middling", "precious")}
+    sea_e = (fr.cost("bulk")[1] == 2) & (on["bulk"] >= 0)
+    assert sea_e.any()
+    for cl in ("middling", "precious"):
+        assert np.allclose((on[cl] - off[cl])[sea_e] / fr.L[cl], fr.e["hop"] / TF2.HAND_KM[cl])  # (a share of value, per class)
+        assert np.array_equal(on[cl][~sea_e], off[cl][~sea_e])
+    assert "bulk" not in TF2.HAND_KM and np.array_equal(on["bulk"], off["bulk"])  # (bulk: freight alone)
+
+
+_CANOES = {"herder": ["herding", "animal_cattle", "salting", "canoes"], "farmer": ["cultivation", "crop_wheat", "salting", "canoes"],
+           "forager": ["ornament", "canoes"]}
+
+
+def test_a_boat_follows_its_rivers_course_and_not_across_to_the_next_river(tmp_path, monkeypatch):
+    """Lane 226 (step4c.md): a river edge joins a cell to the next one down its river or up it; two neighbouring cells on different rivers
+    (here cells 2 and 3, each draining away from the other) are joined overland only. Without RIVER_COURSE (the model's setting) any two
+    navigable neighbours."""
+    elev = [10.0, 20.0, 30.0, 30.5, 20.0, 10.0]  # (one river runs 2 -> 1 -> 0, another 3 -> 4 -> 5)
+    ctx = _line_ctx(tmp_path, nav=[1] * N, elev=elev, know=_CANOES)
+    a = np.repeat(np.arange(N), np.diff(ctx.g.nbr_off))
+    b = ctx.g.nbr_idx
+    monkeypatch.setattr(TF, "RIVER_COURSE", True)  # (off in the model, step4c.md: it cost herders' grain)
+    mode = TF._Frame(ctx, 0, None, None).cost("bulk")[1]
+    assert mode[(a == 2) & (b == 1)][0] == 1 and mode[(a == 1) & (b == 2)][0] == 1 and mode[(a == 4) & (b == 5)][0] == 1
+    assert mode[(a == 2) & (b == 3)][0] == 0 and mode[(a == 3) & (b == 2)][0] == 0  # (over the watershed: on foot)
+    c = TF._Frame(ctx, 0, None, None).cost("bulk")[0]
+    assert c[(a == 2) & (b == 1)][0] < c[(a == 1) & (b == 2)][0]  # (down its course cheaper than up)
+    monkeypatch.setattr(TF, "RIVER_COURSE", False)
+    assert TF._Frame(ctx, 0, None, None).cost("bulk")[1][(a == 2) & (b == 3)][0] == 1
+
+
+def test_a_river_km_costs_the_hands_as_a_sea_km_does(tmp_path, monkeypatch):
+    """Lane 226 (step4c.md): a river edge costs middling and dear goods the hands (hop / HAND_KM in value terms), bulk freight alone."""
+    ctx = _line_ctx(tmp_path, nav=[1] * N, elev=[10.0, 20.0, 30.0, 40.0, 50.0, 60.0], know=_CANOES)
+    fr = TF._Frame(ctx, 0, None, None)
+    on = {cl: fr.cost(cl)[0].copy() for cl in ("bulk", "middling", "precious")}
+    riv = fr.cost("bulk")[1] == 1
+    assert riv.any()
+    monkeypatch.setattr(TF, "RIVER_HANDS", False)
+    fr.costs = {}
+    off = {cl: fr.cost(cl)[0] for cl in ("bulk", "middling", "precious")}
+    for cl in ("middling", "precious"):
+        assert np.allclose((on[cl] - off[cl])[riv] / fr.L[cl], fr.e["hop"] / TF.HAND_KM[cl])
+        assert np.array_equal(on[cl][~riv], off[cl][~riv])
+    assert np.array_equal(on["bulk"], off["bulk"])
+
+
+def test_herds_and_horses_walk_as_a_drove_and_take_no_boat(tmp_path, monkeypatch):
+    """Lane 226 (step4c.md): livestock and horses cost DROVE per km on land (a pack animal = 1), whatever carriers the land's people know,
+    and go on foot beside a river, not by boat; other middling goods keep the carriers' cost; without DROVES as any middling cargo."""
+    ctx = _line_ctx(tmp_path, nav=[1] * N, elev=[10.0, 20.0, 30.0, 40.0, 50.0, 60.0], know=_CANOES)
+    fr = TF._Frame(ctx, 0, None, None)
+    c, mode, _ = fr.cost_of("horses")
+    inside = ~fr.e["bord"]
+    assert (mode == 0).all() and np.allclose(c[inside], fr.e["hop"] * TF.DROVE)
+    assert fr.cost_of("livestock")[0] is c and (fr.cost_of("cloth")[1] == 1).any()  # (cloth still goes by boat)
+    monkeypatch.setattr(TF, "DROVES", False)
+    assert (fr.cost_of("horses")[1] == 1).any()
+
+
+def test_a_made_good_is_made_in_towns_where_its_know_how_and_input_are(tmp_path):
+    """PW-1522: silk is made by a town's people (the town share) from farmland, once silk is known; a town that does not know it lacks
+    it once someone can make it, and land without a town makes none."""
+    from planet.lineages import trade as TR
+    know = {"herder": ["herding", "animal_cattle", "salting"], "farmer": ["cultivation", "crop_wheat", "salting", "silk", "weaving"],
+            "forager": ["ornament"]}
+    led = {}
+    other = {**know, "farmer": ["cultivation", "crop_wheat", "salting"], "herder": know["herder"] + ["silk", "weaving"]}  # (silk known, not by the town)
+    for k, kn in enumerate((know, other, {**know, "farmer": ["cultivation", "crop_wheat", "salting"]})):
+        d = tmp_path / str(k)
+        d.mkdir()
+        ctx = _with_town(_line_ctx(d, know=kn), d, cell=2, pop=10 ** 9)  # (a town that is most of its cell)
+        ctx.meta["techtree"]["techs"] += [{"id": "silk"}, {"id": "weaving"}]
+        led[k] = TR.ledger_at(ctx, 0)
+    assert led[0][1]["surplus"].get("silk", 0) > 0 and led[0][1]["lack"].get("silk", 0) == 0  # (the farmers' town makes it)
+    assert led[0][0]["surplus"].get("silk", 0) == 0 and led[0][2]["surplus"].get("silk", 0) == 0  # (no town, no workshop)
+    assert led[1][1]["surplus"].get("silk", 0) == 0 and led[1][1]["lack"].get("silk", 0) > 0  # (a town without the know-how wants it)
+    assert led[2][1]["lack"].get("silk", 0) == 0  # (nobody can make it yet: nobody wants it)

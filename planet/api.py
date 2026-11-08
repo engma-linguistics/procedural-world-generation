@@ -33,6 +33,13 @@ keeps it), so tests can drive them without a socket.
                       or straight from the run's keyframe nearest t (the
                       same world the Zoom button makes); the job's "world"
                       is its id when done. Reuses an existing one.
+  GET  /api/refine/estimate?world=<id>&level=8|9 -> refine_estimate: what a refine of the world onto
+                      that grid costs (minutes, peak GB, file GB), the free memory and /tmp, and why it
+                      would be refused (refuse: [...]) or what to know first (warn: [...]).
+  POST /api/refine    {world, level} -> {"job": id}: the world refined onto the finer grid (refine.py,
+                      `planet refine`); the job's "world" is the new one. One refine at a time (409
+                      while another is queued or running); refused when memory or /tmp is short, both
+                      when asked and again when the job starts.
 """
 
 from __future__ import annotations
@@ -41,6 +48,7 @@ import itertools
 import json
 import os
 import queue
+import shutil
 import tempfile
 import threading
 import time
@@ -512,8 +520,117 @@ def enrich_job(req: dict, progress=lambda f, msg: None) -> dict:
     return {"world": r["world"]}
 
 
+# ---- refine a finished world onto a finer grid from the viewer (PW-1438; planet/refine.py)
+REFINE_MAX_LEVEL = 9
+VIEWER_MAX_LEVEL = 8  # the viewer reads a world as one JSON text: an L9 world's is too long for the browser (PW-1209)
+REFINE_RAM_SPARE_GB = 8.0  # memory left free beside the refine's expected peak
+REFINE_TMP_MIN_GB = 40.0  # free /tmp kept (on the Threadripper /tmp is RAM: below this the machine runs short)
+REFINE_LONG_MIN = 20.0  # longer than this: say "run it overnight"
+
+
+def free_ram_gb() -> float | None:
+    """Memory available to a new process, GB (Linux's MemAvailable), or None where it can't be read."""
+    try:
+        for line in Path("/proc/meminfo").read_text().splitlines():
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) / 1e6  # (kB)
+    except (OSError, ValueError, IndexError):
+        pass
+    return None
+
+
+def free_disk_gb(path) -> float | None:
+    try:
+        return shutil.disk_usage(path).free / 1e9
+    except OSError:
+        return None
+
+
+def _world_level(world: str) -> int:
+    m = S.read_header(S.find_world(world), ("meta",)).get("meta", {})
+    if m.get("method") != "tectonics":
+        raise BadRequest("only a world from a run can be refined (this one was generated directly)")
+    return int(m["level"])
+
+
+def parse_refine_request(req: dict) -> dict:
+    """Check a POST /api/refine {world, level} now: the world exists, comes from a run, and level is finer than it
+    (at most REFINE_MAX_LEVEL). Raises BadRequest, or SystemExit for an unknown world."""
+    if not isinstance(req, dict) or not req.get("world"):
+        raise BadRequest("give a world")
+    world = str(req["world"]).removesuffix(".json")
+    src = _world_level(world)
+    try:
+        level = int(req.get("level", src + 1))
+    except (TypeError, ValueError):
+        raise BadRequest("level is a whole number") from None
+    if not src < level <= REFINE_MAX_LEVEL:
+        raise BadRequest(f"level must be finer than the world's (L{src}) and at most {REFINE_MAX_LEVEL}")
+    return {"type": "refine", "world": S.find_world(world).stem, "level": level}
+
+
+def refined_versions(world: str) -> dict:
+    """{level: id} of the worlds already refined from this one (the store's world index)."""
+    try:
+        entries = json.loads((S.worlds_dir() / "index.json").read_text())
+    except (OSError, ValueError):
+        entries = []
+    return {int(e["level"]): e["id"] for e in entries if e.get("refined_from") == world and e.get("level")}
+
+
+def refine_estimate(req: dict, busy: str | None = None) -> dict:
+    """GET /api/refine/estimate: the cost of a refine (refine.cost) and the machine's room for it. refuse: why it
+    must not start now (memory, /tmp or disk short, another refine queued or running: busy, its job id); warn: what
+    to know first (long, the viewer can't open it). existing: a world already refined from it at that level."""
+    from . import refine as RF
+    r = parse_refine_request(req)
+    c = RF.cost(r["level"])
+    ram, tmp, disk = free_ram_gb(), free_disk_gb(tempfile.gettempdir()), free_disk_gb(S.worlds_dir().parent)
+    refuse, warn = [], []
+    if busy:
+        refuse.append(f"another refine is queued or running (job {busy}): one at a time")
+    need = c["peak_gb"] + REFINE_RAM_SPARE_GB
+    if ram is None:
+        warn.append("could not read the free memory: check it yourself")
+    elif ram < need:
+        refuse.append(f"not enough free memory: {ram:.0f} GB free, it needs about {c['peak_gb']:.0f} GB "
+                      f"plus {REFINE_RAM_SPARE_GB:.0f} GB to spare. Close something or wait for other jobs")
+    if tmp is not None and tmp < REFINE_TMP_MIN_GB:
+        refuse.append(f"/tmp is nearly full: {tmp:.0f} GB free, keep at least {REFINE_TMP_MIN_GB:.0f} GB "
+                      "(it is memory on this machine)")
+    if disk is not None and disk < 2 * c["file_gb"]:
+        refuse.append(f"not enough disk for the new world: {disk:.1f} GB free, it needs about {2 * c['file_gb']:.1f} GB")
+    if c["minutes"] > REFINE_LONG_MIN:
+        warn.append(f"about {c['minutes']:.0f} minutes: start it before bed and leave the server running")
+    opens = r["level"] <= VIEWER_MAX_LEVEL
+    if not opens:
+        warn.append(f"the viewer cannot open an L{r['level']} world yet (too big for the browser): it is saved, "
+                    "for peoples runs and later use")
+    have = refined_versions(r["world"]).get(r["level"])
+    if have:
+        warn.append(f"this world was already refined to L{r['level']}: world {have}")
+    return {**r, "from_level": _world_level(r["world"]), **c, "free_ram_gb": None if ram is None else round(ram, 1),
+            "free_tmp_gb": None if tmp is None else round(tmp, 1), "free_disk_gb": None if disk is None else round(disk, 1),
+            "opens_in_viewer": opens, "existing": have, "busy": busy, "refuse": refuse, "warn": warn, "ok": not refuse}
+
+
+def refine_job(req: dict, progress=lambda f, msg: None) -> dict:
+    """POST /api/refine's work: checks the room again (memory may have gone to other jobs while it waited), then
+    refine.refine_world. {"world": the new world's id}."""
+    from . import refine as RF
+    est = refine_estimate(req)
+    if est["refuse"]:
+        raise BadRequest("not started: " + "; ".join(est["refuse"]))
+    lv = est["level"]
+    path = RF.refine_world(est["world"], lv, log=lambda *a: None,
+                           progress=lambda f, stage: progress(f, f"refining to L{lv}: {stage}"))
+    progress(1.0, f"world {path.stem}")
+    return {"world": path.stem, "level": lv}
+
+
 JOBS = {"timezoom": timezoom_job, "finish": finish_job, "hlzooms": highlight_zooms_job, "make": make_job,
-        "lineages": lineages_job, "enrich": enrich_job}
+        "lineages": lineages_job, "enrich": enrich_job,
+        "refine": refine_job}
 
 
 def any_job(req: dict, progress=lambda f, msg: None) -> dict:
@@ -631,6 +748,12 @@ class Jobs:
             self._start_worker()
         self.q.put(jid)
         return jid
+
+    def active(self, kind: str) -> str | None:
+        """The id of a queued or running job of this type (request "type"), or None."""
+        with self.lock:
+            return next((j["id"] for j in self.jobs.values()
+                         if j["status"] in ("queued", "running") and j["request"].get("type") == kind), None)
 
     def get(self, jid: str) -> dict | None:
         with self.lock:
