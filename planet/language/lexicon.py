@@ -60,8 +60,9 @@ SWADESH_RETENTION_1KYR = 0.86
 # (2026-11-07, round 5) A replacement draw that no source can fill keeps the old word (KEEP), so the hazard is the chance a
 # competitor arises, not the outcome. KEEP_COMPENSATION restores the calibrated outcome: Swadesh-100 retention 86% per
 # millennium with a contact lect (the driver's usual case; isolated-lect harness `retention` in calibration.md), measured
-# 0.115 replaced without it, 0.132 at x1.15, 0.150 at x1.24.
-KEEP_COMPENSATION = 1.2
+# 0.115 replaced without it, 0.132 at x1.15, 0.150 at x1.24 (240-concept list); with the WOLD extension (more recipes, fewer keeps)
+# 0.158 at x1.2, so x1.08.
+KEEP_COMPENSATION = 1.08
 BASE_REPLACE = 0.0026726 * KEEP_COMPENSATION   # per generation; re-solve with calibrate_base_replace() (x KEEP_COMPENSATION) if the table or RATE_BY_FREQ change
 
 # Where a replacement comes from. A fresh root ("coin", origin unknown) keeps a real share: in attested histories a good
@@ -129,16 +130,24 @@ COLEX_BOOST = 4.0             # and x this for the rarer member of a deliberate 
 # often, and a contrast pair that does share a form is renewed like an accidental homophone (HOMOPHONE_BOOST), proto or
 # not. English you (< plural ye) for thou is the attested exception kept open.
 CONTRAST_DAMP = 0.1
-_PRONOUNS = ("I", "THOU", "HE OR SHE OR IT", "HE", "WE", "YOU", "THEY")
-_NUMERALS = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN")
+_PRONOUNS = ("I", "THOU", "HE OR SHE OR IT", "HE", "SHE", "IT", "WE", "YOU", "THEY")
+_NUMERALS = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "TWENTY", "HUNDRED", "THOUSAND")
 _WH = ("WHO", "WHAT", "WHERE", "WHEN", "HOW")
 CONTRAST_SETS = (
     ("BROTHER", "SISTER"), ("SON", "DAUGHTER"), ("GRANDMOTHER", "GRANDFATHER"), ("UNCLE", "AUNT"), ("HUSBAND", "WIFE"),
     ("MOTHER", "FATHER"), ("MAN", "WOMAN"), ("BOY", "GIRL"), _PRONOUNS, _NUMERALS, _WH, ("THIS", "THAT"),
     ("HERE", "THERE"), ("LEFT", "RIGHT"), ("NORTH", "SOUTH"), ("EAST", "WEST"), ("UPSTREAM", "DOWNSTREAM"),
-    ("SUNRISE", "SUNSET"),
+    ("SUNRISE", "SUNSET"), ("FIRST", "SECOND"), ("YES", "NO"), ("BEFORE", "AFTER"), ("UP", "DOWN"), ("TODAY", "TOMORROW"),
+    ("OLDER BROTHER", "YOUNGER BROTHER"), ("OLDER SIBLING", "YOUNGER SIBLING"), ("GRANDSON", "GRANDDAUGHTER"),
+    ("NEPHEW", "NIECE"), ("WIDOW", "WIDOWER"), ("FATHER-IN-LAW (OF MAN)", "MOTHER-IN-LAW (OF MAN)"),
+    ("SON-IN-LAW (OF MAN)", "DAUGHTER-IN-LAW (OF MAN)"), ("YOUNG MAN", "YOUNG WOMAN"), ("BUY", "SELL"),
+    ("SUMMER", "WINTER"), ("MORNING", "EVENING"), ("MASTER", "SERVANT"), ("TEACH", "LEARN"), ("LOVE", "HATE"),
 )
-CONTRAST_OPEN = frozenset({frozenset({"THOU", "YOU"}), frozenset({"HE", "HE OR SHE OR IT"})})
+# pairs inside a set that many languages do say with one word (no T-V or number split in the 2nd person; no gender in the
+# 3rd: Finnish hän, Turkish o; Hungarian ő): not damped
+CONTRAST_OPEN = frozenset({frozenset({"THOU", "YOU"}), *(frozenset(p) for p in (
+    ("HE", "HE OR SHE OR IT"), ("SHE", "HE OR SHE OR IT"), ("IT", "HE OR SHE OR IT"), ("HE", "SHE"), ("HE", "IT"),
+    ("SHE", "IT")))})
 AFFIX_RENEW = 0.01            # per generation: a derivational affix worn to nothing is renewed from a word (or coined)
 ELAB_THRESHOLD = 0.5          # niche weight above which a concept starts to split
 ELAB_RATE = 0.02              # per generation, times the niche weight, once past the threshold
@@ -792,7 +801,8 @@ COLOURS = frozenset({"BLACK", "WHITE", "RED", "YELLOW", "GREEN", "BROWN", "BLUE"
 
 _WATER_BODIES = {"RIVER", "LAKE", "SEA", "MARSH", "SPRING (OF WATER)", "FORD", "COAST"}
 _PERSON_ROLES = {"PEOPLE", "STRANGER", "ENEMY", "FRIEND", "CHIEF", "PERSON", "MAN", "WOMAN", "CHILD (YOUNG HUMAN)",
-                 "MALE PERSON"}
+                 "MALE PERSON", "MASTER", "SERVANT", "SLAVE", "KING", "MERCHANT", "TEACHER", "THIEF", "NEIGHBOUR",
+                 "SOLDIER", "YOUNG MAN", "YOUNG WOMAN"}
 _SETTLEMENTS = {"VILLAGE", "TOWN", "HOUSE"}
 _GOD_DOMAIN_CLASS = {"HERD": "animal", "HEARTH": "settlement", "STORM": "nature", "FLOOD": "water", "HARVEST": "abstract",
                      "FERTILITY": "abstract", "SMITHING": "abstract", "DEATH": "abstract", "WAR": "abstract"}
@@ -804,6 +814,11 @@ _DERIVED_CLASS = {
     "CAMP": "settlement", "GRAVE": "land", "PEBBLE": "land", "STREAM": "water", "POND": "water", "TWIG": "plant",
     "PUPPY": "animal", "CHICK": "animal", "SONG": "abstract", "DREAM": "abstract", "GIFT": "abstract",
     "BREATH": "nature", "HEAT": "nature",
+    # WOLD meanings (round 5) whose IDS field puts them in the wrong coarse class
+    **dict.fromkeys(("BOAT", "RAFT", "CART", "WHEEL", "POT", "BOWL", "JUG", "MORTAR"), "tool"),
+    **dict.fromkeys(("PATH", "BRIDGE", "FIELD", "FURROW", "FENCE", "COUNTRY", "SHORE", "PRECIPICE", "MUD", "CLAY"), "land"),
+    "MARKET": "settlement", "WEDDING": "abstract", "PEACE": "abstract", "WORK (LABOUR)": "abstract", "DEMON": "god",
+    "WOOL": "animal", "FUR": "animal", "SCALE": "animal",
 }
 
 

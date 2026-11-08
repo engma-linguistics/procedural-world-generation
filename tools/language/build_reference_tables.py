@@ -422,6 +422,74 @@ def read_tsv(path: Path) -> list[dict]:
 # of their replacement behaviour (not from data); marked stability_class_source=knowledge.
 KNOWLEDGE_CLASS = {"904": 4, "2106": 3, "2272": 4}  # BERRY, MALE PERSON, HOT OR WARM
 
+# WOLD extension (2026-11-07, round 5): everyday meanings a grammar sketch and sample sentences need, picked from the
+# 1460 meanings of the World Loanword Database (Haspelmath & Tadmor 2009, Concepticon list Haspelmath-2009-1460), with
+# WOLD's part of speech and composite rank (age, borrowing and simplicity scores; the ranking behind the Leipzig-Jakarta
+# list). Selection by the language lane: motion and daily verbs, kin terms, numbers, function words, body, house and tools.
+WOLD_EXTENSION: dict[str, tuple[str, ...]] = {
+    "motion": (
+        "ARRIVE", "ENTER", "LEAVE", "RETURN HOME", "CLIMB", "JUMP", "RISE (MOVE UPWARDS)", "SINK (DESCEND)",
+        "APPROACH", "FOLLOW", "SEND", "BRING", "LEAD (GUIDE)", "RIDE", "ROW", "SAIL", "DWELL (LIVE, RESIDE)", "MEET",
+        "GATHER", "LIFT", "DROP (SOMETHING)", "PUT", "HANG UP", "KNEEL", "LIE DOWN", "REST", "STRETCH", "SPREAD OUT",
+        "BEND", "FOLD",
+    ),
+    "doing and making": (
+        "DO", "MAKE", "BE", "BECOME", "GET", "KEEP", "SEIZE", "CATCH", "FIND", "LOOK FOR", "OPEN", "SHUT", "COVER",
+        "HIDE (CONCEAL)", "BUILD", "BREAK (DESTROY OR GET DESTROYED)", "TEAR (SHRED)", "POUR", "PLANT (SOMETHING)",
+        "WEAVE", "CARVE", "BAKE", "ROAST OR FRY", "KNEAD", "POUND", "CHEW", "LICK", "BATHE", "BURY",
+        "LIGHT (IGNITE)", "EXTINGUISH", "BURN (SOMETHING)", "SHINE", "SHOOT", "CUT DOWN", "GROW", "CHANGE", "REMAIN",
+        "DIVIDE", "JOIN", "BEGIN", "FINISH", "HELP", "WORK (LABOUR)", "BE BORN", "COUGH", "MISS (A TARGET)",
+        "THRESH", "DYE", "TAN", "SCRAPE",
+    ),
+    "exchange and society": (
+        "BUY", "SELL", "PAY", "BORROW", "LEND", "STEAL", "TRADE OR BARTER", "EARN", "RULE", "MARRY", "PRAY", "DANCE",
+        "SHOUT", "WHISPER", "CALL", "TELL", "SHOW", "ASK (INQUIRE)", "ASK (REQUEST)", "ANSWER", "TEACH", "LEARN",
+        "UNDERSTAND", "FORGET", "LISTEN", "LOOK", "WANT", "LOVE", "HATE", "CHOOSE", "DARE", "SCOLD",
+    ),
+    "qualities": (
+        "DARK", "DEAD", "TALL", "HIGH", "LOW", "DEEP", "SHALLOW", "FLAT", "CROOKED", "EMPTY", "SOFT",
+        "LIGHT (WEIGHT)", "STRONG", "WEAK", "YOUNG", "BEAUTIFUL", "UGLY", "HEALTHY", "SICK", "TIRED", "HAPPY",
+        "DEAF", "BLIND", "RIPE", "RAW", "COOKED", "RICH", "POOR", "CLEVER", "DIFFICULT", "EASY", "TRUE", "WRONG",
+        "HOLY", "CALM", "READY",
+    ),
+    "kin and people": (
+        "SIBLING", "OLDER BROTHER", "YOUNGER BROTHER", "OLDER SIBLING", "YOUNGER SIBLING", "GRANDSON",
+        "GRANDDAUGHTER", "GRANDCHILD", "NEPHEW", "NIECE", "COUSIN", "WIDOW", "WIDOWER", "ORPHAN", "PARENTS",
+        "FAMILY", "FATHER-IN-LAW (OF MAN)", "MOTHER-IN-LAW (OF MAN)", "SON-IN-LAW (OF MAN)",
+        "DAUGHTER-IN-LAW (OF MAN)", "YOUNG MAN", "YOUNG WOMAN", "MASTER", "SERVANT", "SLAVE", "KING", "SOLDIER",
+        "MERCHANT", "TEACHER", "THIEF", "NEIGHBOUR", "WEDDING",
+    ),
+    "numbers and function words": (
+        "TWENTY", "HUNDRED", "THOUSAND", "FIRST", "SECOND", "HALF", "PAIR", "SHE", "IT", "THROUGH", "NOTHING",
+        "TODAY", "TOMORROW", "NOW", "BEFORE", "AFTER", "BEHIND", "UP", "DOWN", "WITHOUT", "NO", "YES", "HOW MUCH",
+    ),
+    "body": (
+        "SHOULDER", "LIP", "RIB", "LUNG", "THROAT", "KIDNEY", "STOMACH", "INTESTINES", "CHIN", "FOREHEAD", "CHEEK",
+        "JAW", "FACE", "HIP", "WAIST", "BODY", "PALM OF HAND", "FINGER", "TOE", "BRAIN", "BEAK", "FINGERNAIL",
+        "PAIN", "POISON", "MEDICINE", "SOUL", "MIND", "VOICE",
+    ),
+    "nature and time": (
+        "AIR", "LIGHT (RADIATION)", "DARKNESS", "DEW", "MUD", "RAINBOW", "FOAM", "STEAM", "SHORE", "FLAME",
+        "PRECIPICE", "CLAY", "THUNDER", "BOLT (OF LIGHTNING)", "WORLD", "WAVE", "TIDE", "MONTH", "DAY (24 HOURS)",
+        "SUMMER", "WINTER", "AUTUMN", "MORNING", "EVENING", "AFTERNOON", "TIME",
+    ),
+    "animals and food": (
+        "SHEEP", "PIG", "OX", "BULL", "RABBIT", "HEN", "ROOSTER", "GOOSE", "DUCK", "DOVE", "EAGLE", "CROW", "FOX",
+        "FROG", "SNAIL", "SPIDER", "FLEA", "BEE", "INSECT", "NEST", "WOOL", "FUR", "SCALE", "MEAT", "FLOUR",
+        "BUTTER", "BEVERAGE", "SOUP", "GRAIN", "FIREWOOD",
+    ),
+    "house, tools, places": (
+        "DOOR", "ROOF", "WALL (OF HOUSE)", "WINDOW", "FENCE", "TABLE", "CHAIR", "POT", "BOWL", "JUG", "BASKET",
+        "MORTAR", "BROOM", "MAT", "PILLOW", "THREAD", "CLOTHES", "SHIRT", "SHOE", "BELT", "RING", "LEATHER", "BOW",
+        "ARROW", "SHIELD", "HAMMER", "BOAT", "RAFT", "PADDLE", "BRIDGE", "PATH", "FIELD", "FURROW", "WHEEL", "CART",
+        "TRAP (PITFALL)", "MARKET", "COUNTRY", "PLACE (POSITION)", "PART", "PIECE", "MIDDLE", "TOP", "EDGE",
+        "END (OF SPACE)", "PEACE", "FEAR (FRIGHT)", "ANGER", "OMEN", "SACRIFICE", "DEMON",
+    ),
+}
+WOLD_POS = {"Noun": "N", "Verb": "V", "Adjective": "A", "Adverb": "A", "Function word": "FUNC"}
+# numerals stand as nouns like the Swadesh ONE..FIVE rows (pos N), not as function words
+WOLD_POS_BY_GLOSS = {"TWENTY": "N", "HUNDRED": "N", "THOUSAND": "N"}
+
 
 def build_concepts(raw: Path, out: Path) -> None:
     d = raw / "concepticon"
@@ -471,6 +539,9 @@ def build_concepts(raw: Path, out: Path) -> None:
             p["MEAN_RATE"] if p else "", p["ENGLISH_FREQUENCY"] if p else "",
             h["RANK"] if h else "", h["STABILITY_SCORE"] if h else "", cls, src,
         ])
+    for r in rows:
+        r.append("")   # (pos: the core rows' parts of speech are lexicon.py's lists)
+    rows += wold_rows(raw, conc, {r[0] for r in rows})
     missing = [r for r in rows if not r[9]]
     hdr = [
         "source: Concepticon conceptlists (https://github.com/concepticon/concepticon-data, concepticondata/conceptlists/): "
@@ -487,10 +558,32 @@ def build_concepts(raw: Path, out: Path) -> None:
         "stability_class: 1 (most stable, slowest replacement) .. 5 (fastest). Derived, not published: quintile of the Pagel rate "
         "among the 200 Pagel concepts where available, else quintile of Holman stability among its 100, else quintile of the LJ rank, else (3 concepts: BERRY, MALE PERSON, HOT OR WARM) "
         f"a class from general knowledge, marked 'knowledge'. Concepts with no class: {len(missing)}.",
+        "WOLD1460 rows (2026-11-07): meanings of the World Loanword Database (Haspelmath & Tadmor 2009; Concepticon list "
+        "Haspelmath-2009-1460, CC-BY 4.0) picked for sample sentences and grammar sketches (WOLD_EXTENSION in the script); "
+        "stability_class 3-5 by tercile of WOLD's composite rank among them (wold_rank_tercile), pos from WOLD's part of speech.",
     ]
     write_tsv(out / "concepts.tsv", hdr,
               ["concepticon_id", "gloss", "semantic_field", "lists", "lj_rank", "pagel_rate", "pagel_english_freq",
-               "holman_rank", "holman_stability", "stability_class", "stability_class_source"], rows)
+               "holman_rank", "holman_stability", "stability_class", "stability_class_source", "pos"], rows)
+
+
+def wold_rows(raw: Path, conc: dict, have: set) -> list[list]:
+    """The WOLD_EXTENSION meanings as concepts.tsv rows (those not already on the core lists)."""
+    w = {r["CONCEPTICON_GLOSS"]: r for r in read_tsv(raw / "wold" / "Haspelmath-2009-1460.tsv") if r["CONCEPTICON_ID"]}
+    pick = []
+    for xs in WOLD_EXTENSION.values():
+        for g in xs:
+            r = w[g]
+            if r["CONCEPTICON_ID"] not in have and r["CONCEPTICON_ID"] not in {x["CONCEPTICON_ID"] for x in pick}:
+                pick.append(r)
+    order = sorted(pick, key=lambda r: int(r["RANK"]))
+    cls = {r["CONCEPTICON_ID"]: 3 + (3 * i) // len(order) for i, r in enumerate(order)}
+    out = []
+    for r in sorted(pick, key=lambda r: int(r["CONCEPTICON_ID"])):
+        cid = r["CONCEPTICON_ID"]
+        out.append([cid, r["CONCEPTICON_GLOSS"], conc.get(cid, {}).get("SEMANTICFIELD", ""), "WOLD1460", "", "", "", "", "",
+                    cls[cid], "wold_rank_tercile", WOLD_POS_BY_GLOSS.get(r["CONCEPTICON_GLOSS"], WOLD_POS[r["PART_OF_SPEECH"]])])
+    return out
 
 
 def main() -> None:

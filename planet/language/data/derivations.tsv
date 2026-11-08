@@ -1,5 +1,5 @@
 # source: WRITTEN FROM KNOWLEDGE, not extracted from any book or database. The base -> target pairs are the derivational and semantic relations historical linguists treat as ordinary: instrument, agent, result and place nouns from verbs; diminutives; denominal and deadjectival verbs; 'X-like' qualities; causatives. Modelled on Buck 1949 (A Dictionary of Selected Synonyms in the Principal Indo-European Languages, Chicago), Urban 2012 (Analyzability and Semantic Associations in Referring Expressions, Leiden; cross-linguistic motivation patterns of 160 meanings), Koch 2008 (lexical motivation), Pokorny 1959 / LIV2 2001 (PIE root families such as *bher- 'carry'), Haspelmath & Tadmor 2009 (WOLD, the IDS semantic fields) and Heine & Kuteva 2002 (the function-word rows).
-# version: hand-authored 2026-11-04 (procedural-language lane, word families and derivation round)
+# version: hand-authored 2026-11-04 (procedural-language lane, word families and derivation round); extended 2026-11-07 (round 5, the WOLD extension of concepts.tsv: agents, instruments, causatives and kin-term shifts for the new meanings)
 # licence: original text for this repository (no third-party data copied); cite the works above when using it.
 # CLICS3: at load time lexicon.py joins each pair with data/clics_edges.tsv; a pair CLICS3 also attests as a colexification in >= 3 families (BLOOD/RED, MOUNTAIN/HILL, TREE/FOREST ...) gets its family count added to the weight (a motivated pair is often colexified too).
 # columns: relation = the affix meaning (agent 'one who', thing 'instrument / result / object', place 'place of', little 'small / young / diminutive', like 'X-like, having X', do 'make / do X, verb from a noun or quality', cause 'make (someone) V'), or reinforce (a function word renewed by compounding with the base: Latin ecce + iste > French ce 'this'; the Jespersen cycle, Old English na-wiht 'no thing' > not); base and target = concept ids of planet/language/lexicon.py; weight = typicality 1 (attested, uncommon) .. 3 (common across families); example = one or two real cases (romanized) or the bare motivation.
@@ -255,3 +255,118 @@ shift	FEW	SOME	2	CLICS3 18 families
 shift	MANY	ALL	2	CLICS3 17 families
 shift	ALL	MANY	1	CLICS3 17 families
 shift	TWO	OTHER	1	'second' > 'other' (Latin alter, English other < 'second of two')
+agent	TEACH	TEACHER	3	English teach-er; Latin doctor < docere 'teach'
+agent	STEAL	THIEF	2	Latin fur / furtum; Russian vor 'thief' < vorovat' 'steal'; Swahili m-wizi < -iba 'steal'
+agent	TRADE OR BARTER	MERCHANT	2	Latin mercator < mercari 'trade'; German Händler < handeln
+agent	RULE	KING	2	Latin rex < regere 'rule'; Sanskrit rājan < rāj- 'rule'
+thing	SHOOT	ARROW	2	Old Irish saiget; Russian strela beside streljat' 'shoot'; Yoruba ọfà
+thing	MARRY	WEDDING	2	Spanish casamiento < casarse; Russian svad'ba beside svat 'matchmaker'
+thing	COVER	ROOF	2	Latin tectum < tegere 'cover'; German Dach (*tegh- 'cover')
+thing	SIT	CHAIR	2	German Sessel < sitzen; Latin sella < *sed- 'sit'
+thing	POUND	MORTAR	2	Latin pila beside pinsere 'pound'; Swahili ki-nu
+thing	BURN (SOMETHING)	FIREWOOD	2	Swahili kuni; Russian drova beside dar 'gift' (Indo-European *dreu- 'tree' + burn)
+thing	FEAR (BE AFRAID)	FEAR (FRIGHT)	3	English fear (verb and noun); Latin timor < timere
+thing	SEE	FACE	2	Latin visage < videre (via French); Russian lico; Hungarian arc
+thing	BREATHE	SOUL	2	Latin anima 'breath, soul'; Greek psykhē < psykhein 'breathe'; Hebrew nefesh
+thing	BREATHE	LUNG	2	Polish płuca; Sanskrit; motivation 'breather'
+thing	THINK	MIND	2	Latin mens beside meminisse; Sanskrit manas < man- 'think'
+thing	SAY	VOICE	1	Latin vox beside vocare 'call'; German Stimme
+thing	CALL	VOICE	2	Latin vox < vocare 'call'
+thing	BE ALIVE	BODY	1	German Leib < leben 'live'
+thing	CARRY	CART	2	Latin carrus; German Wagen < wegan 'carry, move'
+thing	TURN AROUND	WHEEL	2	PIE *kʷékʷlos 'wheel' < *kʷel- 'turn, revolve'
+place	TRADE OR BARTER	MARKET	2	Latin mercatus < mercari 'trade'
+place	GO	PATH	3	Latin iter < ire 'go'; Russian put'
+place	WALK	PATH	2	German Pfad; Swahili njia
+thing	DARK	DARKNESS	3	English dark-ness; Latin obscuritas < obscurus
+thing	SICK	PAIN	1	motivation: sickness, hurt (German Weh, weh tun)
+cause	BURN	LIGHT (IGNITE)	2	English kindle; German anzünden 'make burn'
+cause	FALL	DROP (SOMETHING)	3	English fell < fall; German fällen 'make fall'
+cause	SIT	PUT	2	English set < sit; German setzen 'make sit, put'
+cause	LEARN	TEACH	3	Russian u-čit' / u-čit'-sja; Lithuanian mokyti / mokytis; Hebrew limed / lamad
+cause	LIE (REST)	LIE DOWN	1	English lay < lie
+cause	DIE	EXTINGUISH	1	Latin exstinguere; motivation 'make (the fire) die'
+little	DOG	FOX	1	motivation 'small dog' (Spanish zorro is unrelated; Japanese kitsune)
+little	BIRD	DOVE	1	motivation 'small bird'
+shift	BROTHER	OLDER BROTHER	2	the plain kin term narrowed: Hungarian bátya / öcs vs fivér; many East Asian systems
+shift	SISTER	OLDER SIBLING	1	the plain kin term widened or narrowed by birth order
+shift	CHILD (DESCENDANT)	GRANDCHILD	2	Latin nepos 'grandson, nephew'; motivation 'child's child'
+shift	FATHER	FATHER-IN-LAW (OF MAN)	1	Spanish suegro is unrelated; Japanese giri no chichi 'father by duty'
+shift	MOTHER	MOTHER-IN-LAW (OF MAN)	1	Japanese giri no haha 'mother by duty'
+shift	SON	SON-IN-LAW (OF MAN)	1	Japanese giri no musuko
+shift	DAUGHTER	DAUGHTER-IN-LAW (OF MAN)	1	Japanese giri no musume; German Schwiegertochter (compound)
+shift	MAN	YOUNG MAN	1	motivation
+shift	WOMAN	YOUNG WOMAN	1	motivation
+shift	FLAME	FIRE	2	Latin flamma > Romance 'fire' senses; motivation
+shift	FIRE	FLAME	2	motivation
+shift	SKY	WORLD	1	motivation
+shift	EARTH (SOIL)	COUNTRY	2	Latin terra 'earth, country'; Russian zemlja 'soil, land'
+shift	DAY (NOT NIGHT)	DAY (24 HOURS)	3	English day; most languages colexify
+shift	MOON	MONTH	3	English moon / month; Latin mensis; CLICS: MOON - MONTH in many families
+shift	SUN	TIME	1	motivation
+shift	STOMACH	BELLY	2	CLICS: BELLY - STOMACH
+shift	BELLY	STOMACH	2	CLICS: BELLY - STOMACH
+shift	MEAT	BODY	1	CLICS: MEAT - BODY (Tagalog laman)
+shift	WIND	AIR	2	CLICS: WIND - AIR
+shift	BREATH	SOUL	2	Latin anima; Greek pneuma; Hebrew ruach 'wind, breath, spirit'
+shift	MOUTH	LIP	2	CLICS: MOUTH - LIP
+shift	HAND	PALM OF HAND	2	CLICS: HAND - PALM OF HAND
+shift	FINGERNAIL	CLAW	2	CLICS: FINGERNAIL - CLAW
+agent	FIGHT	SOLDIER	2	German Krieger < Krieg 'war'; English fighter
+agent	WORK (LABOUR)	SLAVE	1	Old Church Slavonic rabъ 'slave' beside rabota 'work, servitude'
+agent	DWELL (LIVE, RESIDE)	NEIGHBOUR	2	Old English nēah-gebūr 'near dweller'; German Nachbar
+agent	SELL	MERCHANT	2	German Verkäufer < verkaufen; Swahili m-uzaji < -uza 'sell'
+thing	EYE	WINDOW	2	Russian okno < oko 'eye'; Old Norse vindauga 'wind-eye'
+thing	BURN	FLAME	2	Latin flamma < *bhleg- 'burn, shine'; German Flamme; motivation 'what burns'
+thing	DRINK	BEVERAGE	3	German Getränk < trinken; Latin potio < potare; English drink (noun)
+thing	TIE	BELT	2	German Gürtel < gürten 'gird'; Latin cingulum < cingere 'gird'
+thing	SHOOT	BOW	1	motivation 'shooter'; Hungarian íj; Swahili upinde
+thing	ROW	PADDLE	2	German Ruder < rudern; Latin remus beside remigare
+thing	WEAVE	BASKET	1	motivation 'woven thing'; Latin corbis; Swahili kikapu
+thing	OPEN	DOOR	1	motivation 'opening': Swahili mlango; Japanese to
+place	SELL	MARKET	2	German Markt is a loan; Swahili soko; motivation 'place of selling' (Turkish satış yeri)
+like	GOD	HOLY	2	Proto-Slavic svętъ; motivation 'of the gods' (Latin divinus < divus)
+like	COOK	COOKED	2	English cooked; Latin coctus < coquere
+cause	RISE (MOVE UPWARDS)	LIFT	3	English raise < rise; German heben / erheben; Gothic urraisjan
+cause	GO	SEND	2	Japanese ikaseru 'make go'; Turkish gönder- ; motivation 'make go'
+cause	COME	BRING	2	Turkish getir- < gel- 'come'; Japanese korasu; motivation 'make come'
+cause	SEE	SHOW	3	Japanese miseru < miru 'see'; Hebrew her'ā < rā'ā 'see'; Turkish göster- < gör-
+cause	ENTER	PUT	1	motivation 'make go in'
+cause	HEAR	TELL	1	motivation 'make hear'; Turkish duyur- 'announce' < duy- 'hear'
+agent	HELP	SERVANT	2	German Gehilfe < helfen; motivation 'helper'
+agent	RULE	MASTER	1	motivation 'ruler'; Latin dominus beside dominari
+thing	FALL	TRAP (PITFALL)	2	German Falle < fallen 'fall'; English pitfall
+thing	CATCH	TRAP (PITFALL)	2	motivation 'catcher'; Swahili mtego < -tega 'set a trap'
+thing	HIT	HAMMER	1	motivation 'striker'; Latin malleus
+thing	EAT	MEAT	2	English meat < Old English mete 'food'; Swedish mat 'food'
+thing	COVER	CLOTHES	1	motivation 'covering'; Latin vestis beside *wes- 'clothe'
+thing	SEW	THREAD	1	motivation 'what one sews with'
+like	DIE	DEAD	3	English dead beside die; Latin mortuus < mori; Russian mërtvyj < meret'
+like	CHILD (YOUNG HUMAN)	YOUNG	2	motivation 'childlike'; Latin iuvenis is simple
+like	MOUNTAIN	HIGH	1	motivation 'mountain-like'
+like	WORK (LABOUR)	TIRED	1	motivation; German müde is simple
+like	DARK	BLIND	1	Proto-Germanic *blinda- 'dim, dark'; Lithuanian blendžiasi 'grows dark'
+do	LIGHT (RADIATION)	SHINE	2	German leuchten < Licht; Latin lucere beside lux
+do	NAME	CALL	2	Latin nominare < nomen; German nennen < Name
+do	END (OF SPACE)	FINISH	3	English end (verb); German beenden < Ende; Latin finire < finis
+do	PIECE	DIVIDE	1	motivation 'make pieces'
+do	GOD	PRAY	1	motivation; Latin adorare < os 'mouth'
+cause	REMAIN	KEEP	2	motivation 'make stay'; Latin retinere < tenere
+cause	KNOW	TEACH	2	Sanskrit jñāpayati 'makes know'; Latin docere beside discere
+place	GATHER	MARKET	2	Greek agorā < ageirein 'gather'; Latin forum is simple
+place	PLANT (SOMETHING)	FIELD	2	motivation 'planting place'; Latin arvum < arare 'plough'
+thing	POUR	JUG	2	motivation 'pourer'; German Kanne is simple
+thing	COOK	POT	1	motivation 'cooker'
+thing	BOIL	SOUP	1	German Sud < sieden 'boil'; English broth < *bhreu- 'boil'
+thing	CARRY	BASKET	1	motivation 'carrier'
+thing	LIE (REST)	MAT	1	motivation 'thing to lie on'
+thing	SLEEP	PILLOW	1	motivation
+thing	COVER	SHIELD	2	Latin scutum < *skeu- 'cover'
+thing	BREATHE	AIR	1	motivation 'what is breathed'
+agent	LEAD (GUIDE)	KING	1	Latin dux < ducere 'lead'; Old English dryhten 'lord' < dryht 'host'
+like	BLOOD	RAW	2	Latin crudus < cruor 'blood'; Sanskrit krūra 'raw, bloody'
+like	NIGHT	DARK	2	motivation 'night-like'; Swahili giza is simple
+do	FIRE	BURN (SOMETHING)	2	motivation; German feuern < Feuer
+do	HOUSE	DWELL (LIVE, RESIDE)	2	German hausen < Haus 'house'; Latin habitare is simple
+do	PART	DIVIDE	3	Latin partiri < pars 'part'; German teilen < Teil
+do	BOAT	SAIL	1	motivation 'go by boat'
