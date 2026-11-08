@@ -81,7 +81,7 @@ a { color: var(--accent); }
     <span class="label">Under way now (no action needed)</span>
     <ul>
       <li><b>Bird two-voice tones.</b> The syrinx's second voice gets its own tone instead of a fixed fifth: level, rising or falling on each side, contrary and oblique contours, how it arises and merges, how humans hear it, and real two-line audio. Measured on a24559, including whether bird words get shorter as the syllable space grows.</li>
-      <li><b>Language finder.</b> <span class="mono">tools/language/find.py</span> plus a skill: find languages by features or by likeness ("Hawaiian", "Sindarin", "Japanese-ish strict CV", "most English"), with sample words.</li>
+      <li><b>Language finder: done, in main.</b> Ask me in plain words ("fantasy Hawaiian", "Japanese-ish strict CV", "most English") or run <span class="mono">uv run python tools/language/find.py runs/a24559/languages.json --like hawaiian</span>. Its 16 likeness profiles include Sindarin, Quenya, Klingon and Black Speech.</li>
       <li>Merged to main 11-08; leftovers are tickets PW-1536 to PW-1555. Demo: <a href="https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs" target="_blank" rel="noopener">10 languages from a24559</a>; viewer <span class="mono">planet langserve a24559</span> on port 8790.</li>
     </ul>
   </div>
@@ -95,6 +95,9 @@ const SECTIONS = [
     { id: "blocklist", tag: "spelling guard", q: "Put any of the dropped words back on the blocklist?",
       body: "The guard now blocks only slurs (14 entries plus nazi and hitler). Swearing is allowed inside words. I also dropped three words that are not swearing: rape (it also shows up inside grape and drape), whore and slut.",
       opts: [["none", "Leave them off", true], ["rape", "Add back rape"], ["all3", "Add back all three"]] },
+    { id: "elvish", tag: "PW-1557 · elves", q: "No elvish language in a24559 sounds like Tolkien's Elvish",
+      body: "The finder's best elvish match to Sindarin is 4.7 and to Quenya 4.0 (under 2 is close, over 3.5 is nothing alike). The closest elvish one has four tones. Today's elves come from the same random draw as everyone else.",
+      opts: [["leave", "Leave it: our elves are their own", true], ["nudge", "Light nudge on the elf proto: liquids, θ/ð, no tones or ejectives"]] },
   ]},
   { title: "Sounds, sound change and spelling", tk: "PW-1539", intro: "Part 1 of the defaults the lanes picked overnight. C (palatalization weight) is already settled: it is at 0.3 after the last run.", items: [
     { id: "s.A", tag: "A · live rules", q: "Live phonological rules die young",
