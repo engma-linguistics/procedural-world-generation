@@ -17,8 +17,10 @@ How (design1.md step 2; numbers and sources in review1.md section 6, cited R§n)
   century, polities.py). The modes open with techs the tree already has, known by the culture that holds the cell.
 - L, the fall-off length, is one per value class (FALL_KM), each from a sourced distance; the class is the ledger's (trade.GOODS), except
   that tin falls off as a precious good (R§6: tin is among the light, valuable goods that go thousands of km; Kanesh, R§3).
-- At sea a km also costs a share of the cargo's value (HAND_KM per class, lane 225, step4b.md): the hands, time and risk
-  of a sea haul, which on land are in FALL_KM and the border tolls, while ORBIS's per-km sea cost is freight alone.
+- At sea and on rivers a km also costs a share of the cargo's value (HAND_KM per class, lanes 225 and 226, step4b.md and step4c.md): the
+  hands, time and risk of a water haul, which on land are in FALL_KM and the border tolls, while ORBIS's per-km water cost is freight alone.
+  RIVER_COURSE (off): a river boat following only its own river's course (the world's downstream links; lane 226).
+- Herd animals and horses walk (DROVE_GOODS, lane 226): a drove's cost on land, no river boat.
 - The kind of exchange is a label from the two sides (kind_of); it does not change the physics (R§1: fall-off curves separate valuable
   goods from bulky ones, not reciprocity from markets; review1.md "what the model takes" 4).
 - Peoples by body (D65 A + Daniel's additions, PW-1501): flyers carry only light (precious) goods, at a flat cost over any ground or sea
@@ -46,7 +48,7 @@ from numba import njit
 from ..geo import R_KM
 from . import trade as TR
 
-VERSION = 8  # (8: the hands, time and risk of a sea haul, HAND_KM, lane 225, step4b.md; 7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
+VERSION = 9  # (9: boats follow the river's course, the hands on river hauls, herds and horses walk as droves, lane 226, step4c.md; 8: the hands, time and risk of a sea haul, HAND_KM, lane 225, step4b.md; 7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
 # PW-1530; lane 224, step4a.md. 2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
 # 3: a route is judged per good against its carried volume, and last era's routes hold down to half the bar, PW-1515 and PW-1514;
 # 4: grain takers look on until a round finds no more, SEEK_GOODS, lane 216b; 5: market pools and worn ways, lane 218;
@@ -64,6 +66,20 @@ HILL = 0.452 / 0.213  # porter and pack animal in hills against the flat (Cheng 
 RIVER_DOWN = 0.0034 / 0.028  # river boat downstream (`canoes` on a river navigable by small boats, river_nav >= 1): ORBIS
 RIVER_UP = 0.0068 / 0.028  # upstream: ORBIS
 SEA = 0.001 / 0.028  # ship along any coast (`sails` or `plank_boats`), over open sea (`navigation`, or ocean ships, animals.ocean_ships): ORBIS
+RIVER_COURSE = False  # True: a river boat goes only from a cell to the next one down its river's course (the world's `downstream`) or up
+# it (lane 226, step4c.md). Off (as main d8152d53): any two neighbouring cells with navigable rivers, so a boat also crosses between
+# tributaries and over watersheds (on the judge runs two thirds of those edges are not along a river). On, it cut herders' grain met by a
+# tenth to a quarter on all three judge runs (grain went by those crossings), and the river hands bound spices as well without it: an inbox draft
+# --- droves (lane 226, step4c.md): herd animals and horses walk to market, driven by their herders over any ground, so on land they cost a
+# drove's way, not a pack animal's load; they take no river boat; at sea they ship as middling cargo (freight and the hands)
+DROVES = True  # False: carried as any middling cargo, by river boat too (main d8152d53)
+DROVE_GOODS = ("livestock", "horses")
+DROVE = 0.25  # a drove's cost per km, a pack animal = 1. Texas to Kansas, "as much as a thousand miles" (~1,600 km): "the cost of sending
+# cattle over the trail ... was about $1.25 per head; the cost of railway is about $4.00 a head" (Lytle in Freeman 1905, p. 660, quoted in J. Econ. Hist.,
+# "End of the Chisholm Trail"); a head was worth $2 in Texas after the war, up to $40 in the north (Wikipedia, Cattle drives in the United
+# States). $1.25 against $2-4 at the start is 31-63% of the value over ~1,600 km, an e-fold per ~1,700-4,300 km, which against the middling
+# fall-off (433 pack-km) is 0.10-0.25 of a pack animal per km. JUDGEMENT: the dear end (at 0.10 horses' far tenth went 7,400 km overland on
+# 3e0eb4, past the sourced ~1,000-3,000 km)
 CANOE_COAST = RIVER_UP  # a canoe along the coast, one cell out (`canoes`). JUDGEMENT: paddled, as against a current; no coastal canoe cost
 # was found
 # --- a port call (PW-1529, step4a.md section 2): loading and unloading, and the harbour's dues, on top of the per-km cost, so a sea haul is
@@ -89,6 +105,9 @@ HARBOUR_DUE = 0.025  # share of the cargo's value paid where it comes ashore: th
 # in Rome "at fully one hundred times their prime cost" (~8,200 km [est.]: ~1,800 km); an Athenian sea loan on a cargo of wine for the
 # Pontus round trip, capital and risk alone, 22.5% (30% late in the season; Dem. 35.10: ~3,600 km [est.]: ~17,700 km)
 HANDS = True  # False: freight alone at sea (main fe063817)
+RIVER_HANDS = True  # the same hands on a river haul (lane 226, step4c.md): both price chains above ran by river as well as by sea (Pliny's
+# goods went up the Nile from Juliopolis to Coptos, Pearson's pepper down it to Alexandria), and on a river, as at sea, the per-km cost is
+# ORBIS's freight alone. False: freight alone on rivers (main d8152d53)
 HAND_KM = {
     # (bulk: none. A bulk cargo went in one hull from port to port, and its sourced sea cost is freight: wheat by sea ~1.3% of its value
     # per 100 Roman miles (Duncan-Jones, review1.md section 6), which ORBIS's freight already gives (~1.8% here). JUDGEMENT: the sea
@@ -578,14 +597,23 @@ class _Frame:
         W = ctx.world or {}
         nav = np.asarray(W.get("river_nav", np.zeros(n))).astype(int)
         rv = land[a] & land[b] & (nav[a] >= 1) & (nav[b] >= 1) & canoes[a]
-        rf = np.where(elev[b] < elev[a], M["down"], M["up"])
+        if RIVER_COURSE:  # (a boat follows its river: a cell to the next one down its course or up it, lane 226, step4c.md)
+            dn = np.asarray(W.get("downstream", np.full(n, -1))).astype(np.int64)
+            down = dn[a] == b
+            rv &= down | (dn[b] == a)
+            rf = np.where(down, M["down"], M["up"])
+        else:
+            rf = np.where(elev[b] < elev[a], M["down"], M["up"])
 
-        def edges(fc):  # (open, factor per km, mode) per edge from the cells' factors
+        def edges(fc, boats=True):  # (open, factor per km, mode) per edge from the cells' factors
             fa, fb = fc[a], fc[b]
             fac = 0.5 * (fa + fb)
-            use = rv & (rf < fac)
+            use = rv & (rf < fac) & boats
             return (fa > 0) & (fb > 0), np.where(use, rf, fac), np.where(use, 1, np.where(sea[a] | sea[b], 2, 0))
         open_, fac, mode = edges(fcell)
+        # herds and horses walk (lane 226, step4c.md): on land a drove's cost, over any ground (the herders drive them), never by river
+        # boat; at sea as any middling cargo
+        drove_e = edges(np.where(land, np.minimum(f_land, DROVE * mx.get("drove", 1.0) * hm), np.where(sea, f_sea, -1.0)), False)
         fetch_e = None
         if fetch:  # (PW-1511 B: herders fetch grain with their own animals, Khazanov: nomads drove their own herds to frontier markets;
             # pack-animal cost on the land a herding culture carries for, and one cell beyond it, the farmers' edge, tech or not)
@@ -614,6 +642,7 @@ class _Frame:
             open_ &= ~closed
             if fetch_e is not None:
                 fetch_e = (fetch_e[0] & ~closed, *fetch_e[1:])
+            drove_e = (drove_e[0] & ~closed, *drove_e[1:])
             self.war_edges = int(closed.sum())
         else:
             self.war_edges = 0
@@ -622,7 +651,7 @@ class _Frame:
         fly[cell[fl]] = True
         self.fly = fly
         self.e = {"a": a, "b": b, "hop": hop, "open": open_, "fac": fac, "mode": mode, "bord": bord, "toll": toll,
-                  "fly": fly[a] | fly[b], "fetch": fetch_e, "load": land[a] & sea[b], "unload": sea[a] & land[b], "sea_f": M["sea"]}
+                  "fly": fly[a] | fly[b], "fetch": fetch_e, "drove": drove_e, "load": land[a] & sea[b], "unload": sea[a] & land[b], "sea_f": M["sea"]}
         self.costs: dict = {}
         self.nbr_off, self.nbr_idx = g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64)
         # the stretches (each pair of neighbouring cells, both ways as one): esrc per directed edge, ukey (a * n + b, a < b), uid per edge
@@ -661,11 +690,12 @@ class _Frame:
         return {"org": org, "km": kmv, "mkm": mkm, "nb": nb,
                 "heads": np.bincount(org[org >= 0], weights=heads[org >= 0], minlength=len(org))}
 
-    def cost(self, cl: str, fetch: bool = False):
-        """(edge cost, edge mode, edge km) for a value class (cached); fetch: with the herders' own animals (PW-1511 B)."""
-        if (cl, fetch) not in self.costs:
+    def cost(self, cl: str, fetch: bool = False, drove: bool = False):
+        """(edge cost, edge mode, edge km) for a value class (cached); fetch: with the herders' own animals (PW-1511 B); drove: animals
+        that walk (DROVE_GOODS, lane 226)."""
+        if (cl, fetch, drove) not in self.costs:
             e, L = self.e, self.L[cl]
-            op, fac, mode = e["fetch"] if fetch and e["fetch"] is not None else (e["open"], e["fac"], e["mode"])
+            op, fac, mode = (e["drove"] if drove else e["fetch"] if fetch and e["fetch"] is not None else (e["open"], e["fac"], e["mode"]))
             c = np.where(op, e["hop"] * fac, -1.0)
             mode = mode.copy()
             if self.wear is not None:  # (a worn way is cheaper on land, PW-1515; rivers and seas are not worn)
@@ -678,11 +708,18 @@ class _Frame:
             if HANDLE:  # (a port call, PW-1529: loading where goods leave the land, unloading and the harbour's dues where they land)
                 c = np.where((c >= 0) & e["load"] & (mode == 2), c + LOAD_DAYS * DAY_KM * e["sea_f"], c)
                 c = np.where((c >= 0) & e["unload"] & (mode == 2), c + UNLOAD_DAYS * DAY_KM * e["sea_f"] - L * math.log1p(-HARBOUR_DUE), c)
-            if HANDS and cl in HAND_KM:  # (the hands, time and risk of a sea haul, per km, as a share of value: lane 225)
-                c = np.where((c >= 0) & (mode == 2), c + e["hop"] * L / HAND_KM[cl], c)
+            if HANDS and cl in HAND_KM:  # (the hands, time and risk of a sea haul, per km, as a share of value: lane 225; and of a river
+                # haul, lane 226)
+                water = (mode == 2) | ((mode == 1) & RIVER_HANDS)
+                c = np.where((c >= 0) & water, c + e["hop"] * L / HAND_KM[cl], c)
             c = np.where((c >= 0) & e["bord"], c - L * np.log1p(-e["toll"]), c)
-            self.costs[(cl, fetch)] = (np.ascontiguousarray(c), mode.astype(np.int64), np.full(len(c), e["hop"]))
-        return self.costs[(cl, fetch)]
+            self.costs[(cl, fetch, drove)] = (np.ascontiguousarray(c), mode.astype(np.int64), np.full(len(c), e["hop"]))
+        return self.costs[(cl, fetch, drove)]
+
+    def cost_of(self, good: str):
+        """cost() for a good: its value class, the herders' fetch, a drove."""
+        cl = FALL_CLASS.get(good, TR.GOODS[good][1])
+        return self.cost(cl, self.fetch and good in FETCH_GOODS, DROVES and good in DROVE_GOODS)
 
     def sources(self, good: str):
         """(surplus per cell 0..1, the culture whose surplus it is): a cell's biggest surplus of the good among its cultures."""
@@ -707,7 +744,7 @@ class _Frame:
         if S is None:
             S, sc = self.sources(good)
         src =np.flatnonzero((S >= TR.SHOW_MIN) & (True if live is None else live))
-        c, mode, km = self.cost(cl, self.fetch and good in FETCH_GOODS)
+        c, mode, km = self.cost_of(good)
         g = self.ctx.g
         bord = self.e["bord"].astype(np.int32)
         d0 = -L * np.log(S[src])
@@ -885,7 +922,7 @@ def _exchange(fr: _Frame, pools: dict | None, loads) -> tuple:
             cl = FALL_CLASS.get(good, TR.GOODS[good][1])
             L = fr.L[cl]
             src = np.flatnonzero(S >= TR.SHOW_MIN)
-            c, emode, ekm = fr.cost(cl, fr.fetch and good in FETCH_GOODS)
+            c, emode, ekm = fr.cost_of(good)
             ac = at[p]
             o_ = np.argsort(ac, kind="stable")
             p, ac = p[o_], ac[o_]
@@ -1096,7 +1133,8 @@ def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, 
                           "pool": POOL, "pool_hops": POOL_HOPS, "trunk": TRUNK, "trail": TRAIL, "wear_half": WEAR_HALF, "wear_keep": WEAR_KEEP,
                           "trunk_iters": TRUNK_ITERS, "seek_cap": SEEK_CAP,
                           "handle": HANDLE, "load_days": LOAD_DAYS, "unload_days": UNLOAD_DAYS, "day_km": DAY_KM, "harbour_due": HARBOUR_DUE,
-                          "hands": HANDS, "hand_km": HAND_KM},
+                          "hands": HANDS, "hand_km": HAND_KM, "river_course": RIVER_COURSE, "river_hands": RIVER_HANDS,
+                          "droves": DROVES, "drove_goods": list(DROVE_GOODS), "drove": DROVE},
             "basis": "trade_flow.py (PW-1503, design1.md step 2): per good one least-cost walk from its surplus cells; supply = surplus x "
                      "exp(-cost / L) by value class; a cell takes min(its lack, the best supply reaching it); summed to cultures. Read-out only."}
 
