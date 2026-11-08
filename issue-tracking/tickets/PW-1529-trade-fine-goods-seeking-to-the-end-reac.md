@@ -2,7 +2,7 @@
 id: PW-1529
 title: "Trade: fine goods seeking to the end reach almost everywhere by sea; the long-haul network is 1,500-1,800 stretches an era"
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -35,5 +35,6 @@ Options:
 - [ ] A ruling; if B or C, the long-haul stretches per era and the judge's steadiness on the three runs, before and after.
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 224 merged (fe063817); step4a.md. Suite 1113 passed.
 - 2026-11-08: Status needs-decision -> todo. Coordinator 11-08: option B (a sourced per-trip handling cost: loading, harbour dues), measured with PW-1522's craft goods since they add more long-haul goods. Next trade lane.
 - 2026-11-08: Created from inbox draft draft-trade-fine-goods-reach-everywhere-by-sea.md (found by lane 222).

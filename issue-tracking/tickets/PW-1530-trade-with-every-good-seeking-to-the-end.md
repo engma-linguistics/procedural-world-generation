@@ -2,7 +2,7 @@
 id: PW-1530
 title: "Trade: with every good seeking to the end and a local layer, ~800 trading towns at the present on 3e0eb4 (41 before)"
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -34,5 +34,6 @@ Options (for Daniel or the coordinator):
 - [ ] A ruling on A / B / C; if A or B, the trading-town count per era on the three judge runs is reported before and after.
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 224 merged (fe063817); step4a.md. Suite 1113 passed.
 - 2026-11-08: Status needs-decision -> todo. Coordinator 11-08: option A for 'trading town' (needs a long-haul route; merchant quarters follow it), with other route towns kept as market towns drawn small (B's ranking). Next trade lane, with PW-1522 and PW-1529.
 - 2026-11-08: Created from inbox draft draft-trade-towns-hundreds-per-era.md (found by lane 222).
