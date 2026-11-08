@@ -3,6 +3,8 @@ checks (inventory sizes and segment frequencies vs PHOIBLE, 2026-11-04). Each re
 "note"}; `run_all(result)` takes history.generate's result."""
 from __future__ import annotations
 
+import math
+
 import numpy as np
 
 HORIZON_PEOPLES = {"human": frozenset({"human"})}
@@ -305,13 +307,17 @@ def living_segments(result: dict) -> dict:
 # Overused segments over every living lect (round 5, 2026-11-07). The human-voiced check above judged only human-voiced lects,
 # so a sound the sound changes over-produce everywhere (ɹ in half the living lects, PHOIBLE 1.7%) went unseen. Here every
 # living lect counts a segment unless its own voice profile favours it (make_cost below 1 over the segment's keys: a
-# reptilian lect may be full of sibilants); a segment fails when its share passes both OVERUSE_FLOOR and OVERUSE_FACTOR x
+# reptilian lect may be full of sibilants) or humans cannot make it (a species' own sound); a segment fails when its share passes both OVERUSE_FLOOR and OVERUSE_FACTOR x
 # PHOIBLE's share of languages (segments PHOIBLE lacks count as share 0, so the floor alone bars them).
 OVERUSE_FLOOR, OVERUSE_FACTOR = 0.10, 3.0
 
 
 def _favoured(profile, seg) -> bool:
+    """Does the profile favour the segment (make_cost below 1 over its keys), or is it a sound humans cannot make (a
+    species' own sound, PHOIBLE has no share for it)?"""
     from . import profiles as PR
+    if math.isinf(PR.species_cost(PR.HUMAN, seg)):
+        return True
     if profile is None:
         return False
     m = 1.0
