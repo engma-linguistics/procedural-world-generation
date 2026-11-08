@@ -596,6 +596,40 @@ def test_arm_s_state_techs_wait_for_towns_of_ones_own():
     assert {i for i, t in T["techs"].items() if t.get("state")} >= {"writing", "kingship", "law", "coinage"}
 
 
+def test_arm_s_settled_over_living_memory_and_hosts():
+    """Round 3b (lane 207b): settled is read over living memory (3 generations, at least the footprint's step), so a one-sample dip
+    does not re-close the gate but towns lost long ago do; a group or overlay the ledger books no places to is settled as its hosts."""
+    ls = [line("a", at=9.0, generation_yr=25.0), line("g", at=9.0, group_of="a", way="farmer"),
+          line("f", at=9.0, group_of="a", way="forager"), line("o", at=9.0, origin="hybrid", parents=["a", "b"], overlay=True),
+          line("b", at=9.0, generation_yr=25.0)]
+    a = np.round(np.arange(9.0, -0.05, -0.1), 4)
+    n = np.where((a > 5.0) & (np.abs(a - 7.0) > 0.05), 2.0, 0.0)  # (towns from 9 to 5 kyr ago, one sample missing at 7)
+    c = TT.Calendar(ls, towns={"_cell_km2": 3000.0, "a": (a, n)}, arms="S")
+    assert c.settled("a", 7.0) and c.settled("a", 5.0)  # (the dip; and the last town within living memory)
+    assert not c.settled("a", 4.0) and not c.settled("a", 9.5)  # (a millennium after; before any)
+    assert c.settled("g", 6.0) and not c.settled("f", 6.0) and c.settled("o", 6.0) and not c.settled("o", 3.0)
+    assert not c.settled("b", 6.0)  # (a people of its own with no places: not settled)
+
+
+def test_arm_s_carries_a_blocked_front_and_never_drops_knowledge():
+    """Round 3b: a people without towns that writing's front crosses passes it on (z, settled, gets it through y) but does not hold
+    it; without y's carrying z would never meet it. Once y founds a town it takes up what it carried."""
+    have = TT.closure(T, ["writing"])
+    techs = {**T["techs"], "writing": {**T["techs"]["writing"], "rate": 1e-9}}
+    T2 = {**T, "techs": techs, "kind": [{"of": ["src"], "kit": sorted(have)}, {"of": ["y", "z"], "kit": sorted(have - {"writing"})}]}
+    pair = lambda a, b: {"a": a, "b": b, "first_contact_kyr": 8.0, "in_contact_now": True, "series": [[8.0, 3000, 0.0], [0.0, 3000, 0.0]]}
+    con = {"pairs": [pair("src", "y"), pair("y", "z")]}
+    town = (np.array([8.0, 0.0]), np.array([5.0, 5.0]))
+    late = (np.array([8.0, 3.1, 3.0, 0.0]), np.array([0.0, 0.0, 5.0, 5.0]))
+    for s in range(4):
+        ls = [line("src", at=8.0, track=_pop(1e7, 1.0, 8.0)), line("y", at=8.0, track=_pop(1e7, 1.0, 8.0)),
+              line("z", at=8.0, track=_pop(1e7, 1.0, 8.0))]
+        k = TT.build(ls, con, None, seed=s, T=T2, towns={"_cell_km2": 3000.0, "src": town, "z": town}, arms="S")["known"]
+        assert "writing" not in k["y"] and "writing" in k["z"] and k["z"]["writing"][1] == "contact"
+        k2 = TT.build(ls, con, None, seed=s, T=T2, towns={"_cell_km2": 3000.0, "src": town, "z": town, "y": late}, arms="S")["known"]
+        assert k2["y"]["writing"][0] <= 3.1 + 1e-9  # (y founds a town 3.1-3 kyr ago: takes what it carried up then, not before)
+
+
 def test_sea_branch_is_for_sea_peoples_and_reads_sea_goods():
     """PW-1491 (lane 207): the sea branch is held by sea peoples (realm at sea, or swimming and coastal; a group as its people);
     land peoples may take only its traded techs, by contact; its goods are the sea's own, on sea cells."""

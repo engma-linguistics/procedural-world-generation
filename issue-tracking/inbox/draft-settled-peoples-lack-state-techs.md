@@ -1,38 +1,38 @@
 ---
-title: "Arm S: 11-15% of settled D&D peoples still lack a state tech today; printing at 0.5 kyr ago drops to 7% on 0141d1"
+title: "Arm S: may a people without towns invent a state tech, or only not take one up? (0141d1's writing starts 0.6 kyr later)"
 type: task
 status: todo
 parent: PW-661
 milestone: later
 subsystem: culture
 effort: s
-impact: med
-found_by: lane-207
+impact: low
+found_by: lane-207b
 blocked_by: []
 relates: [PW-1490]
-refs: [docs/review/culture/techtree/round3.md, docs/review/culture/techtree/round3/lag.py, docs/review/culture/techtree/round3/tables.py, "planet/lineages/techtree.py::Calendar.settled", "planet/lineages/techtree.py::Calendar.can", "planet/lineages/techspread.py::town_footprint", planet/lineages/samples/techtree.toml, "runs 0141d1 3e0eb4 07c755"]
+refs: [docs/review/culture/techtree/round3.md, docs/review/culture/techtree/round3/compare3b.py, "planet/lineages/techtree.py::Calendar.can", "planet/lineages/techtree.py::Calendar.gated", "runs 0141d1 3e0eb4 07c755"]
 ---
 
 ## Description
-**In plain words.** The new rule (D60 B, arm S) says only peoples with towns of their own take up writing, kingship, law, taxes and
-coinage. It works: foragers and herders without towns no longer write, and the fast techs are unchanged. But a few peoples that do
-have towns now miss a state tech they would have had before. Where that happens, the viewer shows a town-holding people without
-law or coinage for no visible reason.
+**In plain words.** Under the D60 B rule, a people must have a town of its own before it can invent or take up writing, kingship,
+law and the other state techs. Round 3b (round3.md section 2b) fixed the side effects that came from the spreading. One effect is
+left, and it comes from the inventing. On 0141d1, the first writers under the old rule were peoples whose first ledger town came
+later:
+- the elves wrote at 7.1 kyr ago, and their first town is at 5.7;
+- the dwarves wrote at 5.0, and their first town is at 4.8.
 
-**Measured** (round3.md section 2; 8 draws on each run; the baseline is main at faa4fb8c):
-- The share of settled admin cases that never take the tech rose from 7% to 15% on 0141d1, and is 11% on 3e0eb4 and 1% on 07c755.
-- On 0141d1, 44 of those cases are peoples whose towns later shrank below one cell, so the gate rightly closed again; 109 still have
-  towns now.
-- On 3e0eb4 it is 88 who lost their towns and 36 who still have them.
-- Likely cause for the rest: the downstream state techs (law, coinage) now have fewer givers, so their fronts are slower. A town
-  count that flickers around 1 may also re-close the gate.
-- Printing (downstream of writing) at 0.5 kyr ago fell from 72% to 7% of peoples (median of draws) on 0141d1. It is 62% on 3e0eb4
-  and 28% on 07c755.
+A hill giant people with no towns invented paper. Now the whole literate chain on 0141d1 starts later: writing 0.6 kyr later and
+paper 0.9 kyr later (median of 8 draws, against main at faa4fb8c). So printing has reached only 35% of writing-holders at 0.5 kyr
+ago (base 59%), and 49% today (base 62%). 3e0eb4 is unchanged, and 07c755 is back to the baseline.
 
-**What breaks if never done.** The viewer and briefs show settled peoples without law or coinage, and very little printing on
-0141d1. That is a misleading "who knows what" for exactly the peoples that should have it.
+**The call for Daniel.** It is one of two readings of D60 B:
+- **(a) Keep the rule as ruled** (the default now). No town, no invention. Writing then starts nearer the tree's Earth anchor
+  (5.3 kyr ago).
+- **(b) Gate only the taking up.** Any people with the tech's needs may invent a state tech. A people without towns would carry its
+  own invention, passing it on as round 3b's carrying does, and hold it only once it has a town. That would restore 0141d1's early
+  writing and printing.
 
-**To try.**
-- [ ] Split the "still has towns" cases by tech and by whether the town count stayed at 1 or more since the ready date.
-- [ ] If they flicker: read "settled" as having had a town within the last few centuries. That is a mechanism, not a tuned threshold.
-- [ ] Check printing's chain (libraries, paper) for a step that the gate starves.
+Recommendation: (a). The ledger's first town is the model's own evidence that the people has a state's centre. Writing before it
+was the early outlier.
+
+**What breaks if never done.** Nothing. 0141d1 simply prints later than before.

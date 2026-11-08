@@ -26,7 +26,8 @@ KINDS = {  # the tech kinds Daniel named; every other eligible tech is "other"
 }
 KIND_OF = {t: k for k, ts in KINDS.items() for t in ts}
 SHARE_TECHS = ("cultivation", "herding", "plough", "copper", "bronze", "iron", "towns", "cities", "chiefdoms", "kingship", "law",
-               "writing", "coinage", "taxation", "alphabet", "printing", "pottery", "fire_making", "boats")
+               "writing", "coinage", "taxation", "alphabet", "printing", "pottery", "fire_making", "boats", "paper", "libraries",
+               "bureaucracy", "census")
 DATES = (4.0, 3.0, 2.0, 1.0, 0.5, 0.0)
 
 
@@ -139,7 +140,10 @@ def one(seed):
                "towns_now": TT.town_cells_at((towns or {}).get(p), 0.0) if towns else None,
                "towns_first": (float((towns or {})[p][0][int(np.argmax(np.asarray(towns[p][1]) >= 1))])
                                if towns and p in towns and (np.asarray(towns[p][1]) >= 1).any() else None),
-               "admin": {t: known[p][t][0] for t in KINDS["admin"] if t in known[p]}}
+               "admin": {t: known[p][t][0] for t in KINDS["admin"] if t in known[p]},
+               "dates": {t: known[p][t][0] for t in SHARE_TECHS if t in known[p]},  # (round 3b: per people, draw for draw)
+               "hosted": bool(L[p].get("group_of") or L[p].get("overlay")),  # (round 3b: lives in its people's or parents' places)
+               "settled_05": (bool(c.settled(p, 0.5)) if getattr(c, "state", None) else None)}
            for p in hand}
     return {"seed": seed, "arms": "".join(sorted(c.arms)), "n_hand": len(hand), "cases": cases, "shares": shares,
             "shares_pop": shares_pop, "dates": DATES, "people": ppl, "sea": sea, "n_world": len(first)}

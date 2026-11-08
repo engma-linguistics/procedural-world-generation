@@ -58,9 +58,10 @@ Scripts:
   - **What it does not do:** it does not create long lags for settled peoples in suitable land, with one wrinkle. On the D&D runs,
     11-15% of the settled cases still lack a state tech today, against 7% before. About a third of those had towns that later
     shrank away, so the gate rightly closed again. The rest are downstream state techs (law, coinage) whose givers are now fewer.
-    That is the draft below.
+    Round 3b fixes most of it (section 2b).
   - **Side effect:** printing at 0.5 kyr ago fell from 72% to 7% of peoples on 0141d1 (median of draws), because it needs writing's
-    whole chain. It still reaches 62% on 3e0eb4 and 28% on 07c755.
+    whole chain. It still reaches 62% on 3e0eb4 and 28% on 07c755. Round 3b brings 3e0eb4 and 07c755 back to the baseline among
+    writing-holders; on 0141d1 the rest is writing's own later invention (section 2b).
 - **The Ethnographic Atlas and our present-day finish.**
   - **Its period.** The Atlas describes each society at the earliest good description of it. That is 1900-1950 for 69% of
     societies, the 19th century for 25%, before 1800 for 3%, after 1950 for 2% (Kirby et al. 2016). Its "present" is therefore
@@ -197,6 +198,86 @@ Every tech without the flag, and not downstream of one, is identical draw for dr
 | a town of its own now | 62% | 48% | 44% | |
 
 The Atlas shares are spread1's, computed from the D-PLACE files.
+
+## 2b. Round 3b: arm S's side effects (lane 207b)
+
+**In plain words.** Arm S had two side effects: some peoples with towns never took a state tech, and printing was rare on 0141d1.
+There were three causes, and each fix is a rule, not a tuned number:
+- **Peoples without towns stopped passing the news on.** A state tech's front used to cross a people without towns (a herder or
+  giant people between two kingdoms) and go on to the next. Under arm S it stopped there, so a kingdom behind it waited for a
+  roundabout route, or never got the tech. Now such a people **carries** the front: it passes it on as a holder would, but does not
+  hold it, invent from it or count it. If it later founds a town, it takes the tech up at once.
+- **Groups and hybrids have no places of their own in the ledger.** The settlement ledger books a group's places to its people
+  (settlements.py: `people_of`). Overlay hybrids such as the half-elves and half-orcs live in their parents' places. So arm S read
+  them all as having no towns, and none of them ever took writing. A people with no places of its own that is a group or an overlay
+  is now settled when its hosts are, unless its own way of life is a mobile one. Forager and herder groups stay without writing.
+- **Settled is read over living memory.** This means a town within 3 of the people's own generations, and at least within the
+  ledger's 100-year step. It is a judgement (grandparent to grandchild), so that a town count dipping below one cell for a while
+  does not re-close the gate. Measured, it changes almost nothing: dips like that are rare, so it is a guard rather than a fix.
+
+**Holding.** A people never loses a tech it holds: `known` only grows, so a people whose towns are gone keeps its writing and
+kingship. What changed is a split that has no town of its own at its start. It used to drop its parent's state techs. Now it
+carries them, and takes them up when it founds a town.
+
+**Measured.** There are 8 draws per run (the run's seed plus the next 7). Every column is a rebuild over the same stored history:
+- **base:** main at faa4fb8c;
+- **207:** lane 207 at f93792b1;
+- **3b:** this lane;
+- **no carry:** 3b without the carrying, an ablation.
+
+The scripts are [round3/lag.py](round3/lag.py) and [round3/compare3b.py](round3/compare3b.py). "Settled never" counts admin cases
+whose taker had a town by the ready date and still lacks the tech today.
+
+| measure | run | base | 207 | 3b | no carry |
+|---|---|---|---|---|---|
+| settled never | 0141d1 | 7% | 15% | 10% | 14% |
+| ... of which still has a town now (share of cases) | 0141d1 | 6% | 11% | 7% | 11% |
+| settled never | 3e0eb4 | 2% | 11% | 8% | 10% |
+| ... of which still has a town now | 3e0eb4 | 2% | 4% | 2% | 4% |
+| settled never | 07c755 | 0% | 1% | 0% | 1% |
+| writing at 0.5 kyr ago (peoples with hands) | 0141d1 / 3e0eb4 / 07c755 | 97 / 97 / 94% | 72 / 72 / 44% | 79 / 79 / 62% | 79 / 79 / 62% |
+| cultivation at 0.5 kyr ago | all three | 97 / 97 / 96% | same | same | same |
+| writing at 0.5 kyr ago, peoples with no town by then (not groups or overlays) | 0141d1 / 3e0eb4 / 07c755 | 73 / 80 / 67% | 0 / 0 / 0% | 0 / 0 / 0% | 0 / 0 / 0% |
+| writing at 0.5 kyr ago, groups and overlays | 0141d1 / 3e0eb4 / 07c755 | 94 / 100 / 94% | 0 / 0 / 0% | 94 / 100 / 42% | 94 / 100 / 42% |
+| law at 0.5 kyr ago | 0141d1 / 3e0eb4 / 07c755 | 97 / 95 / 93% | 62 / 60 / 42% | 76 / 71 / 61% | 69 / 69 / 61% |
+| coinage at 0.5 kyr ago | 0141d1 / 3e0eb4 / 07c755 | 48 / 78 / 88% | 16 / 41 / 39% | 34 / 55 / 58% | 19 / 48 / 58% |
+| printing among writing-holders at 0.5 kyr ago (pooled) | 0141d1 | 59% | 32% | 35% | 32% |
+| printing among writing-holders at 0.5 kyr ago (pooled) | 3e0eb4 | 56% | 55% | 57% | 55% |
+| printing among writing-holders at 0.5 kyr ago (pooled) | 07c755 | 86% | 62% | 83% | 78% |
+| printing among writing-holders today | 0141d1 / 3e0eb4 / 07c755 | 62 / 63 / 90% | 42 / 61 / 81% | 49 / 64 / 86% | 43 / 61 / 85% |
+| fast techs' dates differing from base, people by people | all three | | 0 | 0 | 0 |
+
+The fast techs compared are cultivation, herding, plough, copper, bronze, iron, towns, cities, pottery, fire making, boats and
+chiefdoms. They are identical draw for draw in every column. A run with the memory window off (window = the ledger step only)
+matched 3b to within one case.
+
+**What is left.**
+- **Settled never, with no town now.** On 0141d1 these are 29 cases over 8 draws (base 14); on 3e0eb4 72 (base 6).
+  - They are peoples whose towns vanished long ago and never came back: the dragonborn, lizardfolk, aarakocra and kenku on 3e0eb4
+    have had none for the last 2.8-3.7 kyr; the sea elves and goblins on 0141d1 for 1.2-2.9 kyr.
+  - They keep every state tech they held. They take up no new one until they have a town again. That is D60 B as ruled, so it was
+    left alone.
+- **Printing on 0141d1.** The gap is not in the spreading. Libraries are held by 96% of writing-holders (base 97%). It is in when
+  writing and paper are first **invented**. Median of the 8 draws, first date anywhere:
+
+  | run | | base | 207 | 3b |
+  |---|---|---|---|---|
+  | 0141d1 | writing | 4.72 kyr ago | 4.09 | 4.09 |
+  | 0141d1 | paper | 2.80 | 1.89 | 1.91 |
+  | 0141d1 | printing | 2.25 | 1.52 | 1.52 |
+  | 3e0eb4 | writing / paper / printing | 4.01 / 2.65 / 2.06 | same | same |
+  | 07c755 | writing / paper / printing | 5.15 / 3.30 / 2.87 | 4.79 / 2.80 / 1.63 | 5.15 / 3.60 / 3.23 |
+
+  - Under the base rule, the first writers on 0141d1 were peoples without a ledger town yet:
+    - the elves at 7.1 kyr ago, whose first town is at 5.7;
+    - the dwarves at 5.0, whose first town is at 4.8.
+  - One paper inventor was a hill giant people (3.2 kyr ago) that never has a town.
+  - D60 B forbids inventing a state tech without towns. So 0141d1's whole literate chain now starts 0.6-0.9 kyr later. Writing
+    starts nearer the tree's Earth anchor (5.3 kyr), and printing (anchor 1.3 kyr) is only reaching most writing-holders at 0.5 kyr
+    ago.
+  - Today 49% of 0141d1's writing-holders print (base 62%).
+  - Whether a people without towns may *invent* a state tech (as against take one up) is a ruling, not a mechanism. It is in the
+    draft below.
 
 ## 3. The sea peoples' branch (PW-1491)
 
