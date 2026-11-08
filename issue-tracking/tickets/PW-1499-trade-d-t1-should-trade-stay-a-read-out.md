@@ -2,7 +2,7 @@
 id: PW-1499
 title: "Trade D-T1: should trade stay a read-out after the run, or feed back into the history (densities, dwarven holds, foragers)?"
 type: task
-status: needs-decision
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -43,4 +43,5 @@ Trade-offs:
 placeholders stay, and the brief's bought-in foods won't match the densities the history gave.
 
 ## Updates
+- 2026-11-07: Status needs-decision -> done. Daniel 11-07: D63 A. Trade does not change the history now; once it is worked out reasonably, it should feed future runs (step 4d replaces TRADE_CAP/BARTER_CAP).
 - 2026-11-07: Created from inbox draft draft-trade-d1-readout-or-feedback.md (found by lane 211).

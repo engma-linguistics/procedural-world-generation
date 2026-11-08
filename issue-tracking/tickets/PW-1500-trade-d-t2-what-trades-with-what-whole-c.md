@@ -2,7 +2,7 @@
 id: PW-1500
 title: "Trade D-T2: what trades with what: whole cultures, map cells, or towns?"
 type: task
-status: needs-decision
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -35,4 +35,5 @@ Trade-offs: B costs about 16 cost walks per frame, a few minutes after a run at 
 and it puts routes on real rivers and coasts. **My lean: B.** If this is never decided, step 2 can't start.
 
 ## Updates
+- 2026-11-07: Status needs-decision -> done. Daniel 11-07: D64 B (cells for goods and costs, summed to cultures, towns as hubs).
 - 2026-11-07: Created from inbox draft draft-trade-d2-unit-of-trade.md (found by lane 211).

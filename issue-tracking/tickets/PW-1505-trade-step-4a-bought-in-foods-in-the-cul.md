@@ -39,4 +39,5 @@ review does that.
   sense against the routes
 
 ## Updates
+- 2026-11-07: Carries Daniel's D65 additions: flyers spread foods to new regions; giants tribute and/or trade by kind; dragons' kobolds trade for the realm.
 - 2026-11-07: Created from inbox draft draft-trade-step4a-culinary-imports.md (found by lane 211).

@@ -2,7 +2,7 @@
 id: PW-1501
 title: "Trade D-T3: how do flyers, sea peoples, mining kinds and dragons carry and trade goods?"
 type: task
-status: needs-decision
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -47,4 +47,5 @@ Trade-offs:
 buying salt over land.
 
 ## Updates
+- 2026-11-07: Status needs-decision -> done. Daniel 11-07: D65 A, plus: (1) flyers can bring new foods to new regions, as real birds have (crops/foods carried by flying peoples should seed new regions: step 2/4a); (2) giants do tribute AND/OR trade depending on the kind; (3) dragons take tribute, but their kobolds trade on the realm's behalf.
 - 2026-11-07: Created from inbox draft draft-trade-d3-fantasy-carriers.md (found by lane 211).

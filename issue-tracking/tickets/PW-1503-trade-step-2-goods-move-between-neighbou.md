@@ -47,4 +47,5 @@ If it is never done, no culture's cuisine can say what it buys in, and D53's tra
 - [ ] a workbench Trade tab: imports and exports by culture, good, era and kind
 
 ## Updates
+- 2026-11-07: Carries Daniel's D65 additions: flyers spread foods to new regions; giants tribute and/or trade by kind; dragons' kobolds trade for the realm.
 - 2026-11-07: Created from inbox draft draft-trade-step2-exchange.md (found by lane 211).

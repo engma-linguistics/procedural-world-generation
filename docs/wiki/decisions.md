@@ -330,3 +330,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-07: Daniel D61 C (PW-1496), D62 A (PW-1495 done). Overnight: lane 208 (D61 + writing-without-towns sources, chiefdom take-up variant), scout 209 (PW-1497 Andes, pass 1), scout 210 (PW-1331 KN_RESP source, pass 1).
 - 2026-11-07: Daniel: D60 wording back to towns OR chiefdoms (take-up only; invent needs towns) -> lane 208; D61 add Genghis submit-or-else (lane 208, draft if too deep); milestones not binding; trade epic PW-1498 -> lane 211 (review + design).
 - 2026-11-07: lane 211 merged (docs: trade review1/design1, ~340 sources). PW-1499..1501 decisions (desk D63-65, leans A/B/A stand by default), PW-1502..1505 steps. Lane 212 (step 1 goods ledger) started.
+- 2026-11-07: Daniel D63 A (read-out now, feed back once worked out), D64 B, D65 A + flyers spread foods, giants tribute/trade by kind, dragons' kobolds trade.
