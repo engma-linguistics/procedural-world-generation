@@ -485,6 +485,18 @@ def test_harmony_is_structure_preserving():
     assert R.harmony_onto(f("tolɛ"), f("tolɑ"), Inv2) == f("tolɔ")
 
 
+def test_tone_mergers_parse_and_simplify():
+    """Tone evolution (sound lane pass 2): rising and falling level to high, mid merges up or down, the outer levels merge
+    inward, so tone systems shrink as well as grow."""
+    cat = {r.id: r for r in R.catalogue(HUMAN)}
+    w = tuple(from_ipa("ta˨˦ki˧mu˥po˦˨ŋa˩"))
+    want = {"S227": "ta˦ki˧mu˥po˦˨ŋa˩", "S228": "ta˨˦ki˧mu˥po˦ŋa˩", "S229": "ta˨˦ki˦mu˥po˦˨ŋa˩",
+            "S230": "ta˨˦ki˨mu˥po˦˨ŋa˩", "S231": "ta˨˦ki˧mu˦po˦˨ŋa˩", "S232": "ta˨˦ki˧mu˥po˦˨ŋa˨"}
+    for rid, out in want.items():
+        assert rid in cat, rid
+        assert word_ipa(R.apply(cat[rid], w)) == out, rid
+
+
 def test_palatalized_series_has_exits():
     """S221 makes a palatalized series before i; S233-S235 take it away again (sound lane pass 2: lʲ had no exit)."""
     cat = {r.id: r for r in R.catalogue(HUMAN)}
