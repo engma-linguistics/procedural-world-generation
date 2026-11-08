@@ -2,7 +2,7 @@
 id: PW-1496
 title: "Where do expelled peoples go? Today they simply die (live polities: kept / thinned / expelled)"
 type: task
-status: needs-decision
+status: todo
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -39,5 +39,6 @@ Lean: C. It is B's mechanism (refugees), and keeps D59's "a martial winner razes
 - [ ] Daniel picks; then measure on seeds 7, 10, 3 (round11/measure.py) against the round 11 runs.
 
 ## Updates
+- 2026-11-07: Status needs-decision -> todo. Daniel 11-07: D61 C. A very martial winner razes (lost), a less martial one drives the people out to its own nearest land the winner doesn't rule.
 - 2026-11-07: Desk D61 (lean C).
 - 2026-11-07: Created from inbox draft draft-expelled-peoples-go-where.md (found by lane204).

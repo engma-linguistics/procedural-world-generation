@@ -2,7 +2,7 @@
 id: PW-1495
 title: "Arm S: may a people without towns invent a state tech, or only not take one up? (0141d1's writing starts 0.6 kyr later)"
 type: task
-status: needs-decision
+status: done
 parent: PW-661
 milestone: later
 subsystem: culture
@@ -41,5 +41,6 @@ was the early outlier.
 **What breaks if never done.** Nothing. 0141d1 simply prints later than before.
 
 ## Updates
+- 2026-11-07: Status needs-decision -> done. Daniel 11-07: D62 A. No town, no invention; 'some level of organization at a societal level' is a prerequisite for writing, not a lean. Rule stands as merged. He asked for real-world counterexamples: lane 208 checks with sources.
 - 2026-11-07: Status todo -> needs-decision. Desk D62 (lean A: keep, no town no invention; A stands if Daniel says nothing).
 - 2026-11-07: Created from inbox draft draft-settled-peoples-lack-state-techs.md (found by lane-207b).
