@@ -2,7 +2,7 @@
 id: PW-1503
 title: "Trade step 2: goods move between neighbours and fade with distance by transport mode and era (gifts, barter, markets, merchants, tribute)"
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-745, PW-1386, PW-1405]
 refs: [docs/review/culture/trade/design1.md, docs/review/culture/trade/review1.md, "planet/lineages/salt_reach.py::_spfa", "planet/lineages/salt_reach.py::TRADE_CAP_KM", planet/humanuse.py, "planet/lineages/polities.py::ROAD_X", "planet/lineages/animals.py::ocean_ships", planet/lineages/attitudes.py, planet/lineages/samples/techtree.toml]
 created: 2026-11-07
-updated: 2026-11-07
+updated: 2026-11-08
 ---
 
 ## Description
@@ -47,5 +47,6 @@ If it is never done, no culture's cuisine can say what it buys in, and D53's tra
 - [ ] a workbench Trade tab: imports and exports by culture, good, era and kind
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 213: built (planet/lineages/trade_flow.py, server /api/trade?flows=1, brief tab panel 'comes from / goes to' + partners). Judged on 0141d1, 3e0eb4, 07c755 in docs/review/culture/trade/step2.md: grain overland 96-113 km median, middling 89-96% within 300 km, spices 59-82% beyond 1,000 km by sea; nudge Jaccard 0.84-0.95; 50-70 s per L7 run. Herders' grain is short (draft herders-grain-far); flyer foods empty on these trees (draft); the whole-run Trade tab is left to step 3.
 - 2026-11-07: Carries Daniel's D65 additions: flyers spread foods to new regions; giants tribute and/or trade by kind; dragons' kobolds trade for the realm.
 - 2026-11-07: Created from inbox draft draft-trade-step2-exchange.md (found by lane 211).

@@ -34,7 +34,7 @@ import numpy as np
 
 from ..geo import R_KM, is_land
 
-VERSION = 1  # (bump when the rules change: the server's cached docs are remade)
+VERSION = 2  # (2: giants trade or take tribute by kind, GIANT_MODE; a mining kind's hold wants as a town does: PW-1503) (bump when the rules change: the server's cached docs are remade)
 CLASSES = ("bulk", "middling", "precious")
 # good: (label, value class, where it comes from). Classes per review1.md section 6 ("value per weight is the switch") and design1.md step 1.
 GOODS = {
@@ -87,6 +87,12 @@ NEED_GATE = {"copper": ("native_copper", "copper"), "tin": ("bronze",), "iron": 
              "mithril": ("mithril_work",), "ornaments": ("ornament",), "oil_wine": ("wine", "oil_press"), "sugar": ("sugar_making",)}
 TRIBUTE_ROWS = True  # tribute-taking kinds keep a ledger row (marked mode "tribute"): D65 (PW-1501, owner): a dragon realm's needs and surplus
 # are traded on its behalf by its kobolds, so step 2 needs them; False leaves them out
+# D65 / PW-1507 (coordinator 11-08: the lane's lean B, a mode set by hand per giant kind; the trees' kind ids). A JUDGEMENT per kind, with
+# no source: hill giants herd (a way of life of their own) and stone giants keep to their own mountains, so both trade; cloud giants trade
+# fine goods and storm giants trade by sea (the ticket's examples); frost and fire giants raid and take tribute (the ticket's example for
+# frost; fire giants as smith-lords over the peoples below). A kind not listed falls back to: a way of life of its own trades.
+GIANT_MODE = {"hill_giant": "trade", "stone_giant": "trade", "cloud_giant": "trade", "storm_giant": "trade",
+              "frost_giant": "tribute", "fire_giant": "tribute"}
 OFF_LADDER_HERDS = ("pastoral_nomad", "transhumant", "agro_pastoral")  # an off-ladder kind with one of these ways keeps its own herds (cuisine.profile)
 
 
@@ -102,10 +108,11 @@ def mode_of(ctx, pid: str) -> dict:
     if "dragon" in pid and "flies" in (line.get("traits") or []):
         return {"mode": "tribute", "via": "kobolds", "off_ladder": off, "way": way}
     if off:
-        return {"mode": "trade" if way else "tribute", "via": None, "off_ladder": True, "way": way}
+        return {"mode": GIANT_MODE.get(pid) or ("trade" if way else "tribute"), "via": None, "off_ladder": True, "way": way}
     return {"mode": "trade", "via": None, "off_ladder": False, "way": way}
 SHOW_MIN = 0.02  # a surplus or lack under this (2% of the culture's people) is left out of the doc (display rounding, not a model number)
 LINE_TOP = 3  # goods named per side in the "has / lacks" line
+from .ladder import TRADE_CAP as HOLD_TOWN  # noqa: E402 (a hold buys at most this share of its food): the share of a mining kind's people that want as a town's do
 NEAR_FARM = 1  # % of a cell's people farming (eraq's resolution) from which foragers there live beside farmers (Kitanishi: within a day's walk; a cell is ~1-2 days across at L7)
 
 
@@ -217,8 +224,10 @@ def ledger_at(ctx, i: int) -> dict | None:
     keep = np.ones(len(ids), bool)
     farms, herds = np.ones(len(ids), bool), np.ones(len(ids), bool)
     modes = []
+    miner = np.zeros(len(ids), bool)
     for k, c in enumerate(ids.tolist()):
         pid = C[c]["people"]
+        miner[k] = "miner" in ((ctx.lines[ctx.idx[pid]].get("traits") or []) if pid in ctx.idx else [])
         kn = know.setdefault(pid, _known_at(ctx, pid, era))
         m = mode_of(ctx, pid)
         modes.append(m)
@@ -247,6 +256,9 @@ def ledger_at(ctx, i: int) -> dict | None:
     band = forage * ~np.array([m["off_ladder"] for m in modes], bool)[kc] if len(kc) else forage
     settled = np.clip(farm + herd, 0.0, 1.0)
     urban = np.where(np.array([m["off_ladder"] for m in modes], bool)[kc], 0.0, urban) if len(kc) else urban
+    # a mining kind's hold trades as a town does (D65, PW-1501): its people want what a town's people want, at the share of their food a hold
+    # buys (ladder.TRADE_CAP, the model's own placeholder until step 4d replaces it)
+    urban = np.where(miner[kc], np.maximum(urban, HOLD_TOWN), urban) if len(kc) else urban
     need = {
         "grain": np.clip(herd + urban + band * near_farm, 0.0, 1.0),
         "salt": np.where(land, np.clip(settled + band * near_farm, 0.0, 1.0), 0.0),
@@ -269,6 +281,7 @@ def ledger_at(ctx, i: int) -> dict | None:
     wsum = np.bincount(kc, weights=w, minlength=len(ids))
     mean = lambda v: np.bincount(kc, weights=w * v, minlength=len(ids)) / np.maximum(wsum, 1e-12)  # noqa: E731
     sur, lack = {}, {}
+    pair_sur, pair_lack = {}, {}  # (per (cell, culture) pair, for the exchange: trade_flow.py)
     for g in GOODS:
         v = X["val"][g][cell]
         out = v * (work[WORK[g]] if g in WORK else 1.0)
@@ -276,10 +289,13 @@ def ledger_at(ctx, i: int) -> dict | None:
             out = out * gate(GATE[g])
         nd = need.get(g)
         if nd is None:
+            pair_sur[g] = out
             sur[g] = mean(out)
             continue
-        sur[g] = mean(np.maximum(0.0, out - nd))
-        lack[g] = mean(nd * (1.0 - X["salt_own"][cell])) if g == "salt" else mean(np.maximum(0.0, nd - out))
+        pair_sur[g] = np.maximum(0.0, out - nd)
+        pair_lack[g] = nd * (1.0 - X["salt_own"][cell]) if g == "salt" else np.maximum(0.0, nd - out)
+        sur[g] = mean(pair_sur[g])
+        lack[g] = mean(pair_lack[g])
     ways = {k: mean(v) for k, v in (("farm", farm), ("herd", herd), ("forage", forage), ("urban", urban))}
     people = np.bincount(kc, weights=X["heads"][cell], minlength=len(ids))
     # what a culture is known for: its surplus over the frame's mean surplus of that good (stone and fish lie nearly everywhere, tin does not)
@@ -295,7 +311,20 @@ def ledger_at(ctx, i: int) -> dict | None:
         res[int(c)] = {"surplus": s2, "lack": l2, "has": has, "lacks": list(l2)[:LINE_TOP], "mode": modes[k]["mode"], "via": modes[k]["via"],
                        "ways": {a: round(float(b[k]), 3) for a, b in ways.items()}, "people": int(round(float(people[k])))}
     ctx._frame_cache[key] = res
+    ctx._frame_cache[("trade_pairs", i)] = {"cell": cell, "culture": ids[kc] if len(kc) else kc, "w": w, "wsum": dict(zip(ids.tolist(), wsum.tolist())),
+                                            "surplus": pair_sur, "lack": pair_lack, "urban": urban, "forage": band}
     return res
+
+
+def pairs_at(ctx, i: int) -> dict | None:
+    """The ledger per (cell, culture) pair at frame i (tribute rows included): {"cell", "culture", "w" (the pair's weight in its culture's
+    mean), "wsum" (culture -> the sum of its weights), "surplus" and "lack" ({good: per pair, 0..1}), "urban", "forage" (a band's share)}.
+    A culture's ledger number is sum(w x pair value) / wsum, so an import per pair summed the same way is a share of its people, like its lack."""
+    if ("trade_pairs", i) not in ctx._frame_cache:
+        ctx._frame_cache.pop(("trade_ledger", i), None)
+        if ledger_at(ctx, i) is None:
+            return None
+    return ctx._frame_cache[("trade_pairs", i)]
 
 
 def line(row: dict | None) -> str | None:
