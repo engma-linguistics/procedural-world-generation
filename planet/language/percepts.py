@@ -43,6 +43,7 @@ class Segment:
     length: int = 0  # long vowel / geminate
     tone: int = 0  # 0 none 1 low 2 mid 3 high 4 rising 5 falling 6 extra-high 7 extra-low
     source2: int = 0  # second simultaneous source (syrinx), non-human
+    tone2: int = 0  # the second voice's own tone (codes as `tone`; only with source2): 0 = moves in parallel with the first
     register: int = 0  # 0 human range, -1 sub-bass, +1 ultra, non-human
     retroflex: int = 0
     labiodental: int = 0
@@ -59,7 +60,7 @@ class Segment:
         if not h:
             h = hash((self.kind, self.place, self.manner, self.voice, self.larynx, self.phonation, self.secondary,
                       self.sibilant, self.height, self.back, self.round, self.nasal, self.length, self.tone, self.source2,
-                      self.register, self.retroflex, self.labiodental, self.lateral, self.double, self.prenasal)) or 1
+                      self.tone2, self.register, self.retroflex, self.labiodental, self.lateral, self.double, self.prenasal)) or 1
             object.__setattr__(self, "_h", h)
         return h
 
@@ -68,10 +69,10 @@ AXES: tuple[str, ...] = tuple(f.name for f in fields(Segment) if f.name not in (
 AXIS_RANGE: dict[str, tuple[int, int]] = {
     "place": (0, 8), "manner": (0, 9), "voice": (0, 1), "larynx": (0, 3), "phonation": (0, 4), "secondary": (0, 4),
     "sibilant": (0, 1), "height": (0, 6), "back": (0, 4), "round": (0, 1), "nasal": (0, 1), "length": (0, 1),
-    "tone": (0, 7), "source2": (0, 1), "register": (-1, 1), "retroflex": (0, 1), "labiodental": (0, 1),
+    "tone": (0, 7), "source2": (0, 1), "tone2": (0, 7), "register": (-1, 1), "retroflex": (0, 1), "labiodental": (0, 1),
     "lateral": (0, 1), "double": (0, 1), "prenasal": (0, 1)}
 # axes that mark a percept outside the human voice (human cost inf): checked by is_nonhuman
-NONHUMAN = ("source2", "register")
+NONHUMAN = ("source2", "tone2", "register")
 Word = tuple  # tuple[Segment, ...]
 
 
@@ -231,10 +232,11 @@ def from_ipa(s: str, strict: bool = False, base_only: bool = False) -> list[Segm
     i, n = 0, len(s)
     attach = False  # may a following modifier attach to out[-1]?
     pren = False
+    s2 = False  # just after ᴖ: tone letters here are the second voice's (a˦ᴖ˨˦)
     while i < n:
         ch = s[i]
         if ch in _SEPARATORS:
-            attach = False
+            attach = s2 = False
             i += 1
             continue
         if ch in _PRENASAL and i + 1 < n and (not attach or ch != "ⁿ" or (out and out[-1].kind == "V")):
@@ -256,6 +258,7 @@ def from_ipa(s: str, strict: bool = False, base_only: bool = False) -> list[Segm
                 pren = False
             out.append(seg)
             attach = True
+            s2 = s[i + m - 1] == "ᴖ"
             i += m
             continue
         if ch in _TONE_LETTERS:
@@ -263,7 +266,10 @@ def from_ipa(s: str, strict: bool = False, base_only: bool = False) -> list[Segm
             while j < n and s[j] in _TONE_LETTERS:
                 j += 1
             t = _tone_of([_TONE_LETTERS[c] for c in s[i:j]])
-            if attach and out and out[-1].kind == "V":
+            if attach and out and out[-1].kind == "V" and s2 and out[-1].source2:
+                out[-1] = replace(out[-1], tone2=t)
+                s2 = False
+            elif attach and out and out[-1].kind == "V":
                 out[-1] = replace(out[-1], tone=t)
             else:
                 out.append(Segment("T", tone=t))
@@ -281,6 +287,7 @@ def from_ipa(s: str, strict: bool = False, base_only: bool = False) -> list[Segm
         if attach and out and (ch in _COMBINING or ch in _SPACING):
             what, v = _COMBINING.get(ch) or _SPACING[ch]
             out[-1] = _apply(out[-1], what, v)
+            s2 = what == "source2"
             i += 1
             continue
         if ch in _COMBINING_IGNORED or ch in _SPACING_IGNORED or ch in _COMBINING or ch in _SPACING:
@@ -334,7 +341,7 @@ def parse_segment(s: str) -> Segment | None:
 _SEC_MARK = {1: "ʷ", 2: "ʲ", 3: "ˠ", 4: "ˤ"}
 _TONE_MARK = {1: "˨", 2: "˧", 3: "˦", 4: "˨˦", 5: "˦˨", 6: "˥", 7: "˩"}
 _PREN_MARK = {0: "ᵐ", 4: "ᶮ", 5: "ᵑ", 6: "ᶰ"}
-_STRIP = ("register", "source2", "tone", "length", "phonation", "larynx", "secondary", "nasal", "prenasal")
+_STRIP = ("register", "tone2", "source2", "tone", "length", "phonation", "larynx", "secondary", "nasal", "prenasal")
 
 
 def core(seg: Segment) -> Segment:
@@ -373,6 +380,8 @@ def _marks(seg: Segment, stripped: Iterable[str], flip: bool, dental: bool) -> t
         sp += _TONE_MARK[seg.tone]
     if "source2" in st and seg.source2:
         sp += "ᴖ"
+    if "tone2" in st and seg.tone2:
+        sp += _TONE_MARK[seg.tone2]  # (the second voice's tone letters follow ᴖ: a˦ᴖ˨˦)
     if "register" in st and seg.register:
         sp += "˯" if seg.register < 0 else "˰"
     return pre, comb, sp
@@ -533,7 +542,7 @@ def _axis_d(ax: str, x: int, y: int) -> float:
         return place_distance(x, y)
     if ax == "manner":
         return float(min(abs(x - y), 3))
-    if ax == "tone":
+    if ax in ("tone", "tone2"):
         (a1, a2), (b1, b2) = _TONE_PITCH[x], _TONE_PITCH[y]
         return 0.5 * (abs(a1 - b1) + abs(a2 - b2)) + (0.5 if (x == 0) != (y == 0) else 0.0)
     if ax == "larynx":
@@ -635,7 +644,7 @@ _FEATURES: dict[str, Callable[[Segment], bool]] = {
     "dorsal": lambda s: s.kind == "C" and 4 <= s.place <= 6,
     "high": lambda s: s.kind == "V" and s.height >= 5, "low": lambda s: s.kind == "V" and s.height <= 1,
     "front": lambda s: s.kind == "V" and s.back <= 1, "back": lambda s: s.kind == "V" and s.back >= 3,
-    "tone": lambda s: s.tone != 0, "source2": lambda s: bool(s.source2), "sub": lambda s: s.register < 0,
+    "tone": lambda s: s.tone != 0, "source2": lambda s: bool(s.source2), "tone2": lambda s: s.tone2 != 0, "sub": lambda s: s.register < 0,
     "ultra": lambda s: s.register > 0,
 }
 EDGE = ClassPred(lambda s: False, "#", edge=True)

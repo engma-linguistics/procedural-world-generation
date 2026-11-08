@@ -390,7 +390,7 @@ def lineage(doc, l) -> str:
 #: marks for sounds no human makes, beyond the IPA (percepts.py, symbols.tsv): what each one means on the page
 HOUSE_MARKS = (("‼", "harsh, growled voice (the Voice Quality Symbols' mark)"),
                ("ᵣ", "purred voice, about 25 pulses a second"),
-               ("ᴖ", "a second voice sounding at once, as a bird's syrinx makes two notes (house mark)"),
+               ("ᴖ", "a second voice sounding at once, as a bird's syrinx makes two notes (house mark); tone letters after it are the second voice's own tone: a˦ᴖ˨˦ = first voice high, second rising"),
                ("˯", "sub-bass register, below human hearing (house mark)"),
                ("˰", "ultrasonic register, above human hearing (house mark)"),
                ("ʞ", "a beak or mandible clap (the withdrawn IPA letter, reused)"))

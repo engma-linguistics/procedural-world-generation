@@ -14,7 +14,8 @@ Contrast-dependent choices take a set of contrast names (contrasts_of builds it 
 - "open_e" "open_o" "back_a" "lax_i" "lax_u" "dark_l" "beta" "breathy_h": ɛ ɔ ɑ/ɒ ɪ ʊ ɫ β ɦ are written plainly (e o a i u l
   v h) unless the lect also has the sound they would be confused with; then è ò å ì ù ll bh hh (the table's `marked` column);
 - "tone": the lect is tonal, so the marked vowels use a dot below (ẹ ọ ị ụ, Yoruba and Igbo) instead of a grave.
-Non-human percepts are written in ASCII letters (growl rh, purr vr, second voice wh, sub-bass mh, ultra ih: NH_MARKS).
+Non-human percepts are written in ASCII letters (growl rh, purr vr, second voice wh, sub-bass mh, ultra ih: NH_MARKS); the
+second voice's own tone (syrinx lane) is the first voice's tone mark on its w: a˦ᴖ˨˦ áw̌h, aᴖ˨ aẁh (book mode: awh).
 Clicks are the letters ǀ ǁ ǃ ǂ (U+01C0-01C3; a long click doubles: ǃǃ). Within one word a hyphen goes between two
 spellings that would otherwise read as one (n-g vs ng, t-s vs ts, k-' vs k').
 The contract's n'g is written n-g here, because ' is the glottal stop.
@@ -378,13 +379,17 @@ def diacritics(sp: str) -> int:
     return sum(is_diacritic_letter(g) for i, g in enumerate(gs) if i == 0 or gs[i - 1] != g)
 
 
-def nh_marks(seg: Segment) -> list[str]:
-    """A segment's non-human marks, in writing order (growl/purr, second voice, register)."""
+def nh_marks(seg: Segment, tone2: bool = False) -> list[str]:
+    """A segment's non-human marks, in writing order (growl/purr, second voice, register). tone2: the second voice's own
+    tone written as the first voice's tone mark on its w (high ẃh, low ẁh, rising w̌h, falling ŵh; mid unmarked)."""
     out = []
     if seg.phonation in _NH_PHONATION:
         out.append(_NH_PHONATION[seg.phonation])
     if seg.source2:
-        out.append(_NH_SOURCE2)
+        mk = _NH_SOURCE2
+        if tone2 and seg.tone2:
+            mk = unicodedata.normalize("NFC", mk[0] + _TONE.get(seg.tone2, "") + mk[1:])
+        out.append(mk)
     if seg.register:
         out.append(_NH_SUB if seg.register < 0 else _NH_ULTRA)
     return out
@@ -459,7 +464,7 @@ def spell(seg: Segment, contrasts: set[str] | frozenset = ALL_CONTRASTS, book: b
             sp = _book_fold(sp)
     # non-human percepts: readable ASCII marks after the sound (romanization.tsv header)
     if marks:
-        sp += "".join(nh_marks(seg))
+        sp += "".join(nh_marks(seg, tone2=not book))
     return unicodedata.normalize("NFC", sp)
 
 

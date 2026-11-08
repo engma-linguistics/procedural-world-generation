@@ -1079,6 +1079,7 @@ def _sync_inventory(lect: Lect, kyr: float | None = None) -> None:
     tone marks are made consistent first (tone_hygiene), then the inventory is observed from the forms with its tones the
     ones on the vowels, and a ʔ that only prothesis put before initial vowels is left out (not a phoneme)."""
     tones = tone_hygiene(lect, kyr)
+    voice2_hygiene(lect, kyr)
     inv = _inv_mod().observed(lect.inventory, lect.all_forms(), lect.profile)
     inv = _inv_mod().retemplate(inv, lect.all_forms())
     if hasattr(inv, "tones"):
@@ -1141,6 +1142,46 @@ def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
                                    "(tonogenesis: phonemicization)")
     lect.changes.append({"kyr": round(kyr, 3), "rule": rid, "cause": "tonogenesis", "origin_lect": None})
     return tonemes(lect.all_segments())
+
+
+TONE2_MIN_MARKED = 0.1  # a second-voice tone contrast stays only once marks stand on this share of the core list's second-voice vowels
+
+
+def voice2_hygiene(lect: Lect, kyr: float | None = None) -> bool:
+    """Second-voice tone marks agree with a contrast (syrinx lane, 2026-11-08; docs/review/language/syrinx.md). The second
+    voice moving in parallel (tone2 0) is itself a category, the unmarked one, so a split needs two categories over the
+    core list's second-voice vowels, marks on at least TONE2_MIN_MARKED of them (lower than the first voice's
+    TONE_MIN_MARKED: no default tone fills the rest) and an ear that hears the second voice's pitch; otherwise every
+    second-voice tone mark is stripped (a `simplification`, cause "dispersion"), the second voice moving in parallel again.
+    A tone2 left on a vowel that lost its second voice goes too. Returns whether anything changed."""
+    segs = lect.all_segments()
+    orphan = {x: replace(x, tone2=0) for x in segs if x.kind == "V" and x.tone2 and not x.source2}
+    if orphan:
+        _map_forms(lect, orphan, "simplification", float(kyr if kyr is not None else lect.born_kyr))
+        segs = lect.all_segments()
+    if not any(x.kind == "V" and x.tone2 for x in segs):
+        return bool(orphan)
+    cnt: dict = {}
+    for c in _core():
+        w = lect.lexicon.get(c)
+        if w is not None:
+            for x in w.form:
+                if x.kind == "V" and x.source2:
+                    cnt[x.tone2] = cnt.get(x.tone2, 0) + 1
+    n = sum(cnt.values())
+    marked = n - cnt.get(0, 0)
+    hears = (getattr(lect.profile, "hear", None) or {}).get("tone2", 1.0) > 0
+    if len(cnt) >= 2 and hears and marked >= TONE2_MIN_MARKED * n:
+        return bool(orphan)
+    kyr = float(kyr if kyr is not None else lect.born_kyr)
+    mapping = {x: replace(x, tone2=0) for x in segs if x.kind == "V" and x.tone2}
+    what = ("second-voice tone marks dropped (" + ", ".join(sorted({_tone_name(x.tone2) for x in mapping})) + "): "
+            + ("no second-voice tone contrast" if len(cnt) < 2 else "not heard" if not hears
+               else "too few marked second-voice vowels to phonemicize"))
+    _map_forms(lect, mapping, "simplification", kyr)
+    lect.changes.append({"kyr": round(kyr, 3), "rule": "simplification", "cause": "dispersion", "origin_lect": None,
+                         "merged": what})
+    return True
 
 
 _CONTOUR_PARTS = {4: (1, 3), 5: (3, 1)}  # rising = low + high, falling = high + low
