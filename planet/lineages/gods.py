@@ -32,8 +32,8 @@ Faiths (PW-1358): a faith is its own record, not a culture. JUDGEMENT throughout
   and CONVERT_GAP above its own (TAU_CONVERT); a missionary neighbour (a faith that seeks converts: written so, or a moralizing high
   god's faith with MISSION_P's chance) when its own faith is not missionary and MISSION_GAP less organised (TAU_MISSION); or its
   rulers (a state, empire or dragon realm of the polities read-out whose ruling culture holds the faith), at a rate set by the
-  ruler's tolerance (attitudes.py, PW-904: TAU_FORCED to TAU_TOLERANT; ETHNIC_RULE x for a faith that is not missionary). A
-  neighbour's pull is x the share of the taker's border facing it and x the taker's tolerance; a ruler's x the share of the
+  ruler's religious tolerance (attitudes.py, PW-904, PW-1520: TAU_FORCED to TAU_TOLERANT; ETHNIC_RULE x for a faith that is not missionary). A
+  neighbour's pull is x the share of the taker's border facing it and x the taker's religious tolerance x the faith's appeal (its organisation and its fit to the taker's life, appeal(), PW-1520); a ruler's x the share of the
   taker's land it rules. The convert takes a copy of the converter's leading god (how = "converted"), keeping its own old beings
   (syncretism), and the church that converted it holds it (`held`) against faiths no better organised. A converted culture does not
   break away by drift (its old gods leading again would otherwise undo every conversion within SCHISM_KYR); it can still convert
@@ -61,7 +61,7 @@ import numpy as np
 
 from .techtree import GODS_MODES  # noqa: E402
 MODE_DEFAULT = "faith_made"
-GODS_FORMAT = "procgen-gods/2"  # (/2: each culture's faith shares and the states' and peoples' roll-ups, PW-1489)
+GODS_FORMAT = "procgen-gods/3"  # (/2: each culture's faith shares and the states' and peoples' roll-ups, PW-1489; /3: the religious tolerance, towns and a faith's appeal, PW-1520)
 GROUPS = {
     "water": ("sea", "river", "rain", "flood"),
     "sky": ("sky", "sun", "storm"),
@@ -121,6 +121,11 @@ SHARE_PLATEAU = 0.10  # sourced: before a culture tips, a pressing faith's conve
 ASSIM_RULE = 0.1  # JUDGEMENT on the sourced rulers' scale: a culture's own faith presses its minorities as an ethnic ruler of it would (ETHNIC_RULE x a ruler's push at the culture's own tolerance): ~2.5 kyr at tolerance 0.5, ~0.5 kyr intolerant, ~15 kyr at 0.9, so a remnant fades over a millennium or two unless the culture is tolerant (the dhimmi Christians of Egypt and Syria stayed large for centuries) or something keeps pressing it
 SHARE_MIN = 0.005  # a minority under half a percent is folded into the culture's faith (too few to name)
 SHARE_TOP = 4  # the faiths a culture or a state lists by name; the rest are pooled as "others"
+# A faith's appeal (PW-1520): a neighbour's pull (contact or missionaries; a ruler's push is force and is not asked) is x appeal(): its organisation
+# x its fit to the taker's life. No new tuned number: the reference is the top faith tier, the contest is even.
+ORG_REF = TIERS[0][1]  # (0.9, the moralizing high god: the organisation the sourced rates TAU_MISSION (Stark's church) are for)
+FIT_W = 0.5  # JUDGEMENT: a better- or worse-fitting god moves the pull by up to half either way, never to nothing: a faith is its church and its promise as much as its god's domain (an even contest of fits is 1)
+APPEAL_ORG, APPEAL_FIT = True, True  # (switches, for the lane's before/after measures and the tests)
 RULE_TIERS = ("state", "empire", "dragon realm")  # JUDGEMENT: a chiefdom (a town and its cell) pushes no faith; dragons are sapient and rule as any
 PLACE_KM = 400.0  # JUDGEMENT: a faith written at a place is founded by the culture nearest it, if one is this close
 R_KM = 6371.0  # (the place distance on the grid's unit sphere; the planets are Earth-sized, PW-443 for others)
@@ -201,6 +206,18 @@ def _drift(w: np.ndarray, sal: np.ndarray, dt: float) -> np.ndarray:
     return w2 / w2.sum()
 
 
+def _settled_fit(w: np.ndarray, sal: np.ndarray) -> float:
+    """A being's fit to a land once it has settled there (PW-1520): _drift's end point, each group's weight moved onto that group's
+    salient domains (a sea god taken inland becomes a rain god), dotted with the salience. A foreign god fits as well as its groups
+    do: a sky god serves under any sky, a sea god only where there is water."""
+    f = 0.0
+    for idx in GROUP_IDX.values():
+        s = sal[idx]
+        if s.sum() > 1e-6:
+            f += float(w[idx].sum()) * float(s @ s) / float(s.sum())
+    return f
+
+
 def _cos(a: np.ndarray, b: np.ndarray) -> float:
     return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-12))
 
@@ -274,6 +291,7 @@ class Pantheons:
         self.att = Attitudes(lines, seed)  # (PW-904: each culture's tolerance and aggression; a ruler's tolerance sets its push)
         self.comp: dict[int, dict] = {}  # culture -> {faith: share}, the shares summing to 1, its faith (faith_of) at least half (PW-1489)
         self.cells: dict[int, int] = {}  # culture -> its cells at the last frame (weights a merge's shares)
+        self.sal: dict[int, np.ndarray] = {}  # culture -> its salience at the last frame (a faith's fit to its life, appeal(); PW-1520)
         self.share_counts = {"merge_capped": 0}
 
     # ---- minority faiths (PW-1489)
@@ -313,8 +331,13 @@ class Pantheons:
         out: dict = {}
         if not mixed:
             return out
-        for x in mixed:  # (its own faith, as an ethnic ruler of it: ASSIM_RULE)
-            tol = self.att.tolerance(x)
+        guard: dict = {}  # (PW-1520: a ruler more tolerant than its subject shields the subject's minorities, over the share of its land it rules)
+        for r, subs, _took in rule or ():
+            for x, share in subs:
+                if x in mixed and x != r and share > 0:
+                    guard[x] = max(guard.get(x, 0.0), share * max(0.0, self.att.religious(r) - self.att.religious(x)))
+        for x in mixed:  # (its own faith, as an ethnic ruler of it: ASSIM_RULE; under a more tolerant ruler, at the ruler's tolerance where it rules)
+            tol = min(1.0, self.att.religious(x) + guard.get(x, 0.0))
             out[x] = ASSIM_RULE / (TAU_FORCED ** (1.0 - tol) * TAU_TOLERANT ** tol)
         wts = contacts if isinstance(contacts, dict) else None
         for a, b in contacts or ():
@@ -325,12 +348,12 @@ class Pantheons:
                 f = self.faith_of.get(x)
                 if x in mixed and w > 0 and f is not None and self.faith_of.get(y) == f and f not in self.closed:
                     tau = TAU_MISSION if self.faiths[f].missionary else TAU_CONVERT
-                    out[x] = out.get(x, 0.0) + w * self.att.tolerance(x) / RECEPT_MID / tau
+                    out[x] = out.get(x, 0.0) + w * self.att.religious(x) / RECEPT_MID / tau
         for r, subs, _took in rule or ():
             fr = self.faith_of.get(r)
             if fr is None or fr in self.closed:
                 continue
-            tol = self.att.tolerance(r)
+            tol = self.att.religious(r)
             rate = (1.0 if self.faiths[fr].missionary else ETHNIC_RULE) / (TAU_FORCED ** (1.0 - tol) * TAU_TOLERANT ** tol)
             for x, share in subs:
                 if x in mixed and x != r and share > 0 and self.faith_of.get(x) == fr:
@@ -461,7 +484,7 @@ class Pantheons:
         of a missionary faith, a culture of a faith that is not missionary and at least MISSION_GAP less individuated, over
         TAU_MISSION (the gap is over the culture's own leading god, or over the church that converted it, `held`); a ruler (rule:
         [(ruler culture, subject cultures, took)]) pushes its faith on its subjects over its tolerance's tau. Each is x the taker's
-        receptiveness (its tolerance / RECEPT_MID) but the ruler's push, which is not asked; a neighbour's pull is x the share of the
+        receptiveness (its religious tolerance / RECEPT_MID) and, for a neighbour, x its faith's appeal() but the ruler's push, which is not asked; a neighbour's pull is x the share of the
         taker's border that faces it (touch(); contacts given as a plain set face fully), a ruler's push x the share of the subject
         culture's land it rules. A faith pulls only from its founding on (t: the time now, kyr ago)."""
         out = []
@@ -481,22 +504,35 @@ class Pantheons:
                 if self.faiths[fy].missionary and not self.faiths[fx].missionary:
                     if ly.ind < MISSION_MIN or gap < MISSION_GAP:
                         continue
-                    out.append((w * self.att.tolerance(x) / RECEPT_MID / TAU_MISSION, x, fy, y, "missionaries"))
+                    out.append((w * self.att.religious(x) / RECEPT_MID * self.appeal(x, lx, ly) / TAU_MISSION, x, fy, y, "missionaries"))
                 elif ly.ind >= CONVERT_MIN and gap >= CONVERT_GAP:
-                    out.append((w * self.att.tolerance(x) / RECEPT_MID / TAU_CONVERT, x, fy, y, "contact"))
+                    out.append((w * self.att.religious(x) / RECEPT_MID * self.appeal(x, lx, ly) / TAU_CONVERT, x, fy, y, "contact"))
         for r, subs, _took in rule or ():
             fr = self.faith_of.get(r)
             if fr is None or fr in self.closed or self.lead(r) is None:
                 continue
             if t is not None and self.faiths[fr].founded < t - 1e-9:
                 continue
-            tol = self.att.tolerance(r)
+            tol = self.att.religious(r)
             rate = (1.0 if self.faiths[fr].missionary else ETHNIC_RULE) / (TAU_FORCED ** (1.0 - tol) * TAU_TOLERANT ** tol)
             for x, share in subs:
                 fx = self.faith_of.get(x)
                 if x != r and share > 0 and fx not in (None, fr) and self.lead(x) is not None and (t is None or self.faiths[fx].founded >= t - 1e-9):
                     out.append((rate * share, x, fr, r, "rulers"))
         return out
+
+    def appeal(self, x: int, lx: Being, ly: Being) -> float:
+        """How strongly a neighbour's faith draws culture x (PW-1520), its own qualities as a faith: its organisation (the individuation
+        of its leading god over ORG_REF: the sourced spread rates are a church's with a moralizing high god, a faith with only temples or
+        keepers of the rites wins converts more slowly) x its fit to x's land and life (its leading god's settled fit to x's salience, _settled_fit,
+        against x's own leading god's: 1 -/+ FIT_W, 1 when they fit alike). Missionary effort is the link's own pace (TAU_MISSION against
+        TAU_CONVERT). A ruler's push is not asked: it is force, at the sourced rates."""
+        org = min(1.0, ly.ind / ORG_REF) if APPEAL_ORG else 1.0
+        sal = self.sal.get(x)
+        if sal is None or not APPEAL_FIT:
+            return org
+        fy, fx = _settled_fit(ly.w, sal), _settled_fit(lx.w, sal)
+        return org * (1.0 + FIT_W * (fy - fx) / (fy + fx) if fy + fx > 1e-12 else 1.0)
 
     def _convert(self, x: int, f: int, y: int, how: str, ago: float):
         lx, ly = self.lead(x), self.lead(y)
@@ -510,7 +546,7 @@ class Pantheons:
         self.off.pop(x, None)
         self.counts["conversions"] += 1
         self.counts["by_" + how] += 1
-        tol = round(self.att.tolerance(y), 3) if how == "rulers" else None
+        tol = round(self.att.religious(y), 3) if how == "rulers" else None
         self.faiths[f].events.append([round(float(ago), 3), "converted", x, old, how])
         word = {"contact": "from", "missionaries": "from the missionaries of", "rulers": "under its rulers,"}[how]
         self._ev(ago, "conversion", f"culture {x} took faith {f} {word} culture {y}", culture=x, faith=f, faith_was=old, by=y, how=how,
@@ -675,12 +711,14 @@ class Pantheons:
         self.by.pop(c, None)
         self._leave(c, ago, "its cultures ended")
 
-    def frame(self, ago: float, cultures: dict[int, dict], contacts=None, where: dict | None = None, found=None, rule_steps=(), step_kyr: float = 0.1):
+    def frame(self, ago: float, cultures: dict[int, dict], contacts=None, where: dict | None = None, found=None, rule_steps=(), step_kyr: float = 0.1,
+              urban: dict | None = None):
         """One frame. cultures: culture id -> {"sal": salience array, "know": set of techs, "place": str} for each culture with cells
         and a people that has spirit_ritual (the rest have no gods yet). contacts: pairs of cultures in touch this frame (faith spread);
         where: culture -> (cells, sum of their unit vectors) (the faiths' track). found: [(culture, authored spec)] founded this frame
         (after the cultures' own gods are tended; each spec's "faith" is set to its new faith's id). rule_steps: [(ago, [(ruler culture,
-        subject cultures, took land by war)])] of the polity steps since the last frame (rule_table; PW-1477: rulers push their faith)."""
+        subject cultures, took land by war)])] of the polity steps since the last frame (rule_table; PW-1477: rulers push their faith).
+        urban: culture -> share of its people in towns and cities (urban_reader; PW-1520: raises its tolerances)."""
         dt = 0.0 if self.prev is None else max(self.prev - ago, 0.0)
         self.prev = ago
         for c, (n, _v) in (where or {}).items():
@@ -696,6 +734,7 @@ class Pantheons:
                     self.att.subject(x)
         for c, u in cultures.items():
             sal, bs = u["sal"], self.by.setdefault(c, [])
+            self.sal[c] = sal
             if not bs:  # (founded: the BEING_MIN most salient domains; a culture with no faith yet founds one)
                 if c not in self.faith_of:
                     self._join(c, self._found_faith(c, ago, DOMAINS[int(np.argmax(sal))]), ago)
@@ -748,7 +787,7 @@ class Pantheons:
             n_in[a] = n_in.get(a, 0) + 1
             n_in[b] = n_in.get(b, 0) + 1
         self.att.step(ago, dt, {c: u.get("people", "?") for c, u in cultures.items()}, n_in,
-                      {c for c, f in self.faith_of.items() if self.faiths[f].missionary})
+                      {c for c, f in self.faith_of.items() if self.faiths[f].missionary}, urban or {})
         if dt > 0:
             self._schisms(ago, dt)
             self._decide_missions()
@@ -802,6 +841,45 @@ def _resolver(doc: dict):
             c = into[c][1]
         return c
     return res
+
+
+def urban_reader(run_dir: Path, m: dict, n_cells: int):
+    """The share of each culture's people living in towns and cities (PW-1520), from the settlement ledger (settlements.json: a site counts
+    once it reaches its holder's town size, as trade._urban reads it) over the people on its cells (meta.eraq density x cell area).
+    Returns urban(j, ago, cell, cul, nC) -> {culture: share} for a run frame j inside the land-use window, {} outside it; None when the
+    run has no ledger or no land-use window (the cultures then count as rural)."""
+    from .landuse import PEOPLE_SCALE
+    from .settlements import pop_at
+    eq, sm = m.get("eraq"), m.get("settlements")
+    if not eq or not sm or "dens" not in (eq.get("layers") or {}) or not (Path(run_dir) / sm["file"]).exists():
+        return None
+    doc = json.loads((Path(run_dir) / sm["file"]).read_text())
+    town = doc["tiers"]["town_min_by_stage"][-1]
+    lo = min(doc["tiers"]["town_min_by_stage"])
+    sites = [s for s in doc["sites"] if s.get("kind") not in ("mine", "pit") and s.get("peak_pop", 0) >= lo]
+    lay = eq["layers"]["dens"]
+    dens_all = np.fromfile(Path(run_dir) / lay["file"], np.uint8).reshape(lay["shape"])
+    at = {j: i for i, j in enumerate(eq["frames"])}
+    area = 4.0 * np.pi * R_KM ** 2 / n_cells
+
+    def urban(j: int, ago: float, cell: np.ndarray, cul: np.ndarray, nC: int) -> dict:
+        if j not in at or not len(cell):
+            return {}
+        heads = (np.exp2(dens_all[at[j]].astype(float) * PEOPLE_SCALE) - 1.0) * area
+        pop = np.zeros(n_cells)
+        for s in sites:
+            t = town
+            for a, tm, _ in s.get("bands") or []:
+                if a >= ago - 1e-6:
+                    t = tm
+            p = pop_at(s, ago)
+            if p >= t:
+                pop[s["cell"]] += p
+        w = 1.0 / np.bincount(cell, minlength=n_cells)[cell]  # (a cell two cultures share: each takes half its people and its towns)
+        den = np.bincount(cul, weights=w * heads[cell], minlength=nC)
+        num = np.bincount(cul, weights=w * pop[cell], minlength=nC)
+        return {int(c): round(float(min(1.0, num[c] / den[c])), 4) for c in np.flatnonzero(den > 0)}
+    return urban
 
 
 def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
@@ -859,6 +937,7 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
              else ("died", e["id"], None, e["ended_kyr"]) for e in ended]
     ei = 0
     frames = []
+    urban = urban_reader(run_dir, m, g.n)
     for j in use:
         ago = agos[j]
         elev, ice = T.frame(run, arr, "elevation", j).astype(float), T.frame(run, arr, "ice", j).astype(float)
@@ -922,7 +1001,8 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
         uv = np.stack([np.bincount(cul, weights=U[cell, k], minlength=nC) for k in range(3)], 1) if cur else None
         frames.append({"j": j, "ago": ago, "ends": ends, "first": first, "cur": cur, "contacts": touch(g.n, cell, cul, src, dst, nC),
                        "where": {c: (int(n[c]), uv[c]) for c in cur} if cur else None, "present": {c: int(n[c]) for c in present},
-                       "cell": cell.astype(np.int32), "cul": cul.astype(np.int32)})
+                       "cell": cell.astype(np.int32), "cul": cul.astype(np.int32),
+                       "urban": urban(j, ago, cell, cul, nC) if urban is not None else {}})
     return {"C": C, "res": res, "known": known, "win": win, "seed": int(m.get("seed") or 0), "frames": frames, "after": endev[ei:],
             "U": U, "lines": {k: v.get("name", k) for k, v in lines.items()},
             "temperament": {k: {"traits": v.get("traits") or [], "demography": v.get("demography") or {}, "way": v.get("way")} for k, v in lines.items()},
@@ -1034,7 +1114,7 @@ def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None, ru
                 here.append((rsteps[ri][0], [(r, subs, tk) for r, subs, tk in rsteps[ri][1]]))
             ri += 1
         prev_ago = ago
-        P.frame(ago, fr["cur"], fr["contacts"], fr["where"], found, here, step_kyr)
+        P.frame(ago, fr["cur"], fr["contacts"], fr["where"], found, here, step_kyr, fr.get("urban"))
         for c, s in found:
             s["took"], s["culture_now"], s["founded_kyr"] = True, c, round(float(ago), 3)
             if s.get("first_why") and min(s["ago_kyr"], win) - ago > 0.5:
@@ -1073,7 +1153,7 @@ SHARE_RULE = ("Each culture holds a share of each faith. Its faith (the one name
               "when a newcomer faith passes half (Bulliet's conversion curve), and the old faith stays on as a minority. Between conversions "
               "a faith grows within a culture along an S-curve, from its first converts (1 %) to about a tenth (Bulliet's plateau before the "
               "take-off), at the pace of the neighbour, missionaries or ruler pressing it; once a culture holds a faith, the culture itself (faster the less tolerant it is) and its neighbours and rulers of that faith "
-              "win over the minorities that remain, over a millennium or two. Daughter cultures carry their parent's minorities; merged cultures pool "
+              "win over the minorities that remain, over a millennium or two; a ruler more tolerant of other faiths than its subjects shields their minorities (the protected faiths of the caliphates). Daughter cultures carry their parent's minorities; merged cultures pool "
               "theirs by land (the survivor's faith keeps at least half). States and peoples: their cultures' shares weighted by land.")
 
 

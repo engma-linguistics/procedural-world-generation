@@ -229,7 +229,7 @@ def _tolerance(att: dict | None, c: int, era: float) -> float:
     if not r:
         return TOL_MID
     best = None
-    for kyr, tol, _ in r.get("track") or []:
+    for kyr, tol, *_ in r.get("track") or []:
         if kyr >= era - 1e-9 and (best is None or kyr < best[0]):
             best = (kyr, tol)
     return float(best[1]) if best else float((r.get("now") or [TOL_MID])[0])

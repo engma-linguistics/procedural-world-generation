@@ -133,6 +133,18 @@ TECH = ("villages", "towns", "cities")
 LEDGER_TECHS = TECH + ("delving", "fortifications", "mines", "roads", "copper", "iron")  # (every tech the ledger reads: _tech_dates, _known_dates, _mines_dates)
 
 
+def pop_at(s: dict, ago: float) -> float:
+    """A ledger site's people at `ago` kyr (its series, oldest first), 0 before its founding or once it was left."""
+    if ago > s["founded_kyr"] + 1e-6 or (s["abandoned_kyr"] is not None and ago <= s["abandoned_kyr"] + 1e-6):
+        return 0.0
+    sr = s["series"]
+    for k in range(1, len(sr)):
+        if sr[k][0] <= ago:
+            (a0, p0), (a1, p1) = sr[k - 1], sr[k]
+            return float(p1 if a0 == a1 else p0 + (p1 - p0) * (a0 - ago) / (a0 - a1))
+    return float(sr[-1][1])
+
+
 def ledger_dates(known: dict) -> dict:
     """{line: {tech: kyr ago}} of the techs the ledger reads (LEDGER_TECHS), from meta.techtree.known: two trees with the same make the
     same ledger (PW-1464)."""
