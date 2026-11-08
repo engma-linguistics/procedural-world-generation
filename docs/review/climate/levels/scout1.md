@@ -17,14 +17,15 @@ commit message lists PW-290 but the ticket was never updated. I re-checked it th
    L7: the ticket's gap, reproduced on the ground of today's runs.
 2. **Which commit closed it.** The commit just before PW-015 stage 1 (`1b2f0800`) still has L7 land 17% drier
    than L6 on that ground; the merge (`f0197064`) has it 3% wetter.
-3. **Whole runs, same seed at both levels** (seeds 3199 and 21, 1 Gyr, current main): RESULT_SHORT
+3. **Whole runs, same seed at both levels** (seeds 3199 and 21, the ticket's own, 1 Gyr, current main): L7
+   now comes out **1-5 points less arid** than L6, not 10 more, both over the whole run and in the finish
+   window the worlds are taken from (§3). The difference is within the seed-to-seed terrain noise.
 
 What is left, about one point of arid land on the same ground, comes from relief the finer grid can see: an
 L7 cell's rain varies about 30% more within each L6 cell's area, the extra arid cells sit on rougher, higher
 ground (rain shadows of ridges L6 averages away), and Köppen's arid line is a threshold, so a wider spread of
 rain around the same mean puts more cells under it. That is resolution showing real terrain, not a
-level-dependent constant, and it is smaller than the spread between seeds. **I recommend closing PW-290**
-(after the coordinator reads the pair table below), with one guard test so the gap cannot come back silently.
+level-dependent constant, and it is smaller than the spread between seeds. **I recommend closing PW-290**, with one guard test so the gap cannot come back silently.
 No fix, no screen and no sweep were run: there was no clear candidate worth a screen.
 
 ## 1. What changed since the ticket
@@ -131,7 +132,26 @@ keyframe against the first fine one (baseline: the same run 2.5 Myr earlier, L6 
 The step is the same size as the same-ground test's +0.84 (it also includes 2.5 Myr of drift and the
 vegetation's feedback); the drift within each run's last 25 Myr is as large.
 
-SIMS_SECTION
+### Fresh pairs on current main (`simpairs.py`)
+
+`tools/ice_diag.py --seed S --myr 1000 --level {6,7}`, default parameters, code `c2e54f2b`, in memory (the L7
+pair was killed in the 09:40 pause and re-run from scratch at 14:40). The two levels' tectonics diverge, so the
+terrains differ; the pair is the same seed, not the same ground. Baseline for each row: the same seed at L6.
+Medians over the climate updates in the window; arid = Köppen B % of land; trees = tree cover % (updates with
+trees only); rain = land mean, mm/yr.
+
+| seed | window | arid L6 / L7 | BWh L6 / L7 | trees L6 / L7 | land rain L6 / L7 |
+|---|---|---|---|---|---|
+| 3199 | 50-1000 Myr (L7: mostly the nested-L6 climate) | 27.4 / 24.0 (-3.4) | 14.0 / 9.9 | 43.3 / 40.8 | 1154 / 1164 |
+| 3199 | finish window 990-1000 (L7's own climate) | 27.3 / 24.9 (-2.4) | 15.6 / 9.0 | 42.0 / 41.0 | 1159 / 1209 |
+| 21 | 50-1000 Myr | 25.1 / 24.3 (-0.8) | 10.9 / 10.0 | 42.3 / 42.2 | 1148 / 1166 |
+| 21 | finish window 990-1000 | 22.6 / 18.0 (-4.5) | 6.0 / 4.5 | 35.2 / 36.3 | 1111 / 1181 |
+
+The ticket's seeds (3199, 21) were 10-12 points **more** arid at L7 on 10-15. Today they are 1-5 points
+**less** arid at L7, in both the whole run and the finish window that worlds are taken from, with as much or
+more land rain. The sign now goes the other way and the size is within the spread between different terrains
+of one seed (lane 92's six pairs: -3.0 to +2.6). Tree cover: L7 -0.1 to -2.4 over the whole run, -1.0 / +1.1 in
+the finish window.
 
 ## 4. The candidates from the brief, ranked
 
@@ -153,7 +173,7 @@ The ice and plants are not in the same-ground test (both cold, no vegetation fee
 
 ## 5. Recommendation and next pass
 
-- **Close PW-290** once the coordinator accepts §3's pairs: the gap the ticket describes is reproduced on old
+- **Close PW-290**: the gap the ticket describes is reproduced on old
   code and absent on current code, and the cause is named.
 - **Guard (draft filed):** a slow test that computes one generated ground's climate at L7 and on the nested L6
   grid and asserts arid share within 2 points and land rain within 5%. On `6926583` this test would have read
