@@ -225,7 +225,9 @@ class Rule:
   `data/sound_changes.tsv` by a parser of the compact notation; parse failures are logged and skipped, not fatal.
   (Sound lane, 2026-11-08) `X` is any segment, so `r > l / _X*r` reaches an r later in the word (dissimilation S091-S094,
   Grassmann staged over aspirated and breathy stops, ATR harmony S134 approximated on height); a parallel list of clusters
-  ("pl, kl, fl > pj, kj, fj") is a staged rule, a step per pair. 7 of 217 rows stay refused: haplology (S106, identity),
+  ("pl, kl, fl > pj, kj, fj") is a staged rule, a step per pair. S218-S225 add common changes the catalogue lacked (t > k,
+  k > ʔ and ŋ > n everywhere as in Hawaiian, secondary palatalization before front vowels, aː > ɔː, ɪ ʊ > i u, t k > s
+  before i, k > tʃ before a); S174 diphthongizes in open syllables only. 7 of 225 rows stay refused: haplology (S106, identity),
   suffix harmony (S132, S133, morphology), pitch accent (S170), tone loss (S172) and analogy (S183, S184). A staged rule
   `applies` when any step can act, and `_single` runs its steps in order on a lone segment (the steers see every step).
   A chain "a > b > c" is staged, a > b then b > c (feeding). The famous chain shifts are single staged events written in

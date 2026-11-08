@@ -131,7 +131,9 @@ def test_crop_two_hops(result):
     borrows = [st.process for st in w.etym if st.process.startswith("borrow:")]
     assert borrows[-1] == "borrow:d3"  # (d3 may renew its loan from d0 before lending it on; the route still links them)
     route = [r for r in doc["food_routes"] if r["concept"] == "crop:wheat"]
-    first = [r for r in route if r["origin_deme"] == 0]
+    # (d0 may replace its own word after taming and lend the new one: the taming route then has no hops and the hops go
+    # with an "inherited by the donor" route from d0)
+    first = [r for r in route if r["origin_deme"] == 0 and r["hops"]]
     assert len(first) == 1 and [h["deme"] for h in first[0]["hops"]][:1] == [3]
     if [h["deme"] for h in first[0]["hops"]] != [3, 4]:
         # d3 replaced its loan before lending it on (`now: replaced`): the second hop starts a route of its own from d3
