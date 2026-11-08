@@ -1,0 +1,6 @@
+box wet rl x2.0 rw x1.0 eps x1.0: cells 675  T 24.4 C  P 2642 mm  PAR 2992 MJ/m2/yr  LAI 3.73  q10-sum 16.54 (12 = a year at 20 C)  acclim shift -0.21 C
+GPP 2712  NPP 970  NPP/GPP 0.357  supply factor 1.050
+Rm leaf 725  Rm wood+root 695  Rg 323  Ra 1743
+Ra shares: leaf maint 0.42  wood+root maint 0.40  growth 0.19
+cell NPP (mixed stand) 826  TrBE cover 0.62
+land NPP 59.0 Pg C/yr  npp_check boxes: T18-32 P2500+ 819  T18-32 P1500-2500 772  forest 44.2 Mkm2
