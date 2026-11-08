@@ -335,3 +335,11 @@ intensity)`, logged in `systems.seg_loans`, applied by `History.take_segments`.
 2. River names through each lect's sound-change history (`name:river:<id>` words, as for gods), then X9 and P1/P3/P5-P7.
 3. The horizon now reads low on the window (4.3) and 11.0 on the logistic fit; decision 7 of pass 2 still open.
 4. Domain words for desert and sun gods (they borrow fire and sky).
+
+
+## Grammar phase D and texts (lang-gram-d, 2026-11-08): state at hand-back
+Done and committed on `lang-gram-d` (merged with lang-design after the faiths lane): demo read 3 fixes, four-line texts,
+the fable (texts.py), recipe, faith myth (texts.myth + sketch.myth_of), phase D grammar (DIST, REMPST, COMPL/INCH/RPT,
+MIR, HON, OBV, polite address, comparison following the `comparative` aim, DOM), the question-particle pull
+(PULL_BOOST/KEEP). Write-up: for-daniel.md "Grammar phase D and texts". Left: the species-leanings table (proposal
+only), sketches not regenerated (they track runs/a24559; regenerate after the merge rebuild), the cold-review agent.
