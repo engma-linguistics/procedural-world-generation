@@ -1797,7 +1797,8 @@ def shift_word(rng, lex: Lexicon, concept: str, kyr: float, lect_id: str | None 
 # segment is logged in the lexicon's systems ("seg_loans": [ipa, donor lect, kyr, concept]); the driver adds it to the
 # lect's inventory (history.take_segments). Consonants only (vowel systems are borrowed far less: Matras 2009 ch. 9).
 SEG_BORROW_MIN = 0.5
-SEG_BORROW_K = 0.15
+SEG_BORROW_K = 0.075  # (0.15 -> 0.075, owner ruling 11-08, PW-1540 E: 205 of 618 living lects carried a borrowed-segment
+#                       log, 142 at the cap, while the areal inventory signal barely moved)
 SEG_BORROW_MAX = 4   # borrowed consonants per line at most (Swahili's θ ð ɣ x from Arabic is about the most)
 
 
