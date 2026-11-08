@@ -300,20 +300,21 @@ def test_inclusive_we_sentence_and_pronoun_note():
     assert "kita" in n["text"] and "kami" in n["text"]
 
 
-def test_numerals_by_base():
-    lj = lect(numeral_base="decimal", numeral="NumN")
+def test_numerals_note_uses_the_lects_own_words():
+    """The numerals note quotes the lect's own composite words and its counting system's recipes (polish lane: it built
+    'ten one' from the typology label, which disagreed with the word lists)."""
+    lj = lect(numeral_base="vigesimal", numeral="NumN")
     lj["lexicon"].update({c: {"ipa": f, "roman": f, "pos": "A"} for c, f in
-                          (("ONE", "sa"), ("THREE", "tiga"), ("FOUR", "empa"), ("FIVE", "lima"), ("TEN", "pulu"),
-                           ("TWENTY", "kawan"), ("TWO", "dua"))})
-    assert SN.numeral_phrase(SN.View(lj), 11)[1] == "ten one"
-    assert SN.numeral_phrase(SN.View(lj), 30)[1] == "three ten"
-    lj["typology"]["numeral"] = "NNum"
-    assert SN.numeral_phrase(SN.View(lj), 30)[1] == "ten three"
-    lj["typology"].update(numeral_base="vigesimal", numeral="NumN")
-    v = SN.View(lj)
-    assert SN.numeral_phrase(v, 30)[1] == "twenty ten" and SN.numeral_phrase(v, 40)[1] == "two twenty"
-    n = SN.numerals_note(v)
-    assert n["topic"] == "Numerals" and "vigesimal" in n["text"] and n["ex"]
+                          (("ONE", "sa"), ("TWO", "dua"), ("FIVE", "lima"), ("TEN", "pulu"), ("TWENTY", "kawan"),
+                           ("ELEVEN", "pulsa"), ("FIFTEEN", "pulima"), ("THIRTY", "kawpu"), ("FORTY", "dukaw"))})
+    lj["systems"] = {"numeral": {"label": "vigesimal", "system": "hybrid", "quinary": False}}
+    n = SN.numerals_note(SN.View(lj))
+    assert n["topic"] == "Numerals" and "twenties" in n["text"]
+    shown = {x[0]: x[2] for x in n["ex"]}
+    assert shown["pulsa"].startswith("11 = 10 + 1") and shown["kawpu"].startswith("30 = 20 + 10")
+    assert shown["dukaw"].startswith("40 = 20 × 2")
+    lj["systems"] = {}
+    assert SN.numerals_note(SN.View(lj)) is None
 
 
 # ---- demo-page bugs (grammar B, 2026-11-08) -------------------------------------------------------------------------------
@@ -499,8 +500,6 @@ def test_second_read_sentence_fixes():
     assert "see" in notes["Object agreement"]["ex"][0][1]
     assert notes["Giving (two objects)"]["text"].startswith("DAT ")
     assert "genitive marker, a clitic" in notes["Possession"]["text"]
-    ex = {e[2].split(" (")[0]: e for e in notes["Numerals"]["ex"]}
-    assert ex["30"][1] == "ten three" and ex["11"][1] == "ten and one" and "3 × 10" in ex["30"][2]
     v = SN.View(lj)
     w = SN.verb(v, "SEE", redup=True)[0]
     assert SN.render_word(v, w[0])[0] == "li-lis"
@@ -586,7 +585,7 @@ def test_phase_d_sentences_and_notes():
     lj["processes"] = {"polite": {"kind": "plural", "concept": "YOU"}, "compare": "locational", "dom": "animate"}
     s = by_id(lj)
     assert line(s["deixis"])[1].startswith("man DIST") and "three distances" in s["deixis"]["note"]
-    assert "PST.REM" in line(s["remote"])[1] and "PST.RCT < PST < PST.REM" in s["remote"]["note"]
+    assert "PST.REM" in line(s["remote"])[1] and "from nearer to further back: PST.RCT, PST, PST.REM" in s["remote"]["note"]
     assert "COMPL" in line(s["aspect"])[1] and "eaten the fish up" in s["aspect"]["en"]
     assert "MIR" in line(s["mirative"])[1]
     assert line(s["polite"])[1].startswith("2PL.POL") and "HON" in line(s["polite"])[1]

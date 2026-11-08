@@ -2,7 +2,7 @@
 # version: hand-authored 2026-11-04 (procedural-language lane, word families and derivation round); extended 2026-11-07 (round 5, the WOLD extension of concepts.tsv: agents, instruments, causatives and kin-term shifts for the new meanings)
 # licence: original text for this repository (no third-party data copied); cite the works above when using it.
 # CLICS3: at load time lexicon.py joins each pair with data/clics_edges.tsv; a pair CLICS3 also attests as a colexification in >= 3 families (BLOOD/RED, MOUNTAIN/HILL, TREE/FOREST ...) gets its family count added to the weight (a motivated pair is often colexified too).
-# columns: relation = the affix meaning (agent 'one who', thing 'instrument / result / object', place 'place of', little 'small / young / diminutive', like 'X-like, having X', do 'make / do X, verb from a noun or quality', cause 'make (someone) V'), or reinforce (a function word renewed by compounding with the base: Latin ecce + iste > French ce 'this'; the Jespersen cycle, Old English na-wiht 'no thing' > not); base and target = concept ids of planet/language/lexicon.py; weight = typicality 1 (attested, uncommon) .. 3 (common across families); example = one or two real cases (romanized) or the bare motivation.
+# columns: relation = the affix meaning (agent 'one who', thing 'instrument / result / object', place 'place of', little 'small / young / diminutive', like 'X-like, having X', do 'make / do X, verb from a noun or quality', cause 'make (someone) V'), or reinforce (a function word renewed by compounding with the base: Latin ecce + iste > French ce 'this'; the Jespersen cycle, Old English na-wiht 'no thing' > not), or repair (the same, used only to renew a pronoun, numeral or deictic cell that sound change merged with another cell of its paradigm: lexicon.core_repair; Spanish nosotros, French il); base and target = concept ids of planet/language/lexicon.py; weight = typicality 1 (attested, uncommon) .. 3 (common across families); example = one or two real cases (romanized) or the bare motivation.
 # A target may sit on several rows; derivation picks among the rows whose base the lexicon has. Only these pairs derive (plus two renewals in lexicon.py: the expressive diminutive, lexicon.RENEW_LITTLE, a noun or quality replaced by its own diminutive: Latin auricula > French oreille 'ear', avicellus > oiseau 'bird', soliculus > soleil 'sun', vetulus > vieux 'old', novellus > nouveau 'new'; and the frequentative or preverb renewal of verbs, lexicon.RENEW_INTENS: Latin canere > cantare 'sing', iacere > iactare 'throw', edere > comedere > Spanish comer 'eat').
 # Content words from function words are kept to three rows of weight 1 (STRANGER < OTHER / FAR is a quality); function words derive among themselves (here < this + place).
 # shift rows (2026-11-04, compounds and shifts round): base > target = a semantic shift (the target concept takes the base's word) attested across families although the two concepts sit in different semantic fields (lexicon.shift_word otherwise allows a shift only along a CLICS3 colexification of >= 6 families, >= 10 for the core vocabulary, inside one concepts.tsv / CLICS3 semantic field and part of speech). Polysemies listed both ways where both directions are attested; sources: Buck 1949, Wilkins 1996 (Natural tendencies of semantic change and the search for cognates, in Durie & Ross eds., The Comparative Method Reviewed), Sweetser 1990 (From Etymology to Pragmatics: SEE > KNOW, HEAR > KNOW), Heine & Kuteva 2002 (World Lexicon of Grammaticalization: the content > function word rows, BELLY > IN, WITH > AND, ONE > SOME), Urban 2012, CLICS3 family counts. A pathway may cross parts of speech (grammaticalization); other shifts may not.
@@ -213,6 +213,18 @@ reinforce	THAT	HE	1	'that one'
 reinforce	THAT	THEY	1	'those ones'
 reinforce	OTHER	WE	1	Spanish nosotros < nos + otros 'we others'
 reinforce	OTHER	YOU	1	'you others' (Spanish vosotros < vos + otros)
+repair	THAT	HE OR SHE OR IT	2	'that one': Latin ille > French il, Italian egli (a 3rd person renewed from the far demonstrative)
+repair	THAT	THEY	2	'those ones': Latin illi > French ils
+repair	ALL	YOU	2	'you all': Southern US y'all; Hindi aap log 'you people'
+repair	OTHER	YOU	2	Spanish vosotros < vos + otros, once vos also served one person
+repair	OTHER	WE	2	Spanish nosotros < nos + otros, once nos also served one person
+repair	ALL	WE	1	'we all'
+repair	ALL	WE (INCLUSIVE)	1	'we all (you and I)'
+repair	ALL	THEY	1	'they all'
+repair	PERSON	WHO	2	'what person' (Latin quis homo; many 'which person' interrogatives)
+repair	TEN	HUNDRED	2	'ten tens': Gothic taihuntaihund 'ten-ten' = 100
+repair	THERE	THAT	2	'that there'
+repair	THAT	THERE	2	'(at) that (place)'
 shift	TREE	WOOD	3	Buck 1949 1.42/1.43: Old English treow 'tree, wood', Russian drevo/drova; CLICS3 59 families
 shift	WOOD	TREE	3	Latin lignum; Malay kayu 'wood, tree'; CLICS3 59 families
 shift	STICK	TREE	1	CLICS3 23 families (tree ~ stick)

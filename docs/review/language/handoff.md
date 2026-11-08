@@ -398,3 +398,12 @@ summary and Daniel's calls: for-daniel.md "Sound lane pass 2". Not-slow suite: 1
    calibration.md pass F).
 2. Tone: four-tone systems are 53-60% of tonal lects; tonogenesis outpaces the mergers.
 3. Stress per word, lexical diffusion, stress marks in demo_page.py (grammar C/D's file).
+
+## Polish lane (lang-polish, 2026-11-08): state at hand-back
+Branch `lang-polish` from lang-design 703d4f81; committed locally, not merged. Every item of demo-read-4.md is fixed at
+the cause or listed under "Weirdness left" in for-daniel.md "Polish lane" (with the before/after table). New code:
+`lexicon.core_repair` (+ `repair` rows in derivations.tsv), `grammar.polite_contrast`, the pantheon and faith taboos in
+`faiths.Plan` (doc `faiths[*].taboos`), `texts.FABLE_DEPTH_KYR`, `romanize.BOOK_GUARD` / `RESERVED_SPELLINGS`,
+`sentences._resegment`, `dist_gram`, `default_class`, `_second_fix`, `numerals_note` from `systems.numeral`.
+Last pass: `scratchpad/polish/pass1/a24559/`; measures `scratchpad/polish/tools/meas.py <languages.json>`; text dump of
+the demo `scratchpad/polish/demo.txt`. Left: the items in "Weirdness left"; sketches not regenerated; the cold review.

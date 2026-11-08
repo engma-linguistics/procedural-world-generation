@@ -732,3 +732,74 @@ drop; none is in the code. Only traits the lineage data already holds are used (
 
 My own view: the rows are flavour on top of mechanisms that already exist (generation length, population size). I
 would apply at most the first, and only if you want elves and dragons to feel different in their grammar.
+
+## Polish lane (lang-polish, 2026-11-08)
+
+Fixes for every item of `demo-read-4.md`, at the cause where there was one. Numbers and the full pass: see the end of
+this section (filled in after the pass).
+
+**Defaults taken**
+1. **Paradigm repair, not a veto** (`lexicon.core_repair`). Sound change may still merge two pronoun cells, two numerals,
+   two question words or this/that, but the very next lexicon step renews the more marked one: plural before singular,
+   3rd before 2nd before 1st person, a composite numeral before a simple one, WHO before WHAT, far before near. The
+   renewal tries, in order: the counting recipe, a reinforcement ('we others' as Spanish nosotros, 'you all',
+   'that one' for he/they as French il, 'ten tens' for 100 as Gothic taihuntaihund, 'what person' for who), a loan
+   from a contact language (English they), a derivation, and only last a new word of unknown origin. Left open on
+   purpose: thou = you (English) and he = she (Finnish hän). I chose an immediate repair rather than a sound-change
+   veto because the veto lives in the sound lane's rules.py and because real paradigms do merge and then repair.
+2. **T-V only with a distinct polite form.** Polite address is not created where the polite form ('you all' or 'they')
+   sounds like plain 'you', and it is lost (the English way) if they later fall together.
+3. **Numerals:** an addend stands on the other side of the base from a multiplier, so 12 and 20 never meet (they did
+   in 83 of 612 living lects: an NNum lect said 'ten two' for both). The numerals note now quotes the lect's own
+   number words and its counting system's recipes, so it agrees with the word lists.
+4. **One faith, one pantheon.** A faith's gods are its founding (seat) culture's, topped up with the gods most holders
+   share; every holder names exactly those. The myth's food taboos are the faith's own, most characteristic first, so
+   two faiths with swine and carrion-bird taboos lead with different ones. Gods, their names and spirits are persons
+   for noun classes. God names are spelled in the book register (no tone marks).
+5. **The fable** now uses an ancestor last spoken 3-6 kyr ago with 2-4 daughters (nearest age when none fits), and the
+   page says how long ago it was spoken.
+6. **Book spellings:** the letter-separating guard inside a word is now a middle dot (irh·ll), as Catalan l·l, so it
+   does not read as an affix break; a word that would be spelled null / none / undefined at its end is re-spelled
+   (nulh).
+7. **Notes from the forms:** a stored paradigm cell whose stem differs from the dictionary form is now segmented from
+   the forms (stem + marker, ∅ for a marker with no sound, or the stem's changed shape with a note) instead of being
+   shown unsegmented and called 'merged with the stem'; 'the verb carries the subject's 3SG marker' is dropped where
+   subject concord replaced it; a far demonstrative that sounds like 'that' or 'this' is not shown as a third distance,
+   and the 'reinforced by a place word' clause appears only while the form still shows it; split alignment with only one
+   of ACC / ERG live says so; the remote past note reads 'graded, from nearer to further back' or names the perfect;
+   a class used as the default for nouns outside the other classes says so; verb clitics in a second-position language
+   are described as second position; a bound copula goes on the edge of the predicate phrase; the invocation marks its
+   object once; recipes say 'them' for a plural food and use the lect's own 'at' / 'in'; word-family cards count
+   distinct words (uncle = father's brother = mother's brother is one word).
+
+**Weirdness left (for you)**
+- Class fallback: a noun whose group has no class takes the abstract, tools, plant or animal class (the first the
+  lect has), so a dog can take the 'tools' classifier. The note now says that class is the default; whether animals
+  should rather fall to the person or a general class is your call.
+- A god name can sound like a grammatical marker (Moow); not vetoed.
+- The kobold 'belly' family shows a human proto-form: the word is a loan, and the card does not yet say so.
+- Event lines in the history quote a gram's form when it was made (Aliy'unun 2SG.POSS ŋɨ̞n then, ŋɨ̞ŋ now); not yet
+  marked as 'then'.
+- Instrument 'with' (a free word WITH) and comitative 'with' (the COM case) are different markers in one language;
+  correct, but the page does not explain it.
+- The dwarf vowel ä missing from the chart is in the sound lane's inventory files; not touched.
+
+**Measured** (full pass of a24559 at commit c5a5c885, 8 workers, 1463 s, scratch output `scratchpad/polish/pass1/`;
+before = the grammar D pass the demo read 4 page came from; living lects 612 -> 624, the draws moved):
+
+| measure | before | after |
+| --- | --- | --- |
+| living lects with two core pronoun cells alike (I = WE, THOU = HE ...) | 156 (25.5%) | 1 (0.2%) |
+| living lects with two numerals alike (restricted hundred = thousand aside) | 339 (55.4%) | 5 (0.8%) |
+| living lects with two question words alike | 150 (24.5%) | 1 (0.2%) |
+| plural T-V where 'thou' = 'you' | 39 of 187 | 0 of 156 |
+| faith gods not named by every holder | 89 | 8 (a name coinage failed) |
+| faiths with their own food taboos in the record | 0 | 81 of 107 (first: swine 54, carrion birds 21, others 6) |
+| horizon, human, window / logistic | 12.0 / 13.3 kyr | 13.5 / 10.8 kyr (summary line 14.0) |
+| pronoun loans (WOLD check) | 0.049 | 0.069 (repairs by loan, as English they) |
+| sisters strict / cross-family | 0.593 / 0.0005 | 0.605 / 0.0005 |
+
+All 14 checks as before: 13 pass; the horizon check still fails (target 6-10 kyr). The horizon moves 1-2 kyr between
+passes on its own (bootstrap noise, calibration.md), so neither reading is a regression I can pin on the repair.
+Demo: `scratchpad/polish/languages-demo.html` (12 languages, 8.4 MB) and `languages-demo-stripped.html`. The fable now
+uses the triton proto-language, last spoken about 6,000 years ago, with 4 daughters ('bird' betʰi > bitʰi, biɾ, pini).

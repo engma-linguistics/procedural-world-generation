@@ -251,13 +251,9 @@ def class_of(v: View, concept: str) -> tuple[str, str] | None:
     by = {g: (k, f) for k, g, f in cs["classes"]}
     hit = by.get(want)
     if hit is None:
-        hit = next((by[a] for a in ("abstract", "manner", "plant", "animal") if a in by), None)
-    if hit is None:
-        k, g0, f = cs["classes"][-1]
+        k, f = default_class(cs)
         hit = (k, f)
-        want = g0
-    else:
-        want = next(g for g, kf in by.items() if kf == hit)
+    want = next(g for g, kf in by.items() if kf == hit)
     k, f = hit
     k = v.cl_num.get(f, k)
     if grp_of(cs, f) != _want(cs, concept):
@@ -266,6 +262,17 @@ def class_of(v: View, concept: str) -> tuple[str, str] | None:
     if kind in ("sex", "animacy") and want == "abstract":
         lab = "N" if kind == "sex" else "INAN"
     return f, lab
+
+
+def default_class(cs: dict) -> tuple:
+    """(k, function) of the class a noun takes when its own group has no class (as grammar._class_for falls back): the
+    abstract, tools, plant or animal class, the first the lect has, else its last class."""
+    by = {g: (k, f) for k, g, f in cs["classes"]}
+    hit = next((by[a] for a in ("abstract", "manner", "plant", "animal") if a in by), None)
+    if hit is None:
+        k, _g, f = cs["classes"][-1]
+        hit = (k, f)
+    return hit
 
 
 def grp_of(cs: dict, fn: str) -> str | None:
@@ -397,14 +404,16 @@ def render_word(v: View, w: Word) -> tuple[str, str, str]:
                 forms[i] = x
         else:
             cell = None
-    if fused:
-        whole = cell.replace("-", "")
-        pre_c = [m for m in ms[:len(w.pre)] if m[3]]
-        post_c = [m for m in ms[len(w.pre) + 1:] if m[3]]
-        fl = "".join(m[0] + "=" for m in pre_c) + whole + "".join("=" + m[0] for m in post_c)
-        gl = "".join(m[1] + "=" for m in pre_c) + ".".join([w.gloss] + [m[1] for m in ms if not m[3] and m[1] != w.gloss]) \
-            + "".join("=" + m[1] for m in post_c)
-        return fl, gl, "".join(m[0] for m in pre_c) + whole + "".join(m[0] for m in post_c)
+    if fused:   # (the stored cell's stem piece is not the dictionary form: segment it from the forms themselves)
+        pieces = _resegment(v, w, cell.split("-"), inner.index(si))
+        for i, x in zip(inner, pieces):
+            forms[i] = x
+        disp = [x if x else ZERO for x in forms]
+        fl, gl = disp[0], ms[0][1]
+        for i in range(1, len(ms)):
+            fl += ms[i][2] + disp[i]
+            gl += ms[i][2] + ms[i][1]
+        return fl, gl, "".join(forms)
     for i in range(len(forms) - 1):
         if cell is not None and i in inner and i + 1 in inner:
             continue   # (inside a stored cell the engine's own forms stand)
@@ -437,6 +446,26 @@ def render_word(v: View, w: Word) -> tuple[str, str, str]:
             except Exception:  # noqa: BLE001 - a rule that cannot run leaves the plain join
                 pass
     return fl, gl, surface
+
+
+ZERO = "∅"   # (Leipzig: a marker with no sound in this word)
+
+
+def _resegment(v: View, w: Word, pieces: list, k: int) -> list:
+    """The pieces of a stored cell whose stem piece is not the dictionary form (polish lane: the page called these
+    'merged with the stem' even where the word was the bare stem or the stem plus a plain ending). With one marker on
+    one side, the cell is split at the dictionary stem when it begins (suffix) or ends (prefix) with it: the marker's
+    shape here is the rest (empty: no sound here, shown ∅; kobold eie 'go.3SG'). Otherwise the cell's own pieces stand,
+    the stem in its changed shape, and the note says what the stem became (frost giant sɛw 'dog', ʃi-dɛw 'LOC-dog')."""
+    whole, stem = "".join(pieces), w.form
+    if len(pieces) == 2 and k == 0 and whole.startswith(stem):
+        return [stem, whole[len(stem):]]
+    if len(pieces) == 2 and k == 1 and whole.endswith(stem):
+        return [whole[:len(whole) - len(stem)], stem]
+    if pieces[k] != stem:
+        v.extra.append(f"the stem {stem} is {pieces[k]} in this form (a sound change at the join, as Welsh cath 'cat', "
+                       "y gath 'the cat')")
+    return pieces
 
 
 def _portmanteaus(v: View, w: Word) -> None:
@@ -778,7 +807,7 @@ def flagging(v: View, S: NP | None, O: NP | None, tam: str | None = None) -> tup
         return erg and S is not None, False
     if al == "split":
         if v.proc.get("split") == "aspect":
-            past = tam in GR.SPLIT_ASPECT
+            past = tam in GR.SPLIT_ASPECT or tam in ("REMPST", "RECPST")   # (a graded past is a past too)
             return erg and past and S is not None, acc and not past
         return erg and S is not None and not _is_pron(S), acc and _is_pron(O)
     return False, False
@@ -877,6 +906,27 @@ def subject_marker(v: View, person: str) -> str:
     return person
 
 
+_VERB_CLITIC = re.compile(r"a clitic (?:before|after) the verb(?: phrase)?")
+
+
+def _second_fix(v: View, text: str) -> str:
+    """Where the verb's clitics stand in second position (grammar C), a verb clitic sits after the clause's first word,
+    whatever its old side: the notes say so (dragonborn: 'a clitic after the verb' on the first word)."""
+    if not v.proc.get("second") or not text:
+        return text
+    return _VERB_CLITIC.sub("a clitic in second position (after the first word of the clause)", text)
+
+
+_CARRIES = re.compile(r"the verb carries the subject's (\S+) marker")
+
+
+def _claims_absent(note: str, gloss: str) -> bool:
+    """Does a note name a subject marker the glossed words do not show (a noun subject's class marker took the
+    person marker's place: subject concord)? Notes are kept to what the forms show."""
+    m = _CARRIES.search(note)
+    return bool(m) and re.search(rf"(^|[-=.\s<]){re.escape(m.group(1))}($|[-=.\s>])", gloss) is None
+
+
 def finish(v: View, sid: str, en_text: str, words: list, note: list, q: bool = False) -> dict:
     rows, surf = [], []
     for w in words:
@@ -899,7 +949,9 @@ def finish(v: View, sid: str, en_text: str, words: list, note: list, q: bool = F
     out = {"id": sid, "en": en_text, "w": rows, "ipa": ipa, "roman": roman}
     if q:
         out["q"] = 1
-    nt = "; ".join(x for x in dict.fromkeys(list(note) + v.extra) if x)
+    gl_all = " ".join(r[1] for r in rows)
+    note = [x for x in note if not _claims_absent(x, gl_all)]
+    nt = _second_fix(v, "; ".join(x for x in dict.fromkeys(list(note) + v.extra) if x))
     v.extra = []
     if nt:
         out["note"] = nt
@@ -1220,9 +1272,10 @@ def cop_phrase(v: View, pred: NP) -> list:
     cop = _copula(v)
     if cop is None:
         return list(pred.words)
-    if _cop_bound(v):
+    if _cop_bound(v):   # (on the edge of the whole predicate phrase, not inside it: 'with boat'=COP, Turkish evde-dir)
         ws = list(pred.words)
-        attach(v, ws, pred.head, "COP")
+        g = v.g("COP") or {}
+        attach(v, ws, (len(ws) - 1 if g.get("side") != "pre" else 0) if len(ws) > 1 else pred.head, "COP")
         return ws
     cw = [Word(cop[0], "COP")]
     return pred.words + cw if v.ov() else cw + pred.words
@@ -1646,6 +1699,17 @@ def s_voice(v: View) -> list[dict]:
 
 # ---- grammar phase D sentences (2026-11-08) --------------------------------------------------------------------------
 
+def dist_gram(v: View) -> dict | None:
+    """The far demonstrative gram (DIST), unless sound change has made it sound like 'that' (or 'this'): then the
+    language has two distances again, whatever the gram list says (polish lane: the storm giant 'yon' was 'that')."""
+    g = v.g("DIST")
+    if g is None:
+        return None
+    if any(v.w(c) and v.ipa(c) == g["form_ipa"] for c in ("THAT", "THIS")):
+        return None
+    return g
+
+
 def dem_np(v: View, concept: str, which: str, det: str | None = None) -> NP:
     """A noun with a demonstrative: 'this' or 'that' from the lexicon, 'yon' the far demonstrative gram (DIST)."""
     if which == "DIST":
@@ -1666,7 +1730,7 @@ def dem_np(v: View, concept: str, which: str, det: str | None = None) -> NP:
 
 def s_deixis(v: View) -> dict | None:
     """'That man over there sees this dog.': three distances where the lect has a far demonstrative (DIST)."""
-    g = v.g("DIST")
+    g = dist_gram(v)
     S, Vc, O = v.w("MAN", "WOMAN", "PERSON"), v.w("SEE", "HEAR"), v.w("DOG", "BIRD", "TREE")
     if g is None or not (S and Vc and O and v.w("THIS")):
         return None
@@ -1687,10 +1751,14 @@ def s_remote(v: View) -> dict | None:
     s, o = noun_phrase(v, S, _the(v)), noun_phrase(v, O, _a(v))
     vw = verb(v, Vc, "3SG", "REMPST")
     grades = [ABBR[f] for f in ("RECPST", "PAST", "REMPST") if v.g(f)]
+    if len(grades) > 1:
+        rest = "the pasts are graded, from nearer to further back: " + ", ".join(grades)
+    else:   # (the plain past has been lost since: nearer events take the perfect, or the bare verb)
+        rest = ("there is no plain past beside it: nearer events take the perfect (PRF)" if v.g("PERF") else
+                "there is no plain past beside it: nearer events take the bare verb")
     return finish(v, "remote", f"The {en(S)} {_vf(Vc, 2)} {'an' if en(O)[0] in 'aeiou' else 'a'} {en(O)} long ago.",
                   clause(v, s, vw, o, tam="REMPST"),
-                  [f"the remote past is {_how(g)} ({g['form_ipa']}, {_src(g)}); the pasts are graded: "
-                   + " < ".join(grades) + " (nearer to further back)"] + vw[2])
+                  [f"the remote past is {_how(g)} ({g['form_ipa']}, {_src(g)}); {rest}"] + vw[2])
 
 
 _ASPECT_EN = {"COMPL": ("The {s} has eaten the {o} up.", ("EAT", "DRINK")),
@@ -1732,11 +1800,18 @@ def s_mirative(v: View) -> dict | None:
                   + vw[2])
 
 
+def polite_live(v: View) -> bool:
+    """Does the lect have polite address with a polite pronoun that differs from the plain 'you' (grammar.polite_contrast:
+    a lect whose 2SG and 2PL fell together cannot be polite with the plural)?"""
+    pol = v.proc.get("polite")
+    return bool(pol and v.w(pol["concept"]) and v.w("THOU") and v.ipa(pol["concept"]) != v.ipa("THOU"))
+
+
 def polite_pronoun(v: View) -> NP | None:
     """The pronoun the lect uses to address one person with respect (processes.polite): the plural 'you' (French vous)
     or a third person (German Sie), glossed with its own person and POL."""
     pol = v.proc.get("polite")
-    if not pol or not v.w(pol["concept"]):
+    if not polite_live(v):
         return None
     np_ = pronoun(v, pol["concept"])
     np_.words[0].gloss = PRON[pol["concept"]] + ".POL"
@@ -1927,6 +2002,14 @@ def notes_nouns(v: View) -> list[dict]:
                                   "takes the ergative (ERG); elsewhere the object takes the accusative (ACC)."
                         }.get(v.proc.get("split"), "Alignment is split: both an accusative and an ergative marker "
                                                    "are live.")}.get(alv, "")
+        if alv == "split" and (v.g("ACC") is None or v.g("ERG") is None):   # (the notes say what the forms show)
+            have, lack = ("ACC", "ERG") if v.g("ACC") is not None else ("ERG", "ACC")
+            al = (f"The grammar leans to a split by {v.proc.get('split') or 'person'}, but only the {CASE_NAME[have]} "
+                  f"({have}) is live; with no {CASE_NAME.get(lack, lack.lower())} ({lack}) " +
+                  ("the object is marked and subjects are not." if have == "ACC" else
+                   "the doer of a transitive verb is marked and objects are not.") +
+                  (" (In the past the object is left unmarked: there the split would want the ergative.)"
+                   if have == "ACC" and v.proc.get("split") == "aspect" else ""))
     elif alv == "neutral":
         al = "Subject and object are not marked apart: word order tells them."
     else:
@@ -1978,7 +2061,10 @@ def notes_nouns(v: View) -> list[dict]:
             if g is None:
                 continue
             how = _how(g) if bound_cls or (g.get("level") or 0) >= GR.CLITIC else "a separate word after the numeral"
-            rows.append(f"class {v.cl_num.get(f, k)} for {GR.GROUP_GLOSS.get(grp, grp)}, {how} ({g['form_ipa']}, "
+            dflt = ", and for every noun no other class takes" if default_class(cs)[1] == f and len(cs["classes"]) and \
+                any(_want(cs, c) not in {x[1] for x in cs["classes"]} for c in ("DOG", "HOUSE", "MILK", "FISH", "MAN")) \
+                else ""
+            rows.append(f"class {v.cl_num.get(f, k)} for {GR.GROUP_GLOSS.get(grp, grp)}{dflt}, {how} ({g['form_ipa']}, "
                         f"{_src(g)})")
             n = _noun_of_group(v, kind, grp)
             if n and len(ex) < 4:
@@ -2252,17 +2338,21 @@ def notes_phase_d(v: View, sents: dict) -> list[dict]:
     if N and v.w("THIS") and v.w("THAT"):
         ex = [_ex(v, noun_phrase(v, N, dem="THIS").words, f"this {en(N)}"),
               _ex(v, noun_phrase(v, N, dem="THAT").words, f"that {en(N)}")]
-        g = v.g("DIST")
+        g = dist_gram(v)
         if g is not None:
             ex.append(_ex(v, dem_np(v, N, "DIST").words, f"that {en(N)} over there (yon)"))
-            txt = (f"Demonstratives count three distances: 'this' {v.ipa('THIS')} (near), 'that' {v.ipa('THAT')} "
-                   f"(further) and a far one, {_how(g)} ({g['form_ipa']}, {_src(g)}, reinforced by a place word as "
-                   "English 'that there' became 'yon')")
+            that = v.ipa("THAT")
+            how = ("'that' with a place word grown onto it, as English 'that there' became 'yon'"
+                   if len(g["form_ipa"]) > len(that) and g["form_ipa"].startswith(that[:2]) else
+                   "once 'that' with a place word, as English 'that there' became 'yon'; sound change has worn it down "
+                   "since" if g.get("source", [""])[0] == "THAT" else "")
+            txt = (f"Demonstratives count three distances: 'this' {v.ipa('THIS')} (near), 'that' {that} "
+                   f"(further) and a far one, {_how(g)} ({g['form_ipa']}, {_src(g)}" + (f"; {how})" if how else ")"))
         else:
             txt = f"Demonstratives count two distances: 'this' {v.ipa('THIS')} (near) and 'that' {v.ipa('THAT')} (far)"
         out.append({"topic": "Demonstratives", "text": txt + ".", "ex": ex + _sent_ex(sents, "deixis")})
     pol = v.proc.get("polite")
-    if pol and v.w(pol["concept"]):
+    if polite_live(v):
         hon = v.g("HON")
         txt = (f"Speaking to one person with respect, one says {'the plural' if pol['kind'] == 'plural' else 'a third-person'} "
                f"pronoun {v.ipa(pol['concept'])} ('{'you all' if pol['kind'] == 'plural' else 'they'}') in place of "
@@ -2434,64 +2524,40 @@ def notes_phase_c(v: View, sents: dict) -> list[dict]:
     return out
 
 
-def numeral_phrase(v: View, n: int) -> tuple[list, str] | None:
-    """A numeral above ten as the counting base builds it from the lect's own words: decimal 11 'ten one', 30 'three
-    ten'; vigesimal 30 'twenty ten', 40 'two twenty'. Addition puts the larger number first (Greenberg 1978);
-    multiplication follows the numeral's place beside a noun (NumN 'three ten', NNum 'ten three')."""
-    base = v.t.get("numeral_base", "decimal")
-    units = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE")
-    mult_first = v.t.get("numeral") != "NNum"
-
-    def mul(k, b):
-        return [k, b] if mult_first else [b, k]
-    if base == "vigesimal":
-        b, rest = divmod(n, 20)
-        parts = ([] if b == 0 else ["TWENTY"] if b == 1 else mul(units[b - 1], "TWENTY"))
-        if rest >= 10:
-            parts += ["TEN"] + ([units[rest - 11]] if rest > 10 else [])
-        elif rest:
-            parts.append(units[rest - 1])
-    else:
-        t, rest = divmod(n, 10)
-        parts = ([] if t == 0 else ["TEN"] if t == 1 else ["TWENTY"] if t == 2 and v.w("TWENTY") else mul(units[t - 1], "TEN"))
-        if rest:
-            if t >= 1 and not mult_first and v.w("AND"):
-                parts.append("AND")   # (base-first multiplication 'ten three' = 30: addition takes 'and', 'ten and one')
-            parts.append(units[rest - 1])
-    if not parts or not all(v.w(c) for c in parts):
-        return None
-    words = [Word(v.ipa(c), lgloss(c), c) for c in parts]
-    return words, " ".join(en(c) for c in parts)
-
-
-def _arith(v: View, n: int) -> str:
-    """How a numeral phrase reads: '3 × 10', '10 + 1', '2 × 20 + 10'."""
-    base = 20 if v.t.get("numeral_base") == "vigesimal" else 10
-    b, rest = divmod(n, base)
-    if base == 20 and rest >= 10:
-        tail = " + 10" + (f" + {rest - 10}" if rest > 10 else "")
-    else:
-        tail = f" + {rest}" if rest else ""
-    head = str(base) if b == 1 else f"{b} × {base}" if b else ""
-    return (head + tail).lstrip(" +")
+_SYSTEM_LEAD = {
+    "decimal": "Counting is decimal: numbers above ten are built from ten and the units",
+    "hybrid": "Counting is in twenties, with ten and the units inside each twenty (as French quatre-vingt-dix, 'four "
+              "twenty ten')",
+    "vigesimal": "Counting is in twenties: twenty, two twenties, a hundred as five twenties",
+    "quinary": "Counting builds on five: six to nine are 'five and one' to 'five and four', ten is 'two fives'",
+    "restricted": "Counting is restricted: a few number words, then hands and persons ('two hands' for ten), and "
+                  "'many' past twenty"}
 
 
 def numerals_note(v: View) -> dict | None:
-    base = v.t.get("numeral_base")
-    if base not in ("decimal", "vigesimal", "other") or not v.w("TEN"):
+    """The lect's own counting system (lexsys: `systems.numeral`) and its own number words (polish lane: the note built
+    11 'ten one' from the typology label while the lexicon's ELEVEN had its system's recipe and form, so the note and
+    the word lists disagreed): each composite numeral as the word the lect says, with the recipe it was built by."""
+    from . import lexsys as LS
+    sy = (v.lj.get("systems") or {}).get("numeral") or {}
+    system = sy.get("system")
+    if system not in _SYSTEM_LEAD:
         return None
-    shown = (11, 15, 30, 40) if base != "vigesimal" else (11, 30, 40, 60)
+    rec = LS._recipes(system, bool(sy.get("quinary")))
     ex = []
-    for n in shown:
-        r = numeral_phrase(v, n)
-        if r:
-            ex.append(_ex(v, r[0], f"{n} ('{r[1]}' = {_arith(v, n)})"))
+    for c in ("SIX", "ELEVEN", "FIFTEEN", "THIRTY", "FORTY", "HUNDRED", "TEN"):
+        r = rec.get(c)
+        if r is None or r[2] == "same" or not v.w(c) or len(ex) >= 4:
+            continue
+        h, m, op = r
+        n, a, b = LS.NUM_VALUE[c], LS.NUM_VALUE.get(h, h.lower()), LS.NUM_VALUE.get(m, m.lower())
+        ex.append(_ex(v, [Word(v.ipa(c), str(n), c)], f"{n} = {a} {'+' if op == 'add' else '×'} {b} "
+                                                      f"('{en(h)}' and '{en(m)}')"))
     if not ex:
         return None
-    lead = {"decimal": "Counting is decimal: numbers above ten are built from ten and the units",
-            "vigesimal": "Counting is vigesimal: numbers above twenty are counted in twenties, with ten and the units "
-                         "inside each twenty",
-            "other": "Numbers above ten are built from ten and the units"}[base]
+    lead = _SYSTEM_LEAD[system]
+    if sy.get("quinary") and system in ("decimal", "hybrid", "vigesimal"):
+        lead += "; six to nine are built on five ('five one' for six)"
     words = [c for c in ("TWENTY", "HUNDRED") if v.w(c)]
     tail = (" " + " and ".join(f"{('Twenty' if c == 'TWENTY' else 'a hundred')} is {v.ipa(c)}" for c in words) + "."
             if words else "")
@@ -2529,7 +2595,7 @@ def grammar_notes(lj: dict, sents: list | None = None) -> list[dict]:
         except (KeyError, IndexError, ValueError, StopIteration):
             continue
     for n in out:
-        n["text"] = _shown_forms(v, n, by)
+        n["text"] = _second_fix(v, _shown_forms(v, n, by))
     return out
 
 
@@ -2543,6 +2609,8 @@ def _morph_pairs(form: str, gloss: str):
 
 def _where(base: str, var: str, cons: set) -> str:
     """Why a marker's form in an example differs from its base form: the joining rules, or the stored word form."""
+    if var == ZERO:
+        return "not heard (∅) in some words, where sound change has worn it into the stem"
     if len(var) > len(base) and var.endswith(base) and var[: len(var) - len(base)] in cons:
         gl = var[: len(var) - len(base)]
         return f"{var} after " + ("a front or central vowel" if gl == _GLIDE_FRONT else
@@ -2550,7 +2618,7 @@ def _where(base: str, var: str, cons: set) -> str:
     b, w = _segs(base), _segs(var)
     if b and w and len(b) == len(w) and b[:-1] == w[:-1] and b[-1].kind == "C" and b[-1].manner == 3:
         return f"{var} before a stop"
-    return f"{var} where it has merged with the stem"
+    return f"{var} in some words (sound change at the join)"
 
 
 def _shown_forms(v: View, note: dict, by: dict) -> str:
@@ -2580,7 +2648,7 @@ def _shown_forms(v: View, note: dict, by: dict) -> str:
         if lab in seen and base not in seen[lab]:
             alts = "; ".join(_where(base, x, v.cons) for x in sorted(seen[lab]))
         elif lab not in seen and lab in merged:
-            alts = "merged with the stem in " + ", ".join(sorted(merged[lab]))
+            alts = "fused into one ending with the marker beside it in " + ", ".join(sorted(merged[lab]))
         else:
             continue
         k = at + len(f"({base}")

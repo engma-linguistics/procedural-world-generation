@@ -1924,8 +1924,8 @@ def semantic_group(concept: str, pos: str = "N") -> str:
         return "animal"
     if u.startswith(("CROP:", "PLANT:")):
         return "plant"
-    if u.startswith(("GOD:",)):
-        return "person"
+    if u.startswith(("GOD:", "NAME:GOD:")) or u in ("GOD", "SPIRIT", "DEMON"):
+        return "person"   # (polish lane: a god, its name and spirits are persons, not things or abstractions)
     if u in _LIQUIDS:
         return "liquid"
     if u in _PLACES or u.startswith(("PLACE:", "LAND:")):
@@ -3329,17 +3329,34 @@ POLITE_LOSS = 0.001
 POLITE_KIND = {"plural": 0.7, "third": 0.3}
 
 
+def _form_of(lexicon, concept):
+    w = _lex_get(lexicon, concept)
+    return None if w is None else getattr(w, "form", w)
+
+
+def polite_contrast(lexicon, concept: str) -> bool:
+    """Can `concept` ('you all' or 'they') serve as the polite 'you'? Only where it is a word apart from the plain 'you':
+    a lect whose 2SG and 2PL fell together (English you, once thou was gone) has no plural to be polite with."""
+    a, b = _form_of(lexicon, "THOU"), _form_of(lexicon, concept)
+    return a is not None and b is not None and a != b
+
+
 def _polite(g: Grammar, rng, kyr: float, p_make: float, p_loss: float, lexicon) -> None:
     cur = g.processes.get("polite")
     if cur is None and p_make > 0 and rng.random() < p_make:
         kind = _choice(rng, POLITE_KIND)
         concept = "YOU" if kind == "plural" else "THEY"
-        if _lex_get(lexicon, concept) is None or _lex_get(lexicon, "THOU") is None:
+        if not polite_contrast(lexicon, concept):   # (polish lane: T-V only where 2SG and the polite form differ)
             return
         g.processes["polite"] = {"kind": kind, "concept": concept}
         g.aims["politeness"] = "binary"
         g.events.append((kyr, f"polite address: '{'you all' if kind == 'plural' else 'they'}' is used to address one "
                               "person with respect"))
+    elif cur is not None and lexicon is not None and not polite_contrast(lexicon, cur["concept"]):
+        # the plain and the polite 'you' fell together (sound change): the distinction is gone, as English thou / you
+        del g.processes["polite"]
+        g.aims["politeness"] = "none"
+        g.events.append((kyr, "polite address was lost: the plain and the polite 'you' fell together"))
     elif cur is not None and rng.random() < p_loss:
         del g.processes["polite"]
         g.aims["politeness"] = "none"
