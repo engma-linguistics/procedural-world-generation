@@ -47,12 +47,14 @@ def main():
     ap.add_argument("--herb-rl", type=float, default=1.0, help="x the herbs' leaf (and root) maintenance respiration rate")
     ap.add_argument("--eps", type=float, default=1.0, help="x all light-use efficiencies (EPS_SCALE 0.8 -> 0.8 x this)")
     ap.add_argument("--trop-eps", type=float, default=1.0, help="x the tropical trees' efficiency")
+    ap.add_argument("--trbe-eps", type=float, default=1.0, help="x the tropical evergreen trees' (TrBE) efficiency only")
     ap.add_argument("--kn", type=float, default=None, help="canopy leaf-respiration depth constant for the non-herbs "
                     "(vegetation.KN_RESP; None: as the code has it, 0: every leaf respires alike)")
     a = ap.parse_args()
     if a.kn is not None:
         V._KP[~V.HERBS, 20] = a.kn
     V._KP[[V.IDX["TrBE"], V.IDX["TrBR"]], 0] *= a.trop_eps
+    V._KP[V.IDX["TrBE"], 0] *= a.trbe_eps
     herbs = [V.IDX[c] for c in ("C4G", "C3G", "TunH", "WetH")]
     V._KP[herbs, 9] *= a.herb_rl
     V._KP[:, 0] *= a.eps
