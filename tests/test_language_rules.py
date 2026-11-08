@@ -504,3 +504,21 @@ def test_palatalized_series_has_exits():
     assert word_ipa(R.apply(cat["S233"], w)) == "lalʲinetʲ"
     assert word_ipa(R.apply(cat["S234"], w)) == "lʲalʲinʲet"
     assert word_ipa(R.apply(cat["S235"], w)) == "ʎaʎinʲetʲ"
+
+
+def test_no_rule_voices_or_prenasalises_an_ejective():
+    """Cold review 2026-11-08, R2: intervocalic and postnasal voicing and prenasalisation made voiced ejective clicks
+    (ʘ̬ʼ) and ᵑɡʼ. No rule of the catalogue makes a voiced or prenasalised ejective from a segment that was not one; the
+    plain stops still voice."""
+    from dataclasses import replace as _r
+    from planet.language import rules as RU
+    from planet.language.percepts import from_ipa as _f, to_ipa as _t
+    rules = list(RU.load_tsv()[0]) + list(RU.DEMO_RULES)
+    ej = [_r(_f(b)[0], larynx=2, voice=0) for b in "p t k q ts ǃ ǀ ǁ ǂ ʘ".split()]
+    words = [_f(f"a{_t(s)}a") for s in ej] + [_f(f"{n}{_t(s)}a") for s in ej for n in ("an", "am", "aŋ")] \
+        + [_f(f"a{_t(s)}da") for s in ej]
+    for r in rules:
+        for w in words:
+            assert not any(RU.impossible(x) for x in RU.apply(r, w)), (r.id, _t(w[1]))
+    voicing = next(r for r in RU.DEMO_RULES if r.id == "lenition.intervocalic_voicing")
+    assert "".join(_t(x) for x in RU.apply(voicing, _f("aka"))) == "aɡa"

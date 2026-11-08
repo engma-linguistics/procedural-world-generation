@@ -2317,6 +2317,65 @@ def core_repair(rng, lex: "Lexicon", inv, kyr: float, lect_id: str, contact_word
     return out
 
 
+# --- offensive-looking spellings (cold review 2026-11-08) ---------------------------------------------------------------
+# A word whose spelling (either register) reads as an English slur or obscenity (romanize.blocklist: naziguluni 'pigs',
+# nige 'bird') is renewed once the history is done, as `core_repair` renews a merged cell: a loan from a contact lect, a
+# derivation, a fresh root; a god's name takes an epithet (faiths.coin_name). The orthography spells a phoneme one way in
+# every word of a lect (romanize.Orthography), so no other spelling of the same sounds is open to a word; romanize.unoffend
+# (a middle dot) is left for the forms with no word behind them (affixed and joined forms, grams).
+OFFENSE_ROUNDS = 3
+
+
+def offense_repair(rng, lex: "Lexicon", inv, kyr: float, lect_id: str, offends, contact_words=None,
+                   contact_weights=None, profile=None, name_coiner=None) -> list[tuple[str, str]]:
+    """Renew every word whose spelling `offends(form) -> str | None` flags. `name_coiner(rng, concept) -> Word | None`
+    renews a NAME word (a god's name). Returns [(concept, "offense:<how>")]; a word nothing could replace is left to
+    the spelling guard."""
+    out = []
+    for k in sorted(lex.words):
+        bad = offends(lex.words[k].form)
+        if bad is None:
+            continue
+
+        def ok(w):
+            return w is not None and w.form != lex.words[k].form and offends(w.form) is None \
+                and not _clashes(lex, k, w.form, any_domain=False)
+
+        new, how = None, ""
+        if lex.words[k].pos == "NAME":
+            for _t in range(6):
+                w = name_coiner(rng, k) if name_coiner is not None else None
+                if ok(w):
+                    new, how = w, "epithet"
+                    break
+        else:
+            if contact_words:
+                have = sorted(d for d in contact_words if k in contact_words[d]
+                              and (contact_weights is None or contact_weights.get(d, 0.0) > 0))
+                for d in have:
+                    w = borrow(contact_words[d][k], d, lex, profile, inv, kyr, "contact (the old word read as rude)",
+                               store=False)
+                    if ok(w):
+                        new, how = w, "borrow"
+                        break
+            if new is None:
+                w = _derive_tries(rng, lex, k, concept_info(k), inv, kyr, lect_id)
+                if ok(w):
+                    new, how = w, "derive"
+            if new is None:
+                for _t in range(OFFENSE_ROUNDS * 10):
+                    w = coin(rng, lex, k, inv, kyr, lect_id, how="root", store=False)
+                    if ok(w):
+                        new, how = w, "coin"
+                        break
+        if new is None:
+            continue
+        lex.set(new)
+        lex.counts["offense"] = lex.counts.get("offense", 0) + 1
+        out.append((k, f"offense:{how}:{bad}"))
+    return out
+
+
 # --- substrate and sound change -----------------------------------------------------------------------------------------
 
 def local_concepts(lex: Lexicon) -> list[str]:
@@ -2364,6 +2423,11 @@ def _merge_ids(ids: str, rule_id: str) -> str:
     return "+".join(parts + ([f"…{more}"] if more else []))
 
 
+def has_nucleus(form: Form) -> bool:
+    """Does the form have a syllable nucleus (a vowel; the percept space has no syllabic consonants)?"""
+    return any(s.kind == "V" for s in form)
+
+
 def minimal_form(old: Form) -> Form:
     """What is left of a word a sound change would delete whole: its last vowel (the nucleus that held out), else its last
     segment. Words do not vanish; they wear down to a minimal form."""
@@ -2395,7 +2459,7 @@ def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], r
     changed get a `sound_change:<id>` step; successive changes at the same kyr in the same lect collapse into one step
     (ids joined by '+', '+…n' past four), and so does anything past a run of MAX_SOUND_RUN sound-change steps. Returns
     the number of words changed. A word the rule would delete whole keeps a minimal form (`minimal_form`, noted 'kept
-    minimal'); a derivational affix worn to nothing is lost (an empty entry, noted in `lex.notes`) until `step` renews
+    minimal'), and one it would leave without a vowel is passed by (`has_nucleus`: the minimal word); a derivational affix worn to nothing is lost (an empty entry, noted in `lex.notes`) until `step` renews
     it."""
     lect_id = lect_id or lex.lect
     n = 0
@@ -2407,6 +2471,9 @@ def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], r
         note = ""
         if not f and w.form:
             f, note = minimal_form(w.form), "kept minimal"
+        elif f != w.form and not has_nucleus(f) and has_nucleus(w.form):
+            continue   # (minimal word: a change that would leave the word with no vowel passes it by, as apocope spares
+            #            monosyllables; cold review 2026-11-08, R1: 'you' /h/, 'I' /dʑ/)
         if f != w.form:
             lex.words[k] = _sound_step(w, f, rule_id, kyr, lect_id, note)
             n += 1

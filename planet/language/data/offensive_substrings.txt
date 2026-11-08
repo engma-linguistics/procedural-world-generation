@@ -1,0 +1,33 @@
+# English slurs and obscenities a book spelling must not contain (romanize.offensive). Matched as substrings, case-folded,
+# with diacritics stripped (nïgi = nigi), against both registers; the word separators of the house spelling (space, hyphen,
+# middle dot) and the apostrophe (a letter here: ʔ, ejectives) break a match, so k'ik'e does not read as one.
+# Keep it short: a word that only looks rude to a schoolchild is not listed. Cold review 2026-11-08 (naziguluni, shitayoo'ï,
+# nige/nigi, lifukuwu).
+nazi
+hitler
+nigg
+niga
+nige
+nigi
+nigr
+shit
+fuck
+fuk
+cunt
+kunt
+slut
+whore
+kike
+fag
+rape
+twat
+wank
+piss
+chink
+gook
+spic
+coon
+dyke
+jizz
+cock
+dick

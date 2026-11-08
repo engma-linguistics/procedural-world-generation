@@ -237,7 +237,10 @@ def from_ipa(s: str, strict: bool = False, base_only: bool = False) -> list[Segm
             attach = False
             i += 1
             continue
-        if ch in _PRENASAL and not attach:
+        if ch in _PRENASAL and i + 1 < n and (not attach or ch != "ⁿ" or (out and out[-1].kind == "V")):
+            # (a superscript nasal before a consonant is prenasalization; only ⁿ right after a consonant reads as nasal
+            # release. Before 2026-11-08 a prenasal after a vowel parsed only where the table had the whole symbol (ᵐb),
+            # so ᵐp after a vowel needed a '.', which the pages showed as a syllable break: sa˦.ᵐp; cold review R1)
             pren = True
             i += 1
             continue

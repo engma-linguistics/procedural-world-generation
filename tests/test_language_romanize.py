@@ -312,3 +312,16 @@ def test_no_placeholder_spellings():
         sp = RO.romanize_word(from_ipa(ipa), inventory=inv, book=True)
         assert not any(sp.lower().endswith(t) for t in RO.RESERVED_SPELLINGS), sp
     assert RO._unreserve("none") == "non·e" and RO._unreserve("inull") == "inulh"
+
+
+def test_offensive_substrings_are_caught_and_broken():
+    """The blocklist (data/offensive_substrings.txt) is matched case-folded with diacritics stripped; the spelling guard
+    breaks a match with a middle dot at a consonant-vowel boundary, never inside a digraph (sh·it, not s·hit)."""
+    from planet.language import romanize as RO
+    assert RO.offensive("NÁZÍGÚLÚ") == "nazi" and RO.offensive("nïgi") == "nigi"
+    assert RO.offensive("k'ik'e") is None   # (the apostrophe is a letter here: an ejective)
+    assert RO.unoffend("shitayoo'ï") == "sh·itayoo'ï"
+    for s in ("naziguluni", "Lifukuwu", "twatwirh"):
+        assert RO.offensive(RO.unoffend(s)) is None
+    assert RO.offensive(RO.romanize("naziɡuluni", book=True)) is None
+    assert RO.romanize("naziɡuluni", book=True, ) != "naziguluni"

@@ -9,7 +9,7 @@ import pytest
 from planet.language import inventory as I
 from planet.language import lexicon as L
 from planet.language import lexsys as LS
-from planet.language.percepts import from_ipa
+from planet.language.percepts import from_ipa, word_ipa
 
 GEN = L.GEN_YR_HUMAN
 
@@ -889,3 +889,36 @@ def test_twelve_and_twenty_differ_in_any_order(concepts):
             LS.set_numerals(rng, lex, "decimal", inv, 1.0, "L", system={"label": "decimal", "system": "decimal",
                                                                            "quinary": False}, mul_first=mf)
             assert lex.words["TWELVE"].form != lex.words["TWENTY"].form, (mf, hf)
+
+
+def test_offense_repair_renews_rude_spellings(concepts):
+    """A word whose spelling reads as an English slur or obscenity (cold review 11-08: naziguluni 'pigs') is renewed,
+    and the new form does not offend."""
+    from planet.language import romanize as RO
+    rng, inv, lex = _proto(76, concepts)
+    orth = RO.Orthography(I.segments(inv))
+    k = "PIG" if "PIG" in lex.words else sorted(k for k, w in lex.words.items() if w.pos != "NAME")[0]
+    lex.set(replace(lex.words[k], form=from_ipa("naziɡulu")))
+
+    def offends(form):
+        return orth.offends(form)
+    assert offends(lex.words[k].form) == "nazi"
+    ev = L.offense_repair(rng, lex, inv, 1.0, "L", offends)
+    assert k in [e[0] for e in ev] and all(e[1].startswith("offense:") for e in ev)
+    assert offends(lex.words[k].form) is None
+    assert not [w for w in lex.words.values() if offends(w.form)]
+
+
+def test_minimal_word_keeps_a_vowel(concepts):
+    """Cold review 2026-11-08, R1: a sound change that would leave a word with no vowel ('you' /hu/ > /h/) passes that
+    word by; other words still change."""
+    rng, inv, lex = _proto(77, concepts)
+    ks = sorted(k for k in lex.words if lex.words[k].pos != "NAME")[:2]
+    lex.set(replace(lex.words[ks[0]], form=tuple(from_ipa("hu"))))
+    lex.set(replace(lex.words[ks[1]], form=tuple(from_ipa("hapu"))))
+
+    def apocope(f):
+        return f[:-1] if f and f[-1].kind == "V" else f
+    L.apply_rule_to_lexicon(lex, apocope, "test", 1.0, "L")
+    assert word_ipa(lex.words[ks[0]].form) == "hu"
+    assert word_ipa(lex.words[ks[1]].form) == "hap"

@@ -27,11 +27,19 @@ Scope read: the demo (`languages-demo-stripped.html`, all 10 languages, fable, "
 index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). Ranks: R1 hurts plausibility most.
 
 ### Must fix before publishing (not linguistics)
-- [ ] **Offensive-looking spellings.** Elf 7 myth, 'We do not eat wild swine': book spelling **naziguluni** ('pigs',
+- [x] **Offensive-looking spellings.** Elf 7 myth, 'We do not eat wild swine': book spelling **naziguluni** ('pigs',
   bold, twice). Fable, Bagbeshaï 'in': **shitayoo'ï** (bold, twice). Borderline: elf **nige / nigeni / nigi**
   ('bird', 'birds', 'not'; myth and word list); halfling **lifukuwu** ('daughter', word families). Fix: a blocklist
   check on book spellings (substring, case-folded) in `planet/language/romanize.py`, re-rolling the spelling choice
   or picking another word for showcase texts; run it in `demo_page.py` checks.
+  *Done (lang-last, ebc40791):* blocklist `planet/language/data/offensive_substrings.txt` (28 entries; case-folded,
+  diacritics stripped, both registers). After the history, words whose spelling hits it are renewed at the source
+  (`lexicon.offense_repair` via `history.offense_pass`: loan, derivation, fresh root; god names an epithet); given names
+  are redrawn. One spelling per phoneme leaves no alternative spelling for a word, so forms with no word behind them
+  (affixed, joined, grams, settlement joins) get a middle dot at a C|V boundary inside the match (`romanize.unoffend`:
+  naz·i, sh·it). a24559: 439 lexicon words flagged, 439 renewed, 0 left; romanized fields of languages.json with a hit
+  721 -> 0; regenerated demo (no audio) 0 hits (the only token is English 'spice' in prose). Not added as a
+  `demo_page.py` check (the guard sits in `romanize_word`, so every spelling passes through it).
 
 ### Phonology
 - **R1. Words and syllables with no vowel.** Human 20 2SG and 2PL pronoun is just **h** (pronoun table, sentence 4
@@ -41,14 +49,28 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   brother' (s8), /u˦ᴖ**w**/ 'hear' (s4, now identical to 'one' and the class prefix). Fix: a minimal-word constraint
   in `rules.py` (no deletion that leaves a lexical word or root without a vowel; a pronoun or content word is at least
   V or CV), prenasalised stops always onsets in syllabification.
+  *Done (lang-last, e9fc69b9):* a sound change that would leave a lexicon word or paradigm stem with no vowel passes it
+  by (`lexicon.has_nucleus`); a24559 living lexicon words with no vowel 304 -> 0, demo interlinear and joined lines 0
+  (old: 'h' twice, ʘ̬w). The "sa˦.ᵐp" dot was not syllabification: `from_ipa` could not read ᵐp after a vowel, so
+  `word_ipa` wrote a '.' to keep the parse; it now reads it (0 such dots in the new demo). Liturgical single-vowel words
+  (Names section) are untouched.
 - **R1b. Apocope applied outside its stated scope.** The aarakocra sketch says the final-vowel deletions (rules 3 and
   8) apply only "where words are made" / "inside words", but the demo's joined line applies them across words and
   phrase-finally (all the aarakocra examples above). Fix: the sentence joiner in `sentences.py` should apply only the
   rules whose scope is "across words in a phrase", or the sketch's scope column is wrong.
+  *Partly done (e9fc69b9):* the cut came from `render_word` running word-level live rules over the affixed word (the
+  phrase joiner is length-preserving already). `phonology.apply_word` now refuses a rule that would delete the stem's
+  last vowel (an affix may still lose its vowel). Whether word-level apocope should run over affixed words at all, and
+  the sketch's scope wording, are left.
 - **R2. Sounds no mouth makes.** Elf 7 has voiced ejective clicks ʘ̬ʼ ǁ̬ʼ ǂ̬ʼ (chart; 'water' a˦ʘ̬ʼi˦bi˨); dragonborn
   44 has a prenasalised ejective **ᵑɡʼ** (chart; '11' ruᵑɡʼuj). An ejective is voiceless by definition. The elf sketch
   shows the cause: intervocalic voicing (4.5 kyr) hit glottalic consonants. Fix: voicing and prenasalisation rules
   exclude [ejective]; `inventory.py` rejects voiced+ejective and nasal+ejective.
+  *Done (lang-last, 2e88db39):* `rules.impossible` (ejective + voice or prenasal); a rule does not act where it would
+  make one (`_apply_one`, `_single`); S077, S083, S142 and the demo intervocalic voicing act on pulmonic stops only
+  (tsv regenerated from `tools/language/knowledge_tables.py`); new check "no impossible segments (all lects)". Inventory
+  draws from the symbol table never make one (the table has none), so `inventory.py` needed no change. a24559: words
+  with an impossible segment 2669 in 81 living lects -> 0, check passes.
 - **R3. Marked sounds without their plain partner.** Elf 7 lost plain ǀ ǁ ǃ ǂ (declicking, 2 kyr) yet kept the
   ejective, aspirated, voiced and nasal clicks at those places. Silver dragon 13 has no /n/ and no plain /m/ (only ŋ
   and growled m‼); blue dragon 10 has /p b/ but no /m/; dragonborn 44 has kʼ but no plain velar stop; blue dragon has
@@ -115,6 +137,14 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   ɐːɨ; 'fish', 'come', 'give', 'good' likewise. A shared innovation absent from the shown ancestor means the ancestor
   line is not the 6 kyr state. This is the page's Schleicher showcase. Fix: build the ancestor line from the lexicon
   as it stood at the split, and check that each daughter word descends from it or is marked replaced or borrowed.
+  *Not done (lang-last ran out of the one pass).* Diagnosis on the a24559 run before these fixes: the ancestor p320 is
+  an arrival proto (born = died 6.0 kyr) with ONE child, d767, a copy at 6.0. All four daughters descend through d767
+  (d767 itself and three later buds of it), so their real common ancestor is d767 at its earliest bud, after it had
+  replaced 'say', 'see', 'bird' etc.: shared innovations of the d767 line, not a wrong p320. No dead lect in 2-9 kyr
+  splits into 2+ living lines at its death (lects bud and live on), and the snapshots keep only the core-100 forms and
+  grams, not a full lect, so the fable cannot be told in the split-time state from the output. Fix needs the engine to
+  keep a full copy of a lect at a chosen bud (the fable's MRCA), or `texts.pick_family` to pick the MRCA lect and a
+  bud time and the pass to store that state. Needs a pass.
 - **R3. Every recipe and myth is the same text.** All ten recipes run "Take X. Grind it with a stone. Put it in the
   pot. Cook it at the fire. Eat it with salt. It is good." (grinding cane, alliums, nightshade fruit, bananas; goat
   meat swaps in "cut with a knife"). All five myths forbid wild swine (elf, drow, aarakocra, silver dragon,
@@ -147,13 +177,22 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   hb- that the score ignores; the complexity section prints a stray "Marks beyond the standard IPA" line after the
   tortle and kobold entries.
 
+### Side effect of the last fixes (lang-last full pass, 2026-11-08): overused nʲ
+The single full pass after the three fixes (scratchpad `last/a24559`) fails "overused segments (all living lects)":
+nʲ in 62 of 618 living lects (10.03%, 5.2x PHOIBLE) against the 10% floor; the run before had it in 35 of 620 (5.7%).
+Spread over kobold, kenku, human, aarakocra, dragonborn (not one family). Likely the minimal word: CV words with i that
+apocope used to cut now keep the i, so S221 (n > nʲ before i) finds more contexts and its coda exit S234 fewer. Not
+confirmed (one pass only). Candidate: S221 weight 0.4 -> 0.3, or exit S233 also before i in long words; needs a pass.
+All other checks pass except the scholars' horizon (accepted).
+
 ### Acceptance
-- [ ] no lexical word, pronoun or root without a vowel in any demo or sketch line; no nucleus-less syllable
-- [ ] no voiced or prenasalised ejective in any inventory of the run
+- [x] no lexical word, pronoun or root without a vowel in any demo or sketch line; no nucleus-less syllable (demo
+  checked; sketches not regenerated)
+- [x] no voiced or prenasalised ejective in any inventory of the run
 - [ ] a marked series member without its plain partner is either gone or listed as a logged exception
 - [ ] markers that bind shorten; no marker sits next to its identical source
 - [ ] fable daughters descend from the shown ancestor (a check in `demo_page.py`)
 - [ ] recipe and myth texts differ in more than the nouns across the ten demo languages
 - [ ] numeral composition notes only where the parts are visible; arithmetic labels right
-- [ ] offensive-substring check passes on all book spellings in the demo
+- [x] offensive-substring check passes on all book spellings in the demo
 - [ ] a second cold read of the regenerated demo finds none of R1-R3 again

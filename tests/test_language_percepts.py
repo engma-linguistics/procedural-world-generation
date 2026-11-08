@@ -146,3 +146,13 @@ def test_to_ipa_marks_for_missing_symbols():
     assert to_ipa(S("C", place=8, voice=1)) == "ʔ̬"  # voiced glottal stop, not ɦ
     assert to_ipa(S("V", voice=1, height=5, back=0, round=1)) != to_ipa(one("y"))  # a fronted ʏ is not y
     assert to_ipa(S("V", voice=1, height=6, back=1, length=1)) != "iː"
+
+
+def test_prenasal_voiceless_stop_after_a_vowel_needs_no_dot():
+    """Cold review 2026-11-08, R1: ᵐp after a (toned) vowel parsed as plain p, so word_ipa wrote sa˦.ᵐp, read as a
+    vowelless syllable. It now parses, and no '.' is written."""
+    from planet.language.percepts import word_ipa
+    for t in ("sa˦ᵐp", "naᵐpᵐpuf", "aᵑk", "a˦ⁿd"):
+        f = from_ipa(t)
+        assert word_ipa(f) == t and "." not in word_ipa(f)
+    assert from_ipa("sa˦ᵐp")[-1].prenasal == 1

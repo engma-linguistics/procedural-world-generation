@@ -73,6 +73,15 @@ SPECIFIC_ADJ = ("NEW", "OLD", "BIG", "SMALL", "WHITE", "RED", "BLACK", "HIGH", "
 
 
 # ------------------------------------------------------------------------------------------------------------- helpers
+def _offends(lect, form) -> bool:
+    """Would the name's raw spelling (either register) read as an English slur or obscenity (romanize.blocklist)?"""
+    from .output import orthography
+    try:
+        return orthography(lect).offends(tuple(form)) is not None
+    except Exception:   # noqa: BLE001 - a lect with no orthography: the spelling guard still breaks the match
+        return False
+
+
 def _w(lect, c):
     from .names import _word
     return _word(lect, c)
@@ -377,6 +386,8 @@ class Personal:
                 if sum(1 for x in given if x["age"] == kind) >= n:
                     break
                 x = self._given(lect, t, kind, i)
+                if x is not None and _offends(lect, x["form"]):
+                    continue   # (a name that reads as an English slur is not given: the next draw; cold review 11-08)
                 if x is not None and x["roman"] not in seen:
                     given.append(x)
                     seen.add(x["roman"])
