@@ -1,0 +1,185 @@
+<title>Grammar Options Reference</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one reading column; wide tables scroll in their own box. Field-notebook feel: ink on paper, gloss small caps. */
+:root{
+  --bg:#f6f5f1; --fg:#1f2328; --muted:#5f6670; --line:#d9d6cc; --card:#ffffff; --acc:#2d5d8a; --warn:#9a4d0c; --code:#efece4;
+  --f-body:"Source Serif 4","Iowan Old Style",Georgia,serif; --f-ui:"IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--fg:#e4e6ea;--muted:#9aa2ad;--line:#2c323a;--card:#1b2026;--acc:#79aee0;--warn:#e0a060;--code:#222830;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171b;--fg:#e4e6ea;--muted:#9aa2ad;--line:#2c323a;--card:#1b2026;--acc:#79aee0;--warn:#e0a060;--code:#222830;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--f-body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 60px}
+main{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+h1,h2,h3{font-family:var(--f-ui);text-wrap:balance;line-height:1.25}
+h1{font-size:28px;margin:0}h2{font-size:21px;margin:28px 0 4px;padding-top:10px;border-top:1px solid var(--line)}h3{font-size:16px;margin:18px 0 2px}
+p,li{max-width:68ch}p{margin:6px 0}
+.lede{color:var(--muted);font-size:17px}
+code{font-family:var(--f-mono);font-size:.84em;background:var(--code);padding:1px 4px;border-radius:3px;overflow-wrap:anywhere}
+.sc{font-variant:small-caps;letter-spacing:.03em}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font:14px/1.4 var(--f-ui)}
+th,td{text-align:left;vertical-align:top;padding:6px 9px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.f{font-family:var(--f-mono);font-size:13px;white-space:nowrap}
+.v{display:inline-block;margin:0 6px 2px 0;white-space:nowrap}.v b{font-weight:500}.v i{color:var(--muted);font-style:normal;font-variant-numeric:tabular-nums}
+.stab{font-size:12px;color:var(--muted);white-space:nowrap}
+.flag{color:var(--warn);font-weight:600}
+ol.steps{padding-left:22px}ol.steps li{margin:6px 0}
+.note{border-left:3px solid var(--warn);padding:6px 12px;background:var(--card)}
+.toc{font:14px var(--f-ui);display:flex;flex-wrap:wrap;gap:6px 14px}.toc a{color:var(--acc)}
+a{color:var(--acc)}
+</style>
+
+<main>
+<h1>Grammar options and how they get chosen</h1>
+<p class="lede">Every option the generator can give a language's grammar, where it comes from, and the code that picks it. Shares are of the 627 living languages in run a24559 (the run before round 5's final run). Line numbers are for branch <code>lang-design</code> at a6f293a3.</p>
+<nav class="toc"><a href="#how">How a grammar is made</a><a href="#features">The 39 features</a><a href="#grams">What can be marked</a><a href="#social">Who speeds it up</a><a href="#pages">Notes and sentences</a><a href="#gaps">Gaps found writing this</a></nav>
+
+<h2 id="how">How a grammar is made</h2>
+<p>There are two layers. The <b>typology</b> is a list of features: what the speech community leans toward, such as "SOV" or "marks the past". The <b>grams</b> are real markers with sound shapes: words that turn into clitics and affixes over time. The page shows the typology as the grams actually realise it, so a page never says "no plural" above a plural suffix.</p>
+<ol class="steps">
+<li><b>Proto-language, 20 kyr ago.</b> Each of 39 features is drawn in a fixed order, and each draw is conditional on the features drawn before it.
+  <ul><li>The word-order features use real cross-tabulations from WALS (the World Atlas of Language Structures): for example, the chance of postpositions given SOV.</li>
+  <li>The rest start from Grambank's world frequency for that feature. That is multiplied by the lift from the three strongest correlated features already drawn, so case marking makes ergativity likelier, and so on.</li></ul>
+  The proto-language then starts with only 1–3 grams, all still free words or clitics: most often negation, plural or past.
+  <br><code>grammar.py:775 draw_typology</code> · <code>:656 _draw_feature</code> · <code>:629 _p1</code> (Grambank lifts) · <code>:1669 proto_grammar</code></li>
+<li><b>Daughters drift.</b> Every generation, each feature can flip, with a chance set by its stability class:
+  <ul><li>word order and adposition order are the slowest;</li>
+  <li>gender and alignment are slow;</li>
+  <li>tense, aspect, mood and articles are fast.</li></ul>
+  A flip re-draws the feature conditional on everything else. Over 20 kyr, a human language keeps its proto value about 85–90% of the time for the very stable features and 50–60% for the fickle ones.
+  <br><code>grammar.py:552 STABILITY</code> · <code>:804 drift</code></li>
+<li><b>Harmony pulls.</b> After a word-order change, an order feature that now clashes re-draws up to 10× faster. So a language that goes SOV → SVO tends to swap postpositions for prepositions within a few kyr, as Dryer's harmonies and Dunn et al. 2011 describe.
+  <br><code>grammar.py:557 DISHARMONY</code> · <code>:793 _disharmony</code></li>
+<li><b>Adult learners simplify.</b> Every flip is more likely in proportion to the share of adults learning the language as a second language. When a morphological feature re-draws, there is a chance (half that share) that it goes straight to its simplest value: no case, no gender, no evidentials, and so on (Trudgill 2011).
+  <br><code>grammar.py:561 SIMPLE_VALUE</code></li>
+<li><b>Grams climb down the ladder:</b> free word → clitic → affix → fused → lost.
+  <ul><li>New markers are recruited from the language's own words along grammaticalization paths. Examples: GO → future, FINISH → perfect, ONE → indefinite article, BACK → "behind".</li>
+  <li>The typology steers which functions get recruited, and a feature flip toward marking pulls in a gram.</li>
+  <li>Once a gram is an affix, sound change runs over the inflected forms, so irregular forms arise by themselves. Analogy levels some of them out again.</li></ul>
+  <code>grammar.py:1859 recruit</code> · <code>:1881 step</code> · <code>:1017 _wanted</code> · <code>data/grammaticalization_paths.tsv</code> (78 paths after Heine &amp; Kuteva)</li>
+<li><b>What the page shows.</b> Every feature a gram realises is read off the live grams (<code>grammar.py:1232 realise</code>). A gram that binds even though the typology didn't want it becomes grammar (<code>:1255 _adopt</code>).</li>
+</ol>
+<p class="note">Nothing here depends on the people. Dragons, kenku and humans draw grammar from the same tables. Population, isolation and the share of adult learners change the rates, but no species leans toward any feature, unlike sounds and tone, which lean by voice profile.</p>
+
+<h2 id="features">The 39 features</h2>
+<p>These are listed in draw order. "How it's chosen" names the source table. The figure beside each value is its share among living languages today.</p>
+<div class="tw"><table>
+<thead><tr><th>Feature</th><th>Options (share now)</th><th>How it's chosen</th><th>Stability</th></tr></thead>
+<tbody id="ftab"></tbody>
+</table></div>
+<p>There are two derived features as well. <b>Head direction</b> (final 60%, initial 40%) comes from basic word order, or from adpositions and genitives when the order is free. <b>Tone</b> (38% tonal) comes from the sound system, not the grammar. <code>grammar.py:759 _derive</code></p>
+
+<h2 id="grams">What can be marked (gram functions)</h2>
+<p>There are 36 functions, plus noun classes. A gram for one of these is a real marker with a form, and it has a side (before or after its host) fixed by an order feature. Affixes stack in a fixed order, innermost first: derivation, class, number, determiner, case, valence, aspect, tense, mood, polarity, person (after Bybee 1985). <code>grammar.py:85 FUNCS</code> · <code>:125 SLOT_ORDER</code></p>
+<div class="tw"><table>
+<thead><tr><th>Slot</th><th>Functions</th><th>Wanted when</th></tr></thead>
+<tbody>
+<tr><td>number</td><td><span class="sc">pl</span>, <span class="sc">du</span></td><td>number ≠ none; dual only for sg-du-pl</td></tr>
+<tr><td>determiner</td><td><span class="sc">def</span>, <span class="sc">indf</span></td><td>definite / indefinite article present</td></tr>
+<tr><td>case</td><td><span class="sc">gen loc dat</span> · <span class="sc">acc</span> or <span class="sc">erg</span> · <span class="sc">abl all ins com</span></td><td>any case; <span class="sc">acc</span>/<span class="sc">erg</span> by alignment; the last four only for case = many</td></tr>
+<tr><td>class</td><td>class markers grown from classifier nouns (person, people, plant, animal, liquid, place, small…) or by sex or animacy</td><td>gender ≠ none or numeral classifiers = yes</td></tr>
+<tr><td>derivation</td><td><span class="sc">dim</span>, <span class="sc">agt</span> (one who), <span class="sc">place</span></td><td>diminutive / agent noun = yes; place always</td></tr>
+<tr><td>valence</td><td><span class="sc">caus</span>, <span class="sc">pass</span>, <span class="sc">refl</span></td><td>causative = bound; passive ≠ none; reflexive always</td></tr>
+<tr><td>aspect</td><td><span class="sc">prf</span>, <span class="sc">prog</span>, <span class="sc">ipfv</span>, <span class="sc">hab</span></td><td>perfective / progressive / habitual marked</td></tr>
+<tr><td>tense</td><td><span class="sc">pst</span>, <span class="sc">pst.rct</span>, <span class="sc">fut</span></td><td>past / future marked</td></tr>
+<tr><td>mood</td><td><span class="sc">dir</span> (witnessed), <span class="sc">rep</span> (reported)</td><td>evidentiality</td></tr>
+<tr><td>polarity</td><td><span class="sc">neg</span></td><td>always</td></tr>
+<tr><td>person</td><td><span class="sc">1sg 2sg 3sg 1pl 2pl 3pl</span></td><td>verb agreement ≠ none, or pro-drop</td></tr>
+</tbody></table></div>
+
+<h2 id="social">Who speeds it up or slows it down</h2>
+<p>Per generation, each language's community scales the ladder hazards (<code>grammar.py:1735 social_factors</code>; Trudgill 2011, Lupyan &amp; Dale 2010):</p>
+<div class="tw"><table>
+<thead><tr><th>Hazard</th><th>Base rate</th><th>Adult L2 learners</th><th>Small group</th><th>Isolated</th></tr></thead>
+<tbody>
+<tr><td>recruit a new marker</td><td>0.025 / gen</td><td>fewer (×(1−L2))</td><td>more</td><td>more</td></tr>
+<tr><td>fuse one step down</td><td>0.012 / gen</td><td>much fewer (×(1−L2)²)</td><td>more</td><td>more</td></tr>
+<tr><td>lose a fused marker</td><td>0.002 / gen</td><td>up to 5×</td><td>less</td><td>less</td></tr>
+<tr><td>strip a bound marker</td><td>0.012 / gen</td><td>×L2²</td><td>no effect</td><td>no effect</td></tr>
+<tr><td>level an irregular form</td><td>0.003 / gen</td><td>up to 3×</td><td>less</td><td>no effect</td></tr>
+</tbody></table></div>
+<p>So big trade languages with many adult learners lose their inflections, and small isolated languages build them up. Hazards are per generation: long-lived peoples change less per kyr, and peoples with generations under 28 years are softened by the 11-07 ruling.</p>
+
+<h2 id="pages">Grammar notes and sample sentences</h2>
+<p>These are added after the history, from each living language's own record. Nothing is drawn at random (<code>sentences.py</code>).</p>
+<ul>
+<li><b>Ten sentence types:</b> transitive, intransitive with a place, tense, yes/no question, wh-question, negation, possession, number, copula, relative clause. <code>sentences.py:885 SENTENCES</code></li>
+<li><b>Word order</b> comes from basic order and the order features. <b>Markers</b> are the language's live grams, at their level: a free word, a clitic (=) or an affix (-). <b>Pronoun dropping</b> follows the pro-drop feature when the verb agrees.</li>
+<li><b>Joining between morphemes:</b> a glide between vowels, and nasals that take the place of articulation of the following stop. Words are not joined to each other. <code>sentences.py:242 join</code></li>
+<li><b>Grammar notes:</b> nouns, case, gender and classes (<code>:936</code>); tense and aspect, evidentials, agreement (<code>:1026</code>); negation, questions, possession, relative clauses, copula (<code>:1074</code>).</li>
+<li><b>Where there's no gram to use</b>, the construction takes a word it commonly grows from, and the note says so:
+  <ul><li>a copula from the 3rd-person pronoun or THAT;</li>
+  <li>a question particle from a WH word;</li>
+  <li>a relativiser from THAT or WHO;</li>
+  <li>"other" possession said with WITH.</li></ul>
+  These are the lane's choices, not data.</li>
+</ul>
+
+<h2 id="gaps">Gaps found while writing this</h2>
+<p>These show up in the shares above. They're candidates for the last round:</p>
+<ul>
+<li><span class="flag">Passive: 0%.</span> 42% of Grambank languages have one. No living language keeps a passive, probably because no recruitment path produces <span class="sc">pass</span> often enough to survive.</li>
+<li><span class="flag">Object agreement: 0%.</span> Real share: 34% of languages with object suffixes and 22% with object prefixes. There is no gram function for object agreement at all, so the feature can never be realised.</li>
+<li><span class="flag">Inclusive/exclusive "we": 0%.</span> Real share: 53%. The feature only shows "yes" when the lexicon has two separate "we" words, and the lexicon never splits them.</li>
+<li><b>Noun–adjective order: 85%</b>, against about 65% in WALS. That's a little high, but Dryer's figures favour NA in both OV and VO.</li>
+<li><b>Dual: 2%</b>, against Grambank's 8%. That's low, but dual is a fragile category.</li>
+<li><b>No species leanings in grammar.</b> If you want dragons to lean toward, say, evidentials or noun classes the way kenku lean tonal, that's a small table per people.</li>
+</ul>
+</main>
+
+<script>
+const S={"word_order":{"SOV":0.52,"SVO":0.3,"free":0.13,"VSO":0.04,"VOS":0.01,"OVS":0.0,"OSV":0.0},"adposition":{"post":0.59,"pre":0.37,"mixed":0.04,"none":0.0},"genitive":{"GN":0.62,"NG":0.35,"mixed":0.03},"adjective":{"NA":0.85,"AN":0.13,"mixed":0.02},"demonstrative":{"DemN":0.63,"NDem":0.36,"mixed":0.01},"numeral":{"NNum":0.5,"NumN":0.41,"mixed":0.1},"relative":{"NRel":0.64,"RelN":0.24,"other":0.12},"definite_article":{"none":0.6,"pre":0.29,"post":0.12},"indefinite_article":{"none":0.81,"present":0.19},"case":{"none":0.56,"few":0.37,"many":0.07},"alignment":{"nom-acc":0.45,"neutral":0.41,"split":0.08,"erg-abs":0.06},"number":{"sg-pl":0.58,"none":0.4,"sg-du-pl":0.02},"gender":{"none":0.65,"classes":0.16,"animacy":0.1,"sex":0.09},"past":{"marked":0.56,"none":0.44},"future":{"marked":0.57,"none":0.43},"perfective":{"marked":0.61,"none":0.39},"progressive":{"none":0.63,"marked":0.37},"habitual":{"none":0.62,"marked":0.38},"evidentiality":{"none":0.76,"indirect":0.2,"direct+indirect":0.04},"negation":{"preverbal":0.59,"postverbal":0.2,"clause_final":0.15,"clause_initial":0.06},"polar_question":{"intonation":0.45,"final_particle":0.41,"initial_particle":0.07,"verb_morph":0.06},"pro_drop":{"yes":0.77,"no":0.23},"alienability":{"no":0.63,"yes":0.37},"numeral_classifiers":{"no":0.82,"yes":0.18},"clusivity":{"no":1.0,"yes":0},"verb_reduplication":{"yes":0.72,"no":0.28},"causative":{"periphrastic":0.89,"bound":0.11},"passive":{"none":1.0,"periphrastic":0,"bound":0},"diminutive":{"no":0.56,"yes":0.44},"agent_noun":{"yes":0.58,"no":0.42},"comparative":{"other":0.45,"exceed":0.36,"locational":0.2},"serial_verbs":{"no":0.5,"yes":0.5},"copula":{"yes":0.59,"no":0.41},"predicative_possession":{"other":0.49,"have":0.41,"locational":0.1},"adjective_verb_like":{"no":0.6,"yes":0.4},"numeral_base":{"decimal":0.58,"other":0.27,"vigesimal":0.15},"wh_in_situ":{"no":0.51,"yes":0.49},"verb_agreement":{"none":0.41,"suffix":0.31,"prefix":0.26,"both":0.02},"object_agreement":{"none":1.0,"suffix":0,"prefix":0}};
+const W="WALS cross-tab on basic order (wals_wordorder.tsv), else Dryer fallback";
+const G=(ids,extra)=>"Grambank "+ids+" with lifts from earlier features"+(extra?"; "+extra:"");
+const F=[
+["word_order","very stable","WALS 81A world frequencies"],
+["adposition","very stable",W+" (85A)"],
+["genitive","stable",W+" (86A)"],
+["adjective","fickle",W+" (87A)"],
+["demonstrative","medium",W+" (88A)"],
+["numeral","medium","Hand table after Dryer: NumN a little likelier in OV"],
+["relative","stable",W+" (90A)"],
+["definite_article","fickle",G("GB020/022/023","prefix vs suffix split by their odds")],
+["indefinite_article","very fickle",G("GB021")],
+["case","medium",G("GB070 core, GB072 oblique","both → many, one → few")],
+["alignment","stable",G("GB408 accusative, GB409 ergative","both → split")],
+["number","medium",G("GB044 plural, GB043 dual","plus GB318 free plural words")],
+["gender","stable",G("GB051 sex, GB053 animacy (damped ×0.6), GB052/054 shape or plant classes")],
+["past","fickle",G("GB083","+0.10 for free particles")],
+["future","fickle",G("GB084","+0.10 for free particles")],
+["perfective","fickle",G("GB086","+0.10")],
+["progressive","very fickle","0.25 + 0.3 × Grambank GB120"],
+["habitual","very fickle","Flat 25% (no Grambank feature)"],
+["evidentiality","medium",G("GB323","35% of those also mark witnessed")],
+["negation","medium","Hand table after WALS 143A, split by OV / VO"],
+["polar_question","medium",G("GB263 final, GB262 initial, GB286 verb marker","otherwise intonation")],
+["pro_drop","medium",G("GB522")],
+["alienability","stable",G("GB059")],
+["numeral_classifiers","medium",G("GB057")],
+["clusivity","stable",G("GB028","shown only when the lexicon has two 'we' words")],
+["verb_reduplication","medium",G("GB158")],
+["causative","medium",G("GB155","else periphrastic")],
+["passive","fickle",G("GB147 bound, GB302 periphrastic")],
+["diminutive","fickle",G("GB187")],
+["agent_noun","medium",G("GB048")],
+["comparative","medium",G("GB265 exceed, GB266 locational")],
+["serial_verbs","medium",G("GB118")],
+["copula","fickle",G("GB117")],
+["predicative_possession","medium",G("GB250 have, GB252 locational","else 'with'")],
+["adjective_verb_like","stable",G("GB068")],
+["numeral_base","stable",G("GB335 vigesimal, GB333 decimal")],
+["wh_in_situ","medium",G("GB326")],
+["verb_agreement","medium",G("GB090 prefix, GB089 suffix")],
+["object_agreement","fickle",G("GB093 suffix, GB094 prefix")],
+];
+const zero=new Set(["passive","object_agreement","clusivity"]);
+const tb=document.getElementById("ftab");
+for(const [k,stab,how] of F){
+  const tr=document.createElement("tr");
+  const vals=Object.entries(S[k]||{}).map(([v,s])=>`<span class="v"><b>${v}</b> <i>${Math.round(s*100)}%</i></span>`).join("");
+  tr.innerHTML=`<td class="f">${k}${zero.has(k)?' <span class="flag">●</span>':''}</td><td>${vals}</td><td>${how}</td><td class="stab">${stab}</td>`;
+  tb.appendChild(tr);
+}
+</script>
