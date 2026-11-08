@@ -348,3 +348,49 @@ Each default is one constant in `planet/language/grammar.py`.
 - **Antipassive** is wanted only in ergative or split lects (WALS 108A).
 - **Complexity score**: free clause particles (a question word, a free copula) are left out of the mean binding level,
   so the new grams do not lower it.
+
+### Measured
+Isolated harness (300 human protos, ~20 kyr; before = lang-design 3d239669) and the full pass of a24559 (622 living
+lects; before = phase B's final pass). Shares are of lects with the gram at all / bound (affix or fused).
+
+| | harness before | harness after | full pass before | full pass after | reference |
+| --- | --- | --- | --- | --- | --- |
+| question gram (Q) | 0% | 62% / 26% | 0% | 49% / 9% | WALS 116A: about 60% particle, 17% verbal |
+| polar question shown: intonation only | 43% | 38% | 42% | 51% | WALS 116A: about 14% |
+| polar question shown: verb morphology | 10% | 26% | 6% | 9% | about 17% |
+| copula gram (COP) / copula shown | 0% / 56% | 69% / 69% | 0% / 62% | 56% / 56% | GB117 57% |
+| relativizer (REL) | 0% | 36% | 0% | 22% | (no single figure) |
+| complementizer / topic / focus | 0% | 29% / 21% / 9% | 0% | 12% / 6% / 8% | |
+| concord (any target) | 0% | 33% (70% of gender lects) | 0% | 20% (51% of gender lects) | gender is defined by agreement in Grambank |
+| applicative / reciprocal / antipassive | 0% | 12% / 16% / 1% | 0% | 9% / 7% / 0% | WALS 109A ~45% applicative; 108A ~25% antipassive |
+| switch-reference (SS or DS) | 0% | 13% | 0% | 3% | (Americas, New Guinea, Australia) |
+| actor / patient voice | 0% | 2% / 1% | 0% | 1% / 1% | rare (Philippine type) |
+| inflection classes | 0% | 27% | 0% | 9% | |
+| portmanteau endings | 0% | 13% | 0% | 3% | |
+| stem change across the lexicon | 0% | 5% | 0% | 8% | |
+| infix | 0% | 1% | 0% | 0% | rare |
+| second-position clitics | 0% | 17% | 0% | 10% | |
+| noun incorporation | 0% | 9% | 0% | 4% | |
+| verb synthesis, WALS 22A bins 0-1 / 2-3 / 4-5 / 6-7 / 8+ | 25 / 37 / 24 / 13 / 0% | 24 / 43 / 21 / 12 / 0% | 55 / 26 / 15 / 4 / 0% | 55 / 28 / 14 / 3 / 0% | about 3 / 17 / 36 / 21 / 23% |
+
+Full-pass checks: all pass except the scholars' horizon (human lects), which reads **19.0 kyr** this pass (phase B's
+read 11.0, phase A's 16.0); another lane is on it, and this branch changes no sound or lexicon code. "Typology agrees
+with the live grams" is ok with polar question and copula now realised. 2062 s at 10 workers on a loaded machine.
+
+**Synthesis (your decision, not tuned).** Still 55% of living lects in the 0-1 bin against WALS's about 3%. Phase C adds
+categories (valence, voice, switch-reference) but in the full pass they are mostly free words, as phase B found: the
+lever is still `FUSE` and the L2 exponent on fusion. I did not touch FUSE.
+
+### Odd or worth a look
+- **Intonation-only questions are 51% of the full pass** (WALS about 14%). The aims ask for a particle in about 58%
+  of lects, but the pull is slowed by the adult-learner share and a free particle is often abandoned. Raising the
+  pull for Q alone, or letting the lexical 'if' stand in when no gram lives (as before), would close it; I left it.
+- **Antipassive is near 0%**: its only source is a live reflexive in an ergative lect. WALS 108A has about a quarter
+  of languages with one. A lexical source would help, but I found none I could cite.
+- **Concord copies the class marker's own form** onto adjectives and the verb (alliterative). Separate agreement forms
+  (Swahili a- vs m-) are not modelled.
+- **Gender is still shown without concord** in about half of gender lects (Grambank's definition requires agreement).
+  Should `gender` read 'none' until concord reaches at least the demonstrative? Your call; it would cut the gender
+  share by about half.
+- **Infixes are vanishingly rare** (vowel-initial verb prefixes are rare, since recruitment keeps a word's onset).
+- **The actor-voice source 'do, make' is my guess.**
