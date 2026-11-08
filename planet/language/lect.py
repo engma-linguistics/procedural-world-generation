@@ -1144,13 +1144,13 @@ def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:
     return tonemes(lect.all_segments())
 
 
-TONE2_MIN_MARKED = 0.1  # a second-voice tone contrast stays only once marks stand on this share of the core list's second-voice vowels
+TONE2_MIN_MARKED = 0.1  # a second-voice tone contrast stays only once marks stand on this share of the lexicon's second-voice vowels
 
 
 def voice2_hygiene(lect: Lect, kyr: float | None = None) -> bool:
     """Second-voice tone marks agree with a contrast (syrinx lane, 2026-11-08; docs/review/language/syrinx.md). The second
     voice moving in parallel (tone2 0) is itself a category, the unmarked one, so a split needs two categories over the
-    core list's second-voice vowels, marks on at least TONE2_MIN_MARKED of them (lower than the first voice's
+    lexicon's second-voice vowels (all words, not the core list: they are rare), marks on at least TONE2_MIN_MARKED of them (lower than the first voice's
     TONE_MIN_MARKED: no default tone fills the rest) and an ear that hears the second voice's pitch; otherwise every
     second-voice tone mark is stripped (a `simplification`, cause "dispersion"), the second voice moving in parallel again.
     A tone2 left on a vowel that lost its second voice goes too. Returns whether anything changed."""
@@ -1162,12 +1162,10 @@ def voice2_hygiene(lect: Lect, kyr: float | None = None) -> bool:
     if not any(x.kind == "V" and x.tone2 for x in segs):
         return bool(orphan)
     cnt: dict = {}
-    for c in _core():
-        w = lect.lexicon.get(c)
-        if w is not None:
-            for x in w.form:
-                if x.kind == "V" and x.source2:
-                    cnt[x.tone2] = cnt.get(x.tone2, 0) + 1
+    for w in lect.lexicon.words.values():   # (the whole lexicon: second-voice vowels are rare, the core list holds few)
+        for x in w.form:
+            if x.kind == "V" and x.source2:
+                cnt[x.tone2] = cnt.get(x.tone2, 0) + 1
     n = sum(cnt.values())
     marked = n - cnt.get(0, 0)
     hears = (getattr(lect.profile, "hear", None) or {}).get("tone2", 1.0) > 0

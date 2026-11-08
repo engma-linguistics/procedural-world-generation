@@ -2003,8 +2003,11 @@ def _build_demo() -> tuple[Rule, ...]:
         _demo("tone2.parallel", "[V source2=1 tone2=1..7] > [tone2=0]", "perception", "syrinx, hear:tone2", 1,
               "the second voice stops moving on its own and follows the first again (a whole tier lost, as Swahili "
               "lost Proto-Bantu tone)", family="tone"),
-        _demo("voice2.loss", "[V source2=1] > [source2=0 tone2=0]", "effort", "syrinx", 1,
-              "the two voices merge onto one: the second voice is lost and the vowel is plain"),
+        # (unstressed syllables only, word by word: as written first, for every second-voice vowel at once, it fired in
+        # 23 aarakocra and kenku lines of pass A and left one living lect of 52 with a second voice; 22 kept it before)
+        _demo("voice2.loss", "[V source2=1 −stress] > [source2=0 tone2=0]", "effort", "syrinx", 1,
+              "the two voices merge onto one in weak syllables first, word by word, as reduction spreads through the "
+              "lexicon (Wang 1969 on lexical diffusion)", "diffusing"),
         _demo("chain_shift.raise_mid", "e, o > i, u / [+stress]", "dispersion", "tongue_body", 2,
               "Great Vowel Shift: Middle English feet [feːt] > [fiːt]"),
         _demo("metathesis.cc", "sk > ks", "perception", "tongue_tip, tongue_body", 2, "Old English ascian > dialectal ax",

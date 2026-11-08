@@ -60,7 +60,7 @@ DEMO_CASES = [
     ("tone2.contour_level", "taᴖ˦˨", "taᴖ˦", "taᴖ˨", None),
     ("tone2.low_parallel", "taᴖ˨", "taᴖ", "taᴖ˦", None),
     ("tone2.parallel", "ta˦ᴖ˨˦", "ta˦ᴖ", "ta˦", None),
-    ("voice2.loss", "taᴖ˨˦", "ta", "ti", None),
+    ("voice2.loss", "taᴖ˨˦kaᴖ.ta", "takata", "taᴖ", "final"),
     ("chain_shift.raise_mid", "seta", "sita", "tase", "penult"),
     ("metathesis.cc", "aska", "aksa", "asa", None),
     ("epenthesis.cluster", "takt", "takət", "tak", None),
