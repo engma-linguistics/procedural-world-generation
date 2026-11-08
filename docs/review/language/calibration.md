@@ -923,3 +923,87 @@ mountain gift WATER. p3 numbers from pass 2 above.
 | lects with a segment-loan log / at the cap 4 / logged consonants still in the inventory | - | 0 | 205 / 142 / 266 of 697 |
 
 All other checks pass in both. Run time 1644 s (p4, 10-core load) and 2087 s (p5, tests running beside it).
+
+## Synthesis lane (2026-11-08, lang-synth): verb synthesis toward WALS 22A
+
+Bound verb categories per living lect (affix or fused; tense, aspect, mood/evidential, negation, valence/voice, subject
+person, object person), in WALS 22A bins 0-1 / 2-3 / 4-5 / 6-7 / 8+. WALS (Bickel & Nichols, 145 languages, from
+memory): about 3 / 17 / 36 / 21 / 23%.
+
+**Diagnosis (before tuning).** Polish pass 1 (lang-design base, 624 living lects) and the isolated harness (240 human
+protos, 720 generations, adult-L2 share drawn from the full pass's own distribution):
+
+| living lects by adult-L2 share (full pass) | n | 0-1 bin | verb categories at any level | verb grams bound (affix or fused) |
+| --- | --- | --- | --- | --- |
+| 0-0.2 | 51 | 25% | 5.5 | 57% |
+| 0.2-0.4 | 114 | 32% | 5.1 | 42% |
+| 0.4-0.55 | 162 | 46% | 4.8 | 29% |
+| 0.55-0.7 | 144 | 69% | 4.5 | 19% |
+| 0.7 (the proxy's ceiling) | 153 | 91% | 4.2 | 8% |
+
+- **Not too few grams.** Every L2 band recruits 4-5.5 verb categories (at some level); recruitment falls only gently
+  with L2 share.
+- **Grams stay free or are stripped as fast as they bind.** The share of verb grams that are bound falls from 57% to 8%
+  across the bands. Two hazards do it, both in `social_factors`: fusion was damped by (1 - l2)^2 (x0.21 at the median
+  0.54, x0.09 at 0.7) and adult-learner stripping of bound grams was 0.012 x l2^2 (0.0059 per generation at 0.7: a bound
+  gram lived ~170 generations). At l2 0.7 a clitic bound at ~0.0015 per generation and was stripped at ~4x that. In the
+  harness "dropped by adult learners" was 5 losses per lect, second only to abandoned periphrases.
+- **The L2 input is high.** `inputs.l2_share` is a co-presence proxy (other peoples on the deme's cells, plus mixed
+  cities), median 0.54, and 31% of living lects sit at its 0.7 ceiling. Most real languages have a small adult-learner
+  share. So a squared damping on that proxy froze grammaticalization in about half the world.
+- Isolated lects were already fine (l2 < 0.25 in the harness: 0% in 0-1, mode 6-7 of the 7 countable categories).
+- Shift lects are the most isolating (75% in 0-1): they take the ruler's (hub, high-L2) grammar.
+
+**Harness grid** (same 240 protos; base = lang-design code):
+
+| variant | 22A bins | mean bound | 0-1 at l2 >= 0.65 | fused share of bound grams |
+| --- | --- | --- | --- | --- |
+| base (FUSE 0.012, fuse (1-l2)^2, strip 0.012 l2^2) | 44 / 26 / 21 / 9 / 0 | 2.38 | 87% | 13% |
+| A: FUSE 0.02 | 30 / 36 / 24 / 10 / 0 | 2.77 | 62% | 16% |
+| B: fuse (1-l2) | 18 / 47 / 26 / 9 / 0 | 3.05 | 38% | 14% |
+| C: A + B | 17 / 42 / 31 / 9 / 0 | 3.15 | 34% | 18% |
+| D: B + strip l2^3 | 16 / 39 / 32 / 13 / 0 | 3.37 | 38% | 16% |
+| E: C + strip l2^3 | 13 / 37 / 38 / 13 / 0 | 3.55 | 30% | 18% |
+| F: FUSE 0.016, fuse (1-l2), strip 0.006 l2^2 | 10 / 40 / 38 / 12 / 0 | 3.55 | 24% | 16% |
+| **G (taken): FUSE 0.02, fuse (1-l2), strip 0.008 l2^3** | **7 / 39 / 42 / 12 / 0** | 3.72 | 18% | 18% |
+| H: FUSE 0.024, fuse (1-l2), strip 0.012 l2^3 | 8 / 44 / 36 / 12 / 0 | 3.53 | 21% | 21% |
+
+The L2 damping dominates: the FUSE rise alone (A) moves the 0-1 bin 14 points, the linear damping alone (B) 26. G keeps
+the gradient (mean bound categories 5.5 / 4.8 / 3.6 / 2.7 by L2 band), keeps the fused share of bound grams under a
+fifth (no mass fusion into unreadable stems), and adds ~6 losses per lect (more grams cycle through, "worn away" up from
+1.2 to 4.6 per lect), so the gram cycle runs faster rather than saturating. The upper bins cannot fill: our list has 7
+categories (10 when evidential, voice and switch-reference are counted apart, as 22A does), so 8+ stays ~0-3% against
+WALS's 23%. Harness on the 10-category count: base 43 / 26 / 19 / 10 / 2, G 6 / 32 / 39 / 20 / 3.
+
+**Full pass** (a24559, seed default, 6 workers, 1899 s with a pause in the middle; scratch output
+`scratchpad/synth/pass1/`). Before = sound pass 3's pass I (`scratchpad/sound3/passI/`, same grammar code; polish pass 1
+reads the same within 2 points). Bins 0-1 / 2-3 / 4-5 / 6-7 / 8+, 7-category count:
+
+| living lects | before | after | WALS 22A (about) |
+| --- | --- | --- | --- |
+| all (622 / 614) | 58 / 26 / 13 / 4 / 0 | **29 / 34 / 29 / 9 / 0** | 3 / 17 / 36 / 21 / 23 |
+| generation < 60 yr (humans, kobolds, dragonborn, halflings ...; 379 / 375) | 43 / 36 / 17 / 4 / 0 | **10 / 41 / 37 / 11 / 0** | |
+| generation 60-150 yr (elves, gnomes, giants ...; 125 / 121) | 66 / 17 / 13 / 5 / 0 | 23 / 38 / 28 / 11 / 0 | |
+| generation >= 150 yr (dragons ...; 118 / 118) | 97 / 3 / 0 / 0 / 0 | 93 / 6 / 1 / 0 / 0 | |
+| human lects only (101 / 100) | 52 / 35 / 13 / 0 / 0 | 19 / 40 / 35 / 6 / 0 | |
+| all, 10-category count | 58 / 23 / 14 / 5 / 0 | 28 / 30 / 28 / 12 / 2 | |
+
+The full pass trails the harness because of generation length, not contact: hazards are per generation, so a people
+with 200+ year generations gets under 100 generations in 20 kyr and its grams never get past free words (93% in 0-1;
+draft `draft-language-long-lived-isolating.md`). Short-generation lects land at 10% in 0-1 with the mode at 2-5. By L2
+band (all lects): 0-0.25: 8% in 0-1; 0.25-0.45: 20%; 0.45-0.65: 24%; >= 0.65: 47% (before 14 / 39 / 56 / 89%).
+
+| measure (living) | before | after |
+| --- | --- | --- |
+| grams by level free / clitic / affix / fused | 4204 / 3866 / 2485 / 360 | 2197 / 2800 / 4773 / 869 |
+| fused share of bound grams | 13% | 15% |
+| mean complexity score / obligatory / fused per lect | 7.35 / 4.54 / 0.58 | 12.17 / 9.05 / 1.42 |
+| allomorphy share of paradigm cells | 0.458 (polish p1: 0.364) | 0.364 |
+| hubs simpler: hub / isolated score | 4.11 / 7.31 | 8.35 / 10.56 (ok) |
+| complexity over each lect's snapshots: rising / falling / flat (> 1 point) | 437 / 35 / 120 | 482 / 41 / 73 |
+| typology agrees with the live grams | ok, 0 clashes | ok, 0 clashes |
+| horizon, window / logistic (`human_logistic`) | 4.77 / 12.72 | 10.67 / 13.22 (FAIL, as before) |
+
+All other checks pass (pass I's two segment FAILs are sound pass 3 work in progress, not on this branch). The hub /
+isolated gap narrows (ratio 0.56 to 0.79) because hubs now bind too, but stays clearly ordered. Allomorphy is the sound
+lane's paradigm-cell rules (pass I carries sound pass 3); this lane does not move it (polish p1 0.364, after 0.364).
