@@ -1,4 +1,5 @@
 ---
+id: PW-1505
 title: "Trade step 4a: bought-in foods in the culinary brief (what, from whom, how far, by what road)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 211
 blocked_by: []
 relates: [PW-692, PW-728, PW-744, PW-805, PW-912, PW-984]
 refs: [docs/review/culture/trade/design1.md, docs/review/culture/trade/review1.md, "planet/lineages/brief.py::NOT_MODELLED", "planet/lineages/cuisine.py::sheet", planet/lineages/salt_reach.py]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -34,3 +37,6 @@ review does that.
 - [ ] cuisine sheet: a "Bought in" line; the brief's trade_reach filled; BRIEF_VERSION bumped
 - [ ] checked on the D&D showcase and the stress trees: herders' grain, inland salt, and how far wine and spice reach all make
   sense against the routes
+
+## Updates
+- 2026-11-07: Created from inbox draft draft-trade-step4a-culinary-imports.md (found by lane 211).

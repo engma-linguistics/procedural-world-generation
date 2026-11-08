@@ -1,4 +1,5 @@
 ---
+id: PW-1503
 title: "Trade step 2: goods move between neighbours and fade with distance by transport mode and era (gifts, barter, markets, merchants, tribute)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 211
 blocked_by: []
 relates: [PW-745, PW-1386, PW-1405]
 refs: [docs/review/culture/trade/design1.md, docs/review/culture/trade/review1.md, "planet/lineages/salt_reach.py::_spfa", "planet/lineages/salt_reach.py::TRADE_CAP_KM", planet/humanuse.py, "planet/lineages/polities.py::ROAD_X", "planet/lineages/animals.py::ocean_ships", planet/lineages/attitudes.py, planet/lineages/samples/techtree.toml]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -42,3 +45,6 @@ If it is never done, no culture's cuisine can say what it buys in, and D53's tra
 - [ ] nudge test: a 10% border nudge and a reseed. The top-5 flows per culture should keep their giver and good (report the
   Jaccard overlap)
 - [ ] a workbench Trade tab: imports and exports by culture, good, era and kind
+
+## Updates
+- 2026-11-07: Created from inbox draft draft-trade-step2-exchange.md (found by lane 211).

@@ -1,4 +1,5 @@
 ---
+id: PW-1500
 title: "Trade D-T2: what trades with what: whole cultures, map cells, or towns?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane 211
 blocked_by: []
 relates: [PW-670, PW-1011]
 refs: [docs/review/culture/trade/design1.md, docs/review/culture/trade/review1.md, planet/lineages/cultures.py, planet/lineages/settlements.py, "planet/lineages/salt_reach.py::_spfa", "planet/lineages/cuisine.py::culture_cells"]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Options:
 
 Trade-offs: B costs about 16 cost walks per frame, a few minutes after a run at L7. In return it keeps foragers and herders in,
 and it puts routes on real rivers and coasts. **My lean: B.** If this is never decided, step 2 can't start.
+
+## Updates
+- 2026-11-07: Created from inbox draft draft-trade-d2-unit-of-trade.md (found by lane 211).

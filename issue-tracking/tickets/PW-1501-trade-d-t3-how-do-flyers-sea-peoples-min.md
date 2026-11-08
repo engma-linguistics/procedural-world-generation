@@ -1,4 +1,5 @@
 ---
+id: PW-1501
 title: "Trade D-T3: how do flyers, sea peoples, mining kinds and dragons carry and trade goods?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane 211
 blocked_by: []
 relates: [PW-1491, PW-1494]
 refs: [docs/review/culture/trade/design1.md, docs/review/culture/trade/review1.md, planet/lineages/polities.py, planet/lineages/spec.py, "planet/lineages/land.py::SEA_GOODS"]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -42,3 +45,6 @@ Trade-offs:
 
 **My lean: A.** If this is never decided, step 2 treats flyers and sea peoples like walkers, and the brief will show merfolk
 buying salt over land.
+
+## Updates
+- 2026-11-07: Created from inbox draft draft-trade-d3-fantasy-carriers.md (found by lane 211).

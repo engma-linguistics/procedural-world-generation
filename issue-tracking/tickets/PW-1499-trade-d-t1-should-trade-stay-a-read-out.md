@@ -1,4 +1,5 @@
 ---
+id: PW-1499
 title: "Trade D-T1: should trade stay a read-out after the run, or feed back into the history (densities, dwarven holds, foragers)?"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane 211
 blocked_by: []
 relates: [PW-1371, PW-1405, PW-1406, PW-661]
 refs: [docs/review/culture/trade/design1.md, docs/review/culture/trade/review1.md, "planet/lineages/ladder.py::TRADE_CAP", "planet/lineages/ladder.py::BARTER_CAP", "planet/lineages/salt_reach.py::_spfa", planet/lineages/output.py, planet/lineages/polities.py]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Trade-offs:
 
 **My lean: A now, then B as the last step (4d), once steps 1-3 are judged on the stress trees.** If this is never decided, the two
 placeholders stay, and the brief's bought-in foods won't match the densities the history gave.
+
+## Updates
+- 2026-11-07: Created from inbox draft draft-trade-d1-readout-or-feedback.md (found by lane 211).

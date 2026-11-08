@@ -1,4 +1,5 @@
 ---
+id: PW-1504
 title: "Trade step 3: trade routes and trading towns (ports, river ports, caravan towns, merchant quarters) on the globe"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 211
 blocked_by: []
 relates: [PW-1011, PW-889]
 refs: [docs/review/culture/trade/design1.md, docs/review/culture/trade/review1.md, planet/lineages/settlements.py, "planet/lineages/settlements.py::CONST", viewer/index.html]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -39,3 +42,6 @@ If it is never done, Daniel can see trade only in tables, not on the globe.
   - ports sit at harbours and caravan towns at desert edges;
   - the route set holds steady under the nudge test;
   - screenshots in docs/review/culture/trade/
+
+## Updates
+- 2026-11-07: Created from inbox draft draft-trade-step3-routes-hubs.md (found by lane 211).
