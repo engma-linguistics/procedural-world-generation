@@ -3,7 +3,7 @@
 Everything here has a working default in the code already. Nothing is blocked; change any of them in one place.
 
 ## Decisions (defaults taken)
-1. **Synthesis level** (how affix-heavy languages are): the measurement against WALS 22A comes from grammar A. Default: unchanged until you rule.
+1. **Synthesis level** (how affix-heavy languages are). Grammar A measured it: 58% of our lects mark 0-1 verb categories with affixes, against about 3% in WALS 22A, so ours are far more isolating than real languages. Default: unchanged until grammar B adds mood and it's measured again. Then raise `FUSE` (0.012 to about 0.02) if it's still over about 25%. Details in the Grammar phase A section.
 2. **Species leanings in grammar** (like kenku → tone): the lane's guessed table, marked as guesses.
 3. **Letters for non-human sounds** in book spellings (the purr vs trill rr): names lane's guess.
 4. **Merger veto / homophony; spread of change rates between lects:** current settings kept.
@@ -12,6 +12,7 @@ Everything here has a working default in the code already. Nothing is blocked; c
 
 ## Weirdness noticed
 - **The demo page has glitches** (a full read before publishing found them). Merchants are glossed as things in two languages, a dual marker is described but missing from its example, one note quotes the wrong verb, and some agent jargon shows. None is in the data model's core. All are queued as the first item of grammar B in queue.md.
+- **Scholars' horizon jumped from about 11 to 16-18 thousand years** in both the grammar A and lexicon lanes' passes. Grammar A doesn't touch the words, so the measure may swing with any change to the random draws. The lexicon lane is checking that before it tunes anything.
 - See each lane's section below for more.
 
 ## Demos waiting
