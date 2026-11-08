@@ -551,3 +551,18 @@ Against Wikipedia's grammatical-category list, after A-C:
 - [x] degrammaticalization (`DEGRAM`), logged as events.
 - [x] 11 synthesis measured vs WALS 22A: in `for-daniel.md` as a decision.
 - [x] 5 and task 8: give, imperative, passive, serial-verb, reduplication, split-ergative and inclusive sentences, with notes (Commands, Pronouns, Voice, Reduplication, Serial verbs, Giving, Numerals; Case names the split).
+
+### Phase B progress (branch `lang-gram-b`, 2026-11-08)
+
+- [x] demo-page bugs from the 11-08 read (queue.md row): all fixed at their cause, tests in test_language_sentences.py
+  and test_language_demo.py.
+- [x] 12 mood: IMP, HORT, OBLG, APPR (G007, G034, G035 mapped; X27-X30 built in); imperative and hortative sentences.
+- [x] 7 object agreement: 1SG.O-3PL.O from object pronouns, one lead path (X33) and the series binds as a set
+  (`SERIES`, 'set' paths X34-X38); `object_agreement` realised from the grams; 'The woman sees you.' and the object
+  marker in every transitive clause. Harness: shown 0% > 51% (GB093 34% / GB094 22%).
+- [x] GEN sources: ablative > genitive (X31), demonstrative linker (X32), a pull in case lects. Harness: 0% > 63%.
+- [x] clusivity in agreement: 1PL.INCL joins a binding subject series when an inclusive 'we' exists (X45).
+- [x] 9 possessor marking on the possessed noun: 1SG.POSS-3PL.POSS (slot 'poss'), lead path X39; used in the 'my
+  mother' and 'my brother' sentences. Harness: 19% of lects.
+- [ ] 8 concord (class/gender on adjectives, demonstratives, the verb): not started.
+- [ ] 10 Q, COP, REL, COMP, TOP/FOC as grams: not started (the notes now describe the stand-ins without path ids).

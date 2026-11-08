@@ -237,3 +237,25 @@ The in-memory doc is unchanged (/1 shape).
 1. Speed. The wall clock did not fall: steps are about 920 s at 12 workers. The next lever is the worker side (`rules._apply_one`, the Pattern memo dict, `dataclasses.replace`). Each interval forks a fresh Pool; a persistent pool would only save the fork, not the stepping.
 2. The scholars' horizon still fails (10.7 kyr against 6-10).
 3. The complexity tab of the demo reads today's L2, population and isolation. A per-snapshot `l2`/`pop` would let causes be dated.
+
+## Continuation: grammar phase B (lang-gram-b, 2026-11-08)
+
+Done on `lang-gram-b`: the demo-page bugs, then mood (IMP, HORT, OBLG, APPR), object agreement, genitive sources,
+the inclusive subject marker and possessor marking. See for-daniel.md "Grammar phase B" and architecture.md section 7.
+Left for the next grammar lane, in this order:
+1. **Concord** (grammar-gaps item 8). Proposed shape:
+   - a process `Grammar.processes["concord"]`, a sorted list drawn from "dem", "adj", "verb", grown at a small
+     hazard while a class marker is bound at affix level, and dropped when none is;
+   - `sentences.noun_phrase` copies the noun's class marker (same form and side) onto the adjective and the
+     demonstrative;
+   - `verb()` takes the subject's class marker in place of 3SG when "verb" is in the list (Bantu subject concord).
+2. **Constructions as grams** (item 10): Q (from IF/'or'/'not'), COP (G056, map 'COPULA'), REL (G055), COMP (G023
+   SAY), FOC (G057 COP > FOC).
+   - They would need `_wanted` entries from `polar_question`, `copula` and `relative`, realised values, and
+     `sentences.py` using the gram where one lives (the lexical stand-in stays as the fallback).
+   - Watch the complexity score: free grams lower `mean_level`.
+- Measuring: the isolated harness is
+  `/tmp/claude-1000/-data-personal-repos-procedural-world-generation/78e89d74-f837-4b74-a7da-25a178d37d96/scratchpad/gramb/sim.py`.
+  - Run it with `PYTHONPATH=. NP=10 .venv/bin/python <sim.py> 300 out.json` from the worktree. It takes about
+    2 minutes.
+  - `shares.py` in the same folder reads it and also counts the phase B series. Copy both rather than editing them.

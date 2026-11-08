@@ -314,3 +314,93 @@ def test_numerals_by_base():
     assert SN.numeral_phrase(v, 30)[1] == "twenty ten" and SN.numeral_phrase(v, 40)[1] == "two twenty"
     n = SN.numerals_note(v)
     assert n["topic"] == "Numerals" and "vigesimal" in n["text"] and n["ex"]
+
+
+# ---- demo-page bugs (grammar B, 2026-11-08) -------------------------------------------------------------------------------
+
+def test_person_nouns_take_the_person_class():
+    from planet.language import grammar as GR
+    for c in ("MERCHANT", "SOLDIER", "TEACHER", "THIEF", "KING", "HUNTER"):
+        assert GR.semantic_group(c) == "person", c
+    lj = lect(gender="animacy")
+    lj["lexicon"]["MERCHANT"] = {"ipa": "dagaŋ", "roman": "dagaŋ", "pos": "N"}
+    lj["grams"] = [gram("CLASS:1", "o", 2, "pre", "N", ("PERSON", "G066", "concept")),
+                   gram("CLASS:2", "e", 2, "pre", "N", ("STONE", "G066", "concept"))]
+    lj["classes"] = {"kind": "animacy", "classes": [[1, "animate", "CLASS:1"], [2, "inanimate", "CLASS:2"]]}
+    assert SN.class_of(SN.View(lj), "MERCHANT") == ("CLASS:1", "ANIM")
+
+
+def test_class_numbers_have_no_gap_and_no_twin():
+    import numpy as np
+    from planet.language import grammar as GR
+    g = GR.Grammar(typology=GR.Typology({"gender": "classes"}), aims=GR.Typology({"gender": "classes"}), shown={})
+    g.class_system = GR.ClassSystem("classes")
+    rng = np.random.default_rng(1)
+    for grp in ("person", "plant", "animal"):
+        GR.add_class(g, rng, None, None, 1.0, group=grp)
+    g.class_system.classes = [c for c in g.class_system.classes if c.k != 1]   # (class 1 lost)
+    GR.add_class(g, rng, None, None, 1.0, group="liquid")
+    ks = [c.k for c in g.class_system.classes]
+    assert len(set(ks)) == len(ks) == 3 and ks[-1] == 4
+    # the page numbers them 1..n
+    lj = lect(gender="classes")
+    lj["grams"] = [gram(f"CLASS:{k}", f, 2, "pre", "N") for k, f in ((2, "mu"), (3, "ki"), (4, "ma"))]
+    lj["classes"] = {"kind": "classes", "classes": [[2, "plant", "CLASS:2"], [3, "animal", "CLASS:3"],
+                                                    [4, "liquid", "CLASS:4"]]}
+    txt = next(n["text"] for n in SN.grammar_notes(lj) if n["topic"] == "Gender and noun classes")
+    assert "class 1 for" in txt and "class 3 for" in txt and "class 4" not in txt
+    assert by_id(lj)["transitive"]["w"][-1][1] == "CL2-dog"
+
+
+def test_dual_note_shows_the_dual():
+    lj = lect()
+    lj["grams"] = [gram("PL", "s", 2, "post", "N"), gram("DU", "ki", 2, "post", "N")]
+    n = next(n for n in SN.grammar_notes(lj) if n["topic"] == "Number")
+    assert "dual" in n["text"].lower()
+    assert [e[2] for e in n["ex"]] == ["dog", "dogs", "two dogs"] and n["ex"][2][1] == "dog-DU"
+
+
+def test_correlative_note_quotes_its_own_verb():
+    lj = lect(relative="other")
+    del lj["lexicon"]["SING"]
+    lj["lexicon"]["DANCE"] = {"ipa": "tari", "roman": "tari", "pos": "V"}
+    n = next(n for n in SN.grammar_notes(lj) if n["topic"] == "Relative clauses")
+    assert "who dances, that woman" in n["text"] and "sings" not in n["text"]
+
+
+def test_free_classifier_example_shows_the_classifier():
+    lj = lect(numeral_classifiers="yes")
+    lj["grams"] = [gram("CLASS:1", "ekor", 0, "pre", "N", ("ANIMAL", "G066", "concept")),
+                   gram("CLASS:2", "buah", 0, "pre", "N", ("STONE", "G066", "concept"))]
+    lj["classes"] = {"kind": "classifiers", "classes": [[1, "animal", "CLASS:1"], [2, "abstract", "CLASS:2"]]}
+    n = next(n for n in SN.grammar_notes(lj) if n["topic"] == "Gender and noun classes")
+    assert n["ex"] and all("CLF" in e[1] for e in n["ex"])
+    assert n["ex"][0][2] == "two dogs"
+
+
+def test_possession_note_names_the_sentences_thing():
+    lj = lect()
+    lj["lexicon"]["BOAT"] = {"ipa": "perahu", "roman": "perahu", "pos": "N"}
+    s = SN.utterances(lj)
+    assert next(x for x in s if x["id"] == "possession")["en"] == "My mother has a boat."
+    n = next(n for n in SN.grammar_notes(lj, s) if n["topic"] == "Possession")
+    assert "my mother has a boat" in n["text"] and "dog" not in n["text"]
+
+
+def test_note_prose_names_the_joined_form():
+    lj = lect(word_order="SOV", head_direction="final")
+    lj["grams"] = [gram("PAST", "an", 1, "pre", "V"), gram("3PL", "e", 1, "post", "V")]
+    n = next(n for n in SN.grammar_notes(lj) if n["topic"] == "Tense and aspect")
+    forms = " ".join(e[0] for e in n["ex"])
+    assert "am=" in forms or "aŋ=" in forms or "an=" in forms
+    if "an=" not in forms:
+        assert "before a stop" in n["text"]
+
+
+def test_no_tool_jargon_in_notes_or_sentences():
+    for kw in ({}, {"predicative_possession": "other"}, {"predicative_possession": "locational"}, {"relative": "other"}):
+        lj = lect(**kw)
+        SN.enrich(lj)
+        blob = json.dumps(lj["sentences"]) + json.dumps(lj["grammar_notes"])
+        for bad in ("G05", "G06", "the lane", "sketch.py", "Grambank marks"):
+            assert bad not in blob, (kw, bad)
