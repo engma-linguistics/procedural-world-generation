@@ -23,15 +23,15 @@ class Speller:
     """Romanization with one lect's contrasts and inventory."""
 
     def __init__(self, lect):
-        segs = lect.segments() if lect.lexicon is not None else []
-        self.inv = frozenset(segs)
-        self.cs = RO.contrasts_of(segs)
+        self.orth = orthography(lect)
+        self.inv = self.orth.inv
+        self.cs = self.orth.cs
 
     failures: dict = {}  # (romanizer errors, by segment IPA: the word falls back to its IPA rather than stopping the pass)
 
     def form(self, form) -> str:
         try:
-            return RO.romanize_word(form, self.cs, self.inv)
+            return self.orth.word(form)
         except Exception as e:
             from .percepts import to_ipa
             key = f"{type(e).__name__}: {' '.join(to_ipa(s) for s in form)}"
@@ -40,9 +40,30 @@ class Speller:
 
     def ipa(self, ipa: str) -> str:
         try:
-            return RO.romanize_word(from_ipa(ipa), self.cs, self.inv)
+            return self.orth.word(from_ipa(ipa))
         except Exception:
             return ipa
+
+
+def orthography(lect) -> RO.Orthography:
+    """A lect's spelling (romanize.Orthography): its surface segments, its allophones spelled as their phonemes, its book
+    diacritics ranked by token counts in its lexicon. Cached on the lect until its forms change (lect.segments' cache)."""
+    segs = lect.segments() if getattr(lect, "lexicon", None) is not None else []
+    o = getattr(lect, "_orth", None)
+    if o is not None and o[0] is getattr(lect, "_segs", None) and o[0] is not None:
+        return o[1]
+    counts: dict = {}
+    if getattr(lect, "lexicon", None) is not None:
+        for w in lect.lexicon.words.values():
+            for s in w.form:
+                counts[s] = counts.get(s, 0) + 1
+    inv = getattr(lect, "inventory", None)
+    orth = RO.Orthography(segs, getattr(inv, "allophones", None) or {}, counts)
+    try:
+        lect._orth = (getattr(lect, "_segs", None), orth)
+    except Exception:
+        pass
+    return orth
 
 
 def _r(x, k=3):

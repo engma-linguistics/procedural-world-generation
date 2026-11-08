@@ -634,14 +634,36 @@ word's path from it is its etymology chain (`etym_steps`), whose first step is t
 ## 12. Romanization (`romanize.py`)
 
 `data/romanization.tsv`: IPA -> house spelling, deterministic, ASCII first, digraphs next, diacritics last. Rulings: ŋ
-`ng` (`n'g` where n+g meet), ʃ `sh`, tʃ `ch`, ʒ `zh`, dʒ `j`, θ `th`, ð `dh`, x `kh`, ɣ `gh`, **uvulars get their own spelling**:
-q for q, `qh` for χ (as in several Caucasian romanizations), `gq` or `ġ` for ʁ (pick one, document the convention source),
-ʔ `'`, long vowel doubled, tone as acute/grave, clicks `!` `|` `ǁ`, ejectives `'` after the letter, aspiration `h` only when
-contrastive in that lect, ə `e` with a note or `ë` when it contrasts with e. Non-human percepts take the house symbol from
-`symbols.tsv`. `romanize(ipa: str, lect: Lect | None) -> str` (the lect is needed for contrast-dependent choices).
-Proper names capitalized; hyphen only where a digraph would mislead. The tap ɾ is r, the trill rr, the approximant ɹ ř (2026-11-04: they
-shared r before; full mode is injective up to the documented MERGES). Book mode spells the IPA-kept affricates with their
-stop's letter (ɟʝ gy, cç ky; the table's `book` column) and ɹ as r.
+`ng` (`n-g` where n+g meet), ʃ `sh`, tʃ `ch`, ʒ `zh`, dʒ `j`, θ `th`, ð `dh`, x `kh`, ɣ `gh`, **uvulars get their own spelling**:
+q for q, `qh` for χ (as in several Caucasian romanizations), `gq` or `ġ` for ʁ, ʔ `'`, long vowel doubled, tone as acute/grave,
+clicks as the letters ǀ ǁ ǃ ǂ (U+01C0-01C3, not ASCII `| || !`; a long click doubles, ǃǃ), ejectives `'` after the letter,
+aspiration `h` only when contrastive in that lect, ə `e` with a note or `ë` when it contrasts with e. Non-human percepts take
+ASCII marks (`NH_MARKS`: growl rh, purr vr, second voice wh, sub-bass mh, ultra ih; purr is no longer the trill's rr).
+Proper names capitalized; a multi-word name capitalizes each word and joins a one- or two-letter particle with a hyphen
+(`title_words`: *Opa'i-e*, *E-Iva*). The tap ɾ is r, the trill rr, the approximant ɹ ř (2026-11-04). Book mode spells the
+IPA-kept affricates with their stop's letter (ɟʝ gy, cç ky; the table's `book` column) and ɹ as r.
+
+**One lect, one orthography** (names lane, 2026-11-08; names-spelling-gaps.md recs 2-7). `Orthography(segments, allophones,
+counts)` is a lect's spelling in both registers, used by `output.Speller`, `names.py` and the sketch:
+- it is built from the lect's **phonemes**: an allophone is spelled as its phoneme (Kunrei, Spanish *b d g*), an inserted ʔ
+  is not written; the IPA keeps the phonetics, and allophones no longer change the contrast set;
+- **no IPA marks** in either register: a shifted vowel (ɨ̠ e̞ ɑ̟) is its base's letter unless the lect has both, then a Latin
+  breve (raised/advanced) or macron below (lowered/retracted) ("shift"); a dental beside its alveolar takes a breve below
+  (t̮ d̮ n̮ l̮; macron below is taken by ḻ = ɻ);
+- **aspiration, pinyin-style**: a lect that contrasts aspiration only on voiceless stops/affricates and has no voiced stops
+  writes the plain ones b d g j dz and the aspirates p t k ch ts ("pinyin"), so its fricatives stay sh th kh; only a lect with
+  voiced stops too (Indic three-way) writes h and switches the fricatives to š þ x ("aspiration");
+- **book diacritics planned once per lect** (`book_folds`): a diacritic letter whose ASCII fold merges none of the lect's
+  phonemes is always folded; of the rest the `BOOK_DIACRITIC_BUDGET` (2) commonest by token count keep their marks and the
+  others fold everywhere (`Orthography.lossy`, named on the sketch's orthography line); every long vowel is doubled. The
+  per-word cap and the once-per-word doubled vowel are gone: a phoneme is spelled one way in every word of a lect;
+- **non-human marks in book**: one per sound, written once after a run of sounds that carry it, and a growled r is rrh.
+
+Measured on a24559 (627 living lects, 235,255 words, old code vs new on the same IPA): full spellings with an IPA mark 12.1%
+-> 0; book words whose spelling depended on position 13,151 (+5,121 by vowel length) -> 0; ASCII click marks in full
+spellings 618 -> 0; lects whose one aspirate flipped the fricatives 55 -> 46 (8 now pinyin); book homograph sets 6,266 ->
+5,990 (tone-only sets dominate); book diacritic letters per word 0.25 -> 0.28 (two kept per lect, not one per word); 246 lects
+fold at least one contrastive diacritic (486 folds).
 
 ## 13. Workbench and brief
 
@@ -651,6 +673,36 @@ stop's letter (ɟʝ gy, cç ky; the table's `book` column) and ɹ as r.
   the scholars' tree beside it and the horizon marked). IPA and house spelling side by side.
 - `brief.py` gains a short language section per people: the headword (romanized endonym), the glossonym, two exonyms, three
   etymologies, and the food words with their route.
+
+### 13b. Personal and settlement names (`personal.py`, names lane 2026-11-08)
+
+`names.personal[lect]` (every living lect): `{tradition: {given, byname, order, origin, changed?, themes?}, given: [{roman,
+ipa, gloss, age: old|new, opaque, etym}], bynames: [{roman, ipa, gloss, kind, etym}]}`; `names.demes[d].settlements`: up to
+three standing sites of the deme (settlements.json, sites in the deme's cells now, largest first): `{site, tier, pop, ipa,
+roman, gloss, lect, named_by, kyr, substrate_of, pattern (P2 or null), tautology, plain}`.
+
+- **Traditions** are drawn at each proto and inherited down the lect tree; each lect redraws one field with chance `DRIFT`
+  (0.12). Given names: `dithematic` (closed pools of 8 + 6 theme concepts fixed where the tradition began), `phrase`
+  (subject + verb in the lect's order, Yoruba-like), `single`. Bynames: `patronymic`/`matronymic` (parent's name + GEN gram
+  + SON/DAUGHTER, fused when GEN is bound and the lect head-final; with no GEN, as on a24559, the kin word compounds with
+  the parent's name), `epithet`, `clan` (family first or last).
+- **Old names**: three per lect are coined in the tradition's origin lect and carried down: a theme whose root the lect
+  still has (`etym_roots`) takes its reflex, a replaced one stays as the lect hears the old form (opaque), and an old name
+  is clipped toward two syllables with a chance that grows with age (`OPAQUE_KYR`, `OPAQUE_CAP`). **Approximation**: names
+  are not replayed through each lect's own rule history (the rule objects are not kept); the boundary sound changes a real
+  compound name undergoes (Wilhelm > William) are therefore missing. Three new names per lect are coined from today's words.
+- **Settlements**: a generic from the namer's words (FORD/BRIDGE on a river cell, else by tier: TOWN, MARKET, FENCE
+  'enclosure', VILLAGE, HOUSE, FIELD, WALL), eroded to one syllable (a suffix) after `SUFFIX_KYR`; a specific (a founder's
+  given name in the bound GEN, Kraków-style; else an adjective). A site founded by a people whose lect the current lect does
+  not descend from keeps the founder lect's name as heard (P2), and with chance `SUBSTRATE_TAUTOLOGY` (only when the generic's
+  root differs from the newcomers' own, so they no longer understand it) the newcomers add their own generic: a tautology
+  (River Avon). On a24559 (final run): 1430 towns in 488 demes, 970 kept from another people (P2), 213 tautologies; 920 of
+  1875 old given names opaque; 103 of 625 lects changed their tradition.
+- **E10 faith endonyms** (`names.high_god`): a people whose main deme's culture has a living high god (gods.json,
+  cultures.json beside the run) may call itself 'the people of the <domain> god' (weight `FAITH_W`, by the god's
+  individuation). No polity or state data reaches the language pass yet, so E11 confederations and X6 dynasty exonyms are
+  still missing.
+- Shown in the viewer's Names tab (with play buttons) and on the sketch pages ("Names of people and places").
 
 ## 14. Work split for tonight
 

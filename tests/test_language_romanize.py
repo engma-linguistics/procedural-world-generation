@@ -20,10 +20,11 @@ def test_rulings():
     assert r("θa") == "tha" and r("ða") == "dha" and r("xa") == "kha" and r("ɣa") == "gha"
     assert r("qa") == "qa" and r("χa") == "qha" and r("ʁa") == "ġa" and r("ɢa") == "gqa"
     assert r("ʔa") == "'a" and r("aː") == "aa" and r("kʼa") == "k'a"
-    assert r("ǃa") == "!a" and r("ǀa") == "|a" and r("ǁa") == "||a"
+    assert r("ǃa") == "ǃa" and r("ǀa") == "ǀa" and r("ǁa") == "ǁa" and r("ǃːa") == "ǃǃa"  # click letters U+01C0-01C3
     assert r("á") == "á" and r("à") == "à" and r("a˧") == "a"
     assert r("ənə", {"schwa"}) == "ënë" and r("ənə", set()) == "ene"
-    assert r("pʰapa") == "phapa" and r("pʰa") == "pa"  # aspiration written only where it contrasts
+    assert r("pʰapa") == "paba" and r("pʰa") == "pa"  # aspiration written only where it contrasts (pinyin b/p: no voiced stops)
+    assert r("pʰapaba") == "phapaba"
     assert r("θa", {"aspiration"}) == "þa" and r("χa", {"aspiration"}) == "x̣a"  # no clash with th, qh as aspirates
 
 
@@ -42,7 +43,9 @@ def test_hyphen_where_a_digraph_would_mislead():
 
 
 def test_title_name():
-    assert R.title_name("'aba") == "'Aba" and R.title_name("!xu") == "!Xu" and R.title_name("ørn") == "Ørn"
+    assert R.title_name("'aba") == "'Aba" and R.title_name("ǃxu") == "ǃXu" and R.title_name("ørn") == "Ørn"
+    assert R.title_words(["hili", "kang"]) == "Hili Kang" and R.title_words(["opa'i", "e"]) == "Opa'i-e"
+    assert R.title_words(["e", "iva"]) == "E-Iva" and R.title_words(["banu", "hashim"]) == "Banu Hashim"
 
 
 def _pool():
@@ -119,14 +122,14 @@ def test_nonhuman_spellings_are_ascii_letters():
             assert sp.isascii() and sp.isalpha(), (row.symbol, sp)
             assert sp not in seen, (row.symbol, seen.get(sp), sp)
             seen[sp] = row.symbol
-    assert R.romanize("a‼") == "arh" and R.romanize("aᵣ") == "arr" and R.romanize("aᴖ") == "awh"
+    assert R.romanize("a‼") == "arh" and R.romanize("aᵣ") == "avr" and R.romanize("aᴖ") == "awh"
     assert R.romanize("a˯") == "amh" and R.romanize("i˰") == "iih" and R.romanize("ʞa") == "cka"
     assert R.romanize("ma‼") == "marh" and R.romanize("ʁ‼a") == "grha"
-    assert R.romanize("ar", inventory=from_ipa("aᵣ a r")) == "a-rr"  # a + trill is not the purred a
+    assert R.romanize("ar", inventory=from_ipa("aᵣ a r")) == "arr" and R.romanize("aᵣ") != R.romanize("ar")  # purr is not the trill
 
 
 def test_contrasts_of():
-    assert R.contrasts_of(from_ipa("ppʰa")) == {"aspiration"}
+    assert R.contrasts_of(from_ipa("ppʰa")) == {"pinyin"} and R.contrasts_of(from_ipa("ppʰba")) == {"aspiration"}
     assert R.contrasts_of(from_ipa("eəa")) == {"schwa"} and R.contrasts_of(from_ipa("eə")) == {"schwa_a"}
     assert R.contrasts_of(from_ipa("eɛ")) == {"open_e"} and R.contrasts_of(from_ipa("ɛ")) == set()
     assert R.contrasts_of(from_ipa("lɫ")) == {"dark_l"} and R.contrasts_of(from_ipa("ɫ")) == set()
@@ -139,7 +142,7 @@ def test_contrasts_of():
 def test_book_mode_names_are_sayable():
     """The names a book reader choked on (full spelling Müdhœ̃̀œ̃'áĩ́ĩ, Pë̀ġàkìʿà, Sǘpũ̀vò) come out short and nearly ASCII."""
     b = lambda x: R.romanize(x, book=True)
-    assert b("my˧dʱœ̃ː˨ʔa˦ĩː˦") == "müdoon'ain"  # one doubled vowel, nasal = +n, ü beside i, one diacritic letter
+    assert b("my˧dʱœ̃ː˨ʔa˦ĩː˦") == "mudoon'aiin"  # every long vowel doubled, nasal = +n, ü beside i folds (no u: lossless)
     assert b("pə˨ʁa˨ki˨ʕa˨") == "peġakiʿa"  # no tone, schwa e, the uvular ġ kept
     assert b("sy˦pũ˨vo˨") == "supunvo"  # no i in the word: y is u
     for x in ("my˧dʱœ̃ː˨ʔa˦ĩː˦", "pə˨ʁa˨ki˨ʕa˨", "sy˦pũ˨vo˨"):
@@ -151,12 +154,13 @@ def test_book_mode_rules():
     assert b("á à ǎ a˧") == "aaaa"  # no tone
     assert b("ãta") == "anta" and b("ãma") == "ama" and b("ãŋa") == "anga"  # nasal: + n, plain before a nasal
     assert "̃" not in b("ãẽĩõũ")
-    assert b("aːtaː") == "aata" and b("tːa") == "tta"  # one doubled vowel per word; a long consonant doubled
+    assert b("aːtaː") == "aataa" and b("tːa") == "tta"  # every long vowel doubled; a long consonant doubled
     assert b("ənə") == "ene" and b("eəa") == "eea"  # schwa e, no diaeresis
     assert b("ɛɔɪʊɑ") == "eoiua" and b("eɛ oɔ iɪ") == "eeooii"  # the open/lax/back vowels always plain
-    assert b("y") == "u" and b("iy") == "iü" and b("ø") == "o" and b("eø") == "eö" and b("eœ") == "eö"
+    assert b("y") == "u" and b("iuy") == "iuü" and b("iy") == "iu" and b("ø") == "o" and b("eoø") == "eoö" and b("eoœ") == "eoö" and b("eø") == "eo"
     assert b("ʔaʔa") == "a'a"  # no word-initial glottal stop
-    assert b("ʃaʈaʂa") == "shaṭasa"  # one diacritic letter per word: the first
+    assert b("ʃaʈaʂa") == "shatasa"  # no t or s in the lect: ṭ and ṣ fold to t and s, merging nothing
+    assert b("ʃaʈaʂa", None, from_ipa("ʃ ʈ ʂ t s a")) == "shaṭaṣa" and b("ʈata", None, from_ipa("ʈ ʂ t s a")) == "ṭata"  # one spelling per phoneme
     assert b("ʃa", {"aspiration"}) == "sha"  # (book: the digraph even where the workbench writes š)
     assert b("lːaɫa") == "llalla"  # no Catalan dot
     assert b("ɲ̟a") == "nya" and b("ʊ̞ta") == "uta"  # no house letter: folded
@@ -165,7 +169,7 @@ def test_book_mode_rules():
 def test_book_mode_keeps_the_uvulars():
     b = lambda x, cs=None: R.romanize(x, cs, book=True)
     assert b("qa") == "qa" and b("χa") == "qha" and b("ʁa") == "ġa" and b("ɢa") == "gqa" and b("ɴa") == "nqa"
-    assert b("χa", {"aspiration"}) == "x̣a" and b("ʃaʁa") == "shaġa" and b("ṭaʁaʁa".replace("ṭ", "ʈ")) == "ṭaġaġa"
+    assert b("χa", {"aspiration"}) == "x̣a" and b("ʃaʁa") == "shaġa" and b("ʈaʁaʁa", None) == "taġaġa"
     for cs in (set(), {"aspiration"}):
         for v, u in (("x", "χ"), ("ɣ", "ʁ"), ("k", "q"), ("ɡ", "ɢ"), ("ŋ", "ɴ")):
             assert b(v + "a", cs) != b(u + "a", cs)
@@ -188,7 +192,7 @@ def test_book_mode_diacritics_rare_on_generated_words():
             book.append(R.romanize_word(tuple(w.form), cs, segs, book=True))
     assert len(book) == 200
     assert sum(map(R.diacritics, book)) / len(book) < 0.3
-    assert all(R.diacritics(x) <= 1 or any(g in R.BOOK_KEEP for g in R._graphemes(x)) for x in book)
+    assert all(R.diacritics(x) <= 2 * R.BOOK_DIACRITIC_BUDGET or any(g in R.BOOK_KEEP for g in R._graphemes(x)) for x in book)
     # (at most one outlier in 200: the palatal affricate ɟʝ spells 'gyyh' in book mode, šẽɟʝo > shen-gyyho, seen once
     # when word lengths started following the syllable space and the draws moved)
     assert sum(len(b) > len(f) + 4 for f, b in zip(full, book)) <= 1
@@ -236,3 +240,64 @@ def test_injective_over_the_whole_vowel_space(cs):
         groups[R.spell(s, cs)].add(to_ipa(s))
     bad = {k: v for k, v in groups.items() if any(not R.merged(a, b, cs) for a, b in itertools.combinations(sorted(v), 2))}
     assert not bad, bad
+
+
+def test_book_one_spelling_per_phoneme_per_lect():
+    """Book mode spells a phoneme the same way in every word of a lect: the diacritic budget is per lect, not per word."""
+    inv = from_ipa("ʈ ʂ ʃ t s a i u y ħ h")
+    cs = R.contrasts_of(inv)
+    folds = R.book_folds(inv, cs, {from_ipa("ʈ")[0]: 50, from_ipa("ʂ")[0]: 40, from_ipa("ħ")[0]: 1, from_ipa("y")[0]: 30})
+    kept = {g for g in ("ṭ", "ṣ", "ḥ", "ü") if g not in folds}
+    assert len(kept) == R.BOOK_DIACRITIC_BUDGET and kept == {"ṭ", "ṣ"}  # the two commonest keep their marks
+    sp = lambda x: R.romanize(x, cs, inv, book=True, folds=folds)
+    assert sp("ʈaʈa") == "ṭaṭa" and sp("taʈa") == "taṭa" and sp("ħaħa") == "haha"
+    o = R.Orthography(inv, counts={from_ipa("ʈ")[0]: 50, from_ipa("ʂ")[0]: 40})
+    assert o.lossy and all(a for _g, a in o.lossy)
+
+
+def test_spell_phonemes_not_allophones():
+    """An allophone is spelled as its phoneme (Kunrei, Spanish b d g); an inserted glottal stop is not written."""
+    k, gh = from_ipa("k")[0], from_ipa("ɣ")[0]
+    glottal = from_ipa("ʔ")[0]
+    o = R.Orthography(from_ipa("kɣaʔi"), allophones={gh: (k, "intervocalic"), glottal: (None, "glottal_onset")})
+    assert o.word(from_ipa("aɣa")) == "aka" and o.word(from_ipa("ʔaka"), book=True) == "aka"
+    assert gh not in o.inv and "aspiration" not in o.cs
+
+
+def test_pinyin_aspiration_keeps_the_fricative_digraphs():
+    """A lect that contrasts aspiration but has no voiced stops writes b/p (pinyin, Korean RR): one aspirate no longer flips
+    sh th kh to š þ x across the lexicon."""
+    inv = from_ipa("p pʰ t tʰ k ʃ θ x a")
+    cs = R.contrasts_of(inv)
+    assert "pinyin" in cs and "aspiration" not in cs
+    r = lambda x: R.romanize(x, cs, inv)
+    assert r("pʰa") == "pa" and r("pa") == "ba" and r("ʃa") == "sha" and r("θa") == "tha" and r("xa") == "kha"
+    assert len({r(x) for x in ("pa", "pʰa", "ta", "tʰa", "ka")}) == 5
+    assert "aspiration" in R.contrasts_of(from_ipa("ppʰba"))  # voiced stops too: aspiration is written with h
+
+
+def test_nonhuman_marks_do_not_pile_up_in_book():
+    """Book mode: one non-human mark per sound, once per run of marked sounds; a growled trill is rrh, not rrrh."""
+    b = lambda x: R.romanize(x, book=True)
+    assert b("a‼r‼a") == "arrha" and b("r‼a‼") == "rrarh" and b("aᴖ˯") == "awh"
+    for x in ("tɛ‼r‼i", "ku‼ɾi‼si‼li‼k", "a‼r‼a‼r‼"):
+        assert not __import__("re").search(r"(rh|vr|wh|mh|ih){2}|rrrh", b(x)), b(x)
+
+
+IPA_MARKS = set("̠̪̞̟̝̹̜̥̬")
+
+
+@pytest.mark.parametrize("cs", CONTRAST_SETS, ids=lambda c: "+".join(sorted(c)) or "none")
+def test_no_ipa_marks_in_full_spellings(cs):
+    """The workbench spelling is an orthography: no IPA diacritic (bridge, retracted, lowered, advanced...) in it."""
+    import unicodedata
+    leaks = {}
+    for s in itertools.chain(_vowel_space(), _pool()):
+        sp = unicodedata.normalize("NFD", R.spell(s, cs))
+        if set(sp) & IPA_MARKS:
+            leaks[to_ipa(s)] = sp
+    for x in ("t̪a", "ɨ̠a", "e̞o", "ʌ̞", "ɑ̟"):
+        sp = unicodedata.normalize("NFD", R.romanize(x, cs))
+        if set(sp) & IPA_MARKS:
+            leaks[x] = sp
+    assert not leaks, sorted(leaks.items())
