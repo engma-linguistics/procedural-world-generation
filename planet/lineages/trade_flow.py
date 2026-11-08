@@ -44,8 +44,9 @@ from numba import njit
 from ..geo import R_KM
 from . import trade as TR
 
-VERSION = 3  # (2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
-# 3: a route is judged per good against its carried volume, and last era's routes hold down to half the bar, PW-1515 and PW-1514)
+VERSION = 4  # (2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
+# 3: a route is judged per good against its carried volume, and last era's routes hold down to half the bar, PW-1515 and PW-1514;
+# 4: grain takers look on until a round finds no more, SEEK_GOODS, lane 216b)
 FORMAT = "procgen-trade-flows/1"
 
 # --- cost per km of each mode, a pack animal = 1 (R§6). ORBIS (Scheidel, Meeks & Weiland 2012, from Diocletian's Price Edict), denarii per kg
@@ -92,6 +93,11 @@ QUARTERS = True  # step 3 (PW-1504): a merchant quarter lifts its border's toll 
 FETCH = False  # PW-1511 B (needs-decision): True: herders fetch grain with their own animals. Off: it met no more of their need on the judge runs (step3.md)
 FETCH_GOODS = ("grain",)  # PW-1511 B: what herders fetch with their own animals (Khazanov 2019: grain from the frontier markets)
 ROUNDS = 3  # a taker cut short by an emptied source looks for the next best source up to this many times (a compute bound)
+SEEK_GOODS = ("grain",)  # ... but grain's takers look on, round after round, until a round finds no more (no taker cut short reaches a
+# live source); SEEK_CAP is only a safety cap. Lane 216 (step3b.md): 3 rounds left 62-73% of the world's grain lack unmet; grain needs
+# 40-150 rounds to settle. Each round re-walks only the land the emptied sources had supplied (_rewalk). The other goods keep the
+# compute bound: run to the end they need up to 200 rounds each and the derive takes ~6x as long (step3b.md, pass 2)
+SEEK_CAP = 400
 
 
 @njit(cache=True)
@@ -150,6 +156,67 @@ def _walk(src, d0, nbr_off, nbr_idx, ecost, ekm, emode, ebord, limit):
                 nb[j] = nb[i] + ebord[e]
                 heapq.heappush(h, (nd, j))
     return d, org, km, mkm, nb, pe
+
+
+@njit(cache=True)
+def _rewalk(dead, seed, d, org, km, mkm, nb, pe, nbr_off, nbr_idx, ecost, ekm, emode, ebord, limit):
+    """_walk again, in place, after the sources marked `dead` (per cell) stop giving: only the cells they had supplied are walked again,
+    from the live cells bordering them and the live sources among them (seed: a live source's starting cost, else inf). The other cells
+    keep their cost and path, since taking sources away lowers no cost and leaves a live source's own paths as they were. Returns the
+    number of cells walked again."""
+    n = d.shape[0]
+    bad = np.zeros(n, np.bool_)
+    cnt = 0
+    for j in range(n):
+        o = org[j]
+        if o >= 0 and dead[o]:
+            bad[j] = True
+            d[j] = np.inf
+            org[j] = -1
+            pe[j] = -1
+            km[j] = 0.0
+            for m in range(4):
+                mkm[j, m] = 0.0
+            nb[j] = 0
+            cnt += 1
+    if cnt == 0:
+        return 0
+    h = [(0.0, np.int64(0))]
+    h.pop()
+    pushed = np.zeros(n, np.bool_)
+    for j in range(n):
+        if bad[j] and seed[j] < np.inf:  # (a live source that a dead one had outbid on its own cell)
+            d[j] = seed[j]
+            org[j] = j
+            heapq.heappush(h, (d[j], np.int64(j)))
+    for j in range(n):
+        if bad[j]:
+            for e in range(nbr_off[j], nbr_off[j + 1]):
+                i = nbr_idx[e]
+                if not bad[i] and not pushed[i] and d[i] < np.inf:
+                    pushed[i] = True
+                    heapq.heappush(h, (d[i], np.int64(i)))
+    while len(h) > 0:
+        di, i = heapq.heappop(h)
+        if di > d[i]:
+            continue
+        for e in range(nbr_off[i], nbr_off[i + 1]):
+            c = ecost[e]
+            if c < 0.0:
+                continue
+            j = nbr_idx[e]
+            nd = di + c
+            if nd < d[j] and nd <= limit:
+                d[j] = nd
+                org[j] = org[i]
+                pe[j] = e
+                km[j] = km[i] + ekm[e]
+                for m in range(4):
+                    mkm[j, m] = mkm[i, m]
+                mkm[j, emode[e]] += ekm[e]
+                nb[j] = nb[i] + ebord[e]
+                heapq.heappush(h, (nd, j))
+    return cnt
 
 
 def _knows(kn: set, techs) -> bool:
@@ -341,6 +408,7 @@ class _Frame:
         self.e = {"a": a, "b": b, "hop": hop, "open": open_, "fac": fac, "mode": mode, "bord": bord, "toll": toll,
                   "fly": fly[a] | fly[b], "fetch": fetch_e}
         self.costs: dict = {}
+        self.nbr_off, self.nbr_idx = g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64)
 
     def cost(self, cl: str, fetch: bool = False):
         """(edge cost, edge mode, edge km) for a value class (cached); fetch: with the herders' own animals (PW-1511 B)."""
@@ -376,11 +444,34 @@ class _Frame:
         src = np.flatnonzero((S >= TR.SHOW_MIN) & (True if live is None else live))
         c, mode, km = self.cost(cl, self.fetch and good in FETCH_GOODS)
         g = self.ctx.g
-        d, org, kmv, mkm, nb, pe = _walk(src.astype(np.int64), -L * np.log(S[src]), g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64), c, km, mode,
-                                     self.e["bord"].astype(np.int32), L * math.log(1.0 / FLOOR))
+        bord = self.e["bord"].astype(np.int32)
+        d0 = -L * np.log(S[src])
+        d, org, kmv, mkm, nb, pe = _walk(src.astype(np.int64), d0, self.nbr_off, self.nbr_idx, c, km, mode, bord, L * math.log(1.0 / FLOOR))
+        seed = np.full(n, np.inf)
+        seed[src] = d0
+        self._last = {"good": good, "d": d, "org": org, "km": kmv, "mkm": mkm, "nb": nb, "pe": pe, "S": S, "sc": sc, "L": L,
+                      "edges": (c, km, mode, bord), "seed": seed}
+        return self._view()
+
+    def _view(self):
+        w = self._last
+        d, org, S, L = w["d"], w["org"], w["S"], w["L"]
         sup = np.where(np.isfinite(d), np.exp(-np.minimum(d, 700.0) / L), 0.0)
         carry = np.where(org >= 0, d + L * np.log(np.maximum(S[np.maximum(org, 0)], 1e-300)), 0.0)  # (the carrying cost alone, cost-km)
-        return sup, org, kmv, mkm, nb, sc, carry, S, pe, mode
+        return sup, org, w["km"], w["mkm"], w["nb"], w["sc"], carry, S, w["pe"], w["edges"][2]
+
+    def rewalk(self, good: str, dead: np.ndarray, view: bool = True):
+        """The last walk of this good again with the source cells marked `dead` (per cell) taken out: as walk(good, live=~dead and the
+        earlier live mask), re-walking only the land the dead sources had supplied (_rewalk). Returns walk's tuple; the edge each cell was
+        reached by is a new array (an earlier round's routes keep theirs)."""
+        w = self._last
+        assert w["good"] == good
+        w["pe"] = w["pe"].copy()
+        c, km, mode, bord = w["edges"]
+        w["seed"][dead] = np.inf
+        _rewalk(dead, w["seed"], w["d"], w["org"], w["km"], w["mkm"], w["nb"], w["pe"], self.nbr_off, self.nbr_idx, c, km, mode, bord,
+                w["L"] * math.log(1.0 / FLOOR))
+        return self._view() if view else None
 
 
 def kind_of(fr: _Frame, giver: int, taker: int, borders: float) -> str:
@@ -436,6 +527,7 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
     agg: dict = {}
     home: dict = {}
     unmet: dict = {}
+    rounds: dict = {}
     for good in TR.GOODS:
         lack = P["lack"].get(good)
         if lack is None or not (lack > 0).any():
@@ -443,25 +535,39 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
         # the supply is shared: a source gives at most its surplus (in people's worth, like for like, as the ledger), the nearest takers
         # first (best supply first); a taker cut short by an emptied source tries the next best source in the next round
         rem = lack.copy()
-        avail = None
+        avail = avail0 = None
         want = (lack > 0) & trading
-        for _ in range(ROUNDS):
+        nr = 0
+        for _ in range(SEEK_CAP if good in SEEK_GOODS else ROUNDS):
             p = np.flatnonzero(want & (rem > 0))
             if not len(p):
                 break
-            sup, org, km, mkm, nb, sc, carry, S, pe, emode = fr.walk(good, None if avail is None else avail > 1e-9 * np.maximum(avail0, 1e-12))
             if avail is None:
+                sup, org, km, mkm, nb, sc, carry, S, pe, emode = fr.walk(good)
                 avail0 = S * heads
                 avail = avail0.copy()
+                alive = np.ones(len(avail), bool)
+            else:  # (the sources emptied last round give no more: walk again where they had reached)
+                gone = alive & ~(avail > 1e-9 * np.maximum(avail0, 1e-12))
+                alive &= ~gone
+                fr.rewalk(good, gone, view=False)
+                W = fr._last
+                org, km, mkm, nb, pe, d = W["org"], W["km"], W["mkm"], W["nb"], W["pe"], W["d"]
             cp, t = cell[p], cu[p]
             o = org[cp]
-            ask = np.minimum(rem[p], sup[cp]) * heads[cp]
+            if avail0 is not None and nr > 0:  # (supply and carrying cost at the asking cells only)
+                sup_p = np.where(np.isfinite(d[cp]), np.exp(-np.minimum(d[cp], 700.0) / W["L"]), 0.0)
+            else:
+                sup_p = sup[cp]
+            ask = np.minimum(rem[p], sup_p) * heads[cp]
             ok = (o >= 0) & (ask > 0)
-            p, cp, t, o, ask = p[ok], cp[ok], t[ok], o[ok], ask[ok]
+            p, cp, t, o, ask, sup_p = p[ok], cp[ok], t[ok], o[ok], ask[ok], sup_p[ok]
             if not len(p):
                 break
-            order = np.argsort(sup[cp] * -1.0, kind="stable")
+            carry_p = d[cp] + W["L"] * np.log(np.maximum(S[o], 1e-300)) if nr > 0 else carry[cp]  # (the carrying cost alone)
+            order = np.argsort(sup_p * -1.0, kind="stable")
             got = _allocate(order, o, ask, avail)
+            nr += 1
             cut = got < ask * (1 - 1e-9)
             rem[p] -= got / np.maximum(heads[cp], 1e-12)
             giver = sc[o]
@@ -476,7 +582,7 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
                 key = giver[fl] * len(wsum_arr) + t[fl]
                 u, inv = np.unique(key, return_inverse=True)
                 vv = v[fl]
-                cols = [vv, vv * km[cp[fl]], vv * carry[cp[fl]], *(vv * mkm[cp[fl], m] for m in range(4)), vv * nb[cp[fl]]]
+                cols = [vv, vv * km[cp[fl]], vv * carry_p[fl], *(vv * mkm[cp[fl], m] for m in range(4)), vv * nb[cp[fl]]]
                 sums = [np.bincount(inv, weights=x, minlength=len(u)) for x in cols]
                 for k, kk in enumerate(u.tolist()):
                     a = agg.setdefault((kk // len(wsum_arr), kk % len(wsum_arr), good), [0.0, 0.0, 0.0, np.zeros(4), 0.0])
@@ -487,6 +593,7 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
                     a[4] += sums[7][k]
             want = np.zeros(len(rem), bool)
             want[p[cut]] = True  # (only those cut short by an emptied source look further)
+        rounds[good] = nr
         q = np.flatnonzero((lack > 0) & trading)
         for c, x in _sum_by(cu[q], rem[q] * w[q] / wsum_arr[cu[q]]).items():
             unmet.setdefault(c, {})[good] = x
@@ -520,7 +627,8 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
                       mode, kind, via])
     flows.sort(key=lambda f: -f[3])
     rnd = lambda d: {str(c): {g: round(x, 4) for g, x in v.items() if x >= FLOW_MIN} for c, v in d.items()}  # noqa: E731
-    out = {"flows": flows, "home": rnd(home), "unmet": rnd(unmet), "war_edges": fr.war_edges, "flyer_foods": flyer_foods(ctx, fr)}
+    out = {"flows": flows, "home": rnd(home), "unmet": rnd(unmet), "war_edges": fr.war_edges, "flyer_foods": flyer_foods(ctx, fr),
+           "rounds": rounds}
     if loads is not None:
         out.update(loads.finish(last_routes))
         out["quarter_edges"] = fr.quarter_edges

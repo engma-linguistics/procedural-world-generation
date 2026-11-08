@@ -155,3 +155,31 @@ def test_a_route_is_judged_per_good_against_its_carried_volume(tmp_path):
     f = TF.flows_at(_line_ctx(tmp_path), 0)
     assert f["routes"] and max(r[2] for r in f["routes"]) <= 1 + 1e-9
     assert max(r[2] for r in f["routes"]) > 0.5  # (a six-cell line: one road carries the whole of some good)
+
+
+def test_rewalk_matches_a_fresh_walk_without_the_dead_sources(tmp_path):
+    """Grain's rounds (trade_flow.SEEK_GOODS) re-walk only the land of the emptied sources (_rewalk); the costs and origins must be those
+    of a fresh walk from the live sources alone."""
+    ctx = _line_ctx(tmp_path)
+    fr = TF._Frame(ctx, 0, None, None)
+    fr.walk("grain")
+    src = np.unique(fr._last["org"][fr._last["org"] >= 0])
+    dead = np.zeros(N, bool)
+    dead[src[:1]] = True
+    fr.rewalk("grain", dead, view=False)
+    fr2 = TF._Frame(ctx, 0, None, None)
+    fr2.walk("grain", live=~dead)
+    for k in ("d", "org"):
+        a, b = fr._last[k], fr2._last[k]
+        assert np.array_equal(np.isfinite(a), np.isfinite(b)) and np.allclose(a[np.isfinite(a)], b[np.isfinite(b)])
+
+
+def test_grain_takers_look_on_until_a_round_finds_no_more(tmp_path, monkeypatch):
+    """Lane 216b: grain's allocation runs until no taker cut short reaches a live source (SEEK_GOODS); with it the grain still unmet is
+    never more than with the old 3-round bound, and the rounds used are recorded."""
+    f = TF.flows_at(_line_ctx(tmp_path), 0)
+    assert f["rounds"]["grain"] >= 1
+    monkeypatch.setattr(TF, "SEEK_GOODS", ())
+    g = TF.flows_at(_line_ctx(tmp_path), 0)
+    un = lambda x: sum(v.get("grain", 0.0) for v in x["unmet"].values())  # noqa: E731
+    assert un(f) <= un(g) + 1e-9 and g["rounds"]["grain"] <= TF.ROUNDS
