@@ -512,3 +512,19 @@ Norde 2009). Three phases, one lane at a time on grammar.py to avoid conflicts:
 - **Phase C (morphology types):** 13 inflection classes and cumulative exponence (keep merged categories);
   14 applicative, reciprocal, antipassive; 15 infixes, reduplication, stem change across the lexicon; 16 second-position
   clitics and topic fronting; 17 switch-reference; 18 noun incorporation; 19 Austronesian-style voice.
+
+### Phase D (coordinator's picks, Daniel 11-07 night: "what would *you* want to work on?")
+Against Wikipedia's grammatical-category list, after A-C:
+- **Deixis distance:** 2- vs 3-way demonstratives (this/that/yon), distance-marked by the lexicon and pages. Cheap and very visible.
+- **Politeness and honorifics:** T-V pronoun splits (a plural or 3rd-person pronoun used politely), honorific verb forms in
+  status-heavy cultures; link them to the peoples' social data where it exists.
+- **Species leanings in grammar,** the way kenku lean tonal: a small per-people bias table (e.g. long-lived peoples toward
+  evidentials and conservative morphology). Owner-flavoured, so propose the table rather than invent lore.
+- **Tense remoteness** (Bantu-style graded pasts and futures), **aspect variety** (inceptive, completive, iterative), and
+  **mirativity** beside the evidentials.
+- **Comparison and degree** as real constructions (the exceed, locational and particle comparatives the typology draws).
+- **Obviation and animacy hierarchies** (proximate/obviative third persons; hierarchy-driven agreement), with Phase B's
+  object agreement.
+- **A glossed short text per demo language** (a few connected sentences: a small story or a recipe, in keeping with
+  the culinary end-goal), not just isolated sentences.
+- **A last-pass "reviewing linguist" agent** reads the regenerated sketches cold and lists what looks fake.
