@@ -510,7 +510,7 @@ class LivePolities(StandIns):
                     hk = heads[k] = hk.copy()
                     hk[cells] *= 1.0 - cut
                     if fate == "expelled":  # (the heads that left the taken cells, those whose presence fell under EST too)
-                        gone = float((on * (1.0 - h.p[k][cells] / pb)).sum())
+                        gone = float((on * (1.0 - np.divide(h.p[k][cells], pb, out=np.ones_like(pb), where=pb > 0))).sum())
                         moved = self._refuge(k, hk, cells, ruled, gone)
                     done[(k, self.k)] = spent + (cut * n if fate != "expelled" else gone - moved)
             out[lid] = [fate, int(round(gone - moved)), int(round(moved))]
