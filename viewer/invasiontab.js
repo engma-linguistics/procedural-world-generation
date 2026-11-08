@@ -36,7 +36,7 @@
   const FOOT = `Invasions you schedule: "the antelope-kin come down on the humans around year 1400". Each changes only the states and wars
     read after the run (the Polities layer on the globe), never the peoples history: in its window a state of the invaders that borders a polity
     of the victims attacks it with twice war's usual chance per century (light) or for certain and with no edge in strength needed (strong).
-    A strong one also reaches: a war band if the invaders have only chiefdoms, an expedition across the gap if no state of theirs borders the
+    A strong one also reaches: a war band if the invaders have only chiefdoms, an expedition of up to about 1,000 km (further for a large empire: as far as its own radius) if no state of theirs borders the
     victims, and further for nomads and herders. The result says what came of it: who took what from whom, when, and how much land, or why nothing happened (no state of the invaders then,
     no border with the victims, the odds, or the chance). On the right, the incursions the peoples history found on its own (read-only).`;
   const st = { edit: null, err: '', who: '' };

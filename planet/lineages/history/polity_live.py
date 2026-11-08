@@ -11,8 +11,10 @@ hazard and war_v0), and then:
   tolerance, in any era): the history keeps each people's tolerance and aggression (attitudes.Attitudes, stepped here each century
   from the tree's temperament and the live polities' own wars, rule and contacts). A people on the land that changed hands is kept,
   thinned or expelled by the winner's harshness to it: the tree's old enmity (StandIns.hostility) moved by the winner's tolerance,
-  + TOL_X x (0.5 - tolerance), and the winner's aggression sets how hard (FATE_AT, FATE_CUT, TOL_X, AGG_MID; judgements). A winner
-  of middling tolerance and aggression (0.5) fares exactly as the old placeholder (A);
+  + TOL_X x (0.5 - tolerance), raised by its aggression in proportion to its intolerance (PW-1487, Daniel D59 C: a martial, intolerant
+  winner expels or razes in any era; a tolerant conqueror, Cyrus, still keeps), and the winner's aggression also sets how hard
+  (FATE_AT, FATE_CUT, TOL_X, AGG_HARSH, AGG_MID; judgements). A plain winner (aggression AGG_HARSH) of middling tolerance (0.5) fares
+  exactly as the old placeholder (A);
 - invasions you schedule reach as in the read-out (PW-1479, PW-1450): a strong row seats a war band (polities._war_bands) and sends an
   expedition across the gap (polities._expedition, invasions.campaign_budget), the same code as polities.derive.
 
@@ -45,15 +47,25 @@ INVASIONS = None  # (invasions you schedule, as invasions.clean reads them, PW-1
 PACIFY = {"chiefdom": 1 / 3, "state": 1.0, "empire": 1.0, "dragon realm": 1 / 3}  # judgement: a chiefdom or a tribute-taking dragon keeps a third of a state's peace
 STATE_BAR = 1.0  # judgement (Carneiro 2012's social circumscription made tight): land a foreign state rules bars a faction from splitting off fully
 # ---- the loser's peoples (proposal-r2 3.3, "War is mostly a change of owner"; tolerance from the tree's enmities, judgement)
-FATE_AT = (0.25, 0.6)  # the winner's harshness to a people on the taken land (_fates: hostility + TOL_X x (0.5 - tolerance)): under 0.25 kept, under 0.6 thinned, else expelled
+FATE_AT = (0.25, 0.6)  # the winner's harshness to a people on the taken land (_fates: harshness()): under 0.25 kept, under 0.6 thinned, else expelled
 TOL_X = 2.0  # judgement (PW-1481): tolerance 0..1 spans the whole harshness scale: at 0.5 the old enmity alone, at 0 + 1 (strangers expelled), at 1 - 1 (even old enemies kept)
 FATE_CUT = {"kept": 0.0, "thinned": 0.25, "expelled": 0.8}  # the share of its presence on the taken cells it loses (once, at the conquest), for a winner of aggression AGG_MID
+AGG_HARSH = AT.AGG_BASE  # reasoned (PW-1487, D59 C): the aggression at which a winner is as harsh as its tolerance alone says (a plain
+# people's, attitudes.AGG_BASE 0.3). Each 0.1 of aggression above it adds TOL_X x 0.1 x (1 - tolerance): a fully intolerant winner's
+# aggression weighs exactly as its tolerance does (TOL_X), a fully tolerant one's not at all. The gate is Daniel's own two poles (D54):
+# Genghis Khan and Cyrus were both great conquerors, so aggression cannot make every conqueror harsh; it makes an intolerant one harsher
 AGG_MID = 0.5  # judgement (PW-1481): the cut scales with the winner's aggression / AGG_MID (attitudes: 0.3 a plain people, 0.5 a martial one), never past all of it
 FATE_MAX = 0.1  # guard: no people loses more than 10% of its heads to conquests in one step (the rest of the cut is waived)
 NEED_X = 4.0  # cost (lane 201b): on an expedition's miss, how far the history looks for the nearest victim polity (the why-not's "lay N km
 # away"), in multiples of the largest budget tried; past it the why-not says "more than N km". The read-out (derive) still looks without limit
 SUBJECT_SHARE = PO.SUBJECT_SHARE
 SEDENTARY_MIN = 1.0  # (heads: a cell with fewer sedentary heads is not settled land a dragon can take tribute from)
+
+
+def harshness(hostility: float, tol: float, agg: float) -> float:
+    """A winner's harshness to a people on the land it took (PW-1481, PW-1487): its people's old enmity to theirs, + TOL_X x (0.5 -
+    tolerance), + TOL_X x (aggression - AGG_HARSH) x (1 - tolerance). Read against FATE_AT: kept, thinned, expelled."""
+    return hostility + TOL_X * (0.5 - tol) + TOL_X * (agg - AGG_HARSH) * (1.0 - tol)
 
 
 class LivePolities(StandIns):
@@ -443,9 +455,9 @@ class LivePolities(StandIns):
             self.recs[o]["fell_kyr"], self.recs[o]["fell_how"] = round(ago, 3), how
 
     def _fates(self, win, cells, heads) -> dict:
-        """The peoples on the land war took fare by the winner's attitudes (PW-1481): its harshness to each, its people's old enmity to
-        theirs (hostility) + TOL_X x (0.5 - its tolerance), reads kept, thinned or expelled (FATE_AT); the cut (FATE_CUT) scales with its
-        aggression / AGG_MID. A tolerant winner keeps even an old enemy's people more often; an intolerant one thins or expels even a
+        """The peoples on the land war took fare by the winner's attitudes (PW-1481, PW-1487): its harshness to each (harshness: its
+        people's old enmity to theirs, moved by its tolerance and by its aggression gated by its intolerance) reads kept, thinned or
+        expelled (FATE_AT); the cut (FATE_CUT) scales with its aggression / AGG_MID. A tolerant winner keeps even an old enemy's people more often; an intolerant one thins or expels even a
         people it had no quarrel with; an aggressive one cuts harder. Cuts their presence there once, never more than FATE_MAX of a
         people's heads in one step. Returns {people: [fate, heads lost]}."""
         h = self.h
@@ -463,7 +475,7 @@ class LivePolities(StandIns):
             lid = h.lines[k].id
             if lid in wanc or win["people"] in self.anc.get(lid, ()):  # (the winner's own people and kin)
                 continue
-            z = float(self.hostility[wk, k]) + TOL_X * (0.5 - tol)
+            z = harshness(float(self.hostility[wk, k]), tol, agg)
             fate = "kept" if z < FATE_AT[0] else ("thinned" if z < FATE_AT[1] else "expelled")
             cut = min(1.0, FATE_CUT[fate] * agg / AGG_MID)
             if cut > 0:
@@ -542,6 +554,6 @@ class LivePolities(StandIns):
                 "attitudes": self.att.doc() | {"keyed_by": "people (line index; the history has no cultures)"},
                 "invasions": [{"row": r, "log": {k: v for k, v in lg.items()}} for r, lg in zip(self.inv_in, self.inv_log)],
                 "invasion_problems": self.inv_notes,
-                "constants": {"FATE_AT": FATE_AT, "FATE_CUT": FATE_CUT, "FATE_MAX": FATE_MAX, "PACIFY": PACIFY, "STATE_BAR": STATE_BAR, "AGG_MID": AGG_MID, "TOL_X": TOL_X,
+                "constants": {"FATE_AT": FATE_AT, "FATE_CUT": FATE_CUT, "FATE_MAX": FATE_MAX, "PACIFY": PACIFY, "STATE_BAR": STATE_BAR, "AGG_MID": AGG_MID, "TOL_X": TOL_X, "AGG_HARSH": AGG_HARSH,
                               "CAMPAIGN_KM": IV.CAMPAIGN_KM, "NEED_X": NEED_X,
 }}

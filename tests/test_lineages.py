@@ -3732,18 +3732,48 @@ def test_live_conquest_harshness_reads_the_winners_attitudes(faketz, monkeypatch
     assert out[(0.95, 0.3)] == ["kept", 0]
     assert out[(0.1, 0.3)][0] == "expelled" and out[(0.1, 0.6)][0] == "expelled"
     assert 0 < out[(0.1, 0.3)][1] < out[(0.1, 0.6)][1]
-    R.hostility[fk, kb] = 0.5  # (an old quarrel: a very tolerant winner keeps them, a middling one thins as the old rule, an intolerant one expels)
-    for ta, want in (((0.95, 0.5), "kept"), ((0.5, 0.5), "thinned"), ((0.1, 0.5), "expelled")):
+    R.hostility[fk, kb] = 0.5  # (an old quarrel: a very tolerant winner keeps them, a middling plain one thins as the old rule, an
+    # intolerant one expels; a middling martial one expels too, PW-1487)
+    for ta, want in (((0.95, 0.5), "kept"), ((0.5, 0.3), "thinned"), ((0.1, 0.5), "expelled"), ((0.5, 0.5), "expelled")):
         h.p[kb][cells] = p0
         R.att.x[fk] = np.array(ta)
         R.k += 1
         assert R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"][0] == want
 
 
+def test_aggression_makes_an_intolerant_conqueror_harsher_not_a_tolerant_one():
+    """PW-1487 (Daniel D59 C, round11.md): aggression raises a winner's harshness in proportion to its intolerance. A martial,
+    intolerant winner expels even a people it has no quarrel with; a martial, tolerant one (Cyrus) still keeps it; a plain winner
+    (aggression AGG_HARSH) is as harsh as its tolerance alone says, as before."""
+    from planet.lineages.history import polity_live as PL
+    fate = lambda z: "kept" if z < PL.FATE_AT[0] else ("thinned" if z < PL.FATE_AT[1] else "expelled")  # noqa: E731
+    assert fate(PL.harshness(0.0, 0.36, 0.60)) == "expelled"  # (round 10's orcs, seed 10: thinned there)
+    assert fate(PL.harshness(0.0, 0.80, 0.80)) == "kept"  # (a tolerant horde)
+    assert fate(PL.harshness(0.3, 0.75, 0.60)) == "kept"  # (a tolerant martial winner keeps even a mild old enemy)
+    for tol in (0.2, 0.5, 0.8):
+        assert PL.harshness(0.2, tol, PL.AGG_HARSH) == 0.2 + PL.TOL_X * (0.5 - tol)  # (plain winner: the old rule)
+        assert PL.harshness(0.2, tol, 0.7) > PL.harshness(0.2, tol, 0.4)
+    assert PL.harshness(0.2, 1.0, 0.9) == PL.harshness(0.2, 1.0, 0.1)  # (fully tolerant: aggression does not move it)
+    lift = lambda tol: PL.harshness(0.0, tol, 0.8) - PL.harshness(0.0, tol, 0.3)  # noqa: E731
+    assert lift(0.1) > lift(0.5) > lift(0.9) > 0
+
+
+def test_campaign_budget_is_a_fixed_range_or_the_states_own_radius_times_mobility():
+    """PW-1478 (Daniel D56 B plus Rome, round11.md): an expedition reaches CAMPAIGN_KM (1,000 km) or, for a state larger than that,
+    its own radius (EXTENT_X x sqrt(area / pi)); x2 for nomads and pastoral nomads."""
+    import math
+    from planet.lineages import invasions as IV
+    assert IV.campaign_budget(0.2e6, 1.0) == IV.CAMPAIGN_KM == 1000.0  # (a small state: the fixed range)
+    assert IV.campaign_budget(0.2e6, IV.mobility({"traits": ["nomadic"]})) == 2000.0
+    rome = IV.campaign_budget(5.0e6, 1.0)  # (Rome at AD 117, Taagepera 1979)
+    assert math.isclose(rome, math.sqrt(5.0e6 / math.pi)) and 1200 < rome < 1300
+    assert IV.campaign_budget(5.0e6, 2.0) == 2 * rome
+
+
 def test_live_polities_send_a_strong_rows_expedition_across_a_gap(faketz, monkeypatch):
     """PW-1479 (lane 201, round10.md): with polities in the history on, a strong invasion row reaches victims across unruled land as
-    the read-out does (polities._expedition, the same code): only within the campaign budget (invasions.CAMPAIGN_KM, the one constant
-    both paths read; None: the state's own reach again), and the read-out says why not when it falls short."""
+    the read-out does (polities._expedition, the same code): only within the campaign budget (invasions.campaign_budget, which both
+    paths read; here 1 km and no radius term, too short, against 1e5 km), and the read-out says why not when it falls short."""
     import types
     from planet.lineages import invasions as IV, polities as PO
     h, env, step, land = _live_setup(faketz, monkeypatch)
@@ -3766,8 +3796,9 @@ def test_live_polities_send_a_strong_rows_expedition_across_a_gap(faketz, monkey
     _sync_pm(h)
     rows = IV.clean([{"id": "r", "who": {"people": "folk"}, "whom": {"people": "kob"}, "from_kyr": 1.0, "to_kyr": 0.6, "strength": "strong"}])[0]
     p0, logs = h.p.copy(), {}
-    for km in (None, 1e5):
+    for km in (1.0, 1e5):
         monkeypatch.setattr(IV, "CAMPAIGN_KM", km)
+        monkeypatch.setattr(IV, "EXTENT_X", 0.0 if km == 1.0 else IV.EXTENT_X)
         h.p[:] = p0
         _sync_pm(h)
         R.__init__(h)
@@ -3779,7 +3810,7 @@ def test_live_polities_send_a_strong_rows_expedition_across_a_gap(faketz, monkey
             R.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
             _sync_pm(h)
         logs[km] = R.inv_log[0]
-    assert logs[None]["took"] == [] and logs[None]["exped"] == [] and logs[None]["exped_fail"] > 0  # (one more reach: too short)
+    assert logs[1.0]["took"] == [] and logs[1.0]["exped"] == [] and logs[1.0]["exped_fail"] > 0  # (too short)
     lg = logs[1e5]
     assert lg["took"] and lg["exped"] and lg["exped"][0]["km"] > 0 and "winner_id" in lg["exped"][0]
     doc = R.doc()
