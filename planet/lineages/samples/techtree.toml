@@ -16,6 +16,7 @@
 # bare = true (PW-971): bare-bones tool use, allowed in a stem before its sapiens node (Lomekwi, Oldowan, Acheulean). Every other tech
 # waits for the node, gesture and language included. Each body plan has its own (PW-987): knapping and handaxes need hands, found and
 # hooked tools take a beak (grip, below), so the bird stems use found tools before their minds and the cats, saurians and dragons none.
+# state = true (D60 B, arm S): a state tech, taken up only by a people with towns of its own (techtree.Calendar.settled).
 # grip (PW-987): what a tech needs to hold its tool, when it needs one (hands not false): "hands" (the default), "beak" or "any" (either). modern_contact = true: spreads by contact (x spread) to any people under a sapiens node.
 #
 # Dates are the real-world (Earth) archaeological firsts the ordering leans on, in kyr before the present. Sources are
@@ -73,7 +74,8 @@ region_min_share = 0.1  # D55 (PW-1471): each present-day landmass holding at le
 region_mkm2 = 24     # D55 (lane 200b): a people's part of a landmass is ceil(its area / this) learners, so a region is a stretch of land, not a
                      # whole continent. JUDGEMENT, measured (round2.md): 12-16 make the humans alone write in 8 of 8 draws (forced); 32 and
                      # landmasses alone leave them without writing; 24 gives writing in 3 of 8, cities and kingship in 6 of 8
-contact_arms = "BT"  # D53 (PW-1461, lane 200b): a tech that needs towns (writing, the alphabet) crosses the taker's town network as the GIVER is
+contact_arms = "BST"  # S: D60 B (PW-1490, lane 207): a state tech (`state = true`) only for a people with towns of its own then
+                     # (techtree.Calendar.settled; round3.md). B, T: D53 (PW-1461, lane 200b): a tech that needs towns (writing, the alphabet) crosses the taker's town network as the GIVER is
                      # minded to trade (techtree.trade_of: 1 - insularity, + 0.1 cosmopolitan): (range width)^(1 - tau) x (towns' width)^tau.
                      # On the final tree (regions on) the median lag from the world's first writing to each people taking it by contact:
                      # 0141d1 1,221 yr off, 608 with B, 953 with T; a2b637 1,001, 409, 665 (12 draws each, round2.md)
@@ -288,6 +290,7 @@ source = "Schmandt-Besserat 1992, Before Writing, U of Texas Press (Near Eastern
 
 [[tech]]
 id = "writing"
+state = true  # D60 B (arm S): taken up only by a people with towns of its own
 name = "writing"
 track = "communication"
 domains = ["know"]
@@ -1215,6 +1218,7 @@ source = "unverified (ranked burials of the Neolithic and Chalcolithic, no singl
 
 [[tech]]
 id = "law"
+state = true  # D60 B (arm S): taken up only by a people with towns of its own
 name = "written law"
 track = "social"
 domains = ["know"]
@@ -1237,6 +1241,7 @@ source = "unverified (Eridu temple sequence from ~7.5 kyr, textbook date)"
 
 [[tech]]
 id = "coinage"
+state = true  # D60 B (arm S): taken up only by a people with towns of its own
 name = "coinage"
 track = "social"
 domains = ["trade"]
@@ -6632,6 +6637,7 @@ source = "none known (unverified)"
 
 [[tech]]
 id = "kingship"
+state = true  # D60 B (arm S): taken up only by a people with towns of its own
 name = "kingship and divine rulers"
 track = "social"
 domains = ["war", "ritual"]
@@ -6667,6 +6673,7 @@ source = "fantasy (D&D clerics); no citation"
 
 [[tech]]
 id = "taxation"
+state = true  # D60 B (arm S): taken up only by a people with towns of its own
 name = "taxation and tribute"
 track = "social"
 domains = ["trade", "war"]
@@ -6689,6 +6696,7 @@ source = "Veldhuis 2014 (unverified) (unverified)"
 
 [[tech]]
 id = "bureaucracy"
+state = true  # D60 B (arm S): taken up only by a people with towns of its own
 name = "bureaucracy and civil service"
 track = "social"
 domains = ["trade", "war"]
@@ -6711,6 +6719,7 @@ source = "none known (unverified)"
 
 [[tech]]
 id = "census"
+state = true  # D60 B (arm S): taken up only by a people with towns of its own
 name = "census and population registers"
 track = "social"
 domains = ["trade", "war"]
@@ -6789,3 +6798,215 @@ earliest_kyr = 0.5
 era = "renaissance"
 earth_origins = 2
 source = "none known (unverified)"
+
+# ---- the sea peoples' branch (PW-1491, lane 207) -----------------------------------------------------------------------------
+# The early ladder needs timber, forage or farmland, which a sea country lacks, so the merfolk and storm giants ended 10-23 kyr behind.
+# These techs are what the sea floor and reefs offer instead: food from the shelf, reefs and kelp, heat from hydrothermal vents, tools of
+# shell, bone and coral, and on to vent-worked metal, reef towns and records of their own. `sea = true`: held only by a sea people
+# (techtree.is_sea: realm coast or sea, or swims and coastal), but a traded one (pearls) passes to land peoples by contact. The goods are
+# the sea's (land.SEA_GOODS: shelf by depth, reef and kelp_beds by the world's cover layers, vents from res_vms at today's ridges).
+# All fantasy: the dates are the nearest land analogue's (named in `source`), not sea records.
+[[tech]]
+id = "sea_foraging"
+name = "reef and shelf foraging"
+track = "food"
+domains = ["food"]
+needs = ["foraging_lore"]
+env_any = ["shelf", "reef", "kelp_beds"]
+earliest_kyr = 165
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491); analogue: shellfish gathering, Marean et al. 2007, Nature 449:905 (~164 kyr)"
+
+[[tech]]
+id = "shell_tools"
+name = "shell, bone and coral tools"
+track = "tools"
+domains = ["craft"]
+needs = ["sea_foraging", "knapping"]
+env_any = ["shelf", "reef"]
+earliest_kyr = 40
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491); analogue: bone tools (unverified)"
+
+[[tech]]
+id = "kelp_cordage"
+name = "kelp cord and nets"
+track = "tools"
+domains = ["craft", "food"]
+needs = ["cordage", "sea_foraging"]
+env_any = ["kelp_beds", "shelf"]
+earliest_kyr = 30
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491); analogue: netting (unverified)"
+
+[[tech]]
+id = "vent_cooking"
+name = "vent cooking and warmth"
+track = "fire"
+domains = ["food"]
+needs = ["sea_foraging"]
+env = ["vents"]
+earliest_kyr = 400
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491): the sea's fire; analogue: cooking (this tree's date)"
+
+[[tech]]
+id = "shellfish_beds"
+name = "shellfish beds (oyster and mussel farming)"
+track = "food"
+domains = ["food"]
+needs = ["sea_foraging", "storage"]
+env_any = ["shelf", "reef"]
+earliest_kyr = 11.5
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491): the sea's farming; analogue: cultivation (this tree's date)"
+
+[[tech]]
+id = "kelp_gardens"
+name = "kelp gardens"
+track = "food"
+domains = ["food"]
+needs = ["kelp_cordage", "shellfish_beds"]
+env_any = ["kelp_beds", "shelf"]
+earliest_kyr = 10
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491); analogue: cultivation's first crops (unverified)"
+
+[[tech]]
+id = "reef_villages"
+name = "reef and kelp-forest villages"
+track = "shelter"
+domains = ["build"]
+needs = ["shellfish_beds", "huts"]
+env_any = ["shelf", "reef", "kelp_beds"]
+earliest_kyr = 10
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491); analogue: villages (unverified)"
+
+[[tech]]
+id = "pearl_crafts"
+name = "pearl and nacre crafts"
+track = "tools"
+domains = ["craft", "trade"]
+needs = ["shell_tools", "shellfish_beds"]
+env_any = ["shelf", "reef"]
+traded = true
+earliest_kyr = 7
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491): traded to land peoples; analogue: shell ornaments (unverified)"
+
+[[tech]]
+id = "coral_lime"
+name = "coral and shell-lime building"
+track = "shelter"
+domains = ["build"]
+needs = ["reef_villages", "shell_tools"]
+env_any = ["reef", "shelf"]
+earliest_kyr = 7
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491); analogue: lime plaster (unverified)"
+
+[[tech]]
+id = "vent_ores"
+name = "vent ore gathering (sulphide chimneys)"
+track = "tools"
+domains = ["craft"]
+needs = ["vent_cooking", "shell_tools"]
+env = ["vents"]
+earliest_kyr = 9
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491); analogue: native copper (this tree's ~10 kyr)"
+
+[[tech]]
+id = "vent_smelting"
+name = "vent smelting"
+track = "tools"
+domains = ["craft"]
+needs = ["vent_ores", "reef_villages"]
+env = ["vents"]
+earliest_kyr = 7
+era = "bronze age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491): metal worked in the vents' heat; analogue: copper smelting (unverified)"
+
+[[tech]]
+id = "vent_bronze"
+name = "vent-cast copper and bronze"
+track = "tools"
+domains = ["craft", "war"]
+needs = ["vent_smelting"]
+env = ["vents"]
+earliest_kyr = 5.5
+era = "bronze age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491); analogue: bronze (unverified)"
+
+[[tech]]
+id = "reef_towns"
+name = "reef towns"
+track = "shelter"
+domains = ["build"]
+needs = ["reef_villages", "kelp_gardens", "coral_lime"]
+earliest_kyr = 7
+era = "stone age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491); analogue: towns (unverified)"
+
+[[tech]]
+id = "shell_tallies"
+name = "shell and knot-cord records"
+track = "communication"
+domains = ["know", "trade"]
+needs = ["tallies", "reef_towns"]
+earliest_kyr = 5.5
+era = "bronze age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491); analogue: tokens and knotted-cord records (unverified)"
+
+[[tech]]
+id = "tide_councils"
+name = "tide councils"
+track = "social"
+domains = ["know", "war"]
+needs = ["reef_towns", "shell_tallies"]
+earliest_kyr = 5.2
+era = "bronze age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491): the sea's chiefdoms and courts; analogue: kingship (unverified)"
+
+[[tech]]
+id = "shell_script"
+name = "incised-shell script"
+track = "communication"
+domains = ["know"]
+needs = ["shell_tallies", "reef_towns"]
+earliest_kyr = 5.0
+era = "bronze age"
+mode = "fantasy"
+sea = true
+source = "fantasy (sea branch, PW-1491): the sea's writing, gated by its own reef towns (the settlement ledger holds no sea places); analogue: writing (unverified)"

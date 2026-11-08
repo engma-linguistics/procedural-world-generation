@@ -68,7 +68,15 @@ GOODS = {
     "frost": ("frozen ground and ice margins", False),
     "den": ("caves, rock shelters and ground to dig (den ground)", True),
     "storm_coast": ("storm-beaten coasts", False),
+    # the sea's own goods (PW-1491, lane 207): on sea cells, carried to the coast's land cells; the sea peoples' tech branch reads them
+    "shelf": ("shallow shelf sea (to ~200 m)", False),
+    "reef": ("coral reefs (warm shallows)", True),
+    "kelp_beds": ("kelp forests and seagrass meadows", True),
+    "vents": ("hydrothermal vents and sea-floor sulphides (mid-ocean ridges)", True),
 }
+SEA_GOODS = ("shelf", "reef", "kelp_beds", "vents")
+SHELF_M = (-400.0, -200.0)  # shelf: full from the shore to -200 m, gone at -400 m (the shelf break, ~200 m)
+REEF_FULL, KELP_FULL = 5.0, 10.0  # % cover of reef framework, of kelp or seagrass, that counts in full (JUDGEMENT: a reef tract, a kelp bed)
 # ores and the like: counted as districts (connected cells >= DISTRICT_MIN) in the notes; the rest by area
 DISTRICTS = {"gold", "iron", "copper", "tin", "gems", "mithril", "coal", "metal", "harbour", "seabirds", "seals", "coral",
              "volcanic", "salt", "salt_rock"}
@@ -152,6 +160,17 @@ def _volcanic(g, L, land) -> np.ndarray:
         young = np.asarray(L.get("landform_age", np.zeros(g.n)), float) <= YOUNG_MYR
         out = np.maximum(out, YOUNG_GROUND * (np.isin(lf, (ARC_CLASS, HOTSPOT_CLASS)) & young))
     return out * land
+
+
+def _sea_goods(f, sea) -> dict:
+    """The sea's own goods per cell, 0..1, on sea cells only (PW-1491): the shelf by depth (elevation, SHELF_M); reefs and kelp or
+    seagrass by the world's cover layers (reef, kelp, seagrass, %); vents from the resources' sea-floor sulphides (res_vms: at sea, the
+    ridges of today's spreading plate boundaries, resources.py)."""
+    el = f("elevation")
+    return {"shelf": np.where(sea, np.clip((el - SHELF_M[0]) / (SHELF_M[1] - SHELF_M[0]), 0, 1), 0.0),
+            "reef": np.where(sea, np.clip(f("reef") / REEF_FULL, 0, 1), 0.0),
+            "kelp_beds": np.where(sea, np.clip(np.maximum(f("kelp"), f("seagrass")) / KELP_FULL, 0, 1), 0.0),
+            "vents": np.where(sea, np.clip(f("res_vms"), 0, 1), 0.0)}
 
 
 def goods(world_ref: str | None) -> dict | None:
@@ -312,6 +331,9 @@ def _make_goods(world_ref: str) -> dict:
         else:  # (likelihoods and classes: already 0..1; point-like, so they reach the country around)
             out[k] = np.where(land, _reach(g, v), 0.0)
     out["_raw"] = {k: np.where(land, v, 0.0) for k, v in raw.items()}
+    for k, v in _sea_goods(f, sea).items():  # (PW-1491: on the sea cells, and the best of the next sea cells on the coast's land)
+        out[k] = np.where(sea, v, np.where(coast, nbr_reduce(g, np.maximum, v[g.nbr_idx]), 0.0))
+        out["_raw"][k] = out[k]
     out["_salt_km"], out["_salt_kind"] = salt_km, salt_kind
     out["_temp"] = f("temperature")  # (mean annual C, for the heath fuel: fuels.py)
     out["_peat"] = np.where(land, f("peat_depth"), 0.0)  # (metres of peat, for the fuels: fuels.py)

@@ -156,7 +156,7 @@
   function techTip(id, extra = '') {  // (the real-world source at the bottom: where and when it happened on Earth)
     const t = D.TECH[id], f = D.firsts[id];
     const land = [...t.env, ...(t.env_any.length ? ['one of ' + t.env_any.join(' / ')] : [])].join(', ');
-    return `<b>${esc(t.name)}</b><div class="muted">${esc(D.TRACK[t.track]?.name || t.track)} · ${esc(t.era)}${t.fantasy ? ' · fantasy' : ''}</div>
+    return `<b>${esc(t.name)}</b><div class="muted">${esc(D.TRACK[t.track]?.name || t.track)} · ${esc(t.era)}${t.fantasy ? ' · fantasy' : ''}${t.sea ? ' · sea peoples\' branch' : ''}${t.state ? ' · needs towns of its own' : ''}</div>
       <div>needs: ${t.needs.length ? t.needs.map((n) => esc(tname(n))).join(', ') : '<span class="muted">nothing</span>'}</div>
       ${land ? `<div>land: ${esc(land)}</div>` : ''}
       <div>earliest ${t.earliest_kyr ?? '?'} kyr${t.elder_kyr ? ` (elder kinds ${t.elder_kyr})` : ''}</div>

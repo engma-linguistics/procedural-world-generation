@@ -465,7 +465,7 @@ def test_arms_off_is_the_plain_front_bit_for_bit():
     """D52's switch off (the default, or an empty string) is today's rule exactly, with or without a town footprint."""
     a = _writing_world(None, over={"contact_arms": ""})
     assert (a == _writing_world("")).all() and (a == _writing_world("", towns=TOWNS_Y)).all()
-    assert TT.ARM_DEFAULTS["contact_arms"] == "" and T["defaults"]["contact_arms"] == "BT"  # (the tree's own: D53's arm T, lane 200b)
+    assert TT.ARM_DEFAULTS["contact_arms"] == "" and T["defaults"]["contact_arms"] == "BST"  # (the tree's own: D53's arm T, lane 200b; D60 B's arm S, lane 207)
 
 
 def test_each_arm_speeds_writing_by_its_own_mechanism():
@@ -581,3 +581,35 @@ def test_region_learners_split_a_continent_by_area():
     k0 = int(np.ceil(600 * cell / 100.0))
     assert [k for k, _ in r].count(0) == k0 and [k for k, _ in r].count(1) == int(np.ceil(100 * cell / 100.0))
     assert abs(sum(w for _, w in r) - 700 / 705) < 1e-9
+
+
+def test_arm_s_state_techs_wait_for_towns_of_ones_own():
+    """D60 B (arm S, lane 207): a state tech (writing) is taken up only while the taker has a town of its own; its front still
+    arrives as before, so a people founding a town takes it up then, and one with towns all along is not slowed."""
+    off = _writing_world("")
+    assert (_writing_world("S", towns=TOWNS_Y) == off).all()  # (towns all along: as without the arm)
+    none = {"_cell_km2": 3000.0, "src": TOWNS_Y["y"]}
+    assert (_writing_world("S", towns=none) == 8.0).all()  # (no town of its own: never)
+    late = {"_cell_km2": 3000.0, "y": (np.array([8.0, 3.0, 2.9, 0.0]), np.array([0.0, 0.0, 5.0, 5.0]))}
+    w = _writing_world("S", towns=late)
+    assert (w >= 5.0 - 1e-6).all() and (w <= np.maximum(off, 5.2)).all()  # (at its first town, or its own front if later)
+    assert {i for i, t in T["techs"].items() if t.get("state")} >= {"writing", "kingship", "law", "coinage"}
+
+
+def test_sea_branch_is_for_sea_peoples_and_reads_sea_goods():
+    """PW-1491 (lane 207): the sea branch is held by sea peoples (realm at sea, or swimming and coastal; a group as its people);
+    land peoples may take only its traded techs, by contact; its goods are the sea's own, on sea cells."""
+    L = {"merfolk": {"id": "merfolk", "realm": "coast"}, "tri": {"id": "tri", "traits": ["swims", "coastal"]},
+         "liz": {"id": "liz", "traits": ["swims"]}, "g": {"id": "g", "group_of": "merfolk", "realm": "land"}}
+    assert TT.is_sea(L["merfolk"], L) and TT.is_sea(L["tri"], L) and TT.is_sea(L["g"], L) and not TT.is_sea(L["liz"], L)
+    sea = [i for i, t in T["techs"].items() if t.get("sea")]
+    assert 10 <= len(sea) <= 20 and all(T["techs"][i].get("mode") == "fantasy" for i in sea)
+    pearl, smelt = T["techs"]["pearl_crafts"], T["techs"]["vent_smelting"]
+    assert TT.sea_ok(pearl, L["liz"], L) and not TT.sea_ok(pearl, L["liz"], L, inventing=True)
+    assert not TT.sea_ok(smelt, L["liz"], L) and TT.sea_ok(smelt, L["merfolk"], L, inventing=True)
+    from planet.lineages import land as LD
+    lay = {"elevation": np.array([100.0, -50.0, -300.0, -3000.0]), "reef": np.array([0, 10.0, 0, 0]),
+           "kelp": np.zeros(4), "seagrass": np.array([0, 0, 5.0, 0]), "res_vms": np.array([0.9, 0, 0, 0.6])}
+    g = LD._sea_goods(lambda k: lay[k], lay["elevation"] < 0)
+    assert g["shelf"].tolist() == [0.0, 1.0, 0.5, 0.0] and g["reef"][1] == 1.0 and g["kelp_beds"][2] == 0.5
+    assert g["vents"].tolist() == [0.0, 0.0, 0.0, 0.6]  # (the land's own ore is not a vent)

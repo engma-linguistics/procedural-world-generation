@@ -82,7 +82,8 @@ FILE = Path(__file__).parent / "samples" / "techtree.toml"
 ERAS = ("stone age", "bronze age", "classical", "medieval", "renaissance", "industrial")
 STEPS = 360  # time steps, log-spaced from the oldest line to the present
 NEAR_KYR = 0.05  # the last step before the present
-DEPOSITS = ("metal", "gold", "iron", "copper", "tin", "gems", "mithril", "coal", "salt", "salt_rock", "stone", "volcanic")
+DEPOSITS = ("metal", "gold", "iron", "copper", "tin", "gems", "mithril", "coal", "salt", "salt_rock", "stone", "volcanic",
+            "vents", "reef", "kelp_beds")  # (the sea's point goods, PW-1491: a vent field, a reef tract, a kelp bed)
 
 
 def load(path: Path | str | None = None) -> dict:
@@ -193,6 +194,24 @@ def _grips(t: dict, k: dict, node: float | None, ago: float) -> bool:
     beak = bool(k.get("beak"))
     g = t.get("grip", "hands")
     return hands if g == "hands" else beak if g == "beak" else hands or beak
+
+
+def is_sea(line: dict, L: dict) -> bool:
+    """A sea people (PW-1491): its realm is the sea (coast or sea), or it swims and keeps to the coast (the tritons, sea elves, deep
+    folk); a group as its people."""
+    seen, cur = set(), line
+    while cur is not None and cur.get("group_of") and cur["id"] not in seen:
+        seen.add(cur["id"])
+        cur = L.get(cur["group_of"])
+    cur = cur or line
+    tr = set(cur.get("traits") or [])
+    return cur.get("realm", "land") != "land" or {"swims", "coastal"} <= tr
+
+
+def sea_ok(t: dict, line: dict, L: dict, inventing: bool = False) -> bool:
+    """Whether a people may hold a tech of the sea branch (`sea = true`, PW-1491): a sea people always; a land people only a traded one,
+    taken by contact (pearls and nacre)."""
+    return not t.get("sea") or is_sea(line, L) or (bool(t.get("traded")) and not inventing)
 
 
 def _env_ok(t: dict, have: set | None) -> bool:
@@ -533,11 +552,19 @@ def contact_rate(area_mkm2: float | None, D: dict) -> float:
 #      trade-mindedness (trade_of): a trading people's writing crosses a taker's towns, an inward one's its whole land.
 #   K  kin share: between a people and its parent, its daughter lines or a sibling line, begun within arm_kin_kyr (a language
 #      family's depth, a judgement), the taker's insularity does not apply (openness 1): its reserve is against Others.
+#   S  settled uptake (D60 B, PW-1490, lane 207): a state tech (`state = true` in the tree: writing, kingship, law, taxation, census,
+#      bureaucracy, coinage) is invented, taken up, shared or inherited only by a people with towns of its own then (settled():
+#      at least one town cell in the footprint), not from the knowledge alone. Its front still arrives as before, so a people that
+#      founds a town takes up a tech already at its border at once. Without a footprint at all, the people's way of life decides
+#      (not a mobile one, MOBILE_WAYS). Foragers, herders and sea nomads without towns stay without states and writing, as the
+#      Ethnographic Atlas's mobile peoples did (docs/review/culture/techtree/round3.md).
 # A front's arrival is recomputed each step for the techs an arm touches and never moves later (a front that gains a road
 # speeds up from where it is; the pair's keyed draw is unchanged).
 ARM_ADMIN = ("writing", "alphabet", "law")
 ARM_URBAN_NEEDS = ("towns", "cities")
 ARM_ELITE = ("chiefdoms", "kingship", "towns")
+MOBILE_WAYS = ("forager", "fisher_forager", "hunter", "pastoral_nomad", "nomadic", "sea_nomad", "transhumant")  # (arm S without a footprint)
+ARM_LETTERS = "BCEKST"
 ARM_DEFAULTS = {"contact_arms": "", "arm_trade_km_yr": 2.2, "arm_kin_kyr": 15.0,
                 "arm_width_x": 1.0}  # (width_x: a factor on B's and E's width, for the nudge check)
 
@@ -546,7 +573,7 @@ def _arm(D: dict, k: str):
     return D.get(k, ARM_DEFAULTS[k])
 
 
-TOWN_ARMS = frozenset("BET")  # (the arms that read the town footprint)
+TOWN_ARMS = frozenset("BEST")  # (the arms that read the town footprint)
 
 
 def trade_of(line: dict) -> float:
@@ -559,16 +586,16 @@ def trade_of(line: dict) -> float:
 
 def arms_of(T: dict | None = None) -> str:
     """The tree's D52 arms (its [defaults] contact_arms), as sorted letters."""
-    return "".join(sorted(set(str(_arm((T or load())["defaults"], "contact_arms"))) & set("BCEKT")))
+    return "".join(sorted(set(str(_arm((T or load())["defaults"], "contact_arms"))) & set(ARM_LETTERS)))
 
 
 def town_arms(T: dict | None = None) -> str:
-    """The tree's arms that need the settlement ledger's town footprint (B, E): output.save then builds the tree twice (PW-1464)."""
+    """The tree's arms that need the settlement ledger's town footprint (B, E, S): output.save then builds the tree twice (PW-1464)."""
     return "".join(sorted(set(arms_of(T)) & TOWN_ARMS))
 
 
 def arms_without_towns(T: dict | None = None) -> str:
-    """The tree's arms less B and E: the first tree output.save builds, before the ledger exists (PW-1464)."""
+    """The tree's arms less B, E and S: the first tree output.save builds, before the ledger exists (PW-1464)."""
     return "".join(sorted(set(arms_of(T)) - TOWN_ARMS))
 
 
@@ -650,7 +677,7 @@ class Calendar:
         T = T or load()
         D = T["defaults"]
         self.T, self.D, self.seed, self.mode, self.era, self.gods_mode = T, D, seed, mode, era, gods_mode
-        self.arms = arms = set(str(_arm(D, "contact_arms") if arms is None else arms)) & set("BCEKT")
+        self.arms = arms = set(str(_arm(D, "contact_arms") if arms is None else arms)) & set(ARM_LETTERS)
         cap = ERAS.index(era) if era in ERAS else len(ERAS) - 1
         self.techs = techs = {i: t for i, t in T["techs"].items() if ERAS.index(t.get("era", "stone age")) <= cap
                               and (mode != "real" or t.get("mode") != "fantasy") and (gods_mode != "belief_only" or not t.get("gods"))}
@@ -662,6 +689,7 @@ class Calendar:
         if unmatched:  # (a rule none of whose ids is a line of this tree applies to nothing, PW-1041)
             warnings.warn(f"tech tree [[kind]] rules name no line of this tree: {', '.join(unmatched)}", stacklevel=3)
         self.kind = {l["id"]: _kind(T, l, L) for l in people}
+        self.sea = {l["id"]: is_sea(l, L) for l in people}  # (PW-1491: who may hold the sea branch)
         self.node = {l["id"]: _node(l, L) for l in people}  # (PW-971: the sapiens node, kyr, of the line's stem; None: no stem node above it)
         self.gens = {l["id"]: _gen(l, L) for l in people}
         self.learn = {lid: learners_x(g, D) for lid, g in self.gens.items()}
@@ -675,6 +703,8 @@ class Calendar:
         self.known: dict[str, dict[str, list]] = {l["id"]: {} for l in people}
         self.hz: dict[str, dict[str, float]] = {l["id"]: {} for l in people}  # (the invention hazard summed so far, per people and tech)
         self.waits: dict[tuple, float] = {}  # ((people, tech): its keyed waiting time, in units of hazard: PW-1483)
+        self.state = {i for i, t in techs.items() if t.get("state")} if "S" in arms else set()  # (arm S: D60 B)
+        self.towns = towns or {}
         if arms:
             self.urban = {i for i, t in techs.items() if set(t.get("needs", [])) & set(ARM_URBAN_NEEDS)}
             self.admin = {i for i, t in techs.items() if t.get("admin") or i in ARM_ADMIN}
@@ -683,7 +713,6 @@ class Calendar:
             if arms & {"B", "E"} and not towns:  # (no footprint: a tree built before the settlement ledger, or inside the history)
                 warnings.warn(f"tech tree arms {''.join(sorted(arms & {'B', 'E'}))} need a town footprint; without one they do nothing",
                               stacklevel=3)
-            self.towns = towns or {}
             self.cell_km2 = float(self.towns.get("_cell_km2") or 0.0)
             self.v_trade = float(_arm(D, "arm_trade_km_yr"))
             self.width_x = float(_arm(D, "arm_width_x"))
@@ -748,10 +777,28 @@ class Calendar:
             return False
         if (inventing or not t.get("traded")) and not _env_ok(t, self.have[lid]):  # (a traded tech, bronze, comes without the ore)
             return False
+        if t.get("sea") and not self.sea[lid] and (inventing or not t.get("traded")):  # (the sea branch: sea peoples; pearls by trade)
+            return False
+        if tid in self.state and not self.settled(lid, ago):  # (arm S, D60 B: a state tech needs towns of the people's own)
+            return False
         if inventing:
             first = floor_of(self.T, tid, bool(k.get("elder")))  # (a gated tech's floor; a soft tech has none)
             return first is None or ago <= first
         return True
+
+    def settled(self, lid, ago) -> bool:
+        """Arm S (D60 B): whether a people is settled enough for a state tech then: a town of its own in the footprint (the
+        settlement ledger's, or the live polities' seats inside the history); with no footprint at all, a way of life that is not
+        a mobile one (MOBILE_WAYS)."""
+        if self.towns:
+            return town_cells_at(self.towns.get(lid), ago) >= 1
+        return self.L[lid].get("way") not in MOBILE_WAYS
+
+    def keeps(self, lid, tid, at) -> bool:
+        """Whether a line starting at `at` keeps a tech it inherits: it can hold the tool (PW-987), and a state tech only if settled."""
+        t = self.techs[tid]
+        return self.held(lid, tid, at) and (tid not in self.state or self.settled(lid, at)) \
+            and (not t.get("sea") or self.sea[lid] or bool(t.get("traded")))  # (a land split of a sea people keeps no sea craft)
 
     def wait_of(self, lid, tid) -> float:
         """The people's waiting time for a tech, in units of hazard (PW-1483): one keyed exponential draw (mean 1) per (seed, people,
@@ -853,12 +900,12 @@ class Calendar:
                 if l.get("origin") in ("split", "group") or l.get("group_of"):
                     src = l.get("group_of") or (l.get("parents") or [None])[0]
                     for tid, v in (known.get(src) or {}).items():
-                        if v[0] >= at - 1e-9 and not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")) and held(lid, tid, at):  # (PW-971: a stem under a node inherits only bare tools from before it)
+                        if v[0] >= at - 1e-9 and not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")) and self.keeps(lid, tid, at):  # (PW-971: a stem under a node inherits only bare tools from before it)
                             give(lid, tid, at, "inherited", src)
                 elif l.get("origin") == "hybrid":
                     for src in l.get("parents") or []:
                         for tid in list((known.get(src) or {})):
-                            if not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")) and held(lid, tid, at):
+                            if not (node[lid] is not None and at > node[lid] and not techs[tid].get("bare")) and self.keeps(lid, tid, at):
                                 give(lid, tid, at, "inherited", src)
                 kit = closure(T, [i for i in kind[lid].get("kit", []) if i in T["techs"]])
                 for tid in [i for i in order if i in kit]:
@@ -982,6 +1029,7 @@ class Calendar:
                            "env": techs[i].get("env", []), "env_any": techs[i].get("env_any", []),
                            "earliest_kyr": techs[i].get("earliest_kyr"), "elder_kyr": techs[i].get("elder_kyr"),
                            "era": techs[i].get("era", "stone age"), "fantasy": techs[i].get("mode") == "fantasy",
+                           **({"sea": True} if techs[i].get("sea") else {}), **({"state": True} if techs[i].get("state") else {}),
                            "source": techs[i].get("source", ""), "domains": domains_of(techs[i]), "pool": pool[i],
                            "floor_kyr": floor_of(T, i), "rate": round(rates[i], 4),
                            "anchor_lag_kyr": None if floor_of(T, i) is not None else anchor_lag(T, i)} for i in order],
@@ -1097,7 +1145,7 @@ def rebuild(run_dir: Path, gods_mode: str | None = None, T: dict | None = None, 
     lines = with_generations(m["lineages"], m.get("tree"))
     D = (T or load())["defaults"]
     towns = None
-    if set(str(_arm(D, "contact_arms") if arms is None else arms)) & {"B", "E"} and m.get("settlements"):
+    if set(str(_arm(D, "contact_arms") if arms is None else arms)) & TOWN_ARMS and m.get("settlements"):
         from .techspread import town_footprint
         towns = town_footprint(run_dir)
     return build(lines, m.get("contacts"), m.get("present"), present, goods, m.get("mode", "fantasy"),
