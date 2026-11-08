@@ -82,7 +82,8 @@ def test_demo_page_is_one_offline_file(tmp_path):
     page, info = DP.build(str(src), None, 10, "auto", audio=False)
     assert len(info["languages"]) == 4 and info["clips"] == 0
     assert "<script src" not in page and "<link" not in page and "fetch(" not in page
-    assert page.count("class='lang'") == 4 and "Sample sentences" in page and "Word families" in page
+    assert page.count("class='lang'") == 5 and "Sample sentences" in page and "Word families" in page   # (4 + the complexity tab)
+    assert "Languages getting more and less complex" in page
     assert "name='viewport'" in page and "localStorage" not in page
 
 

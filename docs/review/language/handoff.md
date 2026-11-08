@@ -213,3 +213,27 @@ New allophone test name "coda". Nothing else in the file changed shape.
 **Measuring.** The lane's scratch scripts (`meas.py`, `runsnap.sh`) were in the session scratchpad and are gone with it;
 `meas.py` read a languages.json and reported same-form pairs, tone re-firings, renewal and affix shares, replacement
 shares, segment shares over all and human-voiced lects, checks, timing and bytes per key. Rewrite as needed.
+
+## Continuation (finish lane, 2026-11-08)
+
+**State.** Branch `lang-finish` (worktree `.claude/worktrees/lang-finish`, from `lang-design` at a6f293a3). All tasks are committed. Nothing is merged or pushed.
+
+The final run is in place:
+- `runs/a24559/languages.json`, `languages-etym.json` and `languages-snapshots.json`;
+- `run.json` `meta.languages` is updated by the pass, as in earlier rounds.
+
+Numbers are in calibration.md "Final run (2026-11-08, finish lane)". The defaults taken while Daniel was away are in `for-daniel.md`.
+
+**Schema change: format procgen-languages/2 (architecture.md §11).** Every reader must go through the loaders:
+- `planet.language.output.load(path, sidecars=...)` / `save(doc, path)` in Python;
+- `LangCore.expand(main, {etym, snapshots})` in the viewer. `langview.js` fetches the sidecars when `doc.format` is /2.
+- `langserve.py` serves `languages-<part>.json` beside `--languages`.
+
+The in-memory doc is unchanged (/1 shape).
+
+**Determinism.** The output must not depend on the str hash seed. Never iterate a set or frozenset of strings (or of Segments, whose hash includes `kind`) where the order can reach an rng draw or a float sum; sort it first. The slow test `test_deterministic_across_hash_seeds` runs the tiny world under two seeds.
+
+**Next steps.**
+1. Speed. The wall clock did not fall: steps are about 920 s at 12 workers. The next lever is the worker side (`rules._apply_one`, the Pattern memo dict, `dataclasses.replace`). Each interval forks a fresh Pool; a persistent pool would only save the fork, not the stepping.
+2. The scholars' horizon still fails (10.7 kyr against 6-10).
+3. The complexity tab of the demo reads today's L2, population and isolation. A per-snapshot `l2`/`pop` would let causes be dated.

@@ -36,4 +36,12 @@ tests; `LC.expand` in viewer/langcore.js, with langview.js fetching the sidecars
 shape; format procgen-languages/2 documented in architecture.md §11; (d) speed: memoize the wave's `ease_factor` /
 `size_factor` per (receiver, rule) per interval (they recompute `touched_by`, `load_forms`, `keep_part` per offer),
 and stop `load_forms` sorting the whole lexicon on every call; profile one worker with cProfile first.
-- [ ] main file under 40 MB, pass under 5 minutes with 12 workers on a24559, viewer unchanged for the owner
+Finish lane (2026-11-08): the size half is done. Format procgen-languages/2 (architecture.md §11): the main file is 36.4 MB
+(9.5 MB gzipped), with the sidecars languages-etym.json at 63.1 MB and languages-snapshots.json at 26.2 MB, 125.7 MB in all.
+The baseline was one 241.5 MB file. One expander on each side: output.load/expand and LangCore.expand. Every reader is
+switched over, and the output is identical across hash seeds. The speed half is not done. The 6-frame single-process profile
+fell from 765 s to about 680 s (cached Segment hash, wave memo, lazy homophones), but the full pass is still about 1260 s,
+because the non-human ease drag added steps time. A parent profile puts the remaining time in the workers' rule
+application: `rules._apply_one`, the Pattern memo dict and `dataclasses.replace`.
+- [x] main file under 40 MB, viewer unchanged for the owner (36.4 MB; the sidecars load in parallel)
+- [ ] pass under 5 minutes with 12 workers on a24559 (now ~21 min wall: worker-side rule application is next)
