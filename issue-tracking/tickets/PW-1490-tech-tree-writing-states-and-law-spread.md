@@ -1,4 +1,5 @@
 ---
+id: PW-1490
 title: "Tech tree: writing, states and law spread as fast as copper; nearly every people with hands holds the whole core ladder by the present"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: scout-206
 blocked_by: []
 relates: [PW-1485, PW-1471, PW-1461]
 refs: [docs/review/culture/techtree/spread1.md, docs/review/culture/techtree/spread1/measure.py, docs/review/culture/techtree/spread1/tables.py, docs/review/culture/techtree/spread1/tables_out.md, "planet/lineages/techtree.py::Calendar.advance", "planet/lineages/techtree.py::Calendar.can", "planet/lineages/techtree.py::contact_rate", planet/lineages/samples/techtree.toml, "runs 0141d1 3e0eb4 a2b637 07c755", "Murdock 1967 Ethnographic Atlas (D-PLACE EA028/EA033/EA055)", "Comin, Easterly & Gong 2010 AEJ:Macro 2(3)", "Svizzero & Tisdell 2015 Soc Evol Hist 14(2)"]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -55,3 +58,6 @@ Not v1-blocking.
 - [ ] at the 0.5 kyr-ago state, the core admin techs (writing, kingship) held by clearly fewer peoples than the farming techs, on
   0141d1 and 07c755, over 8 draws
 - [ ] the fast techs (crops, copper, iron) unchanged within draw scatter
+
+## Updates
+- 2026-11-07: Created from inbox draft draft-slow-techs-spread-like-crops.md (found by scout-206).
