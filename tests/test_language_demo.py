@@ -153,3 +153,33 @@ def test_demo_page_second_read_fixes():
     big = dict(a, population=300000, l2=0.0, isolation=1.0)
     doc.living[:] = [big] + [dict(x, population=10, l2=0.9, isolation=0.0) for x in doc.living[1:]]
     assert "Trudgill" not in DP._cause(doc, big, True, 2.0)
+
+
+def test_demo_page_third_read_fixes():
+    """Grammar D, from demo read 3: 'few adult learners' needs a low share, 'small' a small community; a trade-good
+    concept reads 'seals (trade good)'; populations keep enough digits to tell two apart; one family, not '1 families'."""
+    import demo_page as DP
+    import sketch as SK
+    doc = SK.Doc(_mini_doc())
+    a = doc.living[0]
+    mid = dict(a, population=32000, l2=0.40, isolation=1.0)
+    doc.living[:] = [mid] + [dict(x, population=10 ** 6, l2=0.9, isolation=0.0) for x in doc.living[1:]]
+    txt = DP._cause(doc, mid, True, 2.0)
+    assert "small" not in txt.split("(")[0] and "few adult learners" not in txt and "fewer adult learners" in txt
+    assert SK.cname("good:seals") == "seals (trade good)"
+    assert DP._pop({"population": 3_427_826}) != DP._pop({"population": 3_381_000})
+    for c in a["lexicon"]:
+        a["lexicon"][c]["etym_roots"] = ["r1"] if c in ("DOG", "FISH", "BIRD") else [c]
+    out = DP.families(doc, a, "etym_roots", None)
+    assert "1 family of 3+" in out
+
+
+def test_faith_label_reads_as_english():
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools" / "language"))
+    import sketch as SK
+    assert SK.faith_label("the sea faith of first tortles of the south of Simath") == \
+        "the sea faith of the earliest tortles of the south of Simath"
+    assert SK.faith_label("the sky faith of giant-kin stem of the west of Simath") == \
+        "the sky faith of the giant-kin of the west of Simath"
+    assert SK.faith_label("the mountain schism of first kobolds of the west of Simath") == \
+        "the mountain schism of the earliest kobolds of the west of Simath"

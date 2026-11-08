@@ -337,7 +337,8 @@ class Doc:
             sch = (self.names.get("scholars") or {}).get(lid)
             if sch:
                 return "Proto-" + sch["roman"]
-            return f"the {people(l['people'])} proto-language"
+            return f"the {l['people'].replace('_', ' ')} proto-language"   # (the people's key as an adjective: a page may
+            # name peoples in the plural, and "the humans proto-language" does not read)
         dn = l.get("deme_name") or f"{people(l['people'])} {l['deme']}"
         if short:
             return dn.split(" (")[0]
@@ -354,11 +355,15 @@ class Doc:
         return None
 
 
+#: how a concept's kind prefix reads after the word ('good:seals' is seals as a trade good, not 'good seals')
+_KIND = {"good": "trade good", "kin": "kin term"}
+
+
 def cname(c: str) -> str:
     """A concept as a reader sees it: WATER -> water, crop:foxtail_millet -> foxtail millet (crop)."""
     if ":" in c:
         kind, rest = c.split(":", 1)
-        return f"{rest.replace('_', ' ')} ({kind})"
+        return f"{rest.replace('_', ' ')} ({_KIND.get(kind, kind)})"
     return "I" if c == "I" else c.lower()
 
 
@@ -412,31 +417,9 @@ def inv_segments(l: dict) -> list:
     return [s for s in (seg(x) for x in inv.get("consonants", []) + inv.get("vowels", [])) if s is not None]
 
 
-_ORTH: dict = {}
-
-
 def orth_of(l: dict) -> R.Orthography:
-    """The lect's spelling (romanize.Orthography): its phonemes, its allophones spelled as their phonemes, its book folds
-    ranked by token counts in its lexicon (the same plan names.py and output.py use)."""
-    k = id(l)
-    if k in _ORTH and _ORTH[k][0] is l:
-        return _ORTH[k][1]
-    inv = l.get("inventory") or {}
-    allo = {}
-    for a in inv.get("allophones") or []:
-        if not isinstance(a, dict):
-            continue  # (an old or fake file lists bare symbols: nothing to map)
-        x = seg(a.get("ipa", ""))
-        if x is not None:
-            allo[x] = (seg(a["of"]) if a.get("of") else None, a.get("test"))
-    counts: dict = {}
-    for e in (l.get("lexicon") or {}).values():
-        for s in R.from_ipa(e.get("ipa") or ""):
-            counts[s] = counts.get(s, 0) + 1
-    segs = set(inv_segments(l)) | set(counts)
-    o = R.Orthography(segs, allo, counts)
-    _ORTH[k] = (l, o)
-    return o
+    """The lect's spelling (romanize.Orthography): sentences.orthography, the plan names.py and output.py use."""
+    return SN.orthography(l)
 
 
 def rule_text(doc: Doc, rid: str) -> str:
@@ -1043,6 +1026,56 @@ def interlinear(form: str, gloss: str) -> list[str]:
     return ["| " + " | ".join(f"*{x}*" for x in fw) + " |", "|" + " --- |" * len(fw), "| " + " | ".join(gw) + " |"]
 
 
+def interlinear4(s: dict) -> list[str]:
+    """A text sentence in four lines: book spelling, IPA with morph breaks, gloss (a table, word by word), then the
+    English."""
+    fw, gw = [w[0] for w in s["w"]], [w[1] for w in s["w"]]
+    bw = (s.get("roman") or "").split(" ")
+    if len(bw) != len(fw):
+        bw = [""] * len(fw)
+    return ["| " + " | ".join(f"**{x}**" for x in bw) + " |", "|" + " --- |" * len(fw),
+            "| " + " | ".join(f"*{x}*" for x in fw) + " |", "| " + " | ".join(gw) + " |", "", f"‘{s['en']}’", ""]
+
+
+def texts_section(doc: "Doc", l: dict) -> list[str]:
+    """Connected texts (planet/language/texts.py): the fable in this language and in its proto-language."""
+    from planet.language import texts as TX
+    out = ["## Texts", "",
+           "Each sentence in four lines: the book spelling, the IPA with its morph breaks, the gloss, and the English.", "",
+           f"### A fable: {TX.FABLE_TITLE}", "",
+           "One fixed short fable, told in every language as August Schleicher told his in Proto-Indo-European (1868), so "
+           "that the same text shows what sound change and grammar change did. English: " + " ".join(TX.FABLE_EN), ""]
+    mine = TX.fable(l)
+    if not mine:
+        out += ["This language lacks the words to tell it.", ""]
+    for s in mine:
+        out += interlinear4(s)
+    x, seen = (l if mine else {}), set()
+    while x.get("parent") and x["parent"] in doc.lects and x["id"] not in seen:
+        seen.add(x["id"])
+        x = doc.lects[x["parent"]]
+    if x is not l:
+        theirs = TX.fable(x)
+        if theirs:
+            out += [f"The same fable in its proto-language ({doc.label(x['id'])}, {kyr(x.get('born_kyr'))}):", ""]
+            for s in theirs:
+                out += interlinear4(s)
+    title, my = myth_of(doc, l)
+    if my:
+        out += [f"### A myth: {title}", "", "What the faith data holds, told in this language: each god's domain, the "
+                "high god's gift, the foods forbidden because they belong to a god, and the invocation. Nothing is "
+                "added: the run records no creation story or deeds.", ""]
+        for s in my:
+            out += interlinear4(s)
+    title, rec = TX.recipe(l)
+    if rec:
+        out += [f"### A recipe: {title}", "", "A short connected text; the food is one of this people's own where the "
+                "language has a word for it.", ""]
+        for s in rec:
+            out += interlinear4(s)
+    return out
+
+
 def grammar_sketch(l: dict) -> list[str]:
     ensure_sentences(l)
     notes = l.get("grammar_notes") or []
@@ -1516,6 +1549,44 @@ def personal_names(doc: Doc, l: dict) -> list[str]:
     return out
 
 
+def faith_label(name: str) -> str:
+    """A faith's name as the pages print it. The run names a culture "first tortles of the south of Simath" (a founding
+    culture: planet/lineages/cultures.py) and a faith after it ("the sea faith of first tortles of ..."), which reads as
+    if these were the first tortles anywhere: here "the sea faith of the earliest tortles of ...", and "the" before a
+    culture named without it ("the sky faith of the giant-kin of ...")."""
+    m = re.match(r"^(the [^ ]+ [^ ]+ of )(first )?(.*)$", name or "")   # (faith, schism, ...)
+    if not m:
+        return name
+    rest = m.group(3).replace("giant-kin stem", "giant-kin")
+    return m.group(1) + ("the earliest " if m.group(2) else ("" if rest.startswith("the ") else "the ")) + rest
+
+
+def _run_doc(doc: Doc, name: str) -> dict:
+    """runs/<run>/<name>.json beside the languages (cultures, gods, taboos), {} when absent; cached on the doc."""
+    cache = doc.__dict__.setdefault("_run_docs", {})
+    if name not in cache:
+        p = Path("runs") / str(doc.d.get("run") or "") / f"{name}.json"
+        cache[name] = json.loads(p.read_text(encoding="utf-8")) if doc.d.get("run") and p.is_file() else {}
+    return cache[name]
+
+
+def myth_of(doc: Doc, l: dict) -> tuple[str, list]:
+    """The lect's faith myth (texts.myth): its faith from languages.json `faiths`, the divine food taboos of its culture
+    from the run's taboos.json (each taboo's god by its label, from gods.json)."""
+    from planet.language import texts as TX
+    fa = doc.d.get("faiths") or {}
+    F = next((f for _k, f in sorted(fa.items(), key=lambda t: int(t[0])) if l["id"] in (f.get("holders") or [])), None)
+    if F is None:
+        return "", []
+    dc = _run_doc(doc, "cultures").get("deme_culture") or []
+    c = dc[l["deme"]] if l.get("deme") is not None and l["deme"] < len(dc) else None
+    beings = {b["id"]: b for b in _run_doc(doc, "gods").get("beings") or []}
+    tb = ((_run_doc(doc, "taboos").get("cultures") or {}).get(str(c)) or {}).get("taboos") or []
+    taboos = [((beings.get(t["god"]) or {}).get("label"), t["target"], t["label"]) for t in tb
+              if t.get("origin") == "divine" and t.get("god") is not None]
+    return TX.myth(l, dict(F, name=faith_label(F["name"])), taboos)
+
+
 def faith_section(doc: Doc, l: dict) -> list[str]:
     """The lect's faith (languages.json `faiths`, faiths & contact pass 3): its gods' names in this language with their
     histories and the same names in the faith's other languages, and the liturgy (the frozen sacred register, its
@@ -1526,7 +1597,7 @@ def faith_section(doc: Doc, l: dict) -> list[str]:
         return []
     F = fa[fid]
     out = ["## Gods and liturgy", "",
-           f"**Faith.** {F['name'][0].upper() + F['name'][1:]}"
+           f"**Faith.** {faith_label(F['name'])[0].upper() + faith_label(F['name'])[1:]}"
            + (f", founded {kyr(F['founded_kyr'])} ago" if F.get("founded_kyr") is not None else "")
            + (f", held by {len(F['holders'])} languages" if len(F.get("holders") or []) > 1 else "") + ".", ""]
     rows = []
@@ -1580,6 +1651,7 @@ def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] 
     out += personal_names(doc, l)
     out += faith_section(doc, l)
     out += sample_sentences(l)
+    out += texts_section(doc, l)
     out += comparison(doc, l, roots_cache)
     return "\n".join(out).rstrip() + "\n"
 

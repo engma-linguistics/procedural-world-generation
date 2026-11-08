@@ -54,6 +54,15 @@ FUSE = 0.012           # one step down the ladder per generation for an average 
 FUSE_LEVEL = (1.0, 0.7, 0.06)   # multiplier for 0->1, 1->2, 2->3 (binding is fast; true fusion with the stem is slow)
 AGE_SCALE = 200.0      # generations; fusion hazard x (1 + age/AGE_SCALE), capped at AGE_CAP
 AGE_CAP = 2.0
+#: grammar phase D (task 4): the polar-question particle. Intonation-only questions were 51% of the full pass against
+#: WALS 116A's ~14% (Dryer): the aims ask for a particle in ~58% of lects, but the pull was slow under adult learners
+#: and a free particle was abandoned like any optional periphrasis. Question particles are among the most frequent and
+#: stable function words (Dryer 2013; Mandarin ma, Japanese ka), so the aims' pull toward one is PULL_BOOST times the
+#: ordinary PRESSURE and a wanted one is abandoned at KEEP times ABANDON. A far demonstrative is as stable (WALS 41A:
+#: 3-way distance contrasts in ~37% of languages; the sim had 14% before KEEP and the 'very common' X64).
+#: Graded pasts (recent, remote) keep at 0.4 (WALS 66A: ~30% of languages with a past grade it; the sim had 9%, now 20%).
+PULL_BOOST = {"Q": 3.0}
+KEEP = {"Q": 0.25, "DIST": 0.25, "RECPST": 0.4, "REMPST": 0.4}
 ABANDON = 0.0005       # an optional periphrasis (level 0-1) falls out of use; x4 when the typology no longer wants it
                        # (0.002 abandoned 44% of new periphrases before they bound when L2 learners slow fusion; now ~16%)
 LOSS = 0.002          # a fused gram (level 3) is lost outright
@@ -158,6 +167,16 @@ FUNCS: dict[str, FuncInfo] = {
     "DS": FuncInfo("V", "comp", 0.8, "clause", "different subject (switch-reference)"),
     "AV": FuncInfo("V", "head", 0.9, "valence", "actor voice"),
     "PV": FuncInfo("V", "head", 0.9, "valence", "patient voice"),
+    # grammar phase D (2026-11-08): a third demonstrative ('yon'), a remote past beside the recent one, more aspects
+    # (inceptive, completive, repetitive), the mirative, an honorific verb marker, the obviative third person
+    "DIST": FuncInfo("NP", "dem", 0.4, "det", "far demonstrative ('yon')"),
+    "REMPST": FuncInfo("V", "aux", 0.5, "tense", "remote past"),
+    "INCH": FuncInfo("V", "aux", 0.6, "aspect", "inceptive ('begin to')"),
+    "COMPL": FuncInfo("V", "aux", 0.7, "aspect", "completive ('finish, fully')"),
+    "RPT": FuncInfo("V", "aux", 0.6, "aspect", "repetitive ('again')"),
+    "MIR": FuncInfo("VP", "aux", 0.5, "mood", "mirative (news, surprise)"),
+    "HON": FuncInfo("V", "aux", 0.6, "mood", "honorific (respect for the subject)"),
+    "OBV": FuncInfo("N", "head", 0.6, "case", "obviative (the less central third person)"),
 }
 CLASS_INFO = FuncInfo("N", "dem", 1.3, "class", "noun class")
 
@@ -483,11 +502,30 @@ _BUILTIN_PATHS = (
     ("X61", ("WHEN",), "DS", "attested", "'when' > different-subject marker (Jacobsen 1967; a subordinator)"),
     ("X62", ("PASS",), "PV", "attested", "passive > patient voice (Ross 2002; Austronesian)"),
     ("X63", ("DO OR MAKE",), "AV", "attested", "'do, make' > actor voice (a guess: no catalogued source)"),
+    # 2026-11-08, grammar phase D. Deixis: 'that' reinforced by a place word becomes a far demonstrative ('that there'
+    # > yon; Spanish aquel < eccum ille, French celui-la; Diessel 1999), so the language counts three distances. Tense
+    # remoteness: a remote past beside the past and the recent past (Bantu graded pasts; Nurse 2008; the source 'long,
+    # old, before' is a guess). Aspect: 'finish' > completive (Heine & Kuteva 2002 FINISH > COMPLETIVE; Bybee et al.
+    # 1994), 'begin' > inceptive (Heine & Kuteva 2002), 'return, turn' > repetitive (Heine & Kuteva 2002 RETURN >
+    # REPETITIVE). Mirativity: a perfect or a reportative evidential that also marks news and surprise (Turkish -mIs,
+    # Bulgarian; DeLancey 1997, Aikhenvald 2004): copies, the source keeps its function. Honorific verb marker: 'lord,
+    # master, king' > honorific (a guess: no catalogued path; Korean -si- has no known source). Obviative: a
+    # demonstrative or 'other' > obviative (a guess: the Algonquian obviative's source is unknown).
+    ("X64", ("THAT",), "DIST", "very common", "'that' + a place word > far demonstrative ('that there' > yon; Diessel 1999)"),
+    ("X65", ("LONG", "OLD", "BEFORE"), "REMPST", "common", "'long, old, before' > remote past (graded pasts; a guess)"),
+    ("X66", ("FINISH",), "COMPL", "very common", "'finish' > completive (Heine & Kuteva 2002; Bybee et al. 1994)"),
+    ("X67", ("BEGIN",), "INCH", "attested", "'begin' > inceptive (Heine & Kuteva 2002)"),
+    ("X68", ("RETURN HOME", "TURN AROUND"), "RPT", "attested", "'return, turn' > repetitive (Heine & Kuteva 2002)"),
+    ("X69", ("PERF",), "MIR", "attested", "perfect > mirative (Turkish -mIs, Bulgarian; DeLancey 1997)"),
+    ("X70", ("EVID.REP",), "MIR", "attested", "reportative > mirative (Aikhenvald 2004)"),
+    ("X71", ("KING", "MASTER"), "HON", "attested", "'lord, master' > honorific verb marker (a guess)"),
+    ("X72", ("THAT", "OTHER"), "OBV", "attested", "'that, other' > obviative (a guess: Algonquian's source is unknown)"),
+    ("X73", ("WHAT",), "Q", "attested", "'what' > polar question particle (Polish czy; Kuteva et al. 2019)"),
 )
 #: gram-to-gram paths whose source keeps its own function (polysemy: the copula stays a copula when a focus particle
 #: splits off it, the reflexive stays reflexive beside a reciprocal); the new gram starts with the source's form. Every
 #: other gram path is a reanalysis (the gram changes function: PERF > PAST).
-COPY_PATHS = {"G057", "X50", "X54", "X55", "X57", "X59", "X60"}
+COPY_PATHS = {"G057", "X50", "X54", "X55", "X57", "X59", "X60", "X69", "X70"}
 
 
 def _parse_source(text: str) -> tuple[tuple[str, ...], bool]:
@@ -1238,6 +1276,13 @@ def _wanted(function: str, typ: Typology) -> bool:
         return typ.ov() == "OV"   # (switch-reference: overwhelmingly verb-final clause-chaining languages; Haiman & Munro)
     if f in ("AV", "PV"):
         return t("word_order", "SOV") in ("VSO", "VOS")   # (Philippine-type voice: verb-initial Austronesian)
+    # grammar phase D
+    if f == "REMPST":
+        return t("past") == "marked"
+    if f == "HON":
+        return t("politeness", "none") != "none"   # (an honorific verb marker only in a language with polite address)
+    if f == "OBV":   # (obviation: head-marking languages that index two third persons on the verb; Algonquian, Kutenai)
+        return t("object_agreement", "none") != "none" and t("verb_agreement", "none") != "none"
     if f[0] in "123":
         return t("verb_agreement", "none") != "none" or t("pro_drop") == "yes"
     return True
@@ -1272,7 +1317,7 @@ MOOD_FNS = ("IMP", "HORT", "OBLG", "APPR")
 #: agreement on the verb, possessor marking on the noun
 SERIES = {"S": PERSON_FNS + (INCL_FN,), "O": OBJ_FNS, "P": POSS_FNS}
 SERIES_OF = {f: k for k, fs in SERIES.items() for f in fs}
-_TAM = {"past": ("PAST", "RECPST"), "future": ("FUT",), "perfective": ("PERF", "IPFV"), "progressive": ("PROG",),
+_TAM = {"past": ("PAST", "RECPST", "REMPST"), "future": ("FUT",), "perfective": ("PERF", "IPFV"), "progressive": ("PROG",),
         "habitual": ("HAB",)}
 _PRE_NEG = ("preverbal", "clause_initial")
 #: the inclusive and exclusive 'we' concepts; the clusivity feature is 'yes' only when the lexicon holds both, apart
@@ -2035,6 +2080,7 @@ def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None =
     _clusivity(g, rng, kyr, 1.0, 0.0, lexicon, inv, None)   # (a proto that tells the two 'we's apart has both words)
     _redup(g, rng, kyr, 1.0, 0.0)
     _numerals(g, rng, lexicon, inv, kyr)
+    _compare(g, rng, kyr, lexicon)
     realise(g, lexicon)
     return g
 
@@ -2081,6 +2127,7 @@ def social_factors(l2_share: float, population: float | None, isolation: float) 
         "loss": (1.0 + 4.0 * l2) * (1.0 - 0.3 * sg) * (1.2 - 0.4 * iso),
         "strip": l2 ** 2,
         "analogy": (1.0 + 2.0 * l2) * (1.0 - 0.3 * sg),
+        "large": max(0.0, -sg),   # (0 up to ~10^4 speakers, 1 from ~10^6: state-sized societies; politeness, phase D)
     }
 
 
@@ -2109,6 +2156,9 @@ def _sync_lexicon(g: Grammar, lexicon, kyr: float) -> None:
             g.helpers[role] = (concept, _form(w))
 
 
+_DIST_PLACE = ("THERE", "FAR")
+
+
 def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, targets: set | None = None) -> Gram | None:
     """One recruitment draw over the attested paths. `targets`: the aims' pull (PRESSURE), restricted to these functions
     (wanted ones no live gram marks yet: a flip to 'number: sg-pl' recruiting a plural word)."""
@@ -2121,8 +2171,10 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, tar
         tgt = p.target
         if p.weight <= 0 or (targets is not None and tgt not in targets):
             continue   # (a 'set' path binds only with its series)
-        if tgt == "RECPST" and "PAST" not in live_by_fn:
+        if tgt in ("RECPST", "REMPST") and "PAST" not in live_by_fn:
             continue   # 'come from' > recent past only beside a past tense (G003); never the plain past
+        if tgt == "DIST" and (_find(lexicon, idx, _DIST_PLACE)[1] is None or _find(lexicon, idx, ("THIS",))[1] is None):
+            continue   # (a far demonstrative needs a place word to reinforce 'that', and a 'this' to stand beside)
         if tgt == "CLASS":
             if g.class_system is None:
                 if not _wanted("CLASS", at):
@@ -2195,6 +2247,8 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, tar
         g.events.append((kyr, f"coined a {p.target} marker: {ipa(gr.form)}"))
         return gr
     form, hist = _recruited_form(_form(w), kyr)
+    if p.target == "DIST":   # ('that' + the first syllable of 'there, far': that-there > yon)
+        form = tuple(form) + tuple(first_syllable(_form(_find(lexicon, idx, _DIST_PLACE)[1])))
     gr = Gram(p.target, form, info.host, _side(p.target, at), FREE, (str(a), p.id, "concept"), kyr,
               [(kyr, f"recruited from '{a}' ({p.id})"), *hist], id=g.new_id(p.target))
     g.grams.append(gr)
@@ -2344,6 +2398,11 @@ def _processes(g: Grammar, rng, kyr: float, dn: float, soc: dict, lexicon=None, 
     changed |= _infix(g, rng, kyr, _p(INFIX * fuse, dn))
     _second(g, rng, kyr, dn, fuse, loss)
     _incorp(g, rng, kyr, _p(INCORP * fuse, dn), _p(INCORP_LOSS * loss, dn))
+    # grammar phase D (2026-11-08)
+    _polite(g, rng, kyr, _p(POLITE_MAKE * soc.get("large", 0.0), dn),
+            _p(POLITE_LOSS * (1.0 - soc.get("large", 0.0)) * loss, dn), lexicon)
+    _compare(g, rng, kyr, lexicon)
+    _dom(g, rng, kyr, lv, _p(DOM_MAKE * fuse, dn), _p(DOM_LOSS * loss, dn))
     if changed:
         _sync_cells(g)
 
@@ -2722,7 +2781,8 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
             _recruit(rng, g, lexicon, kyr, T, idx, inv)
         if PRESSURE > 0:
             for fns in _unrealised(g, a).values():
-                if rng.random() < _p(PRESSURE * soc["recruit"], dn):
+                boost = max(PULL_BOOST.get(f, 1.0) for f in fns) if fns else 1.0
+                if rng.random() < _p(PRESSURE * boost * soc["recruit"], dn):
                     if idx is None:
                         idx = _lex_index(lexicon)
                     _recruit(rng, g, lexicon, kyr, T, idx, inv, targets=fns)
@@ -2734,7 +2794,7 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                 continue
             gr.age_gens += dn
             wanted = _wanted(gr.function, a)
-            if gr.level <= CLITIC and rng.random() < _p(ABANDON * (1.0 if wanted else 4.0), dn):
+            if gr.level <= CLITIC and rng.random() < _p(ABANDON * (KEEP.get(gr.function, 1.0) if wanted else 4.0), dn):
                 _lose(g, gr, kyr, "the periphrasis fell out of use")
                 changed = True
                 continue
@@ -3252,3 +3312,88 @@ __all__ = [
     "people_set", "compound", "place_name", "paradigm_table", "to_json", "from_json", "describe", "add_class",
     "semantic_group", "social_factors", "rebuild", "build_parts", "analogy", "first_syllable", "ipa",
 ]
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# Grammar phase D processes (2026-11-08): polite address, comparison, differential object marking. First guesses, listed
+# for Daniel in for-daniel.md "Grammar phase D and texts".
+# --------------------------------------------------------------------------------------------------------------------
+
+#: polite address (T-V; Brown & Gilman 1960; Helmbrecht, WALS 45A: 2-way 24%, several 7%, avoidance 3%, none 66%).
+#: Polite second-person pronouns concentrate in large, stratified societies (Eurasian states), so the hazard scales with
+#: the social factor `large` (0 up to ~10^4 speakers, 1 from ~10^6); a small community drops it at POLITE_LOSS. The
+#: polite form is the plural 'you' (French vous; 70%) or a third person (German Sie, Italian Lei; 30%). The aims then
+#: want an honorific verb marker (HON). Stored as `processes["polite"]` {kind, concept} and the aims' `politeness`.
+POLITE_MAKE = 0.002
+POLITE_LOSS = 0.001
+POLITE_KIND = {"plural": 0.7, "third": 0.3}
+
+
+def _polite(g: Grammar, rng, kyr: float, p_make: float, p_loss: float, lexicon) -> None:
+    cur = g.processes.get("polite")
+    if cur is None and p_make > 0 and rng.random() < p_make:
+        kind = _choice(rng, POLITE_KIND)
+        concept = "YOU" if kind == "plural" else "THEY"
+        if _lex_get(lexicon, concept) is None or _lex_get(lexicon, "THOU") is None:
+            return
+        g.processes["polite"] = {"kind": kind, "concept": concept}
+        g.aims["politeness"] = "binary"
+        g.events.append((kyr, f"polite address: '{'you all' if kind == 'plural' else 'they'}' is used to address one "
+                              "person with respect"))
+    elif cur is not None and rng.random() < p_loss:
+        del g.processes["polite"]
+        g.aims["politeness"] = "none"
+        g.events.append((kyr, "polite address fell out of use"))
+
+
+#: comparison (Stassen, WALS 121A: locational 47%, exceed 20%, conjoined 20%, particle 13%). The typology aim
+#: `comparative` (Grambank GB265/GB266: exceed / locational / other) picks the construction; "other" splits between
+#: the particle type (likelier in VO languages, as in Europe) and the conjoined type ('A is big, B is small'). The
+#: construction follows the aim whenever it drifts; an exceed aim with no 'climb'/'jump' verb falls back to locational.
+#: The exceed verb is 'climb' or 'jump' ('climb over' > 'exceed'; a guess where the lexicon has no 'surpass').
+COMPARE_OTHER = {"conjoined": 0.6, "particle": 0.4}
+EXCEED_VERBS = ("CLIMB", "JUMP")
+
+
+def _compare(g: Grammar, rng, kyr: float, lexicon) -> None:
+    t = aims(g)
+    aim = t.get("comparative") or "locational"
+    if aim == "exceed" and lexicon is not None and not any(_lex_get(lexicon, c) is not None for c in EXCEED_VERBS):
+        aim = "locational"
+    cur = g.processes.get("compare")
+    if cur is not None and (cur == aim or (aim == "other" and cur in COMPARE_OTHER)):
+        return
+    if aim == "other":
+        w = dict(COMPARE_OTHER)
+        if t.ov() == "VO":
+            w["particle"] *= 2.0
+        kind = _choice(rng, w)
+    else:
+        kind = aim
+    if cur is not None:
+        g.events.append((kyr, f"comparison changed from the {cur} type to the {kind} type"))
+    g.processes["compare"] = kind
+
+
+#: differential object marking (Bossong 1985; Aissen 2003): the accusative marks only objects high on the animacy
+#: hierarchy (human and animal), as Spanish a and Hindi ko. It arises where an accusative is live, more often when the
+#: accusative came from a dative (X23; that is how Spanish a and Hindi ko began), and spreads to all objects (the
+#: marker generalizes) at DOM_LOSS.
+DOM_MAKE = 0.0015
+DOM_LOSS = 0.0006
+
+
+def _dom(g: Grammar, rng, kyr: float, lv: dict, p_make: float, p_loss: float) -> None:
+    acc = lv.get("ACC")
+    cur = g.processes.get("dom")
+    if not acc:
+        if cur:
+            del g.processes["dom"]
+        return
+    from_dat = any(x.source[1] == "X23" for x in acc)
+    if cur is None and rng.random() < p_make * (4.0 if from_dat else 1.0):
+        g.processes["dom"] = "animate"
+        g.events.append((kyr, "the accusative now marks only animate objects (differential object marking)"))
+    elif cur is not None and rng.random() < p_loss:
+        del g.processes["dom"]
+        g.events.append((kyr, "the accusative spread to every object"))

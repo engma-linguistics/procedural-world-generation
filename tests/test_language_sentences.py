@@ -506,3 +506,103 @@ def test_second_read_sentence_fixes():
     assert SN.render_word(v, w[0])[0] == "li-lis"
     imp = by_id(lj)["imperative"]
     assert "marks its object" in imp["note"]
+
+
+def test_third_read_fixes():
+    """Grammar D, from demo read 3: the imperative object keeps its case; a vowel-initial stem reduplicates with no
+    glide; a stored cell for the inner markers carries the outer ones; a bound copula in the possession sentence; a
+    fronted question word takes its free case word along; serial-verb doers take the ergative; no jargon; glide
+    allomorphs name their vowels; same-sounding markers and stem-vowel persons are named; head-marked possession is
+    not 'no marker'; the antipassive names no ergative where there is none."""
+    lj = lect(alignment="nom-acc", predicative_possession="other")
+    lj["grams"] = [gram("ACC", "o", 0, "post", "NP"), gram("COP", "da", 2, "post", "N"), gram("COM", "sa", 2, "post", "NP"),
+                   gram("ANTIP", "si", 2, "post", "V"), gram("1SG.O", "n", 2, "post", "V"),
+                   gram("1PL.O", "n", 2, "post", "V"), gram("3SG.POSS", "ri", 2, "post", "N")]
+    lj["lexicon"]["GO"] = {"ipa": "ulo", "roman": "ulo", "pos": "V"}
+    s = by_id(lj)
+    assert line(s["imperative"])[1] == "eat fish ACC"
+    assert line(s["content"])[1].startswith("what ACC ") and "with its case marker" in s["content"]["note"]
+    assert line(s["possession"])[1].endswith("-COM-COP") and "COP" not in line(s["possession"])[1].split()[-2:-1]
+    assert "ergative" not in s["antipassive"]["note"]
+    notes = {n["topic"]: n for n in SN.grammar_notes(lj)}
+    assert "1PL.OBJ and 1SG.OBJ are both n" in notes["Word shapes"]["text"]
+    assert "with no marker" not in notes["Possession"]["text"] and "person marker" in notes["Possession"]["text"]
+    txt = " ".join(n["text"] for n in notes.values()) + " ".join(x.get("note", "") for x in s.values())
+    assert "gram)" not in txt and "gram is tracked" not in txt
+    # reduplication of a vowel-initial stem: a bare copy, no glide
+    lj["processes"] = {"redup": {"fn": "ITER", "shape": "CV", "side": "pre"}}
+    v = SN.View(lj)
+    w = SN.verb(v, "GO", redup=True)[0]
+    assert SN.render_word(v, w[0])[0] == "u-ulo"
+    # a stored class cell under a plural: the cell's own stem shape, the plural added outside it
+    lj = lect()
+    lj["lexicon"]["DOG"] = {"ipa": "aru", "roman": "aru", "pos": "N"}
+    lj["grams"] = [gram("CLASS:1", "ne", 2, "pre", "N"), gram("PL", "ŋi", 2, "pre", "N")]
+    lj["paradigms"] = {"nouns": {"rows": [{"concept": "DOG", "cells": {"lemma": {"ipa": "aru"}},
+                                           "segmented": {"CLASS:1": "n-aru"}}]}}
+    v = SN.View(lj)
+    w = SN.Word("aru", "dog", "DOG")
+    SN.attach(v, [w], 0, "CLASS:1", "CL1")
+    SN.attach(v, [w], 0, "PL")
+    assert SN.render_word(v, w)[0] == "ŋi-n-aru"
+    # serial verbs in an ergative lect: the doer takes the ergative
+    lj = _more(TAKE="ambil", COME="datan")
+    lj["typology"].update(alignment="erg-abs", serial_verbs="yes")
+    lj["grams"] = [gram("ERG", "ku", 2, "post", "NP")]
+    assert "man-ERG" in line(by_id(lj)["serial"])[1]
+    # glide allomorphs say which vowels they follow
+    assert SN._where("a", "ja", {"j", "w"}) == "ja after a front or central vowel"
+    assert SN._where("a", "wa", {"j", "w"}) == "wa after a back or rounded vowel"
+    # a person shown only by a stem change: in the sentence and in the notes, not 'no marker yet'
+    lj = lect()
+    lj["grams"] = [gram("1SG", "mo", 2, "pre", "V")]
+    lj["processes"] = {"stem_change": {"2SG": [["i", "e"]]}}
+    lj["lexicon"]["HEAR"] = {"ipa": "dinik", "roman": "dinik", "pos": "V"}
+    lj["lexicon"]["THUNDER"] = {"ipa": "kulot", "roman": "kulot", "pos": "N"}
+    s = by_id(lj)["polar"]
+    assert "hear\\2SG" in line(s)[1] and "stem's vowel" in s["note"]
+    notes = {n["topic"]: n for n in SN.grammar_notes(lj)}
+    assert "2SG" not in notes["Person agreement"]["text"].split("No marker yet for")[-1].split(".")[0]
+    assert "2SG subject (you)" in notes["Word shapes"]["text"] and notes["Word shapes"]["ex"]
+
+
+def test_sentence_spelling_is_the_book_spelling():
+    lj = lect()
+    s = by_id(lj)["transitive"]
+    assert s["roman"] == SN.book_spelling(lj, s["ipa"].split(" "))
+
+
+def test_phase_d_sentences_and_notes():
+    """Grammar D: three-way demonstratives, graded pasts, the newer aspects, the mirative, polite address with an
+    honorific, comparison by type, obviation and differential object marking."""
+    lj = _more(THIS="ki", OLD="tua", CLIMB="naik", FINISH="habis")
+    lj["lexicon"]["YOU"] = {"ipa": "kamu", "roman": "kamu", "pos": "N"}
+    lj["typology"].update(alignment="nom-acc")
+    lj["grams"] = [gram("DIST", "neja", 0, "post", "NP"), gram("PAST", "su", 0, "post", "V"),
+                   gram("RECPST", "baru", 0, "post", "V"), gram("REMPST", "lama", 0, "post", "V"),
+                   gram("COMPL", "bis", 1, "post", "V"), gram("MIR", "pa", 1, "post", "VP"),
+                   gram("HON", "an", 2, "post", "V"), gram("OBV", "ri", 2, "post", "N"), gram("ABL", "da", 0, "post", "NP"),
+                   gram("ACC", "o", 0, "post", "NP")]
+    lj["processes"] = {"polite": {"kind": "plural", "concept": "YOU"}, "compare": "locational", "dom": "animate"}
+    s = by_id(lj)
+    assert line(s["deixis"])[1].startswith("man DIST") and "three distances" in s["deixis"]["note"]
+    assert "PST.REM" in line(s["remote"])[1] and "PST.RCT < PST < PST.REM" in s["remote"]["note"]
+    assert "COMPL" in line(s["aspect"])[1] and "eaten the fish up" in s["aspect"]["en"]
+    assert "MIR" in line(s["mirative"])[1]
+    assert line(s["polite"])[1].startswith("2PL.POL") and "HON" in line(s["polite"])[1]
+    assert "dog ABL" in line(s["comparative"])[1] and "bigger" in s["comparative"]["en"]
+    assert "OBV" in line(s["obviative"])[1]
+    assert "ACC" in line(s["transitive"])[1]                       # (a dog is animate: marked)
+    lj2 = copy.deepcopy(lj)
+    lj2["lexicon"]["DOG"]["ipa"] = "x"
+    del lj2["lexicon"]["DOG"], lj2["lexicon"]["BIRD"], lj2["lexicon"]["FISH"]
+    lj2["lexicon"]["STONE"] = {"ipa": "batu", "roman": "batu", "pos": "N"}
+    assert "ACC" not in line(by_id(lj2)["transitive"])[1]          # (a stone is not: bare)
+    notes = {n["topic"]: n for n in SN.grammar_notes(lj)}
+    assert "three distances" in notes["Demonstratives"]["text"] and len(notes["Demonstratives"]["ex"]) >= 3
+    assert "Polite address" in notes and "Comparison" in notes and "Obviation" in notes
+    assert "only animate objects" in notes["Case"]["text"]
+    for kind, want in (("exceed", "exceed"), ("particle", "than"), ("conjoined", "small")):
+        lj["processes"]["compare"] = kind
+        lj["lexicon"]["SMALL"] = {"ipa": "kecil", "roman": "kecil", "pos": "A"}
+        assert want in line(by_id(lj)["comparative"])[1], kind

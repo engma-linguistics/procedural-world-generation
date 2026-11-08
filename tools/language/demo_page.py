@@ -48,18 +48,40 @@ def _proto_people(doc, l) -> str:
     return doc.line(l["id"])[-1]["people"]
 
 
+#: sample sentences that show the newer grammar (phases C and D); the picker prefers languages with more of them
+NEWER = ("applicative", "voice_av", "voice_pv", "incorp", "reciprocal", "antipassive", "focus", "topic", "chain",
+         "comparative", "polite", "mirative", "remote", "aspect", "obviative", "deixis")
+
+
+NEWER_EN = {"voice_av": "voice and pivot", "voice_pv": "voice and pivot", "incorp": "noun incorporation",
+            "chain": "switch-reference", "polite": "polite address", "remote": "graded tenses",
+            "aspect": "more aspects", "obviative": "obviation", "deixis": "three-way demonstratives",
+            "comparative": "comparison"}
+
+
+def _newer(l) -> int:
+    """How many of the newer constructions a language shows: NEWER sentences, an infix, concord beyond the adjective."""
+    ids = {s["id"] for s in l.get("sentences") or []}
+    proc = l.get("processes") or {}
+    return (sum(1 for x in NEWER if x in ids) + (1 if proc.get("infix") else 0)
+            + sum(1 for x in proc.get("concord") or [] if x in ("dem", "verb")))
+
+
 DEMO_EXTRA = [
     ("most_spoken", "the most spoken language", lambda doc, l: True, lambda l: (l.get("population") or 0,),
      lambda l: f"about {_pop(l)} speakers"),
     # (an elvish or dwarvish language is one spoken by that people AND descended from that people's own proto-language)
     ("elvish", "an elvish language", lambda doc, l: SK.group(l["people"]) == "elf"
-     and SK.group(_proto_people(doc, l)) == "elf", lambda l: (l.get("population") or 0,),
+     and SK.group(_proto_people(doc, l)) == "elf", lambda l: (_newer(l), l.get("population") or 0),
      lambda l: f"spoken by {SK.people(l['people'])}"),
     ("dwarvish", "a dwarvish language", lambda doc, l: "dwar" in l["people"] and "dwar" in _proto_people(doc, l),
-     lambda l: (l.get("population") or 0,), lambda l: f"spoken by {SK.people(l['people'])}"),
+     lambda l: (_newer(l), l.get("population") or 0), lambda l: f"spoken by {SK.people(l['people'])}"),
     ("ergative", "an ergative language", lambda doc, l: (l.get("typology") or {}).get("alignment") == "erg-abs"
-     and any(g["function"] == "ERG" for g in l.get("grams") or []), lambda l: (_bound(l),),
+     and any(g["function"] == "ERG" for g in l.get("grams") or []), lambda l: (_newer(l), _bound(l)),
      lambda l: "the doer of a transitive verb is marked (ergative), the doer of an intransitive one is not"),
+    ("newer", "the most of the newer grammar", lambda doc, l: True, lambda l: (_newer(l), l.get("population") or 0),
+     lambda l: "shows " + ", ".join(dict.fromkeys(NEWER_EN.get(x, x) for x in NEWER
+                                                  if x in {s["id"] for s in l.get("sentences") or []}))),
     ("synthetic", "the most affixes", lambda doc, l: True, lambda l: (_bound(l),),
      lambda l: f"{_bound(l)} live affixes"),
     ("isolating", "the fewest affixes", lambda doc, l: len(l.get("sentences") or []) >= 8, lambda l: (-_bound(l),),
@@ -69,7 +91,7 @@ DEMO_EXTRA = [
 
 def _pop(l) -> str:
     p = l.get("population") or 0
-    return f"{p / 1e6:.1f} million" if p >= 1e6 else f"{p / 1e3:.0f} thousand" if p >= 1e3 else str(int(p))
+    return f"{p / 1e6:.2f} million" if p >= 1e6 else f"{p / 1e3:.0f} thousand" if p >= 1e3 else str(int(p))
 
 
 def pick(doc, n: int) -> list[tuple[str, dict, str]]:
@@ -189,10 +211,10 @@ def md_table(md: str) -> str:
     return "".join(out) + "</table></div>"
 
 
-def play(cid: str | None, label: str = "") -> str:
+def play(cid: str | None, label: str = "", cls: str = "") -> str:
     if not cid:
         return ""
-    return f"<button class='say{' lab' if label else ''}' data-a='{cid}' aria-label='play'>&#9654;{(' ' + E(label)) if label else ''}</button>"
+    return f"<button class='say{' lab' if label else ''}{' ' + cls if cls else ''}' data-a='{cid}' aria-label='play'>&#9654;{(' ' + E(label)) if label else ''}</button>"
 
 
 def gloss_html(g: str) -> str:
@@ -207,6 +229,70 @@ def interlinear(form: str, gloss: str) -> str:
         fw, gw = [form], [gloss]
     return "<div class='igl'>" + "".join(f"<div><span class='f ipa'>{E(f)}</span><span class='g'>{gloss_html(g)}</span></div>"
                                          for f, g in zip(fw, gw)) + "</div>"
+
+
+def interlinear4(s: dict) -> str:
+    """A text sentence in four lines: book spelling, IPA with morph breaks and gloss word by word, then the English."""
+    fw, gw = [w[0] for w in s["w"]], [w[1] for w in s["w"]]
+    bw = (s.get("roman") or "").split(" ")
+    if len(bw) != len(fw):
+        bw = [""] * len(fw)
+    return ("<div class='igl'>" + "".join(f"<div><span class='b'>{E(b)}</span><span class='f ipa'>{E(f)}</span>"
+                                          f"<span class='g'>{gloss_html(g)}</span></div>" for b, f, g in zip(bw, fw, gw))
+            + f"</div><div class='l2'>‘{E(s['en'])}’</div>")
+
+
+def text_lines(sents: list, l: dict, au: "Audio", tag: str) -> str:
+    """A connected text: each sentence in four lines with its own play button (class `tag` for 'play all')."""
+    out = []
+    for s in sents:
+        cid = au.clip(s["ipa"], l["people"], True)
+        out.append(f"<div class='tx'>{play(cid, cls=tag)}{interlinear4(s)}</div>")
+    return "".join(out)
+
+
+def fable_section(doc, k: int, au: "Audio", picks: list) -> str | None:
+    """The fable (planet/language/texts.py) in a proto-language and three of its living daughters, sentence by sentence
+    side by side, each with audio: Schleicher's way of showing sound change and grammar change through one text."""
+    from planet.language import texts as TX
+    fam = TX.pick_family(doc.lects, doc.intel, tuple(l["people"] for _h, l, _w in picks))
+    if fam is None:
+        return None
+    proto, ds = fam
+    lects = [proto] + ds
+    tells = [TX.fable(l) for l in lects]
+
+    def name(l):
+        nm = doc.deme_name(l)
+        return nm["roman"] if nm and l.get("parent") else doc.label(l["id"], short=True)
+    heads = []
+    for j, l in enumerate(lects):
+        when = (f"spoken about {SK.kyr(l.get('born_kyr'))}" if l.get("died_kyr") is not None else
+                f"spoken today by {SK.people(l['people'])}, about {_pop(l)}")
+        first = next((c for c in (au.clip(s["ipa"], l["people"], True) for s in tells[j][:1]) if c), None)
+        heads.append(f"<li><b>{E(name(l))}</b> <span class='muted'>({E(when)})</span> "
+                     + (f"<button class='say lab all' data-sel='.fx{j}'>&#9654; the whole fable</button>" if first else "")
+                     + "</li>")
+    h = [f"<section class='lang' id='L{k}' data-k='{k}'><h2>A fable: {E(TX.FABLE_TITLE)}</h2>",
+         "<p>One short fable, the same in every language, told here in a proto-language and in three of its living "
+         "daughters, in the way August Schleicher wrote his fable of the sheep and the horses in reconstructed "
+         "Proto-Indo-European (1868). Side by side, the same sentence shows what thousands of years of sound change did to "
+         "the words and what grammaticalization did to the grammar: markers that are separate words in the proto-language "
+         "can be clitics or endings in the daughters, and new ones appear. Each sentence has four lines: the book "
+         "spelling, the IPA with its morph breaks, the gloss and the English.</p>",
+         "<p class='muted'>The English: " + E(" ".join(TX.FABLE_EN)) + "</p>",
+         "<ul>" + "".join(heads) + "</ul>"]
+    for i, en in enumerate(TX.FABLE_EN):
+        h.append(f"<h3>({i + 1}) {E(en)}</h3><div class='fab'>")
+        for j, (l, sents) in enumerate(zip(lects, tells)):
+            s = next((x for x in sents if x["id"] == f"fable{i + 1}"), None)
+            if s is None:
+                continue
+            h.append(f"<div class='card'><h4>{E(name(l))}</h4>{text_lines([s], l, au, f'fx{j}')}"
+                     + (f"<div class='note'>{E(s['note'])}</div>" if s.get("note") else "") + "</div>")
+        h.append("</div>")
+    h.append("</section>")
+    return "".join(h)
 
 
 def families(doc, l, field: str, au: Audio) -> str:
@@ -231,7 +317,8 @@ def families(doc, l, field: str, au: Audio) -> str:
             f["main"] = SK.felt_members(doc, lex, r, f["main"])
     big = sorted((x for x in fam.items() if len(x[1]["main"]) >= 2), key=lambda x: (-len(x[1]["main"]), str(x[0])))
     inside = {c for _r, f in big for c in f["main"]}
-    out = [f"<p class='muted'>{sum(len(f['main']) >= 3 for _r, f in big)} families of 3+ words; "
+    n3 = sum(len(f['main']) >= 3 for _r, f in big)
+    out = [f"<p class='muted'>{n3} {'family' if n3 == 1 else 'families'} of 3+ words; "
            f"{round(100 * len(inside) / max(1, len(lex)))}% of the {len(lex)} words share a root with another.</p>"]
     for r, f in big[:5]:
         info = R.get(r) or {}
@@ -275,8 +362,9 @@ def lineage(doc, l) -> str:
             v = doc.intel.get((l["id"], x["id"]))
             sis.append((-(v or 0), x["id"], v))
     sis.sort()
-    rel = ", ".join(f"{E(doc.label(i, short=True))} <span class=muted>"
-                    f"({f'{v:.0%}' if v else 'under 5%'} understood)</span>" for _s, i, v in sis[:4])
+    rel = ", ".join(f"{E(doc.label(i, short=True))} <span class=muted>("
+                    + ("today's speech of a community it descends from; " if doc.label(i, short=True) in names else "")
+                    + f"{f'{v:.0%}' if v else 'under 5%'} understood)</span>" for _s, i, v in sis[:4])
     # (the file keeps intelligibility only from 5% up: a missing pair is below that, not unknown)
     out = f"<div class='line'>{hidden}{' → '.join(steps)}</div>"
     fam_n = 1 + len(sis)
@@ -340,6 +428,22 @@ def lang_section(doc, l, why_head, why, au: Audio, k: int) -> str:
                  + (f"<div class='note'>{E(s['note'])}</div>" if s.get("note") else "") + "</div>")
     if not sents:
         h.append("<p class='muted'>Too few words of its own for the sample sentences.</p>")
+    # a connected text: a short recipe in four lines (book spelling, IPA, gloss, English), with audio
+    from planet.language import texts as TX
+    title, rec = TX.recipe(l)
+    if rec:
+        h.append(f"<h3>A recipe: {E(title)}</h3><p class='muted'>A short connected text, each line in the book spelling, "
+                 "the IPA with its morph breaks, the gloss and the English. The food is one of this people's own (from "
+                 f"the world's cuisine data where the language has a word for it).</p>"
+                 f"<div class='row'><button class='say lab all' data-sel='#L{k} .rx{k}'>&#9654; the whole recipe</button></div>"
+                 + text_lines(rec, l, au, f"rx{k}"))
+    title, my = SK.myth_of(doc, l)   # (the faith's myth: what the run's faith data holds, nothing added)
+    if my:
+        h.append(f"<h3>A myth: {E(title)}</h3><p class='muted'>What this people's faith data holds, told in the language: "
+                 "each god's domain, the high god's gift, the foods forbidden because they belong to a god, and the "
+                 "invocation. The run records no creation story or deeds, so none is told.</p>"
+                 f"<div class='row'><button class='say lab all' data-sel='#L{k} .mx{k}'>&#9654; the whole myth</button></div>"
+                 + text_lines(my, l, au, f"mx{k}"))
     # grammar
     h.append("<h3>The grammar in short</h3><div class='notes'>")
     for i, n in enumerate(l.get("grammar_notes") or []):
@@ -412,6 +516,8 @@ nav button.on{border-color:var(--acc);color:var(--acc);font-weight:600}
 .l2{font-size:13px;color:var(--muted)}.note{font-size:12px;color:var(--muted)}
 details{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:4px 10px;margin:4px 0}summary{cursor:pointer;font-weight:600}
 .ex{margin:2px 0 6px 8px}
+.fab{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}.igl .b{font-weight:600;font-size:14px}
+.tx{margin:2px 0 8px}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:6px 10px}
 @media (max-width:700px){.two{grid-template-columns:minmax(0,1fr)}main{padding:8px 16px 40px}nav{flex-wrap:nowrap;overflow-x:auto}nav button{white-space:nowrap}}
 .sent,.notes,details,.line{min-width:0;overflow-wrap:anywhere}
@@ -438,7 +544,7 @@ document.addEventListener('click',function(e){
   if(b.dataset.lang!==undefined){show(+b.dataset.lang);return}
   if(b.classList.contains('all')){
     if(b===curBtn||b.classList.contains('playing')){stop();b.classList.remove('playing');return}
-    stop();var ids=[].slice.call(document.querySelectorAll('#L'+b.dataset.k+' .sent .say')).map(function(x){return x.dataset.a});
+    stop();var ids=[].slice.call(document.querySelectorAll(b.dataset.sel||('#L'+b.dataset.k+' .sent .say'))).map(function(x){return x.dataset.a}).filter(Boolean);
     b.classList.add('playing');var i=0;
     (function step(){if(i>=ids.length||!b.classList.contains('playing')){b.classList.remove('playing');return}
       var id=ids[i++];var a=new Audio(A[id]);cur=a;a.onended=function(){setTimeout(step,350)};a.play()})();
@@ -524,6 +630,8 @@ def _gram_events(ser, since: float) -> list:
                 ev.append((k1, "+", fn, f"{_lab(fn)} bound further: {_gform(a)} > {_gform(b)}"))
             elif b[2] < a[2]:
                 ev.append((k1, "-", fn, f"{_lab(fn)} came loose: {_gform(a)} > {_gform(b)}"))
+            elif a[1] != b[1] and a[1] and b[1]:
+                ev.append((k1, "~", fn, f"{_lab(fn)} reshaped by sound change: /{a[1]}/ > /{b[1]}/"))
     return ev
 
 
@@ -556,6 +664,10 @@ def _rank(q: float) -> str:
     return "the highest of all living languages" if q >= 0.995 else f"above {q:.0%} of living languages"
 
 
+SMALL_L2 = 0.15      # an adult-learner share at or below this is 'few adult learners'
+SMALL_POP = 20_000   # a community this size or smaller is 'small' (Trudgill 2011's small societies: a few thousand)
+
+
 def _cause(doc, l, rising: bool, since: float) -> str:
     liv = doc.living
     l2q, popq, isoq = (_q([x.get(k) for x in liv], l.get(k)) for k in ("l2", "population", "isolation"))
@@ -567,16 +679,22 @@ def _cause(doc, l, rising: bool, since: float) -> str:
     facts = (f"L2 share {l.get('l2') or 0:.2f}, {_rank(l2q)}; {int(l.get('population') or 0):,} speakers, "
              f"{_rank(popq).replace(' of all living languages', '').replace(' of living languages', '')}; isolation "
              f"{l.get('isolation') or 0:.2f}, {_rank(isoq).replace(' of all living languages', '').replace(' of living languages', '')}")
+    l2, pop = l.get("l2") or 0, int(l.get("population") or 0)
+    # (the wording follows the values themselves, not only the rank among this world's languages: 'few adult learners'
+    # needs a low share, 'small' a small number of speakers, Trudgill's societies of a few thousand)
+    learners = ("few adult learners" if l2 <= SMALL_L2 else
+                f"fewer adult learners than most languages here (share {l2:.2f})" if l2q <= 0.4 else None)
+    small = pop <= SMALL_POP
     if rising:
-        if l2q <= 0.4 and isoq >= 0.6 and popq <= 0.5:
-            bits.append("a small, tight-knit, isolated community with few adult learners: grams are worn down and bound "
-                        "and nobody simplifies them (Trudgill's small, isolated societies)")
-        elif l2q <= 0.4 and isoq >= 0.6:
-            bits.append("an isolated community with few adult learners (though not a small one): what grammaticalization "
+        if learners and isoq >= 0.6 and small:
+            bits.append(f"a small, isolated community with {learners}: grams are worn down and bound and few speakers "
+                        "simplify them (Trudgill's small, isolated societies)")
+        elif learners and isoq >= 0.6:
+            bits.append(f"an isolated community with {learners} (though not a small one): what grammaticalization "
                         "binds stays bound")
-        elif l2q <= 0.4:
-            bits.append("few adult second-language learners: what grammaticalization binds stays bound")
-        elif popq <= 0.4:
+        elif learners:
+            bits.append(f"{learners}: what grammaticalization binds stays bound")
+        elif small:
             bits.append("a small community, so new grams can spread and bind quickly")
         else:
             bits.append("nothing in its circumstances explains it (many adult learners, not isolated): the grams kept "
@@ -586,7 +704,7 @@ def _cause(doc, l, rising: bool, since: float) -> str:
             s = recent[0]
             bits.append(f"its speakers shifted language {s['kyr']:g} kyr ago ({s.get('speakers') or '?'} under "
                         f"{s.get('ruler_people') or '?'}): adults learning a new language strip what they cannot master")
-        if l2q >= 0.6:
+        if l2q >= 0.6 and l2 >= 0.3:
             bits.append("many adult second-language speakers (a contact or trade language): irregular and bound forms are "
                         "levelled, as in English after Norse contact or in Swahili")
         if popq >= 0.75:
@@ -647,7 +765,7 @@ def complexity_section(doc, k: int) -> str:
             nm = doc.deme_name(l)
             name = nm["roman"] if nm else doc.label(l["id"], short=True)
             ev = _gram_events(ser, since)
-            evh = "".join(f"<li><span class='muted'>{kyr:g} kyr ago</span> {'▲' if kind == '+' else '▼'} "
+            evh = "".join(f"<li><span class='muted'>{kyr:g} kyr ago</span> {'▲' if kind == '+' else '▼' if kind == '-' else '~'} "
                           f"<span class='ipa'>{E(t)}</span></li>" for kyr, kind, _fn, t in ev[:10])
             if len(ev) > 10:
                 evh += f"<li class='muted'>... and {len(ev) - 10} more</li>"
@@ -660,8 +778,10 @@ def complexity_section(doc, k: int) -> str:
                          f"{E(_gform(g0[fn])) if fn in g0 else '(none)'}</td>"
                          f"<td class='ipa'>{E(_gform(g1[fn])) if fn in g1 else '(none)'}</td></tr>"
                          for fn in pairs)
-            h.append(f"<div class='card' style='margin:8px 0'><h4>{E(name)} <span class='muted'>{E(SK.people(l['people']))}, "
-                     "</span></h4>"
+            dn = l.get("deme_name") or ""
+            where = dn.split(" (", 1)[1].rstrip(")") if " (" in dn else ""
+            h.append(f"<div class='card' style='margin:8px 0'><h4>{E(name)} <span class='muted'>{E(SK.people(l['people']))}"
+                     + (f", {E(where)}" if where else "") + "</span></h4>"
                      f"<div class='two'><div>{_spark(ser, since)}<div class='note'>score {c0:.2f} {since:g} kyr ago &rarr; "
                      f"{c1:.2f} now ({'+' if dlt > 0 else ''}{dlt:.2f})</div></div>"
                      f"<div><b>Likely cause.</b> {_cause(doc, l, rising, since)}</div></div>"
@@ -696,8 +816,12 @@ def build(src: str, run_json: str | None, n: int, backend: str, audio: bool, re_
             nm = doc.deme_name(l)
             nav.append(f"<button data-lang='{k}'>{E(nm['roman'] if nm else l['id'])} "
                        f"<span class='muted'>{E(SK.people(l['people']))}</span></button>")
-        secs.append(complexity_section(doc, len(picks)))   # (one more tab: languages getting more and less complex)
-        nav.append(f"<button data-lang='{len(picks)}'>More and less complex</button>")
+        fab = fable_section(doc, len(picks), au, picks)   # (a tab: one fable in a proto-language and its daughters)
+        if fab:
+            secs.append(fab)
+            nav.append(f"<button data-lang='{len(secs) - 1}'>A fable</button>")
+        secs.append(complexity_section(doc, len(secs)))   # (one more tab: languages getting more and less complex)
+        nav.append(f"<button data-lang='{len(secs) - 1}'>More and less complex</button>")
     finally:
         au.close()
     voice = (f"Audio made by the {au.backend} voice ({'eSpeak NG, a formant synthesizer: robotic but exact' if au.backend == 'espeak' else 'Piper, a neural voice: more natural, a little less exact'}), "

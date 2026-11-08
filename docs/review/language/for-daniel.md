@@ -540,3 +540,140 @@ lever is still `FUSE` and the L2 exponent on fusion. I did not touch FUSE.
 - River names through each lect's own sound-change history (they would need `name:river` words injected into the lexicons, like the gods).
 - Peaks get no tautologies: peak names have no substrate path.
 - X9 and the P-pattern names (P1, P3, P5-P7) not started.
+
+## Grammar phase D and texts (branch lang-gram-d, 2026-11-08)
+
+### Fixes from demo read 3
+All fixed where they arose, the mechanical ones with tests (`test_third_read_fixes`, `test_demo_page_third_read_fixes`,
+`test_sentence_spelling_is_the_book_spelling`).
+- **Imperative and serial verbs drop case**: the imperative, the hortative and serial verbs now run the same flagging as
+  any clause, so the object keeps its accusative and a transitive serial verb's subject its ergative.
+- **Reduplication glide** (i-ji, u-wuk): a reduplicant now joins its base with no glide (u-ulo), as the rule text says.
+- **Storm giant 'dog' with two stem shapes**: a stored cell is now used for the innermost markers it covers and any
+  outer marker is added outside it, so the plural and the singular share one stem.
+- **Trudgill wording**: "small" needs under 20,000 speakers and "few adult learners" an L2 share under 0.15; other
+  communities get their own wording.
+- **Felt families** ('middle' tahe̞/dahe̞, ilai/ilami-): I left them. They pass the phase C rule (three shared sounds or
+  the first two) and look like real doublets. **Odd glosses** "seals (good)" now read "seals (trade good)".
+- **Dangling comma in card names**: the card heading now names the region from the deme's name.
+- **"1 families"**: number agreement.
+- **Antipassive note** mentions the ergative only where an ergative exists.
+- **Copula note vs sentence**: possession and predication go through one copula phrase, so a bound copula attaches in
+  the sentence too; markers that share a conditioning context are told apart ("after a front or central vowel" / "after
+  a back or rounded vowel").
+- **Negation clitic after the verb**: the note now describes second-position clitics as such; "typology calls it" is gone.
+- **Stranded ACC after wh-fronting**: the whole object noun phrase moves, case marker included.
+- **"Fused" vs "suffix"**: a fused marker is described as "a suffix that fuses with some stems", and the forms list says
+  "merged with the stem in X 'go.1SG'" where it has merged.
+- **Storm giant word shapes**: the stem-vowel person is described in its own sentence ("the subject (2SG) is shown by
+  the stem's vowel", with an example verb) and is no longer listed under "no marker yet"; portmanteaus get an example.
+- **Kobold**: the possession note mentions head marking on the possessed noun; identical forms are named as such
+  ("1PL.OBJ and 1SG.OBJ are both n"); a second (inflection-class) form now gets its own example.
+- **Jargon**: "no question gram is tracked" is gone; "(no LOC gram)" now reads "(there is no locative case)".
+- **PROG vs IPFV**: different English ("is going" vs "goes (ongoing or repeated)").
+- **Spelling**: sentences now use the same book spelling as the Words table (one shared `orthography()`).
+- **Minor**: ancestors are no longer listed as closest living relatives; populations in millions show two decimals;
+  a form changed by sound change since an event is marked "reshaped by sound change"; a free person marker beside a
+  full pronoun reads "short unstressed pronoun ... beside the full pronoun X".
+- **Picker**: a new "newer features" demo slot prefers a language that shows applicatives, reciprocals, voice, infixes,
+  incorporation, focus or concord, and the elvish, dwarvish and ergative picks prefer these on ties.
+
+### Texts
+- Every glossed text has four lines: book spelling, IPA, gloss, English.
+- **The fable** (`planet/language/texts.py`): "The Bird and the Fish", six sentences, written for this (not a copy of
+  Schleicher's), using only Swadesh-100 words so every proto-language can tell it:
+  A bird sat in a tree. / The bird saw a fish in the water. / The bird said: "Come! I will give you a good seed." /
+  The fish said: "I do not eat seeds. You will eat me." / The fish did not come. / The bird ate the seed.
+  It is shown for a proto-language and two to four daughters from different branches (intelligibility to each other at
+  most 0.5), side by side with audio, in its own demo tab ("A fable"), and in each sketch (the lect's version and its
+  proto's).
+- **A recipe** per demo language, as commands ("How to cook X": take, grind or cut, put in the pot, cook on the fire,
+  eat with salt, it is good). X is the people's first crop from the food data, else its first herd animal, else fish.
+- **The faith myth** (`texts.myth`, built after merging the faiths lane): "What the gods hold", told only from the
+  data: each of up to three gods holds its first domain ('Oanga holds the fire'), the high god gives its domain's gift
+  ('... gives us rain', faiths.GIFT), each divine food taboo becomes 'X holds the wild swine. We do not eat wild swine.'
+  (taboos.json, the god matched by label; targets with no word, like eels, are left out), and it ends with the
+  invocation ('X, hear us!'). gods.json has no creation story, sex or divine kinship (its `parent` is the god's descent
+  across cultures), so none is told. Shown on the demo page and in the sketches beside the recipe.
+- **Faith names**: the run names a founding culture "first tortles of the south of Simath" (planet/lineages/cultures.py
+  line 430) and its faith "the sea faith of first tortles of ...". The language pages now print "the sea faith of the
+  earliest tortles of ..." (`sketch.faith_label`); the cause is in the lineages code, not mine, and changing it would
+  rename the stored cultures of every run.
+
+### Phase D: what I added, with the defaults I chose
+Each default is one constant in `planet/language/grammar.py`.
+- **Distance in demonstratives** (DIST, X64): 'that' plus the first syllable of 'there' or 'far' (that-there > yon;
+  Diessel 1999), only where the lect has 'this'. Kept like a question particle (`KEEP` 0.25).
+- **Remote past** (REMPST, X65, from 'long', 'old', 'before': my guess at a source) beside a past tense; graded pasts are
+  kept at `KEEP` 0.4.
+- **Aspect**: completive from 'finish' (X66), inceptive from 'begin' (X67), iterative from 'return' or 'turn around'
+  (X68).
+- **Mirative** split off the perfect (X69) or the reportative (X70) (DeLancey 1997; Aikhenvald 2012).
+- **Politeness**: polite address arises with population (`POLITE_MAKE` 0.002 x how large the community is; the peoples'
+  data has no rank or class field, so size is the only social figure I could use). It takes the plural 'you' (70%) or
+  the third person (30%) (WALS 45A); it is lost at 0.001 in small communities. An honorific verb marker (HON, from
+  'king' or 'master', X71) is wanted only where polite address exists.
+- **Comparison** follows the typology's own `comparative` aim (Grambank: exceed / locational / other); "other" splits
+  into the particle type (likelier in VO lects) and the conjoined type. The exceed verb is 'climb' or 'jump' (a guess).
+- **Differential object marking**: the accusative marks only animate objects, at 0.0015 per generation (x4 when the
+  accusative came from a dative, as Spanish a and Hindi ko did), generalising at 0.0006.
+- **Obviation** (OBV, from 'that' or 'other', X72: a guess, the Algonquian source is unknown) only where the verb
+  marks both subject and object.
+- **Polar questions**: the aims' pull toward a question particle is 3x the ordinary pressure, a wanted free particle is
+  abandoned at a quarter of the usual rate, and 'what' is a new source (X73, Polish czy).
+- New sentences: distance, remote past, aspect, mirative, polite request, comparison, obviation; new notes:
+  Demonstratives, Polite address, Comparison, Obviation, and DOM in the Case note.
+
+### Measured
+Isolated harness (300 human protos, ~20 kyr, `sim.py` from phase C) and the final full pass of a24559 (after merging
+the faiths lane: 612 living lects; "before" = phase C's final pass, 622 living lects).
+
+| | harness before | harness after | full pass before | full pass after | reference |
+| --- | --- | --- | --- | --- | --- |
+| polar question: intonation only | 39% | 32% | 51% | 36% | WALS 116A: about 14% |
+| question gram (Q), any | 61% | 68% | 49% | 64% | about 60% particle + 17% verbal |
+| far demonstrative (3-way distance) | 0% | 31% | 0% | 16% | WALS 41A: 3-way about 37% |
+| graded past, of lects with a past | 9% | 20% | (not measured) | 11% | WALS 66A: about 30% |
+| completive / inceptive / iterative | 0% | 22% / 8% / 10% | 0% | 8% / 6% / 6% | (no single figure) |
+| mirative | 0% | 8% | 0% | 6% | WALS 77/78 area: rare as a gram |
+| polite address (plural / third person) | 0% | 14% / 5% | 0% | 16% / 14% | WALS 45A: 24% binary + 10% more |
+| honorific verb marker | 0% | 2% | 0% | 1% | rare (Japanese, Korean, Tibetan) |
+| comparison: locational / exceed / particle / conjoined | none | 20 / 31 / 24 / 25% | none | 18 / 34 / 20 / 28% | WALS 121A: 47 / 20 / 13 / 20% |
+| DOM, of lects with an accusative | 0% | 17% | 0% | 8% | common in accusative languages (Bossong) |
+| obviative | 0% | 3% | 0% | 1% | rare (Algonquian, Kutenai) |
+
+Scholars' horizon (human lects), not chased: window reading 12.0 kyr, logistic `human_logistic` 13.3 kyr (the
+pre-merge pass of this branch read 17.0 / 14.7: the window reading swings, as noted before); still FAIL on the window
+reading. Other checks all ok as before.
+
+### Odd output
+- **Far demonstrative worn back into 'that'** (red dragon on the demo: 'that' tɛ˨˦ɨ˨ and the far one tɛ˨˦ɨ˨): the
+  reinforcing syllable eroded away, so the two distances now sound alike. Real systems do merge this way; the page
+  reports it as it stands rather than hiding it.
+- **Full pass vs harness**: far demonstratives (16% vs 31%) and graded pasts (11% vs 20%) are half as common in the
+  full pass as in the isolated harness; contact and adult learners strip optional free words. Below WALS on both; I
+  did not chase it further.
+- **Comparison shares**: locational is 18% (WALS 121A 47%) and exceed 34% (20%), because the construction now follows
+  the typology's Grambank-drawn `comparative` aim; that draw (GB265/GB266) was there before phase D. Changing it is a
+  one-line prior change if you want WALS shares.
+- **Recipes on crops**: "How to cook cane" and "How to cook alliums": the staple is the people's first crop, whatever
+  it is; a cane recipe that says "grind it with a stone" is plausible but odd.
+- **Proto fables without a locative**: a proto-language with no case or adposition says 'bird tree sit-PST' for "A bird
+  sat in a tree"; that is honest, not missing.
+- **Polite note** says "It grew in a large society, where rank is marked in speech": the only social figure the model
+  uses is population, so "rank" is my gloss, not data.
+
+### Species leanings (a proposal, not applied)
+Per-people multipliers on existing rates, the way kenku lean tonal. All are suggestions for you to accept, change or
+drop; none is in the code. Only traits the lineage data already holds are used (lifespan, generation length, body).
+
+| people (by a trait the lineage data holds) | lean | multiplier | why |
+| --- | --- | --- | --- |
+| long generations (elves, dragons) | evidentials and mirative kept | EVID/MIR recruitment x1.5, loss x0.5 | flavour: long memories and witnessed events |
+| long generations (elves, dragons) | conservative morphology | erosion and fusion x0.7 | long generations already change less per kyr; this would add to it |
+| voice profile with a wide pitch range (kenku, already tonal) | reduplication | REDUP x1.5 | flavour: sound-copying |
+| short generations (goblin-kin, kobolds) | faster grammaticalization | recruitment x1.2 | already happens per kyr through generation length |
+| everyone else | none | x1 | the baseline |
+
+My own view: the rows are flavour on top of mechanisms that already exist (generation length, population size). I
+would apply at most the first, and only if you want elves and dragons to feel different in their grammar.
