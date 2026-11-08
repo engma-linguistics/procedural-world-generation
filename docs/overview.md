@@ -415,7 +415,7 @@ A **world** is one moment, finished. Five ways to get one:
 
 **One rule for the world's water** (PW-355): until PW-355 `hydrology.erode` routed the water along the bed under the ice (over the ice surface only where the bed is below the sea), the rivers and lakes over the ice surface. It now routes over the ice surface under all ice, as `rivers_and_lakes` does (under a sheet the subglacial water's head is dominated by the ice surface's slope); the bed beneath is still what is cut. Measured on keyframe worlds (strength 0.3): L7 seed 11 (run 738c73) at 652 Myr (4895 ice cells, none on a sub-sea bed): 2016 beds under the ice change (p1/p99 −124/+133 m, extremes −417/+381), 493 of 758 within two cells of the ice (p1/p99 −182/+211), beyond eight cells p1/p99 ±3 m; lakes within eight cells of the ice 24 → 17 cells (open lakes 140 → 132), the rest 644 → 643; the five largest rivers' mouths and flows unchanged (the longest course 90 → 91 cells); climate beyond two cells of the ice within 0.4 °C and 12 mm at the 99th percentile. L7 time zoom 080df3 at 950 kyr (13251 ice cells, 2564 on a sub-sea bed): 9756 beds under the ice change (p1/p99 −219/+232 m), within two cells p1/p99 −320/+173; lakes within eight cells of the ice 88 → 73 (open 95 → 81), beyond 58 → 60; four of the five largest mouths unchanged, the fourth moves one cell (flow 308 → 346); beyond two cells of the ice 0.2 °C and 61 mm at the 99th percentile. A world without ice (738c73 at 8 Myr) is bit-identical.
 
-**Outputs:** `worlds/<id>.json` (all layers inline; 5 MB at L6, 30–45 MB at L7) plus a readable `.txt` summary with ASCII maps. A tectonic world has ~119 layers (§2.16; 32 of them vegetation, 7 coastal life with turbidity and upwelling, 10 soils, 3 the satellite view); its meta records the source run and time, global temperature, sea level, hotspots, volcanoes, the overturning and the code version.
+**Outputs:** `worlds/<id>.json` (a ~0.2 MB header: meta, summary, legend, and each layer's file and type) and `worlds/layers/<id>/<name>.bin` (one binary file per layer, each in the smallest type that keeps its values exactly: ~50 MB at L7, ~200 MB at L8; PW-1209, `docs/review/viewer/binary-layers.md`) plus a readable `.txt` summary with ASCII maps. A tectonic world has ~119 layers (§2.16; 32 of them vegetation, 7 coastal life with turbidity and upwelling, 10 soils, 3 the satellite view); its meta records the source run and time, global temperature, sea level, hotspots, volcanoes, the overturning and the code version.
 
 ### 2.12 Highlights (`highlights.py`)
 
@@ -618,7 +618,8 @@ Outputs go under the data root (the repository, or `$PLANET_DATA`). All are gene
 | `runs/<id>/state/<t>.ckpt` | full simulation state (with the geological record) every 100 Myr, where `slice` starts replaying |
 | `runs/<id>/volcanoes.json.gz` | every volcano ever |
 | `runs/<id>/run.txt` | readable report: events, stats over time, ASCII maps, plate table |
-| `worlds/<id>.json` / `.txt` | a world, layers inline; names its grid file (`../grids/L7.json`) |
+| `worlds/<id>.json` / `.txt` | a world: header and layer specs; names its grid file (`../grids/L7.json`) |
+| `worlds/layers/<id>/<name>.bin` | a world's layers, one binary file each (`store.write_world_layers`) |
 | `worlds/highlights/<id>.json` | highlight cache |
 | `zooms/<id>/` | `zoom.json`, `layers/*.bin`, PNGs |
 | `grids/L<n>.json` | grid geometry shared by all items at that level |

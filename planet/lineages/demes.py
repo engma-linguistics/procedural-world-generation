@@ -823,7 +823,7 @@ def _derive(run_dir: Path, window_kyr: float, presence: bool = True) -> dict:
     flow = None
     if m.get("world"):
         try:
-            wl = json.loads(S.find_world(m["world"]).read_text())["layers"]  # (only the rivers: world.load would build a grid too)
+            wl = S.world_layers(m["world"], ("flow",))  # (only the rivers: world.load would build a grid too)
             flow = np.asarray(wl["flow"], float) if "flow" in wl else None
         except SystemExit:
             flow = None

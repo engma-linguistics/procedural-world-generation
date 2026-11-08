@@ -9,7 +9,8 @@ both, e.g. for tests). Under it:
   runs/<id>/layers/<name>.bin    one layer, all frames: (frames, cells), raw little-endian
   runs/<id>/state/<t>.ckpt       full simulation state every ~100 Myr (replay starts there)
   runs/<id>/volcanoes.json.gz    every volcano at every keyframe (write_volcanoes)
-  worlds/<id>.json, <id>.txt     a full world (JSON layers; the grid by reference)
+  worlds/<id>.json, <id>.txt     a world: meta, summary, legend, layer specs (the grid by reference)
+  worlds/layers/<id>/<name>.bin  one world layer, (cells,) (write_world_layers)
   worlds/highlights/<id>.json    highlights.py cache for world <id>
   worlds/history/<id>.npz        resources.history pass of world <id> (its zooms' deposits)
   zooms/<id>/zoom.json           a regional zoom: meta + layer specs
@@ -120,6 +121,11 @@ def history_path(world_id: str) -> Path:
 def names_path(world_id: str) -> Path:
     """The owner's names for a world's landmasses (names.py, PW-867), in a subfolder: world listings don't see it."""
     return worlds_dir() / "names" / f"{world_id}.json"
+
+
+def world_layers_dir(world_id: str) -> Path:
+    """A world's layer files, one per layer (world.save, PW-1209), in a subfolder: world listings don't see it."""
+    return worlds_dir() / "layers" / world_id
 
 
 def goods_path(world_id: str) -> Path:
@@ -607,6 +613,91 @@ def read_layers(base_dir: Path, specs: dict, names=None, mmap: bool = True) -> d
     return {k: read_layer(base_dir, specs[k], mmap) for k in (specs if names is None else names)}
 
 
+# A world's layers (PW-1209): one binary file per layer, worlds/layers/<id>/<name>.bin, each in the smallest type that
+# gives back exactly the values the world had. Whole numbers go in the smallest integer type that holds them. Numbers
+# rounded to d decimals (the finishing code rounds most layers) go as whole numbers of 10^-d: "decimals": d, value =
+# stored / 10^d. Dividing two exact whole numbers rounds once, so this is the same float64 as parsing the decimal
+# text was. Anything else is float32 when that is exact, else float64. "kind" says what Python gets back: "int"
+# (int64), "float" (float64) or "bool"; the viewer gets the same numbers (viewer/globe/load.js worldLayer).
+_INT_TYPES = (np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32)
+_MAX_DECIMALS = 6
+
+
+def _int_type(lo, hi):
+    return next((np.dtype(t) for t in _INT_TYPES if np.iinfo(t).min <= lo and hi <= np.iinfo(t).max), None)
+
+
+def world_layer_encode(values) -> tuple[np.ndarray, dict]:
+    """A world layer in real units -> (the array to store, its spec without "file")."""
+    a = np.asarray(values)
+    if a.dtype.kind == "b":
+        return a.astype(np.uint8), {"dtype": "uint8", "shape": list(a.shape), "kind": "bool"}
+    if a.dtype.kind in "iu":
+        dt = _int_type(int(a.min()), int(a.max())) if a.size else np.dtype(np.uint8)
+        if dt is not None:
+            return a.astype(dt), {"dtype": dt.name, "shape": list(a.shape), "kind": "int"}
+        a = a.astype(np.float64)  # (beyond 32 bits: exact as float64 below 2^53)
+        return a, {"dtype": "float64", "shape": list(a.shape), "kind": "float"}
+    if a.dtype.kind != "f":
+        raise TypeError(f"a world layer must be numbers, not {a.dtype}")
+    a = a.astype(np.float64)
+    if a.size and np.isfinite(a).all():
+        big = float(np.abs(a).max())
+        for d in range(_MAX_DECIMALS + 1):
+            if big * 10 ** d >= 2 ** 31:
+                break
+            q = np.rint(a * 10 ** d)
+            if np.array_equal(q / 10 ** d, a):
+                dt = _int_type(q.min(), q.max())
+                return q.astype(dt), {"dtype": dt.name, "shape": list(a.shape), "kind": "float", "decimals": d}
+    f32 = a.astype(np.float32)
+    if np.array_equal(f32.astype(np.float64), a, equal_nan=True):
+        return f32, {"dtype": "float32", "shape": list(a.shape), "kind": "float"}
+    return a, {"dtype": "float64", "shape": list(a.shape), "kind": "float"}
+
+
+def world_layer_decode(raw: np.ndarray, spec: dict) -> np.ndarray:
+    """A stored world layer -> its values, as the world had them (int64, float64 or bool)."""
+    kind = spec.get("kind", "float")
+    if kind == "bool":
+        return np.asarray(raw).astype(bool)
+    if kind == "int":
+        return np.asarray(raw).astype(np.int64)
+    if spec.get("decimals") is not None:
+        return np.asarray(raw, dtype=np.float64) / 10 ** spec["decimals"]
+    return np.asarray(raw).astype(np.float64)
+
+
+def write_world_layers(world_id: str, layers: dict) -> dict:
+    """Writes worlds/layers/<id>/<name>.bin per layer (each atomically; files of layers no longer there are removed)
+    and returns the specs for the world's JSON, in the order given. Files are relative to worlds/."""
+    d = world_layers_dir(world_id)
+    d.mkdir(parents=True, exist_ok=True)
+    specs = {}
+    for name, v in layers.items():
+        arr, spec = world_layer_encode(v)
+        dt = np.dtype(spec["dtype"]).newbyteorder("<")
+        write_atomic(d / f"{name}.bin", np.ascontiguousarray(arr.astype(dt)).tobytes())
+        specs[name] = {"file": f"layers/{world_id}/{name}.bin", **spec}
+    for p in d.glob("*.bin"):
+        if p.stem not in specs:
+            p.unlink(missing_ok=True)
+    return specs
+
+
+def read_world_layers(specs: dict, names=None) -> dict:
+    """{name: values} of a world's layers (world_layer_decode), for names (default: all)."""
+    return {k: world_layer_decode(read_layer(worlds_dir(), specs[k], mmap=False), specs[k])
+            for k in (specs if names is None else names)}
+
+
+def world_layers(ref, names) -> dict:
+    """{name: values} of some layers of a saved world (an id or its .json path), those it has; only their files are
+    read (world.load reads them all and builds the grid)."""
+    specs = json.loads(find("world", ref).read_text())["layers"]
+    return read_world_layers(specs, [k for k in names if k in specs])
+
+
 # ---------------------------------------------------------------------------
 # Grids and legends
 # ---------------------------------------------------------------------------
@@ -837,6 +928,10 @@ def delete(kind: str, item_id: str) -> list[Path]:
             if q.exists():
                 q.unlink()
                 gone.append(q)
+        q = world_layers_dir(item_id)
+        if q.is_dir() and not q.is_symlink():
+            shutil.rmtree(q)
+            gone.append(q)
         for z in zooms_of(item_id):
             shutil.rmtree(z)
             gone.append(z)
@@ -874,6 +969,9 @@ def orphans() -> list[Path]:
     out += [p for p in sorted((worlds_dir() / "names").glob("*.json")) if not exists("world", p.stem)]
     out += [p for p in sorted((worlds_dir() / "history").glob("*.npz")) if not exists("world", p.stem)]
     out += [p for p in sorted((worlds_dir() / "goods").glob("*.npz")) if not exists("world", p.stem)]
+    import time  # (a world's layers are written before its .json: one written in the last hour may be a save under way)
+    out += [p for p in sorted((worlds_dir() / "layers").glob("*")) if p.is_dir() and not p.is_symlink()
+            and not exists("world", p.name) and time.time() - p.stat().st_mtime > 3600]
     return out
 
 

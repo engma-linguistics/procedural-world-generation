@@ -1065,8 +1065,8 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
     flow = None
     if m.get("world"):
         try:
-            flow = np.asarray(json.loads(S.find_world(m["world"]).read_text())["layers"].get("flow"), float)
-        except (SystemExit, TypeError, KeyError):
+            flow = np.asarray(S.world_layers(m["world"], ("flow",))["flow"], float)
+        except (SystemExit, KeyError):
             flow = None
     C = doc["cultures"]
     dc = np.asarray(doc["deme_culture"], np.int64)

@@ -294,12 +294,11 @@ def _world_layers(world: str | None, n: int) -> dict:
     if not world:
         return out
     try:
-        wl = json.loads(S.find_world(world).read_text())["layers"]
+        wl = S.world_layers(world, keys)
     except SystemExit:
         return out
-    for k in keys:
-        if k in wl:
-            out[k] = np.nan_to_num(np.asarray(wl[k], float))
+    for k, v in wl.items():
+        out[k] = np.nan_to_num(np.asarray(v, float))
     return out
 
 

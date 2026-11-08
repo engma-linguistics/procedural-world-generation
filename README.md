@@ -421,7 +421,8 @@ planet simulate ...`; `serve` then shows that root's runs).
   stats over time, ASCII elevation maps at five moments, and a plate table.
 - `worlds/<id>.json` / `.txt`: a full world (from `slice` or `generate`); it
   names its grid file (`"grid": "../grids/L6.json"`) rather than including
-  it. The `.txt` has the summary and ASCII maps. Water layers: `flow` (river flow,
+  it, and lists its layer files (`worlds/layers/<id>/<name>.bin`, one binary file
+  per layer, PW-1209). The `.txt` has the summary and ASCII maps. Water layers: `flow` (river flow,
   upstream runoff in cells x m/yr; times a cell's area per year = m3/s),
   `runoff`, `evaporation`, `pet` (mm/yr), `lake` (0/1), `lake_kind` (0 none,
   1 open/fresh, 2 closed/salt, 3 salt pan) and `lake_level` (the lake's
@@ -465,8 +466,8 @@ frames and worlds; worlds also `plant_cover`, `lai`, `lai_jul`, `lai_jan`,
 `flooded` and `veg_<PFT>` for each of the 19 plant functional types). Not every item stores every layer: run frames have
 the annual wind, current and jet layers; worlds have those plus the July /
 January winds, and add `biome`, `runoff`, `evaporation`, `pet`,
-`warm_month`, `cold_month` and the wave and tide layers. World layers are
-stored inline in the world's JSON; runs and zooms use `.bin` files. Run
+`warm_month`, `cold_month` and the wave and tide layers. All of them use
+`.bin` files: a world's are `worlds/layers/<id>/<name>.bin`, listed in its JSON. Run
 frames keep `lake_depth` (m of water, stored in decimetres) where worlds keep `lake_level` (its
 surface); `lake_kind` means the same in both. Time zooms keep a few of these
 names (`elevation`, `ice`, `temperature`, `climate`, plus the frozen
