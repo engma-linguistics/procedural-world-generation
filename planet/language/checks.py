@@ -486,11 +486,29 @@ def areal(result: dict) -> dict:
                 "are shown, not judged")
 
 
+def possible_segments(result: dict) -> dict:
+    """No lect of the run, living or dead, has a segment no mouth makes (rules.impossible: a voiced or prenasalised
+    ejective; cold review 2026-11-08, R2)."""
+    from . import rules as RU
+    from .percepts import to_ipa
+    bad: dict = {}
+    for l in result["lects"]:
+        if getattr(l, "lexicon", None) is None:
+            continue
+        for s in l.segments():
+            if RU.impossible(s):
+                bad.setdefault(to_ipa(s), []).append(l.id)
+    n = sum(len(v) for v in bad.values())
+    note = "; ".join(f"{k} in {len(v)} lects ({', '.join(v[:3])})" for k, v in sorted(bad.items())) or "none"
+    return _row("no impossible segments (all lects)", n, "0", n == 0, note)
+
+
 def run_all(result: dict) -> list[dict]:
     out = []
     for fn, arg in ((proto_inventories, result["lects"]), (sister_distant, result), (horizon, result), (shifts, result),
                     (long_generations, result), (complexity, result), (living_sizes, result), (living_segments, result),
-                    (living_overuse, result), (typology_consistency, result), (borrowability, result), (areal, result)):
+                    (living_overuse, result), (typology_consistency, result), (borrowability, result), (areal, result),
+                    (possible_segments, result)):
         try:
             out.append(fn(arg))
         except Exception as e:  # (a check that cannot run says so; it never stops the pass)

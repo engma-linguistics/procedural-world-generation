@@ -435,6 +435,19 @@ def _syll_ok(flags, w, i, end) -> bool:
     return True
 
 
+def impossible(seg) -> bool:
+    """A segment no mouth makes (cold review 2026-11-08, R2): an ejective (larynx 2) that is voiced or prenasalised. An
+    ejective is made with the glottis closed (the larynx is the piston), so the folds cannot vibrate and no nasal airflow
+    can lead it in; voiced ejective clicks (ʘ̬ʼ) and ᵑɡʼ came from intervocalic and postnasal voicing and prenasalisation
+    reaching glottalic stops. A rule's output segment that is impossible where its input was not is not made: the rule
+    does not act there (`_apply_one`, `_single`), as real voicing lenitions leave ejectives alone (Georgian, Quechua)."""
+    return getattr(seg, "kind", None) == "C" and seg.larynx == 2 and (seg.voice == 1 or seg.prenasal != 0)
+
+
+def _makes_impossible(produced, matched) -> bool:
+    return any(impossible(x) for x in produced) and not any(impossible(x) for x in matched)
+
+
 def _make(items, matched, focus_seg):
     res = []
     for ref, literal, sets in items:
@@ -634,6 +647,8 @@ def _apply_one(rule: Rule, w: tuple, stress_index, stem_index) -> tuple:
                 and (not env.syll or _syll_ok(env.syll, w, i, end)) \
                 and _env_ok(env, out, w, end, sat_l, sat_r):
             produced = _produce(ch, w, i, end, out, trig)
+            if produced is not None and _makes_impossible(produced, w[i:end]):
+                produced = None   # (no voiced or prenasalised ejective: `impossible`)
             if produced is not None:
                 before = len(out)
                 if ch.left_set and before and out[-1].kind == "V":
@@ -917,13 +932,15 @@ def _single(rule: Rule, seg):
         key = _tonekey(seg)
         for inp, items in ch.pairs:
             if inp == key:
-                return _make(items, (seg,), seg)
+                o = _make(items, (seg,), seg)
+                return None if _makes_impossible(o, (seg,)) else o
         return None
     if ch.kind == "assimilate":
         return [seg]
     if rule.span:
         return None
-    return _make(ch.items, (seg,), seg)
+    o = _make(ch.items, (seg,), seg)
+    return None if _makes_impossible(o, (seg,)) else o
 
 
 # ------------------------------------------------------------------------------------------------------- catalogue
@@ -1891,7 +1908,7 @@ def _build_demo() -> tuple[Rule, ...]:
               "Grimm's law: Latin pater, English father (but spuere, spew: kept after s and other obstruents)"),
         _demo("lenition.f_h", "f > h / #_, V_V", "effort", "larynx", 3, "Latin facere > Old Spanish hazer > hacer"),
         _demo("lenition.h_loss", "h > ∅", "effort", "larynx", 5, "Spanish hacer [aθer]; Cockney 'ouse"),
-        _demo("lenition.intervocalic_voicing", "[−voice −son −glottal] > [+voice] / V_V", "coarticulation", "larynx", 5,
+        _demo("lenition.intervocalic_voicing", "[−voice −son −glottal +pulmonic] > [+voice] / V_V", "coarticulation", "larynx", 5,
               "Latin vitam > Spanish vida"),
         _demo("lenition.spirantization", "b, d, g > β, ð, ɣ / V_V", "effort", "lips, tongue_tip, tongue_body", 5,
               "Spanish lobo [loβo], nada [naða], lago [laɣo]"),
