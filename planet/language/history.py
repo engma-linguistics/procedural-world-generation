@@ -33,6 +33,7 @@ import numpy as np
 from . import inputs as I
 from . import lect as LC
 from . import lexicon as LX
+from . import lexsys as LS
 from . import rules as RU
 
 START_KYR = I.START_KYR
@@ -87,7 +88,10 @@ SHIFT_PRONE = ("word_order", "adposition", "genitive", "adjective", "relative", 
 # lect with hazard AREAL_K x contact x (prestige ratio / PRESTIGE_CAP) x (1 + its bilingual share there), the feature drawn
 # by AREAL_WEIGHT (the areal features of the Balkans, Mainland Southeast Asia, Ethiopia and the Amazon: order, articles,
 # future and perfect, evidentials, classifiers, polar questions); gender, case and alignment almost never.
-AREAL_K = 0.0015
+# (lexcon pass 2: 0.0015 -> 0.015. At 0.0015 a lect line copied 0.57 features in 20 kyr, ~1/40 of the typology drift
+# (grammar.STABILITY: 1e-3 per feature per generation for a medium feature), and near cross-family pairs agreed no more
+# than far ones: near - far -0.0009)
+AREAL_K = 0.015
 AREAL_WEIGHT = {"word_order": 1.0, "adposition": 1.0, "genitive": 1.5, "adjective": 1.5, "relative": 1.0,
                 "demonstrative": 1.0, "numeral": 1.0, "definite_article": 2.0, "indefinite_article": 1.5,
                 "future": 2.0, "perfective": 1.5, "progressive": 1.5, "past": 1.0, "evidentiality": 2.0,
@@ -276,7 +280,8 @@ class History:
             cw = self.loan_weights(l, contacts[l.deme], i)
             ctx = {"contact_ids": sorted(cw), "contact_weights": cw, "niche": niche_for(R, l.deme, i), "l2": R.l2_share(l.deme, i),
                    "population": R.deme_population(l.deme, i), "isolation": R.isolation(l.deme, i),
-                   "rate_scale": RATE_SCALE, "replace_scale": REPLACE_SCALE, "rule_weight": RULE_WEIGHT}
+                   "rate_scale": RATE_SCALE, "replace_scale": REPLACE_SCALE, "rule_weight": RULE_WEIGHT,
+                   "kin": LS.kin_pull(R.culture_rules(l.deme)), "speech_taboo": LS.speech_taboo(R.culture_rules(l.deme))}
             tasks.append((l.id, i, n, t1, ctx, self.pending.pop(l.id, [])))
         fired = self.run_steps(tasks)
         self.timing["steps"] = self.timing.get("steps", 0.0) + time.perf_counter() - tm
@@ -1131,9 +1136,16 @@ def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse
         h.interval(i)
     # (adoptions decided in the last interval would land in the next one, which does not exist: they are dropped)
     h.timing["driver_s"] = round(time.perf_counter() - t, 1)
+    last = len(R.frames_kyr) - 1
     for l in h.lects.values():
         if l.alive and l.deme is not None:
-            l.population = R.deme_population(l.deme, len(R.frames_kyr) - 1)
+            l.population = R.deme_population(l.deme, last)
+    for l in sorted((x for x in h.lects.values() if x.alive and x.deme is not None and not x.minority), key=lambda x: x.id):
+        rules = R.culture_rules(l.deme) or ()
+        if "motherinlaw" in rules or "inlaw_words" in rules:   # (an avoidance register as it stands today: lexsys)
+            cw = {y.id: y.lexicon for y in (h.lect_of(o) for o in sorted(R.contacts_of(l.deme, last, CONTACT_BORROW)))
+                  if y is not None and y.alive and y.id != l.id}
+            LS.avoidance(rng_for(h.seed, "avoid", l.id), l.lexicon, l.inventory, R.kyr(last), l.id, cw, l.profile)
     out = {"history": h, "run": R, "seed": h.seed, "lects": list(h.lects.values()), "shifts": h.shifts,
            "food_routes": [r for r in h.routes.values()], "log": h.log, "timing": h.timing}
     if analyse:

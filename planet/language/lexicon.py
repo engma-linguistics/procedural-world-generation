@@ -62,7 +62,20 @@ SWADESH_RETENTION_1KYR = 0.86
 # millennium with a contact lect (the driver's usual case; isolated-lect harness `retention` in calibration.md), measured
 # 0.115 replaced without it, 0.132 at x1.15, 0.150 at x1.24 (240-concept list); with the WOLD extension (more recipes, fewer keeps)
 # 0.158 at x1.2, so x1.08.
-KEEP_COMPENSATION = 1.08
+# (2026-11-08, lexcon pass 2: x1.08 -> x1.0: with KEEP_COIN the frequent meanings no longer fall to keep, and the full
+# a24559 pass replaced 16.0% of the human core per 1 kyr at x1.08 (retention 0.840); x1.0 brings it to ~0.85)
+KEEP_COMPENSATION = 1.0
+# (2026-11-08, lexcon pass 2) A replacement draw for a frequent open-class meaning (frequency class <= KEEP_COIN_FREQ)
+# that no source could fill is a fresh root (a word of unknown origin) with chance KEEP_COIN, else the old word is kept.
+# Without it a frequent meaning with no derivation, compound or shift (EGG, STAR, LEAF, FISH ...) is renewed only by
+# loans and, in a lect with little contact, outlives everything: in the isolated harness (24 seeds, contact weight
+# 0.09) EGG, LEAF and SLEEP kept their proto word 12 kyr in 83-92% of runs, and the core 100 kept 29.5% over 12 kyr
+# where a constant 86% per kyr keeps 16%: a tail that held the scholars' horizon near 17 kyr (calibration.md,
+# "Lexicon & contact lane, pass 2"). Harness: all classes at 0.25 / 0.5 / 1.0 -> 25% / 23% / 17.5% kept, fresh roots
+# 10% / 17% / 30% of replacements; classes <= 2 at 1.0 -> 22%, fresh roots 6% (the slow meanings are the tail; the
+# rare ones have sources). The closed classes (pronouns, numerals, deixis, wh-words) keep their word: the most stable.
+KEEP_COIN = 1.0
+KEEP_COIN_FREQ = 2
 BASE_REPLACE = 0.0026726 * KEEP_COMPENSATION   # per generation; re-solve with calibrate_base_replace() (x KEEP_COMPENSATION) if the table or RATE_BY_FREQ change
 
 # Where a replacement comes from. A fresh root ("coin", origin unknown) keeps a real share: in attested histories a good
@@ -2001,13 +2014,19 @@ def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, i
                     break
         if new is not None:
             return s, new
+    if "coin" not in order and not closed_class(k) and c.freq_class <= KEEP_COIN_FREQ and rng.random() < KEEP_COIN:
+        for _ in range(3):   # (a meaning nothing else can renew: a word of unknown origin, KEEP_COIN)
+            new = coin(rng, lex, k, inv, kyr, lect_id, how="root", store=False)
+            if not _clashes(lex, k, new.form):
+                return "coin", new
     return "keep", None
 
 
 def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, Lexicon] | None = None,
          kyr: float = 0.0, lect_id: str | None = None, niche_weights: dict[str, float] | None = None,
          profile=None, head_first: bool | None = None, contact_weights: dict[str, float] | None = None,
-         numeral_base: str | None = None, population: float | None = None) -> list[tuple[str, str]]:
+         numeral_base: str | None = None, population: float | None = None,
+         kin_weights: dict | None = None, speech_taboo: float = 1.0) -> list[tuple[str, str]]:
     """Lexical events over `n_generations` (fractional is fine) in one batch: each word is replaced with probability
     1 - (1 - h)^n, h = BASE_REPLACE * RATE_BY_FREQ[freq_class] (x HOMOPHONE_BOOST for the rarer members of a homophone
     group, `_renewal_boost`), the new word coming from SOURCES: a derivation, a compound (data/compounds.tsv recipes only), a colexification
@@ -2034,7 +2053,8 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
     if n_generations > 0 and lex.words:
         keys = list(lex.words)
         boost = _renewal_boost(lex)
-        h = np.array([min(1.0, hazard(lex.words[k].freq_class) * boost.get(k, 1.0)) for k in keys])
+        h = np.array([min(1.0, hazard(lex.words[k].freq_class) * boost.get(k, 1.0)
+                          * (speech_taboo if not closed_class(k) else 1.0)) for k in keys])   # (name taboos: lexsys)
         p = 1.0 - (1.0 - h) ** n_generations
         hit = np.nonzero(rng.random(len(keys)) < p)[0]
         donors = sorted(contact_words) if contact_words else []
@@ -2100,7 +2120,8 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
     if inv is not None and n_generations > 0:
         _renew_affixes(rng, lex, inv, n_generations, kyr)
         events += LS.systems_step(rng, lex, n_generations, inv, kyr, lect_id, numeral_base=numeral_base,
-                                  population=population, contact_words=contact_words, weights=contact_weights)
+                                  population=population, contact_words=contact_words, weights=contact_weights,
+                                  kin_weights=kin_weights)
     if niche_weights and inv is not None:
         for niche, wt in sorted(niche_weights.items()):
             if wt < ELAB_THRESHOLD:

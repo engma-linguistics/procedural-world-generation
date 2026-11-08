@@ -508,7 +508,9 @@ def test_coinage_does_not_swamp_derivation(long_runs):
             assert L.affix_share(lex, m) <= L.AFFIX_CAP + 0.04, (m, L.affix_share(lex, m))
     n = sum(tot.values())
     n -= tot["keep"]   # (draws no source could fill: the old word lives on)
-    assert 0.0 < tot["coin"] / n < 0.06, tot   # (2026-11-07: only a drawn fresh root, about SOURCES["coin"])
+    # (2026-11-08, lexcon pass 2: 0.06 -> 0.08: a frequent meaning no source can renew now takes a fresh root
+    # (lexicon.KEEP_COIN) instead of living forever; 6.4% on these seeds, well under the review's 15% bar)
+    assert 0.0 < tot["coin"] / n < 0.08, tot   # (2026-11-07: only a drawn fresh root, about SOURCES["coin"])
     assert tot["borrow"] / n < 0.35, tot   # (loans fill gaps, not every gap: BORROW_FALLBACK)
     assert tot["derive"] + tot["renew"] + tot["compound"] + tot["shift"] > 6 * tot["coin"], tot
     assert tot["renew"] / n < 0.06, tot
@@ -770,3 +772,35 @@ def test_contrast_pairs_rarely_share_a_form(concepts):
                 n += 1
                 same += lex[a].form == lex[b].form
     assert same / n < 0.06, (same, n)
+
+
+def test_kinship_follows_the_cultures_marriage_rules():
+    """A culture with clan exogamy and cross-cousin marriage pulls its lects toward bifurcate-merging terms (Iroquois,
+    Crow, Omaha; Murdock 1949); one with neither toward Hawaiian or Eskimo (lexsys.kin_pull)."""
+    assert LS.kin_pull(None) is None
+    clan = LS.kin_pull({"clan_exogamy", "cousin_one_side"})
+    assert clan["iroquois"] > clan["crow"] > clan["hawaiian"] == 1.0
+    plain = LS.kin_pull({"dead_name"})
+    assert plain["hawaiian"] > plain["iroquois"]
+    bif = {}
+    for name, kw in (("clan", clan), ("plain", plain)):
+        ends = collections.Counter()
+        for s in range(30):
+            rng, inv, lex = _proto(700 + s, L.concepts(None))
+            LS.set_kin(rng, lex, 20.0, "L", inv, system="hawaiian")
+            for _ in range(20):
+                LS.systems_step(rng, lex, 40.0, inv, 20.0, "L", kin_weights=kw)
+            ends[lex.systems["kin"]["system"]] += 1
+        bif[name] = ends["iroquois"] + ends["crow"] + ends["omaha"]
+    assert bif["clan"] > bif["plain"] + 5, bif
+
+
+def test_speech_taboos_and_avoidance_register():
+    """Name taboos raise the open-class hazard; an in-law avoidance register gives everyday meanings a second word."""
+    assert LS.speech_taboo(None) == 1.0 and LS.speech_taboo({"dead_soundalike", "ruler_name"}) > 1.3
+    rng, inv, lex = _proto(720, L.concepts(None))
+    other = _proto(721, L.concepts(None), "M")[2]
+    reg = LS.avoidance(rng, lex, inv, 0.0, "L", {"M": other})
+    assert len(reg) >= 10 and lex.systems["avoidance"] is reg
+    assert all(lex.words[k].form != tuple(L.from_ipa(v[0])) for k, v in reg.items())
+    assert {v[1].split(" ")[0] for v in reg.values()} >= {"loan", "paraphrase"}

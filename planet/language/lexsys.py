@@ -331,6 +331,27 @@ KIN_WEIGHTS = {"hawaiian": 0.33, "iroquois": 0.22, "crow": 0.13, "omaha": 0.13, 
 KIN_NEXT = {"hawaiian": ("eskimo", "iroquois"), "eskimo": ("hawaiian", "sudanese"), "iroquois": ("hawaiian", "crow", "omaha"),
             "sudanese": ("eskimo", "iroquois"), "crow": ("iroquois",), "omaha": ("iroquois",)}
 KIN_CHANGE = 0.0006
+# The culture steers the drift (lexcon pass 2): a terminology follows the marriage rules its people keep (Murdock 1949,
+# Social Structure: bifurcate-merging terms go with exogamous unilineal kin groups; a cross / parallel cousin split with
+# cross-cousin marriage, the 'Dravidian' and Iroquois kind; lineal Eskimo and generational Hawaiian terms with bilateral
+# kin and no clans). The culture's kinship taboos (taboos.json: clan_exogamy, cousin_one_side) weight the next system,
+# and a lect whose system its culture does not favour changes up to KIN_PULL_MAX times faster.
+KIN_PULL = {"clan_exogamy": {"iroquois": 2.0, "crow": 2.0, "omaha": 2.0},
+            "cousin_one_side": {"iroquois": 3.0, "crow": 1.5, "omaha": 1.5},
+            None: {"hawaiian": 1.5, "eskimo": 1.5}}
+KIN_PULL_MAX = 3.0
+
+
+def kin_pull(rules) -> dict | None:
+    """Weights per kinship system from a culture's taboo rule ids (KIN_PULL); None when the culture is not known."""
+    if rules is None:
+        return None
+    w = {k: 1.0 for k in KIN_SYSTEMS}
+    hit = [r for r in ("clan_exogamy", "cousin_one_side") if r in rules]
+    for r in hit or [None]:
+        for k, x in KIN_PULL[r].items():
+            w[k] *= x
+    return w
 
 
 def _kin_groups(system: str) -> list:
@@ -387,12 +408,65 @@ def kin_group(lex, k: str) -> tuple:
     return ()
 
 
+# --- speech taboos and avoidance registers (lexcon pass 2; contact-gaps rec. 7, lexicon-gaps rec. 6) ----------------
+# A culture whose taboos ban the names of the dead or of the ruler and the words that sound like them (taboos.json
+# dead_soundalike, ruler_name) replaces its words faster: Australian languages (Dixon 1980, The Languages of Australia,
+# ch. 2: a word like a dead person's name is dropped for a synonym or a neighbour's word) and Tahitian pi'i (words in a
+# chief's name replaced). Each such rule raises the open-class hazard by SPEECH_TABOO_X (judgement: Dixon reckons the
+# effect large but gives no rate).
+SPEECH_TABOO_X = {"dead_soundalike": 0.3, "ruler_name": 0.2}
+
+
+def speech_taboo(rules) -> float:
+    """The replacement-hazard factor from a culture's speech taboos (1.0 without)."""
+    return 1.0 + sum(x for r, x in SPEECH_TABOO_X.items() if rules and r in rules)
+
+
+# An avoidance register (a 'mother-in-law language': Dyirbal Jalnguy, Guugu Yimidhirr; Dixon 1972, Haviland 1979): where
+# the culture has the in-law avoidance rules (taboos.json motherinlaw, inlaw_words) the lect keeps a second word for
+# everyday meanings, used before the avoided kin. Jalnguy words are often a neighbour's everyday word, or a general term
+# standing for several ordinary ones; here: a contact lect's word (AVOID_LOAN) or a paraphrase 'the <quality> one'
+# (lexicon.taboo_word), else a derivation. Built for the living lects as they stand today (`avoidance`), not inherited.
+AVOID_CONCEPTS = ("EAT", "DRINK", "SEE", "HEAR", "GO", "COME", "SIT", "SLEEP", "WATER", "FIRE", "HAND", "EYE", "FOOT",
+                  "HEAD", "HOUSE", "DOG", "FISH", "MEAT", "SPEAK", "GIVE")
+AVOID_LOAN = 0.5
+
+
+def avoidance(rng, lex, inv, kyr: float, lect_id: str, contact_words: dict | None = None, profile=None) -> dict:
+    """{concept: [ipa, how, note]} for the avoidance register of `lex` (AVOID_CONCEPTS it has); stored in
+    lex.systems["avoidance"]."""
+    out = {}
+    donors = sorted(contact_words or {})
+    for k in AVOID_CONCEPTS:
+        k = LX.resolve(k)
+        if k not in lex.words:
+            continue
+        cur = lex.words[k].form
+        w, how = None, None
+        have = [d for d in donors if k in contact_words[d] and contact_words[d][k].form != cur]
+        if have and rng.random() < AVOID_LOAN:
+            d = have[int(rng.integers(len(have)))]
+            w = LX.borrow(contact_words[d][k], d, lex, profile, inv, kyr, "avoidance register", store=False)
+            how = f"loan from {d}"
+        if w is None:
+            w = LX.taboo_word(rng, lex, k, inv, kyr, lect_id)
+            how = "paraphrase" if w is not None else None
+        if w is None:
+            w = LX.derive(rng, lex, k, inv, kyr, lect_id)
+            how = "derived" if w is not None else None
+        if w is None or w.form == cur:
+            continue
+        out[k] = [LX.word_ipa(w.form), how, w.etym[-1].note or ""]
+    lex.systems["avoidance"] = out
+    return out
+
+
 SYSTEM_CONCEPTS = frozenset((*NUMERALS, "MANY", *COLOUR_ORDER, *KIN_CONCEPTS))
 
 
 # --- the per-step systems --------------------------------------------------------------------------------------------
 def systems_step(rng, lex, n_generations: float, inv, kyr: float, lect_id: str, numeral_base: str | None = None,
-                 population: float | None = None, contact_words=None, weights=None) -> list:
+                 population: float | None = None, contact_words=None, weights=None, kin_weights: dict | None = None) -> list:
     """The systems' own clocks, once per lexicon step: a numeral system follows its grammar's label (a changed label
     re-draws the system and rebuilds the composites), a restricted system grows into a 5-based one in a large people,
     and the colour terms take their next B&K split."""
@@ -405,9 +479,12 @@ def systems_step(rng, lex, n_generations: float, inv, kyr: float, lect_id: str, 
             out += set_numerals(rng, lex, sy["label"], inv, kyr, lect_id,
                                 system={"label": sy["label"], "system": "quinary", "quinary": True})
     ksy = (lex.systems.get("kin") or {}).get("system")
-    if ksy is not None and rng.random() < 1.0 - (1.0 - KIN_CHANGE) ** n_generations:
+    if ksy is not None:
         nx = KIN_NEXT[ksy]
-        out += set_kin(rng, lex, kyr, lect_id, inv, system=nx[int(rng.integers(len(nx)))])
+        kw = np.array([(kin_weights or {}).get(k, 1.0) for k in nx])
+        up = min(KIN_PULL_MAX, max(1.0, kw.max() / (kin_weights or {}).get(ksy, 1.0)))   # (a disfavoured system moves sooner)
+        if rng.random() < 1.0 - (1.0 - KIN_CHANGE * up) ** n_generations:
+            out += set_kin(rng, lex, kyr, lect_id, inv, system=nx[int(rng.choice(len(nx), p=kw / kw.sum()))])
     if any(c in lex.words for c in COLOUR_ORDER) and any(len(g) > 1 for g in colour_partition(lex)):
         pf = min(2.0, max(0.5, ((population or COLOUR_POP) / COLOUR_POP) ** 0.5))
         if rng.random() < 1.0 - (1.0 - COLOUR_SPLIT * pf) ** n_generations:

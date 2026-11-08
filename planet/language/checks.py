@@ -106,7 +106,8 @@ def _group_row(v: dict | None) -> dict | None:
     if not v:
         return None
     return {"horizon_kyr": v.get("horizon_kyr"), "censored": v.get("censored"), "smoothed_kyr": v.get("smoothed_kyr"),
-            "single_window_kyr": v.get("single_window_kyr"), "splits": v.get("splits"), "lects": v.get("lects")}
+            "single_window_kyr": v.get("single_window_kyr"), "logistic_kyr": v.get("logistic_kyr"), "splits": v.get("splits"),
+            "lects": v.get("lects")}
 
 
 def horizon(result: dict) -> dict:
@@ -135,6 +136,7 @@ def horizon(result: dict) -> dict:
     hum = groups.get("human") or {}
     return _row("scholars' horizon (human lects)",
                 {"human": h, "human_smoothed": hum.get("smoothed_kyr"), "human_single_window": hum.get("single_window_kyr"),
+                 "human_logistic": hum.get("logistic_kyr"),
                  "long_lived": lh, "long_lived_censored": lg.get("censored"), "long_lived_smoothed": lg.get("smoothed_kyr"),
                  "all": (groups.get("all") or {}).get("horizon_kyr"), "by_group": groups,
                  "old_pair_measure": old, "old_all": fam.get("horizon_kyr"), "recovery_by_bin": rec, "strict_shares": strict},
