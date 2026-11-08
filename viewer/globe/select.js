@@ -54,6 +54,7 @@ export function applyUrlOptions() {
   if (p.get('peopleswhole') === '1') state.peoplesWhole = true;  // (peoples runs: a people with groups as a whole)
   if (p.get('obs')) { state.obs = p.get('obs'); [...$('obsSeg').children].forEach((b) => b.classList.toggle('on', b.dataset.v === state.obs)); }
   // (&settle=mines: the settlements overlay showing only its mining districts ('only the mines'), for links to the mines; &settle=all: everything)
+  if (p.get('trade') === 'routes') $('tradeRoutes').checked = true;  // (&trade=routes: the Trade routes overlay, PW-1504)
   if (p.get('settle')) { $('settlements').checked = true; $('settleMines').checked = true; $('settleMinesOnly').checked = p.get('settle') === 'mines'; }
   for (const id of [...OVERLAY_IDS, 'smooth', 'spin']) if (p.has(id)) $(id).checked = p.get(id) === '1';
   if (p.get('relief')) $('relief').value = p.get('relief');

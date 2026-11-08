@@ -494,8 +494,19 @@ def sheet(ctx, brief: dict, c: int, i: int, era: float) -> dict:
     return {"culture": {k: p[k] for k in ("id", "name", "people", "people_name", "ways", "dairy", "faith", "cells")},
             "fuel": fuel(ctx, brief, p), "staple": staple(ctx, brief, p), "drink": drink(ctx, brief, p),
             "who_eats_together": who_eats_together(ctx, brief, p, mask, era), "outsiders_get_wrong": outsiders(ctx, i, era, p, others),
-            "wont_eat": wont_eat(p),
+            "wont_eat": wont_eat(p), "goods": goods(ctx, c, i),
             "basis": "rule-based from this run at this era (cuisine.py); every line is for the culinary side to overrule"}
+
+
+def goods(ctx, c: int, i: int) -> dict | None:
+    """The culture's "has / lacks" line from the goods ledger (trade.py, PW-1502); None outside the land-use window (the last ~12.5 kyr)
+    or for a kind that takes tribute rather than trading."""
+    from . import trade as TR
+    r = (TR.ledger_at(ctx, i) or {}).get(c)
+    if r is None:
+        return None
+    return {"text": TR.line(r), "has": r["has"], "lacks": r["lacks"], "surplus": r["surplus"], "lack": r["lack"],
+            "basis": "the goods ledger (trade.py): what its own land gives beyond its own need, and what its ways of life want but do not have at home"}
 
 
 def markdown(s: dict, era: float) -> list[str]:
@@ -505,6 +516,8 @@ def markdown(s: dict, era: float) -> list[str]:
          f"- Fuel: {s['fuel']['text']}", f"- Staple: {s['staple']['text']}", f"- Drink: {s['drink']['text']}",
          f"- Who eats together: {s['who_eats_together']['text']}",
          f"- What outsiders get wrong: {s['outsiders_get_wrong']['text']}"]
+    if s.get("goods"):
+        t.append(f"- Has / lacks: {s['goods']['text']}")
     we = s["wont_eat"]
     if we["faith"] or we["own"]:
         t.append("- Won't eat:")

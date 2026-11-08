@@ -27,6 +27,7 @@
   GET    /api/faithmap?run=<id>&frame=<f>[&w=1024][&only=<faith>]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
   GET    /api/polities?run=<id>[&ago=<kyr>]   who rules where (lineages/polities.py, PW-1431): the polities and per-step counts; with ago, the nearest century step's map
   GET    /api/techspread?run=<id>[&tech=writing]   how fast one tech spread (lineages/techspread.py): who knew it when and how, the share of settled people over time
+  GET    /api/trade?run=<id>[&culture=<id>]   the goods ledger (lineages/trade.py, PW-1502): per way of life, or one culture's surplus and lacks per era; &flows=1: where its goods come from and go (trade_flow.py, PW-1503); &routes=1&ago=<kyr>: that era's trade routes and trading towns (trade_routes.py, PW-1504)
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -36,7 +37,7 @@ Big data files (.bin run layers, .json worlds and grids) go gzipped when the
 browser accepts it (Content-Encoding: gzip), compressed once and cached under
 <data root>/.gzcache (Handler.send_gzip). Derived gods and taboos docs are kept
 under <data root>/.godscache (disk_cached), so a restart doesn't pay again; so is the polities
-doc (polities_doc), read after the run and never written into it.
+doc (polities_doc) and the goods ledger (trade_doc), read after the run and never written into it.
 
 Every POST must say `Content-Type: application/json`, and one that carries an
 Origin must come from this server's own address (Handler.post_refused, PW-1037):
@@ -543,6 +544,89 @@ def polities(query: str) -> tuple[dict, int]:
         return {"error": f"{type(e).__name__}: {e}"}, 500
 
 
+_trade_cache: dict = {}  # (run id, run.json mtime, version) -> goods ledger doc
+_trade_lock = threading.Lock()
+
+
+def trade_doc(d: Path) -> dict:
+    """A run's goods ledger (lineages/trade.py, PW-1502): read after the run from its land-use window, cultures, crops, herds, techs and
+    the world's goods (~10 s at L7), kept in memory and on disk under <data root>/.godscache, never in the run folder."""
+    from .lineages import trade as TR
+    key = (d.name, (d / "run.json").stat().st_mtime, TR.VERSION)
+    with _trade_lock:
+        if key not in _trade_cache:
+            _trade_cache.clear()
+            _trade_cache[key] = disk_cached("trade", d, key, lambda: TR.derive(d))
+        return _trade_cache[key]
+
+
+_trade_flow_cache: dict = {}  # (run id, run.json mtime, versions, authored keys) -> exchange doc
+_trade_flow_lock = threading.Lock()
+
+
+def trade_flow_doc(d: Path) -> dict:
+    """A run's exchange (lineages/trade_flow.py, PW-1503): goods moving between neighbours, read after the run from the goods ledger, the
+    world's rivers and coasts, the techs, the polities' wars (polities_doc) and the cultures' tolerance (the gods doc's attitudes); a
+    minute or two at L7 the first time, kept in memory and on disk under <data root>/.godscache, never in the run folder."""
+    from .lineages import trade as TR
+    from .lineages import trade_flow as TF
+    key = (d.name, (d / "run.json").stat().st_mtime, TF.VERSION, TR.VERSION, _authored_key(d, "invasions"), _authored_key(d))
+    with _trade_flow_lock:
+        if key not in _trade_flow_cache:
+            def make():
+                try:
+                    pol = polities_doc(d)
+                except Exception:  # (a run without settlements has no polities: no border is closed by war)
+                    pol = None
+                try:
+                    att = gods_doc(d).get("attitudes")
+                except Exception:
+                    att = None
+                return TF.derive(d, pol=pol, att=att)
+            _trade_flow_cache.clear()
+            _trade_flow_cache[key] = disk_cached("tradeflow", d, key, make)
+        return _trade_flow_cache[key]
+
+
+def trade(query: str) -> tuple[dict, int]:
+    """GET /api/trade?run=<id>[&culture=<id>[&flows=1]]: a peoples run's goods ledger (lineages/trade.py, PW-1502). Without culture: per way
+    of life, the goods most often in surplus and lacking, and the frames; with culture: that culture's surplus and lacks at each frame of the
+    land-use window (the last ~12.5 kyr), its "has / lacks" line, and what every good is made from; with flows=1 instead: per frame where
+    each good it lacks comes from, where each good it spares goes, and its trading partners (lineages/trade_flow.py, PW-1503)."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import trade as TR
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        meta = json.loads((d / "run.json").read_text()).get("meta", {})
+        if meta.get("kind") != "peoples":
+            raise ValueError("the goods ledger is read from a peoples run")
+        if not meta.get("eraq") or not meta.get("world"):
+            raise ValueError("this run has no land-use window or no world (made before PW-742): no goods ledger")
+        doc = trade_doc(d)
+        if q.get("routes"):  # (step 3, PW-1504: the routes and trading towns of the frame nearest ago, for the globe's Trade routes overlay)
+            from .lineages import trade_routes as RT
+            return RT.frame_view(trade_flow_doc(d), float(q.get("ago") or 0.0)), 200
+        if q.get("culture") not in (None, "") and q.get("flows"):
+            from .lineages import trade_flow as TF
+            c = int(q["culture"])
+            if not 0 <= c < len(doc["cultures"]):
+                raise ValueError(f"no culture {c} in this run")
+            fd = trade_flow_doc(d)
+            return {"culture": c, "rows": TF.culture_view(fd, c, doc["cultures"]), "constants": fd["constants"], "seconds": fd["seconds"],
+                    "had_polities": fd["had_polities"], "had_attitudes": fd["had_attitudes"]}, 200
+        if q.get("culture") not in (None, ""):
+            return TR.culture_view(doc, int(q["culture"])), 200
+        return TR.summary(doc), 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
 _techspread_cache: dict = {}  # (run id, run.json mtime, version, tech) -> spread doc (a few seconds each; the last few kept)
 
 
@@ -888,6 +972,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*polities(url.query))
         if url.path == "/api/techspread":
             return self.send_json(*techspread(url.query))
+        if url.path == "/api/trade":
+            return self.send_json(*trade(url.query))
         if url.path == "/api/faithmap":
             body, code = faithmap(url.query)
             if isinstance(body, dict):

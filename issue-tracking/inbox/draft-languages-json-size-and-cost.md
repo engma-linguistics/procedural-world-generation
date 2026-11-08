@@ -1,5 +1,5 @@
 ---
-title: "languages.json is about 150 MB and the pass takes 15+ minutes on a24559: thin it into sidecars and fix the three hot spots before it joins every peoples run"
+title: "The language pass takes 21-34 minutes on a24559: speed up rule application in the workers before it joins every peoples run (file size done)"
 type: task
 status: todo
 parent: PW-767
@@ -13,6 +13,9 @@ refs: [planet/language/output.py, planet/language/history.py, planet/language/pe
 ---
 
 ## Description
+Status at the lang-design merge (2026-11-08): the size half is done (36 MB main file plus sidecars, format
+procgen-languages/2); the speed half is open (last paragraph). The history below is kept as it was.
+
 In plain words: the language pass writes one ~150 MB file per run (149 MB after the 11-04 rounds; the felt-roots table doubled the root entries) (target was 40-60 MB) and takes about 15 minutes with
 12 workers (steps 560 s, inventory observation 55 s). The viewer copes (1.3-2 s load on this machine) and `output.save`
 only calls the pass through a guarded hook, but if this is never done every peoples run grows by 15 minutes and 140 MB, the
@@ -44,4 +47,9 @@ fell from 765 s to about 680 s (cached Segment hash, wave memo, lazy homophones)
 because the non-human ease drag added steps time. A parent profile puts the remaining time in the workers' rule
 application: `rules._apply_one`, the Pattern memo dict and `dataclasses.replace`.
 - [x] main file under 40 MB, viewer unchanged for the owner (36.4 MB; the sidecars load in parallel)
-- [ ] pass under 5 minutes with 12 workers on a24559 (now ~21 min wall: worker-side rule application is next)
+Later passes (2026-11-08, scratch, a24559): grammar C 2062 s at 10 workers on a loaded machine; polish lane 1463 s at 8
+workers. The faiths pass adds ~130 s re-deriving gods.json in memory when the stored one predates faiths. Still no
+speed work since the finish lane. Next lever (finish lane handoff): the worker side, `rules._apply_one`, the Pattern
+memo dict and `dataclasses.replace`; each interval forks a fresh Pool (a persistent pool saves only the fork). Profile
+one worker with cProfile first. If never done, any peoples run that includes languages costs an extra half hour.
+- [ ] pass under 5 minutes with 12 workers on a24559 (now ~21-34 min wall: worker-side rule application is next)

@@ -1,5 +1,5 @@
 ---
-title: "Language realism leftovers: diminutive renewal overused, ɹ ɫ ʁ ɦ far too common, tone re-phonemicised, shifts leave synonyms, growls in bird/reptile protos, function words coined"
+title: "Language realism leftovers: growled sounds in most bird and reptile proto-languages, function words coined instead of grown from content words"
 type: task
 status: todo
 parent: PW-767
@@ -13,8 +13,9 @@ refs: [planet/language/lect.py::rule_factor, planet/language/lect.py::keep_part,
 ---
 
 ## Description
-In plain words: several things still look made up to a linguist reading the language pages. Each has a measured number
-and a fix idea.
+In plain words: several things still look made up to a linguist reading the language pages. Most are fixed (see the
+status at the end); two remain: bird and reptile languages nearly all have a growled sound though their profiles call
+it unusual, and words like "with" and "because" are invented from nothing instead of grown out of ordinary words.
 
 **Diminutive renewal (worst; seen first on the pages).** 9.1% of all living words are 'X + little' meaning X (the
 expressive renewal, Latin auricula > oreille), and the commonest affix ends the history of a median 11% of a lect's words
@@ -63,9 +64,9 @@ origin" everywhere. Fix: let a function word's replacement draw from the content
 grammaticalization_paths.tsv (shared with grammar.py) before coining.
 - [ ] function-word coinage share near the content-word share
 
-**Homophones after the vocabulary round (judgement call for Daniel).** With 712 words per lect (was 376) the median
-homophone share is 0.22 (was 0.125): nearly all CLICS-attested polysemy (NOW / TODAY, POT / BOWL, LOW / SHALLOW), the
-core 100 at 0.12, accidental homophones under 1%. The lexicon test bar moved 0.16 -> 0.20 mean. If the pages read as too
-polysemous, lower shift's draw weight for the WOLD meanings or have a shift vacate its source more often.
-- [ ] Daniel: is ~22% polysemy on a 700-meaning list acceptable?
+**Homophones after the vocabulary round.** Moved to the decisions draft
+`draft-language-defaults-words-contact-faiths.md` (call A).
 
+**Status at the lang-design merge (2026-11-08).** Done: diminutive renewal, same-word shifts, tone re-phonemicised,
+overused segments (all-lect check passes; sound pass 2 also fixed ɑ, lʲ, ɤ). p left as intended (decisions draft, part
+1). Open: the growl share and function-word coinage above.

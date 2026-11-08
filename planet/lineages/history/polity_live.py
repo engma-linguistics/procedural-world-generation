@@ -38,6 +38,7 @@ from .. import invasions as IV
 from .. import polities as PO
 from ..gridops import nbr_reduce
 from ..spread import EST
+from .gridops import _csr_gather
 from . import params as PM
 from .rule import StandIns
 
@@ -60,6 +61,10 @@ NEED_X = 4.0  # cost (lane 201b): on an expedition's miss, how far the history l
 # away"), in multiples of the largest budget tried; past it the why-not says "more than N km". The read-out (derive) still looks without limit
 SUBJECT_SHARE = PO.SUBJECT_SHARE
 SEDENTARY_MIN = 1.0  # (heads: a cell with fewer sedentary heads is not settled land a dragon can take tribute from)
+REVOLT = False  # switch (PW-1513, desk D67 option B; off until Daniel rules): a people that submitted to a ruler and later rises against
+# it (seats a polity of its own on land that ruler held last step, while that ruler still stands) has broken its terms: when the same
+# ruler next takes land it lives on, it may not submit again and meets the fate the winner's attitudes then give it (Herat, 1222).
+# No new number: the trigger is the polities' own seats and claims, the fate is _fates' own. Off: output byte-identical to before
 
 
 def harshness(hostility: float, tol: float, agg: float) -> float:
@@ -121,7 +126,13 @@ class LivePolities(StandIns):
         self.maps: list = []
         self.k = 0
         self.secs = 0.0
+        self._ago = 0.0
         self.run_key = f"try{h.seed}"
+        self.submitted: dict = {}  # (REVOLT: people -> the ruling peoples it submitted to)
+        self.revolted: dict = {}  # (REVOLT: (people, ruler) -> kyr ago of its rising, until the ruler next takes land it lives on)
+        self.submissions: list = []  # (REVOLT: [ago, people, ruler] per submission)
+        self.revolts: list = []  # (REVOLT: [ago, people, ruler, seat cell] per rising)
+        self.punished: list = []  # (REVOLT: [ago, people, ruler, fate, heads lost, heads moved] per retaking that found a revolt)
         from .tech_live import LiveTech
         self.tech = LiveTech(h)  # (the tech tree inside the history, PW-1466: output.save writes it out)
 
@@ -220,7 +231,7 @@ class LivePolities(StandIns):
 
     def _step(self, step):
         h, g = self.h, self.g
-        ago = float(step.ago)
+        ago = self._ago = float(step.ago)
         L = h.lines
         any_gate = any(self.knows(L[k].id, "chiefdoms", ago) for k in self.ppl if h.active.get(L[k].id)) or bool(self.prev_cap)
         if not any_gate:
@@ -347,6 +358,8 @@ class LivePolities(StandIns):
             if got:
                 pid_of[s["key"]] = pid
                 ruling.append(s)
+        if REVOLT and self.owner is not None:
+            self._risings(ruling, pid_of, ago)
         # 4. war (polities.war_v0, unchanged)
         ppl_pid = np.bincount(owner[owner >= 0], weights=sed[owner >= 0], minlength=len(ruling))
         S_pid = [PO.strength(float(ppl_pid[p]), s["people"], self.knows, ago) for p, s in enumerate(ruling)]
@@ -370,7 +383,7 @@ class LivePolities(StandIns):
         for w, l_, how in ctx.get("taken", []):
             wk, lk = ruling[w]["key"], ruling[l_]["key"]
             cells = np.flatnonzero(before == l_)
-            fates = self._fates(ruling[w], cells, heads)
+            fates = self._fates(ruling[w], cells, heads, owner == w)
             if ruling[w]["line"] is not None:
                 self.att.won(int(ruling[w]["line"]))
             ri = ctx.get("taken_row", {}).get(l_)
@@ -454,12 +467,21 @@ class LivePolities(StandIns):
         if o is not None:
             self.recs[o]["fell_kyr"], self.recs[o]["fell_how"] = round(ago, 3), how
 
-    def _fates(self, win, cells, heads) -> dict:
+    def _fates(self, win, cells, heads, ruled=None) -> dict:
         """The peoples on the land war took fare by the winner's attitudes (PW-1481, PW-1487): its harshness to each (harshness: its
         people's old enmity to theirs, moved by its tolerance and by its aggression gated by its intolerance) reads kept, thinned or
         expelled (FATE_AT); the cut (FATE_CUT) scales with its aggression / AGG_MID. A tolerant winner keeps even an old enemy's people more often; an intolerant one thins or expels even a
         people it had no quarrel with; an aggressive one cuts harder. Cuts their presence there once, never more than FATE_MAX of a
-        people's heads in one step. Returns {people: [fate, heads lost]}."""
+        people's heads lost in one step. Where the cut goes (PW-1496, Daniel D61 C): a thinning is lost (war deaths); an expulsion by
+        a winner at or above the martial mark (aggression AGG_MID, a martial people's own: attitudes AGG_BASE + AGG_CONTEST x 0.5) is
+        lost too ("razed": Genghis Khan's sacks); below it the expelled share moves to the same people's nearest land the winner does
+        not rule (ruled: the winner's cells after the step's wars, else the taken cells alone; _refuge), spread over its cells there
+        by its existing density (the Assyrian deportations' refugees), and is lost only if it has none ("expelled", heads lost).
+        Submit or resist (D61, Daniel 11-07: Genghis Khan's "submit and you are spared, resist and you are destroyed"): a people the
+        winner would thin, expel or raze submits, and is kept ("submitted"), if its own aggression is below the winner's (the less
+        warlike yields to the more); one at least as warlike resists and meets that fate. No new number: the two peoples' own
+        attitudes (attitudes.Attitudes) decide (round12.md).
+        Returns {people: [fate, heads lost, heads moved]}, fate kept, submitted, thinned, expelled or razed."""
         h = self.h
         wk = win["line"]
         if wk is None or not len(cells):
@@ -467,6 +489,9 @@ class LivePolities(StandIns):
         out = {}
         wanc = self.anc.get(win["people"], {win["people"]})
         tol, agg = self.att.get(int(wk))
+        if ruled is None:
+            ruled = np.zeros(self.g.n, bool)
+            ruled[cells] = True
         for k, hk in heads.items():
             on = hk[cells]
             n = float(on.sum())
@@ -477,20 +502,94 @@ class LivePolities(StandIns):
                 continue
             z = harshness(float(self.hostility[wk, k]), tol, agg)
             fate = "kept" if z < FATE_AT[0] else ("thinned" if z < FATE_AT[1] else "expelled")
-            cut = min(1.0, FATE_CUT[fate] * agg / AGG_MID)
+            rose = self.revolted.pop((lid, win["people"]), None) if REVOLT else None  # (REVOLT: it broke its terms to this ruler)
+            if fate != "kept" and rose is None and self.att.get(int(k))[1] < agg:  # (submits: less warlike than the winner, it yields and is kept)
+                out[lid] = ["submitted", 0, 0]
+                if REVOLT:
+                    self.submitted.setdefault(lid, set()).add(win["people"])
+                    self.submissions.append([round(self._ago, 3), lid, win["people"]])
+                continue
+            if fate == "expelled" and agg >= AGG_MID:
+                fate = "razed"
+            cut = min(1.0, FATE_CUT["expelled" if fate == "razed" else fate] * agg / AGG_MID)
+            gone = moved = 0.0
             if cut > 0:
                 tot = float(hk.sum())
                 done = self.__dict__.setdefault("_cut_now", {})
                 spent = done.get((k, self.k), 0.0)
                 cut = min(cut, max(0.0, (FATE_MAX * tot - spent) / n))
                 if cut > 0:
+                    gone = cut * n
+                    pb = h.p[k][cells].copy()
                     h.p[k][cells] *= (1.0 - cut)
                     h.p[k][cells[h.p[k][cells] < EST]] = 0.0
                     hk = heads[k] = hk.copy()
                     hk[cells] *= 1.0 - cut
-                    done[(k, self.k)] = spent + cut * n
-            out[lid] = [fate, int(round(cut * n))]
+                    if fate == "expelled":  # (the heads that left the taken cells, those whose presence fell under EST too)
+                        gone = float((on * (1.0 - np.divide(h.p[k][cells], pb, out=np.ones_like(pb), where=pb > 0))).sum())
+                        moved = self._refuge(k, hk, cells, ruled, gone)
+                    done[(k, self.k)] = spent + (cut * n if fate != "expelled" else gone - moved)
+            out[lid] = [fate, int(round(gone - moved)), int(round(moved))]
+            if rose is not None:
+                self.punished.append([round(self._ago, 3), lid, win["people"], *out[lid]])
         return out
+
+    def _risings(self, ruling, pid_of, ago):
+        """REVOLT (PW-1513, D67 B): a people that submitted to a ruling people and now seats a polity of its own on a cell that ruler's
+        polity held last step, while that polity still stands this step, has risen against it: (people, ruler) is marked until the
+        ruler next takes land the people lives on (_fates: no second submission)."""
+        for s in ruling:
+            rulers = self.submitted.get(s["people"])
+            if not rulers or s["tier"] == "dragon realm":
+                continue
+            o = int(self.owner[s["cell"]])
+            prev = self.ruling[o] if 0 <= o < len(self.ruling) else None
+            if prev is None or prev["people"] not in rulers or prev["people"] == s["people"] or prev["key"] not in pid_of:
+                continue
+            if (s["people"], prev["people"]) not in self.revolted:
+                self.revolted[(s["people"], prev["people"])] = round(ago, 3)
+                self.revolts.append([round(ago, 3), s["people"], prev["people"], int(s["cell"])])
+            rulers.discard(prev["people"])
+
+    def _refuge(self, k, hk, cells, ruled, n) -> float:
+        """PW-1496 (D61 C): n expelled heads of people k go to its nearest land the winner does not rule: the cells it holds off the
+        taken land and off the winner's (hk > 0), the connected patch (or patches, at the same distance) first reached ring by ring
+        from the taken cells, spread there by its existing density (its presence there scaled up alike, never past full presence, 1).
+        Updates h.p[k] and hk in place; returns the heads moved (0 if it has no such land: they are lost)."""
+        h = self.h
+        cand = (hk > 0) & ~ruled
+        cand[cells] = False
+        if not cand.any():
+            return 0.0
+        seen = np.zeros(self.g.n, bool)
+        seen[cells] = True
+        front = np.asarray(cells, np.int64)
+        hit = front[:0]
+        while len(front):
+            nb = np.unique(self.idx[_csr_gather(self.off, front)])
+            nb = nb[~seen[nb]]
+            seen[nb] = True
+            hit = nb[cand[nb]]
+            if len(hit):
+                break
+            front = nb
+        if not len(hit):
+            return 0.0
+        patch = np.zeros(self.g.n, bool)
+        patch[hit] = True
+        front = hit
+        while len(front):  # (the connected patch of its land the first ring reached)
+            nb = np.unique(self.idx[_csr_gather(self.off, front)])
+            nb = nb[cand[nb] & ~patch[nb]]
+            patch[nb] = True
+            front = nb
+        at = np.flatnonzero(patch)
+        have = float(hk[at].sum())
+        p0 = h.p[k][at].copy()
+        h.p[k][at] = np.minimum(1.0, p0 * (1.0 + n / have))
+        add = hk[at] * (h.p[k][at] / p0 - 1.0)
+        hk[at] += add
+        return float(add.sum())
 
     # ------------------------------------------------------------ the seam's answers, from the live polities
     def pacification(self, k, step):
@@ -554,6 +653,8 @@ class LivePolities(StandIns):
                 "attitudes": self.att.doc() | {"keyed_by": "people (line index; the history has no cultures)"},
                 "invasions": [{"row": r, "log": {k: v for k, v in lg.items()}} for r, lg in zip(self.inv_in, self.inv_log)],
                 "invasion_problems": self.inv_notes,
+                **({"revolt": {"rule": "PW-1513 D67 B", "revolts": self.revolts, "punished": self.punished,
+                               "submissions": self.submissions}} if REVOLT else {}),
                 "constants": {"FATE_AT": FATE_AT, "FATE_CUT": FATE_CUT, "FATE_MAX": FATE_MAX, "PACIFY": PACIFY, "STATE_BAR": STATE_BAR, "AGG_MID": AGG_MID, "TOL_X": TOL_X, "AGG_HARSH": AGG_HARSH,
                               "CAMPAIGN_KM": IV.CAMPAIGN_KM, "NEED_X": NEED_X,
 }}

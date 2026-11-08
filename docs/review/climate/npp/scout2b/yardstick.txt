@@ -1,0 +1,2 @@
+L6: 36 runs, learnt y mean 1.3515 (sd 0.1680, standard error 0.0280); YARDSTICK now 1.3770
+L6: 36 runs, learnt y mean 1.3524 (sd 0.1940, standard error 0.0323); YARDSTICK now 1.3770

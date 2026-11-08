@@ -1,0 +1,21 @@
+# paired judge: main (A) vs cand (B), 36 paired draws (A has 36, B 36), rolls 0.0005 0.001, late window 600-1000 Myr
+
+## Continuous measures (the judge): median of each arm, and of the paired B - A differences
+| measure | A median | B median | median B-A | 95% CI | B>A / B<A | sign p | moved |
+|---|---|---|---|---|---|---|---|
+| end T | -0.325 | -0.615 | +0.230 | [-2.070, +2.700] | 18 / 18 | 1.000 |  |
+| moment T | -0.325 | -0.615 | -0.145 | [-2.070, +2.700] | 17 / 19 | 0.868 |  |
+| late dT | 0.773 | 1.424 | +0.771 | [-0.260, +1.869] | 22 / 14 | 0.243 |  |
+| late CO2 | 0.543 | 0.626 | +0.103 | [+0.015, +0.216] | 24 / 12 | 0.065 | * |
+| land % | 34.389 | 34.235 | -0.136 | [-0.519, +0.076] | 13 / 23 | 0.132 |  |
+| sink ref | 6.611 | 6.616 | -0.012 | [-0.032, +0.051] | 16 / 20 | 0.618 |  |
+| src ref | 7.988 | 7.993 | -0.012 | [-0.032, +0.051] | 16 / 20 | 0.618 |  |
+| arid % | 21.739 | 22.583 | +1.252 | [-0.246, +2.369] | 23 / 13 | 0.132 |  |
+| hot desert % | 6.826 | 8.614 | +0.949 | [+0.031, +2.333] | 24 / 12 | 0.065 | * |
+| land rain | 1140.486 | 1133.802 | +5.769 | [-37.326, +46.979] | 18 / 18 | 1.000 |  |
+| trees % | 39.832 | 38.611 | -0.048 | [-1.281, +2.165] | 18 / 18 | 1.000 |  |
+
+## Pass count (the check): pass = good finish moment, no hellhouse, not frozen over
+- main: r0.0005 16/18, r0.001 16/18; pooled 32/36; icehouse 36, glacial maximum 18, frozen over at the end 0 (reported: 40%+ at some moment of the hard window 0, at some moment after 300 Myr but not at the end 0), hellhouse 0
+- cand: r0.0005 17/18, r0.001 17/18; pooled 34/36; icehouse 36, glacial maximum 13, frozen over at the end 0 (reported: 40%+ at some moment of the hard window 0, at some moment after 300 Myr but not at the end 1), hellhouse 0
+- both 30, A only 2, B only 4, neither 0; McNemar exact p 0.688 (lane 24's null change: 7 vs 8 discordant of 36)

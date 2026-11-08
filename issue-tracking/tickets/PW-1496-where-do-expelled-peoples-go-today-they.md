@@ -2,7 +2,7 @@
 id: PW-1496
 title: "Where do expelled peoples go? Today they simply die (live polities: kept / thinned / expelled)"
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1465, PW-1487, PW-1481]
 refs: ["planet/lineages/history/polity_live.py::LivePolities._fates", "planet/lineages/history/polity_live.py::harshness", "planet/lineages/history/polity_live.py::FATE_CUT", "planet/lineages/history/polity_live.py::FATE_MAX", docs/review/culture/polities/round11.md, docs/review/culture/polities/round10.md, docs/review/cultures-proposal/proposal-r2.md, "world 899985"]
 created: 2026-11-07
-updated: 2026-11-07
+updated: 2026-11-08
 ---
 
 ## Description
@@ -39,6 +39,7 @@ Lean: C. It is B's mechanism (refugees), and keeps D59's "a martial winner razes
 - [ ] Daniel picks; then measure on seeds 7, 10, 3 (round11/measure.py) against the round 11 runs.
 
 ## Updates
+- 2026-11-08: Status needs-decision -> done. Lane 208: built D61 C plus Daniel's 11-07 submit-or-resist addition (polity_live._fates, _refuge). A people less warlike than the winner submits and is kept; a resister expelled by a winner at or above the martial mark (AGG_MID 0.5) is razed, below it moves to its nearest land the winner does not rule (by its density), lost only with none. Against main e6cb463c, seeds 7/10/3 (switch on): heads lost to conquest 0.15/5.2/20.0 M -> 0.10/0.58/0.94 M; 8.3 M moved on seed 3; 17 razed on seed 10; present population within 0.6%. Switch off byte-identical. docs/review/culture/polities/round12.md. Follow-up (revocable submission) as inbox draft draft-submission-revocable.md.
 - 2026-11-07: Status needs-decision -> todo. Daniel 11-07: D61 C. A very martial winner razes (lost), a less martial one drives the people out to its own nearest land the winner doesn't rule.
 - 2026-11-07: Desk D61 (lean C).
 - 2026-11-07: Created from inbox draft draft-expelled-peoples-go-where.md (found by lane204).

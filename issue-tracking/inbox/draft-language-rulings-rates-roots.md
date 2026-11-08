@@ -1,7 +1,7 @@
 ---
 title: "Language lane rulings: sisters vs horizon (one rate, two checks), per-generation exponent for short-lived peoples, felt vs etymological word families"
 type: task
-status: todo
+status: done
 parent: PW-767
 subsystem: culture
 effort: s
@@ -64,4 +64,7 @@ audio in the UI (utterances, not only single words).
 - [x] rulings recorded
 - [x] generation softening and `etym_roots` in the pass (round 5 core lane, commit eec089ac; per-word `etym_roots`
   beside `roots` in lexicon entries, the doc `roots` table covers both)
-- [ ] the pages show both families (round 5 surface lane)
+- [x] the pages show both families (demo page `families(..., "etym_roots")`, viewer `langmore.js` rootView)
+
+All three rulings are carried out; this draft is a record. Intake can file it as done or reject it as recorded in
+`docs/review/language/for-daniel.md` and calibration.md.

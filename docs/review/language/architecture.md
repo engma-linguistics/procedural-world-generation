@@ -495,6 +495,10 @@ Per-generation (`grammar.step`):
   (and the source word stays a word: `go` keeps meaning go).
 - **fuse**: hazard to move down one level rises with the gram's frequency and age, falls with the lect's adult-L2 share
   (PW-985). At level >= 2 the gram's form is attached to the paradigm exemplars (so sound change erodes it in place).
+  `FUSE` 0.02 per generation; the L2 factor is linear, (1 - l2), as for recruitment; adult learners strip a bound gram at
+  `L2_STRIP` 0.008 x l2^3, so stripping bites only where learners are the majority (synthesis lane 2026-11-08: the
+  earlier (1 - l2)^2 and 0.012 x l2^2 left 58% of living lects with 0-1 bound verb categories, WALS 22A ~3%;
+  calibration.md "Synthesis lane").
 - **lose**: when the form is empty or its contrast collapsed (functional load), level 4; a periphrasis is recruited later by
   the normal recruit draw (the cycle).
 - **analogy**: with a small hazard, level an alternation in an exemplar paradigm back to the stem form.
