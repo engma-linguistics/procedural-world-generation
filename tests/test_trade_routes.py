@@ -183,3 +183,46 @@ def test_grain_takers_look_on_until_a_round_finds_no_more(tmp_path, monkeypatch)
     g = TF.flows_at(_line_ctx(tmp_path), 0)
     un = lambda x: sum(v.get("grain", 0.0) for v in x["unmet"].values())  # noqa: E731
     assert un(f) <= un(g) + 1e-9 and g["rounds"]["grain"] <= TF.ROUNDS
+
+
+def test_a_town_pools_its_hinterland_and_its_goods_leave_from_the_town(tmp_path, monkeypatch):
+    """PW-1514 (D64: towns are the hubs): cells within POOL_HOPS spacings join their nearest town's market; inside the pool spare goods
+    meet wants first, and what is left travels from the town. A pool ends at the cap."""
+    ctx = _with_town(_line_ctx(tmp_path), tmp_path, cell=2)
+    fr = TF._Frame(ctx, 0, None, None)
+    po = fr.pools()
+    assert po is not None and po["org"][2] == 2 and po["org"][1] == 2 and po["org"][3] == 2  # (the town and its neighbours)
+    assert po["org"][5] == -1  # (three spacings away: beyond the cap)
+    f = TF.flows_at(ctx, 0)
+    monkeypatch.setattr(TF, "POOL", False)
+    g = TF.flows_at(ctx, 0)
+    vol = lambda x: sum(r[3] for r in x["flows"]) + sum(sum(v.values()) for v in x["home"].values())  # noqa: E731
+    assert vol(f) > 0 and vol(g) > 0
+    # goods from the pool that travel leave from the town: no route stretch inside the pool except those touching the town
+    assert all(2 in (a, b) or max(a, b) > 3 or min(a, b) < 1 for a, b, *_ in f["routes"])
+
+
+def test_a_worn_way_is_cheaper_on_land_for_every_good(tmp_path):
+    """PW-1515 (Tobler 1993: off a path one walks at 3/5 of the pace on it; Helbing et al. 1997): a land stretch worn by traffic costs
+    up to TRAIL less, for every class of goods, and rivers and seas are not worn."""
+    fr = TF._Frame(_line_ctx(tmp_path), 0, None, None)
+    c0 = {cl: fr.cost(cl)[0].copy() for cl in ("bulk", "middling", "precious")}
+    fr.set_wear(np.full(len(fr.ukey), 1e6 * TF.WEAR_HALF))  # (saturated)
+    for cl, c in c0.items():
+        c1, mode, _ = fr.cost(cl)
+        land = (c > 0) & (mode == 0) & ~fr.e["bord"]
+        assert land.any() and np.allclose(c1[land], c[land] * (1 - TF.TRAIL), rtol=1e-4)
+    fr.set_wear(None)
+    assert np.array_equal(fr.cost("bulk")[0], c0["bulk"])
+
+
+def test_the_walks_wear_the_ways_and_pass_the_wear_on(tmp_path, monkeypatch):
+    """PW-1515 (switch TRUNK, off by default, step3c.md): a frame walks at most TRUNK_ITERS times, wearing the ways its goods took; its
+    worn ways (as shares of its carried goods) reach the next era at WEAR_KEEP."""
+    monkeypatch.setattr(TF, "TRUNK", True)
+    ctx = _line_ctx(tmp_path)
+    f = TF.flows_at(ctx, 0)
+    k, v = f["_wear"]
+    assert 1 <= f["walks"] <= TF.TRUNK_ITERS and len(k) and (v > 0).all() and v.max() <= 1 + 1e-9
+    g = TF.flows_at(ctx, 0, last_wear=(k, v))
+    assert g["routes"] and g["walks"] >= 1

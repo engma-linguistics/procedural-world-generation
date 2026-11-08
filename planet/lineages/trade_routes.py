@@ -112,9 +112,7 @@ class Loads:
         self.fr = fr
         g = fr.ctx.g
         self.n = n = g.n
-        self.esrc = np.repeat(np.arange(n), np.diff(g.nbr_off)).astype(np.int64)
-        lo, hi = np.minimum(self.esrc, g.nbr_idx), np.maximum(self.esrc, g.nbr_idx)
-        self.ukey, self.uid = np.unique(lo.astype(np.int64) * n + hi, return_inverse=True)  # (each directed edge's stretch: both ways as one)
+        self.esrc, self.ukey, self.uid = fr.esrc, fr.ukey, fr.uid  # (each directed edge's stretch: both ways as one; _Frame.stretches)
         self.through = np.zeros((len(GROUPS), n))
         self.towns = towns_at(fr.ctx, fr.era)
         self.tcells = np.array(sorted(self.towns), np.int64)
@@ -124,22 +122,59 @@ class Loads:
         self.tgood = np.zeros((len(self.tcells), len(GROUP_OF)))  # (per town and good: the volume passing)
         self.tot = np.zeros(len(GROUPS))
         self.tot_good: dict = {}
-        self.batches: list = []
+        self.den: dict = {}  # (per good: the volume carried between cultures, deliveries that cross at least one stretch)
+        self.xtot = np.zeros(len(GROUPS))
+        self.parts: dict = {}  # (per good: [(stretch ids, edge modes, load)] between cultures, traced as they come)
+        self.all_load = np.zeros(len(self.ukey))  # (every carried delivery's load per stretch, inside a culture too: the traffic, PW-1515)
+        self.carried = 0.0  # (the frame's carried volume, all goods: deliveries that cross at least one stretch)
+        ne = len(self.esrc)
+        self._eload = np.zeros(ne)
+        self._touched = np.zeros(ne, np.int64)
 
-    def add(self, good: str, cells: np.ndarray, amt: np.ndarray, giv: np.ndarray, taker: np.ndarray, pe: np.ndarray, emode: np.ndarray):
-        """Deliveries of a good this round: taker cells, amounts (people's worth), giver and taker cultures; the walk's edges and modes."""
+    def add(self, good: str, cells: np.ndarray, amt: np.ndarray, giv: np.ndarray, taker: np.ndarray, pe: np.ndarray, emode: np.ndarray,
+            tally: bool = True):
+        """Deliveries of a good this round: taker cells (where the goods arrive), amounts (people's worth), giver and taker cultures; the
+        walk's edges (pe: the edge each cell was reached by, -1 at a source) and their modes. Each is traced back along its way now (the
+        walk's edges change from round to round). tally: count it towards the towns it passes (False: traffic only)."""
         ok = amt > 0
         if not ok.any():
             return
         cells, amt, giv, taker = cells[ok].astype(np.int64), amt[ok].astype(float), giv[ok].astype(np.int64), taker[ok].astype(np.int64)
         gi = GROUP_OF[good]
-        before = self.through[gi, self.tcells].copy() if len(self.tcells) else None
-        _tally(cells, amt, giv, gi, pe, self.esrc, self.through, self.tix, self.tdict)
-        if before is not None:
-            self.tgood[:, list(GROUP_OF).index(good)] += self.through[gi, self.tcells] - before
-        self.tot[gi] += float(amt.sum())
-        self.tot_good[good] = self.tot_good.get(good, 0.0) + float(amt.sum())
-        self.batches.append((good, cells, amt, giv, taker, pe, emode))
+        if tally:
+            before = self.through[gi, self.tcells].copy() if len(self.tcells) else None
+            _tally(cells, amt, giv, gi, pe, self.esrc, self.through, self.tix, self.tdict)
+            if before is not None:
+                self.tgood[:, list(GROUP_OF).index(good)] += self.through[gi, self.tcells] - before
+            self.tot[gi] += float(amt.sum())
+            self.tot_good[good] = self.tot_good.get(good, 0.0) + float(amt.sum())
+        carried = pe[cells] >= 0
+        if not carried.any():
+            if tally:
+                fx = (giv >= 0) & (giv != taker)
+                self.xtot[gi] += float(amt[fx].sum())
+            return
+        self.carried += float(amt[carried].sum())
+        m = _path_load(cells[carried], amt[carried], pe, self.esrc, self._eload, self._touched)
+        es = self._touched[:m].copy()
+        np.add.at(self.all_load, self.uid[es], self._eload[es])
+        self._eload[es] = 0.0
+        if not tally:
+            return
+        fx = (giv >= 0) & (giv != taker)
+        self.xtot[gi] += float(amt[fx].sum())
+        sel = fx & carried
+        if sel.any():
+            self.den[good] = self.den.get(good, 0.0) + float(amt[sel].sum())
+            m = _path_load(cells[sel], amt[sel], pe, self.esrc, self._eload, self._touched)
+            es = self._touched[:m].copy()
+            self.parts.setdefault(good, []).append((self.uid[es], emode[es].astype(np.int64), self._eload[es].copy()))
+            self._eload[es] = 0.0
+
+    def traffic(self) -> np.ndarray:
+        """Per stretch: the share of the frame's carried goods (all goods, people's worth, inside cultures too) that crosses it, both ways
+        summed (PW-1515). A share, so a road's wear does not grow with the world's people from era to era."""
+        return self.all_load / max(self.carried, 1e-12)
 
     def finish(self, last: set | None = None) -> dict:
         """{"routes": [[cell a, cell b, strength, group, mode]], "hubs": [...], "quarters": [[host culture, merchant culture]], "volume"}:
@@ -148,32 +183,19 @@ class Loads:
         is a route, and so is one of ROUTE_HOLD x ROUTE_SHARE or more that was a route the era before (last: the stretches as a * n + b).
         Its group is that good's; its mode the one carrying the biggest share of goods over it."""
         n = self.n
-        ne, nu = len(self.esrc), len(self.ukey)
-        xtot = np.zeros(len(GROUPS))
-        den: dict = {}
-        for (good, cells, amt, giv, taker, pe, emode) in self.batches:
-            fx = (giv >= 0) & (giv != taker)
-            xtot[GROUP_OF[good]] += float(amt[fx].sum())
-            den[good] = den.get(good, 0.0) + float(amt[fx & (pe[cells] >= 0)].sum())  # (carried: the taker is not the source cell itself)
-        eload = np.zeros(ne)
-        touched = np.zeros(ne, np.int64)
+        nu = len(self.ukey)
+        xtot = self.xtot
         st = np.zeros(nu)
         sg = np.zeros(nu, np.int64)
         emu = np.zeros((len(MODES), nu))
-        per: dict = {}
-        for (good, cells, amt, giv, taker, pe, emode) in self.batches:
-            fx = (giv >= 0) & (giv != taker)
-            if not fx.any() or den.get(good, 0.0) <= 0:
+        for good, parts in self.parts.items():  # (per good, both ways of a stretch summed; the stretch keeps its strongest good)
+            den = self.den.get(good, 0.0)
+            if den <= 0:
                 continue
-            m = _path_load(cells[fx], amt[fx], pe, self.esrc, eload, touched)
-            es = touched[:m]
-            x = eload[es] / den[good]
-            per.setdefault(good, []).append((self.uid[es], x))
-            np.add.at(emu, (emode[es], self.uid[es]), x)
-            eload[es] = 0.0
-        for good, parts in per.items():  # (per good, both ways of a stretch summed; the stretch keeps its strongest good)
             u = np.concatenate([p[0] for p in parts])
-            x = np.concatenate([p[1] for p in parts])
+            md = np.concatenate([p[1] for p in parts])
+            x = np.concatenate([p[2] for p in parts]) / den
+            np.add.at(emu, (md, u), x)
             uu, inv = np.unique(u, return_inverse=True)
             sx = np.bincount(inv, weights=x, minlength=len(uu))
             up = sx > st[uu]
@@ -211,7 +233,7 @@ class Loads:
             touch[m, ua[sel]] = True
             touch[m, ub[sel]] = True
         hubs, quarters = self._hubs(np.maximum(self.tot, 1e-12), touch.any(0), touch, ua, ub, md)
-        self.batches = []
+        self.parts = {}
         return {"routes": routes, "hubs": hubs, "quarters": quarters, "volume": {GROUPS[k]: int(round(float(xtot[k]))) for k in range(len(GROUPS))}}
 
     def _hubs(self, tot, on_route, touch, ua, ub, md):
