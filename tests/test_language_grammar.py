@@ -580,12 +580,12 @@ def test_unwanted_gram_that_binds_becomes_the_aim():
     gr = G.Gram("DEF", tuple(from_ipa("nako")), "NP", "post", G.CLITIC, ("THAT", "X"), 10.0, id="DEF#x")
     g.grams = [gr]
     G.aims(g)["definite_article"] = "none"
-    old = (G.FUSE, G.ABANDON)
-    G.FUSE, G.ABANDON = 5.0, 0.0
+    old = (G.FUSE, G.ABANDON, G.DEGRAM)
+    G.FUSE, G.ABANDON, G.DEGRAM = 5.0, 0.0, 0.0
     try:
         G.step(rng, g, 10, inv=Inv(), lexicon=lex())
     finally:
-        G.FUSE, G.ABANDON = old
+        G.FUSE, G.ABANDON, G.DEGRAM = old
     assert gr.level >= G.AFFIX and G.aims(g)["definite_article"] == "post" == g.typology["definite_article"]
     assert any("marker bound" in e[1] for e in g.events)
 
@@ -610,3 +610,251 @@ def test_json_keeps_the_aims():
     assert dict(G.aims(h)) == dict(G.aims(g)) and dict(h.typology) == dict(g.typology)
     c = G.copy(g)
     assert dict(G.aims(c)) == dict(G.aims(g)) and G.aims(c) is not G.aims(g)
+
+
+# --- grammar phase A (2026-11-07) --------------------------------------------------------------------------------------
+
+def _gram(fn, form="ka", level=G.CLITIC, side="post", host=None, src=("X", "X")):
+    return G.Gram(fn, tuple(from_ipa(form)), host or G.func_info(fn).host, side, level, src, 10.0, id=f"{fn}#t")
+
+
+def test_pull_is_per_function_not_per_first_feature():
+    """A live locative no longer blocks the pull toward an accusative or ergative; a plural no longer blocks the dual;
+    a reportative no longer blocks the witnessed evidential; a few-case system with no oblique case pulls one."""
+    rng, g = _grammar(11, case="many", alignment="split", number="sg-du-pl", evidentiality="direct+indirect")
+    g.grams = [_gram("LOC"), _gram("PL"), _gram("EVID.REP", host="VP")]
+    for k, v in (("case", "many"), ("alignment", "split"), ("number", "sg-du-pl"), ("evidentiality", "direct+indirect")):
+        G.aims(g)[k] = v
+    u = G._unrealised(g, G.aims(g))
+    assert u["alignment:ACC"] == {"ACC"} and u["alignment:ERG"] == {"ERG"}
+    assert u["number:DU"] == {"DU"} and u["evidentiality:DIR"] == {"EVID.DIR"}
+    assert u["case:rich"] == {"ABL", "ALL", "INS", "COM"}
+    assert "case" not in u and "number" not in u   # (the locative and the plural answer those)
+    g.grams += [_gram("ACC"), _gram("DU"), _gram("INS")]
+    u = G._unrealised(g, G.aims(g))
+    assert "alignment:ACC" not in u and "number:DU" not in u and "case:rich" not in u and "alignment:ERG" in u
+
+
+def test_ergative_sources_ablative_locative_genitive_and_agentive_by():
+    T = G.load_tables()
+    erg = {p.id: p.sources for p in T.paths if p.target == "ERG"}
+    assert erg["X17"] == ("INS",) and erg["X19"] == ("ABL",) and erg["X20"] == ("LOC",) and erg["X21"] == ("GEN",)
+    assert "NEAR" in erg["X22"]
+    for fn, src in (("ABL", "LEAVE"), ("ALL", "GO"), ("INS", "TAKE")):
+        assert any(p.target == fn and src in p.sources and not p.from_gram for p in T.paths), fn
+    # an ablative reanalysed as the ergative
+    rng, g = _grammar(12, case="few", alignment="erg-abs")
+    g.grams = [_gram("ABL", "tu")]
+    gr = G.recruit(rng, g, lex(), 5.0, function="ERG", source="ABL")
+    assert gr is not None and gr.function == "ERG" and gr.source[0] == "ABL" and g.typology["alignment"] == "erg-abs"
+    # an agentive 'by' word recruited as the ergative
+    rng, g = _grammar(13, case="few", alignment="erg-abs")
+    g.grams = []
+    gr = G.recruit(rng, g, lex(NEAR=("pepe", "FUNC")), 5.0, function="ERG", source="NEAR")
+    assert gr is not None and gr.source[0] == "NEAR"
+
+
+def test_split_ergativity_is_chosen_and_dropped():
+    rng, g = _grammar(14, case="few", alignment="split")
+    g.grams = [_gram("ACC"), _gram("ERG", "lu")]
+    G._processes(g, rng, 5.0, 1.0, {})
+    assert g.processes["split"] == "person"   # no perfective or past to hang an aspect split on
+    seen = set()
+    for s in range(40):
+        r = np.random.default_rng(s)
+        h = G.copy(g)
+        h.processes = {}
+        h.grams.append(_gram("PERF", "se", level=G.AFFIX))
+        G._processes(h, r, 5.0, 1.0, {})
+        seen.add(h.processes["split"])
+    assert seen == {"person", "aspect"}
+    g.grams[1].level = G.LOST
+    G._processes(g, rng, 4.0, 1.0, {})
+    assert "split" not in g.processes and any("split of the alignment ends" in e[1] for e in g.events)
+    h = G.from_json(json.loads(json.dumps(G.to_json(h))))
+    assert h.processes["split"] in ("person", "aspect")
+
+
+def _real_proto(seed, **typ_over):
+    """A proto grammar on a real lexicon (lexicon.proto_lexicon over a human inventory)."""
+    from planet.language import lect as LC
+    from planet.language import lexicon as LX
+    from planet.language import speak as SP
+    rng = np.random.default_rng(seed)
+    inv = LC.draw_inventory(rng, SP.profile_for_people("human"))
+    lx = LX.proto_lexicon(rng, inv, LX.concepts(None), 20.0, f"p{seed}")
+    typ = G.draw_typology(rng)
+    typ.update(typ_over)
+    G._derive(typ)
+    return rng, inv, lx, G.proto_grammar(rng, inv, lx, typ)
+
+
+def test_clusivity_makes_an_inclusive_we_and_loses_it():
+    kinds = set()
+    for s in range(6):
+        rng, inv, lx, g = _real_proto(30 + s, clusivity="yes")
+        inc = lx.get("WE (INCLUSIVE)")
+        assert inc is not None and inc.form != lx["WE"].form
+        assert g.typology["clusivity"] == "yes" and G.clashes(g, lx) == []
+        kinds.add("compound" if any(st.process.startswith("compound") for st in inc.etym) else "root")
+    assert kinds == {"compound", "root"}
+    G.aims(g)["clusivity"] = "no"
+    old = G.CLUSIVE_LOSS
+    G.CLUSIVE_LOSS = 1.0
+    try:
+        G.step(rng, g, 20, inv=inv, lexicon=lx, kyr=3.0)
+    finally:
+        G.CLUSIVE_LOSS = old
+    assert "WE (INCLUSIVE)" not in lx and g.typology["clusivity"] == "no" and "WE" in lx
+    assert any("no more inclusive/exclusive" in e[1] for e in g.events)
+    rng, inv, lx, g = _real_proto(40, clusivity="no")
+    assert "WE (INCLUSIVE)" not in lx and g.typology["clusivity"] == "no"
+
+
+def test_reduplicant_shapes():
+    st = tuple(from_ipa("bona"))
+    assert word_ipa(G.reduplicant(st, "full")) == "bona"
+    assert word_ipa(G.reduplicant(st, "CV", "pre")) == "bo"
+    assert word_ipa(G.reduplicant(st, "CV", "post")) == "na"
+    assert word_ipa(G.reduplicant(tuple(from_ipa("kain")), "CV", "pre")) == "ka"
+
+
+def test_verb_reduplication_is_a_built_process_in_the_verb_cells():
+    rng, g = _grammar(15, verb_reduplication="yes")
+    rd = g.processes["redup"]
+    assert rd["fn"] in G.REDUP and g.typology["verb_reduplication"] == "yes"
+    v = next(e for e in g.exemplars if e.pos == "V")
+    cell = v.parts[(rd["fn"],)]
+    red = G.reduplicant(v.stem, rd["shape"], rd["side"])
+    assert dict(cell)[rd["fn"]] == red and dict(cell)["stem"] == v.stem
+    assert rd["fn"] in G.paradigm_table(g)["verbs"]["columns"]
+    G.aims(g)["verb_reduplication"] = "no"
+    old = G.REDUP_LOSS
+    G.REDUP_LOSS = 1.0
+    try:
+        G.step(rng, g, 20, inv=Inv(), lexicon=lex())
+    finally:
+        G.REDUP_LOSS = old
+    assert "redup" not in g.processes and g.typology["verb_reduplication"] == "no"
+    assert all((rd["fn"],) not in e.cells for e in g.exemplars) and G.clashes(g, lex()) == []
+    rng, g = _grammar(16, verb_reduplication="no")
+    assert "redup" not in g.processes and g.typology["verb_reduplication"] == "no"
+
+
+def test_counting_base_builds_the_higher_numerals():
+    def made(lx, c):
+        # (the step that makes the concept itself: a built TWENTY can sit inside HUNDRED's etymology)
+        return next((st for st in reversed(lx[c].etym) if st.process.startswith("compound:")), None)
+    rng, inv, lx, g = _real_proto(50, numeral_base="decimal", numeral="NumN")
+    st = made(lx, "TWENTY")
+    assert st is not None and st.note.startswith("two ten") and made(lx, "HUNDRED") is None
+    rng, inv, lx, g = _real_proto(51, numeral_base="vigesimal", numeral="NNum")
+    st = made(lx, "HUNDRED")
+    assert st is not None and st.note.startswith("twenty five")
+    rng, inv, lx, g = _real_proto(52, numeral_base="other")
+    assert all(made(lx, c) is not None for c in ("SIX", "SEVEN", "EIGHT", "NINE"))
+    assert made(lx, "SIX").note.startswith("five one")
+
+
+def test_person_markers_bind_as_a_set():
+    """One subject pronoun binding pulls most of its series with it; later gaps fill by analogy."""
+    sizes = []
+    for s in range(12):
+        rng, g = _grammar(60 + s, verb_agreement="suffix")
+        g.grams = [_gram("3SG", "jesu", level=G.FREE, src=("HE OR SHE OR IT", "X08"))]
+        g.grams[0].age_gens = 400
+        old = G.FUSE
+        G.FUSE = 0.2
+        try:
+            G.step(rng, g, 30, inv=Inv(), lexicon=lex(), l2_share=0.0)
+        finally:
+            G.FUSE = old
+        sizes.append(len({x.function for x in g.grams if x.live and x.function in G.PERSON_FNS and x.level >= G.CLITIC}))
+    assert sum(1 for k in sizes if k == 1) <= 2 and np.median(sizes) >= 4, sizes
+    rng, g = _grammar(80, verb_agreement="suffix")
+    g.grams = [_gram("1SG", "ani", level=G.AFFIX, src=("I", "X06"))]
+    G._person_fill(g, rng, lex(), 3.0, G.load_tables(), 1.0)
+    new = [x for x in g.grams if x.function != "1SG"]
+    assert len(new) == 1 and new[0].level == G.AFFIX and new[0].side == "post"
+    assert any("by analogy with the paradigm" in e[1] for e in g.events)
+
+
+def test_degrammaticalization_is_rare_and_prefers_orphaned_edge_markers():
+    rng, g = _grammar(81, case="few")
+    gen = _gram("GEN", "sa", level=G.AFFIX, host="NP")
+    gen.age_gens = 400
+    g.grams = [gen, _gram("DAT", "ku", level=G.LOST, host="NP")]
+    neg = _gram("NEG", "si", level=G.AFFIX, host="VP")
+    assert G._degram_bias(g, gen) == G.DEGRAM_EDGE * G.DEGRAM_ORPHAN and G._degram_bias(g, neg) == 1.0
+    old = (G.DEGRAM, G.FUSE_LEVEL, G.L2_STRIP)
+    G.DEGRAM, G.FUSE_LEVEL, G.L2_STRIP = 50.0, (1.0, 0.7, 0.0), 0.0   # (at the fusion hazard itself; no further fusion)
+    try:
+        for _ in range(40):
+            G.step(rng, g, 10, inv=Inv(), lexicon=lex())
+            if gen.level < G.AFFIX:
+                break
+    finally:
+        G.DEGRAM, G.FUSE_LEVEL, G.L2_STRIP = old
+    assert gen.level == G.CLITIC and any("degrammaticalization" in e[1] for e in g.events)
+    assert any("degrammaticalized: affix > clitic" in h[1] for h in gen.history)
+
+
+# --- grammar phase B (2026-11-08) -------------------------------------------------------------------------------------
+
+def test_phase_b_paths_mood_genitive_object_possessor():
+    T = G.load_tables()
+    by = {}
+    for p in T.paths:
+        by.setdefault(p.target, []).append(p)
+    assert {"OBLG", "HORT", "APPR", "IMP"} <= set(by)
+    assert any(p.id == "G007" for p in by["OBLG"]) and any(p.id == "G034" for p in by["HORT"])
+    assert any(p.from_gram and p.sources == ("ABL",) for p in by["GEN"])
+    assert any(not p.from_gram and "THAT" in p.sources for p in by["GEN"])
+    lead = [p for f in G.OBJ_FNS + G.POSS_FNS for p in by.get(f, []) if p.weight > 0]
+    assert sorted(p.target for p in lead) == ["1SG.POSS", "3SG.O"]   # (one lead path per series, the rest bind with it)
+    assert all(p.weight == 0 for p in by["1PL.INCL"])
+
+
+def test_object_and_possessor_series_bind_as_sets_and_show_in_the_typology():
+    sizes = []
+    for s in range(8):
+        rng, g = _grammar(90 + s, object_agreement="suffix", verb_agreement="suffix")
+        G.aims(g)["object_agreement"] = "suffix"
+        g.grams = [_gram("3SG.O", "jesu", level=G.FREE, side="post", src=("HE OR SHE OR IT", "X33"))]
+        g.grams[0].age_gens = 400
+        old = G.FUSE
+        G.FUSE = 0.3
+        try:
+            G.step(rng, g, 30, inv=Inv(), lexicon=lex(), l2_share=0.0)
+        finally:
+            G.FUSE = old
+        obj = {x.function for x in g.grams if x.live and x.function in G.OBJ_FNS and x.level >= G.CLITIC}
+        sizes.append(len(obj))
+        assert all(x.host == "V" for x in g.grams if x.function in G.OBJ_FNS)
+        if obj:
+            assert g.typology["object_agreement"] == "suffix"
+    assert np.median(sizes) >= 3, sizes   # (the lexicon has no 'you all': at most 5 of 6)
+    rng, g = _grammar(92, genitive="NG")
+    g.grams = [_gram("1SG.POSS", "ani", level=G.CLITIC, side="post", src=("I", "X39"))]
+    G._person_set(g, g.grams[0], np.random.default_rng(0), lex(), 3.0, G.load_tables())
+    poss = [x for x in g.grams if x.function in G.POSS_FNS]
+    assert len(poss) >= 3 and all(x.host == "N" for x in poss)
+
+
+def test_inclusive_subject_marker_joins_only_with_an_inclusive_we():
+    rng, g = _grammar(93, verb_agreement="suffix")
+    gr = _gram("1SG", "ani", level=G.CLITIC, src=("I", "X06"))
+    g.grams = [gr]
+    old = dict(G.PERSON_JOIN)
+    G.PERSON_JOIN.update({k: 1.0 for k in G.PERSON_JOIN})
+    try:
+        G._person_set(g, gr, rng, lex(), 3.0, G.load_tables())
+        assert G.INCL_FN not in {x.function for x in g.grams}
+        g.grams = [gr]
+        G._person_set(g, gr, rng, lex(**{"WE (INCLUSIVE)": ("tuso", "FUNC")}), 3.0, G.load_tables())
+        incl = [x for x in g.grams if x.function == G.INCL_FN]
+        assert len(incl) == 1 and incl[0].source[0] == "WE (INCLUSIVE)"
+    finally:
+        G.PERSON_JOIN.clear()
+        G.PERSON_JOIN.update(old)
+    assert G.feature_of(G.INCL_FN) == ("verb_agreement",)

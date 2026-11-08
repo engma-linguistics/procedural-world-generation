@@ -87,7 +87,8 @@ ENGLISH_WORDS = {  # General American, broad phonemic (Wells 1982 lexical sets)
 ENGLISH_SHOW = ["I", "THOU", "WE", "WHO", "WHAT", "NOT", "ONE", "TWO", "THREE", "MAN", "WOMAN", "DOG", "FISH", "TREE",
                 "WATER", "FIRE", "STONE", "SUN", "MOON", "NIGHT", "HAND", "EYE", "NAME", "EAT", "DRINK", "SEE"]
 PRONOUNS = [("1st", "I", "WE"), ("2nd", "THOU", "YOU"), ("3rd", "HE OR SHE OR IT", "THEY")]
-NUMERALS = ["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN"]
+NUMERALS = ["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "TWENTY", "HUNDRED"]
+NUMERAL_VALUE = {c: v for c, v in zip(NUMERALS, (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 100))}
 SAMPLE = ["I", "THOU", "WE", "THIS", "THAT", "WHO", "WHAT", "NOT", "ALL", "MANY", "ONE", "TWO", "BIG", "LONG", "SMALL",
           "WOMAN", "MAN", "PERSON", "FISH", "BIRD", "DOG", "TREE", "SEED", "LEAF", "BLOOD", "BONE", "EGG", "HEAD", "EYE",
           "MOUTH", "TONGUE", "HAND", "EAT", "DRINK", "SEE", "SLEEP", "DIE", "SUN", "MOON", "WATER", "FIRE", "STONE",
@@ -274,15 +275,14 @@ class Doc:
     def _bookify(l: dict) -> None:
         """Spelling columns show the book spelling (romanize book=True from the IPA, the lect's contrasts and inventory); the
         stored full spelling moves to `roman_full` (the Orthography section keeps full spellings)."""
-        segs = inv_segments(l)
         try:
-            cs, iv = R.contrasts_of(segs), frozenset(segs)
+            o = orth_of(l)
         except Exception:  # noqa: BLE001
             return
 
         def book(ipa):
             try:
-                return R.romanize_word(R.from_ipa(ipa), cs, iv, book=True)
+                return o.word(R.from_ipa(ipa), book=True)
             except Exception:  # noqa: BLE001 (a sketch must not die on one odd form)
                 return None
         for e in (l.get("lexicon") or {}).values():
@@ -410,6 +410,33 @@ def roman_of(ipa: str, inv_segs) -> str:
 def inv_segments(l: dict) -> list:
     inv = l.get("inventory") or {}
     return [s for s in (seg(x) for x in inv.get("consonants", []) + inv.get("vowels", [])) if s is not None]
+
+
+_ORTH: dict = {}
+
+
+def orth_of(l: dict) -> R.Orthography:
+    """The lect's spelling (romanize.Orthography): its phonemes, its allophones spelled as their phonemes, its book folds
+    ranked by token counts in its lexicon (the same plan names.py and output.py use)."""
+    k = id(l)
+    if k in _ORTH and _ORTH[k][0] is l:
+        return _ORTH[k][1]
+    inv = l.get("inventory") or {}
+    allo = {}
+    for a in inv.get("allophones") or []:
+        if not isinstance(a, dict):
+            continue  # (an old or fake file lists bare symbols: nothing to map)
+        x = seg(a.get("ipa", ""))
+        if x is not None:
+            allo[x] = (seg(a["of"]) if a.get("of") else None, a.get("test"))
+    counts: dict = {}
+    for e in (l.get("lexicon") or {}).values():
+        for s in R.from_ipa(e.get("ipa") or ""):
+            counts[s] = counts.get(s, 0) + 1
+    segs = set(inv_segments(l)) | set(counts)
+    o = R.Orthography(segs, allo, counts)
+    _ORTH[k] = (l, o)
+    return o
 
 
 def rule_text(doc: Doc, rid: str) -> str:
@@ -886,11 +913,13 @@ def _v_order(sym: str) -> tuple:
 
 def orthography(l: dict) -> list[str]:
     inv = l.get("inventory") or {}
-    segs = inv_segments(l)
-    cs = R.contrasts_of(segs)
+    o = orth_of(l)
+    cs = o.cs
     out = ["## Orthography", "",
            "The house romanization in two registers: the full spelling (workbench, one letter or digraph per sound, "
-           "tone marks) and the book spelling (lossy: no tone, plain vowels, at most one diacritic letter a word).", ""]
+           "tone marks) and the book spelling (lossy: no tone, plain vowels, and at most "
+           f"{R.BOOK_DIACRITIC_BUDGET} diacritic letters kept for the whole language; one spelling per sound in every word). "
+           "Allophones are spelled as their phonemes.", ""]
     for title, syms in (("Consonants", sorted(inv.get("consonants", []), key=_c_order)),
                         ("Vowels", sorted(inv.get("vowels", []), key=_v_order))):
         rows = []
@@ -899,7 +928,7 @@ def orthography(l: dict) -> list[str]:
             if s is None:
                 continue
             try:
-                full, book = R.spell(s, cs), R.spell(s, cs, book=True)
+                full, book = R.spell(s, cs), R._apply_folds(R.spell(s, cs, book=True), o.folds)
             except Exception:  # noqa: BLE001
                 full = book = "?"
             rows.append(f"{sym} ‹{full}›" + (f" ‹{book}›" if book != full else ""))
@@ -910,6 +939,8 @@ def orthography(l: dict) -> list[str]:
                                                                     if t in TONES) + " (Yoruba-style).")
         out.append("")
     out.append("Where two spellings are given the second is the book spelling.")
+    if o.lossy:
+        out.append(" Book folds that merge two sounds: " + ", ".join(f"‹{g}› is written ‹{a}›" for g, a in o.lossy) + ".")
     out.append("")
     return out
 
@@ -1038,10 +1069,13 @@ def pronouns(doc: Doc, l: dict) -> list[str]:
     lex = l.get("lexicon") or {}
     out = ["### Pronouns", "", "| person | singular | plural |", "| --- | --- | --- |"]
     forms = {}
-    for p, sg, pl in PRONOUNS:
+    rows = list(PRONOUNS)
+    if lex.get("WE (INCLUSIVE)"):   # (grammar phase A: a lect with the distinction keeps its old 'we' as the exclusive)
+        rows[0:1] = [("1st (exclusive)", "I", "WE"), ("1st + 2nd (inclusive)", None, "WE (INCLUSIVE)")]
+    for p, sg, pl in rows:
         cells = []
         for c in (sg, pl):
-            e = lex.get(c)
+            e = lex.get(c) if c else None
             if e:
                 forms[c] = e["ipa"]
                 cells.append(f"{e['ipa']} ‹{e['roman']}›")
@@ -1058,8 +1092,10 @@ def pronouns(doc: Doc, l: dict) -> list[str]:
     for f, cs in seen.items():
         if len(cs) > 1:
             notes.append(f"{' and '.join(cs)} are the same word ({f}).")
-    if (l.get("typology") or {}).get("clusivity") == "yes":
+    if (l.get("typology") or {}).get("clusivity") == "yes" and not lex.get("WE (INCLUSIVE)"):
         notes.append("The typology marks an inclusive/exclusive 'we', but the lexicon holds only one 'we' form.")
+    elif lex.get("WE (INCLUSIVE)"):
+        notes.append("'We' has two forms: an inclusive one (the hearer is among us) and an exclusive one (not you).")
     if (l.get("typology") or {}).get("pro_drop") == "yes":
         notes.append("Subject pronouns are usually dropped.")
     out += [""] + ([" ".join(notes), ""] if notes else [])
@@ -1095,14 +1131,41 @@ HISTORIAN = ("### Families a historian reconstructs",
              "however opaque it has become since (per-word `etym_roots`, the *bher- 'carry' > burden view).")
 
 
+def _bare(ipa: str) -> str:
+    """IPA without tone letters, length and stress marks, for comparing forms by ear."""
+    return re.sub(r"[˥˦˧˨˩ːˑˈˌ\u0300-\u036f]", "", ipa)
+
+
+def audibly_shares(root: str, word: str) -> bool:
+    """Does `word` contain the root word's form (tones and length aside), or for a long root its first or last two
+    sounds? A semantic shift or old derivation whose form has drifted away from the root's is not felt."""
+    a, b = _bare(root), _bare(word)
+    if not a:
+        return True
+    if a in b:
+        return True
+    return len(a) >= 3 and (a[:2] in b or a[-2:] in b)
+
+
+def felt_members(doc: Doc, lex: dict, rid: str, members: list) -> list:
+    """The words of a felt root family a speaker can still hear it in (all of them when the root's own word is gone)."""
+    anchor = lex.get(((doc.d.get("roots") or {}).get(rid) or {}).get("concept") or "")
+    if not anchor or rid not in (anchor.get("roots") or ()):
+        return members
+    return [c for c in members if audibly_shares(anchor["ipa"], lex[c]["ipa"])]
+
+
 def _root_family(doc: Doc, l: dict, lex: dict, field: str = "roots", head: tuple = FELT) -> list[str]:
     """The family of the root with most living words in this lect (per-word `roots` or `etym_roots`, main first; the
     document-level `roots` table)."""
     roots = doc.d.get("roots") or {}
     count: Counter = Counter()
-    for e in lex.values():
+    by: dict = {}
+    for c, e in lex.items():
         for r in (e.get(field) or [])[:1]:
-            count[r] += 1
+            by.setdefault(r, []).append(c)
+    for r, cs in by.items():
+        count[r] = len(felt_members(doc, lex, r, cs) if field == "roots" else cs)
     cands = [(n, r) for r, n in count.items()]
     fam_n = sum(1 for n, _r in cands if n >= 3)
     share = sum(n for n, _r in cands if n >= 2) / max(1, len(lex))
@@ -1115,6 +1178,8 @@ def _root_family(doc: Doc, l: dict, lex: dict, field: str = "roots", head: tuple
         return out + ["Every root here has a single word.", ""]
     members = sorted((c for c, e in lex.items() if rid in (e.get(field) or [])),
                      key=lambda c: (((lex[c].get(field) or []).index(rid)), c))
+    if field == "roots":
+        members = felt_members(doc, lex, rid, members)
     r = roots.get(rid) or _root_from_id(rid)
     out.append(f"The largest: **{r.get('gloss') or cname(r.get('concept', '?'))}** *{r.get('ipa') or '?'}* "
                f"({r.get('pos', '?')}, coined {kyr(r.get('kyr'))} in {doc.label(r.get('lect'), True)}); {n} words have it "
@@ -1206,7 +1271,7 @@ def vocabulary(doc: Doc, l: dict) -> list[str]:
     out.append("")
     nums = [c for c in NUMERALS if c in lex]
     if nums:
-        out += ["### Numerals", "", "| | " + " | ".join(str(i + 1) for i in range(len(nums))) + " |",
+        out += ["### Numerals", "", "| | " + " | ".join(str(NUMERAL_VALUE[c]) for c in nums) + " |",
                 "| --- |" + " --- |" * len(nums),
                 "| IPA | " + " | ".join(lex[c]["ipa"] for c in nums) + " |",
                 "| spelling | " + " | ".join(lex[c]["roman"] for c in nums) + " |", ""]
@@ -1214,12 +1279,16 @@ def vocabulary(doc: Doc, l: dict) -> list[str]:
         made = []
         for c in nums:
             ch = doc.chain(lex[c].get("etym"))
+            built = next((n for n in reversed(ch) if str(n[3]).startswith("compound:") and len(n) > 6
+                          and str(n[5]).upper() == c), None)
             first = next((n for n in ch if not n[3].startswith("sound_change")), None)
-            if first is not None and first[5] and str(first[5]).upper() != c:
+            if built is not None:   # (a numeral built from others: 'twenty = two ten', 'six = five one')
+                made.append(f"{c.lower()} = '{str(built[6]).split(':')[0].split(' (')[0].lower()}'")
+            elif first is not None and first[5] and str(first[5]).upper() != c:
                 made.append(f"{c.lower()} < '{first[5]}'")
         s = f"Counting base: {base}." if base else ""
         if made:
-            s += " Several numerals began as other words: " + "; ".join(made[:6]) + "."
+            s += " Several numerals began as other words: " + "; ".join(made[:8]) + "."
         out += [s.strip(), ""]
     out += word_family(doc, l)
     return out
@@ -1256,15 +1325,14 @@ def sample_sentences(l: dict) -> list[str]:
     sents = l.get("sentences") or []
     if not sents:
         return []
-    segs = inv_segments(l)
     try:
-        cs, iv = R.contrasts_of(segs), frozenset(segs)
+        o = orth_of(l)
     except Exception:  # noqa: BLE001
-        cs, iv = None, None
+        o = None
 
     def book(w):
         try:
-            return R.romanize_word(R.from_ipa(w), cs, iv, book=True)
+            return o.word(R.from_ipa(w), book=True)
         except Exception:  # noqa: BLE001
             return w
     out = ["## Sample sentences", "",
@@ -1361,6 +1429,44 @@ def _table_pipes(text: str) -> str:
     return "\n".join(row(ln) for ln in text.split("\n"))
 
 
+def personal_names(doc: Doc, l: dict) -> list[str]:
+    """Personal names (names.personal: the lect's naming tradition, given names old and new, bynames) and the names of its
+    deme's settlements (names.demes[d].settlements), with their etymologies."""
+    x = (doc.names.get("personal") or {}).get(l["id"])
+    dn = (doc.names.get("demes") or {}).get(str(l.get("deme"))) or {}
+    sts = dn.get("settlements") or []
+    if not x and not sts:
+        return []
+    out = ["## Names of people and places", ""]
+    if x:
+        t = x["tradition"]
+        how = {"dithematic": "two themes from a closed pool, compounded (as Germanic *Wil-helm*, Slavic *Vladi-mir*)",
+               "phrase": "a short sentence about the birth run together (as Yoruba *Babatunde* 'father has returned')",
+               "single": "one meaningful word"}.get(t["given"], t["given"])
+        by = {"patronymic": "the father's name in the genitive with 'son' or 'daughter'",
+              "matronymic": "the mother's name in the genitive with 'son' or 'daughter'",
+              "epithet": "an epithet after the name", "clan": "an inherited clan name"}.get(t["byname"], t["byname"])
+        s = f"**Naming tradition.** Given names are {how}; the byname is {by}"
+        s += (", family name first" if t.get("order") == "family_first" and t["byname"] == "clan" else "") + "."
+        s += f" The tradition goes back to {doc.label(t['origin'], True)}"
+        if t.get("changed"):
+            s += f"; it changed ({t['changed'][1]}) in {doc.label(t['changed'][0], True)}"
+        s += "."
+        if t.get("themes"):
+            s += f" Themes: first {', '.join(t['themes'][0])}; second {', '.join(t['themes'][1])}."
+        out += [s, "", "| name | IPA | meaning | | etymology |", "|---|---|---|---|---|"]
+        for g in x.get("given") or []:
+            out.append(f"| **{g['roman']}** | /{g['ipa']}/ | '{g['gloss']}' | {g['age']}{', opaque' if g.get('opaque') else ''} "
+                       f"| {g['etym']} |")
+        for b in x.get("bynames") or []:
+            out.append(f"| **{b['roman']}** | /{b['ipa']}/ | '{b['gloss']}' | {b['kind']} | {b['etym']} |")
+        out.append("")
+    if sts:
+        out += ["**Settlements.** " + "; ".join(f"**{s['roman']}** /{s['ipa']}/ ({s.get('tier')}, {s.get('pop') or 0:,}): "
+                                                 f"{s['plain'].split(', ', 1)[-1]}" for s in sts) + ".", ""]
+    return out
+
+
 def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] | None = None) -> str:
     roots_cache = {} if roots_cache is None else roots_cache
     nm = doc.deme_name(l)
@@ -1378,6 +1484,7 @@ def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] 
     out += orthography(l)
     out += grammar(doc, l)
     out += vocabulary(doc, l)
+    out += personal_names(doc, l)
     out += sample_sentences(l)
     out += comparison(doc, l, roots_cache)
     return "\n".join(out).rstrip() + "\n"

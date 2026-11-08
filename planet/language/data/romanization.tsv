@@ -7,8 +7,10 @@
 # Nasal vowels: always a tilde (ã). A following n was considered and rejected: one rule for every lect, and it never reads as a
 # coda n, whatever the lect's syllables.
 # Book mode (romanize book=True; names.py `roman`): the book drops tone, writes a nasal vowel as vowel + n (plain before a
-# nasal), doubles one long vowel per word, writes ə e, ɛ ɔ ɪ ʊ ɑ plain, ü ö only beside i e, and keeps one diacritic letter
-# per word (uvular ġ x̣ always kept); lossy on purpose, the workbench and `roman_full` keep this table's full spelling.
+# nasal), doubles every long vowel, writes ə e, ɛ ɔ ɪ ʊ ɑ plain, ü ö only beside i e, and plans its diacritics once per lect
+# (romanize.book_folds: a fold that merges nothing always; at most BOOK_DIACRITIC_BUDGET contrastive diacritic letters kept,
+# the rest folded everywhere; uvular ġ x̣ always kept); lossy on purpose, the workbench and `roman_full` keep this table's
+# full spelling. Both registers spell an allophone as its phoneme (romanize.Orthography).
 # alt = the spelling used when the lect writes aspiration (it contrasts aspirated and plain): th, dh, kh, gh, sh, zh, ch, qh
 # would then read as aspirates, so the fricatives take their single-letter forms. Velar and uvular never share a spelling
 # (uvulars: q, qh, gq, nq, rq, and ġ for ʁ).
@@ -19,7 +21,7 @@
 # the lect has e but no a, e otherwise. Where ll or hh spells ɫ or ɦ, a long l or h is written with a middle dot (Catalan l·l).
 # Non-human percepts are spelled in ASCII letters only, so a reader can say them (the IPA column keeps the exact symbol); the
 # base letters lose their diacritics (ġ g, ò o) and a trailing mark is added:
-#   growl / harsh phonation  rh   (a‼ arh, ɣ‼ ghrh, ʁ‼ grh: a snarl)      purr        rr   (aᵣ arr, mᵣ mrr)
+#   growl / harsh phonation  rh   (a‼ arh, ɣ‼ ghrh, ʁ‼ grh: a snarl)      purr        vr   (aᵣ avr, mᵣ mvr; not rr, the trill)
 #   second voice (syrinx)    wh   (aᴖ awh, ɹᴖ rwh: a warble)               sub-bass    mh   (a˯ amh, ŋ˯ ngmh: a hum)
 #   ultra register           ih   (i˰ iih, s˰ sih: a squeak)
 #   percussives: lip smack pk, teeth clack tk, beak knock ck.
@@ -127,9 +129,9 @@ l	l						ascii
 ɠ	'g								
 ʛ	'gq								
 ʘ	px						house: p + the click mark x		
-ǀ	|						ASCII for ǀ		
-ǁ	||						ASCII for ǁ		
-ǃ	!						ASCII for ǃ		
+ǀ	ǀ						Khoekhoe ǀ (U+01C0, a letter)		
+ǁ	ǁ						Khoekhoe ǁ (U+01C1, a letter)		
+ǃ	ǃ						Khoekhoe ǃ (U+01C3, a letter)		
 ǂ	ǂ						Khoekhoe ǂ		
 ʬ	pk						house: a lip smack, said as a quick "pk"	non-human percussive	
 ʭ	tk						house: a teeth clack, said like "tsk"	non-human percussive	

@@ -24,6 +24,7 @@ A sentence whose words the lexicon lacks is left out, so the set degrades gracef
 names fallbacks, and concepts the core lane is adding, such as HAVE, are tried first)."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from . import grammar as GR
@@ -35,12 +36,20 @@ ABBR = {"PL": "PL", "DU": "DU", "DEF": "DEF", "INDEF": "INDF", "GEN": "GEN", "LO
         "DAT": "DAT", "ACC": "ACC", "ERG": "ERG", "INS": "INS", "COM": "COM", "DIM": "DIM", "AGENT": "AGT",
         "PLACE": "PLACE", "PAST": "PST", "RECPST": "PST.RCT", "FUT": "FUT", "PERF": "PRF", "PROG": "PROG",
         "IPFV": "IPFV", "HAB": "HAB", "EVID.DIR": "DIR", "EVID.REP": "REP", "NEG": "NEG", "CAUS": "CAUS",
-        "PASS": "PASS", "REFL": "REFL", "Q": "Q", "REL": "REL", "COP": "COP", "CLF": "CLF"}
+        "PASS": "PASS", "REFL": "REFL", "Q": "Q", "REL": "REL", "COP": "COP", "CLF": "CLF", "ITER": "ITER",
+        "INTS": "INTS", "CONT": "CONT",
+        # grammar phase B: mood, the inclusive subject marker, object and possessor series
+        "IMP": "IMP", "HORT": "HORT", "OBLG": "OBLG", "APPR": "APPR", "1PL.INCL": "1PL.INCL",
+        **{f"{p}.O": f"{p}.OBJ" for p in GR.PERSON_FNS}, **{f"{p}.POSS": f"{p}.POSS" for p in GR.PERSON_FNS}}
 #: abbreviations that are not in the Leipzig list, explained on the pages
 EXTRA_ABBR = {"PST.RCT": "recent past", "DIR": "direct (witnessed) evidential", "REP": "reported evidential",
-              "AGT": "agent noun", "CL": "noun class", "CLF": "classifier", "ANIM": "animate", "INAN": "inanimate"}
+              "AGT": "agent noun", "CL": "noun class", "CLF": "classifier", "ANIM": "animate", "INAN": "inanimate",
+              "ITER": "iterative (reduplication)", "INTS": "intensive (reduplication)",
+              "CONT": "continuous (reduplication)", "HORT": "hortative ('let us')", "OBLG": "obligative ('must')",
+              "APPR": "apprehensive ('lest')", "INCL": "inclusive (you among us)", "EXCL": "exclusive (not you)"}
 #: English gloss of a pronoun concept
-PRON = {"I": "1SG", "THOU": "2SG", "HE OR SHE OR IT": "3SG", "WE": "1PL", "YOU": "2PL", "THEY": "3PL"}
+PRON = {"I": "1SG", "THOU": "2SG", "HE OR SHE OR IT": "3SG", "WE": "1PL", "YOU": "2PL", "THEY": "3PL",
+        "WE (INCLUSIVE)": "1PL"}
 CASE_EN = {"GEN": "of the {n}", "LOC": "in the {n}", "ABL": "from the {n}", "ALL": "to the {n}", "DAT": "to/for the {n}",
            "ACC": "the {n} (as object)", "ERG": "the {n} (as doer)", "INS": "with (using) the {n}", "COM": "with the {n}"}
 TAM_ORDER = ("PAST", "RECPST", "PERF", "FUT", "PROG", "IPFV", "HAB")
@@ -66,6 +75,8 @@ EN_VERB = {
     "BUY": ("buy", "buys", "bought", "bought", "buying"), "DANCE": ("dance", "dances", "danced", "danced", "dancing"),
     "SHOUT": ("shout", "shouts", "shouted", "shouted", "shouting"),
     "CARVE": ("carve", "carves", "carved", "carved", "carving"),
+    "TAKE": ("take", "takes", "took", "taken", "taking"), "CUT": ("cut", "cuts", "cut", "cut", "cutting"),
+    "BITE": ("bite", "bites", "bit", "bitten", "biting"), "FLY": ("fly", "flies", "flew", "flown", "flying"),
 }
 EN_NOUN = {"CHILD (YOUNG HUMAN)": "child", "LIE (REST)": "lie", "FLESH OR MEAT": "meat", "SMOKE (EXHAUST)": "smoke",
            "STONE OR ROCK": "stone", "kin:mother": "mother", "kin:brother": "brother", "kin:sister": "sister"}
@@ -115,6 +126,11 @@ class View:
         from . import phonology as PH
         self.stress = inv.get("stress")
         self.rules = PH.rules_from_json(lj.get("phonology"))
+        #: the number a reader sees for each class: 1..n in the engine's order (the engine never reuses a lost class's
+        #: number, so its own numbers can have gaps)
+        self.cl_num = {f: i + 1 for i, (_k, _g, f) in enumerate(sorted((self.classes or {}).get("classes") or [],
+                                                                         key=lambda c: c[0]))}
+        self.proc = dict(lj.get("processes") or {})   # (grammar phase A: split ergativity, reduplication)
 
     def w(self, *concepts) -> str | None:
         """The first of the concepts the lexicon has."""
@@ -228,6 +244,7 @@ def class_of(v: View, concept: str) -> tuple[str, str] | None:
     else:
         want = next(g for g, kf in by.items() if kf == hit)
     k, f = hit
+    k = v.cl_num.get(f, k)
     if grp_of(cs, f) != _want(cs, concept):
         return f, f"CL{k}"   # (the noun's own class is missing; the engine falls back on another, so no gender label)
     lab = {"masculine": "M", "feminine": "F", "animate": "ANIM", "inanimate": "INAN"}.get(want, f"CL{k}")
@@ -410,7 +427,7 @@ def attach(v: View, words: list, idx: int, fn: str, label: str | None = None) ->
 
 def noun_phrase(v: View, concept: str, det: str | None = None, adj: str | None = None, num: str | None = None,
                 poss: "NP | None" = None, plural: bool = False, dem: str | None = None, inalienable: bool = False,
-                gloss: str | None = None) -> NP:
+                gloss: str | None = None, dual: bool = False) -> NP:
     """Dem Num Adj N, mirrored for postnominal modifiers (Greenberg's Universal 20 orders); the possessor outermost."""
     notes = []
     n = Word(v.ipa(concept), gloss or lgloss(concept), concept)
@@ -418,7 +435,9 @@ def noun_phrase(v: View, concept: str, det: str | None = None, adj: str | None =
     if cl is not None and (v.g(cl[0]) or {}).get("level", 0) >= GR.CLITIC:
         attach(v, [n], 0, cl[0], cl[1])
     core = [n]
-    if plural:
+    if dual and v.g("DU") is not None:
+        attach(v, core, 0, "DU")
+    elif plural:
         pl = v.g("PL")
         if pl is not None and ((pl.get("level") or 0) >= GR.AFFIX or not num):
             attach(v, core, 0, "PL")
@@ -459,7 +478,15 @@ def noun_phrase(v: View, concept: str, det: str | None = None, adj: str | None =
     if poss is not None:
         gen = None if inalienable and v.t.get("alienability") == "yes" else v.g("GEN")
         pw = list(poss.words)
-        if gen is not None:
+        pm = v.g(poss.person.split(".")[0] + ".POSS")
+        if pm is not None and (pm.get("level") or 0) >= GR.CLITIC:   # (grammar B: head-marked possession)
+            attach(v, np_.words, np_.head, poss.person.split(".")[0] + ".POSS")
+            np_.head = next(i for i, w in enumerate(np_.words) if w is n)
+            notes.append("the possessed noun carries the possessor's person marker")
+            if _is_pron(poss) and v.t.get("pro_drop") == "yes":
+                pw = []   # (the marker says whose: the pronoun is dropped, as Turkish ev-im 'my house')
+                notes.append("the possessor pronoun is dropped")
+        if gen is not None and pw:
             tmp = NP(pw, poss.head)
             _np_gram(v, tmp, "GEN")
             pw = tmp.words
@@ -469,7 +496,9 @@ def noun_phrase(v: View, concept: str, det: str | None = None, adj: str | None =
         else:
             np_.words = np_.words + pw
         if inalienable and v.t.get("alienability") == "yes":
-            notes.append("kin are inalienably possessed: the possessor stands beside the noun with no marker")
+            notes.append("kin are inalienably possessed: no genitive marker" + (
+                "" if pm is not None and (pm.get("level") or 0) >= GR.CLITIC else
+                ", the possessor stands beside the noun with no marker"))
     return np_
 
 
@@ -513,7 +542,12 @@ def _np_gram(v: View, np_: NP, fn: str) -> bool:
 def pronoun(v: View, concept: str) -> NP | None:
     if not v.w(concept):
         return None
-    return NP([Word(v.ipa(concept), PRON.get(concept, lgloss(concept)), concept)], 0, PRON.get(concept, "3SG"))
+    gl = PRON.get(concept, lgloss(concept))
+    if concept == "WE (INCLUSIVE)":
+        gl = "1PL.INCL"
+    elif concept == "WE" and v.w("WE (INCLUSIVE)"):
+        gl = "1PL.EXCL"
+    return NP([Word(v.ipa(concept), gl, concept)], 0, PRON.get(concept, "3SG"))
 
 
 def oblique(v: View, np_: NP, fn: str, word_concepts: tuple[str, ...]) -> tuple[NP, str] | None:
@@ -542,14 +576,24 @@ def oblique(v: View, np_: NP, fn: str, word_concepts: tuple[str, ...]) -> tuple[
 # ---- the verb -----------------------------------------------------------------------------------------------------------
 
 def verb(v: View, concept: str, person: str | None = None, tam: str | None = None, neg: bool = False,
-         gloss: str | None = None) -> tuple[list, int, list]:
+         gloss: str | None = None, redup: bool = False, voice: str | None = None,
+         mood: str | None = None) -> tuple[list, int, list]:
     """The verb with its grams: (words, index of the verb, notes). Bound grams go on the verb, free ones (auxiliaries,
-    particles) beside it on their side, inner ones nearest."""
+    particles) beside it on their side, inner ones nearest. `redup`: the lect's reduplication process (a copy of the
+    stem, innermost); `voice`: a valence gram (PASS)."""
     notes = []
     vw = Word(v.ipa(concept), gloss or lgloss(concept), concept)
     words = [vw]
+    rd = v.proc.get("redup")
+    if redup and rd:
+        red = word_ipa(GR.reduplicant(tuple(from_ipa(vw.form)), rd["shape"], rd["side"]))
+        vw.add(red, ABBR[rd["fn"]], GR.AFFIX, rd["side"], rd["fn"])
+    if voice:
+        attach(v, words, words.index(vw), voice)
     if tam:
         attach(v, words, words.index(vw), tam)
+    if mood:
+        attach(v, words, words.index(vw), mood)
     if person:
         g = v.g(person)
         if g is not None and (g.get("level") or 0) >= GR.CLITIC:
@@ -581,17 +625,41 @@ def neg_gram(v: View, words: list, vw: Word, notes: list) -> None:
 
 # ---- the clause ---------------------------------------------------------------------------------------------------------
 
-def clause(v: View, S: NP | None, Vw: tuple, O: NP | None = None, X: NP | None = None, transitive: bool = True) -> list:
+def _is_pron(np_: NP | None) -> bool:
+    return np_ is not None and np_.words[np_.head].concept in PRON
+
+
+def flagging(v: View, S: NP | None, O: NP | None, tam: str | None = None) -> tuple[bool, bool]:
+    """(ERG on the transitive subject, ACC on the object) by alignment. A split lect (both markers live) divides them as
+    its grammar chose (`processes.split`): by person, pronouns accusative and nouns ergative (Dyirbal); by aspect, the
+    ergative in the perfective or past clause and the accusative elsewhere (Hindi)."""
+    al = v.t.get("alignment", "neutral")
+    acc, erg = v.g("ACC") is not None, v.g("ERG") is not None
+    if al == "nom-acc":
+        return False, acc
+    if al == "erg-abs":
+        return erg and S is not None, False
+    if al == "split":
+        if v.proc.get("split") == "aspect":
+            past = tam in GR.SPLIT_ASPECT
+            return erg and past and S is not None, acc and not past
+        return erg and S is not None and not _is_pron(S), acc and _is_pron(O)
+    return False, False
+
+
+def clause(v: View, S: NP | None, Vw: tuple, O: NP | None = None, X: NP | None = None, transitive: bool = True,
+           tam: str | None = None) -> list:
     """Order S, O and the verb complex by the basic word order (free order: by head direction, and the note says so); an
-    oblique X stands before the verb in OV lects and after the object in VO ones. Case by alignment: ACC on the object
-    (nominative-accusative), ERG on the transitive subject (ergative). Clause-edge negators move to the edge."""
+    oblique X stands before the verb in OV lects and after the object in VO ones. Case by alignment (`flagging`): ACC on
+    the object, ERG on the transitive subject, a split lect by person or aspect. Clause-edge negators move to the edge."""
     words, _vi, _n = Vw
     if transitive and O is not None:
-        al = v.t.get("alignment", "neutral")
-        if al in ("nom-acc", "split") and v.g("ACC") is not None:
+        e, a = flagging(v, S, O, tam)
+        if a:
             _np_gram(v, O, "ACC")
-        if al in ("erg-abs",) and S is not None and v.g("ERG") is not None:
+        if e:
             _np_gram(v, S, "ERG")
+        object_marker(v, words, words[_vi] if words else None, O.person)
     parts = {"S": S.words if S else [], "O": O.words if O else [], "V": words}
     seq = []
     for ch in v.order():
@@ -610,6 +678,25 @@ def clause(v: View, S: NP | None, Vw: tuple, O: NP | None = None, X: NP | None =
             out.remove(w)
             out.append(w)
     return out
+
+
+def object_marker(v: View, words: list, vw: "Word | None", person: str) -> bool:
+    """The verb's object agreement (grammar B): the object's person marker when the lect has bound it (clitic or
+    tighter; a free one is still a pronoun)."""
+    fn = person.split(".")[0] + ".O"
+    g = v.g(fn)
+    if vw is None or g is None or (g.get("level") or 0) < GR.CLITIC or vw not in words:
+        return False
+    attach(v, words, words.index(vw), fn)
+    return True
+
+
+def subject_marker(v: View, person: str) -> str:
+    """The subject series function for a person: the inclusive 'we' takes its own marker when the lect has bound one."""
+    if person == "1PL.INCL":
+        g = v.g("1PL.INCL")
+        return "1PL.INCL" if g is not None and (g.get("level") or 0) >= GR.CLITIC else "1PL"
+    return person
 
 
 def finish(v: View, sid: str, en_text: str, words: list, note: list, q: bool = False) -> dict:
@@ -727,7 +814,7 @@ def s_tense(v: View) -> dict | None:
     fn = _tam(v)
     s, o = noun_phrase(v, S, _the(v)), noun_phrase(v, O, _the(v))
     vw = verb(v, Vc, "3SG", fn)
-    words = clause(v, s, vw, o)
+    words = clause(v, s, vw, o, tam=fn)
     g = v.g(fn) if fn else None
     note = (f"{ABBR[fn]} is {_how(g)}"
             if g else "no tense or aspect marker: time is left to context")
@@ -840,7 +927,7 @@ def s_possession(v: View) -> dict | None:
         cop = _copula(v)
         vw = ([Word(cop[0], "COP")], 0, []) if cop else ([], 0, [])
         words = x[0].words + (vw[0] if not v.ov() else []) + thing.words + (vw[0] if v.ov() else [])
-        notes += ["locational possession ('at my mother (is) a dog')", x[1]]
+        notes += [f"locational possession ('at my {en(K)} (is) a {en(T)}')", x[1]]
     else:
         x = oblique(v, thing, "COM", ("WITH",))
         if x is None:
@@ -848,8 +935,7 @@ def s_possession(v: View) -> dict | None:
         cop = _copula(v)
         words = owner.words + ((([Word(cop[0], "COP")] if cop else []) + x[0].words) if not v.ov() else
                                (x[0].words + ([Word(cop[0], "COP")] if cop else [])))
-        notes += ["possession with 'with' ('my mother (is) with a dog'; Grambank marks neither a 'have' verb nor "
-                  "locational possession, and the lane picked the conjunctional type)", x[1]]
+        notes += [f"possession with 'with' ('my {en(K)} (is) with a {en(T)}')", x[1]]
     return finish(v, "possession", f"My {en(K)} has a {en(T)}.", words, notes)
 
 
@@ -878,7 +964,9 @@ def _copula(v: View) -> tuple[str, str] | None:
     c = v.w("HE OR SHE OR IT", "THAT", "SIT", "STAND")
     if c is None:
         return None
-    return v.ipa(c), f"the copula is the word for '{en(c) if c != 'HE OR SHE OR IT' else 'he, she, it'}' (G056)"
+    src = en(c) if c != "HE OR SHE OR IT" else "he, she, it"
+    return v.ipa(c), (f"the copula is the word for '{src}' (a pointing word or pronoun often becomes 'is', as Hebrew hu "
+                      f"and Mandarin shi did)" if c in ("HE OR SHE OR IT", "THAT") else f"the copula is the word for '{src}'")
 
 
 def s_copula(v: View) -> dict | None:
@@ -912,7 +1000,8 @@ def relative(v: View, head: str, rc_verb: str, det: str | None) -> tuple[NP, str
     if kind == "NRel":
         rel = [Word(v.ipa(that), "REL")] if that else []
         np_ = NP(hn.words + rel + rv, hn.head)
-        return np_, "relative clause after the noun" + (", introduced by the word for 'that' (G055)" if that else "")
+        return np_, "relative clause after the noun" + (", introduced by the word for 'that' (as English that and German der grew from a pointing word)"
+                                                         if that else "")
     if kind == "RelN":
         gen = v.g("GEN")
         link = [Word(gen["form_ipa"], "REL")] if gen is not None and (gen.get("level") or 0) <= GR.CLITIC else []
@@ -923,7 +1012,8 @@ def relative(v: View, head: str, rc_verb: str, det: str | None) -> tuple[NP, str
     corr = ([Word(v.ipa(who), "who", who)] if who else []) + rv
     dem = [Word(v.ipa(that), "that", that)] if that else []
     np_ = NP(corr + dem + hn.words, len(corr) + len(dem) + hn.head)
-    return np_, "a correlative: 'who sings, that woman' (the typology's 'other' relative type)"
+    return np_, f"a correlative: 'who {_vf(rc_verb, 1)}, that {en(head)}' (the relative clause comes first, with 'who', and " \
+                f"'that' picks the noun up again)"
 
 
 def s_relative(v: View) -> dict | None:
@@ -939,8 +1029,171 @@ def s_relative(v: View) -> dict | None:
     return finish(v, "relative", f"I know the {en(H)} who {_vf(R, 1)}.", words, [note] + vw[2])
 
 
+# ---- grammar phase A sentences (2026-11-08): give, imperative, passive, serial verbs, reduplication, split, clusivity -----
+
+def s_give(v: View) -> dict | None:
+    """A ditransitive: the recipient in the dative (case or adposition) when the lect has a DAT gram, else a serial
+    'give' after the theme when the lect serializes, else a double object (both bare)."""
+    S, G_, T, R = v.w("WOMAN", "MAN", "PERSON"), v.w("GIVE"), v.w("FISH", "FLESH OR MEAT", "EGG", "STONE"), \
+        v.w("CHILD (YOUNG HUMAN)", "BOY", "GIRL", "MAN")
+    if not (S and G_ and T and R) or R == S:
+        return None
+    s, o, r = noun_phrase(v, S, _the(v)), noun_phrase(v, T, _a(v)), noun_phrase(v, R, _the(v))
+    en_text = f"The {en(S)} gives the {en(R)} {'an' if en(T)[0] in 'aeiou' else 'a'} {en(T)}."
+    if v.g("DAT") is not None:
+        x = oblique(v, r, "DAT", ())
+        vw = verb(v, G_, "3SG")
+        return finish(v, "give", en_text, clause(v, s, vw, o, x[0]), [x[1] + ", on the recipient"] + vw[2])
+    if v.t.get("serial_verbs") == "yes" and v.w("TAKE"):
+        return _serial(v, "give", S, ("TAKE", T), (G_, R), en_text,
+                       "no dative: a serial construction, 'take the thing, give (it to) the person'")
+    vw = verb(v, G_, "3SG")
+    words = clause(v, s, vw, o, r)
+    return finish(v, "give", en_text, words, ["double object: theme and recipient both unmarked"] + vw[2])
+
+
+def s_imperative(v: View) -> dict | None:
+    """A command: the verb with the lect's imperative marker (IMP) when it has one, else the bare stem (the commonest
+    imperative in the world's languages: WALS 70A); no subject either way."""
+    Vc, O = v.pair((("EAT", "DRINK"), ("FISH", "WATER", "FLESH OR MEAT")), (("TAKE", "CARRY", "HOLD"), ("STONE", "STICK")))
+    if not (Vc and O):
+        return None
+    o = noun_phrase(v, O, _the(v))
+    words, vi, _n = verb(v, Vc, mood="IMP")
+    object_marker(v, words, words[vi], o.person)
+    seq = (o.words + words) if v.ov() else (words + o.words)
+    g = v.g("IMP")
+    note = (f"the imperative is marked: {_how(g)} ({g['form_ipa']}, {_src(g)}); no subject" if g else
+            "the imperative is the bare verb stem, with no subject and no person or tense marker")
+    return finish(v, "imperative", f"{_vf(Vc, 0).capitalize()} the {en(O)}!", seq, [note])
+
+
+def s_hortative(v: View) -> dict | None:
+    """'Let us eat the fish!' with the lect's hortative marker (HORT; from 'let, leave', 'give', 'come' or 'go')."""
+    g = v.g("HORT")
+    Vc, O = v.pair((("EAT",), ("FISH", "FLESH OR MEAT")), (("DRINK",), ("WATER", "MILK")), (("GO",), ("HOUSE", "RIVER")))
+    if g is None or not (Vc and O):
+        return None
+    o = noun_phrase(v, O, _the(v))
+    words, vi, _n = verb(v, Vc, subject_marker(v, "1PL.INCL") if v.w("WE (INCLUSIVE)") else "1PL", mood="HORT")
+    object_marker(v, words, words[vi], o.person)
+    seq = (o.words + words) if v.ov() else (words + o.words)
+    return finish(v, "hortative", f"Let us {_vf(Vc, 0)} the {en(O)}!", seq,
+                  [f"the hortative ('let us') is {_how(g)} ({g['form_ipa']}, {_src(g)})"])
+
+
+def s_object(v: View) -> dict | None:
+    """'The woman sees you.': the verb agrees with its object as well as its subject (Swahili a-ku-ona), where the lect
+    has bound object markers."""
+    if not any((v.g(f) or {}).get("level", 0) >= GR.CLITIC for f in GR.OBJ_FNS):
+        return None
+    S, Vc = v.w("WOMAN", "MAN", "PERSON"), v.w("SEE", "HEAR", "HIT")
+    o = next((pronoun(v, c) for c in ("THOU", "I", "THEY") if v.w(c) and
+              (v.g(PRON[c] + ".O") or {}).get("level", 0) >= GR.CLITIC), None)
+    if not (S and Vc and o):
+        return None
+    s = noun_phrase(v, S, _the(v))
+    vw = verb(v, Vc, "3SG")
+    words = clause(v, s, vw, o)
+    who = {"2SG": "you", "1SG": "me", "3PL": "them"}[o.person]
+    return finish(v, "object", f"The {en(S)} {_vf(Vc, 1)} {who}.", words,
+                  [f"the verb agrees with its object too ({ABBR[o.person + '.O']})"] + vw[2])
+
+
+def s_passive(v: View) -> dict | None:
+    g = v.g("PASS")
+    S, Vc = v.w("FISH", "DOG", "BIRD", "STONE"), v.w("SEE", "EAT", "CARRY", "HIT", "KILL")
+    if g is None or not (S and Vc):
+        return None
+    s = noun_phrase(v, S, _the(v))
+    vw = verb(v, Vc, "3SG", voice="PASS")
+    words = clause(v, s, vw, None, None, transitive=False)
+    return finish(v, "passive", f"The {en(S)} is {_vf(Vc, 3)}.", words,
+                  [f"the passive is {_how(g)} ({g['form_ipa']}, {_src(g)}); the doer is left out"] + vw[2])
+
+
+def _serial(v: View, sid: str, S: str, v1: tuple, v2: tuple, en_text: str, note: str) -> dict:
+    """S V1 O1 V2 (O2) as one clause with one subject: VO lects put each object after its verb, OV lects before; only
+    the first verb carries the subject's person marker."""
+    s = noun_phrase(v, S, _the(v))
+    w1 = verb(v, v1[0], "3SG")[0]
+    w2 = verb(v, v2[0])[0]
+    o1 = noun_phrase(v, v1[1], _the(v)).words if v1[1] else []
+    o2 = noun_phrase(v, v2[1], _the(v)).words if v2[1] else []
+    if v.ov():
+        vp = o1 + w1 + o2 + w2
+    else:
+        vp = w1 + o1 + w2 + o2
+    o = v.order()
+    words = (vp + s.words) if o.index("S") > o.index("V") else (s.words + vp)
+    return finish(v, sid, en_text, words, [note])
+
+
+def s_serial(v: View) -> dict | None:
+    """Serial verbs (`serial_verbs` yes): 'take X come' for bring (Yoruba mu ... wa, Mandarin na ... lai)."""
+    if v.t.get("serial_verbs") != "yes":
+        return None
+    S, T, C, O = v.w("MAN", "WOMAN", "PERSON"), v.w("TAKE", "HOLD"), v.w("COME"), v.w("FISH", "WATER", "STONE", "STICK")
+    if not (S and T and C and O):
+        return None
+    return _serial(v, "serial", S, (T, O), (C, None), f"The {en(S)} brings the {en(O)} (takes it and comes).",
+                   f"serial verbs: '{en(T)}' and '{en(C)}' in one clause make 'bring'")
+
+
+_REDUP_EN = {"ITER": ("{s} {v3} the {o} again and again", ("HIT", "CUT", "EAT")),
+             "INTS": ("{s} really {v3} the {o}", ("EAT", "HIT", "SEE")),
+             "CONT": ("{s} is {ving} the {o}", ("EAT", "CARRY", "SEE"))}
+
+
+def s_redup(v: View) -> dict | None:
+    rd = v.proc.get("redup")
+    if not rd:
+        return None
+    tmpl, verbs = _REDUP_EN[rd["fn"]]
+    S, Vc, O = v.w("MAN", "WOMAN", "CHILD (YOUNG HUMAN)"), v.w(*verbs), v.w("FISH", "STONE", "DOG", "BIRD")
+    if not (S and Vc and O):
+        return None
+    s, o = noun_phrase(v, S, _the(v)), noun_phrase(v, O, _the(v))
+    vw = verb(v, Vc, "3SG", redup=True)
+    words = clause(v, s, vw, o)
+    what = "the whole stem" if rd["shape"] == "full" else \
+        f"a CV copy {'before' if rd['side'] == 'pre' else 'after'} the stem"
+    en_text = "The " + tmpl.format(s=en(S), v3=_vf(Vc, 1), ving=_vf(Vc, 4), o=en(O)) + "."
+    return finish(v, "redup", en_text, words,
+                  [f"reduplication ({GR.REDUP_INFO[rd['fn']].gloss.split(' (')[0]}): {what}"] + vw[2])
+
+
+def s_split(v: View) -> dict | None:
+    """A split-ergative lect by person: a noun doer takes the ergative, a pronoun object the accusative ('the man sees
+    me'). (An aspect split shows in the transitive and tense sentences side by side.)"""
+    if v.t.get("alignment") != "split" or v.proc.get("split") != "person":
+        return None
+    S, Vc = v.w("MAN", "WOMAN", "PERSON"), v.w("SEE", "HIT", "HEAR")
+    o = pronoun(v, "I")
+    if not (S and Vc and o):
+        return None
+    s = noun_phrase(v, S, _the(v))
+    vw = verb(v, Vc, "3SG")
+    words = clause(v, s, vw, o)
+    return finish(v, "split", f"The {en(S)} {_vf(Vc, 1)} me.", words,
+                  ["split ergativity: the noun doer takes the ergative, the pronoun object the accusative"] + vw[2])
+
+
+def s_clusive(v: View) -> dict | None:
+    if not v.w("WE (INCLUSIVE)"):
+        return None
+    Vc, O = v.pair((("EAT",), ("FISH", "FLESH OR MEAT")), (("SEE",), ("DOG", "BIRD")))
+    if not (Vc and O):
+        return None
+    s, o = pronoun(v, "WE (INCLUSIVE)"), noun_phrase(v, O, _the(v))
+    vw = verb(v, Vc, subject_marker(v, "1PL.INCL"))
+    words = clause(v, s, vw, o)
+    return finish(v, "clusive", f"We (you and I) {_vf(Vc, 0)} the {en(O)}.", words,
+                  [f"inclusive 'we' {v.ipa('WE (INCLUSIVE)')}; the exclusive (not you) is {v.ipa('WE')}"] + vw[2])
+
+
 SENTENCES = (s_transitive, s_locative, s_tense, s_polar, s_content, s_negation, s_possession, s_number, s_copula,
-             s_relative)
+             s_relative, s_give, s_imperative, s_passive, s_serial, s_redup, s_split, s_clusive, s_object, s_hortative)
 
 
 def utterances(lj: dict) -> list[dict]:
@@ -983,6 +1236,8 @@ def _src(g: dict) -> str:
     s = src[0]
     if len(src) > 2 and src[2] == "gram" and s in GR.FUNCS:
         return f"from the {GR.FUNCS[s].gloss} marker"
+    if s == "I":
+        return "from 'I'"
     return f"from '{en(s)}'" if s and s != "?" else "a coined form"
 
 
@@ -997,8 +1252,11 @@ def notes_nouns(v: View) -> list[dict]:
     nums = [f for f in ("PL", "DU") if v.g(f)]
     if nums and N:
         txt = "; ".join(f"{GR.FUNCS[f].gloss}: {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})" for f in nums)
-        ex = [_ex(v, noun_phrase(v, N).words, f"{en(N)}"), _ex(v, noun_phrase(v, N, plural=True).words,
-                                                              EN_PLURAL.get(N, en(N) + "s"))]
+        ex = [_ex(v, noun_phrase(v, N).words, f"{en(N)}")]
+        if "PL" in nums:
+            ex.append(_ex(v, noun_phrase(v, N, plural=True).words, EN_PLURAL.get(N, en(N) + "s")))
+        if "DU" in nums:
+            ex.append(_ex(v, noun_phrase(v, N, dual=True).words, "two " + EN_PLURAL.get(N, en(N) + "s")))
         out.append({"topic": "Number", "text": "Nouns mark number: " + txt + ".", "ex": ex})
     else:
         out.append({"topic": "Number", "text": "Nouns do not mark number: one noun form serves for one or many; a numeral "
@@ -1012,7 +1270,13 @@ def notes_nouns(v: View) -> list[dict]:
         al = {"nom-acc": "Alignment is accusative: the object is marked (ACC), subjects are not.",
               "erg-abs": "Alignment is ergative: the subject of a transitive verb is marked (ERG); the subject of an "
                          "intransitive verb and the object are not.",
-              "split": "Alignment is split: both an accusative and an ergative marker are live."}.get(alv, "")
+              "split": {"person": "Alignment is split by person: a noun doing a transitive action takes the ergative "
+                                  "(ERG), a pronoun object takes the accusative (ACC); pronoun doers and noun objects "
+                                  "are unmarked.",
+                        "aspect": "Alignment is split by aspect: in the perfective or past the doer of a transitive verb "
+                                  "takes the ergative (ERG); elsewhere the object takes the accusative (ACC)."
+                        }.get(v.proc.get("split"), "Alignment is split: both an accusative and an ergative marker "
+                                                   "are live.")}.get(alv, "")
     elif alv == "neutral":
         al = "Subject and object are not marked apart: word order tells them."
     else:
@@ -1047,16 +1311,16 @@ def notes_nouns(v: View) -> list[dict]:
         kind = cs.get("kind")
         rows = []
         ex = []
+        bound_cls = any((v.g(f) or {}).get("level", 0) >= GR.CLITIC for _k, _g, f in cs["classes"])
         for k, grp, f in cs["classes"]:
             g = v.g(f)
             if g is None:
                 continue
-            rows.append(f"{f.replace('CLASS:', 'class ')} for {GR.GROUP_GLOSS.get(grp, grp)}, {_how(g)} ({g['form_ipa']}, "
+            rows.append(f"class {v.cl_num.get(f, k)} for {GR.GROUP_GLOSS.get(grp, grp)}, {_how(g)} ({g['form_ipa']}, "
                         f"{_src(g)})")
             n = _noun_of_group(v, kind, grp)
             if n and len(ex) < 4:
-                ex.append(_ex(v, noun_phrase(v, n).words, en(n)))
-        bound_cls = any((v.g(f) or {}).get("level", 0) >= GR.CLITIC for _k, _g, f in cs["classes"])
+                ex.append(_class_example(v, n, f, g, bound_cls))
         lead = {"sex": "Nouns fall into genders by sex", "animacy": "Nouns fall into genders by animacy",
                 "classes": "Nouns fall into noun classes by meaning", "classifiers": "Nouns are counted with classifiers"
                 }.get(kind, "Nouns fall into classes")
@@ -1068,16 +1332,35 @@ def notes_nouns(v: View) -> list[dict]:
     return out
 
 
+def _class_example(v: View, n: str, f: str, g: dict, bound_cls: bool) -> list:
+    """A noun of class `f` with its marker. A bound marker is on the noun already; a free one is a classifier: after a
+    numeral ('two CLF dogs') in a system with no bound marker, else the free word beside the noun on its side."""
+    if (g.get("level") or 0) >= GR.CLITIC:
+        return _ex(v, noun_phrase(v, n).words, en(n))
+    num = v.w("TWO", "THREE", "ONE")
+    if not bound_cls and num:
+        np_ = noun_phrase(v, n, num=num, plural=num != "ONE")
+        if not any(w.gloss == "CLF" for w in np_.words):   # (no classifier slot shown: put it after the numeral)
+            i = next(i for i, w in enumerate(np_.words) if w.concept == num)
+            np_.words.insert(i + 1, Word(g["form_ipa"], "CLF"))
+        return _ex(v, np_.words, f"{en(num)} {EN_PLURAL.get(n, en(n) + 's') if num != 'ONE' else en(n)}")
+    words = noun_phrase(v, n).words
+    lab = (class_of(v, n) or (f, "CLF"))[1]
+    attach(v, words, next(i for i, w in enumerate(words) if w.concept == n), f, lab)
+    return _ex(v, words, en(n))
+
+
 def _noun_of_group(v: View, kind: str, grp: str) -> str | None:
     pool = {"person": ("PERSON", "MAN", "WOMAN"), "people": ("PEOPLE",), "manner": ("TONGUE", "WORD", "SONG"),
             "abstract": ("NAME", "DAY (NOT NIGHT)", "STONE"), "plant": ("TREE", "GRASS", "LEAF"), "animal": ("DOG", "BIRD"),
             "liquid": ("WATER", "BLOOD", "MILK"), "place": ("RIVER", "HOUSE", "MOUNTAIN"), "small": ("EGG", "SEED"),
             "masculine": ("MAN", "FATHER"), "feminine": ("WOMAN", "MOTHER"), "animate": ("PERSON", "DOG"),
             "inanimate": ("STONE", "WATER")}.get(grp, ())
-    for c in pool:
-        if v.w(c) and (class_of(v, c) or ("",))[0] == next((f for _k, g, f in v.classes["classes"] if g == grp), None):
-            return c
-    return None
+    fn = next((f for _k, g, f in v.classes["classes"] if g == grp), None)
+    src = ((v.g(fn) or {}).get("source") or [None])[0] if fn else None
+    ok = [c for c in pool if v.w(c) and (class_of(v, c) or ("",))[0] == fn]
+    # (not the marker's own source noun when another will do: 'tongue' with the classifier from 'tongue' says little)
+    return next((c for c in ok if c != src), ok[0] if ok else None)
 
 
 def notes_verbs(v: View) -> list[dict]:
@@ -1096,17 +1379,27 @@ def notes_verbs(v: View) -> list[dict]:
         y = v.w("YESTERDAY")
         out.append({"topic": "Tense and aspect", "text": "Verbs carry no tense or aspect: time is left to context or to "
                     "words like 'yesterday'" + (f" ({v.ipa(y)})" if y else "") + ".", "ex": []})
-    if evs and Vc:
-        txt = "; ".join(f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})"
-                        for f in evs)
-        ex = [_ex(v, verb(v, Vc, None, f)[0], "(it) " + _vf(Vc, 1) + (", I saw it" if f == "EVID.DIR" else
-                                                                       ", they say")) for f in evs]
-        out.append({"topic": "Mood and evidentiality", "text": "Speakers mark how they know: " + txt + ".", "ex": ex})
+    moods = [f for f in GR.MOOD_FNS if v.g(f)]
+    if (evs or moods) and Vc:
+        bits = []
+        ex = []
+        if evs:
+            bits.append("Speakers mark how they know: " + "; ".join(
+                f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})" for f in evs)
+                + ".")
+            ex += [_ex(v, verb(v, Vc, None, f)[0], "(it) " + _vf(Vc, 1) + (", I saw it" if f == "EVID.DIR" else
+                                                                           ", they say")) for f in evs]
+        if moods:
+            bits.append("Mood markers: " + "; ".join(
+                f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})"
+                for f in moods) + ".")
+            ex += [_ex(v, verb(v, Vc, mood=f)[0], _MOOD_EN[f].format(v=_vf(Vc, 0))) for f in moods]
+        out.append({"topic": "Mood and evidentiality", "text": " ".join(bits), "ex": ex})
     else:
         out.append({"topic": "Mood and evidentiality", "text": "No evidential or mood marker is live; statements are "
                     "unmarked.", "ex": []})
     # person agreement
-    pers = [f for f in GR.PERSON_FNS if v.g(f)]
+    pers = [f for f in GR.SERIES["S"] if v.g(f)]
     bound = [f for f in pers if (v.g(f).get("level") or 0) >= GR.CLITIC]
     free = [f for f in pers if f not in bound]
     if bound and Vc:
@@ -1115,17 +1408,45 @@ def notes_verbs(v: View) -> list[dict]:
         pd = (" Subject pronouns are dropped when the marker is there." if v.t.get("pro_drop") == "yes" else "")
         missing = [f for f in GR.PERSON_FNS if f not in bound]
         out.append({"topic": "Person agreement", "text": "Verbs agree with the subject: " + txt + "." + pd + (
-            f" No marker yet for {', '.join(missing)} (zero)." if missing else ""), "ex": ex})
+            f" No marker yet for {', '.join(missing)} (zero)." if missing else "") + (
+            " The inclusive 'we' has a marker of its own (1PL.INCL); 1PL is the exclusive." if "1PL.INCL" in bound
+            else ""), "ex": ex})
     else:
         txt = "Verbs do not agree with the subject."
         if free:
             txt += " Pronoun-like words stand beside the verb (" + ", ".join(f"{f} {v.g(f)['form_ipa']}" for f in free) + \
                    "), on their way to becoming agreement."
         out.append({"topic": "Person agreement", "text": txt, "ex": []})
+    for ser, topic, lead, en_of in (("O", "Object agreement", "Verbs also agree with the object", _OBJ_EN),
+                                    ("P", "Possessor marking", "The possessed noun carries its possessor's person",
+                                     _POSS_EN)):
+        b = [f for f in GR.SERIES[ser] if (v.g(f) or {}).get("level", 0) >= GR.CLITIC]
+        host = Vc if ser == "O" else v.w("HOUSE", "DOG", "NAME", "EYE")
+        if not b or not host:
+            continue
+        txt = "; ".join(f"{ABBR[f]}: {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})" for f in b)
+        ex = []
+        for f in b[:3]:
+            p = f.split(".")[0]
+            if ser == "O":
+                ws, vi, _n = verb(v, host, "3SG")
+                object_marker(v, ws, ws[vi], p)
+                ex.append(_ex(v, ws, f"he/she {_vf(host, 1)} {en_of[p]}"))
+            else:
+                w = noun_phrase(v, host).words
+                attach(v, w, 0, f)
+                ex.append(_ex(v, w, f"{en_of[p]} {en(host)}"))
+        miss = [ABBR[f] for f in GR.SERIES[ser] if f not in b]
+        out.append({"topic": topic, "text": f"{lead}: {txt}." + (f" No marker yet for {', '.join(miss)}." if miss else ""),
+                    "ex": ex})
     return out
 
 
-_PERSON_EN = {"1SG": "I", "2SG": "you", "3SG": "he/she", "1PL": "we", "2PL": "you all", "3PL": "they"}
+_PERSON_EN = {"1SG": "I", "2SG": "you", "3SG": "he/she", "1PL": "we", "2PL": "you all", "3PL": "they",
+              "1PL.INCL": "we (you and I)"}
+_OBJ_EN = {"1SG": "me", "2SG": "you", "3SG": "him/her", "1PL": "us", "2PL": "you all", "3PL": "them"}
+_POSS_EN = {"1SG": "my", "2SG": "your", "3SG": "his/her", "1PL": "our", "2PL": "your (all)", "3PL": "their"}
+_MOOD_EN = {"IMP": "{v}!", "HORT": "let us {v}", "OBLG": "(one) must {v}", "APPR": "lest (it) {v}"}
 
 
 def notes_clause(v: View, sents: dict) -> list[dict]:
@@ -1147,9 +1468,20 @@ def notes_clause(v: View, sents: dict) -> list[dict]:
         "stay where the questioned phrase would stand" if v.t.get("wh_in_situ") == "yes" else "move to the front") + \
         (": " + ", ".join(f"{en(c)} {v.ipa(c)}" for c in qw) if qw else "") + "."
     out.append({"topic": "Questions", "text": txt, "ex": _sent_ex(sents, "polar") + _sent_ex(sents, "content")})
+    if "imperative" in sents:
+        g = v.g("IMP")
+        txt = (f"Commands take the imperative marker, {_how(g)} ({g['form_ipa']}, {_src(g)}), and no subject." if g else
+               "There is no imperative marker: a command is the bare verb stem, with no subject and no person or tense "
+               "marker.")
+        if v.g("HORT") is not None:
+            txt += " 'Let us ...' has a hortative marker of its own."
+        out.append({"topic": "Commands", "text": txt, "ex": _sent_ex(sents, "imperative") + _sent_ex(sents, "hortative")})
     gen = v.g("GEN")
-    pp = {"have": "a 'have' verb ('my mother has a dog')", "locational": "a locational phrase ('at my mother is a dog')",
-          "other": "'with' ('my mother is with a dog'; the lane's pick for Grambank's 'neither')"
+    ps = sents.get("possession")
+    m = re.fullmatch(r"My (.+) has an? (.+)\.", (ps or {}).get("en") or "")
+    K, T = m.groups() if m else ("mother", "dog")   # (the note names the sample sentence's own kin word and thing)
+    pp = {"have": f"a 'have' verb ('my {K} has a {T}')", "locational": f"a locational phrase ('at my {K} is a {T}')",
+          "other": f"'with' ('my {K} is with a {T}')"
           }.get(v.t.get("predicative_possession"), "")
     txt = (f"The possessor stands {'before' if v.before('genitive', 'GN') else 'after'} the possessed noun"
            + (f", marked by the genitive {_how(gen)} ({gen['form_ipa']})" if gen else ", with no marker") + ".")
@@ -1187,6 +1519,98 @@ def notes_clause(v: View, sents: dict) -> list[dict]:
     return out
 
 
+def notes_more(v: View, sents: dict) -> list[dict]:
+    """Grammar phase A notes: pronouns (clusivity), voice (passive), reduplication, serial verbs, ditransitives,
+    numerals. Each is written only from a live gram, a built process or a feature with its construction shown."""
+    out = []
+    if v.w("WE (INCLUSIVE)") and v.w("WE"):
+        out.append({"topic": "Pronouns", "text": f"'We' has two forms: inclusive {v.ipa('WE (INCLUSIVE)')} (you and I, "
+                    f"the hearer among us) and exclusive {v.ipa('WE')} (we, but not you).",
+                    "ex": [_ex(v, pronoun(v, "WE (INCLUSIVE)").words, "we (you included)"),
+                           _ex(v, pronoun(v, "WE").words, "we (not you)")] + _sent_ex(sents, "clusive")})
+    g = v.g("PASS")
+    if g is not None:
+        out.append({"topic": "Voice", "text": f"The passive is {_how(g)} ({g['form_ipa']}, {_src(g)}): the object of "
+                    "the active verb becomes its subject and the doer is left out.", "ex": _sent_ex(sents, "passive")})
+    rd = v.proc.get("redup")
+    if rd:
+        what = ("copying the whole stem" if rd["shape"] == "full" else
+                "copying the stem's first consonant and vowel before it" if rd["side"] == "pre" else
+                "copying the stem's last consonant and vowel after it")
+        mean = {"ITER": "an action done again and again, or by many", "INTS": "an action done intensely",
+                "CONT": "an action going on"}[rd["fn"]]
+        Vc = v.w("GO", "EAT", "SEE", "WALK")
+        ex = [_ex(v, verb(v, Vc, redup=True)[0], f"({mean})")] if Vc else []
+        out.append({"topic": "Reduplication", "text": f"Verbs reduplicate for {mean} ({ABBR[rd['fn']]}), by {what}.",
+                    "ex": ex + _sent_ex(sents, "redup")})
+    if "serial" in sents:
+        txt = "Verbs can be strung together in one clause with one subject (serial verbs): 'take X come' is 'bring'."
+        ex = _sent_ex(sents, "serial")
+        R, Gv = v.w("RUN", "WALK", "FLY"), v.w("GO")
+        if R and Gv:
+            txt += f" 'Go' after a motion verb gives its direction ('{en(R)} go' = {en(R)} away)."
+            ex.append(_ex(v, verb(v, R)[0] + verb(v, Gv)[0], f"{en(R)} away"))
+        out.append({"topic": "Serial verbs", "text": txt, "ex": ex})
+    gs = sents.get("give")
+    if gs is not None:
+        out.append({"topic": "Giving (two objects)", "text": (gs.get("note") or "").split(";")[0].capitalize() + ".",
+                    "ex": ["give"]})
+    num = numerals_note(v)
+    if num:
+        out.append(num)
+    return out
+
+
+def numeral_phrase(v: View, n: int) -> tuple[list, str] | None:
+    """A numeral above ten as the counting base builds it from the lect's own words: decimal 11 'ten one', 30 'three
+    ten'; vigesimal 30 'twenty ten', 40 'two twenty'. Addition puts the larger number first (Greenberg 1978);
+    multiplication follows the numeral's place beside a noun (NumN 'three ten', NNum 'ten three')."""
+    base = v.t.get("numeral_base", "decimal")
+    units = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE")
+    mult_first = v.t.get("numeral") != "NNum"
+
+    def mul(k, b):
+        return [k, b] if mult_first else [b, k]
+    if base == "vigesimal":
+        b, rest = divmod(n, 20)
+        parts = ([] if b == 0 else ["TWENTY"] if b == 1 else mul(units[b - 1], "TWENTY"))
+        if rest >= 10:
+            parts += ["TEN"] + ([units[rest - 11]] if rest > 10 else [])
+        elif rest:
+            parts.append(units[rest - 1])
+    else:
+        t, rest = divmod(n, 10)
+        parts = ([] if t == 0 else ["TEN"] if t == 1 else ["TWENTY"] if t == 2 and v.w("TWENTY") else mul(units[t - 1], "TEN"))
+        if rest:
+            parts.append(units[rest - 1])
+    if not parts or not all(v.w(c) for c in parts):
+        return None
+    words = [Word(v.ipa(c), lgloss(c), c) for c in parts]
+    return words, " ".join(en(c) for c in parts)
+
+
+def numerals_note(v: View) -> dict | None:
+    base = v.t.get("numeral_base")
+    if base not in ("decimal", "vigesimal", "other") or not v.w("TEN"):
+        return None
+    shown = (11, 15, 30, 40) if base != "vigesimal" else (11, 30, 40, 60)
+    ex = []
+    for n in shown:
+        r = numeral_phrase(v, n)
+        if r:
+            ex.append(_ex(v, r[0], f"{n} ('{r[1]}')"))
+    if not ex:
+        return None
+    lead = {"decimal": "Counting is decimal: numbers above ten are built from ten and the units",
+            "vigesimal": "Counting is vigesimal: numbers above twenty are counted in twenties, with ten and the units "
+                         "inside each twenty",
+            "other": "Numbers above ten are built from ten and the units"}[base]
+    words = [c for c in ("TWENTY", "HUNDRED") if v.w(c)]
+    tail = (" " + " and ".join(f"{('Twenty' if c == 'TWENTY' else 'a hundred')} is {v.ipa(c)}" for c in words) + "."
+            if words else "")
+    return {"topic": "Numerals", "text": lead + "." + tail, "ex": ex}
+
+
 def _sent_ex(sents: dict, sid: str) -> list:
     """A sample sentence as a note's example: by its id (a string; `example` resolves it), not a copy."""
     return [sid] if sid in sents else []
@@ -1212,11 +1636,53 @@ def grammar_notes(lj: dict, sents: list | None = None) -> list[dict]:
             out += fn(v)
         except (KeyError, IndexError, ValueError, StopIteration):
             continue
-    try:
-        out += notes_clause(v, by)
-    except (KeyError, IndexError, ValueError, StopIteration):
-        pass
+    for fn in (notes_clause, notes_more):
+        try:
+            out += fn(v, by)
+        except (KeyError, IndexError, ValueError, StopIteration):
+            continue
+    for n in out:
+        n["text"] = _shown_forms(v, n, by)
     return out
+
+
+def _morph_pairs(form: str, gloss: str):
+    """(gloss piece, form piece) for each morph of an interlinear example, words and morphs aligned by '-' and '='."""
+    for f, g in zip(form.split(" "), gloss.split(" ")):
+        fp, gp = re.split(r"[-=]", f), re.split(r"[-=]", g)
+        if len(fp) == len(gp):
+            yield from zip(gp, fp)
+
+
+def _where(base: str, var: str, cons: set) -> str:
+    """Why a marker's form in an example differs from its base form: the joining rules, or the stored word form."""
+    if len(var) > len(base) and var.endswith(base) and var[: len(var) - len(base)] in cons:
+        return f"{var} after a vowel"
+    b, w = _segs(base), _segs(var)
+    if b and w and len(b) == len(w) and b[:-1] == w[:-1] and b[-1].kind == "C" and b[-1].manner == 3:
+        return f"{var} before a stop"
+    return f"{var} where it has merged with the stem"
+
+
+def _shown_forms(v: View, note: dict, by: dict) -> str:
+    """A note quotes each marker's base form; where its examples show it only in another shape (a glide before it after
+    a vowel, a nasal that took a stop's place, a form sound change reshaped on a stored word) the note says so, so the
+    prose and the examples agree."""
+    seen: dict[str, set] = {}
+    for x in note.get("ex") or []:
+        s = by.get(x) if isinstance(x, str) else None
+        form, gloss = ((" ".join(w[0] for w in s["w"]), " ".join(w[1] for w in s["w"])) if s else
+                       (x[0], x[1]) if isinstance(x, list) else ("", ""))
+        for gp, fp in _morph_pairs(form, gloss):
+            seen.setdefault(gp, set()).add(fp)
+    text = note["text"]
+    for fn, g in sorted(v.grams.items()):
+        base, lab = g.get("form_ipa"), ABBR.get(fn, fn)
+        if not base or lab not in seen or base in seen[lab] or f"({base}, " not in text:
+            continue
+        alts = "; ".join(_where(base, x, v.cons) for x in sorted(seen[lab]))
+        text = text.replace(f"({base}, ", f"({base}; {alts}; ", 1)
+    return text
 
 
 def enrich(lj: dict) -> dict:

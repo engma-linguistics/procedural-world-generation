@@ -410,6 +410,55 @@ grams (level 0) move to the new side, bound ones stay; a NEG left on the old sid
 new one (Jespersen). Writes into `g.typology` from outside (calques on shift) become aims (`grammar.Shown`).
 `grammar.clashes(g, lexicon)` lists contradictions; `checks.typology_consistency` counts living lects with any.
 
+**Grammar phase A (2026-11-07, branch `lang-gram-a`; `grammar-gaps.md` Queue).**
+- *The pull is per function* (`PULL_GROUP`, `pull_group`, `_unrealised`): an accusative or ergative answers the
+  alignment, a dual the 'sg-du-pl' number, an oblique case (ABL ALL INS COM) 'case: many', a witnessed evidential
+  'direct+indirect'; every other function answers its first feature with the rest of that feature's functions. Before,
+  any case gram blocked the pull toward ACC/ERG, a plural blocked DU and a reportative blocked EVID.DIR.
+- *More sources* (built-in paths X19-X26): ABL, LOC and GEN > ERG (gram reanalysis, Kuteva et al. 2019), an agentive
+  'near, with' (English *by*) > ERG, DAT > ACC (differential object marking), 'leave, come' > ABL, 'go' > ALL, 'take,
+  hold' > INS. G060 (reflexive > middle > passive) is mapped, so a REFL gram can become the passive; GET and BECOME
+  (round 5 vocabulary) feed G032/G033.
+- *Split ergativity* (`_split`, `Grammar.processes["split"]`): a lect with both a live ACC and a live ERG divides them
+  by person (pronouns accusative, nouns ergative; 60%) or by aspect (ergative in the PERF or PAST clause, accusative
+  elsewhere; only when it has one). Dropped when either case goes; logged as events.
+- *Clusivity* (`_clusivity`, `INCLUSIVE_FROM`): when the aims say yes and the lexicon has one 'we', the lexicon gets
+  WE (INCLUSIVE) from WE + THOU (45%), I + THOU (15%) or a root of its own (40%); plain WE is then the exclusive. At
+  proto time at once; later at the PRESSURE rate; when the aims say no it goes at `CLUSIVE_LOSS` (a third of the time
+  the inclusive becomes the only 'we'). `realised_value('clusivity')` reads the lexicon, as before. WE (INCLUSIVE) is in
+  the pronoun contrast set (lexicon.py `_PRONOUNS`).
+- *Verbal reduplication* (`_redup`, `REDUP`, `REDUP_SHAPE`, `reduplicant`): a process, not a gram: one meaning per lect
+  (ITER iterative/pluractional 45%, INTS intensive 20%, CONT continuous 35%), a CV copy (65%; prefixed 3 times in 4)
+  or the whole stem. The verb exemplars carry its cell (key `(ITER,)` etc.), so sound change wears the copy down with
+  the word. `verb_reduplication` is now a realised feature (yes iff the process exists).
+- *Counting base* (`_numerals`, `NUMERAL_WORDS`): at proto time a decimal lexicon builds TWENTY as 'two ten', a
+  vigesimal one HUNDRED as 'five twenty' (and TWENTY as 'one person' half the time), the 'other' base 6-9 as 'five one'
+  ... 'five four' (Comrie, WALS 131A). Multiplication follows the numeral's noun order, addition puts the larger first.
+- *Person agreement as a set* (`PERSON_JOIN`, `_person_set`, `_person_fill`): when a person gram binds (reaches clitic),
+  each other member of the series binds with it from its own pronoun (0.6-0.85 each; a zero 3SG is the commonest gap);
+  `PERSON_FILL` (0.004 per generation) fills a remaining gap by analogy, at the paradigm's side and median level.
+- *Degrammaticalization* (`DEGRAM` 1/50 of the hazard of the step undone, x3 `DEGRAM_EDGE` for NP-hosted markers, x3
+  `DEGRAM_ORPHAN` when the marker is the last bound one of a slot that lost others; Norde 2009): a clitic or affix
+  climbs one level; a grammar event.
+- `Grammar.processes` is copied to daughters and kept in `to_json`/`from_json`.
+
+**Grammar phase B (2026-11-08, branch `lang-gram-b`; `grammar-gaps.md` Queue).**
+- *Mood* (`MOOD_FNS`: IMP, HORT, OBLG, APPR; slot 'mood'): G007 > OBLG, G034 > HORT, G035 > APPR mapped; built in
+  'come, go' > HORT (X27), 'give' > HORT (X28), 'look!, come!' > IMP (X29, a guess), HORT > IMP (X30). No typology
+  feature: the ordinary draw only.
+- *Person series* (`SERIES`: S = the six subject persons + 1PL.INCL; O = 1SG.O ... 3PL.O on the verb, side rule 'oagr'
+  from `object_agreement`; P = 1SG.POSS ... 3PL.POSS on the noun, slot 'poss' after number, side rule 'gen' from the
+  genitive order). `_person_set` binds a series as a set when one member reaches clitic; `_person_fill` fills each
+  series' gaps. One lead path per series (X33 'he' > 3SG.O, X39 'I' > 1SG.POSS); the other members' paths have the
+  frequency class `set` (weight 0: never drawn alone). `object_agreement` is realised from the O grams and pulled by
+  its aim. 1PL.INCL (X45) joins only when the lexicon has WE (INCLUSIVE).
+- *Genitive sources*: ABL > GEN (X31), THAT/THIS > GEN linker (X32); `PULL_GROUP['GEN']` pulls a case lect toward one.
+- *Class numbers* are never reused (`add_class` takes 1 + the highest CLASS number ever used); pages number classes
+  1..n (`sentences.View.cl_num`). Role and trade nouns (MERCHANT, SOLDIER ...) are in the person group (`_PERSONS`).
+- *Sentences*: `object_marker` on every transitive verb; `subject_marker` (1PL.INCL); possessor markers on possessed
+  nouns (`noun_phrase`); `s_imperative` with IMP; `s_hortative`, `s_object`; notes Object agreement, Possessor marking,
+  mood markers; `_shown_forms` makes a note name the joined shape of a marker its examples show.
+
 **Grams** (`Gram`): `function` (PL, DU, DEF, INDEF, GEN, LOC, ABL, DAT, ACC, ERG, PAST, PERF, FUT, PROG, HAB, NEG, 1SG..3PL,
 CLASS:n, ...), `form` (segments, may be empty when lost), `host` (N | V | NP | VP), `side` (pre | post, from typology),
 `level` (0 free, 1 clitic, 2 affix, 3 fused, 4 lost), `source` (the lexical word and the path id), `born_kyr`, `history`.
@@ -477,6 +526,19 @@ word or gram the lect has, every order a typology feature.
   list and the pages explain them); lexical glosses lowercase with '.' joining a multi-word meaning; noun classes as M/F/N
   for sex genders, ANIM/INAN for animacy, CL*n* otherwise (and CL*n* whenever the noun's own class is missing and the
   engine falls back on another).
+
+- **Grammar phase A sentences** (2026-11-08): 'the woman gives the child a fish' (`s_give`: DAT case or adposition if
+  the lect has a DAT gram, else serial 'take X give R' if `serial_verbs` yes, else a double object); an imperative
+  (`s_imperative`: the bare stem, no subject; no mood gram exists); a passive where a PASS gram lives (`s_passive`);
+  serial 'take X come' = bring (`s_serial`, `serial_verbs` yes; one subject, the first verb carries the person marker;
+  OV puts each object before its verb); reduplication (`s_redup`, from `processes.redup`: the copy made by
+  `grammar.reduplicant`, glossed ITER/INTS/CONT; an exemplar verb takes its stored cell); split ergativity by person
+  (`s_split`: 'the man sees me', ERG on the noun doer, ACC on the pronoun object; `flagging` decides ERG/ACC for every
+  clause, so an aspect split shows ERG in the tense sentence when its TAM is PERF or PAST and ACC in the transitive one);
+  inclusive 'we' (`s_clusive`, glosses 1PL.INCL and 1PL.EXCL). Notes added: Commands, Pronouns, Voice, Reduplication,
+  Serial verbs, Giving (two objects), Numerals (`numeral_phrase`: decimal 11 'ten one', 30 'three ten' or 'ten three'
+  by the numeral's noun order; vigesimal 30 'twenty ten', 40 'two twenty'), and the Case note names the split. The lect
+  record carries `processes` (`{split?, redup?}`, only when non-empty). About +2.6 KB per living lect.
 
 Output, per living lect (`enrich`): `sentences: [{id, en, w: [[form, gloss]...], ipa, roman, q?, note?}]` (`ipa`: the whole
 sentence after joining, words separated by spaces, for `/api/speak?sentence=1`; `q`: 1 on a yes/no question) and
@@ -682,14 +744,36 @@ word's path from it is its etymology chain (`etym_steps`), whose first step is t
 ## 12. Romanization (`romanize.py`)
 
 `data/romanization.tsv`: IPA -> house spelling, deterministic, ASCII first, digraphs next, diacritics last. Rulings: ŋ
-`ng` (`n'g` where n+g meet), ʃ `sh`, tʃ `ch`, ʒ `zh`, dʒ `j`, θ `th`, ð `dh`, x `kh`, ɣ `gh`, **uvulars get their own spelling**:
-q for q, `qh` for χ (as in several Caucasian romanizations), `gq` or `ġ` for ʁ (pick one, document the convention source),
-ʔ `'`, long vowel doubled, tone as acute/grave, clicks `!` `|` `ǁ`, ejectives `'` after the letter, aspiration `h` only when
-contrastive in that lect, ə `e` with a note or `ë` when it contrasts with e. Non-human percepts take the house symbol from
-`symbols.tsv`. `romanize(ipa: str, lect: Lect | None) -> str` (the lect is needed for contrast-dependent choices).
-Proper names capitalized; hyphen only where a digraph would mislead. The tap ɾ is r, the trill rr, the approximant ɹ ř (2026-11-04: they
-shared r before; full mode is injective up to the documented MERGES). Book mode spells the IPA-kept affricates with their
-stop's letter (ɟʝ gy, cç ky; the table's `book` column) and ɹ as r.
+`ng` (`n-g` where n+g meet), ʃ `sh`, tʃ `ch`, ʒ `zh`, dʒ `j`, θ `th`, ð `dh`, x `kh`, ɣ `gh`, **uvulars get their own spelling**:
+q for q, `qh` for χ (as in several Caucasian romanizations), `gq` or `ġ` for ʁ, ʔ `'`, long vowel doubled, tone as acute/grave,
+clicks as the letters ǀ ǁ ǃ ǂ (U+01C0-01C3, not ASCII `| || !`; a long click doubles, ǃǃ), ejectives `'` after the letter,
+aspiration `h` only when contrastive in that lect, ə `e` with a note or `ë` when it contrasts with e. Non-human percepts take
+ASCII marks (`NH_MARKS`: growl rh, purr vr, second voice wh, sub-bass mh, ultra ih; purr is no longer the trill's rr).
+Proper names capitalized; a multi-word name capitalizes each word and joins a one- or two-letter particle with a hyphen
+(`title_words`: *Opa'i-e*, *E-Iva*). The tap ɾ is r, the trill rr, the approximant ɹ ř (2026-11-04). Book mode spells the
+IPA-kept affricates with their stop's letter (ɟʝ gy, cç ky; the table's `book` column) and ɹ as r.
+
+**One lect, one orthography** (names lane, 2026-11-08; names-spelling-gaps.md recs 2-7). `Orthography(segments, allophones,
+counts)` is a lect's spelling in both registers, used by `output.Speller`, `names.py` and the sketch:
+- it is built from the lect's **phonemes**: an allophone is spelled as its phoneme (Kunrei, Spanish *b d g*), an inserted ʔ
+  is not written; the IPA keeps the phonetics, and allophones no longer change the contrast set;
+- **no IPA marks** in either register: a shifted vowel (ɨ̠ e̞ ɑ̟) is its base's letter unless the lect has both, then a Latin
+  breve (raised/advanced) or macron below (lowered/retracted) ("shift"); a dental beside its alveolar takes a breve below
+  (t̮ d̮ n̮ l̮; macron below is taken by ḻ = ɻ);
+- **aspiration, pinyin-style**: a lect that contrasts aspiration only on voiceless stops/affricates and has no voiced stops
+  writes the plain ones b d g j dz and the aspirates p t k ch ts ("pinyin"), so its fricatives stay sh th kh; only a lect with
+  voiced stops too (Indic three-way) writes h and switches the fricatives to š þ x ("aspiration");
+- **book diacritics planned once per lect** (`book_folds`): a diacritic letter whose ASCII fold merges none of the lect's
+  phonemes is always folded; of the rest the `BOOK_DIACRITIC_BUDGET` (2) commonest by token count keep their marks and the
+  others fold everywhere (`Orthography.lossy`, named on the sketch's orthography line); every long vowel is doubled. The
+  per-word cap and the once-per-word doubled vowel are gone: a phoneme is spelled one way in every word of a lect;
+- **non-human marks in book**: one per sound, written once after a run of sounds that carry it, and a growled r is rrh.
+
+Measured on a24559 (627 living lects, 235,255 words, old code vs new on the same IPA): full spellings with an IPA mark 12.1%
+-> 0; book words whose spelling depended on position 13,151 (+5,121 by vowel length) -> 0; ASCII click marks in full
+spellings 618 -> 0; lects whose one aspirate flipped the fricatives 55 -> 46 (8 now pinyin); book homograph sets 6,266 ->
+5,990 (tone-only sets dominate); book diacritic letters per word 0.25 -> 0.28 (two kept per lect, not one per word); 246 lects
+fold at least one contrastive diacritic (486 folds).
 
 ## 13. Workbench and brief
 
@@ -699,6 +783,36 @@ stop's letter (ɟʝ gy, cç ky; the table's `book` column) and ɹ as r.
   the scholars' tree beside it and the horizon marked). IPA and house spelling side by side.
 - `brief.py` gains a short language section per people: the headword (romanized endonym), the glossonym, two exonyms, three
   etymologies, and the food words with their route.
+
+### 13b. Personal and settlement names (`personal.py`, names lane 2026-11-08)
+
+`names.personal[lect]` (every living lect): `{tradition: {given, byname, order, origin, changed?, themes?}, given: [{roman,
+ipa, gloss, age: old|new, opaque, etym}], bynames: [{roman, ipa, gloss, kind, etym}]}`; `names.demes[d].settlements`: up to
+three standing sites of the deme (settlements.json, sites in the deme's cells now, largest first): `{site, tier, pop, ipa,
+roman, gloss, lect, named_by, kyr, substrate_of, pattern (P2 or null), tautology, plain}`.
+
+- **Traditions** are drawn at each proto and inherited down the lect tree; each lect redraws one field with chance `DRIFT`
+  (0.12). Given names: `dithematic` (closed pools of 8 + 6 theme concepts fixed where the tradition began), `phrase`
+  (subject + verb in the lect's order, Yoruba-like), `single`. Bynames: `patronymic`/`matronymic` (parent's name + GEN gram
+  + SON/DAUGHTER, fused when GEN is bound and the lect head-final; with no GEN, as on a24559, the kin word compounds with
+  the parent's name), `epithet`, `clan` (family first or last).
+- **Old names**: three per lect are coined in the tradition's origin lect and carried down: a theme whose root the lect
+  still has (`etym_roots`) takes its reflex, a replaced one stays as the lect hears the old form (opaque), and an old name
+  is clipped toward two syllables with a chance that grows with age (`OPAQUE_KYR`, `OPAQUE_CAP`). **Approximation**: names
+  are not replayed through each lect's own rule history (the rule objects are not kept); the boundary sound changes a real
+  compound name undergoes (Wilhelm > William) are therefore missing. Three new names per lect are coined from today's words.
+- **Settlements**: a generic from the namer's words (FORD/BRIDGE on a river cell, else by tier: TOWN, MARKET, FENCE
+  'enclosure', VILLAGE, HOUSE, FIELD, WALL), eroded to one syllable (a suffix) after `SUFFIX_KYR`; a specific (a founder's
+  given name in the bound GEN, Kraków-style; else an adjective). A site founded by a people whose lect the current lect does
+  not descend from keeps the founder lect's name as heard (P2), and with chance `SUBSTRATE_TAUTOLOGY` (only when the generic's
+  root differs from the newcomers' own, so they no longer understand it) the newcomers add their own generic: a tautology
+  (River Avon). On a24559 (final run): 1430 towns in 488 demes, 970 kept from another people (P2), 213 tautologies; 920 of
+  1875 old given names opaque; 103 of 625 lects changed their tradition.
+- **E10 faith endonyms** (`names.high_god`): a people whose main deme's culture has a living high god (gods.json,
+  cultures.json beside the run) may call itself 'the people of the <domain> god' (weight `FAITH_W`, by the god's
+  individuation). No polity or state data reaches the language pass yet, so E11 confederations and X6 dynasty exonyms are
+  still missing.
+- Shown in the viewer's Names tab (with play buttons) and on the sketch pages ("Names of people and places").
 
 ## 14. Work split for tonight
 

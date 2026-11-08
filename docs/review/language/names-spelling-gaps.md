@@ -503,6 +503,25 @@ spellings are meant to give each people a recognisable look. Both can coexist (�
 
 ## 7. Ranked recommendations
 
+**Status (names & spelling lane, 2026-11-08; architecture.md sections 12, 13b; commits on `lang-names`):**
+- [x] 1 codes realigned with the doc (rev 7); the generator's label is the new `variant` field
+- [x] 2 one book spelling per phoneme per lect (`book_folds`, budget 2); every long vowel doubled
+- [x] 3 phonemes, not allophones (`romanize.Orthography`)
+- [x] 4 no IPA marks in full spellings (test over the whole percept space)
+- [x] 5 non-human marks: once per run in book, rrh for a growled r, purr `vr` (letters are Daniel's call: `NH_MARKS`)
+- [x] 6 clicks as ǀ ǁ ǃ ǂ, long click doubled (no Bantu c q x option yet)
+- [x] 7 pinyin b/p for aspiration-only lects
+- [x] 8 personal names v0: traditions inherited down the tree (dithematic, phrase, single; patronymic, matronymic,
+  epithet, clan); 3 old + 3 new given names and 2 bynames per living lect with etymologies (`personal.py`)
+- [~] 9 names age: old names carry the lect's reflexes of their themes, a replaced theme stays as a fossil, and old names
+  wear down; not yet replayed through each lect's own sound changes
+- [x] 10 settlement names (generic + specific, generic worn to a suffix, Kraków-style genitive founders)
+- [x] 11 tautologies for substrate settlement names (not yet for rivers and peaks)
+- [ ] 12, 13 orthographic profiles and depth; [ ] 14 name length by tradition; [ ] 16, 18, 19, 20
+- [~] 15 E4 'masters' and E10 faith now fire; E11 confederation and X6 dynasty wait for polity/state data in the run;
+  X9, P1, P3, P5-P7 not started
+- [x] 17 multi-word names capitalized, short particles hyphenated
+
 Value is how much more real-looking or readable the names and spellings get (H/M/L). Cost: S = under a day; M = a few
 days; L = a week or more, or an architecture change. **Before merge** means cheap, fixing something the pages already
 claim or show. **Later** means new capability.

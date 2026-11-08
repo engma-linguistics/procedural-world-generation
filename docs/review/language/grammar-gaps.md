@@ -537,3 +537,32 @@ Against Wikipedia's grammatical-category list, after A-C:
 - **An origin myth from the faith data.** For a people whose culture has gods (`planet/lineages/gods.py`, `taboos.py`,
   merged from main 11-07), a short creation or origin myth built from that faith's gods and taboos, told in the people's
   language and glossed. If the faith data is too thin for that, say so rather than inventing lore.
+
+### Phase A progress (branch `lang-gram-a`, 2026-11-08)
+
+- [x] 1 `_unrealised` per function (`PULL_GROUP`), ergative from ABL/LOC/GEN/INS and agentive 'near, with', DAT > ACC,
+  lexical ABL/ALL/INS sources, split ergativity by person or aspect (`Grammar.processes["split"]`); alignment shown as
+  neutral when no ACC/ERG marker lives. ACC 10% > 40% of lects, ERG 0% > 15%, DU 5% > 10%, ABL 0% > 10%, ALL 5% > 9%.
+- [x] 2 inclusive/exclusive 'we' (WE (INCLUSIVE) from we + you, I + you or a root; sketch pronoun table): 0% > 54%.
+- [x] 3 reduplication (a process with its own verb paradigm cell: 74% of lects) and counting base (20, 100, 6-9 built
+  at proto time; sketch numerals table shows 20 and 100). Serial verbs and 11-19 counting phrases: sentences (task 8).
+- [x] 4 passive: G060 mapped; GET/BECOME already give 45% (before and after; WALS 107A about 44%).
+- [x] 6 person paradigm as a set: one-of-six paradigms 60% > 12% of agreeing lects.
+- [x] degrammaticalization (`DEGRAM`), logged as events.
+- [x] 11 synthesis measured vs WALS 22A: in `for-daniel.md` as a decision.
+- [x] 5 and task 8: give, imperative, passive, serial-verb, reduplication, split-ergative and inclusive sentences, with notes (Commands, Pronouns, Voice, Reduplication, Serial verbs, Giving, Numerals; Case names the split).
+
+### Phase B progress (branch `lang-gram-b`, 2026-11-08)
+
+- [x] demo-page bugs from the 11-08 read (queue.md row): all fixed at their cause, tests in test_language_sentences.py
+  and test_language_demo.py.
+- [x] 12 mood: IMP, HORT, OBLG, APPR (G007, G034, G035 mapped; X27-X30 built in); imperative and hortative sentences.
+- [x] 7 object agreement: 1SG.O-3PL.O from object pronouns, one lead path (X33) and the series binds as a set
+  (`SERIES`, 'set' paths X34-X38); `object_agreement` realised from the grams; 'The woman sees you.' and the object
+  marker in every transitive clause. Harness: shown 0% > 51% (GB093 34% / GB094 22%).
+- [x] GEN sources: ablative > genitive (X31), demonstrative linker (X32), a pull in case lects. Harness: 0% > 63%.
+- [x] clusivity in agreement: 1PL.INCL joins a binding subject series when an inclusive 'we' exists (X45).
+- [x] 9 possessor marking on the possessed noun: 1SG.POSS-3PL.POSS (slot 'poss'), lead path X39; used in the 'my
+  mother' and 'my brother' sentences. Harness: 19% of lects.
+- [ ] 8 concord (class/gender on adjectives, demonstratives, the verb): not started.
+- [ ] 10 Q, COP, REL, COMP, TOP/FOC as grams: not started (the notes now describe the stand-ins without path ids).

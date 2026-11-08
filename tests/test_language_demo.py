@@ -1,6 +1,7 @@
 """planet/langserve.py (the languages viewer on its own) and tools/language/demo_page.py (one offline HTML page)."""
 from __future__ import annotations
 
+import copy
 import gzip
 import http.server
 import json
@@ -97,3 +98,37 @@ def test_demo_page_embeds_audio(tmp_path):
     page, info = DP.build(str(src), None, 1, "espeak", audio=True)
     assert info["backend"] == "espeak" and info["clips"] > 5 and info["failed"] == 0
     assert "data:audio/" in page and "espeak" in page.lower()
+
+
+def test_demo_page_pieces_from_the_page_read():
+    """Bugs a full read of the 11-08 demo found (grammar B): self-ancestors, missing percentages, unfelt 'felt' families,
+    unexplained non-IPA marks, mixed gram labels, a lowercase cause, tool jargon."""
+    import demo_page as DP
+    import sketch as SK
+    d = _mini_doc()
+    a, b = d["lects"][0], copy.deepcopy(d["lects"][0])
+    b.update(id="d0.1", parent="d0", born_kyr=1.0)
+    d["lects"].append(b)
+    doc = SK.Doc(d)
+    line = DP.lineage(doc, b)
+    assert line.split("</div>")[0].count("human 0") == 1                       # (a split that kept the deme is not its own ancestor)
+    c = copy.deepcopy(a)
+    c.update(id="d9", deme=9, family_true=a["family_true"])
+    d["lects"].append(c)
+    doc = SK.Doc(d)
+    assert "under 5% understood" in DP.lineage(doc, a)
+    assert DP.SK.audibly_shares("le˧", "le˧ʔi˧") and not DP.SK.audibly_shares("le˧", "wja˦")
+    assert DP.house_marks({"inventory": {"vowels": ["a", "iᴖ"], "consonants": ["t"]}}).count("ᴖ") == 1
+    assert DP.house_marks(a) == ""
+    assert DP._lab("PAST") == "PST" and DP._lab("PERF") == "PRF" and DP._lab("EVID.REP") == "REP"
+    assert DP._lab("CLASS:2") == "CL2"
+    assert DP._cause(doc, a, False, 2.0)[0].isupper()
+
+
+def test_demo_page_has_no_tool_jargon(tmp_path):
+    import demo_page as DP
+    src = tmp_path / "languages.json"
+    src.write_text(json.dumps(_mini_doc()))
+    page, _info = DP.build(str(src), None, 10, "auto", audio=False)
+    for bad in ("sketch.py", "demo_page.py", "the lane", "(G05", "<code>cx</code>", "grammar.complexity"):
+        assert bad not in page, bad
