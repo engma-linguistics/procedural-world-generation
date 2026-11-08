@@ -175,7 +175,9 @@ def grammar_json(lect, sp: Speller) -> dict:
             row["cells"] = {c: {"ipa": v, "roman": sp.ipa(v)} for c, v in row["cells"].items()}
     for p in pt.get("periphrastic", []):
         p["roman"] = sp.ipa(p["ipa"])
-    return {"typology": dict(g.typology), "grams": grams, "paradigms": pt, "complexity": GR.complexity(g)}
+    cs = g.class_system
+    classes = {"kind": cs.kind, "classes": [[c.k, c.group, f"CLASS:{c.k}"] for c in cs.classes]} if cs and cs.classes else None
+    return {"typology": dict(g.typology), "grams": grams, "paradigms": pt, "complexity": GR.complexity(g), "classes": classes}
 
 
 def thin_snapshots(snaps: list, every: int) -> list:
@@ -262,6 +264,7 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
                                                    "max_onset": inv.max_onset, "max_coda": inv.max_coda,
                                                    "allophones": INV.allophones_json(inv)},
             "typology": gj["typology"], "grams": gj["grams"], "paradigms": gj["paradigms"], "complexity": gj["complexity"],
+            **({"classes": gj["classes"]} if gj.get("classes") else {}),
             "lexicon": lexicon_json(lect, sp, full, et) if lect.lexicon is not None else {}, "lexicon_full": full,
             "affixes": {m: {"ipa": word_ipa(f), "suffix": s} for m, (f, s) in (lect.lexicon.affixes.items() if lect.lexicon is not None else [])},
             "changes": [[c["kyr"], c["rule"], c["cause"], c["origin_lect"]] + ([{k: c[k] for k in ("city", "peoples", "merged") if k in c}] if "merged" in c else [])
@@ -346,6 +349,10 @@ def document(result: dict, thin_dead: int = 1) -> dict:
     living_ids = {l.id for l in lects if l.alive and l.deme is not None}
     lj = [lect_json(l, full=l.id in living_ids, et=et, snap_every=1 if l.id in living_ids else thin_dead)
           for l in sorted(lects, key=_lect_order)]
+    from . import sentences as SN
+    for x in lj:   # (round 5: grammar notes and glossed sample sentences for the living lects)
+        if x["id"] in living_ids:
+            SN.enrich(x)
     intel = intelligibility_json(R, h)
     doc = {
         "format": FORMAT, "run": R.id, "seed": result["seed"], "start_kyr": R.frames_kyr[0], "frames_kyr": R.frames_kyr,

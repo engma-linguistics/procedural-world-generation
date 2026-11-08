@@ -387,6 +387,60 @@ adds the locative gram at its level.
 **Measured complexity** (`complexity(lect) -> dict`): obligatory categories count, mean fusion level, allomorphy count from
 the exemplars. Never stored as an input.
 
+## 7b. Grammar notes and sample sentences (`sentences.py`, round 5)
+
+A pass over one living lect's **json record** (not the engine objects), so it runs in `output.document` and equally on an
+older languages.json (`tools/language/sketch.py` fills the fields when a file lacks them). It draws nothing: every form is a
+word or gram the lect has, every order a typology feature.
+
+- `View(lj)`: the typology, the live grams (one per function, as `Grammar.gram` picks: a bound one first, then the
+  youngest), the paradigm cells, the noun classes (`classes`, see below; rebuilt from the CLASS grams' sources for older
+  files), the lexicon and the inventory.
+- **Words** (`Word`): a stem plus grams. A gram at level 0 is its own word beside its host (side from the gram); level 1 a
+  clitic (`=`); level 2-3 an affix (`-`). Affixes stack inner-first by `grammar.SLOT_ORDER`, clitics outside them. Noun
+  phrase grams (articles, case: host NP) go on the phrase's edge word on their side (an affix stays on the noun); free
+  ones stand at that edge. A word whose bound grams make a stored paradigm cell takes the cell (the engine's own form with
+  its alternations).
+- **Joining** (`join`): at a morpheme or clitic boundary only, V+V takes a glide the lect has (j after front unrounded, w
+  after rounded or back, else ʔ); a nasal before a stop or affricate takes the stop's place if the lect has that nasal.
+- **Phrases**: Dem Num Adj N, each modifier on its side by its order feature (mixed/other: by head direction), mirrored
+  after the noun (Greenberg's Universal 20); the possessor outermost (GN/NG), with the GEN gram unless the noun is kin and
+  the lect has `alienability` yes; numeral classifiers (free CLASS grams) after the numeral; a free plural word is dropped
+  after a numeral, an affix stays.
+- **Clauses**: S, O and the verb complex by `word_order` (free: SOV or SVO by head direction, and the note says so); an
+  oblique before the verb in OV lects, after the object in VO; ACC on the object (nom-acc) or ERG on the transitive subject
+  (erg-abs) only when the gram exists; the subject's person gram on the verb when bound, and the subject pronoun dropped
+  then if `pro_drop` is yes; TAM grams; NEG bound on the verb, or a free negator (the NEG gram's form, else NOT) placed by
+  `negation` (clause-initial and clause-final ones move to the edge).
+- **Constructions the engine tracks no gram for** (lexical sources from grammaticalization_paths.tsv): the polar question
+  particle is the word for IF (as Russian *li* is both 'whether' and the question particle; `verb_morph`: its first syllable
+  as a clitic on the verb); the copula (`copula` yes) is the word for HE OR SHE OR IT, else THAT (G056); relative clauses:
+  NRel with THAT as relativizer (G055), RelN with the clause before the noun and no relativizer (or a free/clitic GEN as a
+  linker, as Mandarin *de*), 'other' as a correlative with WHO ... THAT; predicative possession: 'have' by HAVE, else HOLD
+  (glossed 'have'); 'locational' by LOC (or AT/IN) plus the copula; 'other' (Grambank marks neither) by 'with' (COM or WITH),
+  the conjunctional type: the lane's pick.
+- **Sentences** (`SENTENCES`, each skipped when a slot has none of its candidate concepts): a transitive clause; an
+  intransitive with an adjective and a locative; the first TAM gram the lect has (PAST, RECPST, PERF, FUT, PROG, IPFV, HAB;
+  none: unmarked, and the note says time is left to context); a yes/no question to 'you'; a 'what' question (fronted or in
+  place by `wh_in_situ`); a negation with 'I'; 'my mother has a dog' (kin possession plus predicative possession); 'my
+  brother sees two birds' (kin, numeral, plural); 'that man is a hunter' (demonstrative, copula); 'I know the woman who
+  sings' (relative clause). Candidate lists name concepts the core lane is adding (HAVE, kin:mother ...) first where they
+  fit, so new vocabulary is picked up without code changes.
+- **Glossing**: Leipzig abbreviations (`ABBR`; PST.RCT, DIR, REP, AGT, CL*n*, CLF, ANIM, INAN are not in the Leipzig
+  list and the pages explain them); lexical glosses lowercase with '.' joining a multi-word meaning; noun classes as M/F/N
+  for sex genders, ANIM/INAN for animacy, CL*n* otherwise (and CL*n* whenever the noun's own class is missing and the
+  engine falls back on another).
+
+Output, per living lect (`enrich`): `sentences: [{id, en, w: [[form, gloss]...], ipa, roman, q?, note?}]` (`ipa`: the whole
+sentence after joining, words separated by spaces, for `/api/speak?sentence=1`; `q`: 1 on a yes/no question) and
+`grammar_notes: [{topic, text, ex: [[form line, gloss line, English]]}]` (Number, Case, Gender and noun classes, Tense and
+aspect, Mood and evidentiality, Person agreement, Negation, Questions, Possession, Relative clauses, Copula). About 4 KB a
+lect. `grammar_json` also stores the noun class system, `classes: {kind, classes: [[k, group, "CLASS:k"]]}`, so a reader
+can tell which class a noun takes (`sentences.class_of`, the same rule as `grammar._class_for`).
+
+`grammar.semantic_group` now puts kin terms and people nouns that concepts.tsv has no field for (BROTHER, FATHER, SON,
+HUNTER, CHIEF ...; `_PERSONS`) in the person group; before, they fell into 'abstract' and took the abstract class.
+
 ## 8. Lects and the driver (`lect.py`, `history.py`)
 
 **One lect per deme** at every time. A lect is a speech variety; a *language* is a cluster of lects (section 9). This keeps
@@ -506,6 +560,9 @@ Each returns `{"name", "value", "target", "pass", "note"}`:
                "inventory": {"consonants": [ipa], "vowels": [ipa], "tones": [...], "shapes": {...},
                              "allophones": [{"ipa", "of" (phoneme ipa | null), "test", "where"}]},
                "typology": {...}, "grams": [{function, form_ipa, form_roman, level, side, source, born_kyr}],
+               "classes": {kind, classes: [[k, group, "CLASS:k"]]},                       # when the lect has noun classes
+               "sentences": [{id, en, w: [[form, gloss]], ipa, roman, q, note}],          # living lects (section 7b)
+               "grammar_notes": [{topic, text, ex: [[form, gloss, English]]}],             # living lects (section 7b)
                "paradigms": {"noun": {"lemma", "gloss", "cells": {"SG.NOM": {"ipa","roman"}, ...}}, "verb": {...}},
                "lexicon": { concept: {"ipa", "roman", "pos", "freq", "etym": <node id>, "roots": [root id, ...]} },   # full for living lects, core list only for dead
                "changes": [{kyr, rule, cause, origin_lect (null if own)}],

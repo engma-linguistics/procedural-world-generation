@@ -538,3 +538,16 @@ def test_root_families_in_the_document(result):
            and a["died_kyr"] is None and b["died_kyr"] is None and a["deme"] is not None and b["deme"] is not None]
     assert sis and any(len({w["roots"][0] for w in by[a]["lexicon"].values()} & {w["roots"][0] for w in by[b]["lexicon"].values()}) > 20
                        for a, b in ((x["id"], y["id"]) for x, y in sis))
+
+
+def test_living_lects_get_sentences_and_grammar_notes(result):
+    _, doc, _ = result
+    living = [l for l in doc["lects"] if l["died_kyr"] is None and l["deme"] is not None]
+    assert living
+    for l in living:
+        assert isinstance(l.get("sentences"), list) and isinstance(l.get("grammar_notes"), list)
+        for s in l["sentences"]:
+            assert s["ipa"] and s["en"] and all(len(w) == 2 for w in s["w"])
+    assert any(l["sentences"] for l in living)
+    dead = [l for l in doc["lects"] if l["died_kyr"] is not None]
+    assert all("sentences" not in l for l in dead)

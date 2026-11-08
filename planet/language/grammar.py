@@ -1536,6 +1536,10 @@ _LIQUIDS = {"WATER", "BLOOD", "MILK", "RAIN (PRECIPITATION)", "SEA", "BEER", "OI
 _PLACES = {"RIVER", "LAKE", "MOUNTAIN", "FOREST", "HOUSE", "EARTH (SOIL)", "ROAD", "SKY", "SEA", "HILL", "MARSH", "PLAIN",
            "COAST", "ISLAND", "SPRING", "FORD", "PASS"}
 _FEMALE = {"WOMAN", "MOTHER", "WIFE", "DAUGHTER", "SISTER", "GRANDMOTHER", "kin:mother", "kin:sister", "kin:daughter"}
+#: people words outside concepts.tsv's Kinship field (kin terms from the kin list, roles and agent nouns): class 'person'
+_PERSONS = {"FATHER", "MOTHER", "BROTHER", "SISTER", "SON", "DAUGHTER", "HUSBAND", "WIFE", "AUNT", "UNCLE", "GRANDFATHER",
+            "GRANDMOTHER", "ANCESTORS", "ELDER", "BABY", "BOY", "GIRL", "CHIEF", "GUEST", "HUNTER", "FISHER", "HERDER",
+            "SMITH", "FIGHTER"}
 
 
 @lru_cache(maxsize=1)
@@ -1554,7 +1558,7 @@ def semantic_group(concept: str, pos: str = "N") -> str:
     c = str(concept)
     u = c.upper()
     if u.startswith(("KIN:", "PEOPLE", "PERSON")) or u in ("MAN", "WOMAN", "CHILD (YOUNG HUMAN)", "FRIEND", "ENEMY",
-                                                             "STRANGER", "MALE PERSON"):
+                                                             "STRANGER", "MALE PERSON") or u in _PERSONS:
         return "person"
     if u.startswith(("ANIMAL:", "HERD:")):
         return "animal"
