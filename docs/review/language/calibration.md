@@ -710,3 +710,52 @@ The homophone share rose to 0.22: almost all of it CLICS polysemy (NOW / TODAY, 
 1284 s): task 5 is now more pressing. Still over in the all-lect check: ɫ 0.11 and y 0.18 (kobold, dragonborn, kenku,
 aarakocra lects; their profiles do not mark them as favoured), ɒ 0.20 (humans 18%, source not yet traced), ɖ 0.27 and a
 two-voiced vowel u‼ (0.12) that the human-cost test does not class as non-human.
+
+## Final run (2026-11-08, finish lane)
+
+Baseline: the round-5 core-lane code on the same world (`lang-design` at a6f293a3). Its run was in scratch, 12 workers, on a loaded machine. Final: `runs/a24559/languages.json` plus its sidecars `languages-etym.json` and `languages-snapshots.json` (format procgen-languages/2, architecture.md §11). Determinism: a second run to scratch with a different `PYTHONHASHSEED` (7) is identical apart from `timing`. It was not identical before this lane's fix: `shift_candidates` iterated a frozenset of strings, so two processes picked differently among equal weights (1181 vs 1187 lects). The new slow test `test_deterministic_across_hash_seeds` guards this.
+
+| measure (living lects) | baseline (core lane) | final |
+|---|---|---|
+| files | one 241.5 MB file | 36.4 MB main + 63.1 MB etym + 26.2 MB snapshots = 125.7 MB (gzip 9.5 + 15.5 + 6.6 = 31.7 MB) |
+| pass `timing.total_s` (steps / wave / observe) | 1264.8 (807 / 118 / 43) | 1262.7 (921 / 96 / 40); wall 21m53s at 12 workers, with another run sharing the machine |
+| living lects / all lects | 625 / ~1180 | 617 / 1181 |
+| overused segments (all lects) | FAIL: ɖ 0.24, y 0.19, ɒ 0.16, ɫ 0.15, u‼ 0.12 | pass (none over; worst ratio e̞ 2.6x) |
+| ɖ / ɒ / ɫ / y / ø, all lects | 0.242 / 0.163 / 0.152 / 0.192 / - | 0.100 / 0.010 / 0.070 / 0.066 / 0.019 |
+| u‼ (two-voiced, non-human; exempt now) | 0.118 | 0.112 |
+| p: all / human-voiced / humans (PHOIBLE 0.85) | 0.613 / 0.718 / 0.714 | 0.613 / 0.691 / 0.767 |
+| ʁ / ɹ / ɦ / ʐ, all lects | 0.203 / 0.040 / 0.008 / 0.014 | 0.125 / 0.029 / 0.010 / 0.003 |
+| sisters strict / loose / true (bar 0.5) | 0.588 (core lane, task 4) | 0.554 / 0.591 / 0.639: pass |
+| scholars' horizon, human lects (target 6-10 kyr) | 11.4: FAIL | 10.67 (smoothed 11.11): FAIL |
+| rules per kyr, human / long-lived | | 14.6 / 3.7 (ratio 3.98) |
+| replacements | borrow .252, keep .251, derive .167, shift .148, compound .114, renew .037, coin .029, taboo .003 | borrow .251, keep .251, derive .168, shift .148, compound .113, renew .037, coin .029, taboo .003 |
+| homophone share, median | 0.232 | 0.217 |
+| words per living lect, median (min) | 712 (699) | 712 (698) |
+| sentences | 10 for every living lect, 0 break mismatches | 10 for every living lect, 0 break mismatches |
+
+All other checks pass:
+- proto inventories (top-20 overlap 20);
+- living inventory sizes (consonants p5-p95 12/16/20/24/37, vowels 5/7/9/12/16);
+- living segment frequencies (top-20 overlap 18);
+- language shift (146 shifts; 88 living lects off their descent);
+- hubs simpler (2.0 vs 5.0);
+- typology agrees with the live grams (0 clashes).
+
+**Size.** The doc is packed on disk: one concept table and lect table per document, columnar lexicons, interned root ids, and etymology nodes as columns with a parent gap. Etymology and dead-lect snapshots go to sidecars. The main file the viewer needs first went from 241.5 MB to 36.4 MB (9.5 MB gzipped).
+
+**Speed.** The single-process profile of 6 frames fell from 765 s to about 680 s, from:
+- a cached Segment hash;
+- the wave steer memo;
+- memoized `_unit` / `_strip_tone`;
+- lazy homophones in `shift_candidates`.
+
+The full pass did not get faster on the wall clock. The non-human ease drag adds steps time (807 → 921 s), and the machine was shared. A parent-process profile shows the time is in the workers' stepping, not in pool start-up or pickling.
+
+**Overused segments.** Each was traced to its cause:
+- ɒ came from rounding harmony rounding non-high vowels. Now only high vowels copy rounding, as in Turkish.
+- ɖ had no exit. Added S215 ɖ > ɽ / V_V (Hindi-Urdu), S216 ɽ > ɾ (Eastern Bengali) and S217 ɖ > r / #_ (Romani).
+- y and ɫ in kenku, aarakocra, kobold and dragonborn lects: those voices had no ease drag, so u > y and S152 ran unchecked. The profiles do not favour y or ɫ. Non-human voices now feel the drag of their own species cost.
+- u‼ counts as non-human in the check.
+- p is rare overall because beaked and lipless mouths find labials dear (aarakocra labial cost 5, reptilian 4). In human lects p is 0.77 (PHOIBLE 0.85), so nothing was forced.
+
+**Sentences.** The templates now draw on the WOLD verbs (build, carve, bring, find, catch, sell, buy, dance, shout), kin terms (older brother, younger sibling), numbers (three, four), motion to a goal with the allative, and objects (boat, basket, pot). The English for the polar question now reads "Do you hear the thunder?".

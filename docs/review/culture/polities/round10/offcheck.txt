@@ -1,0 +1,18 @@
+files 102 102 same names True
+--- gods.json: differs (1 vs 1 lines)
+    b'{"format":"procgen-gods/1","gods_mode":"faith_made","from_kyr":300.0,"domains":["sea","river","rain","flood","sky","sun","storm","mountain","fire","forest","desert","herd","hunt","harvest","fertility","hearth","smithing"' 
+    b'{"format":"procgen-gods/1","gods_mode":"faith_made","from_kyr":300.0,"domains":["sea","river","rain","flood","sky","sun","storm","mountain","fire","forest","desert","herd","hunt","harvest","fertility","hearth","smithing"'
+    lines differing: 1
+--- run.json: differs (13 vs 13 lines)
+    b'"meta": {"kind":"peoples","time_unit":"kyr","timezoom":"cdc275","timezoom_name":"time zoom: l60-base-s6001 @ 1000 Myr","now_kyr":296.0,"source_run":"ea33de","source_name":"l60-base-s6001","at_myr":1000.0,"recent":{"kyr":' 
+    b'"meta": {"kind":"peoples","time_unit":"kyr","timezoom":"cdc275","timezoom_name":"time zoom: l60-base-s6001 @ 1000 Myr","now_kyr":296.0,"source_run":"ea33de","source_name":"l60-base-s6001","at_myr":1000.0,"recent":{"kyr":'
+    lines differing: 1
+--- run.txt: differs (2194 vs 2194 lines)
+    b'present = time zoom cdc275 @ 296 kyr; tree <CODE>/planet/lineages/samples/dnd.toml; seed 7000; tries [0.692]; 226.9 s' 
+    b'present = time zoom cdc275 @ 296 kyr; tree <CODE>/planet/lineages/samples/dnd.toml; seed 7000; tries [0.692]; 238.8 s'
+    b'## Demes (PW-981): regional populations since 300,000 years ago: 421 in all, 322 alive, 419 events (10.0 s)' 
+    b'## Demes (PW-981): regional populations since 300,000 years ago: 421 in all, 322 alive, 419 events (9.7 s)'
+    b"## Settlements (PW-1011 v0): since 12,500 years ago, 13520 founded, 10759 alive now (6857 villages, 3042 towns, 177 cities, 110 mining districts, 573 local pits, 12 of them colonies; 4271 of the places a second people's " 
+    b"## Settlements (PW-1011 v0): since 12,500 years ago, 13520 founded, 10759 alive now (6857 villages, 3042 towns, 177 cities, 110 mining districts, 573 local pits, 12 of them colonies; 4271 of the places a second people's "
+    lines differing: 3
+identical after ids/paths: 99 differ: 3

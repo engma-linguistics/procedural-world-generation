@@ -1,0 +1,58 @@
+---
+id: PW-1424
+title: "Climate stability package: one carbon-cycle yardstick per grid level instead of each planet's dice roll, weathering on plant cover"
+type: task
+status: done
+parent: null
+milestone: later
+subsystem: climate
+effort: m
+impact: high
+found_by: lane158
+blocked_by: []
+relates: [PW-1403, PW-1404, PW-1332, PW-1261, PW-994]
+refs: [docs/review/climate/stability/round1.md, docs/review/climate/stability/tools/pin.py, docs/review/climate/stability/tools/pin_read.py, docs/review/climate/stability/tools/yard.py, docs/review/climate/stability/tools/decomp.py, docs/review/climate/stability/tools/share.py, docs/review/climate/stability/tools/probe.py, docs/review/base-climate/fork-judge/round1.md, "planet/tectonics/earth.py::global_temperature", "planet/tectonics/earth.py::plant_factor", "planet/tectonics/earth.py::REF_FREEZE", docs/review/base-climate/v1-finish-16/paired_fork.sh]
+created: 2026-11-03
+updated: 2026-11-04
+---
+
+## Description
+**In plain words.** Each planet learns its "normal" volcanic CO2 output and its normal rock weathering in its first
+300 Myr and keeps them as its yardstick. That yardstick is a dice roll: it varies about as much between re-runs of
+one planet (sd 0.16) as between different planets (0.18). Each 0.1 of it moves the planet's whole later climate by
+1.1 C. It is most of why re-runs of one planet disagree (2.0 C sd of the 600-1000 Myr mean on lane 140's 36 runs).
+The thermostat itself is Earth-strength and quick, and nothing locks in when a planet is pushed
+(round1 sections 1 and 4).
+
+First check (round1 section 5): three of main's coldest test planets, continued from their 300-Myr states with the
+yardstick pinned to the mean, ended +2.9 to +5.4 C warmer than their three unpinned histories. The forecast was
++2.8 to +5.1 C. Their worst hard-window land ice fell from 16-43% to 3-27%.
+
+Baseline: main = lane 140's frozen main 4abc1707; comparisons are the same planet re-run.
+
+Options:
+- **A. One yardstick per grid level.** After the spin-up, set sink reference = source reference x exp(-Y_level). Y
+  is the reference ensemble's mean y (1.316 at L6), re-fit by a probe tool whenever a change moves the
+  weathering's or outgassing's size. Forecast on the 36 runs: late-climate sd across all runs 2.64 -> 1.32 C; between
+  re-runs of one planet 2.0 -> 0.9 C; worst hard-window land ice 33.5 -> 26.6%. Makes the forked judge (PW-1403)
+  unnecessary.
+- **A + C.** As A, and at the same re-anchoring the weathering's plant factor reads plant cover, not NPP (PW-1332
+  option B), so plant-growth fixes stop moving the climate by 3-5 C.
+- **D. Strengthen the thermostat.** Not recommended. It is already between the classic models and the best current
+  estimate for Earth (Krissansen-Totton & Catling 2017).
+- **Leave as is.** Every judge keeps reading the yardstick's dice roll.
+
+Lean: A + C, after the confirming experiment: pin.py on all 36 judge draws (two continuations each from the
+300-Myr fork states). Pass if the between-re-run late dT sd falls to <= 1.2 C and the cold six's peak ice falls by
+about the forecast.
+- [ ] Daniel's choice
+- [ ] confirming experiment (round1 section 7)
+
+## Updates
+- 2026-11-04: Status in-progress -> done. Lane 170/170b merged (D47 C): paired 36 L6 draws vs main 1ecdad3a: 0 hard both, soft 30 vs 28 (p 0.79), late dT all inside -6..+5, spread sd 2.09 -> 1.73 C, cold tail p10 -1.55 -> -0.69, main's two hot outliers gone. YARDSTICK {6: 1.377, 7: 1.542}. docs/review/climate/stability/round3.md.
+- 2026-11-03: Status todo -> in-progress. Lane 160 (round2.md): A fails its 1.2 C re-run line (1.8 C vs 2.0 unpinned; plate chaos alone 1.4 C), but cuts the across-planet spread by a third, removes both tails, no new hard failures (ends-frozen 0/36), soft passes within chance. Built anyway per the owner's C, as lane 170 (physics side).
+- 2026-11-03: Lane 160 confirming experiment (round2.md): pin.py on all 36 draws x2 from 300 Myr. FAILS the pass line: between-re-run sd of late dT 1.8 C pinned vs 2.0 C unpinned (lane 140 main), line 1.2. Two pinned histories from one identical state already differ by 1.4 C sd (plate chaos), so no yardstick fix reaches 1.2. Across-planet sd 2.64 -> 1.7-1.9 C; cold six +2.5 C, peak ice -9 pts (forecast +2.7, -6.6). Hot side fine: no late mean > +5 C (unpinned had 2), no hell. Hard bar: 1/72 frozen-over by window peak (r0.001 l6c_p 733847, chaos; its twin 15.9%), 0/72 ends frozen, no boil/ocean/CO2. Soft passes 33 and 31/36 vs 30/36, within chance. A still worth building for the tails; single-draw judging keeps ~1.4-1.8 C (supports PW-1425/PW-994).
+- 2026-11-03: Status needs-decision -> todo. Owner 11-03: D47 C it is (A + C package and PW-1425). Build after lane 160's full check reports.
+- 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 1; gates no tag (D47, approved)
+- 2026-11-03: Lane 158 lean: yes (A + C). Confirming experiment (pin.py on all 36 draws x2) started as lane 160 before Daniel decides.
+- 2026-11-03: Created from inbox draft draft-climate-yardstick-one-constant.md (found by lane158).

@@ -20,9 +20,7 @@ export function timeLabel(t) {
 // runs (kind 'peoples', or timezoom with meta.phase) and time in kyr before the present (t <= 0).
 export function agoLabel(t) {
   const a = -t;
-  if (a <= 0) return 'present';
-  if (a >= 1000) return `${+(a / 1000).toFixed(a >= 10000 ? 0 : 1)} Myr ago`;
-  return a >= 10 ? `${+a.toFixed(1)} kyr ago` : `${Math.round(a * 1000)} years ago`;
+  return globalThis.NumFmt.ago(Math.max(a, 0));  // '12,400 years ago', 'year 1400' once the present is set (numfmt.js, PW-1429)
 }
 function phaseSummary() {
   const r = S.V.run, m = r.meta, s = r.frames[S.V.frame].stats;

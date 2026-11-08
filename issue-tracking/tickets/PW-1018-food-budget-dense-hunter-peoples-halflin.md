@@ -4,7 +4,7 @@ title: "Food budget: dense 'hunter' peoples (halflings 12/km2, goblins 5, hobgob
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-977, PW-974, PW-990]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/landuse.py, docs/review/megafauna/age-of-dragons.html]
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -39,4 +39,5 @@ Options:
 Lean: B. It follows from the energetics (game cannot feed people at those densities) and needs no per-people tuning.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: dragon and giant food budget re-tunes the peoples balance; not a must-have for December
 - 2026-10-29: Created from inbox draft draft-dense-hunter-peoples-eat-the-wild-offtake.md (found by fun-lane-45b).

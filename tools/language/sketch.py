@@ -13,7 +13,8 @@ silent, the page says so.
 
 --auto picks very different languages by criteria (never by id), plus the most English-like language by ENGLISH_WEIGHTS,
 writes one page each and an index.md explaining the picks and the English score. Only planet.language.percepts (segment
-features, distance) and planet.language.romanize (spellings) are imported from the engine.
+features, distance), planet.language.romanize (spellings) and planet.language.output (the file loader) are imported from the
+engine.
 """
 from __future__ import annotations
 
@@ -1314,6 +1315,18 @@ def comparison(doc: Doc, l: dict, roots_cache: dict) -> list[str]:
     return out
 
 
+
+def _table_pipes(text: str) -> str:
+    """Escape a romanized click spelt '|' inside a markdown table row (Pxeyag|he), which would otherwise split the cell:
+    a pipe is a cell border only with a space or the line's edge on both sides."""
+    def row(ln: str) -> str:
+        if not ln.startswith("|"):
+            return ln
+        return re.sub(r"(?<!\\)\|", lambda m: m.group(0) if (m.start() == 0 or ln[m.start() - 1].isspace())
+                      and (m.end() == len(ln) or ln[m.end()].isspace()) else "\\|", ln)
+    return "\n".join(row(ln) for ln in text.split("\n"))
+
+
 def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] | None = None) -> str:
     roots_cache = {} if roots_cache is None else roots_cache
     nm = doc.deme_name(l)
@@ -1615,7 +1628,8 @@ def main(argv=None) -> int:
     ap.add_argument("--english-top", type=int, default=0, help="print the top N English-like lects and exit")
     a = ap.parse_args(argv)
     src = a.languages
-    doc = Doc(json.loads(Path(src).read_text(encoding="utf-8")))
+    from planet.language import output as OU   # (format /2: the main file and its sidecars; /1 read as it is)
+    doc = Doc(OU.load(src))
     if a.english_top:
         for s, l, c in english_ranking(doc)[:a.english_top]:
             print(f"{l['id']:8s} {l['people']:14s} {s:.3f} " + " ".join(f"{k}={v:.2f}" for k, v in c.items()))
@@ -1634,27 +1648,27 @@ def main(argv=None) -> int:
         picked = {p[2]["id"] for p in picks}
         for key, head, l, why in picks:
             extra = [f"> **Why this language:** {head}: {why}."]
-            (out / fname(l)).write_text(render(doc, l, cache, extra), encoding="utf-8")
+            (out / fname(l)).write_text(_table_pipes(render(doc, l, cache, extra)), encoding="utf-8")
         if ranking:
             s, l, c = ranking[0]
             extra = [f"> **Why this language:** the most English-like of the {len(doc.living)} living languages "
                      f"(score {s:.3f}; definition on the index page)."] + [""] + english_section(l, s, c)
             if l["id"] in picked:
                 extra.append("(Also picked above for another criterion.)")
-            (out / fname(l)).write_text(render(doc, l, cache, extra), encoding="utf-8")
+            (out / fname(l)).write_text(_table_pipes(render(doc, l, cache, extra)), encoding="utf-8")
         rel = src
         try:
             rel = str(Path(src).resolve().relative_to(ROOT))
         except ValueError:
             pass
-        (out / "index.md").write_text(index_page(doc, picks, ranking, rel), encoding="utf-8")
+        (out / "index.md").write_text(_table_pipes(index_page(doc, picks, ranking, rel)), encoding="utf-8")
         print(f"wrote {len(picks) + 1} pages and index.md to {out}")
     for lid in a.lect:
         l = doc.lects.get(lid)
         if l is None:
             print(f"no lect {lid}", file=sys.stderr)
             continue
-        (out / fname(l)).write_text(render(doc, l, cache), encoding="utf-8")
+        (out / fname(l)).write_text(_table_pipes(render(doc, l, cache)), encoding="utf-8")
         print(f"wrote {out / fname(l)}")
     return 0
 

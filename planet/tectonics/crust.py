@@ -25,7 +25,7 @@ from .. import kernels, surface
 from ..geo import R_KM
 from ..surface import ARC, CRATON, FLOOD_BASALT, GRANITE, HOTSPOT, OCEAN, OROGEN, SEDIMENT, SHALE, TUFF
 from . import record
-from .isostasy import BECOMES_CONT_KM, LAVA, LAVA_MAX_KM, MAX_KM, MIX, OCEAN_KM, TUFF as TUFF_X
+from .isostasy import BECOMES_CONT_KM, LAVA, LAVA_MAX_KM, MAX_KM, MIX, OCEAN_KM, TUFF as TUFF_X, max_km
 from .plate_kernels import crust_flow
 from .plates import P_MAX
 
@@ -488,7 +488,7 @@ def flow_and_orogeny(sim, col, edges, stack_add):
     # (a hotter planet's crust is softer: mountains and plateaus can't stand as high)
     t = crust_flow(col.t, edges[0], edges[1], p.crust_flow * sim.heat() ** 2 * dt / 3,
                    int(round(3 * sim.scale**2 * sim.heat() ** 2)))
-    t = col.t = np.minimum(t, MAX_KM)
+    t = col.t = np.minimum(t, max_km(cont, col.cover, col.x))  # (PW-1446: the cap is on the column's height)
     sim.book("flow+cap", t0, t, cont)
     squeezed = cont & (stack_add > SQUEEZED * dt)
     rock[squeezed & (rock != CRATON)] = OROGEN

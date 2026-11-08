@@ -157,8 +157,17 @@ _TUNE = {  # (tuned on Earth with tools/veg_check.py; overrides of the table abo
     "TeBS": dict(eps=1.15, gamma=0.005, carbon=11000),
 }
 PIONEERS = ("BoBS", "BoNS")  # light-hungry trees that shade-tolerant ones crowd out (birch, aspen, larch)
+# Herbs' roots respire too (PW-1261, lane 123): the herbs carry no wood term (rw = 0), so their rl, the leaves' rate,
+# was all the maintenance a grass paid, and its NPP/GPP came out at ~0.7 (Earth's observed climate) against ~0.46 +- 0.12
+# measured over 200+ studies (Collalti & Prentice 2019, Tree Physiol, doi:10.1093/treephys/tpz034, abstract; forests: the grass value is
+# not sourced, an extrapolation). Their grass above-ground NPP ran 1.4-1.8x the field fits at the same rain (Deshmukh
+# 1984, Yang et al. 2020; docs/review/vegetation/npp-check/diagnosis.md). The live roots and rhizomes of a herb stand
+# respire with its leaves (x HERB_ROOT_RESP the leaves' rate while leaves are out: a judgement within 2-3, giving NPP/GPP ~0.55-0.65).
+HERB_ROOT_RESP = 2.5
 for _p in PFTS:
     _p.update(_TUNE.get(_p["code"], {}))
+    if _p["cls"] == HERB:
+        _p["rl"] = _p["rl"] * HERB_ROOT_RESP
     _p["wue"] = {"C4G": 4.0, "Succ": 4.0}.get(_p["code"], 3.0)
     _p["tw_max"] = {"HthS": 20.0, "DecS": 20.0, "TunH": 18.0}.get(_p["code"], 99.0)
     # mm/yr: succulents need rain (or fog) most years; the hyper-arid cores of deserts are barren
@@ -189,11 +198,18 @@ def _col(k):
 _K_COLS = ("eps", "t0", "t1", "t2", "t3", "amin", "top", "phen", "on", "rl", "rw", "lma", "tleaf", "kt", "wet",
            "laimax", "wue", "qy")
 EPS_SCALE = 0.8  # all efficiencies (tuned: Earth's land NPP)
+# Leaf enzyme (Vcmax) and with it leaf respiration fall exponentially with depth in a canopy, as the light does (Lloyd
+# et al. 2010; Bonan et al. 2011 use the same profile), so a stand's leaf respiration grows as (1 - exp(-KN L)) / KN
+# per unit of LAI L, not as L. Scout 173 (PW-1331): KN 0.4 is a scout value, not yet read against a measured profile;
+# lane 181 judged it on D47 main (docs/review/climate/npp/round2.md: 0/36 hard, soft 31 vs 30, spread kept).
+# It lifts wet tropical forest, whose optimum LAI is set by the leaf upkeep, from LAI 3.0 to 4.3 (field ~5; Malhi
+# et al. 2011). Herbs keep the linear form (a sward is one thin layer). 0 turns it off.
+KN_RESP = 0.4
 C4, C3 = IDX["C4G"], IDX["C3G"]
 _KP = np.stack([EPS_SCALE * _col("eps"), *(np.array([p["temp"][j] for p in PFTS], float) for j in range(4)), _col("amin"),
                 _col("top"), _col("phen"), _col("on"), _col("rl"), _col("rw"), _col("lma"), _col("tleaf"),
                 _col("kt"), _col("wet"), _col("laimax"), _col("wue"), (np.arange(NP) == C3).astype(float),
-                _col("wue"), _col("t_grown")], 1)  # (water-use efficiency at today's CA_REF, which potential()
+                _col("wue"), _col("t_grown"), np.where(HERBS, 0.0, KN_RESP)], 1)  # (water-use efficiency at today's CA_REF, which potential()
 # leaves unscaled; the growth temperature the respiration rates are for, T_GROWN)
 # C3 against C4 grasses (PW-231): the two differ only in their photosynthetic
 # pathway, and which wins a month is set by the quantum yield (Ehleringer &
@@ -623,6 +639,7 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, tg, days, ci, out):
     respiration acclimates to it, RESP_ACCLIM)."""
     eps, t0, t1, t2, t3, amin, top, phen, on_t = kp[0], kp[1], kp[2], kp[3], kp[4], kp[5], kp[6], kp[7], kp[8]
     rl, rw, lma, tleaf, kt, wet, wue, qy, wue0 = kp[9], kp[10], kp[11], kp[12], kp[13], kp[14], kp[16], kp[17], kp[18]
+    kn = kp[20]  # canopy leaf-respiration depth constant (0: every leaf respires alike)
     w1, w2 = cap1, cap2
     gpp = resp = asum = 0.0
     gref = 0.0  # GPP as it would be at today's CA_REF (the respiration's carbon supply, below)
@@ -686,6 +703,8 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, tg, days, ci, out):
         if k >= 12:
             q10 = 2.0 ** ((t - 20.0 - acc) / 10.0)
             leaf = lai if (on or phen == 0) else 0.0
+            if kn > 0:  # shaded leaves carry less enzyme, so respire less (Vcmax falls as exp(-kn L))
+                leaf = (1.0 - np.exp(-kn * leaf)) / kn
             resp += (rl * leaf + rw) * q10 * days[m] / 30.4
             if on:
                 fw = (alpha - half) / (1.0 - half)
@@ -936,7 +955,10 @@ _C = _competition()
 
 
 FIRE_MAX, FIRE_MID, FIRE_WIDTH = 0.35, 0.45, 0.09
-FUEL_MIN, FUEL_SPAN = 250.0, 350.0  # g C/m2 of fine fuel: no fire below FUEL_MIN, fully fuelled FUEL_SPAN above
+FUEL_MIN, FUEL_SPAN = 200.0, 350.0  # g C/m2 of fine fuel: no fire below FUEL_MIN, fully fuelled FUEL_SPAN above
+# (FUEL_MIN: GlobFIRM's fuel threshold for fire occurrence, 200 g C/m2 of litter, Thonicke et al. 2001, as LPJmL's
+# fire module documents it (PIK-LPJmL wiki, "Fire", assumption 1); was 250, tuned while the herbs' NPP ran ~1.4x
+# the field values, PW-1328. FUEL_SPAN, the ramp to a fully fuelled cell, is the model's own: GlobFIRM is a step)
 # Fuel age (PW-234): shrubs keep their fine litter as dead twigs and leaves in
 # and under the crown, which decays like fine woody debris, about half as fast
 # as fallen leaf litter (Harmon et al. 1986: twigs k ~0.1-0.3/yr, leaves
@@ -1629,6 +1651,16 @@ def ground_cover(v: dict) -> np.ndarray:
     sm, nu = v["sm"], v["eq"]["nu"]
     g = 1 - np.exp(-0.7 * sm["lai"])
     return 1 - (1 - g) * (1 - 0.6 * nu[GROUNDS].sum(0))
+
+
+def rooted_cover(nu) -> np.ndarray:
+    """0..1 per cell: the share of the ground under rooted (vascular) plants, the trees', shrubs' and herbs' cover
+    fractions nu (NP, n) summed; mosses, lichens and soil crusts (the GROUND types) left out. What the weathering's
+    plant factor reads (tectonics.earth.plant_factor, PW-1424 C): roots, their fungi and the soil CO2 they make are
+    there or not, whatever the plants' carbon budget (GEOCARB's f_E is about vascular plants being there)."""
+    if nu is None:
+        return None
+    return np.clip(np.asarray(nu, np.float64)[~GROUNDS].sum(0), 0.0, 1.0)
 
 
 # Surface albedo (snow-free) of each type's canopy, and the share of lying snow

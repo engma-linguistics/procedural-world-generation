@@ -44,12 +44,16 @@ ICEHOUSE_LAND = 0.01  # (reported only: share of the land under ice)
 #                   a world never in one for ICEHOUSE_NEVER_PCT % of the time is "never-ice" (reported)
 #   glacial maximum an ice-age peak, roughly Earth at its coldest (the Last Glacial Maximum, ~25% of land): the share
 #                   of land under ice reaches GLACIAL_MAX_LAND (the same 25% as judge.py's LAND_ICE_LGM)
-#   frozen over     FROZEN_OVER_LAND of the land (40%) or more under ice. A fail for an Earth-like world, and a loud
-#                   warning that the climate is out of whack, but only in the hard-bar window (hard_window): the
-#                   stretch where the star is near its final brightness (owner 2026-10-30): its forcing within
-#                   FINAL_STAR_C of the finish's and within the last FINAL_MYR of the run, whichever starts later.
-#                   Frozen spells before it, under the dim young star, are an icehouse of the dim era (Earth's
-#                   Cryogenian) and are reported only (frozen_over_any). The only one of the three that fails.
+#   frozen over     the world ENDS frozen: FROZEN_OVER_LAND of the land (40%) or more under ice at the run's last
+#                   sample, so also a world that stays frozen from some time to the end (owner 11-03, D47, PW-1425:
+#                   the worst moment of the window was read before, and it read when the plates' chaos put the
+#                   glacials, not whether a world is broken; the 40% line is unchanged). A fail for an Earth-like
+#                   world (tools/judge.py judge also asks that no finish-window moment passes the finish's land-ice
+#                   check). The peak in the hard-bar window (hard_window: the star near its final brightness, owner
+#                   2026-10-30: its forcing within FINAL_STAR_C of the finish's and within the last FINAL_MYR of the
+#                   run, whichever starts later) is reported (frozen_peak), as are frozen spells under the dim young
+#                   star (frozen_over_any) and the share of the time at 40%+ (frozen_over_pct). The only one of the
+#                   three that fails.
 GLACIAL_MAX_LAND = 0.25
 FROZEN_OVER_LAND = 0.40
 FINAL_STAR_C = 2.0  # C: the star's forcing within this of the finish's (owner 2026-10-30, PW-1142) ...
@@ -106,22 +110,25 @@ def hard_window(t, star=None) -> tuple[np.ndarray, float, str]:
 def ice_terms(si, il, sl_deep: float = DEEP, hard=None) -> dict:
     """The three ice terms over one window of samples (si: sea level from ice, m; il: share of the land under ice,
     0..1, from the run's saved `iced_land` stat; il may be None when the record has none: land terms are then None).
-    hard: the samples in frozen over's hard-bar window (hard_window; None: all): frozen_over counts only there,
-    frozen_over_any over the whole window (reported). Returns percent-of-time shares, the peak land-ice share, and
-    the flags."""
+    hard: the samples in the hard-bar window (hard_window; None: all): frozen_peak (reported) counts only there,
+    frozen_over_any over the whole window (reported). frozen_over: the last sample is frozen over (the world ends
+    frozen, PW-1425); frozen_end_n: how many samples the last frozen spell has held to the end (0: not frozen at the
+    end). Returns percent-of-time shares, the peak land-ice share, and the flags."""
     si = np.asarray(si, float)
     share = 100 * float((si <= ICEHOUSE_SL).mean())
     out = {"icehouse_pct": share, "icehouse": share >= ICEHOUSE_NEVER_PCT, "never_ice": share < ICEHOUSE_NEVER_PCT,
            "deep_pct": 100 * float((si < sl_deep).mean()), "land_ice_peak": None, "glacial_max": None,
-           "glacial_max_pct": None, "frozen_over": None, "frozen_over_pct": None, "frozen_over_any": None}
+           "glacial_max_pct": None, "frozen_over": None, "frozen_over_pct": None, "frozen_over_any": None,
+           "frozen_peak": None, "frozen_end_n": None}
     if il is not None and len(il):
         il = np.asarray(il, float)
         fz = il >= FROZEN_OVER_LAND
         hard = np.ones(len(il), bool) if hard is None else np.asarray(hard, bool)
         out.update(land_ice_peak=100 * float(il.max()), glacial_max=bool((il >= GLACIAL_MAX_LAND).any()),
                    glacial_max_pct=100 * float((il >= GLACIAL_MAX_LAND).mean()),
-                   frozen_over=bool((fz & hard).any()), frozen_over_pct=100 * float(fz.mean()),
-                   frozen_over_any=bool(fz.any()))
+                   frozen_over=bool(fz[-1]), frozen_over_pct=100 * float(fz.mean()),
+                   frozen_over_any=bool(fz.any()), frozen_peak=bool((fz & hard).any()),
+                   frozen_end_n=int(len(fz) - np.flatnonzero(~fz)[-1] - 1) if (~fz).any() else int(len(fz)))
     return out
 
 

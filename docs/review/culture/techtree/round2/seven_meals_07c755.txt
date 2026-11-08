@@ -1,0 +1,9 @@
+world first (any people): tech | main: median, min-max; peoples inventing it themselves, median | def: median, min-max; peoples inventing it themselves, median
+  writing | 4,625, 3,115-5,948; 2 | 5,152, 3,229-7,119; 2
+  towns | 7,789, 5,738-9,155; 6.5 | 8,520, 7,379-9,155; 3
+  cities | 5,952, 4,153-7,379; 3.5 | 5,155, 3,865-6,868; 2
+  kingship | 5,340, 3,597-6,868; 4.5 | 4,628, 3,597-6,166; 3
+run 07c755 draws 12 tech writing
+| variant | peoples knowing it today, median | lag first -> each contact taker, median yr | human |
+| main | 45 | 848 | 3,865 (12/12) |
+| def | 45 | 608 | 4,710 (12/12) |

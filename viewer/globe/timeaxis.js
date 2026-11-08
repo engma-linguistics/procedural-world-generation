@@ -3,7 +3,6 @@
 // its slider is a log axis of time before the present, with "now" at the right end and the eras it was made from
 // as bands, like the workbench timeline (lineages.html drawTimeline). Every other run is linear in its own time
 // (a main run in Myr, a time zoom in kyr). The slider input runs 0..RES; a position picks the nearest moment.
-import { kyr as fmtKyr } from '../planets.js';
 import { S } from './state.js';
 import { $ } from './scene.js';
 
@@ -23,9 +22,9 @@ export function timeAxis(run) {
     const agos = fr.map((f) => -f.t).filter((a) => a > 0);
     const amax = Math.max(...agos), amin = Math.min(...agos) / 2, L0 = Math.log10(amin), L1 = Math.log10(amax);
     at = (t) => (L1 - Math.log10(Math.min(amax, Math.max(-t, amin)))) / (L1 - L0);
-    for (const k of [100000, 10000, 1000, 100, 10, 1, 0.1]) if (k < amax / 1.3 && k > amin * 2) ticks.push({ x: at(-k), text: fmtKyr(k) });
+    for (const k of [100000, 10000, 1000, 100, 10, 1, 0.1]) if (k < amax / 1.3 && k > amin * 2) ticks.push({ x: at(-k), text: NumFmt.ago(k) });
     ticks = ticks.filter((k) => k.x > 0.09 && k.x < 0.94);  // (room for the two ends' labels)
-    ticks.unshift({ x: 0, text: fmtKyr(amax), end: 'start' });
+    ticks.unshift({ x: 0, text: NumFmt.ago(amax), end: 'start' });
     ticks.push({ x: 1, text: 'now', end: 'end' });
     // the eras the run was made from: the tectonic run, the glacial time zoom, the recent pass (when the meta says)
     const tz = m.now_kyr, rp = m.recent?.kyr;
@@ -39,7 +38,7 @@ export function timeAxis(run) {
     at = (t) => Math.min(1, Math.max(0, (t - t0) / span));
     const unit = run.kind === 'timezoom' || run.kind === 'peoples' ? 'kyr' : 'Myr', step = niceStep(span);
     const ago = !!m.phase || run.kind === 'peoples';
-    const label = (v) => (ago && v === 0 ? 'now' : ago ? `${fmtKyr(-v)} ago` : `${+v.toFixed(3)} ${unit}`);
+    const label = (v) => (ago && v === 0 ? 'now' : ago ? NumFmt.ago(-v) : `${+v.toFixed(3)} ${unit}`);
     for (let v = Math.ceil(t0 / step) * step; v <= t1 + 1e-9; v += step) {
       const x = at(v);
       ticks.push({ x, text: label(v), end: x < 0.02 ? 'start' : x > 0.98 ? 'end' : '' });

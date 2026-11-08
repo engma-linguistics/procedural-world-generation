@@ -5,6 +5,9 @@
 //   map      where each faith was at each stored moment (a time slider), its birthplace and the path of its centre
 //   timeline a row per faith on a log time axis, schisms under their parent, like the Cultures tab
 //   taboos   each culture's taboos by kind, and the catalogue with its sources
+//   yours    the faiths Daniel writes in (PW-1430): add, edit, remove; saved in the run's authored.json (POST /api/authored), then
+//            every view is fetched and drawn again with them, marked "yours". The gods mode (PW-1309) is picked in the tab's bar and
+//            saved the same way. Every date is read with NumFmt.parseDate and shown with NumFmt.ago.
 // A classic script: lineages.html calls ReligionTab.draw(el, result) with result = { id, ...run.meta } of the picked run.
 (() => {
   const CSS = `
@@ -14,8 +17,9 @@
 #tab-religion .rl-nav button.on { color: var(--text); border-bottom-color: var(--acc); }
 #tab-religion .rl-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
 #tab-religion .rl-main { min-height: 0; overflow: auto; padding: 10px 12px; }
-#tab-religion .rl-split { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 10px; min-height: 100%; }
-#tab-religion .rl-side { border-left: 1px solid var(--line); padding-left: 10px; overflow: auto; }
+#tab-religion .rl-split { display: grid; grid-template-columns: minmax(0, 1fr) clamp(400px, 40vw, 620px); gap: 10px; min-height: 100%; align-items: start; }
+#tab-religion .rl-side { border-left: 1px solid var(--line); padding-left: 10px; overflow: auto; min-width: 0; }
+@media (max-width: 1100px) { #tab-religion .rl-split { grid-template-columns: minmax(0, 1fr); } #tab-religion .rl-side { order: -1; border-left: 0; padding-left: 0; border-bottom: 1px solid var(--line); padding-bottom: 10px; } }
 #tab-religion .rl-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 12px; }
 #tab-religion .rl-cards.one { grid-template-columns: minmax(0, 1fr); }
 #tab-religion .rl-card { border: 1px solid var(--line); border-radius: 6px; padding: 8px; background: var(--panel); overflow-x: auto; }
@@ -28,13 +32,25 @@
 #tab-religion tr.sel td { background: var(--ctl-hi, #223047); }
 #tab-religion tr[data-f] { cursor: pointer; }
 #tab-religion .kind { display: inline-block; min-width: 120px; color: var(--muted); }
+#tab-religion .rl-yours { font-size: 10px; color: var(--acc, #6fa8ff); border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; margin-left: 4px; white-space: nowrap; }
+#tab-religion .rl-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-content: start; min-width: 0; }
+#tab-religion .rl-form input:not([type]), #tab-religion .rl-form input[type=text], #tab-religion .rl-form select { min-width: 0; max-width: 100%; box-sizing: border-box; }
+#tab-religion .rl-form label { display: grid; gap: 2px; }
+#tab-religion .rl-form .row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+#tab-religion .rl-pick { position: relative; cursor: crosshair; max-width: 560px; }
+#tab-religion .rl-pick img { width: 100%; display: block; border-radius: 4px; }
+#tab-religion .rl-pick svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#tab-religion .ok { color: #6bd66b; } #tab-religion .no { color: #ff7b6b; } #tab-religion .err { color: #ff7b6b; }
 `;
   document.head.insertAdjacentHTML('beforeend', `<style>${CSS}</style>`);
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmt = NumFmt.kyr;
-  const ago = (k) => (k <= 0 ? 'now' : fmt(k) + ' ago');
-  const VIEWS = [['trees', 'God trees'], ['map', 'Map'], ['timeline', 'Timeline'], ['taboos', 'Taboos']];
+  const ago = (k) => NumFmt.ago(k);  // a date: '12,400 years ago', or 'year 1400' once the run's present is set (numfmt.js, PW-1429)
+  const VIEWS = [['trees', 'God trees'], ['map', 'Map'], ['timeline', 'Timeline'], ['minorities', 'Minorities'], ['taboos', 'Taboos'], ['yours', 'Your faiths']];
+  const MODES = [['faith_made', 'faith-made (gods exist while worshipped)'], ['belief_only', 'belief only (no gods are real)'], ['absolute', 'absolute (gods outlive their worshippers)']];
+  const yours = (f) => (f && f.authored != null ? '<span class="rl-yours" title="a faith you wrote">✎ yours</span>' : '');
+  const fname = (f) => esc(f?.name) + yours(f);
   const FOOT = {
     trees: `Each card is one faith's gods on a log time axis (left: older, right: now). A line is one god or spirit, coloured by how individuated it was then
       (grey: a spirit bound to a place; blue: a power; gold: a god; red: a person-god). A god copied into a daughter culture branches off its parent at the split;
@@ -44,6 +60,15 @@
       Drag the slider or press ▶. Click a faith on the right to follow it alone, with the path of its centre (a faith spread over several lands has a centre between them).`,
     timeline: `One row per faith on a log time axis, schisms (faiths that broke away) under the faith they broke from. The bar runs from its founding to its end;
       green dots: cultures it won by conversion; red dots: cultures it lost to another faith. "No followers left": the faith ended while its cultures lived on.`,
+    yours: `Faiths you write. Each is founded under the same rules as the rest, at the first stored moment from its year on at which its founder
+      is on the map and has gods (spirit ritual); after that its gods drift, fade, split and fuse like any. A missionary faith sends preachers: it wins
+      neighbours whose faith is less organised and does not seek converts itself, over a century or two each (as early Christianity, Islam or Buddhism did);
+      a faith that only spreads wins neighbours slowly, over a millennium or two, and only from temples; a closed one takes no converts. Wherever its
+      cultures rule a state, they push it on their subjects: within a generation for a harsh ruler, hardly at all for a tolerant one (each culture's
+      tolerance is on its taboos card). The result column says whether it took hold, how it spread, and why not. Saved with the run; nothing in the peoples history is re-run.`,
+    minorities: `Each culture holds a share of each faith (PW-1489). Its faith, the one named in the other views, is the one held by more than half;
+      a culture converts when a newcomer passes half, and the old faith stays on as a minority that fades over a millennium or two (slower in a tolerant culture).
+      States and peoples add up their cultures by land. Hover a row for the rule.`,
     taboos: `Each living culture's taboos by kind. Food taboos come from its herds, crops, neighbours and gods; the other kinds from its way of life, its techs
       and its gods' domains (the tags shown). Every rule names its source; the catalogue below lists the sources and how far each was read.`,
   };
@@ -54,11 +79,11 @@
   function load(result, done) {  // (gods, taboos and cultures of the run, fetched once)
     if (D && D.id === result.id) { if (D.busy) D.waiters.push(done); else done(); return; }  // (a second draw while the first fetch is in flight waits for it)
     const id = result.id;
-    D = { id, gods: null, taboos: null, cultures: result.culturesDoc || null, busy: true, waiters: [done] };
+    D = { id, gods: null, taboos: null, authored: null, cultures: result.culturesDoc || null, busy: true, waiters: [done] };
     const get = (u) => fetch(u, { cache: 'no-store' }).then((r) => r.ok ? r.json() : r.text().then((t) => { let m = t; try { m = JSON.parse(t).error || t; } catch (e) {} return { error: `${r.status} ${String(m).slice(0, 200)}` }; })).catch((e) => ({ error: e.message }));
     Promise.all([get(`../api/gods?run=${encodeURIComponent(id)}`), get(`../api/taboos?run=${encodeURIComponent(id)}`),
-      D.cultures ? Promise.resolve(D.cultures) : get(`../api/cultures?run=${encodeURIComponent(id)}`)])
-      .then(([g, t, c]) => { if (D.id !== id) return; D.gods = g; D.taboos = t; D.cultures = c; D.busy = false; prep(); const w = D.waiters; D.waiters = []; for (const f of w) f(); });
+      D.cultures ? Promise.resolve(D.cultures) : get(`../api/cultures?run=${encodeURIComponent(id)}`), get(`../api/authored?run=${encodeURIComponent(id)}`)])
+      .then(([g, t, c, a]) => { if (D.id !== id) return; D.gods = g; D.taboos = t; D.cultures = c; D.authored = a && !a.error ? a : { faiths: [], gods_mode: null }; D.busy = false; prep(); const w = D.waiters; D.waiters = []; for (const f of w) f(); });
   }
   function prep() {
     const g = D.gods;
@@ -81,8 +106,11 @@
   const maxInd = (f) => Math.max(0, ...f.beings.map((i) => D.B[i].individuation));
   const indCol = (x) => (x < 0.3 ? '#8a94a3' : x < 0.5 ? '#6fa8ff' : x < 0.7 ? '#e3c26b' : '#ff7b6b');
   const faithOpts = (cur) => D.F.filter((f) => f.beings.length).sort((a, b) => b.beings.length - a.beings.length)
-    .map((f) => `<option value="${f.id}" ${f.id === cur ? 'selected' : ''}>${esc(f.name)} · ${f.beings.length} gods${f.ended_kyr != null ? ' (gone)' : ''}</option>`).join('');
+    .map((f) => `<option value="${f.id}" ${f.id === cur ? 'selected' : ''}>${f.authored != null ? '✎ ' : ''}${esc(f.name)} · ${f.beings.length} gods${f.ended_kyr != null ? ' (gone)' : ''}</option>`).join('');
   const sw = (c) => `<span class="sw" style="background:${c}"></span>`;
+  // a culture's (or state's) faiths with their shares, PW-1489: [[faith id or null (the rest), share], ...] -> 'Dwarf creed 78%, Sun cult 15%, others 7%'
+  const pct = (v) => (v >= 0.995 ? '100%' : v < 0.01 ? '<1%' : `${Math.round(100 * v)}%`);
+  const sharesHtml = (rows) => (rows || []).map(([f, v]) => (f == null ? `<span class="muted">others ${pct(v)}</span>` : `${sw(D.F[f]?.color || '#888')}${fname(D.F[f])} ${pct(v)}`)).join(', ');
   const logX = (oldest, x0, x1) => { const lo = Math.log10(0.05), hi = Math.log10(Math.max(oldest, 0.1) * 1.05); x0 += 14;
     return (k) => x0 + (1 - (Math.log10(Math.max(k, 0.05)) - lo) / (hi - lo)) * (x1 - x0); };
   const TICKS = [0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000];
@@ -111,7 +139,7 @@
       }
       if (b.status === 'merged') h += `<text x="${x(end) + 2}" y="${y + 4}" style="fill:#c88">×</text>`;
       else if (b.status === 'faded' || b.status === 'dormant') h += `<line x1="${x(end)}" x2="${x(end)}" y1="${y - 4}" y2="${y + 4}" stroke="#c88"/>`;
-      const tip = `${b.label} (${b.individuation.toFixed(2)}${b.grants_spells ? ', grants spells' : ''}), ${b.how} ${fmt(b.born_kyr)} ago in ${D.cname(b.culture)}; ${b.status}${b.ended_kyr != null ? ' ' + fmt(b.ended_kyr) + ' ago' + (b.end ? ' (' + b.end + ')' : '') : ''}; domains ${b.top.map((t) => t[0] + ' ' + t[1]).join(', ')}`;
+      const tip = `${b.label} (${b.individuation.toFixed(2)}${b.grants_spells ? ', grants spells' : ''}), ${b.how} ${ago(b.born_kyr)} in ${D.cname(b.culture)}; ${b.status}${b.ended_kyr != null ? ' ' + ago(b.ended_kyr) + (b.end ? ' (' + b.end + ')' : '') : ''}; domains ${b.top.map((t) => t[0] + ' ' + t[1]).join(', ')}`;
       h += `<g><title>${esc(tip)}</title><rect x="0" y="${y - RH / 2}" width="${W}" height="${RH}" fill="transparent"/>
         <text x="${W - LAB}" y="${y + 4}" style="${b.status !== 'living' ? 'opacity:.55' : ''}">${'· '.repeat(Math.min(depth[i], 4))}${esc(b.label)}</text></g>`;
     }
@@ -126,7 +154,7 @@
     const list = st.pick != null ? [st.pick] : D.examples;
     if (!list.length) { main.innerHTML = '<p class="muted">No faith in this run has gods yet.</p>'; return; }
     main.innerHTML = `<div class="rl-cards${list.length === 1 ? ' one' : ''}">${list.map((id) => { const f = D.F[id];
-      return `<div class="rl-card"><h3>${sw(f.color)}${esc(f.name)}</h3><div class="muted" style="margin-bottom:4px">${f.how === 'schism' ? 'broke away from ' + esc(D.F[f.parent]?.name) + ', ' : 'founded '}${ago(f.founded_kyr)};
+      return `<div class="rl-card"><h3>${sw(f.color)}${fname(f)}</h3><div class="muted" style="margin-bottom:4px">${f.how === 'schism' ? 'broke away from ' + esc(D.F[f.parent]?.name) + ', ' : 'founded '}${ago(f.founded_kyr)};
         ${f.ended_kyr == null ? `${f.cultures_now.length} cultures of ${f.peoples_now.length} peoples now` : 'ended ' + ago(f.ended_kyr) + ' (' + esc(f.end) + ')'}; ${f.beings.length} gods and spirits ever</div>${treeSvg(f, st.pick != null ? Math.max(700, main.clientWidth - 40) : 560)}</div>`; }).join('')}</div>`;
   }
 
@@ -168,8 +196,8 @@
     }
     $('rl-ov').innerHTML = o;
     const rows = live.map((f) => [f, sample(f)]).filter(([, s]) => s).sort((a, b) => b[1][2] - a[1][2]);
-    $('rl-side').innerHTML = `<h3>${rows.length} faiths ${at > 0 ? fmt(at) + ' ago' : 'now'}</h3>${st.follow != null ? '<p><a href="#" id="rl-all">show all faiths</a></p>' : ''}
-      <table class="t"><tr><th>faith</th><th>cultures</th><th>cells</th><th>lead god</th></tr>${rows.map(([f, s]) => `<tr data-f="${f.id}" class="${st.follow === f.id ? 'sel' : ''}" title="founded ${esc(ago(f.founded_kyr))} in ${esc(D.cname(f.origin_culture))}; core ${esc(s[6])}"><td>${sw(f.color)}${esc(f.name)}</td><td class="n">${s[1]}</td><td class="n">${s[2]}</td><td class="n" style="color:${indCol(s[5])}">${s[5].toFixed(2)}</td></tr>`).join('')}</table>`;
+    $('rl-side').innerHTML = `<h3>${rows.length} faiths ${at > 0 ? ago(at) : 'now'}</h3>${st.follow != null ? '<p><a href="#" id="rl-all">show all faiths</a></p>' : ''}
+      <table class="t"><tr><th>faith</th><th>cultures</th><th>cells</th><th>lead god</th></tr>${rows.map(([f, s]) => `<tr data-f="${f.id}" class="${st.follow === f.id ? 'sel' : ''}" title="founded ${esc(ago(f.founded_kyr))} in ${esc(D.cname(f.origin_culture))}; core ${esc(s[6])}"><td>${sw(f.color)}${fname(f)}</td><td class="n">${s[1]}</td><td class="n">${s[2]}</td><td class="n" style="color:${indCol(s[5])}">${s[5].toFixed(2)}</td></tr>`).join('')}</table>`;
     for (const tr of $('rl-side').querySelectorAll('tr[data-f]')) tr.onclick = () => { st.follow = st.follow === +tr.dataset.f ? null : +tr.dataset.f; update(); };
     if ($('rl-all')) $('rl-all').onclick = (e) => { e.preventDefault(); st.follow = null; update(); };
   }
@@ -178,7 +206,7 @@
   function tlMount(bar) {
     const s = D.gods.summary.faiths || {};
     bar.innerHTML = `<label class="muted"><input type="checkbox" id="rl-gone" ${st.gone ? 'checked' : ''}> with the faiths gone</label>
-      <span class="muted">${D.F.length} faiths since ${fmt(D.gods.from_kyr)} ago, ${D.F.filter((f) => f.ended_kyr == null).length} living: ${s.founded || 0} founded, ${s.schisms || 0} schisms, ${s.conversions || 0} conversions, ${s.core_changes || 0} cores moved;
+      <span class="muted">${D.F.length} faiths since ${ago(D.gods.from_kyr)}, ${D.F.filter((f) => f.ended_kyr == null).length} living: ${s.founded || 0} founded, ${s.schisms || 0} schisms, ${s.conversions || 0} conversions, ${s.core_changes || 0} cores moved;
       ${D.F.filter((f) => f.end === 'no followers left').length} ended with no followers left</span>`;
     $('rl-gone').onchange = (e) => { st.gone = e.target.checked; update(); };
   }
@@ -189,20 +217,41 @@
     for (const f of D.F) if (keep.has(f.id)) (kids[f.parent ?? 'root'] = kids[f.parent ?? 'root'] || []).push(f);
     const BW = 260, x = logX(D.gods.from_kyr || 300, 0, BW);
     const bar = (f) => { const a = x(f.founded_kyr), b = x(f.ended_kyr ?? 0.05);
-      let dots = f.events.map((e) => `<span title="won ${esc(D.cname(e[2]))} ${esc(ago(e[0]))}" style="position:absolute;left:${x(e[0]) - 2}px;top:1px;width:5px;height:5px;border-radius:50%;background:#6bd66b"></span>`).join('');
+      let dots = f.events.map((e) => `<span title="${e[1] === 'founded' ? 'founded in' : 'won'} ${esc(D.cname(e[2]))} ${esc(ago(e[0]))}" style="position:absolute;left:${x(e[0]) - 2}px;top:1px;width:5px;height:5px;border-radius:50%;background:#6bd66b"></span>`).join('');
       dots += (D.lost[f.id] || []).map((e) => `<span title="lost ${esc(D.cname(e[2]))} to ${esc(D.F.find((g) => g.events.includes(e))?.name || '')} ${esc(ago(e[0]))}" style="position:absolute;left:${x(e[0]) - 2}px;top:1px;width:5px;height:5px;border-radius:50%;background:#ff6b6b"></span>`).join('');
       return `<span style="position:relative;display:inline-block;width:${BW}px;height:8px;background:var(--line,#1f2836);vertical-align:middle"><span style="position:absolute;left:${a}px;width:${Math.max(2, b - a)}px;top:0;bottom:0;background:${f.color};opacity:${f.ended_kyr != null ? 0.45 : 1}"></span>${dots}</span>`; };
-    let h = `<table class="t"><tr><th>faith</th><th>how</th><th>life <span class="muted">(${fmt(D.gods.from_kyr)} ago → now)</span></th><th>cultures now / ever</th><th>peoples now</th><th>leading god now</th><th>end</th></tr>`;
+    let h = `<table class="t"><tr><th>faith</th><th>how</th><th>life <span class="muted">(${ago(D.gods.from_kyr)} → now)</span></th><th>cultures now / ever</th><th>peoples now</th><th>leading god now</th><th>end</th></tr>`;
     const L = Object.fromEntries((D.result.lineages || []).map((l) => [l.id, l.name.split(' (')[0]]));
     const row = (f, d) => { const lead = f.lead_being != null ? D.B[f.lead_being] : null;
-      h += `<tr style="${f.ended_kyr != null ? 'opacity:.6' : ''}"><td style="white-space:nowrap;padding-left:${4 + 14 * d}px">${d ? '<span class="muted">↳ </span>' : ''}${sw(f.color)}${esc(f.name)}</td>
-        <td>${esc(f.how)}</td><td style="white-space:nowrap">${bar(f)} <span class="muted">${fmt(f.founded_kyr)}</span></td><td class="n">${f.cultures_now.length} / ${f.cultures_ever.length}</td>
+      h += `<tr style="${f.ended_kyr != null ? 'opacity:.6' : ''}"><td style="white-space:nowrap;padding-left:${4 + 14 * d}px">${d ? '<span class="muted">↳ </span>' : ''}${sw(f.color)}${fname(f)}</td>
+        <td>${esc(f.how)}</td><td style="white-space:nowrap">${bar(f)} <span class="muted">${ago(f.founded_kyr)}</span></td><td class="n">${f.cultures_now.length} / ${f.cultures_ever.length}</td>
         <td class="muted" style="max-width:260px">${esc(f.peoples_now.map((p) => L[p] || p).join(', '))}</td>
         <td>${lead ? `<span style="color:${indCol(lead.individuation)}">${esc(lead.label)}</span> <span class="muted">${lead.individuation.toFixed(2)}</span>` : ''}</td>
-        <td class="muted">${f.ended_kyr != null ? esc(f.end) + ' ' + fmt(f.ended_kyr) + ' ago' : ''}${f.changes.length ? ` <span title="${esc(f.changes.map((c) => `${fmt(c[0])} ago: ${c[1]} → ${c[2]}`).join('\n'))}">core moved ×${f.changes.length}</span>` : ''}</td></tr>`; };
+        <td class="muted">${f.ended_kyr != null ? esc(f.end) + ' ' + ago(f.ended_kyr) : ''}${f.changes.length ? ` <span title="${esc(f.changes.map((c) => `${ago(c[0])}: ${c[1]} → ${c[2]}`).join('\n'))}">core moved ×${f.changes.length}</span>` : ''}</td></tr>`; };
     const walk = (k, d) => (kids[k] || []).sort((a, b) => b.founded_kyr - a.founded_kyr).forEach((f) => { row(f, d); walk(f.id, d + 1); });
     walk('root', 0);
     main.innerHTML = h + '</table>' + `<p class="muted" style="max-width:900px">The rule (a judgement call, readout only): ${esc(D.gods.faiths.rule)}</p>`;
+  }
+
+  // ---- 3b. minorities (PW-1489) ----
+  function minMount(bar) {
+    const S = D.gods.shares?.summary || {};
+    bar.innerHTML = `<span class="muted">${S.cultures ?? 0} cultures with a faith now: ${S.with_minority ?? 0} hold a minority faith, ${S.minority_over_10 ?? 0} one above 10%</span>`;
+  }
+  function minDraw(main) {
+    const SH = D.gods.shares;
+    if (!SH) { main.innerHTML = '<p class="muted">This run\'s faiths were worked out before minorities were tracked.</p>'; return; }
+    const L = Object.fromEntries((D.result.lineages || []).map((l) => [l.id, l.name.split(' (')[0]]));
+    const rule = `title="${esc(SH.rule)}"`;
+    let h = `<h3 ${rule}>States now</h3>`;
+    h += SH.states.length ? `<table class="t"><tr><th>state</th><th>kind</th><th>cells</th><th>ruled by</th><th>faiths</th></tr>${SH.states.map((s) => `<tr><td>${sw(s.color || '#888')}${esc(s.name)}</td><td>${esc(s.tier)}</td><td class="n">${s.cells}</td><td>${esc(D.cname(s.ruler))}</td><td>${sharesHtml(s.faiths)}</td></tr>`).join('')}</table>`
+      : '<p class="muted">No states, empires or dragon realms rule now (or this run has no settlements).</p>';
+    const cu = Object.entries(D.gods.cultures).filter(([, c]) => c.faith_now != null && (c.shares || []).length > 1)
+      .map(([id, c]) => [id, c, c.shares.slice(1).reduce((a, r) => a + r[1], 0)]).sort((a, b) => b[2] - a[2]);
+    h += `<h3 style="margin-top:16px" ${rule}>Cultures with minorities <span class="muted" style="font-weight:normal">(${cu.length}, the largest minorities first)</span></h3>
+      <table class="t"><tr><th>culture</th><th>people</th><th>faiths</th></tr>${cu.slice(0, 150).map(([id, c]) => `<tr><td>${esc(c.name)}</td><td class="muted">${esc(L[c.people] || c.people)}</td><td>${sharesHtml(c.shares)}</td></tr>`).join('')}</table>`;
+    h += `<h3 style="margin-top:16px" ${rule}>Peoples</h3><table class="t"><tr><th>people</th><th>faiths</th></tr>${Object.entries(SH.peoples).map(([p, r]) => `<tr><td>${esc(L[p] || p)}</td><td>${sharesHtml(r)}</td></tr>`).join('')}</table>`;
+    main.innerHTML = h + `<p class="muted" style="max-width:900px">The rule (a judgement call, readout only): ${esc(SH.rule)}</p>`;
   }
 
   // ---- 4. taboos ----
@@ -219,7 +268,10 @@
     const T = D.taboos; if (!T || T.error) { main.innerHTML = ''; return; }
     const c = T.cultures[st.culture], K = T.kinds || {}, S = T.sources || {};
     const src = (k) => (S[k] ? `<a href="${esc(S[k].url)}" target="_blank" title="${esc(S[k].title)} (${esc(S[k].level)})">${esc(k)}</a>` : esc(k || ''));
-    let h = `<h3>${esc(c.name)}</h3><p class="muted">tags: ${esc((c.tags || []).join(', '))}</p><table class="t"><tr><th>kind</th><th>taboo</th><th>who</th><th>why</th><th>source</th></tr>`;
+    const fn = D.gods.cultures?.[st.culture]?.faith_now, cf = fn != null ? D.F[fn] : null;
+    const at = D.gods.attitudes?.cultures?.[st.culture]?.now;  // (PW-904: [tolerance, aggression] now, 0..1)
+    const atx = at ? `tolerance ${at[0].toFixed(2)}, aggression ${at[1].toFixed(2)} <span title="${esc(D.gods.attitudes.rule || '')}">(?)</span> · ` : '';
+    let h = `<h3>${esc(c.name)}</h3><p class="muted">${cf ? `faiths: ${sharesHtml(D.gods.cultures[st.culture].shares) || sw(cf.color) + fname(cf)}${cf.missionary ? ' (its faith is missionary)' : ''} · ` : ''}${atx}tags:${esc((c.tags || []).join(', '))}</p><table class="t"><tr><th>kind</th><th>taboo</th><th>who</th><th>why</th><th>source</th></tr>`;
     for (const t of c.taboos) h += `<tr><td>${esc(K[t.kind]?.name || t.kind)}</td><td>${esc(t.kind === 'food' ? 'not eaten: ' + t.label : t.label)}</td><td>${esc(t.scope)}</td><td class="muted" style="max-width:360px">${esc(t.why)}</td><td>${t.kind === 'food' ? '<span class="muted">taboos.py (food)</span>' : src(t.source)}</td></tr>`;
     h += '</table><h3 style="margin-top:16px">The catalogue: kinds across all living cultures</h3><table class="t"><tr><th>kind</th><th>what</th><th>cultures with one</th><th>rules</th><th>sources</th></tr>';
     const all = Object.values(T.cultures);
@@ -231,8 +283,125 @@
     main.innerHTML = h;
   }
 
-  const MOUNT = { trees: treesMount, map: mapMount, timeline: tlMount, taboos: tabMount };
-  const DRAW = { trees: treesDraw, map: mapDraw, timeline: tlDraw, taboos: tabDraw };
+  // ---- 5. your faiths (PW-1430) ----
+  const dflt = () => (NumFmt.present && NumFmt.present() != null ? 'year' : 'ago');  // (a bare number: a calendar year once the present is set, else years ago)
+  const readYear = (t) => { const k = NumFmt.parseDate ? NumFmt.parseDate(t, dflt()) : null; return k == null || !Number.isFinite(k) ? null : k; };
+  const blank = () => ({ id: null, name: '', culture: null, people: null, place: null, year_text: '', ago_kyr: null, gods: [{ name: '', domains: [] }], spreads: true, missionary: true });
+  function founderOpts(f) {
+    const L = Object.fromEntries((D.result.lineages || []).map((l) => [l.id, l.name.split(' (')[0]]));
+    const cs = D.C.map((c) => c).sort((a, b) => a.name.localeCompare(b.name));
+    const ps = [...new Set(D.C.map((c) => c.people))].sort((a, b) => String(L[a] || a).localeCompare(String(L[b] || b)));
+    const cur = f.culture != null ? `c${f.culture}` : f.people != null ? `p${f.people}` : '';
+    return `<option value="" ${cur === '' ? 'selected' : ''}>nobody chosen: the culture nearest the place</option>
+      <optgroup label="a people (its culture nearest the place, else its largest)">${ps.map((p) => `<option value="p${esc(p)}" ${cur === 'p' + p ? 'selected' : ''}>${esc(L[p] || p)}</option>`).join('')}</optgroup>
+      <optgroup label="a culture">${cs.map((c) => `<option value="c${c.id}" ${cur === 'c' + c.id ? 'selected' : ''}>${esc(c.name)} (${esc(L[c.people] || c.people)}${c.end ? ', ' + esc(c.end) : ''})</option>`).join('')}</optgroup>`;
+  }
+  const domOpts = (cur) => `<option value="">-</option>` + Object.entries(D.gods.groups || {}).map(([g, ds]) => `<optgroup label="${esc(g)}">${ds.map((d) => `<option ${d === cur ? 'selected' : ''}>${esc(d)}</option>`).join('')}</optgroup>`).join('');
+  function yoursMount(bar) {
+    const A = D.gods.authored || {};
+    bar.innerHTML = `<button id="rl-add">✎ write a faith</button><span class="muted" style="max-width:900px">${esc(A.rule || '')}</span>`;
+    $('rl-add').onclick = () => { st.edit = blank(); update(); };
+  }
+  function yoursDraw(main) {
+    const saved = D.authored.faiths || [], R = Object.fromEntries(((D.gods.authored || {}).faiths || []).map((r) => [r.id, r]));
+    const who = (f) => (f.culture != null ? D.cname(f.culture) : f.people != null ? `the ${f.people}` : 'the culture nearest the place') + (f.place ? ` at ${f.place[0].toFixed(1)}°, ${f.place[1].toFixed(1)}°` : '');
+    let h = `<div class="rl-split"><div>`;
+    if (!saved.length) h += `<p class="muted">No faiths written in yet. Press "write a faith" to add one: a name, who founds it, where and when, its gods.</p>`;
+    else {
+      h += `<table class="t"><tr><th>faith</th><th>founded by</th><th>asked for</th><th>gods</th><th>result</th><th></th></tr>`;
+      saved.forEach((f, i) => { const r = R[f.id], F = r && r.faith != null ? D.F[r.faith] : null;
+        const res = !r ? '<span class="muted">not read (see the problems below)</span>' : r.took_hold
+          ? `<span class="ok">took hold</span> ${esc(ago(r.founded_kyr))} in ${esc(r.founded_in_name || D.cname(r.founded_in))}; ${esc(r.spread || '')}; ${r.ended_kyr != null ? `ended ${esc(ago(r.ended_kyr))} (${esc(r.end)})` : `${r.cultures_now} cultures now, ${r.cultures_ever} ever`}${r.note ? `<br><span class="muted">${esc(r.note)}</span>` : ''}`
+          : `<span class="no">did not take hold</span>: ${esc(r.why || '')}`;
+        h += `<tr><td>${F ? sw(F.color) : ''}${esc(f.name)}<span class="rl-yours">✎ yours</span></td><td>${esc(who(f))}</td><td>${esc(f.year_text || '')} <span class="muted">(${esc(ago(f.ago_kyr))})</span></td>
+          <td>${f.gods.map((g) => `${esc(g.name)} <span class="muted">(${esc(g.domains.join(', '))})</span>`).join('<br>')}</td><td style="max-width:420px">${res}<br><span class="muted">${!f.spreads ? 'stays closed' : f.missionary === false ? 'spreads (no missionaries)' : 'missionary'}</span></td>
+          <td style="white-space:nowrap"><button data-ed="${i}">edit</button> <button data-rm="${i}">remove</button>${F ? ` <button data-tree="${F.id}">its tree</button>` : ''}</td></tr>`; });
+      h += '</table>';
+    }
+    const probs = (D.gods.authored || {}).problems || [];
+    if (probs.length) h += `<p class="err">Problems in the saved file (skipped): ${probs.map(esc).join('; ')}</p>`;
+    h += `<p class="err" id="rl-err">${esc(st.err || '')}</p></div><div class="rl-side">${st.edit ? formHtml(st.edit) : '<p class="muted">Pick "edit" on a faith, or "write a faith".</p>'}</div></div>`;
+    main.innerHTML = h;
+    for (const b of main.querySelectorAll('[data-ed]')) b.onclick = () => { st.edit = JSON.parse(JSON.stringify(saved[+b.dataset.ed])); st.err = ''; update(); };
+    for (const b of main.querySelectorAll('[data-rm]')) b.onclick = () => { const f = saved[+b.dataset.rm]; if (typeof confirm === 'function' && !confirm(`Remove "${f.name}"?`)) return; save(saved.filter((x) => x !== f)); };
+    for (const b of main.querySelectorAll('[data-tree]')) b.onclick = () => { st.pick = +b.dataset.tree; setView('trees'); };
+    if (st.edit) formWire(saved);
+  }
+  function formHtml(f) {
+    const k = f.ago_kyr;
+    return `<div class="rl-form"><h3>${f.id ? 'Edit' : 'Write'} a faith</h3>
+      <label>name <input id="rf-name" value="${esc(f.name)}" maxlength="80"></label>
+      <label>founded by <select id="rf-who">${founderOpts(f)}</select></label>
+      <div><div class="row"><span class="muted">where</span><label class="row"><input type="radio" name="rf-pl" value="home" ${f.place ? '' : 'checked'}> the founder's home</label>
+        <label class="row"><input type="radio" name="rf-pl" value="map" ${f.place ? 'checked' : ''}> a place: click the map</label><span id="rf-plt" class="muted">${f.place ? `${f.place[0].toFixed(2)}°, ${f.place[1].toFixed(2)}°` : ''}</span></div>
+        <div class="rl-pick" id="rf-map"><img alt="click to pick the place" src="../api/faithmap?run=${encodeURIComponent(D.id)}&frame=${D.frames.length ? D.frames[D.frames.length - 1][0] : 0}&w=1024"><svg id="rf-mk" viewBox="0 0 1024 512" preserveAspectRatio="none"></svg></div></div>
+      <label>year <input id="rf-year" value="${esc(f.year_text || (k != null ? ago(k) : ''))}" placeholder="${dflt() === 'year' ? 'year 1400, 300 before year 1' : '12,000 years ago, 12 kyr'}"><span id="rf-yr" class="muted"></span></label>
+      <div><span class="muted">gods (name, then one to three domains)</span><div id="rf-gods">${f.gods.map((g, i) => `<div class="row" data-g="${i}"><input class="rf-gn" value="${esc(g.name)}" placeholder="name" maxlength="60" style="width:120px">
+        ${[0, 1, 2].map((j) => `<select class="rf-gd">${domOpts(g.domains[j])}</select>`).join('')}<button data-gx="${i}" title="remove this god">×</button></div>`).join('')}</div><button id="rf-addg">+ a god</button></div>
+      <label class="row"><input type="checkbox" id="rf-spr" ${f.spreads ? 'checked' : ''}> spreads to its neighbours (else it stays closed: it takes no converts)</label>
+      <label class="row"><input type="checkbox" id="rf-mis" ${f.spreads && f.missionary !== false ? 'checked' : ''}> missionary: it sends preachers and wins less organised neighbours within a century or two (else it spreads slowly, from temples)</label>
+      <div class="row"><button id="rf-save">save</button><button id="rf-cancel">cancel</button><span id="rf-msg" class="err"></span></div></div>`;
+  }
+  function readForm() {  // (the form into st.edit, so a redraw keeps what was typed)
+    const f = st.edit;
+    f.name = $('rf-name').value.trim();
+    const w = $('rf-who').value;
+    f.culture = w[0] === 'c' ? +w.slice(1) : null; f.people = w[0] === 'p' ? w.slice(1) : null;
+    const map = D.root.querySelector('input[name="rf-pl"][value="map"]');
+    if (map && !map.checked) f.place = null;
+    f.year_text = $('rf-year').value.trim(); f.ago_kyr = readYear(f.year_text);
+    f.gods = [...D.root.querySelectorAll('#rf-gods [data-g]')].map((r) => ({ name: r.querySelector('.rf-gn').value.trim(), domains: [...r.querySelectorAll('.rf-gd')].map((s) => s.value).filter(Boolean) }));
+    f.spreads = $('rf-spr').checked;
+    f.missionary = f.spreads && $('rf-mis').checked;
+    return f;
+  }
+  function problem(f) {  // (what the server would refuse, said before saving)
+    if (!f.name) return 'it needs a name';
+    if (f.ago_kyr == null) return `the year "${f.year_text}" could not be read (try ${dflt() === 'year' ? '"year 1400"' : '"12,000 years ago"'} or "12 kyr")`;
+    if (f.culture == null && f.people == null && !f.place) return 'pick who founds it, or a place on the map';
+    if (!f.gods.some((g) => g.domains.length)) return 'it needs at least one god with a domain';
+    return '';
+  }
+  function marker(f) { const mk = $('rf-mk'); if (!mk) return; if (!f.place) { mk.innerHTML = ''; return; } const [x, y] = P(f.place[0], f.place[1]);
+    mk.innerHTML = `<path d="M${x - 8},${y}h16M${x},${y - 8}v16" stroke="#fff" stroke-width="5"/><path d="M${x - 8},${y}h16M${x},${y - 8}v16" stroke="#ff7b6b" stroke-width="2.5"/>`; }
+  function formWire(saved) {
+    const f = st.edit, yr = () => { const k = readYear($('rf-year').value); $('rf-yr').textContent = $('rf-year').value.trim() ? (k == null ? 'cannot read that date' : `→ ${ago(k)}`) : ''; };
+    yr(); marker(f);
+    $('rf-year').oninput = yr;
+    $('rf-map').onclick = (e) => { const r = e.currentTarget.getBoundingClientRect(); if (!r.width) return;
+      const lon = ((e.clientX - r.left) / r.width) * 360 - 180, lat = 90 - ((e.clientY - r.top) / r.height) * 180;
+      f.place = [Math.max(-90, Math.min(90, lat)), lon]; const m = D.root.querySelector('input[name="rf-pl"][value="map"]'); if (m) m.checked = true;
+      $('rf-plt').textContent = `${f.place[0].toFixed(2)}°, ${f.place[1].toFixed(2)}°`; marker(f); };
+    $('rf-addg').onclick = () => { readForm(); if (f.gods.length < 15) f.gods.push({ name: '', domains: [] }); update(); };
+    for (const b of D.root.querySelectorAll('[data-gx]')) b.onclick = () => { readForm(); f.gods.splice(+b.dataset.gx, 1); if (!f.gods.length) f.gods.push({ name: '', domains: [] }); update(); };
+    $('rf-cancel').onclick = () => { st.edit = null; st.err = ''; update(); };
+    $('rf-save').onclick = () => {
+      readForm(); f.gods = f.gods.filter((g) => g.name || g.domains.length);
+      const why = problem(f); if (why) { $('rf-msg').textContent = why; if (!f.gods.length) f.gods.push({ name: '', domains: [] }); return; }
+      if (!f.id) { let n = saved.length + 1; while (saved.some((x) => x.id === `a${n}`)) n++; f.id = `a${n}`; }
+      const i = saved.findIndex((x) => x.id === f.id);
+      save(i >= 0 ? saved.map((x, k) => (k === i ? f : x)) : [...saved, f]);
+    };
+  }
+  function post(body) {
+    return fetch('../api/authored', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ run: D.id, ...body }) })
+      .then((r) => r.json().then((j) => (r.ok ? j : Promise.reject(new Error(j.error || r.status)))));
+  }
+  function reload(msg) {  // (fetch everything again: the trees, map, timeline and taboos all redraw with the saved faiths)
+    const root = D.root, result = D.result;
+    D = null; mounted = '';
+    window.ReligionTab.draw(root, result);
+    if (msg) st.err = msg;
+  }
+  function save(list) {
+    if ($('rf-msg')) $('rf-msg').textContent = 'saving, then working the faiths out again…';
+    post({ faiths: list }).then(() => { st.edit = null; st.err = ''; reload(); })
+      .catch((e) => { st.err = `not saved: ${e.message}`; if ($('rf-msg')) $('rf-msg').textContent = st.err; else update(); });
+  }
+  function setMode(m) { post({ gods_mode: m }).then(() => reload()).catch((e) => { st.err = `gods mode not saved: ${e.message}`; update(); }); }
+
+  const MOUNT = { trees: treesMount, map: mapMount, timeline: tlMount, minorities: minMount, taboos: tabMount, yours: yoursMount };
+  const DRAW = { trees: treesDraw, map: mapDraw, timeline: tlDraw, minorities: minDraw, taboos: tabDraw, yours: yoursDraw };
   function update() { if ($('rl-main')) DRAW[st.view]($('rl-main')); }
   function setView(v) { if (st.playing) { clearInterval(st.playing); st.playing = null; } st.view = v; mounted = ''; history.replaceState(null, '', `${location.search}#religion/${v}`); window.ReligionTab.draw(D.root, D.result); }
   window.ReligionTab = {
@@ -245,9 +414,11 @@
         const key = `${D.id}|${st.view}`;
         if (mounted !== key || !$('rl-main')) {
           el.innerHTML = `<div class="rl-nav">${VIEWS.map(([v, n]) => `<button data-view="${v}" class="${v === st.view ? 'on' : ''}">${n}</button>`).join('')}
-            <span style="flex:1"></span><span class="muted">run ${esc(D.id)} · ${D.gods.summary.living} living gods and spirits · ${D.F.filter((f) => f.ended_kyr == null).length} living faiths · gods mode ${esc(D.gods.gods_mode)}</span></div>
+            <span style="flex:1"></span><span class="muted">run ${esc(D.id)} · ${D.gods.summary.living} living gods and spirits · ${D.F.filter((f) => f.ended_kyr == null).length} living faiths${D.F.some((f) => f.authored != null) ? ` (${D.F.filter((f) => f.authored != null).length} yours)` : ''} · gods mode</span>
+            <select id="rl-mode" title="saved with the run: whether the gods are real (PW-1309)">${MODES.map(([m, n]) => `<option value="${m}" ${m === D.gods.gods_mode ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
             <div class="rl-bar" id="rl-bar"></div><div class="rl-main" id="rl-main"></div>`;
           for (const b of el.querySelectorAll('[data-view]')) b.onclick = () => setView(b.dataset.view);
+          if ($('rl-mode')) $('rl-mode').onchange = (e) => setMode(e.target.value);
           MOUNT[st.view]($('rl-bar'), $('rl-main'));
           mounted = key;
         }

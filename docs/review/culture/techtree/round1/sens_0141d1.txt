@@ -1,0 +1,22 @@
+run 0141d1 draws 12
+
+writing: nudge | code | world-first move yr: median, max, draws > 1,000 yr | per-people move yr (peoples known in either): median, p90, max | known in one only
+  border | main | 0, 1,510, 1/12 | 0, 178, 2,601 (n 332) | 1
+  border | new | 0, 232, 0/12 | 0, 199, 399 (n 324) | 0
+  pop | main | 0, 0, 0/12 | 0, 0, 0 (n 333) | 0
+  pop | new | 0, 95, 0/12 | 0, 0, 126 (n 324) | 0
+  base spread over draws (world first writing, yr ago): main median 4,153 min 2,797 max 4,795 (in 12/12); new median 4,562 min 2,098 max 6,625 (in 12/12)
+
+towns: nudge | code | world-first move yr: median, max, draws > 1,000 yr | per-people move yr (peoples known in either): median, p90, max | known in one only
+  border | main | 0, 312, 0/12 | 0, 0, 2,441 (n 336) | 0
+  border | new | 0, 0, 0/12 | 0, 0, 443 (n 336) | 0
+  pop | main | 0, 0, 0/12 | 0, 0, 0 (n 336) | 0
+  pop | new | 0, 0, 0/12 | 0, 0, 0 (n 336) | 0
+  base spread over draws (world first towns, yr ago): main median 7,649 min 6,625 max 8,832 (in 12/12); new median 6,994 min 5,948 max 9,837 (in 12/12)
+
+cities: nudge | code | world-first move yr: median, max, draws > 1,000 yr | per-people move yr (peoples known in either): median, p90, max | known in one only
+  border | main | 0, 0, 0/12 | 0, 0, 250 (n 334) | 1
+  border | new | 0, 196, 0/12 | 0, 150, 425 (n 330) | 0
+  pop | main | 0, 0, 0/12 | 0, 0, 0 (n 335) | 0
+  pop | new | 0, 299, 0/12 | 0, 0, 440 (n 330) | 0
+  base spread over draws (world first cities, yr ago): main median 5,061 min 3,597 max 6,391 (in 12/12); new median 4,384 min 2,423 max 5,948 (in 12/12)

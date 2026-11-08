@@ -6,6 +6,7 @@ import { plateVelocity } from './geometry.js';
 import { timeLabel } from './timezoom.js';
 import { volcLine } from './load.js';
 import { settlementRows } from './settlements.js';
+import { polityRows } from './polities.js';
 // ------------------------------------------------------------ the cell's description
 // cellInfo(i) lists what is known about cell i as rows { g: group, k: label, v: value,
 // sep: between them in the text, ess: shown in the compact info box (the rest in the
@@ -96,7 +97,7 @@ function peoplesRows(i, R) {
   const dm = demeOf(i);  // (the regional population, PW-981: when the demes layer is loaded)
   if (dm) {
     const D = S.V.demes.demes, par = dm.parent != null ? D[dm.parent] : null;
-    R('place', '', `${dm.name}, ${dm.how === 'first' ? `there when the cut starts (~${dm.born_kyr} kyr ago)` : `since ~${dm.born_kyr} kyr ago`}${par ? ` (${{ split_gap: 'split by a gap from', split_distance: 'budded off', crossing: 'founded over the sea from', from_people: 'arose from' }[dm.how] || 'from'} ${par.short})` : ''}`,
+    R('place', '', `${dm.name}, ${dm.how === 'first' ? `there when the cut starts (${NumFmt.ago(dm.born_kyr)})` : `since ${NumFmt.ago(dm.born_kyr)}`}${par ? ` (${{ split_gap: 'split by a gap from', split_distance: 'budded off', crossing: 'founded over the sea from', from_people: 'arose from' }[dm.how] || 'from'} ${par.short})` : ''}`,
       { lab: 'regional population', ess: true });
   }
   const all = demesAt(i);  // (every people's deme here, overlapping: lane 109)
@@ -145,7 +146,7 @@ function cellInfo(i) {
     : `${L.elevation[i]} m${S.V.tz ? ' (above this moment\'s sea level)' : ''}`, { ess: true });
   const lk = (L.lake_kind || L.lake) && lakeLine(i);
   if (lk) R('place', '', lk, { lab: 'lake', ess: true });
-  if (S.V.run?.kind === 'peoples' && L.peoples) { peoplesRows(i, R); settlementRows(i, R); if (state.layer === 'technology') techRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }
+  if (S.V.run?.kind === 'peoples' && L.peoples) { peoplesRows(i, R); polityRows(i, R); settlementRows(i, R); if (state.layer === 'technology') techRows(i, R); animalRows(i, R); cropRows(i, R); anthroRows(i, R); fuelRows(i, R); }
   if (S.V.kind === 'world' && S.V.wAnthro && state.anthro !== false) { anthroRows(i, R); fuelRows(i, R); }
   const vl = S.V.kind === 'world' && volcLine(i);
   if (vl) R('place', 'volcano', vl, { sep: ': ', ess: true });

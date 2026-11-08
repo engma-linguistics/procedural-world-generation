@@ -54,9 +54,9 @@ class Recorder:
         """From earth.global_temperature, with its own numbers: this step's raw volcanic source and
         weathering sink (model units), the iced share it counted, the CO2 term as counted (clipped)
         and the ice albedo term (C, negative = cooling), and the target dT relaxes toward."""
-        from .earth import earth_ice, ghg_conc, ghg_forcing, ghg_icefree, star_forcing
+        from .earth import earth_ice, ghg_conc, ghg_forcing, ghg_icefree, references, star_forcing
         p = sim.params
-        rel = (sim.rates / sim.refs) if sim.rates is not None else np.ones(2)
+        rel = (sim.rates / references(sim)) if sim.rates is not None else np.ones(2)
         free = ghg_icefree(sim, ice_frac, earth_ice(sim.grid.level))
         self._pending = {
             "t": round(float(sim.t), 3), "dT": round(float(sim.dT), 3), "target": round(float(target), 3),
@@ -91,8 +91,8 @@ class Recorder:
         if w.sum() > 0:  # the sink's share on bare ground and its CO2 log-slope there (earth.co2_law, v1-finish-11)
             out["w_bare"] = round(float(bare.sum() / w.sum()), 4)
             out["w_a"] = round(earth.co2_slope(float(np.exp(sim.co2)), out["w_bare"]), 4)
-        if sim.npp_pot is not None and s > 0:  # (spin-up: the reference's potential plants)
-            out["w_pot"] = round(float((supply * earth.plant_factor(sim.npp_pot)).sum()) / s, 4)
+        if sim.cover_pot is not None and s > 0:  # (spin-up: the reference's potential plants)
+            out["w_pot"] = round(float((supply * earth.plant_factor(sim.cover_pot)).sum()) / s, 4)
         if s > 0 and sim.temp is not None:
             out["w_T"] = round(float((supply * sim.temp).sum()) / s, 2)
             out["w_q"] = round(float((supply * sim.runoff).sum()) / s, 1) if sim.runoff is not None else None
@@ -147,6 +147,18 @@ class Recorder:
         rec["arid_pct"] = round(100 * float(np.isin(kp, ARID).mean()), 2) if land.any() else None
         rec["bwh_pct"] = round(100 * float((kp == BWH).mean()), 2) if land.any() else None
         rec["land_precip"] = round(float(sim.precip[land].mean()), 1) if land.any() else None
+        # the grassy lands (lane 185, PW-1261): herb cover over land, and tree / herb cover on the steppe (Koppen BS)
+        # and the tropical wet-dry lands (Aw, As: savanna country), where the herbs' growth sets the fire and the trees
+        nu = getattr(sim, "veg_frac", None)
+        if nu is not None and land.any():
+            from .. import vegetation
+            herb = np.asarray(nu, float)[vegetation.HERBS].sum(0)
+            rec["grass"] = round(100 * float(herb[land].mean()), 2)
+            for key, codes in (("steppe", ("BSh", "BSk")), ("savanna", ("Aw", "As"))):
+                m = np.isin(kp, [k for k, c, _, _ in climate.KOPPEN if c in codes])
+                rec[f"{key}_cells"] = int(m.sum())
+                rec[f"{key}_trees"] = round(100 * float(tc[land][m].mean()), 2) if m.any() else None
+                rec[f"{key}_grass"] = round(100 * float(herb[land][m].mean()), 2) if m.any() else None
         # land poleward of the snowline, ice-free and iced (the glacial index's cooling share, PW-538)
         smb0, _ = icemass.balance(g.lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, 0.0, 0.0, tilt=sim.params.tilt)
         rec["snow_land"] = round(float((land & (smb0 > 0)).sum()) / max(int(land.sum()), 1), 4)

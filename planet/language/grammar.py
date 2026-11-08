@@ -2619,6 +2619,8 @@ def _seg_to_json(s) -> Any:
     if dataclasses.is_dataclass(s):
         d = {}
         for f in dataclasses.fields(s):
+            if not f.init:   # (Segment's cached hash)
+                continue
             v = getattr(s, f.name)
             if f.name == "kind" or v != f.default:
                 d[f.name] = v

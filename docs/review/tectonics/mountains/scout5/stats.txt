@@ -1,0 +1,21 @@
+== /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/l194/judge: 36 paired draws
+  main late dT range -2.35..+4.36 (inside -6..+5: yes), sd 1.78, mean +1.20, median +1.24; <0: 9, >+3: 6
+  cap  late dT range -2.22..+3.67 (inside -6..+5: yes), sd 1.36, mean +1.29, median +1.48; <0: 7, >+3: 2
+  paired cap - main late dT: mean +0.09 C (95% CI -0.70..+0.86), median +0.23, up/down 18/18
+  soft pass main 32/36, cap 32/36; main only 3, cap only 3; McNemar exact p 1.000
+  frozen over at the end main 0, cap 0; hellhouse main 0, cap 0
+  spread: mean |dev from median| main 1.42, cap 1.06; permutation p 0.120
+== /tmp/claude-1000/-data-personal-repos-procedural-world-generation/43861907-2d55-4b88-96fd-7cf556b60255/scratchpad/l190/judge36:0.0005,0.001: 36 paired draws
+  main late dT range -1.42..+4.32 (inside -6..+5: yes), sd 1.27, mean +1.48, median +1.49; <0: 4, >+3: 3
+  cap  late dT range -2.11..+4.29 (inside -6..+5: yes), sd 1.78, mean +1.63, median +1.93; <0: 8, >+3: 9
+  paired cap - main late dT: mean +0.15 C (95% CI -0.67..+0.97), median +0.56, up/down 20/16
+  soft pass main 31/36, cap 29/36; main only 4, cap only 2; McNemar exact p 0.688
+  frozen over at the end main 0, cap 1; hellhouse main 0, cap 0
+  spread: mean |dev from median| main 1.00, cap 1.48; permutation p 0.025
+== pooled: 72 paired draws
+  main late dT range -2.35..+4.36 (inside -6..+5: yes), sd 1.54, mean +1.34, median +1.43; <0: 13, >+3: 9
+  cap  late dT range -2.22..+4.29 (inside -6..+5: yes), sd 1.58, mean +1.46, median +1.61; <0: 15, >+3: 11
+  paired cap - main late dT: mean +0.12 C (95% CI -0.44..+0.67), median +0.48, up/down 38/34
+  soft pass main 63/72, cap 61/72; main only 7, cap only 5; McNemar exact p 0.774
+  frozen over at the end main 0, cap 1; hellhouse main 0, cap 0
+  spread: mean |dev from median| main 1.21, cap 1.29; permutation p 0.647

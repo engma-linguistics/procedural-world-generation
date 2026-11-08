@@ -4,7 +4,7 @@ title: "Plates: keep only live slots' rows (or owned cells sparsely) instead of 
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: m
 impact: low
@@ -42,4 +42,5 @@ possible cheaply: `idx` as int32 (halves 384 B/cell) if the golden digest is all
 (hash `idx.astype(np.int64)`): no output changes.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: plates memory saving; not a must-have
 - 2026-11-03: Created from inbox draft draft-plates-sparse-owned-cells.md (found by lane 147).

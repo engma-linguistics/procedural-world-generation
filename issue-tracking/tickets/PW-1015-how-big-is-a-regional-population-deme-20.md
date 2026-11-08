@@ -4,7 +4,7 @@ title: How big is a regional population (deme)? ~20, ~60 or ~150 human demes on 
 type: task
 status: in-progress
 parent: PW-981
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: xs
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-981, PW-856, PW-767]
 refs: [planet/lineages/demes.py, "run b69f51"]
 created: 2026-10-29
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -40,6 +40,7 @@ Options:
 Lean: A now; D later, since languages want both levels (family and dialect).
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: v0 shipped; the rest is not a must-have (status unchanged)
 - 2026-10-30: Owner 10-30 D7: A now; D later, when languages arrive.
 - 2026-10-29: Owner 10-29: agrees way of life should shape deme size. Mobile herders and seafarers reach further before splitting, so steppes stay whole and farming valleys fracture. Queue with the next demes work. Scale still to be picked from the maps (at least 2x). In the viewer, call them 'regional populations', not 'demes'.
 - 2026-10-29: Status todo -> in-progress. Owner 10-29: Mongolia-sized is too big. At least double the count. Show maps or numbers at 2-5x the current count. Some regions should stay one people and others fracture a lot. Dialects come later via zooms. A small lane is making the comparison maps (docs/review/lineages/deme-scale/).

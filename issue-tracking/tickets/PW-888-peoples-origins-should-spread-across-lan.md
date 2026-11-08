@@ -4,7 +4,7 @@ title: Peoples' origins should spread across landmasses roughly by habitable are
 type: task
 status: todo
 parent: PW-692
-milestone: v2
+milestone: v5
 subsystem: peoples
 effort: m
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-887, PW-885, PW-869]
 refs: [planet/lineages/history.py]
 created: 2026-10-25
-updated: 2026-10-27
+updated: 2026-11-03
 ---
 
 ## Description
@@ -23,6 +23,7 @@ Coordinator: the species-area relationship says larger, more varied landmasses h
 - [ ] origins per landmass tracked against habitable area over 8 seeds on 2a7385 and one other world; no landmass under ~15% of the land holds most peoples
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> v5: v5 must-have: Seven Meals origins spread across continents
 - 2026-10-27: Status needs-decision -> todo. Owner 2026-10-27: each root ancestor line (reptilian, mammalian, avian, ...) starts on a different landmass (always intended). Related peoples clustering near their ancestor is fine until the civ stage (boats, ~last 20 kyr).
 - 2026-10-27: Status todo -> needs-decision. Merged partial (fun lanes 30-33): area^0.3 origins, sea-crossing founders, persistence-horizon MVP (c=1), trees retimed. Open: overland jump dispersal (lean yes) and roots on separate landmasses (lean yes); asked owner 2026-10-27.
 - 2026-10-26: (fun-lane-30) Ruling applied: origins need a long-term viable landmass (history.ORIGIN_MVP_MULT 8 x viable_pop, Traill 2007 / Frankham 2014). It holds the no-majority line but not elves/half-elves/humans-at-100-kyr targets; founders sit on 1-2 cell places because a cell holds the MVP in people. See draft-small-landmass-founders-start-thin.

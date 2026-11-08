@@ -285,7 +285,7 @@ export async function showStart() {
     if (!opt) { box.innerHTML = '<div class="pl-err">The server has no make API. Restart it: uv run python -m planet serve</div>'; return; }
     const D = opt.defaults, byKey = Object.fromEntries(opt.settings.map((s) => [s.key, s]));
     const S = { preset: opt.default_preset, seed: Math.floor(Math.random() * 1e6), level: D.level, myr: opt.presets[opt.default_preset].myr,
-      timezoom: D.timezoom, kyr: D.kyr, now: D.now, nowKey: D.now, finish: D.finish, highlights: D.highlights, zooms: D.zooms, peoples: D.peoples, requireIce: D.require_ice, tries: D.tries, vals: {} };
+      timezoom: D.timezoom, kyr: D.kyr, now: D.now, nowKey: D.now, finish: D.finish, highlights: D.highlights, zooms: D.zooms, peoples: D.peoples, godsMode: D.gods_mode || 'faith_made', requireIce: D.require_ice, tries: D.tries, vals: {} };
     const eff = (k) => (k in opt.presets[S.preset].set ? opt.presets[S.preset].set[k] : byKey[k].default);  // value without the user's change
     const cur = (k) => (k in S.vals ? S.vals[k] : eff(k));
     const levelNote = { 5: 'tiny, for testing', 6: 'quick', 7: 'showcase' };
@@ -308,7 +308,9 @@ export async function showStart() {
         <label class="ck"><input type="checkbox" id="fHl"><span>Highlights (the most interesting places)</span></label>
         <label class="ck"><span>Regional zooms of the top highlights:</span> <select id="fZooms" style="width:auto;flex:none">${[0, 2, 4, 6].map((k) => `<option value="${k}">${k}</option>`).join('')}</select></label>
         <label class="ck"><span>Peoples on the finished world <span style="color:var(--muted)">(which set of peoples to run; needs the time zoom and the finished world)</span>:</span> <select id="fPeoples" style="width:auto;flex:none" title="Also build a peoples run, with this tree, once the world is made">
-          <option value="">none</option>${(opt.peoples || []).map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></label></fieldset>
+          <option value="">none</option>${(opt.peoples || []).map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join('')}</select></label>
+        <label class="ck"><span>Gods of those peoples <span style="color:var(--muted)">(whether the gods are real; saved with the run)</span>:</span> <select id="fGods" style="width:auto;flex:none" title="Faith-made: gods exist while worshipped and grant their priests spells. Belief only: people believe, no god is real and there is no divine magic. Absolute: gods outlive their worshippers.">
+          ${(opt.gods_modes || []).map(([m, n]) => `<option value="${esc(m)}">${esc(n)}</option>`).join('')}</select></label></fieldset>
       <fieldset><legend>Finished world</legend>
         <label class="ck"><input type="checkbox" id="fIce"><span>Require permanent ice <span style="color:var(--muted)">(refuse a present with no ice that lasts the summer: it takes the latest moment of the last 10 Myr that has some, else makes a new planet with a new seed)</span></span>
           <select id="fTries" style="width:auto;flex:none" title="How many planets to try before giving up">${[1, 2, 3, 4, 6, 8].map((k) => `<option value="${k}">${k} ${k > 1 ? 'tries' : 'try'}</option>`).join('')}</select></label></fieldset>
@@ -330,13 +332,13 @@ export async function showStart() {
       q('#fFinish').checked = S.finish; q('#fNow').value = S.nowKey; q('#fNow').disabled = !S.finish || !S.timezoom;
       q('#fNowKyr').value = typeof S.now === 'number' ? S.now : ''; q('#fNowKyr').max = S.kyr; q('#fNowKyr').disabled = !S.finish || !S.timezoom;q('#fHl').checked = S.highlights && S.finish; q('#fHl').disabled = !S.finish;
       q('#fIce').checked = S.requireIce; q('#fTries').value = S.tries; q('#fTries').disabled = !S.requireIce; q('#fZooms').value = S.zooms; q('#fZooms').disabled = !S.finish || !S.highlights;
-      q('#fPeoples').value = peoplesOn() ? S.peoples : ''; q('#fPeoples').disabled = !S.finish || !S.timezoom;
+      q('#fPeoples').value = peoplesOn() ? S.peoples : ''; q('#fPeoples').disabled = !S.finish || !S.timezoom; q('#fGods').value = S.godsMode; q('#fGods').disabled = !peoplesOn();
       for (const s of opt.settings) { const i = q('#s_' + s.key); i.value = cur(s.key); i.style.borderColor = s.key in S.vals ? 'var(--accent)' : ''; }
       estimate();
     };
     const peoplesOn = () => !!S.peoples && S.finish && S.timezoom;  // (peoples are built on the time zoom and the world)
     const request = () => ({ seed: S.seed, preset: S.preset, level: S.level, myr: S.myr, timezoom: S.timezoom, kyr: S.kyr, now: S.now, finish: S.finish,
-      highlights: S.highlights && S.finish, zooms: S.finish && S.highlights ? S.zooms : 0, require_ice: S.requireIce, tries: S.tries, peoples: peoplesOn() ? S.peoples : '', set: S.vals });
+      highlights: S.highlights && S.finish, zooms: S.finish && S.highlights ? S.zooms : 0, require_ice: S.requireIce, tries: S.tries, peoples: peoplesOn() ? S.peoples : '', gods_mode: peoplesOn() ? S.godsMode : '', set: S.vals });
     let estTimer = null;
     const estimate = () => {
       clearTimeout(estTimer);
@@ -371,6 +373,7 @@ export async function showStart() {
       else if (t.id === 'fHl') S.highlights = t.checked;
       else if (t.id === 'fZooms') S.zooms = +t.value;
       else if (t.id === 'fPeoples') S.peoples = t.value;
+      else if (t.id === 'fGods') S.godsMode = t.value;
       else if (t.id === 'fIce') S.requireIce = t.checked;
       else if (t.id === 'fTries') S.tries = +t.value;
       else if (t.dataset.k) {

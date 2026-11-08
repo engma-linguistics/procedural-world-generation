@@ -404,8 +404,221 @@ var m=/^#L(\\d+)$/.exec(location.hash||'');show(m?+m[1]:0);
 """
 
 
+# ---- languages getting more and less complex (Daniel, 2026-11-07) ------------------------------------------------------------
+# The measure is the grammar's complexity score as each 0.5 kyr snapshot stores it (`cx`, grammar.complexity: bound
+# functions + the mean bonding level of the live grams + 4 x the irregular share of the paradigm cells + 0.5 per bound class
+# marker). A living lect's series runs back through its ancestors (`parent`): before its birth, the parent's snapshots
+# (dead lects keep every 4th, so 2 kyr steps). The events are the differences between successive snapshots' live grams
+# ([function, form, level]): a gram that appears was recruited, one that moves up a level bound or fused, one that drops
+# out was lost. The causes read the lect's own L2 share, population and isolation (today's values: the file does not keep
+# them per frame) and its language shifts.
+
+CX_WINDOW = (0.5, 3.0)   # kyr: the change is read over the strongest window in this range ending now
+CX_CLEAR = 1.0           # a change under this many points of the score is not "clear"
+LEVEL_WORD = ("a free word", "a clitic", "an affix", "fused", "lost")
+
+
+def _series(doc, l) -> list:
+    """[(kyr, snapshot)] oldest first along the line of descent (the youngest lect holding each frame)."""
+    from planet.language.history import snapshot_full
+    line, x = [], l
+    while x is not None:
+        line.append(x)
+        x = doc.lects.get(x.get("parent"))
+    out: dict = {}
+    for x in line:   # (the lect itself first: its own snapshots win)
+        for kyr, sn in snapshot_full(x.get("snapshots") or []):
+            out.setdefault(round(kyr, 3), (x["id"], sn))
+    return sorted(((k, v[0], v[1]) for k, v in out.items()), key=lambda t: -t[0])
+
+
+def _cx_change(ser) -> tuple[float, float, float] | None:
+    """(delta, from kyr, cx then) over the strongest window of CX_WINDOW ending at the newest frame, or None."""
+    if not ser or ser[-1][0] > 0.01 or ser[-1][2].get("cx") is None:
+        return None
+    now = ser[-1][2]["cx"]
+    best = None
+    for kyr, _lid, sn in ser:
+        if CX_WINDOW[0] - 1e-6 <= kyr <= CX_WINDOW[1] + 1e-6 and sn.get("cx") is not None:
+            dlt = now - sn["cx"]
+            if best is None or abs(dlt) > abs(best[0]):
+                best = (dlt, kyr, sn["cx"])
+    return best
+
+
+def _gform(g) -> str:
+    """A gram [function, form, level] in words: '/li/, a clitic'; a fused gram with no segment of its own says so."""
+    lv = LEVEL_WORD[min(g[2], 4)]
+    return f"/{g[1]}/, {lv}" if g[1] else f"{lv}, no form of its own"
+
+
+def _gram_events(ser, since: float) -> list:
+    """[(kyr, kind, function, text)] from the snapshots' live grams after `since` kyr ago."""
+    ev = []
+    seq = [t for t in ser if t[0] <= since + 1e-6]   # (from the window's first frame on: earlier changes are not part of
+    # the change read, and dated by the first frame they piled up there)
+    for (k0, _a, s0), (k1, _b, s1) in zip(seq, seq[1:]):
+        g0 = {g[0]: g for g in s0.get("grams") or []}
+        g1 = {g[0]: g for g in s1.get("grams") or []}
+        for fn in sorted(set(g0) | set(g1)):
+            a, b = g0.get(fn), g1.get(fn)
+            if a is None:
+                ev.append((k1, "+", fn, f"{fn} recruited: {_gform(b)}"))
+            elif b is None:
+                ev.append((k1, "-", fn, f"{fn} lost (was {_gform(a)})"))
+            elif b[2] > a[2]:
+                ev.append((k1, "+", fn, f"{fn} bound further: {_gform(a)} > {_gform(b)}"))
+            elif b[2] < a[2]:
+                ev.append((k1, "-", fn, f"{fn} came loose: {_gform(a)} > {_gform(b)}"))
+    return ev
+
+
+def _spark(ser, since: float) -> str:
+    """A small inline SVG of the score over the last 8 kyr, the window shaded."""
+    pts = [(k, sn["cx"]) for k, _l, sn in ser if k <= 8.0 + 1e-6 and sn.get("cx") is not None]
+    if len(pts) < 2:
+        return ""
+    W, H, P = 260, 70, 4
+    lo, hi = min(v for _k, v in pts), max(v for _k, v in pts)
+    hi = hi if hi > lo else lo + 1
+    X = lambda k: P + (W - 2 * P) * (1 - k / 8.0)  # noqa: E731
+    Y = lambda v: H - P - (H - 2 * P) * (v - lo) / (hi - lo)  # noqa: E731
+    path = " ".join(f"{X(k):.1f},{Y(v):.1f}" for k, v in pts)
+    return (f"<svg viewBox='0 0 {W} {H + 14}' width='{W}' height='{H + 14}' role='img' aria-label='complexity score, last 8 kyr'>"
+            f"<rect x='{X(since):.1f}' y='0' width='{X(0) - X(since):.1f}' height='{H}' fill='var(--line)' opacity='.6'/>"
+            f"<polyline points='{path}' fill='none' stroke='var(--acc)' stroke-width='2'/>"
+            f"<text x='{P}' y='{H + 12}' font-size='10' fill='var(--muted)'>8 kyr ago</text>"
+            f"<text x='{W - P}' y='{H + 12}' font-size='10' fill='var(--muted)' text-anchor='end'>now</text>"
+            f"<text x='{W - P}' y='10' font-size='10' fill='var(--muted)' text-anchor='end'>{hi:.1f}</text>"
+            f"<text x='{W - P}' y='{H - 2}' font-size='10' fill='var(--muted)' text-anchor='end'>{lo:.1f}</text></svg>")
+
+
+def _q(vals: list, x) -> float:
+    vals = sorted(v for v in vals if v is not None)
+    return sum(1 for v in vals if v <= x) / len(vals) if vals and x is not None else 0.5
+
+
+def _rank(q: float) -> str:
+    return "the highest of all living lects" if q >= 0.995 else f"above {q:.0%} of living lects"
+
+
+def _cause(doc, l, rising: bool, since: float) -> str:
+    liv = doc.living
+    l2q, popq, isoq = (_q([x.get(k) for x in liv], l.get(k)) for k in ("l2", "population", "isolation"))
+    bits = []
+    shifts = [s for s in doc.d.get("shifts") or [] if s.get("to_lect") == l["id"] or s.get("from_lect") == l["id"]
+              or s.get("deme") == l.get("deme")]
+    recent = [s for s in shifts if s.get("kyr") is not None and 0.1 <= s["kyr"] <= since + 0.5]   # (inside the window:
+    # a shift after the decline cannot explain it)
+    facts = (f"L2 share {l.get('l2') or 0:.2f}, {_rank(l2q)}; {int(l.get('population') or 0):,} speakers, "
+             f"{_rank(popq).replace(' of all living lects', '').replace(' of living lects', '')}; isolation "
+             f"{l.get('isolation') or 0:.2f}, {_rank(isoq).replace(' of all living lects', '').replace(' of living lects', '')}")
+    if rising:
+        if l2q <= 0.4 and isoq >= 0.6:
+            bits.append("a tight-knit, isolated community with few adult learners: grams are worn down and bound and nobody "
+                        "simplifies them (Trudgill's small, isolated societies)")
+        elif l2q <= 0.4:
+            bits.append("few adult second-language learners: what grammaticalization binds stays bound")
+        elif popq <= 0.4:
+            bits.append("a small community, so new grams can spread and bind quickly")
+        else:
+            bits.append("nothing in its circumstances explains it (many adult learners, not isolated): the grams kept "
+                        "being recruited and bound faster than they eroded, the drift's own momentum")
+    else:
+        if recent:
+            s = recent[0]
+            bits.append(f"its speakers shifted language {s['kyr']:g} kyr ago ({s.get('speakers') or '?'} under "
+                        f"{s.get('ruler_people') or '?'}): adults learning a new language strip what they cannot master")
+        if l2q >= 0.6:
+            bits.append("many adult second-language speakers (a contact or trade language): irregular and bound forms are "
+                        "levelled, as in English after Norse contact or in Swahili")
+        if popq >= 0.75:
+            bits.append("a large, spread-out speech community")
+        if not bits:
+            bits.append("no strong outside pressure shows: erosion took markers faster than new ones were recruited")
+    return f"{'; '.join(bits)}. <span class='muted'>({E(facts)}, today's values)</span>"
+
+
+def complexity_cases(doc, n_each: int = 3) -> tuple[list, list]:
+    """(rising, falling): [(lect, delta, from kyr, cx then, cx now, series)], human-voiced first then one non-human,
+    each from a different people and true family where possible."""
+    rows = []
+    for l in doc.living:
+        ser = _series(doc, l)
+        ch = _cx_change(ser)
+        if ch is None or abs(ch[0]) < CX_CLEAR:
+            continue
+        rows.append((l, ch[0], ch[1], ch[2], ser[-1][2]["cx"], ser))
+    def human(l) -> bool:   # (human-voiced: not the avian, reptilian or feline mouths; profiles.human_voiced)
+        ch = ((doc.d.get("profiles") or {}).get(l["people"]) or {}).get("chain") or [[l["people"]]]
+        return ch[0][0] not in ("avian", "reptilian", "feline")
+
+    def pick(cands):
+        out, seen_p, seen_f = [], set(), set()
+        for want_h, k in ((True, n_each - 1), (False, 1)):
+            for r in cands:
+                l = r[0]
+                if len([x for x in out if human(x[0]) == want_h]) >= k:
+                    break
+                if human(l) != want_h or l["people"] in seen_p or l.get("family_true") in seen_f:
+                    continue
+                out.append(r)
+                seen_p.add(l["people"])
+                seen_f.add(l.get("family_true"))
+        return out
+    rise = pick(sorted([r for r in rows if r[1] > 0], key=lambda r: (-r[1], r[0]["id"])))
+    fall = pick(sorted([r for r in rows if r[1] < 0], key=lambda r: (r[1], r[0]["id"])))
+    return rise, fall
+
+
+def complexity_section(doc, k: int) -> str:
+    rise, fall = complexity_cases(doc)
+    h = [f"<section class='lang' id='L{k}' data-k='{k}'><h2>Languages getting more and less complex</h2>",
+         "<p>Proto-languages start with few grams and mostly gain more, so a language whose grammar <b>shrinks</b> is the "
+         "more telling case. The measure is the grammar's complexity score stored with each 0.5 kyr snapshot "
+         "(<code>cx</code>, grammar.complexity): bound functions + the mean bonding level of the live grams (free word 0, "
+         "clitic 1, affix 2, fused 3) + 4 x the share of irregular paradigm cells + 0.5 per bound class marker. Each "
+         "line follows the language back through the ancestors it split from; the shaded part is the window read. The "
+         "events are differences between successive snapshots' live grams. Causes are read from the lect's L2 share, "
+         "population and isolation (today's values; the file does not keep them per frame) and its language shifts.</p>"]
+    for title, rows, rising in (("Getting simpler", fall, False), ("Getting more complex", rise, True)):
+        h.append(f"<h3>{title}</h3>")
+        if not rows:
+            h.append("<p class='muted'>No living language changed clearly in this direction over the last 0.5-3 kyr.</p>")
+        for l, dlt, since, c0, c1, ser in rows:
+            nm = doc.deme_name(l)
+            name = nm["roman"] if nm else doc.label(l["id"], short=True)
+            ev = _gram_events(ser, since)
+            evh = "".join(f"<li><span class='muted'>{kyr:g} kyr ago</span> {'▲' if kind == '+' else '▼'} "
+                          f"<span class='ipa'>{E(t)}</span></li>" for kyr, kind, _fn, t in ev[:10])
+            if len(ev) > 10:
+                evh += f"<li class='muted'>... and {len(ev) - 10} more</li>"
+            then = next((sn for kk, _l, sn in ser if abs(kk - since) < 1e-6), None)
+            now = ser[-1][2]
+            g0 = {g[0]: g for g in (then or {}).get("grams") or []}
+            g1 = {g[0]: g for g in now.get("grams") or []}
+            pairs = [fn for fn in sorted(set(g0) | set(g1)) if g0.get(fn) != g1.get(fn)][:4]
+            ba = "".join(f"<tr><td class='sc'>{E(fn)}</td><td class='ipa'>"
+                         f"{E(_gform(g0[fn])) if fn in g0 else '(none)'}</td>"
+                         f"<td class='ipa'>{E(_gform(g1[fn])) if fn in g1 else '(none)'}</td></tr>"
+                         for fn in pairs)
+            h.append(f"<div class='card' style='margin:8px 0'><h4>{E(name)} <span class='muted'>{E(SK.people(l['people']))}, "
+                     f"lect {E(l['id'])}</span></h4>"
+                     f"<div class='two'><div>{_spark(ser, since)}<div class='note'>score {c0:.2f} {since:g} kyr ago &rarr; "
+                     f"{c1:.2f} now ({'+' if dlt > 0 else ''}{dlt:.2f})</div></div>"
+                     f"<div><b>Likely cause.</b> {_cause(doc, l, rising, since)}</div></div>"
+                     + (f"<details open><summary>What changed ({len(ev)} gram events)</summary><ul>{evh}</ul></details>" if ev else
+                        "<p class='note'>No gram came or went: the score moved through paradigm irregularity (sound change "
+                        "made or levelled alternants).</p>")
+                     + (f"<div class='scroll'><table class='t'><tr><th>gram</th><th>{since:g} kyr ago</th><th>now</th></tr>{ba}</table></div>"
+                        if ba else "") + "</div>")
+    h.append("</section>")
+    return "".join(h)
+
+
 def build(src: str, run_json: str | None, n: int, backend: str, audio: bool) -> tuple[str, dict]:
-    d = json.loads(Path(src).read_text(encoding="utf-8"))
+    from planet.language import output as OU
+    d = OU.load(src)
     doc = SK.Doc(d)
     if run_json and Path(run_json).is_file():
         meta = json.loads(Path(run_json).read_text(encoding="utf-8")).get("meta") or {}
@@ -424,6 +637,8 @@ def build(src: str, run_json: str | None, n: int, backend: str, audio: bool) -> 
             nm = doc.deme_name(l)
             nav.append(f"<button data-lang='{k}'>{E(nm['roman'] if nm else l['id'])} "
                        f"<span class='muted'>{E(SK.people(l['people']))}</span></button>")
+        secs.append(complexity_section(doc, len(picks)))   # (one more tab: languages getting more and less complex)
+        nav.append(f"<button data-lang='{len(picks)}'>More and less complex</button>")
     finally:
         au.close()
     voice = (f"Audio made by the {au.backend} voice ({'eSpeak NG, a formant synthesizer: robotic but exact' if au.backend == 'espeak' else 'Piper, a neural voice: more natural, a little less exact'}), "

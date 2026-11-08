@@ -4,7 +4,7 @@ title: Drawn rungs can run out of order (a gardener denser than a bronze-age plo
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: v5
 subsystem: peoples
 effort: s
 impact: low
@@ -31,5 +31,6 @@ Options:
 Check on the robust suite (3 seeds x 2 worlds, ranges/round1.md) whether any people's density falls when it takes the plough.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> v5: v5 must-have: drawn rungs in order (owner B, 11-03)
 - 2026-11-03: Status needs-decision -> todo. Owner 11-03: 'no strong feelings, I defer to your B'. B: the rolled rungs share one draw position, so they stay in order.
 - 2026-11-03: Created from inbox draft draft-ranges-rung-order-under-draws.md (found by lane 145).

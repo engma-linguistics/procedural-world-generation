@@ -4,7 +4,7 @@ title: "A do-nothing change fails the hard bar on 2 of main's 6 coldest test pla
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: climate
 effort: m
 impact: high
@@ -44,5 +44,6 @@ Lean: A now, B as the lasting fix.
 - [ ] Daniel's choice
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 1; gates no tag (folded into D47)
 - 2026-11-03: Status needs-decision -> todo. Owner 11-03: agreed B now, C later. Also asked us to consider whether the touchiness itself is the problem ('too much variability for a semi-self-balancing equation'): a climate-stability diagnosis lane writes that up before any more cold-tail work.
 - 2026-11-03: Created from inbox draft draft-hard-bar-null-fails-cold-tail.md (found by lane144).

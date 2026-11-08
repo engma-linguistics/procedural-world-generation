@@ -4,7 +4,7 @@ title: "Species voice profiles: sounds stored as heard (a percept space shared b
 type: story
 status: todo
 parent: PW-767
-milestone: v2
+milestone: later
 subsystem: culture
 effort: m
 impact: high
@@ -31,5 +31,6 @@ Open (in the doc): whether a lane drafts sourced numbers for the non-human profi
 - [ ] non-human profiles drafted with sources and set by Daniel
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: languages are owned by Daniel's language worktree; v4 leaves a names slot
 - 2026-11-03: Daniel 2026-11-03: the lane drafts the non-human profile numbers with sources and owns the reasoning; Daniel reacts afterwards (no gut-call gate before building).
 - 2026-11-03: Created.

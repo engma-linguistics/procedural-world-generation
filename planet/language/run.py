@@ -13,8 +13,8 @@ THIN_BYTES = 60_000_000
 
 
 def write(run_dir, out_dir=None, seed: int | None = None, workers: int | None = None, report: bool = False) -> dict:
-    """Run the pass and write languages.json into the run (and meta.languages), or into out_dir leaving the run untouched.
-    Returns the summary."""
+    """Run the pass and write languages.json and its sidecars (output.save: languages-etym.json, languages-snapshots.json)
+    into the run (and meta.languages), or into out_dir leaving the run untouched. Returns the summary."""
     from . import history as HI, output as OU
     t = time.perf_counter()
     if workers is not None:
@@ -22,17 +22,17 @@ def write(run_dir, out_dir=None, seed: int | None = None, workers: int | None = 
     run_dir = Path(run_dir)
     res = HI.generate(run_dir, seed=seed)
     doc = OU.document(res)
-    text = json.dumps(doc, separators=(",", ":"), ensure_ascii=False)
-    if len(text) > THIN_BYTES:  # (owner: past ~60 MB, dead lects keep every 4th snapshot)
-        doc = OU.document(res, thin_dead=4)
-        text = json.dumps(doc, separators=(",", ":"), ensure_ascii=False)
+    if len(OU.dumps(doc)) > THIN_BYTES:  # (owner: past ~60 MB unpacked, dead lects keep every 4th snapshot)
+        OU.thin_dead(doc, res, 4)
     secs = round(time.perf_counter() - t, 1)
     sm = OU.summary(doc, FILE, secs)
     dest = Path(out_dir) if out_dir else run_dir
     dest.mkdir(parents=True, exist_ok=True)
     doc["timing"]["total_s"] = secs
-    S.write_atomic(dest / FILE, json.dumps(doc, separators=(",", ":"), ensure_ascii=False))
-    sm["bytes"] = (dest / FILE).stat().st_size
+    files = OU.save(doc, dest / FILE)
+    sm["format"] = OU.FORMAT2
+    sm["files"] = files
+    sm["bytes"] = sum(files.values())
     if out_dir is None:
         S.update_meta(run_dir, lambda m: m.__setitem__("languages", sm))
         if report:

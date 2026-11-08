@@ -143,7 +143,7 @@ const name = (id) => {
   return (S.V.lineById.get(id)?.name || String(id).replace(/_/g, ' ')).replace(/ \(.*\)$/, '');
 };
 const n0 = (x) => Math.round(x).toLocaleString('en-US');
-const yrs = (kyr) => (kyr >= 1 ? `${+kyr.toFixed(1)} kyr` : `${Math.max(100, Math.round(kyr * 10) * 100)} years`);
+const yrs = (kyr) => globalThis.NumFmt.ago(kyr >= 1 ? +kyr.toFixed(1) : Math.max(0.1, Math.round(kyr * 10) / 10));  // a coarse date (PW-1429: '1,100 years ago' or 'year 900')
 // the hover card: the sites of cell i at the slider's moment (the living one first, then the ruins)
 export function settlementRows(i, R) {
   const list = S.V.settleByCell?.get(i);
@@ -151,28 +151,28 @@ export function settlementRows(i, R) {
   const ago = nowAgo(), d = S.V.settleDoc;
   for (const s of list) {
     if (ago > s.founded_kyr + 1e-6 || (isGone(s, ago) && !isRuin(s, ago))) continue;
-    const by = `founded ~${yrs(s.founded_kyr)} ago by the ${name(s.founded_by)}${s.ruin_of != null ? ' on older ruins' : ''}`;
+    const by = `founded ${yrs(s.founded_kyr)} by the ${name(s.founded_by)}${s.ruin_of != null ? ' on older ruins' : ''}`;
     if (isRuin(s, ago)) {
-      R('place', '', `ruin of a ${s.tier_peak}${s.kind === 'minority' ? ' (a second people\'s own place)' : ''} of the ${name(holderAt(s, s.abandoned_kyr))} (at most ~${n0(s.peak_pop)} people); ${by}; abandoned ~${yrs(s.abandoned_kyr)} ago: ${esc(s.why)}`,
+      R('place', '', `ruin of a ${s.tier_peak}${s.kind === 'minority' ? ' (a second people\'s own place)' : ''} of the ${name(holderAt(s, s.abandoned_kyr))} (at most ~${n0(s.peak_pop)} people); ${by}; abandoned ${yrs(s.abandoned_kyr)}: ${esc(s.why)}`,
         { lab: 'settlement', ess: true });
       continue;
     }
     const h = holderAt(s, ago), p = popAt(s, ago), hands = s.holders.filter(([a]) => a >= ago - 1e-6).slice(1);
     const who = Object.entries(s.who).map(([k, v]) => `${name(k)} ${v}%`).join(', ');
     if (s.kind === 'pit') {  // (PW-1146: a village's own pit on ordinary ore, not a district)
-      R('place', '', `local pit of the ${name(h)}: a village's ${esc(s.district || 'ore')} pit, ~${n0(p)} diggers and those who feed them; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`
+      R('place', '', `local pit of the ${name(h)}: a village's ${esc(s.district || 'ore')} pit, ~${n0(p)} diggers and those who feed them; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ${yrs(a)}`).join(', ')}` : ''}`
         + ' (ordinary ore: one pit for the best cell of a ring)', { lab: 'local pit', ess: true });
       continue;
     }
     if (s.kind === 'mine') {  // (D12: a district, not a pit; a colony's miners came from their own country nearby)
       R('place', '', `${s.colony ? `mining colony of the ${name(h)}: a mining ${p >= d.tiers.town_min_by_stage[1] ? 'town' : 'village'} of ~${n0(p)} incomers` : `mining district of the ${name(h)}, ~${n0(p)} miners and those who feed them`}`
-        + `, working the ${esc(s.district || 'ore')} ${s.district === 'rock salt' ? 'beds' : 'district'}; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`
+        + `, working the ${esc(s.district || 'ore')} ${s.district === 'rock salt' ? 'beds' : 'district'}; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ${yrs(a)}`).join(', ')}` : ''}`
         + ' (one district: the pits of one seam, the best deposit of its ring of cells)', { lab: 'mine', ess: true });
       continue;
     }
     const what = s.kind === 'minority' ? `${TIER(p, d, s, ago)} (their own place, as a second people here)` : TIER(p, d, s, ago);
-    R('place', '', `${what} of the ${name(h)}, ~${n0(p)} people; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ~${yrs(a)} ago`).join(', ')}` : ''}`
-      + `${s.abandoned_kyr != null ? `; left ~${yrs(s.abandoned_kyr)} ago (${esc(s.why)})` : ''}`, { lab: 'settlement', ess: true });
+    R('place', '', `${what} of the ${name(h)}, ~${n0(p)} people; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ${yrs(a)}`).join(', ')}` : ''}`
+      + `${s.abandoned_kyr != null ? `; left ${yrs(s.abandoned_kyr)} (${esc(s.why)})` : ''}`, { lab: 'settlement', ess: true });
     if (who) R('place', '', `${who} (${s.who_when})`, { lab: 'its people', ess: true });
   }
 }

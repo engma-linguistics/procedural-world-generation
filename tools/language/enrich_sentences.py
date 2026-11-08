@@ -3,7 +3,7 @@ pass (planet/language/sentences.py on each lect's record; the pass itself does t
 
     uv run python tools/language/enrich_sentences.py IN.json OUT.json
 
-Writes OUT.json only; IN.json is never changed (a run's file stays as the pass wrote it)."""
+Writes OUT.json and its sidecars (OUT-etym.json, OUT-snapshots.json) only; IN.json is never changed (a run's file stays as the pass wrote it)."""
 from __future__ import annotations
 
 import json
@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from planet.language import sentences as SN  # noqa: E402
+from planet.language import output as OU, sentences as SN  # noqa: E402
 
 
 def main(argv=None) -> int:
@@ -20,13 +20,13 @@ def main(argv=None) -> int:
     if len(a) != 2 or Path(a[0]).resolve() == Path(a[1]).resolve():
         print(__doc__, file=sys.stderr)
         return 2
-    doc = json.loads(Path(a[0]).read_text(encoding="utf-8"))
+    doc = OU.load(a[0])
     n = 0
     for l in doc["lects"]:
         if l.get("died_kyr") is None and l.get("deme") is not None:
             SN.enrich(l)
             n += 1
-    Path(a[1]).write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    OU.save(doc, a[1])   # (format /2: the main file and its two sidecars beside it)
     print(f"{n} living lects enriched -> {a[1]}")
     return 0
 

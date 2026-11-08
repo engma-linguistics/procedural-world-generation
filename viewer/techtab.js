@@ -8,6 +8,8 @@
 //   inventory one people's kit by track, with what could come next and why not yet
 //   cascade   one tech's transmission tree: who had it from whom, and how long it waited at each border
 //   table     the first tab's matrix: every people against every tech, and the firsts
+//   spread    how fast one tech (writing by default) spread: the share of settled people that knew it over time, and who had it
+//             when and from whom, per people and per culture (GET /api/techspread, planet/lineages/techspread.py; lane 184)
 // A classic script: lineages.html calls TechTab.draw(el, result) with result = { id, ...run.meta } of the picked run.
 (() => {
   const CSS = `
@@ -70,7 +72,7 @@
     return (sp > n / 2 ? cut.slice(0, sp) : cut).replace(/[ ,;:-]+(and|or|of|the)?$/, '') + '…';
   };
   const fmt = NumFmt.kyr;  // (numfmt.js, loaded first by lineages.html)
-  const ago = (k) => (k <= 0 ? 'the present' : fmt(k) + ' ago');
+  const ago = (k) => NumFmt.ago(k);  // a date (numfmt.js, PW-1429)
   // how a people came to know a tech (the colours of the first tab and of the globe's 'technology' layer)
   const HOW_COL = { invented: '#ffd27a', contact: '#7fb0ff', kit: '#c79bff', inherited: '#8fa0b4', tamed: '#6bd6a0', shared: '#6bd6d0' };
   const howCol = (how) => HOW_COL[how] || (String(how).startsWith('with') ? '#6bd6a0' : '#aaa');
@@ -79,7 +81,7 @@
   const TRACK_COL = { communication: '#7cc4ff', fire: '#ff9d6b', tools: '#c9b08a', food: '#9fd18b', shelter: '#e3c26b', travel: '#6bd6d0', social: '#ff8fc8', arcane: '#c79bff' };
   const trackCol = (id) => TRACK_COL[id] || '#aab4c3';
   const ERAS = ['stone age', 'bronze age', 'classical', 'medieval', 'renaissance', 'industrial'];
-  const VIEWS = [['tree', 'Tree'], ['timeline', 'Timeline'], ['map', 'Map'], ['inventory', 'Inventory'], ['cascade', 'Cascade'], ['table', 'Table']];
+  const VIEWS = [['tree', 'Tree'], ['timeline', 'Timeline'], ['map', 'Map'], ['inventory', 'Inventory'], ['cascade', 'Cascade'], ['table', 'Table'], ['spread', 'Spread']];
   const FOOT = {
     tree: `Columns: prerequisite depth inside each era (eras left to right, an era starts after the last column of the one before). Lanes: the tracks.
       A box shows the tech's earliest real-world date (or, as seen by a people, when and how it came to them); the small bar, bottom right, the share of living peoples that know it now. ✦ fantasy.
@@ -95,10 +97,13 @@
     cascade: `Each row a people that came to the tech, placed under the people it came from (depth-first: a cascade reads downwards). Time runs left to right on a log axis.
       A line drops at the giver's date and runs along the taker's row to the taker's date: its length is how long the tech waited at the border. Stars are roots: independent inventions, brought kits, tamings.`,
     table: `Peoples down (oldest first), techs across by track: a square per known tech in the colour of how it came. Drag the time slider: what was not yet known then is greyed.`,
+    spread: `How fast one tech spread. The curve: at each century step of the settlement ledger, the share of the settled people (everyone in a village, town or city) whose people knew it by then
+      (solid), and the share of the cells with a town (dashed). The table: each people that ever had a place, when it first knew the tech and how; "ready" is when it knew the tech's own needs,
+      "in touch" when it first bordered a people who knew it, so a long wait after both is the border being slow. A "big" people holds 1% or more of the settled people now. Cultures: on the right.`,
   };
   const st = { view: (location.hash.split('/')[1] || 'tree'), tech: null, who: '', fant: true, picked: null,
     tl: { track: '', tech: '', sort: 'start', inh: false, gone: true }, inv: { who: null, vs: '', at: 0 },
-    colour: 'how', mapAgo: null, mapFirst: null, table: { at: 0, track: 'all', all: false } };
+    colour: 'how', sp: { tech: 'writing', by: 'people', docs: {} }, mapAgo: null, mapFirst: null, table: { at: 0, track: 'all', all: false } };
   if (!VIEWS.some(([v]) => v === st.view)) st.view = 'tree';
   let D = null, ROOT = null, mounted = '';
 
@@ -151,7 +156,7 @@
   function techTip(id, extra = '') {  // (the real-world source at the bottom: where and when it happened on Earth)
     const t = D.TECH[id], f = D.firsts[id];
     const land = [...t.env, ...(t.env_any.length ? ['one of ' + t.env_any.join(' / ')] : [])].join(', ');
-    return `<b>${esc(t.name)}</b><div class="muted">${esc(D.TRACK[t.track]?.name || t.track)} · ${esc(t.era)}${t.fantasy ? ' · fantasy' : ''}</div>
+    return `<b>${esc(t.name)}</b><div class="muted">${esc(D.TRACK[t.track]?.name || t.track)} · ${esc(t.era)}${t.fantasy ? ' · fantasy' : ''}${t.sea ? ' · sea peoples\' branch' : ''}${t.state ? ' · needs towns of its own' : ''}</div>
       <div>needs: ${t.needs.length ? t.needs.map((n) => esc(tname(n))).join(', ') : '<span class="muted">nothing</span>'}</div>
       ${land ? `<div>land: ${esc(land)}</div>` : ''}
       <div>earliest ${t.earliest_kyr ?? '?'} kyr${t.elder_kyr ? ` (elder kinds ${t.elder_kyr})` : ''}</div>
@@ -245,7 +250,7 @@
       s += `<g class="${cls}" data-id="${t.id}" transform="translate(${x},${y})"><rect class="bg" width="${BW}" height="${BH}" rx="4"/>
         <rect width="4" height="${BH}" rx="2" fill="${trackCol(t.track)}"/>
         <title>${esc(tname(t.id))}</title><text x="10" y="13">${esc(clipWords(tname(t.id), t.fantasy ? 24 : 26))}${t.fantasy ? ' ✦' : ''}</text>
-        <text class="when" x="10" y="25">${v ? `${fmt(v[0])} ago · ${esc(v[1])}` : `from ${t.earliest_kyr != null ? fmt(t.earliest_kyr) : '?'}`}</text>
+        <text class="when" x="10" y="25">${v ? `${ago(v[0])} · ${esc(v[1])}` : `from ${t.earliest_kyr != null ? fmt(t.earliest_kyr) : '?'}`}</text>
         <rect x="${BW - 26}" y="${BH - 7}" width="22" height="3" fill="#2a3446"/><rect x="${BW - 26}" y="${BH - 7}" width="${22 * share}" height="3" fill="${trackCol(t.track)}"/></g>`;
     }
     let lab = `<rect width="${LEFT}" height="${H}" fill="#0e1218" opacity=".92"/>`;  // (the lane names stay on the left)
@@ -427,14 +432,14 @@
       if (lack.length) return `all needs known; its country lacks ${lack.join(', ')}`;
       if (t.env_any.length && !t.env_any.some((e) => g.includes(e))) return `all needs known; its country has none of ${t.env_any.join(' / ')}`;
     }
-    return `all needs known${t.earliest_kyr != null ? `; not before ${fmt(t.earliest_kyr)} ago` : ''}; waits on invention or a neighbour`;
+    return `all needs known${t.earliest_kyr != null ? `; not before ${ago(t.earliest_kyr)}` : ''}; waits on invention or a neighbour`;
   }
   function invMount(bar) {
     const s = st.inv;
     if (!s.who || !D.LINE[s.who]) s.who = D.LINE.human?.in_tree ? 'human' : [...D.PEOPLES].filter(alive).sort((a, b) => Object.keys(D.known[b.id]).length - Object.keys(D.known[a.id]).length)[0]?.id;
     bar.innerHTML = `<span class="muted">people</span><select id="tt-iwho">${peopleOptions(s.who)}</select>
       <span class="muted">compare with</span><select id="tt-ivs"><option value="">nobody</option>${peopleOptions(s.vs)}</select>
-      <span class="muted">as at</span><select id="tt-iat">${[0, 1, 3, 6, 12, 25, 50, 100, 300, 1000].map((k) => `<option value="${k}" ${k === s.at ? 'selected' : ''}>${k ? fmt(k) + ' ago' : 'the present'}</option>`).join('')}</select>
+      <span class="muted">as at</span><select id="tt-iat">${[0, 1, 3, 6, 12, 25, 50, 100, 300, 1000].map((k) => `<option value="${k}" ${k === s.at ? 'selected' : ''}>${k ? ago(k) : 'the present'}</option>`).join('')}</select>
       <label class="muted"><input type="checkbox" id="tt-ifant" ${st.fant ? 'checked' : ''}> fantasy techs</label>
       <span class="key"><span><span class="sw" style="background:#1f2a3a;border-left:3px solid #ffd27a"></span>known (edge: how it came)</span><span><span class="sw" style="border:1px dashed #e3c26b"></span>could come next</span><span><span class="sw" style="background:#141a22;border:1px solid #2a3446"></span>out of reach</span>
       <span>hover: <span style="color:#e3c26b">needs</span> · <span style="color:#7cc4ff">leads to</span></span></span>`;
@@ -544,13 +549,13 @@
     bar.innerHTML = `<select id="tt-ttrack"><option value="all">all tracks</option>${D.tracks.map((k) => `<option value="${k.id}" ${k.id === s.track ? 'selected' : ''}>${esc(k.name)}</option>`).join('')}</select>
       <label class="muted"><input type="checkbox" id="tt-tall" ${s.all ? 'checked' : ''}> lines gone by the present too</label>
       <span class="muted">known at</span><input type="range" id="tt-tat" min="0" max="1000" value="${s.toV(s.at)}" style="width:320px">
-      <b id="tt-tatlab">${s.at <= 0 ? 'the present' : fmt(s.at) + ' ago'}</b>
+      <b id="tt-tatlab">${s.at <= 0 ? 'the present' : ago(s.at)}</b>
       <span class="key">${keyHow()}</span>`;
     $('tt-ttrack').onchange = (e) => { s.track = e.target.value; update(); };
     $('tt-tall').onchange = (e) => { s.all = e.target.checked; mounted = ''; window.TechTab.draw(ROOT, D.result); };
     $('tt-tat').oninput = (e) => {  // (only the squares' opacity and the counts change: no redraw)
       s.at = s.toK(+e.target.value);
-      $('tt-tatlab').textContent = s.at <= 0 ? 'the present' : fmt(s.at) + ' ago';
+      $('tt-tatlab').textContent = s.at <= 0 ? 'the present' : ago(s.at);
       for (const tr of $('tt-mat').rows) {
         let n = 0;
         for (const q of tr.querySelectorAll('.tq')) { const on = +q.dataset.k >= s.at; q.style.opacity = on ? 1 : 0.12; n += on; }
@@ -580,11 +585,11 @@
         const edge = t.track !== lastTrack ? 'border-left:2px solid #3a4658;' : ''; lastTrack = t.track;
         const v = kn[t.id], on = v && v[0] >= s.at;
         if (on) n++;
-        h += v ? `<td style="padding:1px;${edge}" title="${esc(l.name)}: ${esc(t.name)} since ${fmt(v[0])} ago (${esc(v[1])}${v[2] ? ' from ' + esc(short(v[2])) : ''})"><div class="tq" data-k="${v[0]}" style="width:${cell}px;height:${cell}px;border-radius:2px;background:${howCol(v[1])};opacity:${on ? 1 : 0.12}"></div></td>`
+        h += v ? `<td style="padding:1px;${edge}" title="${esc(l.name)}: ${esc(t.name)} since ${ago(v[0])} (${esc(v[1])}${v[2] ? ' from ' + esc(short(v[2])) : ''})"><div class="tq" data-k="${v[0]}" style="width:${cell}px;height:${cell}px;border-radius:2px;background:${howCol(v[1])};opacity:${on ? 1 : 0.12}"></div></td>`
           : `<td style="padding:1px;${edge}"><div style="width:${cell}px;height:${cell}px;border-radius:2px;border:1px solid #1f2836;box-sizing:border-box"></div></td>`;
       }
       const lg = kn.language;
-      h += `<td class="n tn">${n}</td><td class="muted" style="white-space:nowrap;font-size:12px">${lg ? `${fmt(lg[0])} ago, ${esc(lg[1])}${lg[2] ? ' from ' + esc(short(lg[2])) : ''}` : 'none'}</td></tr>`;
+      h += `<td class="n tn">${n}</td><td class="muted" style="white-space:nowrap;font-size:12px">${lg ? `${ago(lg[0])}, ${esc(lg[1])}${lg[2] ? ' from ' + esc(short(lg[2])) : ''}` : 'none'}</td></tr>`;
     }
     h += '</table></div>';
     h += `<h2>Firsts</h2><div class="cards">${D.tracks.filter((k) => s.track === 'all' || k.id === s.track).map((k) => `<div class="card"><b>${esc(k.name)}</b>
@@ -593,9 +598,83 @@
     $('tt-tab').innerHTML = h;
   }
 
+  // ---- 7. how fast a tech spread (lane 184): the share of settled people over time, and who had it when ----
+  function spMount(bar, main) {
+    if (!D.TECH[st.sp.tech]) st.sp.tech = st.tech;
+    bar.innerHTML = `<span class="muted">tech</span><select id="tt-stech">${techOptions(st.sp.tech, true)}</select>
+      <span class="muted">curve of</span><select id="tt-sby"><option value="people">settled people</option><option value="towns">cells with a town</option><option value="both">both</option></select>
+      <button id="tt-sglobe" title="The same tech on the globe: each people's land lit from the moment it knew it">on the globe</button>`;
+    main.innerHTML = '<div class="tt-split" style="grid-template-columns:minmax(0,1fr) 360px"><div class="tt-pad" id="tt-sp"></div><div class="tt-side" id="tt-side"></div></div>';
+    $('tt-sby').value = st.sp.by;
+    $('tt-stech').onchange = (e) => { st.sp.tech = e.target.value; update(); };
+    $('tt-sby').onchange = (e) => { st.sp.by = e.target.value; update(); };
+    $('tt-sglobe').onclick = () => setView('map', st.sp.tech);
+  }
+  const spGet = (tech) => {  // (one fetch per run and tech; a second draw while it is in flight waits for the same one)
+    const k = `${D.id}|${tech}`;
+    return st.sp.docs[k] ||= fetch(`../api/techspread?run=${encodeURIComponent(D.id)}&tech=${encodeURIComponent(tech)}`, { cache: 'no-store' })
+      .then((r) => r.ok ? r.json() : r.text().then((t) => { let m = t; try { m = JSON.parse(t).error || t; } catch (e) {} return { error: `${r.status} ${String(m).slice(0, 200)}` }; }))
+      .catch((e) => ({ error: e.message }))
+      .then((d) => { if (d.error) delete st.sp.docs[k]; return d; });
+  };
+  function spDraw() {
+    const tech = st.sp.tech, run = D.id;
+    if ($('tt-sp')) $('tt-sp').innerHTML = `<p class="muted">Working out how ${esc(tname(tech))} spread…</p>`;
+    spGet(tech).then((doc) => {
+      if (st.view !== 'spread' || st.sp.tech !== tech || D.id !== run || !$('tt-sp')) return;  // (the pick moved on meanwhile)
+      if (doc.error) { $('tt-sp').innerHTML = `<p class="err">Could not work out the spread: ${esc(doc.error)}</p>`; $('tt-side').innerHTML = ''; return; }
+      spRender(doc);
+    });
+  }
+  function spCurve(doc) {
+    const s = doc.stats, A = doc.steps, W = Math.max(520, ($('tt-sp').clientWidth || 800) - 30), H = 230, L = 46, R = 14, T = 12, B = 30;
+    const hi = Math.min(A[0], s.first_kyr != null ? s.first_kyr + Math.max(0.6, s.first_kyr * 0.25) : A[0]);
+    const x = (k) => L + (1 - k / hi) * (W - L - R), y = (v) => T + (1 - v) * (H - T - B);
+    const line = (vals) => A.map((a, i) => a <= hi + 1e-9 ? `${x(a).toFixed(1)},${y(vals[i]).toFixed(1)}` : null).filter(Boolean).join(' ');
+    const step = hi > 8 ? 2 : hi > 4 ? 1 : hi > 1.6 ? 0.5 : 0.2, ticks = [];
+    for (let k = 0; k <= hi + 1e-9; k += step) ticks.push(+k.toFixed(3));
+    let g = ticks.map((k) => `<line x1="${x(k)}" x2="${x(k)}" y1="${T}" y2="${H - B}" stroke="#1a2230"/><text x="${x(k)}" y="${H - B + 14}" text-anchor="middle" font-size="10" fill="var(--muted)">${esc(k ? ago(k) : 'now')}</text>`).join('');
+    g += [0, 0.25, 0.5, 0.75, 1].map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0.5 ? '#3a4658' : '#1a2230'}"/><text x="${L - 6}" y="${y(v) + 3}" text-anchor="end" font-size="10" fill="var(--muted)">${Math.round(v * 100)}%</text>`).join('');
+    if (st.sp.by !== 'towns') g += `<polyline points="${line(doc.share_people)}" fill="none" stroke="var(--acc)" stroke-width="2"/>`;
+    if (st.sp.by !== 'people') g += `<polyline points="${line(doc.share_towns)}" fill="none" stroke="#e3c26b" stroke-width="1.6" stroke-dasharray="5 3"/>`;
+    for (const p of doc.peoples) if (p.ago != null && p.how === 'invented' && p.ago <= hi) {
+      g += `<path transform="translate(${x(p.ago)},${y(0) - 8})" d="M0,-6 L1.8,-2 L6,-2 L2.6,1 L4,5.4 L0,2.8 L-4,5.4 L-2.6,1 L-6,-2 L-1.8,-2 z" fill="${HOW_COL.invented}"><title>${esc(p.name)} invented it ${esc(ago(p.ago))}</title></path>`;
+    }
+    return `<svg width="${W}" height="${H}" role="img" aria-label="share that knew ${esc(doc.tech_name)} over time">${g}</svg>
+      <div class="key"><span><span class="sw" style="background:var(--acc)"></span>settled people</span><span><span class="sw" style="background:#e3c26b"></span>cells with a town (dashed)</span><span style="color:${HOW_COL.invented}">★ an invention</span></div>`;
+  }
+  function spRender(doc) {
+    const s = doc.stats, f = s.first_kyr;
+    const after = (a) => a == null ? 'not yet' : `${ago(a)} <span class="muted">(${fmt(Math.max(f - a, 0))} after)</span>`;
+    const kpi = f == null ? `<p class="muted">Nobody in this run came to ${esc(doc.tech_name)}.</p>` : `<div class="kpi">
+      <div><b>${esc(ago(f))}</b><span>first: ${esc(s.first_by.join(', '))}</span></div>
+      <div><b>${s.inventions}</b><span>independent inventions</span></div>
+      <div><b>${after(s.reach_kyr['0.5'])}</b><span>half the settled people</span></div>
+      <div><b>${after(s.reach_kyr['0.9'])}</b><span>nine in ten</span></div>
+      <div><b>${s.last_big ? `${esc(s.last_big.name)}, ${after(s.last_big.ago)}` : '—'}</b><span>last big people to get it</span></div>
+      <div><b>${Math.round(s.share_now * 100)}%</b><span>of settled people know it now</span></div></div>
+      ${s.big_never.length ? `<p>Big peoples that never had it: <b>${esc(s.big_never.join(', '))}</b>.</p>` : ''}`;
+    const rows = doc.peoples.map((p) => {
+      const start = p.ready != null && p.touch != null ? Math.min(p.ready, p.touch) : null;
+      const wait = p.ago != null && p.how === 'contact' && start != null ? fmt(Math.max(start - p.ago, 0)) : '';
+      return `<tr class="${p.ago == null ? 'future' : ''}"><td>${sw(p.id)}${esc(p.name)}${p.big ? ' <span class="muted">big</span>' : ''}</td>
+        <td class="n">${p.ago != null ? esc(ago(p.ago)) : '<span class="muted">never</span>'}</td>
+        <td>${p.how ? `<span class="sw" style="background:${howCol(p.how)}"></span>${esc(howText(p.how))}${p.from ? ' <span class="muted">from</span> ' + esc(p.from_name || short(p.from)) : ''}` : ''}</td>
+        <td class="n">${p.ready != null ? esc(ago(p.ready)) : '<span class="muted">not ready</span>'}</td><td class="n">${p.touch != null ? esc(ago(p.touch)) : '—'}</td>
+        <td class="n">${wait}</td><td class="n">${(p.share_now * 100).toFixed(1)}%</td></tr>`;
+    }).join('');
+    $('tt-sp').innerHTML = `<h3>How fast ${esc(doc.tech_name)} spread</h3>${kpi}${spCurve(doc)}
+      <h3>Peoples (${doc.peoples.filter((p) => p.ago != null).length} of ${doc.peoples.length} with places ever knew it)</h3>
+      <table class="t"><tr><th>people</th><th>first knew it</th><th>how</th><th>ready</th><th>in touch</th><th>waited at the border</th><th>settled people now</th></tr>${rows}</table>`;
+    $('tt-side').innerHTML = `${techTip(st.sp.tech)}<h3>Cultures (${doc.cultures.length})</h3>
+      <table class="t"><tr><th>when</th><th>culture</th><th>how</th></tr>${doc.cultures.map((c) => `<tr class="${c.alive ? '' : 'future'}"><td class="n">${esc(ago(c.ago))}</td>
+        <td>${sw(c.people)}${esc(c.name)}</td><td>${esc(c.how === 'from its start' ? 'its people knew it when it began' : howText(c.how))}${c.from ? ' <span class="muted">from</span> ' + esc(short(c.from)) : ''}</td></tr>`).join('')}</table>
+      <p class="muted">Greyed: a culture that has since ended.</p>`;
+  }
+
   // ---- the frame of the tab ----
-  const MOUNT = { tree: treeMount, timeline: tlMount, map: mapMount, inventory: invMount, cascade: casMount, table: tableMount };
-  const DRAW = { tree: treeDraw, timeline: tlDraw, map: mapDraw, inventory: () => invDraw($('tt-main')), cascade: casDraw, table: tableDraw };
+  const MOUNT = { tree: treeMount, timeline: tlMount, map: mapMount, inventory: invMount, cascade: casMount, table: tableMount, spread: spMount };
+  const DRAW = { tree: treeDraw, timeline: tlDraw, map: mapDraw, inventory: () => invDraw($('tt-main')), cascade: casDraw, table: tableDraw, spread: spDraw };
   function update() { hideTip(); DRAW[st.view](); }
   window.TechTab = {
     get view() { return st.view; },

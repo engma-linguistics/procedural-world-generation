@@ -2,9 +2,9 @@
 id: PW-846
 title: "Mountains: tallest peak 5.7 km and few Himalaya/Andes/Rockies/Alps-scale ranges; check caps, erosion and orogenic growth, and compare range counts and hypsometry with Earth across seeds"
 type: task
-status: todo
+status: done
 parent: PW-244
-milestone: v2
+milestone: later
 subsystem: tectonics
 effort: m
 impact: high
@@ -13,12 +13,16 @@ blocked_by: []
 relates: []
 refs: []
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-11-04
 ---
 
 ## Description
 Owner feedback 2026-10-25 (feedback doc on world 2a7385): Owner: are there enough ranges of Earth-like sizes, is anything capping them, is erosion flattening them too fast? Investigation pending; relates PW-826 (volcano cap).
 
 ## Updates
+- 2026-11-04: Status todo -> done. Lane 174 merged: planet/summit.py (HydroSHEDS 0.5 deg, 75th percentile by local relief), viewer/globe/summit.js; Earth L7 top summit 7.68 km. Physics gaps stay as PW-1446 (overshoot) and the Andes note.
+- 2026-11-04: Lane 174 built the display fix (planet/summit.py, viewer/globe/summit.js): summit = cell mean + Earth's sub-cell relief by local relief (75th percentile, HydroSHEDS 30" blocks). Earth L7 top reads 7.7 km (cell average 5.9); highlights, range blurbs, world summary and the globe cell readout use it; cell averages unchanged elsewhere. Physics follow-ups (craton overshoot, Andean margins) stay open.
+- 2026-11-03: Scout 171 (docs/review/tectonics/mountains/scout1.md): not too low. The model stores cell averages; Earth averaged at L7 tops out at 5.9 km (Tibet) and its texture gives 5.7-6.3 km, the ticket's number. Current L7 has more high ground than Earth (1.6-3.7% above 4 km vs 1.7%). Re-scoped to presentation: summit height = cell mean + Earth's measured sub-cell relief for the peak highlight and labels. Physics gaps (craton overshoot, rare Andean ranges) are separate.
+- 2026-11-03: Milestones 11-03: v2 -> later: physics side track, ranked 2; gates no tag
 - 2026-10-25: Investigation: no elevation clamp; crust capped at 80 km (isostasy MAX_KM, ~6.9 km before swell); run 6b48f5's peaks are 5-8.5 km per frame (max 9.6), so 2a7385's 5.7 km is a low-relief moment. 2a7385 has 0.4% of land above 4 km against Earth's 1.5% (Earth at L6, smoothed); other L7 worlds 0.2-2.6%. Erosion doesn't look like the main cause; tie to PW-827 (sluggish late plates, fewer active collisions).
 - 2026-10-25: Created.

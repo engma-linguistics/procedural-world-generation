@@ -4,7 +4,7 @@ title: "Settlements: owner look at the mining colonies and the 'mining follows n
 type: task
 status: needs-decision
 parent: PW-856
-milestone: v2
+milestone: later
 subsystem: culture
 effort: xs
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1131, PW-1116]
 refs: [planet/lineages/settlements.py, viewer/globe/settlements.js, docs/review/settlements/README.md, "run 488d7e", "run 570701"]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-03
 ---
 
 ## Description
@@ -43,4 +43,5 @@ Lean: keep as is.
 - [ ] Owner looks at the links
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: settlement mining-colony check; not a must-have
 - 2026-10-30: Created from inbox draft draft-mining-colonies-owner-look.md (found by fun-lane-72).

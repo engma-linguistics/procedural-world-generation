@@ -1,0 +1,14 @@
+=== 0ea92b (l201-sm-main-s7)
+live step s 5.8 tech s 17.3 constants - -
+  row ant_human      happened True  took  40 km2    2,238,354 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 18 state 18 victim 18 border 45
+  row hob_dwarf      happened False took   0 km2            0 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 11 state 9 victim 6 border 0
+  row dwarf_hob      happened False took   0 km2            0 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 18 state 10 victim 18 border 0
+  row halforc_human  happened True  took  47 km2    5,504,046 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 18 state 18 victim 18 border 51
+  row human_tabaxi   happened True  took   8 km2      762,721 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 13 state 13 victim 13 border 8
+  row elf_orc        happened True  took   2 km2    3,875,870 exped   0 (km ) exped_fail   0 need_km - war_band 0 steps 18 state 16 victim 18 border 3
+  conquests {'war': 402, 'invasion': 97}
+  fates n/a (main)   {'kept': 1545, 'thinned': 54, 'expelled': 4} heads lost {'kept': 0, 'thinned': 583888, 'expelled': 22775}
+  states (ago: states, largest Mkm2 people, ruled Mkm2, collapsed this step) 3.0: 98, 0.756 human, 12.65; 2.0: 170, 0.47 half_orc, 24.57; 1.0: 188, 0.361 half_orc, 28.15; 0.5: 202, 1.939 half_orc, 34.19; 0.0: 219, 3.303 half_orc, 37.45
+  shares % human 39.9, half_orc 22.5, antelope_folk 18.5, tabaxi 3.4, dragonborn 3.1, lizardfolk 2.7, bugbear 1.9, elf 1.5
+  first anyone (kyr ago) {'writing': 4.625, 'kingship': 5.34, 'law': 3.229, 'cities': 5.738}
+  writing by people {'aarakocra': 4.006, 'aarakocra_granivore': 3.865, 'aarakocra_piscivore': 3.865, 'aarakocra_raptor': 3.865, 'aarakocra_sailor': 3.865, 'anja': 4.305, 'antelope_folk': 3.728, 'antelope_mountain': 3.597, 'antelope_oryx': 3.597, 'antelope_savanna': 3.597, 'antelope_steppe': 3.597, 'arha': 4.305, 'bugbear': 3.47, 'cervid_boreal': 4.305, 'cervid_folk': 4.462, 'cervid_forest': 4.305, 'cervid_tundra': 4.305, 'cloud_giant': 3.597, 'deep_folk': 4.625, 'dragonborn': 3.865, 'dwarf': 4.153, 'elf': 4.305, 'frost_giant': 4.006, 'gnome': 3.865, 'goblin': 4.153, 'goliath': 3.865, 'half_orc': 3.728, 'halfling': 4.305, 'hill_giant': 4.305, 'hobgoblin': 3.865, 'human': 4.305, 'human_arctic': 4.153, 'human_farmer': 4.153, 'human_forager': 4.153, 'human_jangwa': 4.462, 'human_seafarer': 4.305, 'kobold': 4.305, 'leonin': 4.153, 'lizard_delta': 3.597, 'lizard_desert': 3.597, 'lizardfolk': 3.597, 'orc': 4.462, 'stone_giant': 3.728, 'tabaxi': 3.865, 'tortle': 4.006}

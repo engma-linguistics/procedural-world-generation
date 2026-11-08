@@ -2,7 +2,7 @@
 id: PW-841
 title: "Peoples workbench tree and timeline: text overlaps and clips on the left, needs sideways scroll, a pinned timeline header, and a toggle between species and cultures (groups, peoples)"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v2
 subsystem: viewer
@@ -13,13 +13,15 @@ blocked_by: []
 relates: []
 refs: []
 created: 2026-10-25
-updated: 2026-10-26
+updated: 2026-11-03
 ---
 
 ## Description
 Owner feedback 2026-10-25 (feedback doc on world 2a7385): Owner on seven_meals: overlapping text, off-chart labels; timeline should stay visible when scrolling; toggle species/subspecies vs distinct peoples such as the lizardfolk, orc and human groups.
 
 ## Updates
+- 2026-11-03: Status todo -> done. Lane 168: the controls moved out of the axis into their own bar (they covered the axis labels); an opaque corner above the names; axis band names re-centre on the part in view; name column measured, not estimated; the view menu now has species and stems / peoples only / species + cultures / species + regional populations. Checked in headless Chrome on seven_meals and dnd, scrolled both ways.
+- 2026-11-03: Status needs-decision -> todo. Owner 11-03: the tree fix works in Chrome and Firefox alike. Remaining owner feedback (overlaps, off-chart labels, sticky timeline, species toggle) stays v2.
 - 2026-10-26: Status todo -> needs-decision. Merged fix: #tl grew to content height so its sideways scrollbar sat below the fold; now bounded (minmax(0,1fr)), shift+wheel, horizontal wheel, drag-pan, fit-all button, ?diag=1 log. Verified headless Chrome only; awaiting owner confirmation in Firefox.
 - 2026-10-26: Status done -> todo. Reopened 2026-10-26: owner can't scroll the peoples tree/timeline sideways by any normal means (wheel, shift-wheel, drag, scrollbar) to reach early start points. Fun lane 25's fix was never confirmed by the owner. Verify in Firefox on PC.
 - 2026-10-25: Status todo -> done. Merged fun lane 25.

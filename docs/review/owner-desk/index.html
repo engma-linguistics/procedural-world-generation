@@ -68,147 +68,57 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 
 <div class="wrap">
 <header>
-  <div class="kicker">procgen_world · Tuesday 3 November 2026 · evening</div>
+  <div class="kicker">procgen_world · Saturday 7 November 2026</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Your comments are all acted on: rulings on the tickets, both religion bugs fixed, the board cut from 382 to 89 in v2.
-Two lanes run: where foods come from, and why the climate is touchy.</p>
-  <nav class="toc"><a href="#answers">The board, your two questions</a><a href="#coming">Running now</a><a href="#religion">Religion</a><a href="#landzoom">Land zoom</a><a href="#settled">Settled today</a></nav>
+  <p class="lede">Overnight: your D61 is being built, a sourced look at your writing question, and two physics scouts (Andes-type ranges, the rainforest's leaf constant). Nothing waits on you.</p>
+  <nav class="toc"><a href="#answers">For you</a><a href="#coming">Running now</a><a href="#settled">Settled since last night</a></nav>
 </header>
 
-<h2 id="answers">Your questions</h2>
-<div class="card" id="board"><div class="id">THE BOARD, CUT DOWN (LANE 156, MERGED) · FIVE CALLS YOU MAY WANT TO REVERSE</div>
-<p><b>In plain words:</b> v2 went from 382 open tickets to 89. Nothing was thrown away: 291 moved to the backlog (<code>later</code>), each with
-a one-line reason, and two clear duplicates were closed. From now on a lane may file at most 3 tickets, and each must say what breaks or misleads
-if it's never done; everything else goes in its write-up. v2 now holds the food work (what each people eats, cooks and burns), what makes a
-planet or a people visibly broken, the land zoom in flight, and the speed pass.</p>
-<ol>
-<li><b>Languages, polities, religion follow-ups and the empire on your world went to the backlog</b> (food first). Want any back in v2?</li>
-<li><b>War, plague, events and attitudes went to the backlog, not v3.</b> v3 is "wanted, but later"; backlog is "maybe". Your call which.</li>
-<li><b>Rain stays out of v2</b> (15 tickets), although Earth's mid-latitude interiors are about 1.7&times; too wet compared with measured rain. Rain has failed five tries.
-Pull it back if wet interiors make the crops look wrong.</li>
-<li><b>Getting the level 7 pass rate back to 70%+ went to the backlog</b>, as the fiddly chasing your north star argues against.</li>
-<li><b>32 tickets waiting on a decision still sit in v2</b>, mostly peoples and culture, many small. A short sitting on them is the fastest further cut.</li>
-</ol>
-<p>The write-up also lists <b>candidates to drop entirely</b>, by subsystem, one line each, for you to strike: <code>docs/review/board/triage-2026-11-03.md</code>.
-137 tickets have no milestone at all; they're next.</p>
-</div>
-
-<div class="card" id="qa"><div class="id">YOUR TWO QUESTIONS FROM TONIGHT</div>
-<p><b>L10, and whether to step through L8.</b> The refine accepts any finer level, and a refined world can be refined again, so both
-L7&nbsp;&rarr;&nbsp;L9 and L7&nbsp;&rarr;&nbsp;L8&nbsp;&rarr;&nbsp;L9 run today (<code>planet/refine.py</code>). Nobody has compared them. My guess, unmeasured: stepping adds fine
-detail one level at a time, the way the zoom layers its relief, while the direct jump is cheaper. But L10 isn't worth it for the whole
-planet. A refined L9 already measured 38.8 GB of memory and a file 3.3&times; what the browser can open (<code>docs/review/refine-l8/report.md</code>).
-L10 has four times the cells, so it would be well beyond that. For that much detail the land zoom is the route: it does a region at 1–4 km. If you
-ever want L9, a one-off comparison of direct against stepped is cheap; say the word.</p>
-<p><b>Should 0 be pre-industrial instead of "today"?</b> Our 0 is Earth at 350 ppm CO2, the climate its data show for roughly 1960–2000
-(<code>planet/climate.py</code>, <code>PCO2_REF</code>). That sits only a few tenths of a degree above pre-industrial (my estimate, from the usual
-1850–1900 records), not 1–2 °C. Most of the warming climatologists plot came after 2000. Moving the zero would shift every number and threshold by the same amount and
-change no world, so I'd leave it. One correction: an earlier card here called the accepted range's anchor "pre-industrial 13.8 °C". It's this
-1960–2000 climate, about 14 °C, so the range (−6 to +5 °C) is about 8–19 °C.</p>
+<h2 id="answers">For you</h2>
+<div class="card" id="map"><div class="id">THE ROAD TO V1.0 ON 1 DECEMBER</div>
+<div class="tbl"><table>
+<tr><th>Tag</th><th>Target</th><th>What you can do</th><th>Where it is</th></tr>
+<tr><td>v0.2.0</td><td>Tue 10 Nov</td><td>Write your own faiths, read what a culture cooks, see dates in years.</td><td>tagged Sat 7 Nov</td></tr>
+<tr><td>v0.3.0</td><td>Tue 17 Nov</td><td>States and war, first cut: who rules where at any year, empires, invasions you schedule.</td><td>merged; the nudge check is half met (PW-1460, v4); your D56 reach merged</td></tr>
+<tr><td>v0.4.0</td><td>Mon 23 Nov</td><td>States fight inside the history; calendars; a name slot for your languages.</td><td>first cut of states inside the history merged (off); D56 and D59 answered, being built (lane 204)</td></tr>
+<tr><td>v0.5.0</td><td>Sat 28 Nov</td><td>Your December world: pick from three candidates, refine from the viewer, every Seven Meals people right.</td><td>not started</td></tr>
+<tr><td>v1.0.0</td><td>Tue 1 Dec</td><td>An agent walks the checklist, then you do; tag.</td><td></td></tr>
+</table></div>
+<p>Full map: <code>docs/review/board/milestones-v2-v5.md</code>.</p>
 </div>
 
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>157 · where foods come from</td><td>Your food ask. There are already 33 crops in the model (staples, cuisine plants, regional foods). This checks each one's homeland and date against published sources, adds missing ones (staples first), and fixes how foods spread: today crops cross oceans freely "by canoe", so New World foods can reach the Old World long before sailing ships. Tested on D&amp;D and Seven Meals runs.</td></tr>
-<tr><td>158 · why the climate is touchy</td><td>Your "are we chasing the wrong thing?" question: how strong the planet's own thermostat is compared with Earth's, whether the ice or the CO2 yardsticks carry the chaos, and 2–4 structural fixes so a world settles back on its own. A write-up first, no sweeps. The grass-and-weathering tie (PW-1332) is part of it.</td></tr>
+<tr><td>208 · the expelled flee (your D61 C), "submit or else", and chiefs may take up writing</td><td>A very warlike conqueror razes; a less warlike one drives the people out to their own nearest free land, so expulsions make refugees, not massacres. Your Genghis point too, if it fits: a people that submits at once is kept even by a harsh conqueror, and one that resists gets the harsh fate. And back to your original D60 wording: a people with towns <i>or chiefs</i> may take up writing, as with runes, Ogham and the Tuareg script, but only one with towns invents it. Sources for those written up.</td></tr>
+<tr><td>209 · Andes-type mountain ranges (physics, pass 1 of 3)</td><td>On Earth a quarter of the land above 3 km is the central Andes, on a coast where ocean crust dives under a continent. Our planets have only a third of that share, because nothing squeezes the continent there; only continent-on-continent collisions stack crust. The scout finds a sourced squeeze rate first, screens a few planets, and runs the full 36-planet check only if it clearly works.</td></tr>
+<tr><td>210 · a source for the rainforest's leaf constant (physics, pass 1 of 3)</td><td>The fix that made rainforests grow more rests on one unsourced number (how fast leaf upkeep falls into the shade). The scout finds what the canopy literature measures, then checks why rainforest still grows less than field plots.</td></tr>
+<tr><td>211 · trade: a literature review, then a design (new, your idea)</td><td>What kinds of trade, by which kinds of peoples, in which eras: forager gift exchange, obsidian and shell passed hand to hand, herders and farmers, Bronze Age tin and copper, caravans, the Indian Ocean monsoon trade, salt and spices, markets and money. Distances, goods, who carried them, and what trade changed. Then a step-by-step plan for the model, with the food trade first since your culinary brief is the goal. No code in this lane.</td></tr>
 </table></div>
-<p>Next: the peoples-mechanisms ledger you approved (measure each stacked mechanism, retire the idle ones), after lane 157, since both touch the peoples code. Then resuming a stopped run (PW-508).</p>
+<p><b>Next for physics</b> (scouts run side by side, 1–3 passes each): Andes-type coastal ranges, a source for the rainforest fix's leaf constant. Rain inland waits at the back of the line (three strikes).</p>
 
-<h2 id="religion">Religion: the views are in</h2>
-<div class="card" id="rel2"><div class="id">GOD TREES, A FAITH MAP, A TIMELINE AND 13 KINDS OF TABOO (PW-1358, PW-1311, MERGED)</div>
-<p><b>Look at it</b> (the Peoples workbench has a new Religion tab; the first load of a run takes about 25 seconds):
-<a href="http://localhost:8765/viewer/lineages.html?run=b4d502#religion/trees">god trees</a> ·
-<a href="http://localhost:8765/viewer/lineages.html?run=b4d502#religion/map">faith map with a time slider</a> (click a faith to follow it) ·
-<a href="http://localhost:8765/viewer/lineages.html?run=b4d502#religion/timeline">faith timeline</a> (green dots: cultures won by conversion; red: lost) ·
-<a href="http://localhost:8765/viewer/lineages.html?run=b4d502#religion/taboos">taboos</a>, each with its source.</p>
-<ul>
-<li><b>Taboos</b> now come in 13 kinds: food, totem and clan, purity and the dead, speech and names, kinship and marriage, the after-birth
-abstinence, women and birth, sacred places, sacred times, hunting and harvest, chiefly and royal, sumptuary, contact and caste. 57 rules besides
-food, each from a page that was read (most are encyclopedia-level; two use real counts from the Ethnographic Atlas). A culture draws them from its
-way of life, techs and gods. Kinds with no source yet (division of labour, rest days, smith taboos) are filed (PW-1368).</li>
-<li><b>Your bell curves</b> (15 runs, <code>docs/review/religion/stats-round1.md</code>): individuation comes in steps, not a bell: gods pile up
-under each tech's ceiling (18% at burial spirits, 15% temple powers, 46% kingship gods, 21% heading for a high god). Pantheons cluster at 6
-gods (range 2–14); about 16 taboos per culture (6–24). An odd one: 45 cultures, some of them storm giants, have only 2 living gods, below the 3
-they start with; not yet explained.</li>
-</ul>
-</div>
-
-<h2 id="landzoom">Land zoom: neighbours now meet, rivers carry on</h2>
-<div class="card" id="lz"><div class="id">SEAMS AND RIVERS MERGED (PW-1301, PW-1302, PW-1338)</div>
-<p><b>In plain words:</b> a section built next to one already built takes over its neighbour's ground up to the line and blends over 80 km:
-heights meet at 0.0 m (they were 10–410 m apart), coasts and biomes agree to a pixel. Rivers flowing from the first section into the second now
-carry their water on (48 of 53 crossings; was none). Rivers flowing the other way need one water pass over all finished sections, after a
-sweep (filed). Look: <a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=3580b7">block W</a> ·
-<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=e2313a">ice range</a> ·
-<a href="http://localhost:8765/?world=dba204.json&tab=zoom&zoom=83b0b1">tiling pair</a>. One at a time is hard to see, agreed: a stitched,
-pannable view of neighbours is filed (PW-1359, kept small).</p>
-<p><b>On 1 km and your v3 idea:</b> agreed, no whole planet at 1 km any time soon; a sweep would run at 4 km per pixel, which is minutes
-per section rather than half an hour. Using fine terrain <i>inside</i> the peoples sim is doable as summaries: a 4 km sweep writes, for
-each sim cell, numbers like its farmable valley floor, flat land by water, passes and defensible sites, and the history reads those;
-settlements then sit in real valleys. Running the history itself at 1 km is out, on time and RAM. Filed as a v3 epic (PW-1360), with your
-"super-detailed slow mode" thought noted on it.</p>
-</div>
-
-<h2 id="settled">Settled today</h2>
-<ul><li><b>Your answers tonight</b>, on the tickets: orbits stay Earth's (D46: you said A or B; I picked A, since it adds nothing to an already touchy climate; varied orbits wait for weird worlds). Judging the cold worlds: B now, C later (D45), plus the deeper look (lane 158). Farm numbers: B (PW-1400). The fresh-eyes review (D44): Seven Meals is your campaign world; refactor the peoples mechanisms freely; far fewer tickets; food first. Your north star, "reasonably stable and not prone to exploding when nudged", now heads the briefs.</li>
-<li><b>Religion tab</b>: <b>fixed and merged</b>. It said "no faiths" when you opened a view while the faiths were still being worked out (about 25 s the first time); now it waits and says so. A picked faith's god tree now uses the full width, and its time axis runs to "now" (it was squeezed into a narrow card and cut off at 30 kyr).</li></ul>
-<ul><li><b>Run memory, part 2</b> (PW-801): <b>merged</b>, all 972 tests pass. A run now writes each viewer frame to disk as it makes it. Worlds come out byte-identical. Peak memory, compared with the current code on the same planet: level 7, 1 Gyr: 7.9 → 3.4 GB; level 6, 1 Gyr: 2.7 → 1.1 GB. A level 7 run now fits an 8 GB machine.</li></ul>
-<ul><li><b>Peoples from the New planet form</b> (PW-1394): <b>merged</b>, all 972 tests pass. The New planet form has a "Peoples on the finished world" choice (none, D&amp;D or Seven Meals; it needs the ice-age zoom and the finished world ticked), so one click builds the planet through to its peoples. Peoples runs now have their own label instead of being filed as ice-age zooms; your 63 existing ones were relabelled in place, not deleted, and the religion links above still work.</li></ul>
-<ul><li><b>Rolled numbers in the workbench</b> (PW-1401): <b>merged</b>. A peoples run's Results tab now has a "Sourced numbers" section: each rolled number in plain words, its value, its published range and source, or "fixed values" when the dice were off.</li></ul>
-<ul><li><b>North Atlantic, part 2</b> (PW-1411, PW-1413): <b>three strikes, back of the line.</b> The Nordic seas run 2.7 °C cold because the warm water reaches the Iceland–Scotland ridge too cool (it carries 118 TW there, against 305 TW measured), not because it takes the wrong route; the amounts sinking are about right. Three quick fixes all moved the Nordic seas only together with the sea south of Iceland, which is already right. The next try needs a structural change (the water should lose heat to the air over it, not to a fixed temperature), so it waits. Nothing in the code changed.</li></ul>
-<ul><li><b>Judge moved into tools</b> (PW-1393, from the fresh-eyes review): <b>merged</b>. The code that decides whether a test planet passes now lives in <code>tools/judge.py</code>, not in prunable review folders; it gives byte-identical verdicts on a past test.</li></ul>
-<ul><li><b>Eccentricity study</b> (PW-1365, your ask): done; see D46 above. Write-up: <code>docs/review/climate/eccentricity/round1.md</code>.</li></ul>
-<ul><li><b>North Atlantic too warm</b> (PW-1381): <b>merged</b>, all 962 tests pass. The warm current now gives up its heat on the way north at the rate the Atlantic mooring lines measure. On Earth, compared with the current code: the sea there 13.7 → 11.9 °C (satellites: 11.9), winter rain 2765 → 2265 mm. <b>The 36-world test, compared with the same worlds on the code before:</b> no hard failures on either; 28 against 30 passes, within chance; the late temperature moves −0.12 °C, not a real change. It gives back some ice ages: worlds reaching a full glacial maximum 13 → 17. Three follow-ups filed; two are lane 150.</li>
-<li><b>Den raids</b> (PW-1407): <b>merged</b>. Den peoples no longer lose their raiding food between updates; the effect at the end of a history is under 0.001%.</li>
-<li><b>Old saved checkpoints</b> (PW-1408): nothing to convert after all. All 687 old checkpoints in your 68 runs were already too old to resume from (written before state was added), so those runs already sliced from the start before last night's change. Slicing an old run takes 35–50 minutes at level 7; new runs are fine. Re-simulating any you want to keep sliced quickly is optional (PW-1410).</li></ul>
-<ul><li><b>Foragers trade with farmers</b> (PW-1386): <b>merged</b>, all 961 tests pass. A hunting-and-gathering people with farming neighbours within about a day's walk gets part of its food from them, up to half its foraging food: the Mbuti get over 60% of their food by weight from farm produce (Ichikawa 1983), Congo Basin foragers about 50% (Kitanishi 1995). How the share grows with the farmers' numbers is my judgement; no source I read measures it (PW-1405). <b>On 6 D&amp;D test runs, compared with the same runs before:</b> very small, 0.2–2.4% of forager peoples' food, because most foragers left by 1500 AD are fishers or herders. Whether herders and fishers trade too is filed (PW-1406).</li>
-<li><b>Memory trims</b> (PW-1390, PW-1389, from the level 9 report): <b>merged</b>, all 963 tests pass, and worlds come out bit-identical. <b>Peak memory, compared with the same run before:</b> level 6, 300 Myr: 2.45 → 1.34 GB; level 7, 200 Myr: 6.80 → 4.41 GB. The bigger level 9 saving (storing each plate's cells sparsely) is a refactor across about 8 modules, filed as PW-1409; keyframes (PW-801) are now the larger prize.</li></ul>
-<ul><li><b>Shared spin-up test tool</b> (lane 144): <b>merged</b> as a tool, not switched on; all 960 tests pass. What it found is in D45 above.</li></ul>
-<ul><li><b>Range dice</b> (PW-1383, your ask): <b>merged</b>, all 958 tests pass. Eight peoples numbers with a published range (forager slope, fisher top, gardeners, the three plough stages, herders, rich-land farming time) can be rolled per world inside it. There's a tick box in the peoples workbench and a <code>draw_ranges</code> line in the D&amp;D preset. Off by default, and with it off nothing changes. The rest stay fixed, each with its reason written down (most have no published range). <b>On 6 test runs, each compared with the same seed with the dice off:</b> total people within about ±12% in five, and 0.62× in one; humans' share moved most (0.77× to 1.64×); kobolds barely moved. Filed: listing the rolled numbers in the workbench (PW-1401), and finding ranges for the fixed ones (PW-1402).</li></ul>
-<ul><li><b>Dens follow the rock</b> (PW-1382): <b>merged</b>, all 957 tests pass. A den-ground map from the geology: karst limestone best, then tuff,
-lava fields, cliffs with rock shelters and thick loess, mostly from Goldscheider et al. 2020 on karst (15% of Earth's ice-free land is carbonate). Den kinds live
-at full density on the best ground and half where there's none, as you ruled: a preference, never a limit. <b>On the 14 D&amp;D runs, compared with the same runs on the
-code before:</b> kobold range 11.1 → 10.2 Mkm², with the share on good den ground 35% → 41%; goblins 4.2 → 5.1 Mkm² (9% → 15%). Both live in all 14 runs. The old rule
-gave every mountain full den density; granite mountains now count as fair ground only, which is why kobolds dip. One knob if you'd rather they didn't. One thing
-worth knowing: the generated worlds have only about 1% of land as exposed limestone, against Earth's 15%, which keeps den ground scarce (an existing ticket, PW-130).
-A viewer layer for den ground is filed (PW-1399).</li></ul>
-<p><b>Board tidy, done</b> (from D44's housekeeping):</p>
-<ul>
-<li><b>Closed 12 tickets</b> that were already built or settled by your rulings. 2 more, how hard fit decides shares (PW-1216) and kobolds after one-spot founding (PW-1218), are
-parked as your decisions for later: the pause on share tuning parks them, it doesn't decide them.</li>
-<li><b>New board categories:</b> peoples, culture and food. 202 tickets moved out of the ice-age time-zoom category.</li>
-<li><b>Parked to later:</b> 51 ice-age follow-ups, keeping one cheap check (PW-467); 9 Earth-only regional climate fixes; 10 dragon fine-tuning tickets, keeping
-what dragons eat (PW-961).</li>
-<li><b>New tickets for the review's ideas:</b> the cuisine sheet (PW-1391, waiting on your D44.1), one climate per epoch for the peoples (PW-1392),
-the climate test's code moved into the tools (PW-1393), a peoples step in "make a planet" (PW-1394), and the farming start date checked against each planet's own ice ages (PW-1395).</li>
-<li><b>Docs refreshed:</b> the state page, the plan, the overview, and one consistent L7 cost figure (about 35–40 minutes per Gyr on a quiet
-machine, about 50 under load).</li>
-</ul>
-<ul class="done">
-<li><b>Rain sees the sea's warmth</b> (PW-1364): merged; see the card above.</li>
-<li><b>CO2 yardsticks B</b> (PW-1316): failed its test, not merged; the yardsticks stay as they are (PW-1384, your call).</li>
-<li><b>Spells</b> (PW-1367): kept as is.</li>
-<li><b>Faith rule</b> (PW-1366): kept; we'll tune it together after you've seen the map.</li>
-<li><b>Hunters and crops</b> (PW-1373): merged. A people learns a crop about 0.4 kyr after it arrives, divided by its leaning to farm
-(hunters ~4 kyr), and cat-folk lean to herding. Over 14 D&amp;D runs, leonin now stay hunters or herders in 7 runs (was 0), tabaxi in 6 (was 2),
-goliaths in 3 (was 1); farming kinds barely move. Write-up: <code>docs/review/peoples/density-ladder/hunters-lag.md</code>.</li>
-<li><b>Rich wild land resists farming</b> (PW-1385, your pick A): <b>merged</b>, all 957 tests pass. Where wild food (rich fishing, abundant game)
-feeds several times what ordinary foraging does, a people farms only part of the land, taking up more over about a thousand years. The strength is set from
-the Calusa of Florida (about 0.8 people/km², unfarmed for 550+ years beside maize farmers), and the time scale from the Baltic and Japan. Herding now takes
-grazing land only where it feeds more than the wild. <b>On the 14 D&amp;D runs, compared with the same runs on the code before:</b> people living off the wild
-0.9% → 3.2%; land led by foragers or fishers 34% → 39%; subarctic 4.5% → 15% and polar 8% → 22% of people on the wild; total people −7%. Farming kinds
-still farm 83–97% of their farmable land, and every farming kind now keeps a foraging fringe somewhere (dragonborn in 14 of 14 runs, was 8; orcs 11, was 5;
-leonin 8, was 1). No people dies out. One side effect to know about: desert farmers fall 12%, because fish-rich rivers in dry land count as rich (an exemption
-for irrigable valleys is a one-line change, filed as PW-1398; my lean is to leave it). Crowding-driven farming (B) is filed as a look-around (PW-1388).</li>
-<li><b>City goblins and kobolds</b> (PW-1369): you're right that it doesn't scale. Every minority in every town would need its own
-entry, so dozens. Removed (merged). Town minorities should come out of a towns model later, not be listed by hand.</li>
-<li><b>Dens follow the rock</b>: filed (PW-1382). Caves, rock shelters and diggable ground come from the bedrock and landforms, so den
-peoples cluster where the rock allows.</li>
-<li><b>Published ranges as random draws</b>: yes, filed (PW-1383). Where a source gives a range, a world can optionally draw its value from
-it; off by default.</li>
-<li><b>The density ladder</b>: accepted (2.3–2.6× the people; sparse kinds stay sparse as long as they keep pockets of their own).</li>
+<h2 id="settled">Settled since last night</h2>
+<ul><li><b>Your rulings tonight:</b> D61 C (the warlike raze, the rest drive out; lane 208) and D62 A (no town, no invented writing; stands as built).</li>
+<li><b>Harsh conquerors and far campaigns</b> (PW-1487, PW-1478, lane 204, your D59 C and D56 B, merged; the states-in-history switch is still off). Aggression now makes an intolerant winner harsher; a tolerant one is no harsher than before, so both Genghis and Cyrus come out of one rule. Campaigns reach 1,000 km, twice that for herders and horse nomads. A state bigger than about 3 million km² reaches as far as its own radius: Rome at its height had a radius of about 1,260 km, and Trajan's march to the Persian Gulf was about 1,130 km. Of your 30 written invasions on D&amp;D a2b637, 15 now happen (11 on today's code). Ordinary wars are unchanged.</li>
+<li><b>Who lags on the tech tree, writing needs towns, and a sea ladder</b> (PW-1490, PW-1491, lanes 207 and 207b, merged). Your worry checked: a ready people whose neighbours hold a tech lacks it after 2,000 years in 0–1% of cases. The usual wait is 400–700 years, Earth's order (iron took about 500 years from the Aegean to Ireland). At 500 years ago, 79% of D&amp;D peoples write (97% before) and peoples without towns don't. Farming and metal spread exactly as before, and settled peoples are back to before. Sea peoples have 16 techs of their own, from reef foraging and vent cooking to reef towns and vent smelting. The upper steps are still rare, which is ticketed.</li>
+<li><b>Minority faiths</b> (PW-1489, lane 205, your D57, merged). Each culture now holds a share of each faith. A faith pressing on a culture grows slowly to about a tenth, as Islam did in Iran before its take-off (Bulliet); when the culture converts, the old faith stays on as a minority and fades over centuries, faster under intolerant rule. Which faith a culture follows is exactly as before on all three test runs. About 1 culture in 20 (D&amp;D) to 1 in 10 (Seven Meals) carries a minority above 10%, nearly all of them ones that converted. And most states rule over several faiths: on 0141d1 the ruler's faith is under half of its own realm in 227 of 258 states. To see it: Peoples workbench &rarr; Results, pick a run &rarr; Religion &rarr; Minorities; culture cards now read "faiths: X 94%, Y 6%".</li>
+<li><b>Who is behind on the tech tree: nobody without a reason</b> (scout 206, your D58, closed with the floor kept off). You chose B on D60: state techs need towns (lane 207).</li>
+<li><b>Your rulings today, and v0.2.0 is tagged.</b> D59 C (aggression makes conquest harsher), D56 B plus far reach for big settled empires, D58 A (no minimum invention rate) plus a look at who ends up behind, D57 A (the even missionary chance stays) plus minority faiths. All are being built or measured (lanes 204–206).</li>
+<li><b>Invasions and conquerors inside the history</b> (PW-1479, PW-1481, lane 201, merged behind the switch, still off). The states that form during the history now get the same expeditions, war bands and long-range herders as the summary, through the same code. How far an expedition reaches is one setting, waiting on your D56. With the switch off, runs are byte-identical. With it on, history takes about 15–20 seconds longer.</li>
+<li><b>Worlds that finish too warm: closed</b> (scout 203, one pass, from runs already made). On today's code, 36 fresh test planets end at a median of +0.1 °C against Earth before industry, with 2 failing warm (on older code, 5 of 18 ended more than 3.5 °C warm). Those warm finishes are chance: the same planet run with a tiny code change lands anywhere from 2.9 °C cold to 6.7 °C warm. Nothing is out of bounds, so nothing gets fixed. It reopens if a later check shows more than 10% failing warm. Checked on the quicker level-6 planets only.</li>
+<li><b>Grazing herds after the grass fix: left as they are</b> (scout 202, one pass). The herds fell only because the grass now grows at the right rate. 3.1 tonnes per km² is inside the spread of the real African counts, about one standard deviation below their line, and those counts come from rich-soil open plains, the top of Africa's range. Matching them would undo the grass fix by hand. Letting soil richness set herds is sourced and filed with forage quality (PW-836).</li>
+<li><b>Too-tall peaks: fixed and merged</b> (PW-1446, third and last try, scout 194). Crust stops thickening once it stands too high, as Tibet does. On 36 fresh test planets, compared with today's code on the same planets: no hard failures on either, 32 of 36 pass the soft scorecard on both, and the climate spread narrows (1.36 °C against 1.78) instead of widening. Last time's wider spread was a fluke of that sample. The tallest point of a typical planet drops from 8.2 to 7.0 km. New worlds only; existing runs don't change.</li>
+<li><b>The tech tree: steady, regional, and trade-minded</b> (PW-1483, PW-1471, PW-1461, merged). A small nudge to one input now moves the world's first writing by at most about 230 years, against about 1,500 on yesterday's code. Separate regional learners, writing along trade towns: details on D58.</li>
+<li><b>Writing on time inside the history</b> (PW-1473 and PW-1472, lane 196, merged behind the switch, still off). The late writing came from the border after all. Neighbours set how fast they learn from each other using their border at that moment, and some short borders early on held a chain of peoples back by centuries. Now the pace speeds up as the border grows, and never slows. On the test world (seed 7), writing dates inside the history now fall within the range of 12 rolls of the after-the-fact tree for all 12 largest peoples. Before the fix it was 1 of 12. Inside the history the world has 84 states and empires today, against 36 before the fix, and the first state is 2,400 years old instead of 600. On a second seed it's 7 of 12, a late roll for both trees.</li>
+<li><b>Attitudes and faiths that spread</b> (PW-904 first cut and PW-1477, lane 199, merged). Faiths are worked out after the history, so the history itself doesn't change, but every run's faith map does. A peoples run takes about a minute longer. Details are on D57.</li>
+<li><b>Invasions that reach</b> (PW-1450, lane 198, merged, your D50): expeditions, war bands and far-reaching herders, read-out only, so worlds don't change.</li>
+<li><b>The faith form and the food sheet are fixed</b> (PW-1475/1476, lane 197, merged; details on the tag card). Viewer only, so worlds and runs are unchanged.</li>
+<li><b>Your rulings tonight:</b> D50 B and C (expeditions and war bands for written invasions), plus far-reaching mobile peoples for horde-like conquerors. D53: writing spreads by rulers (E) or trading towns (C), weighted by how trade-minded the spreading culture is; E if that doesn't hold up. D54: the conqueror numbers are placeholders, so attitudes (a culture's general tolerance and aggression, PW-904) move up into v4 and conquest will read them. D55: fix it both ways: a people's own chance to invent (no slower than a set rate, repeats allowed, never forced) and regional groups as separate learners.</li>
+<li><b>L7 carbon yardstick re-set</b> (PW-1458, lane 187b, merged). Measured on 24 test planets on today's code, it comes out at 1.618, against the 1.542 D47 took from six older runs. That gap is about two standard errors, so it's now 1.618. On 4 planets run on both values (baseline: the same planet on the old value), the later climate comes out 0.6 °C cooler at the median, near the 0.8 expected; none freeze, boil or crash on either. New L7 worlds will run slightly cooler; existing runs don't change, and L6 is untouched. A full 36-planet check at L7 hasn't been done.</li>
+<li><b>Technology inside the history, first cut</b> (PW-1466 and PW-1464, lane 192, merged behind the switch, off, so runs are byte-identical). The tech tree now steps along with the history, so states inside it read what their people really know that century, and they follow your D49 writing rule. It costs about 1% of a history's time. Two findings: writing comes too late that way (lane 195), and humans alone never learn to write at all (D55).</li>
+<li><b>Grass roots pay upkeep: merged</b> (PW-1261, attempt 2 of 3, so not a strike). On the Earth test world, against yesterday's code: grass growth now matches the field data (it was 1.15–1.2 times too high), and land growth falls from 64 to 60 billion tonnes of carbon a year (observed about 56), which takes back the rainforest fix's 8% rise. On the same 36 test planets: no hard failures on either, 34 pass the soft scorecard against 31 (within chance), the spread between planets is unchanged (1.26 against 1.25 °C). Land tree cover falls 1.8 points, mostly on dry steppe where fire now reaches. Grazing herds fall with the grass (550–700 mm of rain: 4.1 to 3.1 tonnes per km², against 4.0–4.4 in African parks), so the herd numbers are next to check.</li>
+<li><b>A continent-splitting bug, found by that test</b> (lane 191, merged with it). When a rising plume cracked a plate three ways, the rule checked the pieces on the wrong cells and once let a 2.4% sliver of continent through, which the rules forbid. The test was right; the split now checks the pieces it really makes.</li>
 </ul>
 
-<footer>Desk v134 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v190 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>

@@ -281,6 +281,16 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
             "snapshots": thin_snapshots(lect.snapshots, snap_every)}
 
 
+def thin_dead(doc: dict, result: dict, every: int) -> None:
+    """Keep every `every`-th snapshot (and the last) of the dead lects in a built doc (document(thin_dead=every) without
+    building the doc again)."""
+    living = {l.id for l in result["lects"] if l.alive and l.deme is not None}
+    by = {l.id: l for l in result["lects"]}
+    for x in doc["lects"]:
+        if x["id"] not in living and x["id"] in by:
+            x["snapshots"] = thin_snapshots(by[x["id"]].snapshots, every)
+
+
 def landscape_json(R) -> dict:
     """Rivers and lakes (fixed: the world's present ones) with the demes that lived on them, oldest first, for river and place
     names (the conservative layer), and each deme's landscape at its first frame in the window."""
@@ -474,3 +484,312 @@ def _round_all(x, k: int = 3):
     if isinstance(x, list):
         return [_round_all(b, k) for b in x]
     return x
+
+
+# ---- the stored format: procgen-languages/2 (architecture section 11) ------------------------------------------------------
+# `document` builds the doc in memory in the shape every reader uses (format /1's shape). On disk it is packed into three
+# files: the main file (lects with their words, names, families, checks, ...; each lexicon as columns over a doc-level
+# concept table), `<stem>-etym.json` (the etymology nodes, the roots table and each lexicon's etym / roots / etym_roots
+# columns) and `<stem>-snapshots.json` (each lect's snapshots). `pack` and `expand` are exact inverses
+# (expand(*pack(doc)) == doc apart from "format"); viewer/langcore.js `expand` is the same expander for the browser.
+# Sparse columns are {"i": [index gaps], "v": [values]} (sp / unsp).
+
+FORMAT2 = "procgen-languages/2"
+SIDECARS = {"etym": "-etym", "snapshots": "-snapshots"}
+
+
+def sidecar_paths(path) -> dict:
+    """{"etym": path, "snapshots": path} beside a main file (languages.json -> languages-etym.json, ...)."""
+    from pathlib import Path
+    p = Path(path)
+    return {k: p.with_name(p.stem + suf + p.suffix) for k, suf in SIDECARS.items()}
+
+
+class _Intern:
+    def __init__(self, items=()):
+        self.list: list = []
+        self.ix: dict = {}
+        for x in items:
+            self(x)
+
+    def __call__(self, x) -> int:
+        i = self.ix.get(x)
+        if i is None:
+            i = self.ix[x] = len(self.list)
+            self.list.append(x)
+        return i
+
+
+def sp(pairs) -> dict:
+    """[(index, value)] in rising index order as {"i": [gaps from the previous index], "v": [values]}."""
+    out, last = {"i": [], "v": []}, 0
+    for i, v in pairs:
+        out["i"].append(i - last)
+        out["v"].append(v)
+        last = i
+    return out
+
+
+def unsp(s: dict | None) -> dict:
+    out, at = {}, 0
+    for g, v in zip((s or {}).get("i") or (), (s or {}).get("v") or ()):
+        at += g
+        out[at] = v
+    return out
+
+
+def _split_root(rid: str):
+    lect, sep, rest = rid.partition(":")
+    if not sep:
+        return None
+    concept, at, kyr = rest.rpartition("@")
+    return (lect, concept, kyr) if at else (lect, rest, None)
+
+
+_LEX_MAIN = ("ipa", "roman", "pos", "freq")
+_LEX_ETYM = ("etym", "roots", "etym_roots")
+
+
+def pack(doc: dict) -> tuple[dict, dict]:
+    """The in-memory doc as (main, {"etym": ..., "snapshots": ...}) in format procgen-languages/2."""
+    lects = doc.get("lects") or []
+    roots = doc.get("roots") or {}
+    lect_t = _Intern(l["id"] for l in lects)
+    # concepts: gloss and pos from the roots table (first root of the concept, in id order), else pos from the lexicons
+    cinfo: dict = {}
+    for rid in sorted(roots):
+        e = roots[rid]
+        c = e.get("concept")
+        if c is not None and c not in cinfo:
+            cinfo[c] = [e.get("gloss"), e.get("pos")]
+    for l in lects:
+        for c, w in (l.get("lexicon") or {}).items():
+            if c not in cinfo:
+                cinfo[c] = [None, w.get("pos")]
+    concept_t = _Intern(sorted(cinfo))
+    # root ids: every id in the roots table or any lexicon, as (lect, concept, kyr text) columns; odd ids kept whole
+    ids = set(roots)
+    for l in lects:
+        for w in (l.get("lexicon") or {}).values():
+            ids.update(w.get("roots") or ())
+            ids.update(w.get("etym_roots") or ())
+    root_ids = sorted(ids)
+    rix = {r: i for i, r in enumerate(root_ids)}
+    rl, rc, rk, odd = [], [], [], []
+    for i, r in enumerate(root_ids):
+        s = _split_root(r)
+        if s is None or s[1] not in concept_t.ix:
+            odd.append((i, r))
+            rl.append(-1), rc.append(-1), rk.append(None)
+            continue
+        rl.append(lect_t(s[0])), rc.append(concept_t.ix[s[1]]), rk.append(s[2])
+    main = {k: v for k, v in doc.items() if k not in ("etym_nodes", "roots", "lects")}
+    main["format"] = FORMAT2
+    main["sidecars"] = dict(SIDECARS)
+    out_lects, snaps, lex_et = [], {}, {}
+    for l in lects:
+        x = {k: v for k, v in l.items() if k not in ("lexicon", "snapshots")}
+        lex = l.get("lexicon")
+        if lex is not None:
+            col = {"c": [], "ipa": [], "roman": [], "freq": []}
+            pos, extra = [], []
+            ec = {"etym": [], "roots": []}
+            er, no_et = [], []
+            for j, (c, w) in enumerate(lex.items()):
+                col["c"].append(concept_t.ix[c])
+                col["ipa"].append(w.get("ipa"))
+                col["roman"].append(w.get("roman"))
+                col["freq"].append(w.get("freq"))
+                if w.get("pos") != cinfo[c][1]:
+                    pos.append((j, w.get("pos")))
+                ec["etym"].append(w.get("etym"))
+                ec["roots"].append([rix[r] for r in w.get("roots") or ()])
+                if "etym_roots" not in w:
+                    no_et.append(j)
+                elif list(w["etym_roots"]) != list(w.get("roots") or ()):
+                    er.append((j, [rix[r] for r in w["etym_roots"]]))
+                more = {k: v for k, v in w.items() if k not in _LEX_MAIN + _LEX_ETYM}
+                if more:
+                    extra.append((j, more))
+            col["pos"] = sp(pos)
+            if extra:
+                col["x"] = sp(extra)
+            ec["er"] = sp(er)
+            if no_et:
+                ec["no_er"] = no_et
+            x["lexicon"] = col
+            lex_et[l["id"]] = ec
+        if "snapshots" in l:
+            snaps[l["id"]] = l["snapshots"]
+        out_lects.append(x)
+    main["lects"] = out_lects
+    main["concepts"] = [[c, *cinfo[c]] for c in concept_t.list]
+    # etymology nodes as columns: parent as a backward gap (0: none), lect, process and note interned, ipa 0 = the parent's
+    nodes = doc.get("etym_nodes") or []
+    word_ipa = _word_ipa_of_nodes(lects)
+    proc_t, note_t = _Intern(), _Intern()
+    nc = {"up": [], "kyr": [], "lect": [], "process": [], "ipa": [], "gloss": []}
+    notes = []
+    for i, n in enumerate(nodes):
+        nc["up"].append(0 if n[0] < 0 else i - n[0])
+        nc["kyr"].append(n[1])
+        nc["lect"].append(-1 if n[0] >= 0 and nodes[n[0]][2] == n[2] else lect_t(n[2]))
+        nc["process"].append(proc_t(n[3]))
+        nc["ipa"].append(0 if n[0] >= 0 and nodes[n[0]][4] == n[4] else 1 if word_ipa.get(i) == n[4] else n[4])
+        nc["gloss"].append(n[5])
+        if len(n) > 6:
+            notes.append((i, note_t(n[6])))
+    nc["note"] = sp(notes)
+    rcols = {"node": [], "lect": [], "kyr": [], "ipa": []}
+    absent, other = [], []
+    for i, r in enumerate(root_ids):
+        e = roots.get(r)
+        if e is None:
+            absent.append(i)
+            rcols["node"].append(None), rcols["lect"].append(-1), rcols["kyr"].append(None), rcols["ipa"].append(None)
+            continue
+        rcols["node"].append(e.get("node"))
+        rcols["lect"].append(-1 if rl[i] >= 0 and e.get("lect") == lect_t.list[rl[i]] else lect_t(e.get("lect")))
+        nd = nodes[e["node"]] if isinstance(e.get("node"), int) and 0 <= e["node"] < len(nodes) else None
+        rcols["kyr"].append(0 if nd is not None and e.get("kyr") == nd[1] and e.get("kyr") != 0 else e.get("kyr"))
+        rcols["ipa"].append(0 if nd is not None and e.get("ipa") == nd[4] and e.get("ipa") != 0 else e.get("ipa"))
+        c = e.get("concept")
+        rest = {k: v for k, v in e.items() if k not in ("node", "lect", "kyr", "ipa")}
+        if not (rc[i] >= 0 and c == concept_t.list[rc[i]] and rest == {"concept": c, "gloss": cinfo[c][0], "pos": cinfo[c][1]}):
+            other.append((i, rest))
+    rcols["absent"], rcols["other"] = absent, sp(other)
+    main["lect_ids"] = lect_t.list   # (after the nodes and roots: they may name lects that left no record)
+    etym = {"format": FORMAT2, "root_ids": {"lect": rl, "concept": rc, "kyr": rk, "odd": sp(odd)},
+            "processes": proc_t.list, "notes": note_t.list, "nodes": nc, "roots": rcols, "lexicons": lex_et}
+    return main, {"etym": etym, "snapshots": {"format": FORMAT2, "lects": snaps}}
+
+
+def expand(main: dict, side: dict | None = None) -> dict:
+    """The packed files back as the in-memory doc (format /1's shape). A sidecar left out leaves its part out
+    (`etym_nodes`, `roots` and the words' etym / roots / etym_roots; the lects' `snapshots`). A /1 doc is returned as it is."""
+    if main.get("format") != FORMAT2:
+        return main
+    side = side or {}
+    lect_ids = main["lect_ids"]
+    concepts = main["concepts"]
+    et = side.get("etym")
+    root_ids = None
+    if et is not None:
+        ri = et["root_ids"]
+        odd = unsp(ri.get("odd"))
+        root_ids = [odd[i] if i in odd else f"{lect_ids[a]}:{concepts[c][0]}" + ("" if k is None else f"@{k}")
+                    for i, (a, c, k) in enumerate(zip(ri["lect"], ri["concept"], ri["kyr"]))]
+    doc = {k: v for k, v in main.items() if k not in ("lects", "concepts", "lect_ids", "sidecars")}
+    doc["format"] = FORMAT
+    snaps = (side.get("snapshots") or {}).get("lects")
+    lects = []
+    for x in main["lects"]:
+        l = dict(x)
+        col = x.get("lexicon")
+        if col is not None:
+            pos, ex = unsp(col.get("pos")), unsp(col.get("x"))
+            ec = (et["lexicons"].get(x["id"]) if et is not None else None)
+            er = unsp(ec.get("er")) if ec else {}
+            no_er = set(ec.get("no_er") or ()) if ec else set()
+            lex = {}
+            for j, ci in enumerate(col["c"]):
+                w = {"ipa": col["ipa"][j], "roman": col["roman"][j], "pos": pos[j] if j in pos else concepts[ci][2],
+                     "freq": col["freq"][j]}
+                if ec:
+                    rs = [root_ids[r] for r in ec["roots"][j]]
+                    w["etym"], w["roots"] = ec["etym"][j], rs
+                    if j in er:
+                        w["etym_roots"] = [root_ids[r] for r in er[j]]
+                    elif j not in no_er:
+                        w["etym_roots"] = list(rs)
+                if j in ex:
+                    w.update(ex[j])
+                lex[concepts[ci][0]] = w
+            l["lexicon"] = lex
+        if snaps is not None and x["id"] in snaps:
+            l["snapshots"] = snaps[x["id"]]
+        lects.append(l)
+    doc["lects"] = lects
+    if et is not None:
+        nc, procs, notes = et["nodes"], et["processes"], et["notes"]
+        note = unsp(nc.get("note"))
+        word_ipa = _word_ipa_of_nodes(lects)
+        nodes = []
+        for i in range(len(nc["kyr"])):
+            up = nc["up"][i]
+            ipa = nc["ipa"][i]
+            n = [i - up if up else -1, nc["kyr"][i], lect_ids[nc["lect"][i]] if nc["lect"][i] >= 0 else nodes[i - up][2],
+                 procs[nc["process"][i]],
+                 nodes[i - up][4] if ipa == 0 and up else word_ipa.get(i) if ipa == 1 else ipa, nc["gloss"][i]]
+            if i in note:
+                n.append(notes[note[i]])
+            nodes.append(n)
+        doc["etym_nodes"] = nodes
+        rc, ri = et["roots"], et["root_ids"]
+        absent = set(rc.get("absent") or ())
+        other = unsp(rc.get("other"))
+        roots = {}
+        for i, r in enumerate(root_ids):
+            if i in absent:
+                continue
+            lect = lect_ids[rc["lect"][i]] if rc["lect"][i] >= 0 else lect_ids[ri["lect"][i]]
+            nd = rc["node"][i]
+            kyr = nodes[nd][1] if rc["kyr"][i] == 0 and nd is not None else rc["kyr"][i]
+            ipa = nodes[nd][4] if rc["ipa"][i] == 0 and nd is not None else rc["ipa"][i]
+            if i in other:
+                e = {"node": nd, "lect": lect, "kyr": kyr, **other[i], "ipa": ipa}
+            else:
+                cc = concepts[ri["concept"][i]]
+                e = {"node": nd, "lect": lect, "kyr": kyr, "concept": cc[0], "gloss": cc[1], "ipa": ipa, "pos": cc[2]}
+            roots[r] = e
+        doc["roots"] = roots
+    return doc
+
+
+def _word_ipa_of_nodes(lects: list) -> dict:
+    """{etym node: the ipa of the first word (lect order, then lexicon order) whose etymology ends there}: a node's form is
+    stored as 1 when it is that word's (most chains end in a stored word)."""
+    out: dict = {}
+    for l in lects:
+        for w in (l.get("lexicon") or {}).values():
+            n = w.get("etym")
+            if isinstance(n, int) and n not in out:
+                out[n] = w.get("ipa")
+    return out
+
+
+def dumps(x) -> str:
+    import json as _json
+    return _json.dumps(x, separators=(",", ":"), ensure_ascii=False)
+
+
+def save(doc: dict, path) -> dict:
+    """Write the doc packed (the sidecars first, then the main file, each atomically); {file name: bytes}."""
+    from pathlib import Path
+    from .. import store as S
+    main, side = pack(doc)
+    path = Path(path)
+    sizes = {}
+    for k, p in sidecar_paths(path).items():
+        S.write_atomic(p, dumps(side[k]))
+        sizes[p.name] = p.stat().st_size
+    S.write_atomic(path, dumps(main))
+    sizes[path.name] = path.stat().st_size
+    return sizes
+
+
+def load(path, sidecars: bool | tuple = True) -> dict:
+    """A languages.json (either format) as the in-memory doc; `sidecars` False reads the main file only, or a tuple names
+    the sidecars to read ("etym", "snapshots"). A missing sidecar is skipped."""
+    import json as _json
+    from pathlib import Path
+    path = Path(path)
+    main = _json.loads(path.read_text(encoding="utf-8"))
+    if main.get("format") != FORMAT2:
+        return main
+    want = tuple(SIDECARS) if sidecars is True else (sidecars or ())
+    side = {}
+    for k, p in sidecar_paths(path).items():
+        if k in want and p.is_file():
+            side[k] = _json.loads(p.read_text(encoding="utf-8"))
+    return expand(main, side)

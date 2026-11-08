@@ -214,6 +214,9 @@ export async function loadRun(dir, wantT) {
         pentagons: grid.pentagons, level: grid.level, frame: 0, tz, tzEarth: tz && run.meta.source_run === 'earth',
         ...legendFields(run.legend) };
   document.title = `${run.name} · Planet Viewer`;
+  NumFmt.run = dir;  // (PW-1429: years everywhere; "the present is year N" is kept per run)
+  const pb = $('presentBox'); pb.hidden = !(run.kind === 'peoples' || run.meta?.phase); $('presentYear').value = NumFmt.present() ?? '';
+  $('presentYear').onchange = () => { NumFmt.setPresent($('presentYear').value); S.V.axis = timeAxis(S.V.run); drawAxis(); setFrame(S.V.frame); };
   S.V.axis = timeAxis(run); drawAxis();  // (the slider's dated axis, PW-1042)
   let f = 0;
   if (wantT == null && !tz && run.meta.finish_moment) wantT = run.meta.finish_moment.t;  // (PW-866: open at the finish moment)

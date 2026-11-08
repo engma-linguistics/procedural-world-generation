@@ -4,7 +4,7 @@ title: "Rich wild land: should irrigable river valleys in dry land be exempt fro
 type: task
 status: needs-decision
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -33,4 +33,5 @@ Options:
 Lean A for now; B is a one-line change if the viewer shows empty river valleys beside irrigating peoples.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: rich-wild-land and forager-trade call; not a must-have
 - 2026-11-03: Created from inbox draft draft-rich-wild-irrigated-valleys.md (found by lane 141).

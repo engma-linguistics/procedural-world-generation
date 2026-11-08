@@ -4,7 +4,7 @@ title: Dragon numbers from a shared food budget - the land's surplus split betwe
 type: story
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: l
 impact: high
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-958, PW-957, PW-960, PW-961, PW-973, PW-974, PW-975, PW-833]
 refs: [planet/lineages/history/megafauna.py, planet/lineages/prey.py, docs/review/megafauna/age-of-dragons.html]
 created: 2026-10-28
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -49,6 +49,7 @@ Options:
 Lean: C (A in stages), with the younger age schedule (PW-958), which halves food per dragon.
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: dragon and giant food budget re-tunes the peoples balance; not a must-have for December
 - 2026-10-29: Stage 2 done (fun-lane-45b): the peoples' hunters (density x 2,200 kcal/day x game share 50% forager / 5% other, unverified) take first from the wild offtake, then the giants, then the guild; the dragons get the rest, and with PW-990 B (owner 10-29) their natural density is that rest / 2.7 t a year. Stage-1 cap kept. 6 x 4 sweep: present dragons 62.6k per run vs 42.3k on main (+48%); dragons eat 0.87% of the supply 25 kyr ago, 0.57% now (7-8% where nobody lives); peoples take 88% of it in foragers' country before farming (dnd's dense hunter lines; inbox draft-dense-hunter-peoples-eat-the-wild-offtake). Pressure leaves 0.2-8% of the food-driven dragons in peopled country (no-press diagnostic, 6 runs): stage 3's input. Review page rebuilt.
 - 2026-10-29: Papers read 10-29: Farlow 1993 eqs. 1-8 (pp. 171-187) are the shared-food-budget model in its standard form (predator intake = a share of prey turnover); prey turnover 0.94 M^-0.28 per yr (eq. 6, p. 172); prey:predator biomass 100:1-200:1 in modern large-mammal faunas, as low as 45:1 (p. 176). Jetz et al. 2004 carnivore home range 52.07 ha x M^1.20 (Table 1, p. 268) gives ~52 km radius at 3.2 t, a cross-check for FORAGE_KM. See PW-990 and PW-991.
 - 2026-10-29: Stage 1 merged 10-29 (fun lane 43): food cap per cell (10%/yr wild offtake + 10%/yr stock, unverified, PW-991). It never binds at defaults (PW-990): the natural density from prey is already food-limited, and the old >100% stock shares were a metric that charged an ancient's whole kill to the herders' stock. Worst stock share now 0.9%/yr. Stages 2-3 next.

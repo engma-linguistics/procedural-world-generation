@@ -1,0 +1,13 @@
+== run.json
+('/meta/code/dirty', False, True)
+('/meta/code/planet_src_sha', 'cdf2c8240c465d29', '3a649bb7a23b99b5')
+('/meta/created', '2026-11-05 03:26:32', '2026-11-05 03:32:15')
+('/meta/demes/generated_in_s', 10.0, 9.7)
+('/meta/generated_in_s', 226.9, 238.8)
+('/meta/settlements/generated_in_s', 4.9, 4.8)
+differing paths: 6
+== gods.json
+('/summary/generated_in_s', 4.6, 4.7)
+differing paths: 1
+== taboos.json
+differing paths: 0

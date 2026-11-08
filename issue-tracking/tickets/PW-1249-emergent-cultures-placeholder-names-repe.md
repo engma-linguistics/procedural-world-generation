@@ -4,7 +4,7 @@ title: "Emergent cultures: placeholder names repeat ('temperate humans of the so
 type: task
 status: todo
 parent: null
-milestone: null
+milestone: v4
 subsystem: culture
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-670, PW-972, PW-767]
 refs: [planet/lineages/cultures.py]
 created: 2026-10-31
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 ## Description
@@ -24,4 +24,5 @@ of the Kesh river, 12 kyr"). Later, a gloss name from PW-972's endonym patterns.
 - [ ] no two living cultures share a name on cc22df or 622c00
 
 ## Updates
+- 2026-11-03: Milestones 11-03: null -> v4: v4 must-have: gloss names as the fallback in the names slot until the language worktree's names land
 - 2026-10-31: Created from inbox draft draft-cultures-names.md (found by lane107).

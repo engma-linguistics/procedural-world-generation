@@ -26,6 +26,7 @@
 import * as THREE from 'three';
 import { esc } from '../planets.js';
 import { S, state } from './state.js';
+import { loadPolities, politiesColor, politiesLegend } from './polities.js';
 import { ANIMAL_COLS, BARE, COASTAL, COASTAL_COLS, CROP_COLS, CYAN, ICE, NOBODY, NODATA, OCEAN, RED, TECH_HOW, TECH_HOW_TEXT, animalStocks, animalsColor, anthroLoad, anthroOn, anthroTint, bits, coastColor, coastLegend, coastalTop, cropStocks, cropsColor, demeOf, demesColor, loadDemesAll, fuelColor, huColor, huSwatches, isSeaPeople, lakeColor, landUseColor, obsColor, obsView, peoplesColor, peoplesIdx, plateColor, resColor, resLegend, seasonUnits, seasonalData, techColor, techFrameColors, techHowText, techId, techName, techOldest, techTree, worldAnthroOn } from './colours.js';
 import { rampLegend } from './panel.js';
 import { agoLabel } from './timezoom.js';
@@ -317,8 +318,11 @@ const LAYERS = {
       const ppl = [...new Set(D.map((d) => d.people))].map((id) => lines.find((l) => l.id === id)).filter(Boolean).sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
       const pick = S.V.run.meta.demes?.all ? `<label title="Demes overlap: every people has its own, wherever it lives. Each cell's leading people, or one people's demes (with the cells it shares)">whose demes <select data-demesof><option value="">each cell's leading people</option>${ppl.map((l) => `<option value="${esc(l.id)}"${l.id === state.demesOf ? ' selected' : ''}>${esc(l.name || l.id)}</option>`).join('')}</select></label>${state.demesOf && S.V.demesAll?.f !== S.V.frame ? ' <span class="muted">loading…</span>' : ''}<br>` : '';
       return pick + rows.slice(0, 14).map(([d]) => sw(D[d].color, esc(D[d].name))).join('') + (rows.length > 14 ? `<span class="muted">+ ${rows.length - 14} more</span>` : '') +
-        sw('#5a5a52', 'nobody') + `<span class="muted">${rows.length} regional populations ${who ? `of the ${esc(who.name || who.id)}, wherever they live (over or beside other peoples)` : 'of the leading peoples here'}: cut where sea, hard country or distance part a people (each a shade of its people's colour); ${S.V.demes ? `cut since ${S.V.demes.from_kyr} kyr ago` : 'loading the tree…'}</span>`;
+        sw('#5a5a52', 'nobody') + `<span class="muted">${rows.length} regional populations ${who ? `of the ${esc(who.name || who.id)}, wherever they live (over or beside other peoples)` : 'of the leading peoples here'}: cut where sea, hard country or distance part a people (each a shade of its people's colour); ${S.V.demes ? `cut since ${NumFmt.ago(S.V.demes.from_kyr)}` : 'loading the tree…'}</span>`;
     } },
+  polities: { group: 'peoples', in: { tz: peoplesIn((V) => !!V.run?.meta?.settlements && !!V.run?.meta?.cultures) },
+    hint: 'Peoples runs: who rules where at the slider\'s century: chiefdoms, states, empires (states ruling other cultures) and dragon realms, read after the run from its towns, techs and cultures (planet/lineages/polities.py). Click a cell for its card.',
+    color: () => { loadPolities(); return (i, c) => politiesColor(i, c); }, legend: (sw) => politiesLegend(sw) },
   'peoples mix': { group: 'peoples', needs: ['peoples_mix'], in: { tz: peoplesIn() }, color: peoplesLayer,
     legend: (sw) => [1, 2, 3, 4].map((m) => sw(`hsl(${(0.75 - 0.12 * m) * 360},70%,${35 + 6 * m}%)`, m === 4 ? '4+ peoples' : `${m}`)).join('') + sw('#5a5a52', 'nobody') },
   'peoples overlay': { group: 'peoples', needs: ['peoples', 'peoples_overlay'], in: { tz: peoplesIn() }, color: peoplesLayer,
@@ -440,7 +444,7 @@ const FAMILIES = {
     legend: (sw) => {
       const id = state.layer.slice(8), h = animalStocks()[id], t = h?.tamed?.[0];
       return sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(ANIMAL_COLS[(h?.bit || 0) % 8], 'tamed and known') +
-        `<span class="muted">${h?.fantasy ? `fantasy animal (${S.V.run.meta.mode} mode); ` : ''}${t ? `tamed ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never tamed on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
+        `<span class="muted">${h?.fantasy ? `fantasy animal (${S.V.run.meta.mode} mode); ` : ''}${t ? `tamed ${NumFmt.ago(t.ago_kyr)} by the ${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never tamed on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ${NumFmt.ago(x.ago_kyr)}`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
     } },
   'crop: ': { group: 'peoples', in: { tz: 'crop_wild' }, expand: () => Object.keys(cropStocks()).map((k) => 'crop: ' + k),
     needs: () => ['crop_wild', 'crop_known'],
@@ -448,7 +452,7 @@ const FAMILIES = {
     legend: (sw) => {
       const id = state.layer.slice(6), h = cropStocks()[id], t = h?.tamed?.[0];
       return sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(CROP_COLS[(h?.bit || 0) % CROP_COLS.length], 'cultivated and known') +
-        `<span class="muted">${h?.fantasy ? `fantasy crop (${S.V.run.meta.mode} mode); ` : ''}${t ? `first cultivated ~${t.ago_kyr} kyr ago by the ${esc(t.people)} on ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never cultivated on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ~${x.ago_kyr} kyr ago`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
+        `<span class="muted">${h?.fantasy ? `fantasy crop (${S.V.run.meta.mode} mode); ` : ''}${t ? `first cultivated ${NumFmt.ago(t.ago_kyr)} by the ${esc(t.people)} on ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never cultivated on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ${NumFmt.ago(x.ago_kyr)}`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
     } },
 };
 const FAMILY_OF = { '@body': 'body: ', '@animal': 'animal: ', '@crop': 'crop: ' };
@@ -467,7 +471,7 @@ const MENUS = {
     'temperature', 'climate', 'landforms', 'vegetation', 'tree cover', 'NPP'],
   // a time zoom has no rock, rivers or rain; its plates/crust are frozen (and empty for Earth)
   tz: ['elevation', 'ice thickness', 'bed under ice', 'temperature', 'climate', 'plates', 'crust age', 'glacial erosion', 'glacial till',
-    'glacial outwash', 'glacial loess', 'tree cover', 'peoples', 'peoples blend', 'demes', 'peoples mix', 'peoples overlay', '@body',
+    'glacial outwash', 'glacial loess', 'tree cover', 'peoples', 'peoples blend', 'demes', 'polities', 'peoples mix', 'peoples overlay', '@body',
     '@animal', '@crop', 'land use', 'fuels', 'technology'],
 };
 

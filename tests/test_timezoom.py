@@ -526,7 +526,7 @@ def test_edge_margins_are_the_run_margin_band(sim4, monkeypatch):
     g = sim4.grid
     src = Z.source_from_sim(sim4)
     land = src["elev"] > 0
-    src["ice"] = np.where(land & (np.abs(g.lat) > 55), 2000.0, 0.0)  # thick caps on the high-latitude land
+    src["ice"] = np.where(land & (np.abs(g.lat) > 50), 2000.0, 0.0)  # thick caps on the high-latitude land (50: enough second-ring cells on the fixture)
     s = _Sim(src, 1.0, 0.5, 0.5, Z.TZParams())
     s.fields.f.update(dTg0=0.0, s0=np.zeros(g.n))  # (the first climate's; only the difference is tested)
     s.prepare_surface(0.0)

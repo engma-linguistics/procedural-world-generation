@@ -11,6 +11,7 @@ import { fillPfts, toast } from './pick.js';
 import { windKey } from './map2d.js';
 import { hasLayer } from './load.js';
 import { renderGroupedPicker } from './layerpick.js';
+import { heightText } from './summit.js';
 // ------------------------------------------------------------ UI
 // a colour bar for RAMPS[key]; labels (optional) replace the end values
 export function rampLegend(key, units, labels) {
@@ -229,7 +230,7 @@ function tipHtml(i) {
   }
   else if (layer === 'fuels' && fuelSrc()) { const t = []; fuelRows(i, (g, k, v) => t.push(v)); main = t.join(''); }
   else { const sp = layerSpecial(layer); if (sp) main = sp.tip(i); }
-  return `<b>${esc(layer)}</b>${main ? ': ' + esc(main) : ''}<br><span class="muted">${land ? '' : 'sea, '}${L.elevation[i]} m · ${G.lat[i].toFixed(1)}°, ${G.lon[i].toFixed(1)}°</span>`;
+  return `<b>${esc(layer)}</b>${main ? ': ' + esc(main) : ''}<br><span class="muted">${land ? '' : 'sea, '}${land ? heightText(i) : L.elevation[i] + ' m'} · ${G.lat[i].toFixed(1)}°, ${G.lon[i].toFixed(1)}°</span>`;
 }
 export function renderTip() {
   if (!S.V || S.hovered < 0 || !S.V.layers || !tipOverMap) { tipEl.style.display = 'none'; return; }
@@ -372,7 +373,7 @@ export function renderSummary() {
     ${worldAnthroPanel()}
     ${m.observed ? `<span class="muted">The model's climate on real terrain; observed layers too: switch "model / observed / difference"
       under Colour by (temperature, precipitation, climate). Made ${m.created}.</span><br>` : ''}
-    Land ${s.land_pct}% · peak ${s.highest_m.elevation} m · trench ${s.deepest_m.elevation} m<br>
+    Land ${s.land_pct}% · peak ${Math.round((s.highest_m.summit_m ?? s.highest_m.elevation) / 100) * 100} m (cell average ${s.highest_m.elevation} m) · trench ${s.deepest_m.elevation} m<br>
     <span class="muted">Landmasses (click a name to rename it):</span> ${landmassRows(s)}<br>
     ${overturningLine(m.overturning)}
     <details class="cli"><summary>command line (for scripts)</summary><code>${cmd}</code></details>`;

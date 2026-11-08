@@ -57,6 +57,7 @@ from .. import timeline as T
 from ..geo import is_land
 from ..grid import shared_grid
 from .crossing import corridor
+from .years import years_ago
 from .history.tags import _tags
 from ..kernels import components
 from .spread import nearest_label
@@ -1025,7 +1026,7 @@ def write(run_dir: Path, report: bool = True) -> dict:
 
 
 def lines_for_report(sm: dict, doc: dict) -> list[str]:
-    L = ["", f"## Demes (PW-981): regional populations since {sm['from_kyr']:g} kyr ago: {sm['count']} in all, {sm['alive']} alive, "
+    L = ["", f"## Demes (PW-981): regional populations since {years_ago(sm['from_kyr'])}: {sm['count']} in all, {sm['alive']} alive, "
              f"{sm['events']} events ({sm['generated_in_s']} s)"]
     for p, b in sorted(sm["by_people"].items(), key=lambda x: -x[1]["alive"]):
         if b["alive"]:

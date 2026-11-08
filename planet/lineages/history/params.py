@@ -137,9 +137,6 @@ BODY_C, BODY_OCT, BODY_ELEV_M = 8.0, 1.0, 1000.0  # the body envelope around the
 # then tolerates -2..34 C, from the boreal forest edge to hot desert margins, while the polar ice, the hottest deserts and the driest
 # land stay out of reach of a people whose comfort is temperate; a cold people (goliaths, -6..12 C) likewise stays out of the tropics.
 # Real peoples went further still with clothing, fire and herds (the Arctic, below), so the envelope is a floor on what culture can do
-ECTO_COLD_C = 1.0  # an ectotherm kind's (spec limits.cold_c: the saurian kin, tortles, lizardfolk, troglodytes) margin below its comfort
-# range, in place of BODY_C: a cold-blooded body cannot be clothed against the cold (owner 10-30: "tortles really don't like the frozen
-# north"). A design judgement; the heat side keeps BODY_C
 T_LEARN_KYR = 5.0  # learned acceptance grows as (1 - L) with this e-folding time, in full where the people lives on country its culture
 # finds marginal, and x its pressure on the ring of cells next to its range. Grounded on the human peopling of high and cold country
 # (sources read 2026-10-30): settlement at 4,355-4,480 m in the Peruvian Andes by 12.8-12.4 kyr ago, within ~2 kyr of the first entry
@@ -186,7 +183,7 @@ COHAB_REF = 0.5  # hostility is how far a pair's cohabitation (compose.cohabitat
 # Raid losses, on a raider people's harsh excess (life_history.harsh_kept): R = 1 + RAID_Q F, at most R_MAX
 RAID_Q = 1.0  # lane 85's R_FRONT 2 on a full hostile frontier (F 1): a kobold border keeps 31%, a goblin one 41% (judgement)
 # In-fighting, every people (lane 101, PW-1240 B; owner D25 for the raiders, D31 "humans ought also be infighting"): K x (1 - meta.war x
-# FEUD_CUT x C x u), C the people's circumscription (counter._circumscribed: how far the land next to it bars a faction from splitting
+# FEUD_CUT x C x u), C the people's circumscription (history.rule.StandIns.circumscribed: how far the land next to it bars a faction from splitting
 # off, Carneiro 2012), u its own fill of the land on the cell (counter._fill: Chagnon's fission, Walker and Hill 2014). Country held by
 # other peoples bars SOCIAL_Q (Carneiro 2012: social circumscription is "generally less tight" than a physical barrier, with
 # "leakage"; the 0.5 is a judgement). FEUD_CUT 0.35 is lane 97's in-fighting at x1 for a fully hemmed kobold people (it kept 65%, R
@@ -206,6 +203,7 @@ LAND_Q, H_MAX = 0.3, 0.01  # lane 82's judgements: war-torn country holds up to 
 WAR_Q = 1.0
 WAR_N0 = 10.0  # people per km2 (lane 82: the human farmers' number)
 WAR_EXT = 0.5  # the frontier's weight against crowding (lane 82: foragers' killing is mostly homicide, not war; Fry and Soderberg 2013)
+POLITIES_LIVE = False  # PW-1434 (lane 183): polities in the history, first cut (history.polity_live; round7.md). Off: the stand-ins of history.rule
 STATE_Q = 3.0  # G = 1 / (1 + STATE_Q x tech level x farm share): states pacify (Gomez et al. 2016; Turchin 2009's -alpha S); judgement
 # violent deaths a year by way of life at reference density with a full hostile frontier (lane 82: medians of OWID's compilation of
 # Keeley 1996, Gat 2006, Bowles 2009 and others): foragers 20-160 per 100k, highland horticulturalists 290-731, herders 970-1000,

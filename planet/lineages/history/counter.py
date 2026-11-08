@@ -15,7 +15,7 @@ BRAKE_HOLD of presence: lane 101, a brake thins a people where it lives but neve
   certain size" and can no longer be held together, so it fissions (Chagnon, PNAS profile 2014); internal political conflict is the
   main cause of group fission (Walker and Hill 2014, Human Nature 25:465); where the land is circumscribed and filled, the quarrels
   turn to war (Carneiro 2012's restatement of his 1970 theory, Social Evolution & History 11(2):5). Lane 101 (PW-1240 B): K x (1 -
-  meta.war x FEUD_CUT x C x u), u the people's own fill of the land on the cell (_fill) and C its circumscription (_circumscribed),
+  meta.war x FEUD_CUT x C x u), u the people's own fill of the land on the cell (_fill) and C its circumscription (history.rule),
   graded as Carneiro grades it: free good country next door bars nothing, others' land bars SOCIAL_Q (social circumscription leaks),
   unlivable country fully. A thinned people fights less, so the cut settles instead of sitting at lane 97's flat ~35% for raiders only.
 - culling wars (D25 C, lane 85): a raider people's crowded frontier, outnumbered there by peoples who hate it, is hunted down to 40%
@@ -30,6 +30,10 @@ their own canon losses rather than adding the human rates.
 
 The dials: meta.raiders (raid losses and culls) and meta.war (war-torn land and every people's in-fighting), both 1 by default;
 0 switches a brake off. Off in the deep epoch (no densities then), as lane 82 designed.
+
+The seam (PW-1280): the brakes read three stand-ins for states and war through `self.rule` (history.rule.StandIns): a state's
+pacification G, the hostile frontier F (and the hostility matrix behind it) and in-fighting's circumscription C. Polities in the
+history (v4, PW-1434) swap them by setting `Rule` to a class with the same methods; the formulas here stay.
 """
 
 from __future__ import annotations
@@ -40,26 +44,20 @@ from .. import life_history as LH
 from ..gridops import nbr_reduce
 from ..spread import EST
 from . import params as PM
+from .rule import StandIns
 
 
 class CounterMixin:
+    Rule = StandIns  # (the seam polities swap in through, PW-1280: G, F and C come from here; history.rule)
+
     def _counter_setup(self):
-        """At the start of a run: who raids (spec raids), the hostility between each pair (from the cohabitation matrix), the fields."""
-        L, n = self.lines, self.grid.n
+        """At the start of a run: who raids (spec raids), the stand-ins for states and war (history.rule), the fields."""
+        L = self.lines
         self._raider = np.array([bool(getattr(l, "raids", False)) and not l.overlay and not l.megafauna and not l.marine for l in L])
-        # hostility 0..1 of i towards j: how far the pair's cohabitation falls under the reference of two open peoples (COHAB_REF, 0.5),
-        # in units of an 'apart' wish of weight 1 (compose.APART_FACTOR): an old enmity of weight w reads w, two insular peoples a little
-        from ..compose import APART_FACTOR
-        H = np.asarray(self.cohab, float)
-        self._hos = np.clip((PM.COHAB_REF - H) / (PM.COHAB_REF * APART_FACTOR), 0.0, 1.0)
-        np.fill_diagonal(self._hos, 0.0)
-        for i, l in enumerate(L):  # (kin, megafauna, overlays and the sea peoples are nobody's raiding enemies)
-            if l.overlay or l.megafauna or l.marine:
-                self._hos[i, :] = 0.0
-                self._hos[:, i] = 0.0
-        self._hos[self._kin] = 0.0
-        self._hem = np.zeros(len(L))  # (each line's hemmed-in share (lane 97) or circumscription (lane 101) at its last step)
-        self._K0 = {}  # (line index -> its unbraked habitat this step)
+        R = self.Rule
+        if PM.POLITIES_LIVE and R is StandIns:  # (polities in the history, first cut, PW-1434: off by default; history.polity_live)
+            from .polity_live import LivePolities as R
+        self.rule = R(self)
         self._cull_d = {}  # (line index -> depletion field of an explicit (slow) cull sawtooth)
         self._cull_log = {}  # (line index -> kyr ago of its last logged cull)
         self.lost = {}  # (line id -> {brake: share of K held off, people-weighted over its land}, at its last step)
@@ -68,52 +66,9 @@ class CounterMixin:
     def _brakes_on(self, step) -> bool:
         return step.epoch != "deep" and (self.tree.raiders > 0 or self.tree.war > 0)
 
-    def _frontier(self, k) -> np.ndarray:
-        """F per cell, 0..1: the hostile presence about each cell (the cell and its neighbours), weighted by line k's hostility to each
-        people there (the presences at the start of the step)."""
-        g = self.grid
-        c = self.__dict__.get("_Fc")
-        if c is None or c[0] is not self._pm:  # (once a step, for every line at once: the hostile presence, lines x cells)
-            J = np.flatnonzero(self._hos.any(0))
-            HP = np.clip(self._hos[:, J].astype(np.float32) @ self._pm[J].astype(np.float32), 0.0, 1.0) if len(J) else None
-            c = self._Fc = (self._pm, HP, {})
-        F = c[2].get(k)
-        if F is None:
-            h = c[1][k] if c[1] is not None else None
-            if h is None or not h.any():
-                F = np.zeros(g.n)
-            else:
-                F = np.clip((h + nbr_reduce(g, np.add, h[g.nbr_idx])) / (1.0 + self._deg), 0.0, 1.0)
-            c[2][k] = F
-        return F
-
     def _note_hemmed(self, l, k, K, room, crowd):
-        """After the competition: line k's circumscription for next step's in-fighting (_circumscribed), any people."""
-        if l.overlay or l.megafauna or l.marine:
-            return
-        held = self.p[k] >= EST
-        self._hem[k] = self._circumscribed(l, k, held, room, crowd) if held.any() else 0.0
-
-    def _circumscribed(self, l, k, held, room, crowd) -> float:
-        """How circumscribed line k is, 0..1 (lane 101, PW-1240 B; Carneiro 2012): the mean over the cells next to its range of how far
-        each bars a faction from splitting off there. Free good country (habitat and room >= 0.3, held by no other people) bars nothing;
-        country no one could split off into (habitat under 0.3, or the sea for a people that does not sail) bars fully: environmental
-        circumscription; country other peoples hold bars SOCIAL_Q: social circumscription, which Carneiro finds 'generally less tight',
-        allowing 'leakage' at the peripheries. Its crowding by rivals on its own land counts as social circumscription where that is
-        more. Habitat here is the unbraked one (the brakes' own cut is not a barrier)."""
-        K0 = self._K0.get(k)
-        if K0 is None:
-            return 0.0
-        ring = self._dilate(held, 1) & ~held
-        if l.trait("sea", 0.0):  # (a seafaring people can split off over the water: only its land ring bars it)
-            ring &= self._land_now
-        if not ring.any():
-            return 1.0
-        land = self._land_now
-        taken = (self._cntp - self._pm[k]) > 0
-        free = land & (K0 >= 0.3) & (room >= 0.3) & ~taken
-        bar = np.where(free, 0.0, np.where(land & taken, PM.SOCIAL_Q, 1.0))
-        return float(max(PM.SOCIAL_Q * float(crowd), bar[ring].mean()))
+        """After the competition: the stand-ins note line k's circumscription for next step's in-fighting (history.rule)."""
+        self.rule.after_contest(l, k, K, room, crowd)
 
     def _brake(self, l, k, K, step, env, tags):
         """Line k's K with the brakes applied (the share kept per cell), and the shares lost noted for the output."""
@@ -122,7 +77,7 @@ class CounterMixin:
         held = self.p[k] >= EST
         if not held.any():
             return K
-        self._K0[k] = K  # (the unbraked habitat: in-fighting's fill and circumscription read it)
+        self.rule.note_habitat(k, K)  # (the unbraked habitat: in-fighting's circumscription reads it)
         kept = np.ones(self.grid.n)
         lost = {}
         F = None
@@ -132,16 +87,14 @@ class CounterMixin:
             hw = PM.H_ERA["forager"] if era == "forager" and l.way not in ("fisher_forager", "sea_nomad") else \
                 PM.H_WAY.get(l.way, PM.H_ERA.get(era, 0.0)) if l.way else PM.H_ERA.get(era, 0.0)
             if hw > 0:
-                F = self._frontier(k)
+                F = self.rule.frontier(k)
                 N = np.asarray(self.dens_at(k), float) * self.p[k]  # (people per km2 on each cell)
-                from . import megafauna as MG
-                lev = MG.tech_level(self.tree.era, step.ago)
-                G = 1.0 / (1.0 + PM.STATE_Q * lev * float(self._farm_share[k]))  # (a farming people with the tech forms states, Gómez et al. 2016)
+                G = self.rule.pacification(k, step)  # (a state's pacification: the stand-in, a farming people with the tech forms states)
                 h = wx * hw * ((N / PM.WAR_N0) ** 2 * G + PM.WAR_EXT * F)
                 kw = 1.0 - PM.LAND_Q * np.minimum(1.0, h / PM.H_MAX)
                 kept *= kw
                 lost["war"] = kw
-            fx = self.tree.war * PM.FEUD_CUT * self._hem[k]
+            fx = self.tree.war * PM.FEUD_CUT * self.rule.circumscription(k)
             if fx > 0:  # (in-fighting, every people: lane 101, owner D31 "humans ought also be infighting")
                 kf = 1.0 - np.minimum(1.0, fx * self._fill(k, K))
                 kept *= kf
@@ -149,7 +102,7 @@ class CounterMixin:
         rx = self.tree.raiders
         if rx > 0 and self._raider[k]:
             if F is None:
-                F = self._frontier(k)
+                F = self.rule.frontier(k)
             R = np.clip(np.round((1.0 + rx * PM.RAID_Q * F) / 0.05) * 0.05, 1.0, PM.R_MAX)
             era = self._era[k]
             kr = np.ones(self.grid.n)
@@ -199,7 +152,7 @@ class CounterMixin:
         dk = np.asarray(self.dens_at(k), float)
         mine = np.bincount(lab[site], weights=(self.p[k] * (dk if dk.ndim else dk) * area)[site], minlength=n)
         ring = self._dilate(site, 1)
-        hk = self._hos[k]
+        hk = self.rule.hostility[k]
         foe = np.zeros(g.n)
         for j in np.flatnonzero(hk >= 0.5 * PM.CULL_F):
             if self.active.get(self.lines[j].id):

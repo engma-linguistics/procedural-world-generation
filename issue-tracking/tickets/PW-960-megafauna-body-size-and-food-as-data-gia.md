@@ -4,7 +4,7 @@ title: Megafauna body size and food as data (giants' recommended masses and food
 type: task
 status: todo
 parent: null
-milestone: v2
+milestone: later
 subsystem: peoples
 effort: s
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-724, PW-692]
 refs: [docs/proposals/megafauna-scaling.md, planet/lineages/samples/dnd.toml, planet/lineages/spec.py]
 created: 2026-10-28
-updated: 2026-10-29
+updated: 2026-11-03
 ---
 
 ## Description
@@ -49,5 +49,6 @@ How the dragon figures are built: reptile field metabolic rate (Nagy et al. 1999
 - The brief can then say "a hill giant eats like twelve peasants" and "an adult red dragon takes about forty cattle a year".
 
 ## Updates
+- 2026-11-03: Milestones 11-03: v2 -> later: dragon and giant food budget re-tunes the peoples balance; not a must-have for December
 - 2026-10-29: Papers read 10-29. Nagy et al. 1999 reptile FMR 0.196 M^0.889 checked (Table 2, p. 260); its largest reptile, a 45.2 kg Komodo dragon at 2,430 kJ/day (Table 1, p. 258), sits 10% under the fit (2,700). The varanid-only fit, 0.208 M^0.915 (n = 11, Table 2, eq. 36), overshoots it by 55%, so the all-reptile line stays. Burness, Diamond & Flannery 2001 (PNAS 98:14518, on file, not on the wishlist): the top ectothermic carnivore's mass scales with land area as 0.25 A^0.47 kg (A km2; p. 14520), ~1.7 t for all Earth's land. Our dragons (3.2 t ecological mass, ~50 t at 28 m) are above that line, as the big dinosaurs were ('remains unexplained', abstract): fine for dragons, worth knowing.
 - 2026-10-28: Created from inbox draft draft-megafauna-4-body-size-and-food-data.md (found by daniel).

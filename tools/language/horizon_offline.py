@@ -77,7 +77,8 @@ def main():
     ap.add_argument("--excess", default="0.03", help="comma list of SPLIT_EXCESS values for the split measure")
     ap.add_argument("--json", help="write the split results here")
     a = ap.parse_args()
-    doc = json.load(open(a.languages_json))
+    from planet.language import output as OU
+    doc = OU.load(a.languages_json, sidecars=("etym",))
     if a.pairs[0] != "-":
         pairs_measure(doc, [float(x) for x in a.pairs[0].split(",")], [float(x) for x in a.pairs[1].split(",")])
     splits_measure(doc, [float(x) for x in a.excess.split(",")], a.json)

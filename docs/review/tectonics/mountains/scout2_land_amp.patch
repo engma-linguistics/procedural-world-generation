@@ -1,0 +1,161 @@
+From 8bb104868b131a44500ea7d27eb4ab78d90f58f4 Mon Sep 17 00:00:00 2001
+From: Daniel Bishop <lolologist@gmail.com>
+Date: Wed, 4 Nov 2026 10:37:17 -0500
+Subject: [PATCH] WIP land amplitude from local relief (PW-1446)
+
+---
+ planet/refine.py             |  7 ++++---
+ planet/zoom/regional.py      | 20 ++++++++++++++++++--
+ planet/zoom/stage_terrain.py | 16 +++++++++-------
+ 3 files changed, 31 insertions(+), 12 deletions(-)
+
+diff --git a/planet/refine.py b/planet/refine.py
+index 52fbc86a..e57c6b07 100644
+--- a/planet/refine.py
++++ b/planet/refine.py
+@@ -27,6 +27,7 @@ import numpy as np
+ 
+ from . import kernels
+ from . import store as S
++from . import summit
+ from . import vegetation as VEG
+ from . import world as W
+ from .climate import LAPSE
+@@ -147,9 +148,9 @@ def terrain(nest: Nest, L: dict, seed: int = 1, log=print) -> dict:
+ 
+     # detail (stage_terrain.detail): relief noise by ruggedness; the finest octave two fine cells (the zoom stops at
+     # 6 px, leaving the valleys to its landscape pass; here the finish's erosion cuts them)
+-    r7, rel7 = ruggedness(g, L)
++    r7, _ = ruggedness(g, L)
+     rug = np.nan_to_num(nest.interp(r7, None, 0.5 * sp), nan=0.5)
+-    rel = np.nan_to_num(nest.interp(rel7, None, 0.5 * sp), nan=0.0)
++    lrel = np.nan_to_num(nest.interp(summit.local_relief(g, e7), None, 0.5 * sp), nan=0.0)
+     fine_l = 2 * res
+     lam_f, lam_r = 0.8 * sp, 0.4 * sp
+     f1 = ZK.fbm(Pk, lam_f, RG._octaves(lam_f, fine_l), 0.55, S_ + 2) / 0.17
+@@ -157,7 +158,7 @@ def terrain(nest: Nest, L: dict, seed: int = 1, log=print) -> dict:
+     w_r = np.clip(rug, 0, 1) ** 2
+     detail = (1 - w_r) * f1 + w_r * (0.4 * f1 + 0.9 * rr)
+     detail = 2.2 * np.tanh(detail / 2.2)
+-    amp_land = rug * (0.36 * np.maximum(base, 0) + 0.3 * rel + 25) + 12
++    amp_land = RG.land_amp(rug, lrel)
+     amp_sea = 5 + 0.08 * np.abs(base)
+     taper = np.where(land, smoothstep(0.0, 0.35, ind_n), smoothstep(0.0, 0.25, -ind_n))
+     h = base + taper * np.where(land, amp_land, amp_sea) * detail
+diff --git a/planet/zoom/regional.py b/planet/zoom/regional.py
+index f6021e15..45cac0db 100644
+--- a/planet/zoom/regional.py
++++ b/planet/zoom/regional.py
+@@ -156,7 +156,7 @@ from pathlib import Path
+ 
+ import numpy as np
+ 
+-from .. import coast, icemass, kernels
++from .. import coast, icemass, kernels, summit
+ from .. import humanuse as HU
+ from .. import gameattrs as GA
+ from .. import store as S
+@@ -303,6 +303,22 @@ def softplus(x, s):
+     return s * np.logaddexp(0, x / s)
+ 
+ 
++# The land detail's amplitude per unit of Earth's sub-cell relief (PW-1446): the detail noise, the landscape pass's
++# valleys and the mean-keeping between them put a zoom cell's highest 4 km pixel at about 1.5x the amplitude above
++# its mean. Set on three 4 km zooms of world dba204 (scout 188, docs/review/tectonics/mountains/scout2.md) against
++# HydroSHEDS 0.5-degree blocks, by local relief.
++SUBCELL_K = 1.5
++
++
++def land_amp(rug, local_relief):
++    """The land detail's amplitude (m) per pixel, from the coarse cells' local relief (summit.local_relief,
++    interpolated): Earth's sub-cell relief for that relief (summit.sub_cell_relief) / SUBCELL_K, scaled by the
++    ruggedness. Earth's sub-cell relief follows the local relief, not the height (summit.py's fit): a flat plateau
++    at 4 km is as smooth as a plain, a rugged range at 1.5 km is not (PW-1446; the amplitude used to grow with the
++    height, 0.36 m per m, and drew 3-5 km of extra relief over 7-8 km plateaus)."""
++    return rug * (summit.sub_cell_relief(np.maximum(np.nan_to_num(local_relief), 0.0)) / SUBCELL_K + 25) + 12
++
++
+ def shore_apron(h, lake, lakes, free, held, held_px, rec, order, q, nx, ny, res):
+     """Grade the plain beside each big lake up from its shore (PW-531; SHORE_*
+     constants): within the lake's reach, every land pixel that isn't a river
+@@ -1226,7 +1242,7 @@ class ZoomCtx:
+                  "fit_w", "fjord", "flow", "form_f", "fr", "full_px", "g", "gc_sl", "glac_form", "glac_loess",
+                  "glac_stats", "glacier", "glacier_mask", "ground_up", "gw_sl", "h", "halo", "hf", "ice", "ice_n",
+                  "ice_th", "idx", "ind", "ind_n", "inflow", "inflow_pts", "inside", "interior_c", "isl", "jitter",
+-                 "jitter_g", "jul_f", "keep", "keep_means", "kpix", "kps", "lake", "lake_c", "lake_depth", "lake_id",
++                 "jitter_g", "jul_f", "keep", "lrel", "keep_means", "kpix", "kps", "lake", "lake_c", "lake_depth", "lake_id",
+                  "lake_in", "lake_info", "lake_kind", "lake_loss", "lake_outlets", "lake_seq", "lakes", "lakes_out",
+                  "land", "land_all", "land_c", "lat_px", "layers", "lf", "lf_counts", "lf_gorges", "lf_lake",
+                  "lf_overlay", "lf_sink", "lobe", "logC", "make_branches", "marsh", "minor_add", "n_in",
+diff --git a/planet/zoom/stage_terrain.py b/planet/zoom/stage_terrain.py
+index c4838247..cb26bd53 100644
+--- a/planet/zoom/stage_terrain.py
++++ b/planet/zoom/stage_terrain.py
+@@ -21,6 +21,7 @@ from . import volcanoes as ZV
+ from . import vegetation as ZVG
+ from .. import coast
+ from .. import icemass
++from .. import summit
+ from . import regional as RG
+ from ..geo import smoothstep
+ 
+@@ -92,8 +93,8 @@ def coarse_fields(ctx):
+     """The coarse cells round the region and their fields (heights, rain, ice, ruggedness, runoff) interpolated onto
+     the pixels.
+     Reads: L, cx, cy, e_c, elev, fr, g, ind, land_c, log, nx, ny, px, py, r_c, rock, sel, size_km, sp, t0.
+-    Writes: cov_f, cx, cy, e_c, e_land, e_sea, elev, gc_sl, gw_sl, ice, ind, interior_c, jul_f, land_c, precip, r_c,
+-    rel, rock, rug, runoff, sel."""
++    Writes: cov_f, cx, cy, e_c, e_land, e_sea, elev, gc_sl, gw_sl, ice, ind, interior_c, jul_f, land_c, lrel, precip, r_c,
++    rock, rug, runoff, sel."""
+     # --- coarse cells around the region --------------------------------
+     ctx.elev = ctx.L["elevation"].astype(float)
+     ang = arc_km(ctx.g.centers @ ctx.fr.c)
+@@ -106,7 +107,7 @@ def coarse_fields(ctx):
+ 
+     # ruggedness per coarse cell
+     ctx.rock = ctx.L["rock"].astype(int)
+-    r_all, relief = ruggedness(ctx.g, ctx.L, ctx.sel)
++    r_all, _ = ruggedness(ctx.g, ctx.L, ctx.sel)
+     ctx.r_c = r_all[ctx.sel]
+     ice_c = ctx.L.get("ice", np.zeros(ctx.g.n))[ctx.sel].astype(float)
+ 
+@@ -122,7 +123,7 @@ def coarse_fields(ctx):
+     else:
+         jul_c = np.full(len(ctx.sel), 0.5)
+     vals = np.column_stack([np.maximum(ctx.e_c, 1.0), np.minimum(ctx.e_c, -1.0),
+-                            ctx.L["precipitation"][ctx.sel].astype(float), ice_c, ctx.r_c, relief[ctx.sel],
++                            ctx.L["precipitation"][ctx.sel].astype(float), ice_c, ctx.r_c, summit.local_relief(ctx.g, ctx.elev)[ctx.sel],
+                             gw + LAPSE * np.maximum(ctx.e_c, 0), gc + LAPSE * np.maximum(ctx.e_c, 0), cov_c,
+                             np.asarray(ctx.L["runoff"] if "runoff" in ctx.L else ctx.L["precipitation"], float)[ctx.sel], jul_c])
+     wts = np.ones_like(vals)
+@@ -134,7 +135,8 @@ def coarse_fields(ctx):
+     fine, _ = ZK.gauss_interp(ctx.px, ctx.py, ctx.cx, ctx.cy, vals, wts, sig)
+     ctx.e_land = np.nan_to_num(fine[:, 0], nan=1.0)
+     ctx.e_sea = np.nan_to_num(fine[:, 1], nan=-50.0)
+-    ctx.precip, ctx.ice, ctx.rug, ctx.rel = (fine[:, k] for k in range(2, 6))
++    ctx.precip, ctx.ice, ctx.rug, ctx.lrel = (fine[:, k] for k in range(2, 6))
++    ctx.lrel = np.nan_to_num(ctx.lrel, nan=0.0)  # (local relief, summit.local_relief: the land detail's amplitude)
+     ctx.gw_sl, ctx.gc_sl, ctx.cov_f = (np.nan_to_num(fine[:, k], nan=0.0) for k in range(6, 9))
+     ctx.jul_f = np.clip(np.nan_to_num(fine[:, 10], nan=0.5), 0, 1)
+     # what feeds the streams: the world's runoff (rain minus what the land
+@@ -273,7 +275,7 @@ def coastline(ctx):
+ def detail(ctx):
+     """The base surface from the coast indicator, plus the fractal detail (ruggedness-weighted), and the soft coast
+     clamp.
+-    Reads: P, Pk, S, amp_land, base, bi_island, clamp, detail, elev, g, h, ind_n, isl, land, own, rel, res, rug,
++    Reads: P, Pk, S, amp_land, base, bi_island, clamp, detail, elev, g, h, ind_n, isl, land, lrel, own, res, rug,
+     s_land, s_sea, sea_floor, sp, taper, wD, wS.
+     Writes: amp_land, clamp, detail, h, own, s_land, s_sea, sea_floor, taper."""
+     # --- detail ----------------------------------------------------------
+@@ -289,7 +291,7 @@ def detail(ctx):
+     w_r = np.clip(ctx.rug, 0, 1) ** 2
+     ctx.detail = (1 - w_r) * f1 + w_r * (0.4 * f1 + 0.9 * rr)
+     ctx.detail = 2.2 * np.tanh(ctx.detail / 2.2) + 0.06 * tex  # no absurd spikes
+-    ctx.amp_land = (ctx.rug * (0.36 * np.maximum(ctx.base, 0) + 0.3 * np.nan_to_num(ctx.rel) + 25) + 12) * (1 - 0.9 * ctx.wD)
++    ctx.amp_land = RG.land_amp(ctx.rug, ctx.lrel) * (1 - 0.9 * ctx.wD)
+     amp_sea = (5 + 0.08 * np.abs(ctx.base)) * (1 - 0.7 * ctx.wS)
+     ctx.taper = np.where(ctx.land, smoothstep(0.0, 0.35, ctx.ind_n), smoothstep(0.0, 0.25, -ctx.ind_n)) * ~ctx.bi_island
+     ctx.h = ctx.base + ctx.taper * np.where(ctx.land, ctx.amp_land, amp_sea) * ctx.detail
+-- 
+2.53.0
+

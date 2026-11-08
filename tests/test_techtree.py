@@ -3,6 +3,7 @@
 import math
 
 import numpy as np
+import pytest
 
 from planet.lineages import techtree as TT
 
@@ -262,7 +263,8 @@ def test_small_peoples_rarely_invent_the_specialist_techs():
     big = band = 0
     for s in range(12):
         # (16 kyr, was 8: lane 70's first-of-anchor_peers rates make one isolated people slower than Earth's first finder)
-        lines = [line("big", at=16.0, track=_pop(5e7, 5.0, 16.0)), line("band", at=16.0, track=_pop(1000, 0.1, 16.0))]
+        # (60 kyr, was 16: lane 200b's anchor of 24 regional learners slows one isolated people again)
+        lines = [line("big", at=60.0, track=_pop(5e7, 5.0, 60.0)), line("band", at=60.0, track=_pop(1000, 0.1, 60.0))]
         tt = TT.build(lines, None, None, seed=s, T=T2)
         big += "writing" in tt["known"]["big"]
         band += "writing" in tt["known"]["band"]
@@ -346,7 +348,8 @@ def test_needs_any_one_of_them():
         got = 0
         for s in range(6):
             T2 = {**T, "kind": [{"of": ["x"], "kit": ["pack_animals"] + mount}]}
-            tt = TT.build([line("x", at=6.0, track=_pop(1e7, 1.0, 6.0))], None, None, seed=s, T=T2)
+            # (12 kyr, was 6: lane 200b's first-of-24 regional learners make one isolated people slower than Earth's first finder)
+            tt = TT.build([line("x", at=12.0, track=_pop(1e7, 1.0, 12.0))], None, None, seed=s, T=T2)
             got += "riding" in tt["known"]["x"]
         assert (got >= 5) if ok else got == 0, (mount, got)
     assert TT._earth_ready(T, "riding") == T["techs"]["animal_horse"]["earliest_kyr"]  # (Earth's: the horse, not a fantasy mount)
@@ -412,3 +415,235 @@ def test_faith_nodes_and_gods_mode():
     assert "divine_magic" not in b and "moralizing_high_god" in b
     real = ids("faith_made", mode="real")
     assert "divine_magic" not in real and "moralizing_high_god" in real
+
+
+def test_a_nudge_elsewhere_leaves_a_peoples_dates_alone():
+    """PW-1459: every draw is keyed on what it is for, so changing another people (its size, a newcomer) leaves an unrelated
+    people's dates exactly as they were; the old shared stream reshuffled them."""
+    base = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(1e6))]
+    nudged = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(2e3)), line("c", at=40.0, track=_pop(5e5))]
+    seen = 0
+    for s in range(1, 12):  # (the first two draws in which a invents something: PW-1483's keyed waits differ from the old per-step draws)
+        k0 = TT.build(base, None, None, seed=s, T=T)["known"]
+        if not k0["a"] or seen == 2:
+            continue
+        seen += 1
+        k1 = TT.build(nudged, None, None, seed=s, T=T)["known"]
+        assert k0["a"] and k0["a"] == k1["a"]
+        assert k0["b"] != k1["b"]  # (the nudged people itself does change)
+    assert seen == 2
+    u = [TT.keyed(3, "wait", "a", f"t{k}") for k in range(4000)]
+    assert abs(np.mean(u) - 0.5) < 0.02 and 0.0 <= min(u) and max(u) < 1.0
+
+
+# ---- D52's experiment arms (lane 186, PW-1461) --------------------------------------------------------------------------------
+
+TOWNS_Y = {"y": (np.array([8.0, 0.0]), np.array([50.0, 50.0])), "_cell_km2": 3000.0}  # (50 town cells of 3,000 km2)
+
+
+def _writing_world(arms, towns=None, kin=False, ins=0.3, seeds=range(8), over=None):
+    """A big people y (49 Mkm2), ready for writing, beside a small writer src: the kyr y waits for writing, per seed."""
+    have = TT.closure(T, ["writing"])
+    techs = {**T["techs"], "writing": {**T["techs"]["writing"], "rate": 1e-9}}  # (y never invents it: only the front counts)
+    T2 = {**T, "techs": techs, "defaults": {**T["defaults"], **(over or {})},
+          "kind": [{"of": ["src"], "kit": sorted(have)}, {"of": ["y"], "kit": sorted(have - {"writing"})}]}
+    con = {"pairs": [{"a": "src", "b": "y", "first_contact_kyr": 8.0, "in_contact_now": True,
+                      "series": [[8.0, 3000, 0.0], [0.0, 3000, 0.0]]}]}
+    waits = []
+    for s in seeds:
+        kw = {"origin": "split", "parents": ["p"]} if kin else {}  # (kin: two daughter lines of one people)
+        src = line("src", at=8.0, track=_pop(1e7, 1.0, 8.0), **kw)
+        y = line("y", at=8.0, track=_pop(1e8, 49.0, 8.0), **kw)
+        y["demography"] = {"insularity": ins}
+        ls = [line("p", at=9.0, ended=8.0, track=_pop(1e7, 1.0, 9.0))] * kin + [src, y]
+        k = TT.build(ls, con, None, seed=s, T=T2, towns=towns, arms=arms)["known"]["y"].get("writing")
+        waits.append(8.0 - k[0] if k else 8.0)
+    return np.array(waits)
+
+
+def test_arms_off_is_the_plain_front_bit_for_bit():
+    """D52's switch off (the default, or an empty string) is today's rule exactly, with or without a town footprint."""
+    a = _writing_world(None, over={"contact_arms": ""})
+    assert (a == _writing_world("")).all() and (a == _writing_world("", towns=TOWNS_Y)).all()
+    assert TT.ARM_DEFAULTS["contact_arms"] == "" and T["defaults"]["contact_arms"] == "BST"  # (the tree's own: D53's arm T, lane 200b; D60 B's arm S, lane 207)
+
+
+def test_each_arm_speeds_writing_by_its_own_mechanism():
+    """B crosses the town network (50 cells of 3,000 km2: ~390 km, not 7,000), C runs at trade speed between town peoples, E
+    stops at the nearest town, K drops the taker's reserve against its own kin; each leaves the other cases alone."""
+    off = np.median(_writing_world(""))
+    assert np.median(_writing_world("B", towns=TOWNS_Y)) < off / 3
+    with pytest.warns(UserWarning, match="town footprint"):
+        assert np.median(_writing_world("B")) == off  # (no footprint: B has nothing to cross, and says so)
+    c = np.median(_writing_world("C"))
+    assert c < off / 1.5  # (both know towns: the front at 2.2 km/yr, not 1)
+    dense = {**TOWNS_Y, "y": (np.array([8.0, 0.0]), np.array([5000.0, 5000.0]))}  # (E crosses town spacing, B their summed width:
+    assert np.median(_writing_world("E", towns=dense)) < np.median(_writing_world("B", towns=dense)) / 3  # many towns favour E)
+    assert np.median(_writing_world("E", towns=TOWNS_Y)) < off / 3
+    kin_off, kin_on = np.median(_writing_world("", kin=True, ins=0.9)), np.median(_writing_world("K", kin=True, ins=0.9))
+    assert kin_on < kin_off / 2
+    assert np.median(_writing_world("K", ins=0.9)) == np.median(_writing_world("", ins=0.9))  # (strangers: no change)
+    assert np.median(_writing_world("C", over={"arm_trade_km_yr": 3.3})) < c  # (its number is read from the tree)
+
+
+def test_kin_pairs_are_recent_parents_daughters_and_sisters():
+    ls = [line("p", at=50.0), line("a", origin="split", at=10.0, parents=["p"]), line("b", origin="split", at=8.0, parents=["p"]),
+          line("old", origin="split", at=40.0, parents=["p"]), line("g", origin="group", at=5.0, group_of="a")]
+    k = TT.kin_pairs(ls, 15.0)
+    assert {("p", "a"), ("a", "p"), ("a", "b"), ("g", "a")} <= k
+    assert ("p", "old") not in k and ("a", "old") not in k
+
+
+# ---- the tree as a step function (lane 192, PW-1466) and the town arms after the ledger (PW-1464) ---------------------------------
+
+def test_the_calendar_run_in_pieces_is_the_tree_built_at_once():
+    """PW-1466: techtree.Calendar runs the same steps and keyed draws whether it is advanced once or a piece at a time (as the
+    history does), so fed the same inputs it makes the same calendar."""
+    lines = [line("a", at=60.0, track=_pop(1e6)), line("b", at=60.0, track=_pop(3e5)),
+             line("c", origin="split", at=20.0, parents=["a"], track=_pop(2e5, at=20.0))]
+    con = {"pairs": [{"a": "a", "b": "b", "first_contact_kyr": 40.0, "in_contact_now": True,
+                      "series": [[40.0, 800, 0.0], [0.0, 800, 0.0]]}]}
+    for s in (1, 2):
+        whole = TT.build(lines, con, None, seed=s, T=T)
+        c = TT.Calendar(lines, seed=s, T=T)
+        c.feed(lines, TT.links_of(con, c.kind), TT.forced_of(None, c.techs, c.L), {l["id"]: None for l in c.people})
+        ran = sum(c.advance(t) for t in (59.0, 30.0, 12.0, 5.0, 1.0, 0.3))
+        ran += c.advance()
+        assert ran == TT.STEPS + 1
+        assert c.result() == whole and whole["known"]["c"]
+
+
+def test_a_live_front_speeds_up_as_the_border_grows_and_never_slows():
+    """PW-1473 (round9.md): the tree inside the history re-times a front still on its way from the border known now
+    (history.tech_live.LiveTech._retime): the same border leaves it where advance put it (the same rate), a longer border brings it
+    earlier, a shorter one never makes it later."""
+    from types import SimpleNamespace
+    from planet.lineages.history import tech_live as TL
+    lines = [line("a", at=60.0, track=_pop(1e8, 0.5)), line("b", at=60.0, track=_pop(1e3, 50.0))]  # (a dense giver, a wide taker)
+
+    def links(km):
+        return [("a", "b", 40.0, 0.0, float(km))]
+
+    for seed in range(3, 20):  # (the first draw with fronts still on their way at 5 kyr; PW-1483 changed which draws have them)
+        c = TT.Calendar(lines, seed=seed, T=T)
+        c.feed(lines, links(150), TT.forced_of(None, c.techs, c.L), {l["id"]: None for l in c.people})
+        c.advance(5.0)
+        open_ = {k: v for k, v in c.arrive.items() if v is not None and v < 5.0 and k[2] not in c.known[k[1]]}
+        if open_:
+            break
+    lt = SimpleNamespace(cal=c)
+    assert open_  # (a short border, a wide taker: fronts still on their way)
+    TL.LiveTech._retime(lt, 5.0)
+    assert {k: c.arrive[k] for k in open_} == open_  # (the same border: advance's own rate, nothing moves)
+    c.links = links(1500)
+    TL.LiveTech._retime(lt, 5.0)
+    assert all(c.arrive[k] > v for k, v in open_.items())  # (ten times the border: every open front earlier)
+    sped = dict(c.arrive)
+    c.links = links(50)
+    TL.LiveTech._retime(lt, 5.0)
+    assert c.arrive == sped  # (a shorter border: never later)
+
+
+def test_town_arms_wait_for_the_ledger(monkeypatch):
+    """PW-1464: output.save builds the first tree without B and E (no town footprint yet, so no warning), and the ledger reads only
+    LEDGER_TECHS, which E's techs (writing, the alphabet, law) are not among: one round settles it."""
+    from planet.lineages import settlements as ST
+    monkeypatch.setattr(TT, "load", lambda path=None: {**T, "defaults": {**T["defaults"], "contact_arms": "CE"}})
+    assert TT.arms_of() == "CE" and TT.town_arms() == "E" and TT.arms_without_towns() == "C"
+    assert not set(TT.ARM_ADMIN) & set(ST.LEDGER_TECHS)
+    k0 = {"a": {"towns": [6.0, "invented", None], "writing": [3.0, "contact", "b"]}}
+    k1 = {"a": {"towns": [6.0, "invented", None], "writing": [4.5, "contact", "b"]}}
+    assert ST.ledger_dates(k0) == ST.ledger_dates(k1) != ST.ledger_dates({"a": {"towns": [5.0, "invented", None]}})
+
+
+def test_own_floor_lifts_the_slow_and_never_speeds_the_anchor():
+    """D55's floor (PW-1471, lane 200b): a learner is no slower than the anchor learner its rate is set on, so switching it on leaves
+    the anchor check exactly as it was and lifts only a smaller people; it is never above the anchor learner's own hazard."""
+    T1 = {**T, "defaults": {**T["defaults"], "own_floor": True}}
+    for tid in ("writing", "towns"):
+        assert TT.own_floor(T1, tid) <= TT.rate_of(T1, tid) * TT.anchor_strength(T1, tid) + 1e-12
+        assert TT.own_floor(T, tid) is None or not T["defaults"]["own_floor"]
+    assert TT.own_floor(T1, "bow") is None  # (a floored, Pleistocene tech: no own floor)
+    assert TT.anchor_check(["writing"], seeds=5, T=T1) == TT.anchor_check(["writing"], seeds=5, T=T)
+
+
+def test_region_learners_split_a_continent_by_area():
+    """D55 (lane 200b): each landmass with a tenth of a people's range is a region; with region_mkm2 a large one is several."""
+    n = 1000  # (cells of an Earth-sized sphere: ~510 Mkm2 / 1000)
+    lm = np.full(n, -1)
+    lm[:600], lm[600:700], lm[700:705] = 0, 1, 2
+    present = np.zeros((1, n))
+    present[0, :705] = 1.0
+    r = TT.region_shares(present, lm, {"x": 0}, 0.1)["x"]
+    assert [k for k, _ in r] == [0, 1] and abs(sum(w for _, w in r) - 700 / 705) < 1e-9
+    cell = 4 * np.pi * 6371.0 ** 2 / n / 1e6
+    r = TT.region_shares(present, lm, {"x": 0}, 0.1, region_mkm2=100.0)["x"]
+    k0 = int(np.ceil(600 * cell / 100.0))
+    assert [k for k, _ in r].count(0) == k0 and [k for k, _ in r].count(1) == int(np.ceil(100 * cell / 100.0))
+    assert abs(sum(w for _, w in r) - 700 / 705) < 1e-9
+
+
+def test_arm_s_state_techs_wait_for_towns_of_ones_own():
+    """D60 B (arm S, lane 207): a state tech (writing) is taken up only while the taker has a town of its own; its front still
+    arrives as before, so a people founding a town takes it up then, and one with towns all along is not slowed."""
+    off = _writing_world("")
+    assert (_writing_world("S", towns=TOWNS_Y) == off).all()  # (towns all along: as without the arm)
+    none = {"_cell_km2": 3000.0, "src": TOWNS_Y["y"]}
+    assert (_writing_world("S", towns=none) == 8.0).all()  # (no town of its own: never)
+    late = {"_cell_km2": 3000.0, "y": (np.array([8.0, 3.0, 2.9, 0.0]), np.array([0.0, 0.0, 5.0, 5.0]))}
+    w = _writing_world("S", towns=late)
+    assert (w >= 5.0 - 1e-6).all() and (w <= np.maximum(off, 5.2)).all()  # (at its first town, or its own front if later)
+    assert {i for i, t in T["techs"].items() if t.get("state")} >= {"writing", "kingship", "law", "coinage"}
+
+
+def test_arm_s_settled_over_living_memory_and_hosts():
+    """Round 3b (lane 207b): settled is read over living memory (3 generations, at least the footprint's step), so a one-sample dip
+    does not re-close the gate but towns lost long ago do; a group or overlay the ledger books no places to is settled as its hosts."""
+    ls = [line("a", at=9.0, generation_yr=25.0), line("g", at=9.0, group_of="a", way="farmer"),
+          line("f", at=9.0, group_of="a", way="forager"), line("o", at=9.0, origin="hybrid", parents=["a", "b"], overlay=True),
+          line("b", at=9.0, generation_yr=25.0)]
+    a = np.round(np.arange(9.0, -0.05, -0.1), 4)
+    n = np.where((a > 5.0) & (np.abs(a - 7.0) > 0.05), 2.0, 0.0)  # (towns from 9 to 5 kyr ago, one sample missing at 7)
+    c = TT.Calendar(ls, towns={"_cell_km2": 3000.0, "a": (a, n)}, arms="S")
+    assert c.settled("a", 7.0) and c.settled("a", 5.0)  # (the dip; and the last town within living memory)
+    assert not c.settled("a", 4.0) and not c.settled("a", 9.5)  # (a millennium after; before any)
+    assert c.settled("g", 6.0) and not c.settled("f", 6.0) and c.settled("o", 6.0) and not c.settled("o", 3.0)
+    assert not c.settled("b", 6.0)  # (a people of its own with no places: not settled)
+
+
+def test_arm_s_carries_a_blocked_front_and_never_drops_knowledge():
+    """Round 3b: a people without towns that writing's front crosses passes it on (z, settled, gets it through y) but does not hold
+    it; without y's carrying z would never meet it. Once y founds a town it takes up what it carried."""
+    have = TT.closure(T, ["writing"])
+    techs = {**T["techs"], "writing": {**T["techs"]["writing"], "rate": 1e-9}}
+    T2 = {**T, "techs": techs, "kind": [{"of": ["src"], "kit": sorted(have)}, {"of": ["y", "z"], "kit": sorted(have - {"writing"})}]}
+    pair = lambda a, b: {"a": a, "b": b, "first_contact_kyr": 8.0, "in_contact_now": True, "series": [[8.0, 3000, 0.0], [0.0, 3000, 0.0]]}
+    con = {"pairs": [pair("src", "y"), pair("y", "z")]}
+    town = (np.array([8.0, 0.0]), np.array([5.0, 5.0]))
+    late = (np.array([8.0, 3.1, 3.0, 0.0]), np.array([0.0, 0.0, 5.0, 5.0]))
+    for s in range(4):
+        ls = [line("src", at=8.0, track=_pop(1e7, 1.0, 8.0)), line("y", at=8.0, track=_pop(1e7, 1.0, 8.0)),
+              line("z", at=8.0, track=_pop(1e7, 1.0, 8.0))]
+        k = TT.build(ls, con, None, seed=s, T=T2, towns={"_cell_km2": 3000.0, "src": town, "z": town}, arms="S")["known"]
+        assert "writing" not in k["y"] and "writing" in k["z"] and k["z"]["writing"][1] == "contact"
+        k2 = TT.build(ls, con, None, seed=s, T=T2, towns={"_cell_km2": 3000.0, "src": town, "z": town, "y": late}, arms="S")["known"]
+        assert k2["y"]["writing"][0] <= 3.1 + 1e-9  # (y founds a town 3.1-3 kyr ago: takes what it carried up then, not before)
+
+
+def test_sea_branch_is_for_sea_peoples_and_reads_sea_goods():
+    """PW-1491 (lane 207): the sea branch is held by sea peoples (realm at sea, or swimming and coastal; a group as its people);
+    land peoples may take only its traded techs, by contact; its goods are the sea's own, on sea cells."""
+    L = {"merfolk": {"id": "merfolk", "realm": "coast"}, "tri": {"id": "tri", "traits": ["swims", "coastal"]},
+         "liz": {"id": "liz", "traits": ["swims"]}, "g": {"id": "g", "group_of": "merfolk", "realm": "land"}}
+    assert TT.is_sea(L["merfolk"], L) and TT.is_sea(L["tri"], L) and TT.is_sea(L["g"], L) and not TT.is_sea(L["liz"], L)
+    sea = [i for i, t in T["techs"].items() if t.get("sea")]
+    assert 10 <= len(sea) <= 20 and all(T["techs"][i].get("mode") == "fantasy" for i in sea)
+    pearl, smelt = T["techs"]["pearl_crafts"], T["techs"]["vent_smelting"]
+    assert TT.sea_ok(pearl, L["liz"], L) and not TT.sea_ok(pearl, L["liz"], L, inventing=True)
+    assert not TT.sea_ok(smelt, L["liz"], L) and TT.sea_ok(smelt, L["merfolk"], L, inventing=True)
+    from planet.lineages import land as LD
+    lay = {"elevation": np.array([100.0, -50.0, -300.0, -3000.0]), "reef": np.array([0, 10.0, 0, 0]),
+           "kelp": np.zeros(4), "seagrass": np.array([0, 0, 5.0, 0]), "res_vms": np.array([0.9, 0, 0, 0.6])}
+    g = LD._sea_goods(lambda k: lay[k], lay["elevation"] < 0)
+    assert g["shelf"].tolist() == [0.0, 1.0, 0.5, 0.0] and g["reef"][1] == 1.0 and g["kelp_beds"][2] == 0.5
+    assert g["vents"].tolist() == [0.0, 0.0, 0.0, 0.6]  # (the land's own ore is not a vent)

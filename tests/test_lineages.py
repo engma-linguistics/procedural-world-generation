@@ -3019,7 +3019,7 @@ def test_samples_dragons_have_one_node_and_animal_end():
         assert d not in t.leaves()  # (the animals are no line of the tree: nothing for peoples, techs or megafauna to count)
 
 
-# ---- lane 78: life stages (PW-1148, PW-1147), share bands, portals in force (PW-1150) and wandering --------------------------------
+# ---- lane 78: life stages (PW-1148, PW-1147), portals in force (PW-1150) and wandering --------------------------------
 def test_life_tables_give_canon_paced_generations_and_rates():
     from planet.lineages import life_history as LH
     hu = LH.table(*LH.HUMAN)
@@ -3038,23 +3038,22 @@ def test_life_tables_give_canon_paced_generations_and_rates():
         LH.table(10, 50, "eggs")
 
 
-def test_life_history_band_and_arrival_fields_parse_inherit_and_round_trip():
+def test_life_history_and_arrival_fields_parse_inherit_and_round_trip():
     raw = _mode_raw(portal_mode="wandering", portals=3, growth_rates=True, wave_kyr=1.5)
     rows = {r["id"]: r for r in raw["lineage"]}
-    rows["stem"].update(adult_yr=12, lifespan_yr=50, breeding="brood", survival="harsh", band_pct=[5, 60])
+    rows["stem"].update(adult_yr=12, lifespan_yr=50, breeding="brood", survival="harsh")
     rows["elf"].update(adult_yr=100, lifespan_yr=750, breeding="slow", fertile_yr=[100, 200], founders=1e6, waves=3, portals=2,
                        plane="feywild")
     t = SP.parse(raw)
     assert t.lines["human"].adult_yr == 12 and t.lines["human"].breeding == "brood"  # (a split inherits its life history)
-    assert t.lines["human"].band_pct == (0.0, 100.0)  # (not its band)
     e = t.lines["elf"]
     assert (e.founders, e.waves, e.portal_n, e.plane, e.fertile_yr) == (1e6, 3, 2, "feywild", (100.0, 200.0))
     assert t.growth_rates and t.portal_mode == "wandering" and t.wave_kyr == 1.5
     b = SP.parse(SP.to_raw(t))
-    assert (b.lines["elf"].founders, b.lines["elf"].plane, b.lines["stem"].band_pct, b.growth_rates) == (1e6, "feywild", (5.0, 60.0), True)
+    assert (b.lines["elf"].founders, b.lines["elf"].plane, b.lines["stem"].breeding, b.growth_rates) == (1e6, "feywild", "brood", True)
     from planet.lineages import life_history as LH
     assert abs(LH.generation_yr(e) - LH.table(100, 750, "slow", (100, 200))["by_era"]["forager"]["T"]) < 1e-9
-    for who, bad in (("elf", {"founders": 0}), ("ork", {"adult_yr": 10}), ("ork", {"band_pct": [50, 10]})):
+    for who, bad in (("elf", {"founders": 0}), ("ork", {"adult_yr": 10})):
         r2 = _mode_raw()
         {x["id"]: x for x in r2["lineage"]}[who].update(bad)
         with pytest.raises(ValueError):
@@ -3063,11 +3062,6 @@ def test_life_history_band_and_arrival_fields_parse_inherit_and_round_trip():
     {x["id"]: x for x in r2["lineage"]}["ork"].update(founders=10, waves=2, portals=2, plane="feywild")
     o = SP.parse(r2).lines["ork"]
     assert (o.founders, o.waves, o.portal_n, o.plane) == (None, 1, None, "beyond")
-    r3 = _mode_raw()
-    for x in r3["lineage"]:
-        if x["id"] in ("stem", "elf"):
-            x["band_pct"] = [60, 100]
-    assert SP.band_warnings(SP.parse(r3)) and not SP.band_warnings(SP.parse(_mode_raw()))
 
 
 def test_an_arrival_in_force_founds_its_people_at_several_portals_in_waves(faketz):
@@ -3110,24 +3104,6 @@ def test_growth_rates_off_by_default_and_x_one_without_canon_ages(faketz):
     h2 = H.History(SP.parse(_mode_raw()), ps, 1)
     h2.run()
     assert h2.growth_x(h2.idx["human"]) == 1.0
-
-
-def test_share_bands_nudge_a_peoples_own_density_and_never_clamp(faketz):
-    from planet.lineages.history import bands as B
-    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
-    raw = _mode_raw(band_rounds=2)
-    h0 = H.History(SP.parse(raw), ps, 1000)
-    res0 = h0.run()
-    sh0 = B.shares(h0, H.present_summary(h0, res0["present"]))
-    lo = min(99.0, sh0["ork"] * 2 + 5)
-    {x["id"]: x for x in raw["lineage"]}["ork"]["band_pct"] = [lo, 100]
-    tree = SP.parse(raw)
-    h, res, pres = H.simulate(tree, ps, tries=1)
-    b = pres["bands"]["ork"]
-    assert b["knob"] == "kind" and b["x"] > 1  # (nudged up its own kind factor, PW-1275)
-    assert len(pres["band_rounds"]) >= 2
-    assert b["met"] or b["why"]
-    assert b["share_pct"] == pytest.approx(B.shares(h, pres)["ork"], abs=1e-3)  # (the outcome as run, not set)
 
 
 def test_fit_decides_the_contest_and_martial_peoples_press_harder(faketz):
@@ -3329,7 +3305,7 @@ def _raider_raw():
         {"id": "stem", "origin": "root", "at": "30 kyr", "temp_c": [5, 30], "rain_mm": [100, 5000]},
         {"id": "kob", "parents": ["stem"], "at": "20 kyr", "adult_yr": 6, "lifespan_yr": 120, "breeding": "brood", "survival": "harsh"},
         {"id": "folk", "parents": ["stem"], "at": "20 kyr", "adult_yr": 18, "lifespan_yr": 80},
-        {"id": "dw", "parents": ["stem"], "at": "20 kyr", "disease_resist": 0.75},
+        {"id": "dw", "parents": ["stem"], "at": "20 kyr"},
         {"id": "hill", "origin": "group", "parents": ["dw"], "at": "10 kyr"},
         {"id": "mix", "origin": "hybrid", "parents": ["dw", "folk"], "at": "8 kyr"}],
         "wish": [{"a": "folk", "b": "kob", "want": "apart", "weight": 1.0}]}
@@ -3345,14 +3321,6 @@ def test_raid_losses_scale_a_raiders_canon_losses_only():
     assert LH.harsh_kept(kob, "forager", 1.5) == pytest.approx(0.65, abs=0.02)
     assert LH.harsh_kept(kob, "forager", 2.0) == pytest.approx(0.31, abs=0.02)
     assert LH.harsh_kept(folk, "forager", 2.0) == 1.0
-    assert t.lines["dw"].disease_resist == 0.75 and t.lines["hill"].disease_resist == 0.75  # (a group inherits it, PW-1192)
-    assert t.lines["mix"].disease_resist == pytest.approx(0.375)  # (a hybrid: its parents' mean)
-    assert SP.parse(SP.to_raw(t)).lines["dw"].disease_resist == 0.75
-    raw = _raider_raw()
-    raw["lineage"][3]["disease_resist"] = 1.5
-    with pytest.raises(ValueError):
-        SP.parse(raw)
-    assert SP.load(LR.SAMPLES / "dnd.toml").lines["dwarf"].disease_resist == 0.75  # (owner D25: 0.75, not lane 85's 0.5)
 
 
 def test_the_brakes_cut_a_raider_on_a_hostile_border_and_when_hemmed_in(faketz):
@@ -3378,14 +3346,14 @@ def test_the_brakes_cut_a_raider_on_a_hostile_border_and_when_hemmed_in(faketz):
     h._deep_now = False
     step = types.SimpleNamespace(epoch="recent", ago=1.0, dt=0.1)
     K = np.where(env["land"], 0.8, 0.0)
-    assert h._hos[kb, fk] == pytest.approx(1.0) and h._hos[kb, h.idx["dw"]] == 0.0
-    h._hem[kb] = 0.0
+    assert h.rule.hostility[kb, fk] == pytest.approx(1.0) and h.rule.hostility[kb, h.idx["dw"]] == 0.0
+    h.rule.hem[kb] = 0.0
     Kb = h._brake(L[kb], kb, K, step, env, None)
-    F = h._frontier(kb)
+    F = h.rule.frontier(kb)
     border, home = int(np.argmax(np.where(h._pm[kb], F, -1))), int(np.argmin(np.where(h._pm[kb], F, 9)))
     assert F[border] > 0.3 and F[home] == 0.0
     assert Kb[border] < Kb[home] <= K[home] + 1e-12
-    h._hem[kb] = 1.0
+    h.rule.hem[kb] = 1.0
     Kh = h._brake(L[kb], kb, K, step, env, None)
     assert Kh[home] / K[home] <= 0.66  # (R 1.5 from in-fighting alone: 0.65, and a little war-torn land)
     assert set(h.lost["kob"]) >= {"raid", "feud"} and h.lost["kob"]["feud"] > 0
@@ -3416,7 +3384,7 @@ def _sync_pm(h):
     h._pm = h.p >= 0.12
     h._cntp = h._pm.sum(0, dtype=np.int16)
     h._cnt = h._cntp
-    h.__dict__.pop("_Fc", None)
+    h.rule._Fc = None
 
 
 def test_in_fighting_rises_with_a_peoples_own_fill_and_circumscription(faketz):
@@ -3434,7 +3402,7 @@ def test_in_fighting_rises_with_a_peoples_own_fill_and_circumscription(faketz):
         h.p[:] = 0.0
         h.p[k][land[:200]] = 0.8
         _sync_pm(h)
-        h._hem[k] = 1.0
+        h.rule.hem[k] = 1.0
         full = h._brake(L[k], k, K, step, env, None)
         h.p[k][land[:200]] = 0.2  # (the same land, a fifth as full: Chagnon's village before it grows to splitting size)
         thin = h._brake(L[k], k, K, step, env, None)
@@ -3448,14 +3416,51 @@ def test_in_fighting_rises_with_a_peoples_own_fill_and_circumscription(faketz):
     h.p[kb][land[:50]] = 0.8
     _sync_pm(h)
     room = K.copy()
-    h._K0[kb] = K
+    h.rule.K0[kb] = K
     held = h.p[kb] >= 0.12
-    open_c = h._circumscribed(L[kb], kb, held, room, 0.0)
+    open_c = h.rule.circumscribed(L[kb], kb, held, room, 0.0)
     ring = h._dilate(held, 1) & ~held & env["land"]
     h.p[fk][ring] = 0.8
     _sync_pm(h)
-    ringed = h._circumscribed(L[kb], kb, held, room, 0.0)
+    ringed = h.rule.circumscribed(L[kb], kb, held, room, 0.0)
     assert open_c < ringed <= HP.SOCIAL_Q + (1 - HP.SOCIAL_Q) * float((~env["land"][h._dilate(held, 1) & ~held]).mean()) + 1e-9
+
+
+def test_polities_swap_the_state_and_war_stand_ins_through_one_seam(faketz, monkeypatch):
+    """PW-1280: the brakes read a state's pacification G, the hostile frontier F and in-fighting's circumscription C only through
+    History.rule (history.rule.StandIns). A replacement Rule that answers 'no hostile frontier, full pacification, never hemmed in'
+    takes away the raid, frontier-war and in-fighting cuts without any other change to the history."""
+    from planet.lineages.history import counter as CT
+    from planet.lineages.history.rule import StandIns
+
+    class Peace(StandIns):
+        def frontier(self, k):
+            return np.zeros(self.h.grid.n)
+
+        def pacification(self, k, step):
+            return 0.0
+
+        def circumscription(self, k):
+            return 0.0
+
+    h, env, step = _brake_setup(faketz)
+    L = h.lines
+    kb, fk = h.idx["kob"], h.idx["folk"]
+    land = np.flatnonzero(env["land"])
+    K = np.where(env["land"], 0.8, 0.0)
+    h.p[kb][land[:200]] = 0.8
+    h.p[fk][land[180:400]] = 0.8
+    _sync_pm(h)
+    assert isinstance(h.rule, StandIns) and CT.CounterMixin.Rule is StandIns
+    h.rule.hem[kb] = 1.0
+    stand_in = h._brake(L[kb], kb, K, step, env, None)
+    monkeypatch.setattr(type(h), "Rule", Peace)
+    h._counter_setup()
+    assert type(h.rule) is Peace
+    _sync_pm(h)
+    peace = h._brake(L[kb], kb, K, step, env, None)
+    held = h._pm[kb]
+    assert (stand_in[held] < peace[held]).any() and np.allclose(peace[held], K[held])  # (kobolds of normal canon losses: R 1)
 
 
 def test_a_brake_never_takes_a_peoples_land_outright(faketz, monkeypatch):
@@ -3471,7 +3476,7 @@ def test_a_brake_never_takes_a_peoples_land_outright(faketz, monkeypatch):
     h.p[kb][land[:200]] = 0.8
     h.p[fk][land[150:400]] = 0.8
     _sync_pm(h)
-    h._hem[kb] = 1.0
+    h.rule.hem[kb] = 1.0
     h.tree.raiders = 4.0
     Kb = h._brake(L[kb], kb, K, step, env, None)
     held = h._pm[kb]
@@ -3581,3 +3586,298 @@ def test_brief_people_range_takes_every_cell_it_lives_on(tmp_path):
     assert sel.sum() == len(lived) and sel[lived].all() and cen is not None and "presence table" in basis
     sel_old = BR.region_of_people(mk(None), "dragon", 0)[0]  # (frame 0 of 2: the last frame also reads presence_present.bin)
     assert sel_old.sum() == 50 and sel_old[100:150].all()
+
+
+def _sea_strip(gap_cells, era="renaissance"):
+    """(lane 157) A line of cells: landmass A (0-2), gap_cells of sea, landmass B (3 cells), 100 km a cell; a crop Stock known on A."""
+    from types import SimpleNamespace as NS
+    from planet.lineages import animals as AN
+    from planet.lineages import crop_defs as CD
+    n = 3 + gap_cells + 3
+    off = np.concatenate([[0], np.cumsum([(i > 0) + (i < n - 1) for i in range(n)])])
+    idx = np.array([j for i in range(n) for j in (i - 1, i + 1) if 0 <= j < n])
+    land = np.zeros(n, bool)
+    land[:3] = land[-3:] = True
+    lab = np.where(land, np.where(np.arange(n) < 3, 0, 1), -1)
+    names = [{"name": "A", "area_mkm2": 5.0}, {"name": "B", "area_mkm2": 5.0}]
+    h = NS(grid=NS(n=n, nbr_off=off, nbr_idx=idx, lat=np.zeros(n), lon=np.zeros(n)), cell_km=100.0, cross=NS(label=lab, names=names),
+           _native=np.array([0, 1]), events=[], tree=NS(era=era), lines=[NS(id="a"), NS(id="b")])
+    s = object.__new__(AN.Stock)
+    s.h, s.a, s.rng = h, CD.BY_ID["maize"], np.random.default_rng(1)
+    s.rd, s.route = np.where(np.arange(n) < 3, 1.0, 0.0), np.zeros(n, np.uint8)
+    s.crossings, s.landed, s.n_crossed, s.took_up = [], set(), 0, {0: 5.0}
+    coast = np.zeros(n, bool)
+    coast[2] = coast[n - 3] = True
+    sides = (np.where(np.arange(n) < 3, 1.0, 0.0), np.where(np.arange(n) >= n - 3, 1.0, 0.0))
+    return s, {"land": land}, {"label": lab, "coast": coast}, land, sides
+
+
+def test_crops_cross_open_sea_only_with_colonists_or_ocean_ships():
+    """Lane 157: before the ocean-going ships a crop crosses long open sea only with colonists to their own land, and passes between
+    peoples over a strait; the ships (the last 0.53 kyr of a renaissance or later present) carry it to anyone at once."""
+    from types import SimpleNamespace as NS
+    from planet.lineages import animals as AN
+    assert not AN.ocean_ships("renaissance", 2.0) and not AN.ocean_ships("medieval", 0.1) and AN.ocean_ships("renaissance", 0.3)
+    s, env, tags, land, (a, b) = _sea_strip(10)  # 1000 km of open sea, a seafaring people on A and another on B
+    p, sea = np.stack([a, b]), np.array([0.6, 0.6])
+    for _ in range(200):
+        s._sail_crop(NS(ago=2.0), env, tags, p, land, sea, 0.5)
+    assert s.n_crossed == 0  # (no trade with strangers over open sea in sailing ships)
+    s._ocean(NS(ago=0.3), env, tags, p, land, sea)  # the ships go there and back: it lands at once
+    assert (s.rd[b > 0] > 0).all() and s.crossings[-1]["craft"] == AN.OCEAN_SHIP
+    s, env, tags, land, (a, b) = _sea_strip(10)
+    p = np.stack([a + b, np.zeros(land.size)])  # the seafarers hold both shores: colonists take their gardens
+    for _ in range(200):
+        s._sail_crop(NS(ago=2.0), env, tags, p, land, sea, 0.5)
+        if s.n_crossed:
+            break
+    assert s.n_crossed == 1 and s.crossings[0]["craft"] == "sailing ship"
+    s, env, tags, land, (a, b) = _sea_strip(2)  # a 200 km strait: canoe trade between strangers, also after the planked boats
+    p = np.stack([a, b])
+    for _ in range(400):
+        s._sail_crop(NS(ago=2.0), env, tags, p, land, np.array([0.1, 0.05]), 0.5)
+        if s.n_crossed:
+            break
+    assert s.n_crossed == 1 and s.crossings[0]["craft"].startswith("canoe")
+
+
+def _live_setup(faketz, monkeypatch):
+    """Lane 183 (PW-1434): the brake set-up with polities in the history switched on, every tech known (a lent calendar), a farming
+    people (folk) beside a small one it hates (the kobolds)."""
+    from planet.lineages.history import params as HP, polity_live as PL
+    from planet.lineages import polities as PO
+    monkeypatch.setattr(HP, "POLITIES_LIVE", True)
+    h, env, step = _brake_setup(faketz)
+    assert type(h.rule) is PL.LivePolities
+    import types  # (a lent calendar in place of the tech tree inside the history, history.tech_live)
+    techs = ("chiefdoms", "proto_writing", "writing", "towns", "cities", "kingship", "law", "bronze", "iron")
+    h.rule.tech = types.SimpleNamespace(known={l.id: {t: [100.0, "test", None] for t in techs} for l in h.lines}, step=lambda s: None,
+                                        secs=0.0)
+    monkeypatch.setattr(PO, "WAR_P", 1.0)
+    monkeypatch.setattr(PO, "STATE_KM", 1.0)  # (each seat rules its own cell: neighbours border, so war has somewhere to act)
+    h._farm_share[:] = 1.0
+    h._era = ["agrarian"] * len(h.lines)
+    h.dens[:] = 50.0
+    h.dens[h.idx["kob"]] = 5.0  # (folk ten times as dense: their states far the stronger)
+    h._dmap = None
+    h._env_now = env
+    land = np.flatnonzero(env["land"])
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    h.p[fk][land[:300]] = 0.9
+    h.p[kb][land[300:330]] = 0.9
+    _sync_pm(h)
+    return h, env, step, land
+
+
+def test_polities_in_the_history_seat_claim_and_conquer_with_the_winners_tolerance(faketz, monkeypatch):
+    """PW-1434 (lane 183, round7.md): switched on, the history seats states from its own central places and they claim land (war is
+    polities.war_v0 itself, tested there); the peoples on land a war took fare by the winner's hostility: the kobolds folk hate are
+    expelled, but never more than FATE_MAX of their heads in one step, and a tolerant winner keeps them. Off by default."""
+    import types
+    from planet.lineages.history import params as HP, polity_live as PL
+    assert HP.POLITIES_LIVE is False
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    for ago in (1.2, 1.1, 1.0, 0.9):
+        h.rule.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
+        _sync_pm(h)
+    R = h.rule
+    assert R.steps and R.steps[0]["states"] >= 1 and R.owner is not None and (R.owner >= 0).any()
+    # the peoples on land a war took fare by the winner's hostility to them: the kobolds folk hate are expelled (FATE_CUT), but never
+    # more than FATE_MAX of their heads in one step; folk's own people keep their land
+    kob0, folk0 = h.p[kb].copy(), h.p[fk].copy()
+    cells = np.flatnonzero((h.p[kb] > 0) | (h.p[fk] > 0))
+    R.k += 1
+    fates = R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])
+    assert fates["kob"][0] == "expelled" and fates["kob"][1] > 0 and "folk" not in fates
+    lost = 1.0 - h.p[kb].sum() / kob0.sum()
+    assert 0 < lost <= PL.FATE_MAX + 1e-9 and np.array_equal(h.p[fk], folk0)
+    monkeypatch.setattr(PL, "FATE_AT", (2.0, 3.0))  # (a tolerant winner keeps them)
+    R.k += 1
+    kob1 = h.p[kb].copy()
+    assert R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"] == ["kept", 0] and np.array_equal(h.p[kb], kob1)
+    # the seam reads the live polities: pacified where a state rules, not on unruled land
+    G = R.pacification(fk, types.SimpleNamespace(ago=0.9))
+    ruled = R.owner >= 0
+    assert np.all(G[~ruled] == 1.0) and np.all(G[ruled] < 1.0)
+    doc = R.doc()
+    assert doc["steps"] and doc["polities"] and "inside the history" in doc["calendar"]
+
+
+def test_live_conquest_harshness_reads_the_winners_attitudes(faketz, monkeypatch):
+    """PW-1481 / PW-1465 (lane 201, round10.md; Daniel D54): the history keeps each people's attitudes (attitudes.Attitudes, stepped
+    each century), and a conquered people's fate reads the winner's: harshness 1 - tolerance x (1 - old enmity). With no old quarrel a
+    tolerant winner keeps them and an intolerant one expels them; a more aggressive winner cuts harder."""
+    import types
+    from planet.lineages.history import polity_live as PL
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    for ago in (1.2, 1.1, 1.0):
+        R.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
+        _sync_pm(h)
+    assert fk in R.att.x and kb in R.att.x and R.att_ago == 1.0
+    att = R.doc()["attitudes"]
+    assert str(fk) in att["cultures"] and att["cultures"][str(fk)]["people"] == "folk"
+    R.hostility[fk, kb] = 0.0  # (no old quarrel: only the winner's own temperament)
+    cells = np.flatnonzero(h.p[kb] > 0)
+    p0 = h.p[kb][cells].copy()
+    monkeypatch.setattr(PL, "FATE_MAX", 1.0)
+    out = {}
+    for ta in ((0.95, 0.3), (0.1, 0.3), (0.1, 0.6)):
+        h.p[kb][cells] = p0
+        R.att.x[fk] = np.array(ta)
+        R.k += 1
+        out[ta] = R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"]
+    assert out[(0.95, 0.3)] == ["kept", 0]
+    assert out[(0.1, 0.3)][0] == "expelled" and out[(0.1, 0.6)][0] == "expelled"
+    assert 0 < out[(0.1, 0.3)][1] < out[(0.1, 0.6)][1]
+    R.hostility[fk, kb] = 0.5  # (an old quarrel: a very tolerant winner keeps them, a middling plain one thins as the old rule, an
+    # intolerant one expels; a middling martial one expels too, PW-1487)
+    for ta, want in (((0.95, 0.5), "kept"), ((0.5, 0.3), "thinned"), ((0.1, 0.5), "expelled"), ((0.5, 0.5), "expelled")):
+        h.p[kb][cells] = p0
+        R.att.x[fk] = np.array(ta)
+        R.k += 1
+        assert R._fates({"line": fk, "people": "folk"}, cells, R._heads()[2])["kob"][0] == want
+
+
+def test_aggression_makes_an_intolerant_conqueror_harsher_not_a_tolerant_one():
+    """PW-1487 (Daniel D59 C, round11.md): aggression raises a winner's harshness in proportion to its intolerance. A martial,
+    intolerant winner expels even a people it has no quarrel with; a martial, tolerant one (Cyrus) still keeps it; a plain winner
+    (aggression AGG_HARSH) is as harsh as its tolerance alone says, as before."""
+    from planet.lineages.history import polity_live as PL
+    fate = lambda z: "kept" if z < PL.FATE_AT[0] else ("thinned" if z < PL.FATE_AT[1] else "expelled")  # noqa: E731
+    assert fate(PL.harshness(0.0, 0.36, 0.60)) == "expelled"  # (round 10's orcs, seed 10: thinned there)
+    assert fate(PL.harshness(0.0, 0.80, 0.80)) == "kept"  # (a tolerant horde)
+    assert fate(PL.harshness(0.3, 0.75, 0.60)) == "kept"  # (a tolerant martial winner keeps even a mild old enemy)
+    for tol in (0.2, 0.5, 0.8):
+        assert PL.harshness(0.2, tol, PL.AGG_HARSH) == 0.2 + PL.TOL_X * (0.5 - tol)  # (plain winner: the old rule)
+        assert PL.harshness(0.2, tol, 0.7) > PL.harshness(0.2, tol, 0.4)
+    assert PL.harshness(0.2, 1.0, 0.9) == PL.harshness(0.2, 1.0, 0.1)  # (fully tolerant: aggression does not move it)
+    lift = lambda tol: PL.harshness(0.0, tol, 0.8) - PL.harshness(0.0, tol, 0.3)  # noqa: E731
+    assert lift(0.1) > lift(0.5) > lift(0.9) > 0
+
+
+def test_campaign_budget_is_a_fixed_range_or_the_states_own_radius_times_mobility():
+    """PW-1478 (Daniel D56 B plus Rome, round11.md): an expedition reaches CAMPAIGN_KM (1,000 km) or, for a state larger than that,
+    its own radius (EXTENT_X x sqrt(area / pi)); x2 for nomads and pastoral nomads."""
+    import math
+    from planet.lineages import invasions as IV
+    assert IV.campaign_budget(0.2e6, 1.0) == IV.CAMPAIGN_KM == 1000.0  # (a small state: the fixed range)
+    assert IV.campaign_budget(0.2e6, IV.mobility({"traits": ["nomadic"]})) == 2000.0
+    rome = IV.campaign_budget(5.0e6, 1.0)  # (Rome at AD 117, Taagepera 1979)
+    assert math.isclose(rome, math.sqrt(5.0e6 / math.pi)) and 1200 < rome < 1300
+    assert IV.campaign_budget(5.0e6, 2.0) == 2 * rome
+
+
+def test_live_polities_send_a_strong_rows_expedition_across_a_gap(faketz, monkeypatch):
+    """PW-1479 (lane 201, round10.md): with polities in the history on, a strong invasion row reaches victims across unruled land as
+    the read-out does (polities._expedition, the same code): only within the campaign budget (invasions.campaign_budget, which both
+    paths read; here 1 km and no radius term, too short, against 1e5 km), and the read-out says why not when it falls short."""
+    import types
+    from planet.lineages import invasions as IV, polities as PO
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    g = h.grid
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    env = dict(env, land=np.ones(g.n, bool), ice=np.zeros(g.n), elevation=np.zeros(g.n))  # (all flat land: the gap is open country)
+    h._env_now, h._land_now = env, env["land"]
+    c = np.asarray(g.centers, float)
+    sp = float(np.median(R.ekm)) / PO.R_EARTH_KM  # (one cell spacing, radians)
+    ang = lambda a: np.arccos(np.clip(c @ c[a], -1, 1))  # noqa: E731
+    a0 = int(land[0])
+    d0 = ang(a0)
+    b0 = int(np.argmin(np.abs(d0 - 14 * sp)))
+    h.p[:] = 0.0
+    h.p[fk][d0 < 6 * sp] = 0.9
+    h.p[kb][ang(b0) < 3 * sp] = 0.9
+    h.dens[kb] = 50.0
+    h._dmap = None
+    _sync_pm(h)
+    rows = IV.clean([{"id": "r", "who": {"people": "folk"}, "whom": {"people": "kob"}, "from_kyr": 1.0, "to_kyr": 0.6, "strength": "strong"}])[0]
+    p0, logs = h.p.copy(), {}
+    for km in (1.0, 1e5):
+        monkeypatch.setattr(IV, "CAMPAIGN_KM", km)
+        monkeypatch.setattr(IV, "EXTENT_X", 0.0 if km == 1.0 else IV.EXTENT_X)
+        h.p[:] = p0
+        _sync_pm(h)
+        R.__init__(h)
+        R.tech = types.SimpleNamespace(known={l.id: {t: [100.0, "test", None] for t in ("chiefdoms", "proto_writing", "writing", "towns",
+                                                                                         "cities", "kingship", "law")} for l in h.lines},
+                                       step=lambda s: None, secs=0.0)
+        R.inv_in, R.inv_rows, R.inv_log = rows, IV.hook_rows(rows, R, 0.1), [IV.new_log()]
+        for ago in (1.2, 1.1, 1.0, 0.9, 0.8, 0.7):
+            R.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
+            _sync_pm(h)
+        logs[km] = R.inv_log[0]
+    assert logs[1.0]["took"] == [] and logs[1.0]["exped"] == [] and logs[1.0]["exped_fail"] > 0  # (too short)
+    lg = logs[1e5]
+    assert lg["took"] and lg["exped"] and lg["exped"][0]["km"] > 0 and "winner_id" in lg["exped"][0]
+    doc = R.doc()
+    assert doc["invasions"][0]["log"]["took"] and doc["constants"]["CAMPAIGN_KM"] == 1e5
+
+
+def test_the_tech_tree_runs_inside_the_history_when_polities_do(faketz, monkeypatch):
+    """PW-1466 (lane 192, round8.md): with polities in the history on, the tech tree runs step by step inside it (history.tech_live)
+    and the run's meta.techtree is that calendar written out; the live polities' gates read it. Off, the tree is built after the run."""
+    from planet.lineages.history import params as HP, polity_live as PL
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    monkeypatch.setattr(HP, "POLITIES_LIVE", True)
+    h, res, pres = H.simulate(SP.parse(_raw()), ps, tries=1)
+    assert type(h.rule) is PL.LivePolities and h.rule.tech.cal is not None
+    cal = h.rule.tech.cal
+    assert cal.step == len(cal.grid)  # (the history's last step is the present: every step of the tree has run)
+    live = {lid: dict(kn) for lid, kn in cal.known.items()}
+    assert any(live.values())
+    out = O.save(h, res, pres, name="live tech")
+    tt = json.loads((out / "run.json").read_text())["meta"]["techtree"]
+    assert "inside_history" in tt and tt["known"] == json.loads(json.dumps(live))
+    assert h.rule.knows(next(l for l, kn in live.items() if kn), next(iter(next(kn for kn in live.values() if kn))), 0.0)
+    monkeypatch.setattr(HP, "POLITIES_LIVE", False)
+    h0, res0, pres0 = H.simulate(SP.parse(_raw()), ps, tries=1)
+    assert not hasattr(h0.rule, "tech")
+    assert "inside_history" not in json.loads((O.save(h0, res0, pres0, name="after-run tech") / "run.json").read_text())["meta"]["techtree"]
+
+
+def test_the_live_tree_reads_the_live_seats_as_its_town_footprint(faketz, monkeypatch):
+    """PW-1472 (lane 195, round9.md): with D52's town arm E switched on (a test override; D53 is the owner's call) and polities in the
+    history on, the tree inside the history reads each people's town cells from the history's own central places (no ledger yet), so
+    E acts there and nothing warns; a people whose towns go has none from then."""
+    import warnings
+    from planet.lineages import techtree as TT
+    from planet.lineages.history import tech_live as TL
+    T0 = TT.load()
+    monkeypatch.setattr(TT, "load", lambda path=None: {**T0, "defaults": {**T0["defaults"], "contact_arms": "E"}})
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    cells = R.town_cells(1.0)
+    assert cells.get("folk", 0) > 0 and "kob" not in cells  # (folk's dense farmers hold towns; the kobolds' few heads do not)
+    h.started, h.ended = {l.id: 40.0 for l in h.lines}, {}  # (as History.run keeps them)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", message=".*town footprint")  # (no "need a town footprint" warning)
+        lt = TL.LiveTech(h)
+        assert lt.arms == "E" and lt.towns is not None
+        lt.note_towns(1.0, cells)
+        lt.note_towns(0.9, {})
+        c = TT.Calendar(lt.lines(), seed=1, T=lt.T, towns=lt.towns, arms=lt.arms)
+    assert c.towns is lt.towns and TT.town_cells_at(c.towns["folk"], 1.0) == cells["folk"]
+    assert TT.town_cells_at(c.towns["folk"], 0.9) == 0 and TT.town_cells_at(c.towns["folk"], 1.1) == 0
+    monkeypatch.setattr(TT, "load", lambda path=None: {**T0, "defaults": {**T0["defaults"], "contact_arms": ""}})  # (arms off: no footprint is kept, nothing counted)
+    assert TL.LiveTech(h).towns is None
+
+
+def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
+    """Lane 183: under one ruler, the hostile peoples living inside its land are co-subjects (no frontier); on unruled land the
+    stand-in's frontier holds."""
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    fk = h.idx["folk"]
+    R = h.rule
+    F0 = R.frontier(fk).copy()
+    R.owner = np.zeros(h.grid.n, np.int64)  # (one polity rules everything)
+    R.tier_of = ["state"]
+    R.ruling = [{"people": "folk"}]
+    R._Fc = None
+    assert F0.any() and not R.frontier(fk).any()
+    R.owner[:] = -1
+    R._Fc = None
+    assert np.allclose(R.frontier(fk), F0)

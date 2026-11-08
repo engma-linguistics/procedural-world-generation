@@ -470,7 +470,7 @@ def measure(h, res, pres) -> dict:
             pc = h.population(k, P)
             pop[pid[who]] += pc
             lad = getattr(h, "ladder", None)
-            if lad is not None and lad.ok and pc.sum() > 0 and not l.marine:
+            if lad is not None and lad.ok and getattr(h, "_dmap", None) is not None and pc.sum() > 0 and not l.marine:  # (no _dmap: PEOPLE_PROD off)
                 for i, nm in enumerate(LADDER_RUNGS):
                     sel = (lad.rung[k] == i) & (pc > 0)
                     if sel.any():

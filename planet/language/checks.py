@@ -316,8 +316,9 @@ def _favoured(profile, seg) -> bool:
     """Does the profile favour the segment (make_cost below 1 over its keys), or is it a sound humans cannot make (a
     species' own sound, PHOIBLE has no share for it)?"""
     from . import profiles as PR
-    if math.isinf(PR.species_cost(PR.HUMAN, seg)):
-        return True
+    from .percepts import is_nonhuman
+    if is_nonhuman(seg) or math.isinf(PR.species_cost(PR.HUMAN, seg)):   # (harsh voice too: finite but dear for humans,
+        return True                                                         # PHOIBLE has no share for a growled vowel)
     if profile is None:
         return False
     m = 1.0

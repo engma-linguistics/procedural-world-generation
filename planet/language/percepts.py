@@ -18,7 +18,7 @@ listener lacks them (kw > p, Romanian lupta < lucta; the parrot's labial substit
 from __future__ import annotations
 
 import unicodedata
-from dataclasses import dataclass, fields, replace
+from dataclasses import dataclass, field, fields, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Iterable
@@ -49,9 +49,22 @@ class Segment:
     lateral: int = 0
     double: int = 0  # labial-velar double articulation
     prenasal: int = 0
+    # the hash, worked out once (finish lane, 2026-11-07): segments are dict keys and set members everywhere, and the
+    # generated hash rebuilt a 20-field tuple on every lookup (a fifth of the pass's time). Same value as the generated
+    # one, so set and dict behaviour is unchanged; not compared, not an init argument (replace() starts it afresh).
+    _h: int = field(default=0, init=False, compare=False, repr=False)
+
+    def __hash__(self):
+        h = self._h
+        if not h:
+            h = hash((self.kind, self.place, self.manner, self.voice, self.larynx, self.phonation, self.secondary,
+                      self.sibilant, self.height, self.back, self.round, self.nasal, self.length, self.tone, self.source2,
+                      self.register, self.retroflex, self.labiodental, self.lateral, self.double, self.prenasal)) or 1
+            object.__setattr__(self, "_h", h)
+        return h
 
 
-AXES: tuple[str, ...] = tuple(f.name for f in fields(Segment) if f.name != "kind")
+AXES: tuple[str, ...] = tuple(f.name for f in fields(Segment) if f.name not in ("kind", "_h"))
 AXIS_RANGE: dict[str, tuple[int, int]] = {
     "place": (0, 8), "manner": (0, 9), "voice": (0, 1), "larynx": (0, 3), "phonation": (0, 4), "secondary": (0, 4),
     "sibilant": (0, 1), "height": (0, 6), "back": (0, 4), "round": (0, 1), "nasal": (0, 1), "length": (0, 1),
