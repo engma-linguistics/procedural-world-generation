@@ -4,6 +4,7 @@ test_trade_flow's hand-made line of six cells, no run needed."""
 import json
 
 import numpy as np
+import pytest
 
 from planet.lineages import trade_flow as TF
 from planet.lineages import trade_routes as RT
@@ -141,11 +142,16 @@ def test_last_eras_route_holds_down_to_the_lower_bar(tmp_path, monkeypatch):
     r = TF.flows_at(ctx, 0)["routes"]
     a, b, s = r[-1][0], r[-1][1], r[-1][2]  # (the weakest route stretch)
     monkeypatch.setattr(RT, "SPAN", False)
+    monkeypatch.setattr(RT, "LOCAL_SHARE", RT.ROUTE_SHARE)  # (one bar for both layers here)
+    r = TF.flows_at(ctx, 0)["routes"]
+    a, b, s = r[-1][0], r[-1][1], r[-1][2]  # (the weakest route stretch)
     monkeypatch.setattr(RT, "ROUTE_SHARE", s * 1.5)  # (now it sits between the two bars)
+    monkeypatch.setattr(RT, "LOCAL_SHARE", s * 1.5)
     key = min(a, b) * ctx.g.n + max(a, b)
     assert (min(a, b), max(a, b)) not in _edges(TF.flows_at(_line_ctx(tmp_path), 0)["routes"])
     assert (min(a, b), max(a, b)) in _edges(TF.flows_at(_line_ctx(tmp_path), 0, last_routes={key})["routes"])
     monkeypatch.setattr(RT, "ROUTE_SHARE", s * 2.5)  # (under the lower bar: last era's route does not hold it)
+    monkeypatch.setattr(RT, "LOCAL_SHARE", s * 2.5)
     assert (min(a, b), max(a, b)) not in _edges(TF.flows_at(_line_ctx(tmp_path), 0, last_routes={key})["routes"])
 
 
@@ -157,32 +163,51 @@ def test_a_route_is_judged_per_good_against_its_carried_volume(tmp_path):
     assert max(r[2] for r in f["routes"]) > 0.5  # (a six-cell line: one road carries the whole of some good)
 
 
-def test_rewalk_matches_a_fresh_walk_without_the_dead_sources(tmp_path):
-    """Grain's rounds (trade_flow.SEEK_GOODS) re-walk only the land of the emptied sources (_rewalk); the costs and origins must be those
-    of a fresh walk from the live sources alone."""
-    ctx = _line_ctx(tmp_path)
-    fr = TF._Frame(ctx, 0, None, None)
-    fr.walk("grain")
-    src = np.unique(fr._last["org"][fr._last["org"] >= 0])
-    dead = np.zeros(N, bool)
-    dead[src[:1]] = True
-    fr.rewalk("grain", dead, view=False)
-    fr2 = TF._Frame(ctx, 0, None, None)
-    fr2.walk("grain", live=~dead)
-    for k in ("d", "org"):
-        a, b = fr._last[k], fr2._last[k]
-        assert np.array_equal(np.isfinite(a), np.isfinite(b)) and np.allclose(a[np.isfinite(a)], b[np.isfinite(b)])
+def _seek_line(avail, ask=10.0, cap=400, taker=1):
+    """trade_flow._seek on a bare line of five cells 0-1-2-3-4 (each step costs 1), sources at both ends with `avail` people's worth each,
+    one taker at `taker` asking `ask`; every edge's mode land, no borders, no towns."""
+    n = 5
+    off, idx = [0], []
+    for i in range(n):
+        idx += [j for j in (i - 1, i + 1) if 0 <= j < n]
+        off.append(len(idx))
+    off, idx = np.array(off, np.int64), np.array(idx, np.int64)
+    esrc = np.repeat(np.arange(n), np.diff(off)).astype(np.int64)
+    ne = len(idx)
+    src = np.array([0, 4], np.int64)
+    S = np.zeros(n)
+    S[src] = 1.0
+    av = np.zeros(n)
+    av[src] = avail
+    tk_off = np.searchsorted(np.array([taker]), np.arange(n + 1)).astype(np.int64)
+    rem = np.array([1.0])
+    tr = RT.seek_dummy(n, ne)
+    out = TF._seek(src, np.zeros(2), off, idx, np.ones(ne), np.full(ne, 50.0), np.zeros(ne, np.int64), np.zeros(ne, np.int32), esrc,
+                   1e9, 1e9, tk_off, np.array([0], np.int64), rem, np.array([ask]), np.ones(1, np.bool_), cap, av, av.copy(), S,
+                   np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0), np.array([0, -1, -1, -1, 1], np.int64), np.array([2], np.int64),
+                   np.zeros(1), False, RT.LONG_KM, *tr)
+    return out, rem, tr
 
 
-def test_grain_takers_look_on_until_a_round_finds_no_more(tmp_path, monkeypatch):
-    """Lane 216b: grain's allocation runs until no taker cut short reaches a live source (SEEK_GOODS); with it the grain still unmet is
-    never more than with the old 3-round bound, and the rounds used are recorded."""
+def test_a_taker_looks_on_to_the_next_source_when_its_own_runs_dry():
+    """PW-1519 (one shared walk): a taker takes from its nearest source; when that one runs dry it stops spreading, and the taker draws on
+    the next best live source, along that source's own way, until its lack is met or no source is left."""
+    (dp, do, dg, dkm, *_, mx, deaths, _), rem, tr = _seek_line(np.array([3.0, 100.0]))
+    assert do.tolist() == [0, 4] and np.allclose(dg, [3.0, 7.0]) and abs(rem[0]) < 1e-9
+    assert mx == 2 and deaths == 1
+    assert np.allclose(dkm, [50.0, 150.0])  # (the second delivery came the long way, from cell 4)
+    eall = tr[4]
+    assert eall.sum() == pytest.approx(3.0 * 1 + 7.0 * 3)  # (each delivery traced over the edges it crossed when it was made)
+    (dp, do, dg, *_), rem, _ = _seek_line(np.array([3.0, 4.0]))
+    assert np.allclose(dg, [3.0, 4.0]) and rem[0] == pytest.approx(0.3)  # (both dry: what is left stays unmet)
+    (dp, do, dg, *_, mx, _, capped), rem, _ = _seek_line(np.array([3.0, 100.0]), cap=1)
+    assert len(dg) == 1 and mx == 1 and capped == 1  # (the safety cap: sources per taker)
+
+
+def test_every_good_looks_on_until_none_is_left(tmp_path):
+    """PW-1519: every good's allocation runs to the end in one shared walk; the most sources a taker drew from is recorded per good."""
     f = TF.flows_at(_line_ctx(tmp_path), 0)
-    assert f["rounds"]["grain"] >= 1
-    monkeypatch.setattr(TF, "SEEK_GOODS", ())
-    g = TF.flows_at(_line_ctx(tmp_path), 0)
-    un = lambda x: sum(v.get("grain", 0.0) for v in x["unmet"].values())  # noqa: E731
-    assert un(f) <= un(g) + 1e-9 and g["rounds"]["grain"] <= TF.ROUNDS
+    assert all(0 <= v <= TF.SEEK_CAP for v in f["rounds"].values()) and f["rounds"]["grain"] >= 1
 
 
 def test_a_town_pools_its_hinterland_and_its_goods_leave_from_the_town(tmp_path, monkeypatch):
@@ -226,3 +251,22 @@ def test_the_walks_wear_the_ways_and_pass_the_wear_on(tmp_path, monkeypatch):
     assert 1 <= f["walks"] <= TF.TRUNK_ITERS and len(k) and (v > 0).all() and v.max() <= 1 + 1e-9
     g = TF.flows_at(ctx, 0, last_wear=(k, v))
     assert g["routes"] and g["walks"] >= 1
+
+
+def test_routes_split_into_long_haul_and_local(tmp_path, monkeypatch):
+    """PW-1515 (Daniel 11-08: the dense web is real local exchange): the long-haul layer (precious goods, or goods carried LONG_KM or
+    more) and the local one are each judged against their own volume; a stretch may be a route of either or both (layers 1, 2, 3)."""
+    ctx = _with_town(_line_ctx(tmp_path), tmp_path, cell=2)
+    f = TF.flows_at(ctx, 0)
+    assert f["routes"] and all(len(r) == 10 and r[5] in (1, 2, 3) for r in f["routes"])
+    assert all((r[6] > 0) == bool(r[5] & 1) and (r[8] > 0) == bool(r[5] & 2) and r[2] == max(r[6], r[8]) for r in f["routes"])
+    monkeypatch.setattr(RT, "LONG_KM", 0.0)  # (everything carried is long-haul: no local layer)
+    g = TF.flows_at(ctx, 0)
+    assert g["routes"] and all(r[5] == 1 for r in g["routes"])
+    monkeypatch.setattr(RT, "LONG_KM", 1e9)  # (only the precious goods are long-haul)
+    h = TF.flows_at(ctx, 0)
+    longs = {k for k in RT.GROUP_OF if RT.long_good(k)}
+    assert all(not r[5] & 1 or any(RT.GROUP_OF[k] == r[7] for k in longs) for r in h["routes"])
+    assert all(isinstance(x["long"], bool) for x in f["hubs"])
+    for x in f["hubs"]:
+        assert all(len(y) == 7 for y in RT.culture_hubs(f, x["culture"]))

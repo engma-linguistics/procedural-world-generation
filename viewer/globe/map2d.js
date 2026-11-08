@@ -162,7 +162,7 @@ export function applyProjUrl() {
 }
 $('smooth').addEventListener('change', paint);
 // overlay checkboxes: each id here redraws the overlays when ticked and can be set from the URL (?winds=1)
-export const OVERLAY_IDS = ['lmNames', 'peopleTracks', 'settlements', 'settleVillages', 'settleMines', 'settleMinesOnly', 'tradeRoutes', 'rivers', 'huRivers', 'huHarbours', 'huPasses', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'volcExtinct', 'winds', 'currents', 'overturning',
+export const OVERLAY_IDS = ['lmNames', 'peopleTracks', 'settlements', 'settleVillages', 'settleMines', 'settleMinesOnly', 'tradeRoutes', 'tradeLocal', 'rivers', 'huRivers', 'huHarbours', 'huPasses', 'outlines', 'pentas', 'arrows', 'events', 'hotspots', 'volcanoes', 'volcExtinct', 'winds', 'currents', 'overturning',
                      'axis', 'tropics', 'clouds'];
 OVERLAY_IDS.forEach((id) => $(id).addEventListener('change', () => refresh(() => { buildOverlays(); renderLegend(); })));
 // the wind overlay's season: the yearly mean, or the July / January half-year where the world has them

@@ -41,6 +41,16 @@ ROUTE_HOLD = 0.5  # a stretch over this part of ROUTE_SHARE is a route too when 
 SPAN = True  # a stretch over the lower bar that joins a route is part of it (a double threshold, as in edge tracing)
 QUARTER_SHARE = 0.25  # a trading town hosts a merchant quarter of a foreign culture whose goods are this share of what passes through it.
 # JUDGEMENT: Curtin (via Barraclough 1985, review1.md section 5) gives the institution, not a share
+LONG_KM = 500.0  # long-haul (PW-1515, Daniel 11-08: the dense web is real local exchange; long-distance trade was a branching network of
+# high-value goods): the precious goods (those that fall off as precious, trade_flow.FALL_CLASS: spices, gold, gems, ornaments, mithril, tin)
+# and anything carried at least this far (path km, from its source to its taker). JUDGEMENT within sourced bounds: overland grain went
+# 100-200 km at most (review1.md section 6; Cato's mill, Adams 2007), and fine goods and tin 1,000 km and more (Kanesh ~1,200 km); on the
+# judge runs 90% of grain's cross-culture deliveries go under 8 stretches, ~480 km at L7 (step3b.md). So 500 km keeps nearly all overland
+# grain local and counts grain shipped far by sea or river as long-haul
+LOCAL_SHARE = 0.01  # the local layer's bar, as ROUTE_SHARE (of one good's local carried volume, the world over). JUDGEMENT (step3d.md):
+# local hauls are short and many, each crossing 1-8 stretches, so no stretch carries much of the world's local volume: at 5% the local
+# layer kept 11-92 stretches an era on 3e0eb4 and 0141d1 (6, 3 and 0 kyr ago), at 1% 595-901, about the dense web of lane 218's routes
+# (327-536 stretches an era), which Daniel ruled real local exchange (11-08)
 KINDS = ("port", "caravan town", "river port", "market town")
 ARID = (3, 4, 5, 6)  # Koppen BWh, BWk, BSh, BSk (climate.KOPPEN): hot and cold desert, hot and cold steppe
 MODES = ("land", "river", "sea", "air")
@@ -85,6 +95,19 @@ def _path_load(cells, amt, pe, esrc, eload, touched):
     return m
 
 
+def long_good(good: str) -> bool:
+    """A good that is long-haul wherever it goes: one that falls off as a precious good (trade_flow.FALL_CLASS, trade.GOODS)."""
+    from .trade import GOODS
+    from .trade_flow import FALL_CLASS
+    return FALL_CLASS.get(good, GOODS[good][1]) == "precious"
+
+
+def seek_dummy(n: int, ne: int) -> tuple:
+    """trade_flow._seek's tracing arrays when no routes are traced."""
+    tdict = Dict.empty(key_type=types.int64, value_type=types.float64)
+    return 0, np.zeros((len(GROUPS), n)), np.full(n, -1, np.int64), tdict, np.zeros(ne), np.zeros(ne), np.zeros(ne)
+
+
 def towns_at(ctx, era: float) -> dict:
     """{cell: (site, people)}: the biggest settlement-ledger town or city per cell at the era (the ledger's own town size; trade._urban's
     list of sites that ever reach a town's size)."""
@@ -123,6 +146,7 @@ class Loads:
         self.tot = np.zeros(len(GROUPS))
         self.tot_good: dict = {}
         self.den: dict = {}  # (per good: the volume carried between cultures, deliveries that cross at least one stretch)
+        self.den_long: dict = {}  # (... of it long-haul: a precious good, or carried LONG_KM or more)
         self.xtot = np.zeros(len(GROUPS))
         self.parts: dict = {}  # (per good: [(stretch ids, edge modes, load)] between cultures, traced as they come)
         self.all_load = np.zeros(len(self.ukey))  # (every carried delivery's load per stretch, inside a culture too: the traffic, PW-1515)
@@ -166,43 +190,51 @@ class Loads:
         sel = fx & carried
         if sel.any():
             self.den[good] = self.den.get(good, 0.0) + float(amt[sel].sum())
+            if long_good(good):
+                self.den_long[good] = self.den_long.get(good, 0.0) + float(amt[sel].sum())
             m = _path_load(cells[sel], amt[sel], pe, self.esrc, self._eload, self._touched)
             es = self._touched[:m].copy()
-            self.parts.setdefault(good, []).append((self.uid[es], emode[es].astype(np.int64), self._eload[es].copy()))
+            x = self._eload[es].copy()
+            self.parts.setdefault(good, []).append((self.uid[es], emode[es].astype(np.int64), x, x if long_good(good) else np.zeros(len(x))))
             self._eload[es] = 0.0
+
+    def seek_arrays(self, good: str) -> tuple:
+        """The arrays trade_flow._seek traces a good's deliveries into as they happen: (group, through, town index per cell, town tallies,
+        and per directed edge the load, the load between cultures, its long-haul part); seek_done() books them."""
+        gi = GROUP_OF[good]
+        self._before = self.through[gi, self.tcells].copy() if len(self.tcells) else None
+        ne = len(self.esrc)
+        return gi, self.through, self.tix, self.tdict, np.zeros(ne), np.zeros(ne), np.zeros(ne)
+
+    def seek_done(self, good: str, tr: tuple, got: np.ndarray, cross: np.ndarray, carried: np.ndarray, lng: np.ndarray, emode: np.ndarray):
+        """Books a good's deliveries traced by _seek (got: amounts, cross: their part between cultures, carried: crossed a stretch, lng:
+        long-haul)."""
+        gi, eall, ex, exl = tr[0], tr[4], tr[5], tr[6]
+        if self._before is not None:
+            self.tgood[:, list(GROUP_OF).index(good)] += self.through[gi, self.tcells] - self._before
+        self.tot[gi] += float(got.sum())
+        self.tot_good[good] = self.tot_good.get(good, 0.0) + float(got.sum())
+        self.xtot[gi] += float(cross.sum())
+        self.carried += float(got[carried].sum())
+        es = np.flatnonzero(eall > 0)
+        np.add.at(self.all_load, self.uid[es], eall[es])
+        es = np.flatnonzero(ex > 0)
+        if len(es):
+            self.den[good] = self.den.get(good, 0.0) + float(cross[carried].sum())
+            self.den_long[good] = self.den_long.get(good, 0.0) + float(cross[carried & lng].sum())
+            self.parts.setdefault(good, []).append((self.uid[es], emode[es].astype(np.int64), ex[es], exl[es]))
 
     def traffic(self) -> np.ndarray:
         """Per stretch: the share of the frame's carried goods (all goods, people's worth, inside cultures too) that crosses it, both ways
         summed (PW-1515). A share, so a road's wear does not grow with the world's people from era to era."""
         return self.all_load / max(self.carried, 1e-12)
 
-    def finish(self, last: set | None = None) -> dict:
-        """{"routes": [[cell a, cell b, strength, group, mode]], "hubs": [...], "quarters": [[host culture, merchant culture]], "volume"}:
-        every carried delivery between two cultures adds its amount to each stretch on its way. A stretch's strength is the largest share
-        of one good's carried volume between cultures (that frame, the world over) it carries; a stretch of strength ROUTE_SHARE or more
-        is a route, and so is one of ROUTE_HOLD x ROUTE_SHARE or more that was a route the era before (last: the stretches as a * n + b).
-        Its group is that good's; its mode the one carrying the biggest share of goods over it."""
+    def _layer(self, st: np.ndarray, last: set | None, share: float = ROUTE_SHARE) -> np.ndarray:
+        """The route stretches of one layer from their strengths: ROUTE_SHARE or more; or ROUTE_HOLD x ROUTE_SHARE or more and a route
+        (of either layer) the era before (last: the stretches as a * n + b), or continuing a route of this layer (SPAN)."""
         n = self.n
-        nu = len(self.ukey)
-        xtot = self.xtot
-        st = np.zeros(nu)
-        sg = np.zeros(nu, np.int64)
-        emu = np.zeros((len(MODES), nu))
-        for good, parts in self.parts.items():  # (per good, both ways of a stretch summed; the stretch keeps its strongest good)
-            den = self.den.get(good, 0.0)
-            if den <= 0:
-                continue
-            u = np.concatenate([p[0] for p in parts])
-            md = np.concatenate([p[1] for p in parts])
-            x = np.concatenate([p[2] for p in parts]) / den
-            np.add.at(emu, (md, u), x)
-            uu, inv = np.unique(u, return_inverse=True)
-            sx = np.bincount(inv, weights=x, minlength=len(uu))
-            up = sx > st[uu]
-            st[uu[up]] = sx[up]
-            sg[uu[up]] = GROUP_OF[good]
-        ok = st >= ROUTE_SHARE
-        weak = np.flatnonzero((st >= ROUTE_HOLD * ROUTE_SHARE) & ~ok)
+        ok = st >= share
+        weak = np.flatnonzero((st >= ROUTE_HOLD * share) & ~ok)
         if last and len(weak):  # (last era's routes hold down to the lower bar)
             held = np.isin(self.ukey[weak], np.fromiter(last, np.int64, len(last)))
             ok[weak[held]] = True
@@ -221,22 +253,72 @@ class Loads:
                 on[wa[j]] = True
                 on[wb[j]] = True
                 weak, wa, wb = weak[~j], wa[~j], wb[~j]
+        return ok
+
+    def finish(self, last: set | None = None) -> dict:
+        """{"routes": [[cell a, cell b, strength, group, mode, layers, long-haul strength, long-haul group, local strength, local group]],
+        "hubs": [...], "quarters": [[host culture, merchant culture]], "volume"}: every carried delivery between two cultures adds its
+        amount to each stretch on its way. Two layers (PW-1515, Daniel 11-08: the dense web is real local exchange; long-distance trade was
+        a branching network of high-value goods): long-haul deliveries (precious goods, or carried LONG_KM or more) and local ones (the
+        rest). In each layer a stretch's strength is the largest share of one good's carried volume between cultures in that layer (that
+        frame, the world over) it carries, and its group is that good's; a stretch of strength ROUTE_SHARE or more is a route of the layer,
+        and so is one of ROUTE_HOLD x ROUTE_SHARE or more that was a route the era before or continues a route of the layer (_layer). Each
+        layer is measured against its own volume, so short hauls are not drowned by the long ones and the other way round. layers: 1
+        long-haul, 2 local, 3 both; strength and group are the stronger layer's (0 for a layer it is not a route of); its mode the one
+        carrying the biggest share of goods over it."""
+        n = self.n
+        nu = len(self.ukey)
+        xtot = self.xtot
+        S = np.zeros((2, nu))  # (strength per layer: 0 long-haul, 1 local)
+        SG = np.zeros((2, nu), np.int64)
+        emu = np.zeros((len(MODES), nu))
+        for good, parts in self.parts.items():  # (per good, both ways of a stretch summed; the stretch keeps its strongest good per layer)
+            den = self.den.get(good, 0.0)
+            if den <= 0:
+                continue
+            dl = self.den_long.get(good, 0.0)
+            u = np.concatenate([p[0] for p in parts])
+            md = np.concatenate([p[1] for p in parts])
+            x = np.concatenate([p[2] for p in parts])
+            xl = np.minimum(np.concatenate([p[3] for p in parts]), x)
+            np.add.at(emu, (md, u), x / den)
+            uu, inv = np.unique(u, return_inverse=True)
+            for k, (v, dd) in enumerate(((xl, dl), (x - xl, den - dl))):
+                if dd <= 1e-12 * den:
+                    continue
+                sx = np.bincount(inv, weights=v / dd, minlength=len(uu))
+                up = sx > S[k, uu]
+                S[k, uu[up]] = sx[up]
+                SG[k, uu[up]] = GROUP_OF[good]
+        lo, lc = self._layer(S[0], last), self._layer(S[1], last, LOCAL_SHARE)
+        S[0] = np.where(lo, S[0], 0.0)
+        S[1] = np.where(lc, S[1], 0.0)
+        ok = lo | lc
+        st = S.max(0)
+        sg = np.where(S[0] >= S[1], SG[0], SG[1])
         keep = np.flatnonzero(ok)
         keep = keep[np.argsort(-st[keep], kind="stable")]
         ua, ub = self.ukey[keep] // n, self.ukey[keep] % n
         md = emu[:, keep].argmax(0) if len(keep) else np.zeros(0, np.int64)
-        routes = [[int(a), int(b), round(float(s), 4), int(g), int(m)] for a, b, s, g, m in
-                  zip(ua.tolist(), ub.tolist(), st[keep].tolist(), sg[keep].tolist(), md.tolist())]
+        lay = lo[keep].astype(np.int64) + 2 * lc[keep].astype(np.int64)
+        r4 = lambda v: round(float(v), 4)  # noqa: E731
+        routes = [[int(a), int(b), r4(s), int(g), int(m), int(y), r4(xl), int(gl), r4(xc), int(gc)] for a, b, s, g, m, y, xl, gl, xc, gc in
+                  zip(ua.tolist(), ub.tolist(), st[keep].tolist(), sg[keep].tolist(), md.tolist(), lay.tolist(), S[0, keep].tolist(),
+                      SG[0, keep].tolist(), S[1, keep].tolist(), SG[1, keep].tolist())]
         touch = np.zeros((len(MODES), n), bool)
         for m in range(len(MODES)):
             sel = md == m
             touch[m, ua[sel]] = True
             touch[m, ub[sel]] = True
-        hubs, quarters = self._hubs(np.maximum(self.tot, 1e-12), touch.any(0), touch, ua, ub, md)
+        lh = (lay & 1) > 0
+        on_long = np.zeros(n, bool)  # (a town on the long-haul network)
+        on_long[ua[lh]] = True
+        on_long[ub[lh]] = True
+        hubs, quarters = self._hubs(np.maximum(self.tot, 1e-12), touch.any(0), touch, ua, ub, md, on_long)
         self.parts = {}
         return {"routes": routes, "hubs": hubs, "quarters": quarters, "volume": {GROUPS[k]: int(round(float(xtot[k]))) for k in range(len(GROUPS))}}
 
-    def _hubs(self, tot, on_route, touch, ua, ub, md):
+    def _hubs(self, tot, on_route, touch, ua, ub, md, on_long):
         fr = self.fr
         ctx, i = fr.ctx, fr.i
         if not len(self.tcells):
@@ -287,7 +369,7 @@ class Loads:
             hubs.append({"site": s["id"], "cell": int(c), "place": s.get("place"), "people": int(round(pop)), "culture": host,
                          "culture_name": names[host]["name"] if 0 <= host < len(names) else None, "kind": kind,
                          "strength": round(float(norm[:, c].max()), 4), "goods": top,
-                         "modes": [MODES[m] for m in range(len(MODES)) if touch[m, c]],
+                         "modes": [MODES[m] for m in range(len(MODES)) if touch[m, c]], "long": bool(on_long[c]),
                          "quarters": [[x, (names[x]["name"] if 0 <= x < len(names) else str(x)) + (f" ({fr.info[x]['via']})" if fr.info.get(x, {}).get("via") else ""), v]
                                       for x, v in qs]})
         hubs.sort(key=lambda h: -h["strength"])
@@ -307,6 +389,6 @@ def frame_view(doc: dict, ago_kyr: float) -> dict:
 
 
 def culture_hubs(f: dict, c: int) -> list:
-    """The trading towns on culture c's land in a frame: [[place, kind, people, strength, goods, quarters]]."""
-    return [[h["place"], h["kind"], h["people"], h["strength"], h["goods"], [q[1] for q in h["quarters"]]] for h in f.get("hubs") or []
-            if h["culture"] == c]
+    """The trading towns on culture c's land in a frame: [[place, kind, people, strength, goods, quarters, on the long-haul network]]."""
+    return [[h["place"], h["kind"], h["people"], h["strength"], h["goods"], [q[1] for q in h["quarters"]], bool(h.get("long"))]
+            for h in f.get("hubs") or [] if h["culture"] == c]

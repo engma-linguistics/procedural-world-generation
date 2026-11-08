@@ -44,9 +44,10 @@ from numba import njit
 from ..geo import R_KM
 from . import trade as TR
 
-VERSION = 5  # (2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
+VERSION = 6  # (2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
 # 3: a route is judged per good against its carried volume, and last era's routes hold down to half the bar, PW-1515 and PW-1514;
-# 4: grain takers look on until a round finds no more, SEEK_GOODS, lane 216b; 5: market pools and worn ways, lane 218)
+# 4: grain takers look on until a round finds no more, SEEK_GOODS, lane 216b; 5: market pools and worn ways, lane 218;
+# 6: every good looks on until none is left, in one shared walk, and the routes split into long-haul and local, lane 222)
 FORMAT = "procgen-trade-flows/1"
 
 # --- cost per km of each mode, a pack animal = 1 (R§6). ORBIS (Scheidel, Meeks & Weiland 2012, from Diocletian's Price Edict), denarii per kg
@@ -92,13 +93,10 @@ FOODS = ("grain", "livestock", "dried_fish")  # the goods that are food (for ste
 QUARTERS = True  # step 3 (PW-1504): a merchant quarter lifts its border's toll in the next frame (design1.md steps 2-3); False: no carry-over
 FETCH = False  # PW-1511 B (needs-decision): True: herders fetch grain with their own animals. Off: it met no more of their need on the judge runs (step3.md)
 FETCH_GOODS = ("grain",)  # PW-1511 B: what herders fetch with their own animals (Khazanov 2019: grain from the frontier markets)
-ROUNDS = 3  # a taker cut short by an emptied source looks for the next best source up to this many times (a compute bound)
-SEEK_GOODS = ("grain",)  # ... but grain's takers look on, round after round, until a round finds no more (no taker cut short reaches a
-# live source); SEEK_CAP is only a safety cap. Lane 216 (step3b.md): 3 rounds left 62-73% of the world's grain lack unmet; grain needs
-# 40-150 rounds to settle. Each round re-walks only the land the emptied sources had supplied (_rewalk). The other goods keep the
-# compute bound: run to the end they need hundreds of rounds each (lane 218 tried each cell's 8 best sources in one walk, PW-1519: the
-# walk costs ~30 times as much and the goods still need dozens of walks; step3c.md)
-SEEK_CAP = 400
+SEEK_CAP = 400  # every good's takers look on, from source to next best source, until none is left (PW-1519): one shared walk in which an
+# emptied source stops spreading and the land it held is walked again from the live sources (_seek, lane 222, step3d.md). This caps the
+# sources one taker draws from, a safety cap only. Before: grain ran round after round (lane 216b) and the other goods stopped after 3
+# rounds, a compute bound (step3b.md, step3c.md: run to the end with rounds, or with each cell's 8 best sources, they took ~5-30 times as long)
 # --- market pools (PW-1514, step3c.md; D64: towns are the hubs). A town's market gathers its hinterland's spare goods and its wants: inside
 # the pool the spare goods meet the wants first (a market, no road drawn), and only what is left over travels, from the town, or is
 # fetched, to the town. A marginal cell turning from giver to taker then moves a pool's total a little instead of a source in or out
@@ -119,20 +117,6 @@ WEAR_KEEP = 0.5  # the share of last era's wear that is still there (roads persi
 TRUNK_ITERS = 3  # walks per frame at most: walk, wear the ways the goods took, walk again; it stops sooner once the wear changes by
 # less than WEAR_TOL anywhere (a compute bound)
 WEAR_TOL = 0.02
-
-
-@njit(cache=True)
-def _allocate(order, org, ask, avail):
-    """Shares out each source's supply (avail, per source cell; reduced in place) to its takers in `order` (best supplied first): each
-    gets min(what it asks, what is left)."""
-    got = np.zeros(ask.shape[0])
-    for k in order:
-        o = org[k]
-        x = min(ask[k], avail[o])
-        if x > 0.0:
-            got[k] = x
-            avail[o] -= x
-    return got
 
 
 @njit(cache=True)
@@ -180,64 +164,238 @@ def _walk(src, d0, nbr_off, nbr_idx, ecost, ekm, emode, ebord, limit):
 
 
 @njit(cache=True)
-def _rewalk(dead, seed, d, org, km, mkm, nb, pe, nbr_off, nbr_idx, ecost, ekm, emode, ebord, limit):
-    """_walk again, in place, after the sources marked `dead` (per cell) stop giving: only the cells they had supplied are walked again,
-    from the live cells bordering them and the live sources among them (seed: a live source's starting cost, else inf). The other cells
-    keep their cost and path, since taking sources away lowers no cost and leaves a live source's own paths as they were. Returns the
-    number of cells walked again."""
-    n = d.shape[0]
-    bad = np.zeros(n, np.bool_)
-    cnt = 0
-    for j in range(n):
-        o = org[j]
-        if o >= 0 and dead[o]:
-            bad[j] = True
-            d[j] = np.inf
-            org[j] = -1
-            pe[j] = -1
-            km[j] = 0.0
-            for m in range(4):
-                mkm[j, m] = 0.0
-            nb[j] = 0
-            cnt += 1
-    if cnt == 0:
-        return 0
+def _grow(a, m):
+    """a with room for at least m rows (doubled), the first rows kept."""
+    if m <= a.shape[0]:
+        return a
+    b = np.empty((max(m, 2 * a.shape[0]),) + a.shape[1:], a.dtype)
+    b[:a.shape[0]] = a
+    return b
+
+
+@njit(cache=True)
+def _seek(src, d0, nbr_off, nbr_idx, ecost, ekm, emode, ebord, esrc, limit, L, tk_off, tk_pair, rem, hc, seeking, cap, avail, avail0, S,
+          gT, gC, gF, sc, tcul, inner_km, long_good, long_km, grp, through, tix, tdict, eall, ex, exl):
+    """One shared walk in which every taker takes from the best live supply that reaches it, and a source that runs empty stops
+    spreading (PW-1519, lane 218's idea). The walk is _walk's (Dijkstra from every source at once, a source starting at d0), and a cell's
+    takers (tk_pair[tk_off[c]:tk_off[c+1]], best supplied first as in step 2) are served when the walk settles the cell: each takes
+    min(its lack rem x hc, the supply there x hc, what is left at the source). A source emptied this way is dead: the cells it held are
+    walked again at once from the live cells bordering them and the live sources among them (as a fresh walk from the live sources would
+    reach them: taking a source away lowers no other cost), so a taker it cut short takes from its next best live source. A taker that got
+    all it asked (the supply there was its limit) looks no further. It runs until no taker is left seeking; `cap` (sources per taker) is
+    only a safety cap.
+
+    Each delivery is traced back to its source along the walk's edges as it happens (the edges change when a source dies): its amount is
+    added to every cell passed (through[grp], and at a town (tix >= 0) to tdict per (town, group, giver)), and to every directed edge passed
+    (eall; ex for its part between cultures; exl for that part when it is long-haul: long_good, or carried at least long_km). Givers: a
+    pooled source (a town in gT) splits among its pool's cultures gC by shares gF, else the source cell's culture sc.
+
+    Returns the deliveries (pair, source cell, amount, km, km per mode, borders, cost-km of carrying, carried?, part between cultures,
+    long-haul?),
+    the most sources any taker drew from, the number of sources emptied, and the takers the cap stopped while still short."""
+    n = nbr_off.shape[0] - 1
+    d = np.full(n, np.inf)
+    org = np.full(n, -1, np.int64)
+    pe = np.full(n, -1, np.int64)
+    km = np.zeros(n)
+    mkm = np.zeros((n, 4))
+    nb = np.zeros(n, np.int32)
+    seed = np.full(n, np.inf)
+    alive = np.zeros(n, np.bool_)
+    head = np.full(n, -1, np.int64)  # (per source: its cells, a linked list, checked against org when read)
+    ncell = np.zeros(1024, np.int64)
+    nnext = np.zeros(1024, np.int64)
+    nn = 0
+    stamp = np.zeros(n, np.int64)
+    pstamp = np.zeros(n, np.int64)
+    serves = np.zeros(tk_pair.shape[0], np.int64)
+    m0 = tk_pair.shape[0] + 16
+    dp = np.zeros(m0, np.int64)
+    do = np.zeros(m0, np.int64)
+    dg = np.zeros(m0)
+    dkm = np.zeros(m0)
+    dmkm = np.zeros((m0, 4))
+    dnb = np.zeros(m0)
+    dcar = np.zeros(m0)
+    dcr = np.zeros(m0, np.bool_)
+    dx = np.zeros(m0)
+    dl = np.zeros(m0, np.bool_)
+    nd = 0
+    deaths = 0
     h = [(0.0, np.int64(0))]
     h.pop()
-    pushed = np.zeros(n, np.bool_)
-    for j in range(n):
-        if bad[j] and seed[j] < np.inf:  # (a live source that a dead one had outbid on its own cell)
-            d[j] = seed[j]
-            org[j] = j
-            heapq.heappush(h, (d[j], np.int64(j)))
-    for j in range(n):
-        if bad[j]:
-            for e in range(nbr_off[j], nbr_off[j + 1]):
-                i = nbr_idx[e]
-                if not bad[i] and not pushed[i] and d[i] < np.inf:
-                    pushed[i] = True
-                    heapq.heappush(h, (d[i], np.int64(i)))
+    for k in range(src.shape[0]):
+        s = src[k]
+        alive[s] = True
+        seed[s] = d0[k]
+        if d0[k] < d[s]:
+            d[s] = d0[k]
+            org[s] = s
+        heapq.heappush(h, (d0[k], s))
+    for s in range(n):
+        if org[s] == s:
+            ncell = _grow(ncell, nn + 1)
+            nnext = _grow(nnext, nn + 1)
+            ncell[nn] = s
+            nnext[nn] = head[s]
+            head[s] = nn
+            nn += 1
     while len(h) > 0:
         di, i = heapq.heappop(h)
-        if di > d[i]:
+        if di != d[i]:
             continue
+        o = org[i]
+        if o < 0 or not alive[o]:
+            continue
+        # --- serve the takers here
+        sup = math.exp(-min(di, 700.0) / L)
+        died = False
+        for q in range(tk_off[i], tk_off[i + 1]):
+            p = tk_pair[q]
+            if not seeking[q] or rem[p] <= 0.0:
+                continue
+            ask = min(rem[p], sup) * hc[q]
+            if ask <= 0.0:
+                seeking[q] = False
+                continue
+            got = min(ask, avail[o])
+            serves[q] += 1
+            seeking[q] = got < ask * (1 - 1e-9) and serves[q] < cap
+            if got <= 0.0:
+                continue
+            avail[o] -= got
+            rem[p] -= got / max(hc[q], 1e-12)
+            # (the delivery's givers)
+            lo = np.searchsorted(gT, o)
+            hi = np.searchsorted(gT, o, side="right")
+            cross = 0.0
+            tc = tcul[p]
+            if hi > lo:
+                for r in range(lo, hi):
+                    if gC[r] >= 0 and gC[r] != tc:
+                        cross += got * gF[r]
+            elif sc[o] >= 0 and sc[o] != tc:
+                cross = got
+            m1 = nd + 1
+            if m1 > dp.shape[0]:
+                dp = _grow(dp, m1)
+                do = _grow(do, m1)
+                dg = _grow(dg, m1)
+                dkm = _grow(dkm, m1)
+                dmkm = _grow(dmkm, m1)
+                dnb = _grow(dnb, m1)
+                dcar = _grow(dcar, m1)
+                dcr = _grow(dcr, m1)
+                dx = _grow(dx, m1)
+                dl = _grow(dl, m1)
+            dp[nd] = p
+            do[nd] = o
+            dg[nd] = got
+            dkm[nd] = km[i]
+            for m in range(4):
+                dmkm[nd, m] = mkm[i, m]
+            dnb[nd] = nb[i]
+            dcar[nd] = di + L * math.log(max(S[o], 1e-300))
+            dcr[nd] = pe[i] >= 0
+            dx[nd] = cross
+            lng = long_good or km[i] + inner_km[p] >= long_km
+            dl[nd] = lng
+            nd += 1
+            # (trace it back along the walk's edges as they are now)
+            j = i
+            while True:
+                through[grp, j] += got
+                t = tix[j]
+                if t >= 0:
+                    if hi > lo:
+                        for r in range(lo, hi):
+                            if gC[r] >= 0:
+                                key = (t * 8 + grp) * 1_000_003 + gC[r]
+                                tdict[key] = tdict.get(key, 0.0) + got * gF[r]
+                    elif sc[o] >= 0:
+                        key = (t * 8 + grp) * 1_000_003 + sc[o]
+                        tdict[key] = tdict.get(key, 0.0) + got
+                e = pe[j]
+                if e < 0:
+                    break
+                eall[e] += got
+                ex[e] += cross
+                if lng:
+                    exl[e] += cross
+                j = esrc[e]
+            if avail[o] <= 1e-9 * max(avail0[o], 1e-12):
+                died = True
+                break
+        if died:  # --- the source is empty: it stops spreading, and the land it held is walked again from the live sources
+            alive[o] = False
+            deaths += 1
+            tag = deaths
+            seed[o] = np.inf
+            bad = []
+            x = head[o]
+            while x >= 0:
+                j = ncell[x]
+                if org[j] == o and stamp[j] != tag:
+                    stamp[j] = tag
+                    bad.append(j)
+                x = nnext[x]
+            head[o] = -1
+            for j in bad:
+                d[j] = np.inf
+                org[j] = -1
+                pe[j] = -1
+                km[j] = 0.0
+                for m in range(4):
+                    mkm[j, m] = 0.0
+                nb[j] = 0
+            for j in bad:
+                if alive[j] and seed[j] < np.inf:  # (a live source that the dead one had outbid on its own cell)
+                    d[j] = seed[j]
+                    org[j] = j
+                    ncell = _grow(ncell, nn + 1)
+                    nnext = _grow(nnext, nn + 1)
+                    ncell[nn] = j
+                    nnext[nn] = head[j]
+                    head[j] = nn
+                    nn += 1
+                    heapq.heappush(h, (d[j], np.int64(j)))
+            for j in bad:
+                for e in range(nbr_off[j], nbr_off[j + 1]):
+                    b = nbr_idx[e]
+                    if stamp[b] != tag and pstamp[b] != tag and d[b] < np.inf:
+                        pstamp[b] = tag
+                        heapq.heappush(h, (d[b], np.int64(b)))
+            continue
+        # --- spread
         for e in range(nbr_off[i], nbr_off[i + 1]):
             c = ecost[e]
             if c < 0.0:
                 continue
             j = nbr_idx[e]
-            nd = di + c
-            if nd < d[j] and nd <= limit:
-                d[j] = nd
-                org[j] = org[i]
+            nd2 = di + c
+            if nd2 < d[j] and nd2 <= limit:
+                d[j] = nd2
+                org[j] = o
                 pe[j] = e
                 km[j] = km[i] + ekm[e]
                 for m in range(4):
                     mkm[j, m] = mkm[i, m]
                 mkm[j, emode[e]] += ekm[e]
                 nb[j] = nb[i] + ebord[e]
-                heapq.heappush(h, (nd, j))
-    return cnt
+                ncell = _grow(ncell, nn + 1)
+                nnext = _grow(nnext, nn + 1)
+                ncell[nn] = j
+                nnext[nn] = head[o]
+                head[o] = nn
+                nn += 1
+                heapq.heappush(h, (nd2, j))
+    mx = 0
+    capped = 0
+    for q in range(serves.shape[0]):
+        mx = max(mx, serves[q])
+        if serves[q] >= cap and not seeking[q] and rem[tk_pair[q]] > 1e-12:
+            capped += 1
+    return dp[:nd], do[:nd], dg[:nd], dkm[:nd], dmkm[:nd], dnb[:nd], dcar[:nd], dcr[:nd], dx[:nd], dl[:nd], mx, deaths, capped
 
 
 def _knows(kn: set, techs) -> bool:
@@ -525,18 +683,6 @@ class _Frame:
         carry = np.where(org >= 0, d + L * np.log(np.maximum(S[np.maximum(org, 0)], 1e-300)), 0.0)  # (the carrying cost alone, cost-km)
         return sup, org, w["km"], w["mkm"], w["nb"], w["sc"], carry, S, w["pe"], w["edges"][2]
 
-    def rewalk(self, good: str, dead: np.ndarray, view: bool = True):
-        """The last walk of this good again with the source cells marked `dead` (per cell) taken out: as walk(good, live=~dead and the
-        earlier live mask), re-walking only the land the dead sources had supplied (_rewalk). Returns walk's tuple; the edge each cell was
-        reached by is updated in place (Loads traces each round's deliveries as they come)."""
-        w = self._last
-        assert w["good"] == good
-        c, km, mode, bord = w["edges"]
-        w["seed"][dead] = np.inf
-        _rewalk(dead, w["seed"], w["d"], w["org"], w["km"], w["mkm"], w["nb"], w["pe"], self.nbr_off, self.nbr_idx, c, km, mode, bord,
-                w["L"] * math.log(1.0 / FLOOR))
-        return self._view() if view else None
-
 
 def kind_of(fr: _Frame, giver: int, taker: int, borders: float) -> str:
     """The kind of exchange from the two sides (R§1-R§5; a label, it does not change the physics): tribute where the taker takes tribute
@@ -582,10 +728,10 @@ class _Ledger:
         self.agg: dict = {}
         self.home: dict = {}
 
-    def record(self, good, p, at, o, got, km, carry, mkm, nb, pe, emode, split):
+    def record(self, good, p, at, o, got, km, carry, mkm, nb, pe, emode, split, traced: bool = False):
         """Deliveries to the pairs p (arriving at cells `at`) from source cells o, `got` people's worth each; their ways (km, cost-km,
         km per mode, borders); split: the givers of a pooled source (town cell -> cultures, shares) as (towns, cultures, shares) sorted by
-        town, else the source cell's culture (split[3], per cell)."""
+        town, else the source cell's culture (split[3], per cell). traced: the routes have them already (_seek traces as it goes)."""
         T, Cg, F, sc = split
         lo = np.searchsorted(T, o, "left")
         hi = np.searchsorted(T, o, "right")
@@ -599,7 +745,7 @@ class _Ledger:
         amt = got[row] * np.where(pooled, F[q] if len(F) else 1.0, 1.0)
         p, at = p[row], at[row]
         t = self.cu[p]
-        if self.loads is not None:
+        if self.loads is not None and not traced:
             self.loads.add(good, at, amt, giver, t, pe, emode)
         cp = self.cell[p]
         v = amt / np.maximum(self.heads[cp], 1e-12) * self.w[p] / self.wsum[t]
@@ -625,7 +771,9 @@ class _Ledger:
 
 
 def _exchange(fr: _Frame, pools: dict | None, loads) -> tuple:
-    """Every good's allocation over one walk of the frame (with the frame's worn ways): (ledger, unmet, rounds per good)."""
+    """Every good's allocation over one walk of the frame (with the frame's worn ways): (ledger, unmet, the most sources a taker drew from,
+    and the takers SEEK_CAP stopped while still short, per good)."""
+    from . import trade_routes as RT
     P = fr.P
     cell, cu, w = P["cell"], P["culture"], P["w"]
     led = _Ledger(fr, loads)
@@ -634,6 +782,7 @@ def _exchange(fr: _Frame, pools: dict | None, loads) -> tuple:
     trading = np.array([fr.info[c]["mode"] == "trade" for c in cu.tolist()], bool) if len(cu) else np.zeros(0, bool)
     unmet: dict = {}
     rounds: dict = {}
+    capped: dict = {}
     nw = len(wsum_arr)
     empty = (np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0))
     for good in TR.GOODS:
@@ -687,49 +836,47 @@ def _exchange(fr: _Frame, pools: dict | None, loads) -> tuple:
             split = (T, Cg, F, sc)
             avail0 = S * heads
         want &= rem > 1e-12
-        pk = pools["km"] if pools is not None else None
-        avail = None
-        nr = 0
-        for _ in range(SEEK_CAP if good in SEEK_GOODS else ROUNDS):
-            p = np.flatnonzero(want & (rem > 0))
-            if not len(p):
-                break
-            if avail is None:
-                *_, emode = fr.walk(good, S=S, sc=sc)
-                avail = avail0.copy()
-                alive = np.ones(len(avail), bool)
-            else:  # (the sources emptied last round give no more: walk again where they had reached)
-                gone = alive & ~(avail > 1e-9 * np.maximum(avail0, 1e-12))
-                alive &= ~gone
-                fr.rewalk(good, gone, view=False)
-            W = fr._last
-            org, km, mkm, nb, pe, d = W["org"], W["km"], W["mkm"], W["nb"], W["pe"], W["d"]
-            ac, cp = at[p], cell[p]
-            o = org[ac]
-            sup_p = np.where(np.isfinite(d[ac]), np.exp(-np.minimum(d[ac], 700.0) / W["L"]), 0.0)
-            ask = np.minimum(rem[p], sup_p) * heads[cp]
-            ok = (o >= 0) & (ask > 0)
-            p, ac, cp, o, ask, sup_p = p[ok], ac[ok], cp[ok], o[ok], ask[ok], sup_p[ok]
-            if not len(p):
-                break
-            carry_p = d[ac] + W["L"] * np.log(np.maximum(S[o], 1e-300))  # (the carrying cost alone)
-            order = np.argsort(sup_p * -1.0, kind="stable")
-            got = _allocate(order, o, ask, avail)
-            nr += 1
-            cut = got < ask * (1 - 1e-9)
-            rem[p] -= got / np.maximum(heads[cp], 1e-12)
+        nr = ncap = 0
+        p = np.flatnonzero(want)
+        if len(p):
+            # one shared walk: every taker takes from its best live source, and on to the next when that one runs empty (_seek)
+            cl = FALL_CLASS.get(good, TR.GOODS[good][1])
+            L = fr.L[cl]
+            src = np.flatnonzero(S >= TR.SHOW_MIN)
+            c, emode, ekm = fr.cost(cl, fr.fetch and good in FETCH_GOODS)
+            ac = at[p]
+            o_ = np.argsort(ac, kind="stable")
+            p, ac = p[o_], ac[o_]
+            tk_off = np.searchsorted(ac, np.arange(n + 1)).astype(np.int64)
+            cp = cell[p]
             inner = ac != cp  # (the way on from the town to the pair's own cell)
-            kmv = km[ac] + (np.where(inner, pk[cp], 0.0) if pk is not None else 0.0)
-            mkv = mkm[ac] + (np.where(inner[:, None], pools["mkm"][cp], 0.0) if pk is not None else 0.0)
-            nbv = nb[ac] + (np.where(inner, pools["nb"][cp], 0) if pk is not None else 0)
-            led.record(good, p, ac, o, got, kmv, carry_p, mkv, nbv.astype(float), pe, emode, split)
-            want = np.zeros(len(rem), bool)
-            want[p[cut]] = True  # (only those cut short by an emptied source look further)
+            ikm = np.zeros(len(cell))
+            if pools is not None:
+                ikm[p] = np.where(inner, pools["km"][cp], 0.0)
+            avail = avail0.copy()
+            tr = loads.seek_arrays(good) if loads is not None else RT.seek_dummy(n, len(fr.esrc))
+            dp, do, dg, dkm, dmkm, dnb, dcar, dcr, dx, dl, nr, _, ncap = _seek(
+                src.astype(np.int64), -L * np.log(S[src]), fr.nbr_off, fr.nbr_idx, c, ekm, emode, fr.e["bord"].astype(np.int32), fr.esrc,
+                L * math.log(1.0 / FLOOR), L, tk_off, p.astype(np.int64), rem, heads[cp].astype(float), np.ones(len(p), np.bool_),
+                SEEK_CAP, avail, avail0, S, T.astype(np.int64), Cg.astype(np.int64), F.astype(float), split[3].astype(np.int64),
+                cu.astype(np.int64), ikm, cl == "precious", RT.LONG_KM, *tr)
+            if len(dp):
+                ac2, cp2 = at[dp], cell[dp]
+                inn = ac2 != cp2
+                if pools is not None:
+                    dkm = dkm + np.where(inn, pools["km"][cp2], 0.0)
+                    dmkm = dmkm + np.where(inn[:, None], pools["mkm"][cp2], 0.0)
+                    dnb = dnb + np.where(inn, pools["nb"][cp2], 0)
+                led.record(good, dp, ac2, do, dg, dkm, dcar, dmkm, dnb.astype(float), None, None, split, traced=True)
+                if loads is not None:
+                    loads.seek_done(good, tr, dg, dx, dcr, dl, emode)
         rounds[good] = nr
+        if nr and ncap:
+            capped[good] = ncap
         q = np.flatnonzero((lack > 0) & trading)
         for c, x in _sum_by(cu[q], rem[q] * w[q] / wsum_arr[cu[q]]).items():
             unmet.setdefault(c, {})[good] = x
-    return led, unmet, rounds
+    return led, unmet, rounds, capped
 
 
 def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scale: dict | None = None, quarters: set | None = None,
@@ -760,7 +907,7 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
     while True:
         fr.set_wear(worn if TRUNK else None)
         loads = RT.Loads(fr)
-        led, unmet, rounds = _exchange(fr, pools, loads)
+        led, unmet, rounds, capped = _exchange(fr, pools, loads)
         walks += 1
         if not TRUNK:
             break
@@ -802,7 +949,7 @@ def flows_at(ctx, i: int, pol: dict | None = None, att: dict | None = None, scal
     flows.sort(key=lambda f: -f[3])
     rnd = lambda d: {str(c): {g: round(x, 4) for g, x in v.items() if x >= FLOW_MIN} for c, v in d.items()}  # noqa: E731
     out = {"flows": flows, "home": rnd(home), "unmet": rnd(unmet), "war_edges": fr.war_edges, "flyer_foods": flyer_foods(ctx, fr),
-           "rounds": rounds}
+           "rounds": rounds, "capped": capped}
     out["walks"] = walks
     if routes:
         out.update(loads.finish(last_routes))
