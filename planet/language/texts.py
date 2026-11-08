@@ -10,8 +10,8 @@ four lines, book spelling (`roman`), IPA (the forms with their morph breaks), gl
 
 The fable uses only Swadesh-100 words, because a proto-language's record keeps only those (`lexicon_full` false); the
 recipe uses the people's own staple and fuel words where the lexicon has them (the cuisine data the lexicon lane put in),
-and plain words otherwise. A faith's origin myth will follow once the faiths lane's god names are merged
-(`MYTH_HOOK`)."""
+and plain words otherwise. The myth tells what the run's faith data holds and nothing more (`myth`): which god holds which
+domain, what the high god gives, which foods are forbidden because they belong to a god, and a closing invocation."""
 from __future__ import annotations
 
 from . import grammar as GR
@@ -31,8 +31,10 @@ FABLE_EN = (
 FABLE_WORDS = ("BIRD", "SIT", "TREE", "SEE", "FISH", "WATER", "SAY", "COME", "I", "GIVE", "THOU", "GOOD", "SEED", "EAT",
                "NOT")
 
-#: where the faith origin myth will plug in (faiths lane: god names and a liturgical register; not merged yet)
-MYTH_HOOK = "origin myth: waits for the faiths lane (gods.json names in the lexicon)"
+#: taboo targets (taboos.json) -> the concept naming them (English as taboos.json labels them); targets with no word are
+#: left out of the myth (eels: no 'eel' concept; 'fish' would say more than the taboo does)
+TABOO_CONCEPT = {"swine": "PIG", "carrion_birds": "BIRD", "waterfowl": "DUCK", "sea_beasts": "good:seals",
+                 "shellfish": "good:shellfish", "wheat": "crop:wheat", "cattle": "animal:cattle"}
 
 
 # ---- clause helpers --------------------------------------------------------------------------------------------------------
@@ -323,3 +325,82 @@ def recipe(lj: dict) -> tuple[str, list[dict]]:
                 subj.words + SN.cop_phrase(v, pred)
             add(6, words, "It is good.")
     return f"How to cook {fen}", out
+
+
+# ---- the faith myth ---------------------------------------------------------------------------------------------------------
+
+def _god(v: SN.View, g: dict, lid: str) -> tuple[str, str] | None:
+    """(concept, book-spelled name) of a faith god in this lect, when its name is a word of the lect."""
+    from . import faiths as FA
+    con = FA.god_concept(g["key"])
+    mine = next((n for n in g.get("names") or [] if n[0] == lid), None)
+    if mine is None or not v.w(con):
+        return None
+    return con, mine[2]
+
+
+def myth(lj: dict, faith: dict | None, taboos: list | None = None) -> tuple[str, list[dict]]:
+    """(title, sentences): what the faith holds, told in this lect. Only what the data says: each god's first domain
+    (gods.json `first_domain`), the high god's gift (faiths.GIFT), the foods forbidden because they belong to a god's
+    domain (taboos.json, origin 'divine': `taboos` = [(god label, target, English label)]), and the faith's invocation.
+    No creation story, kinship or deeds: gods.json has none."""
+    from . import faiths as FA
+    if not faith:
+        return "", []
+    v = SN.View(lj)
+    lid = lj["id"]
+    gods = [(g, _god(v, g, lid)) for g in faith.get("gods") or []]
+    gods = [(g, x) for g, x in gods if x is not None]
+    if not gods or not v.w("HOLD"):
+        return "", []
+    out = []
+
+    names = {x[1] for _g, x in gods}
+
+    def add(words, en, notes=()):
+        x = SN.finish(v, f"myth{len(out) + 1}", en, words, list(notes))
+        rs = x["roman"].split(" ")
+        if len(rs) == len(x["w"]):   # (a name is spelled with its capital, as the faith's own records spell it)
+            x["roman"] = " ".join(r[:1].upper() + r[1:] if w[1] in names else r for r, w in zip(rs, x["w"]))
+        out.append(x)
+
+    def god_np(x):
+        return SN.noun_phrase(v, x[0], gloss=x[1])
+
+    for g, x in gods[:3]:
+        dom = FA._domain_word(g["domain"])
+        if dom == "GOD" or not v.w(dom):
+            continue
+        add(tclause(v, god_np(x), "HOLD", SN.noun_phrase(v, dom, SN._the(v))),
+            f"{x[1]} holds the {SN.en(dom)}.", [f"{x[1]}: the god's name in this language"] if not out else [])
+    g0, x0 = gods[0]
+    gift = FA.GIFT.get(g0.get("domain") or "")
+    if gift and _need(v, gift, "GIVE", "WE"):
+        we = pron(v, "WE")
+        if we is not None:
+            add(give(v, god_np(x0), we, SN.noun_phrase(v, gift), None, "3SG"),
+                f"{x0[1]} gives us {SN.en(gift)}.")
+    by_label = {g["label"]: x for g, x in gods}
+    seen = set()
+    for glabel, target, label in taboos or []:
+        con = TABOO_CONCEPT.get(target)
+        x = by_label.get(glabel)
+        if x is None or con is None or con in seen or not _need(v, con, "EAT", "WE"):
+            continue
+        if v.g("NEG") is None and not v.w("NOT"):
+            continue
+        seen.add(con)
+        add(tclause(v, god_np(x), "HOLD", SN.noun_phrase(v, con, plural=True)), f"{x[1]} holds the {label}.")
+        add(tclause(v, pron(v, "WE"), "EAT", SN.noun_phrase(v, con, plural=True), neg=True, person="1PL"),
+            f"We do not eat {label}.", ["a food taboo: the animal belongs to the god's domain"])
+        if len(seen) >= 2:
+            break
+    if _need(v, "HEAR", "WE"):
+        we = pron(v, "WE")
+        if we is not None:
+            vw = SN.verb(v, "HEAR", mood="IMP")
+            SN.object_marker(v, vw[0], vw[0][vw[1]], we.person)
+            name = god_np(x0)
+            add(name.words + SN.clause(v, None, vw, we, transitive=True), f"{x0[1]}, hear us!",
+                ["the invocation that ends the rites"])
+    return f"What the gods hold ({faith['name']})", out

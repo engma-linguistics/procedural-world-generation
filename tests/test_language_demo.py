@@ -172,3 +172,12 @@ def test_demo_page_third_read_fixes():
         a["lexicon"][c]["etym_roots"] = ["r1"] if c in ("DOG", "FISH", "BIRD") else [c]
     out = DP.families(doc, a, "etym_roots", None)
     assert "1 family of 3+" in out
+
+
+def test_faith_label_reads_as_english():
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools" / "language"))
+    import sketch as SK
+    assert SK.faith_label("the sea faith of first tortles of the south of Simath") == \
+        "the sea faith of the earliest tortles of the south of Simath"
+    assert SK.faith_label("the sky faith of giant-kin stem of the west of Simath") == \
+        "the sky faith of the giant-kin of the west of Simath"

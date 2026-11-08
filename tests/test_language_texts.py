@@ -52,3 +52,22 @@ def test_recipe_uses_the_peoples_own_food():
     assert title == "How to cook millet" and len(sents) == 6
     assert sents[0]["en"] == "Take some millet." and "millet" in " ".join(w[1] for w in sents[0]["w"])
     assert all(s["roman"] for s in sents)
+
+
+def test_myth_tells_only_the_faith_data():
+    lj = _fable_lect()
+    lj["lexicon"].update({c: {"ipa": f, "roman": f, "pos": p} for c, f, p in (
+        ("name:god:7", "laut", "NAME"), ("SEA", "samudra", "N"), ("HOLD", "pegan", "V"), ("PIG", "babi", "N"),
+        ("HEAR", "dengar", "V"), ("WE", "kami", "PRON"))})
+    faith = {"name": "the faith of the sea", "gods": [
+        {"key": 7, "domain": "sea", "label": "god of sea and rain", "high": True,
+         "names": [["d1", "laut", "Laut", "lord of the sea", None]]},
+        {"key": 9, "domain": "fire", "label": "spirit of fire", "high": False, "names": []}]}
+    title, sents = TX.myth(lj, faith, [("god of sea and rain", "swine", "wild swine"), ("nobody", "swine", "x"),
+                                       ("god of sea and rain", "eels", "eels")])
+    en = [s["en"] for s in sents]
+    assert title.startswith("What the gods hold") and en[0] == "Laut holds the sea."
+    assert "Laut gives us fish." in en and "We do not eat wild swine." in en and en[-1] == "Laut, hear us!"
+    assert not any("eels" in e or "fire" in e for e in en)   # (no word for eels; the fire god has no name here)
+    assert "Laut" in " ".join(w[1] for w in sents[0]["w"]) and all(s["roman"] for s in sents)
+    assert TX.myth(lj, None) == ("", [])

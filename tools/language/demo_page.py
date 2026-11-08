@@ -437,6 +437,13 @@ def lang_section(doc, l, why_head, why, au: Audio, k: int) -> str:
                  f"the world's cuisine data where the language has a word for it).</p>"
                  f"<div class='row'><button class='say lab all' data-sel='#L{k} .rx{k}'>&#9654; the whole recipe</button></div>"
                  + text_lines(rec, l, au, f"rx{k}"))
+    title, my = SK.myth_of(doc, l)   # (the faith's myth: what the run's faith data holds, nothing added)
+    if my:
+        h.append(f"<h3>A myth: {E(title)}</h3><p class='muted'>What this people's faith data holds, told in the language: "
+                 "each god's domain, the high god's gift, the foods forbidden because they belong to a god, and the "
+                 "invocation. The run records no creation story or deeds, so none is told.</p>"
+                 f"<div class='row'><button class='say lab all' data-sel='#L{k} .mx{k}'>&#9654; the whole myth</button></div>"
+                 + text_lines(my, l, au, f"mx{k}"))
     # grammar
     h.append("<h3>The grammar in short</h3><div class='notes'>")
     for i, n in enumerate(l.get("grammar_notes") or []):

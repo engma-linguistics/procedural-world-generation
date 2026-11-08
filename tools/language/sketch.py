@@ -1020,6 +1020,13 @@ def texts_section(doc: "Doc", l: dict) -> list[str]:
             out += [f"The same fable in its proto-language ({doc.label(x['id'])}, {kyr(x.get('born_kyr'))}):", ""]
             for s in theirs:
                 out += interlinear4(s)
+    title, my = myth_of(doc, l)
+    if my:
+        out += [f"### A myth: {title}", "", "What the faith data holds, told in this language: each god's domain, the "
+                "high god's gift, the foods forbidden because they belong to a god, and the invocation. Nothing is "
+                "added: the run records no creation story or deeds.", ""]
+        for s in my:
+            out += interlinear4(s)
     title, rec = TX.recipe(l)
     if rec:
         out += [f"### A recipe: {title}", "", "A short connected text; the food is one of this people's own where the "
@@ -1497,6 +1504,44 @@ def personal_names(doc: Doc, l: dict) -> list[str]:
     return out
 
 
+def faith_label(name: str) -> str:
+    """A faith's name as the pages print it. The run names a culture "first tortles of the south of Simath" (a founding
+    culture: planet/lineages/cultures.py) and a faith after it ("the sea faith of first tortles of ..."), which reads as
+    if these were the first tortles anywhere: here "the sea faith of the earliest tortles of ...", and "the" before a
+    culture named without it ("the sky faith of the giant-kin of ...")."""
+    m = re.match(r"^(.*? faith of )(first )?(.*)$", name or "")
+    if not m:
+        return name
+    rest = m.group(3).replace("giant-kin stem", "giant-kin")
+    return m.group(1) + ("the earliest " if m.group(2) else ("" if rest.startswith("the ") else "the ")) + rest
+
+
+def _run_doc(doc: Doc, name: str) -> dict:
+    """runs/<run>/<name>.json beside the languages (cultures, gods, taboos), {} when absent; cached on the doc."""
+    cache = doc.__dict__.setdefault("_run_docs", {})
+    if name not in cache:
+        p = Path("runs") / str(doc.d.get("run") or "") / f"{name}.json"
+        cache[name] = json.loads(p.read_text(encoding="utf-8")) if doc.d.get("run") and p.is_file() else {}
+    return cache[name]
+
+
+def myth_of(doc: Doc, l: dict) -> tuple[str, list]:
+    """The lect's faith myth (texts.myth): its faith from languages.json `faiths`, the divine food taboos of its culture
+    from the run's taboos.json (each taboo's god by its label, from gods.json)."""
+    from planet.language import texts as TX
+    fa = doc.d.get("faiths") or {}
+    F = next((f for _k, f in sorted(fa.items(), key=lambda t: int(t[0])) if l["id"] in (f.get("holders") or [])), None)
+    if F is None:
+        return "", []
+    dc = _run_doc(doc, "cultures").get("deme_culture") or []
+    c = dc[l["deme"]] if l.get("deme") is not None and l["deme"] < len(dc) else None
+    beings = {b["id"]: b for b in _run_doc(doc, "gods").get("beings") or []}
+    tb = ((_run_doc(doc, "taboos").get("cultures") or {}).get(str(c)) or {}).get("taboos") or []
+    taboos = [((beings.get(t["god"]) or {}).get("label"), t["target"], t["label"]) for t in tb
+              if t.get("origin") == "divine" and t.get("god") is not None]
+    return TX.myth(l, dict(F, name=faith_label(F["name"])), taboos)
+
+
 def faith_section(doc: Doc, l: dict) -> list[str]:
     """The lect's faith (languages.json `faiths`, faiths & contact pass 3): its gods' names in this language with their
     histories and the same names in the faith's other languages, and the liturgy (the frozen sacred register, its
@@ -1507,7 +1552,7 @@ def faith_section(doc: Doc, l: dict) -> list[str]:
         return []
     F = fa[fid]
     out = ["## Gods and liturgy", "",
-           f"**Faith.** {F['name'][0].upper() + F['name'][1:]}"
+           f"**Faith.** {faith_label(F['name'])[0].upper() + faith_label(F['name'])[1:]}"
            + (f", founded {kyr(F['founded_kyr'])} ago" if F.get("founded_kyr") is not None else "")
            + (f", held by {len(F['holders'])} languages" if len(F.get("holders") or []) > 1 else "") + ".", ""]
     rows = []
