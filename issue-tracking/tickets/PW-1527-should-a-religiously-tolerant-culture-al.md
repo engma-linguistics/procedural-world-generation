@@ -1,15 +1,19 @@
 ---
+id: PW-1527
 title: "Should a religiously tolerant culture also take its neighbours' faith more readily? (today it does: the two effects cancel on minorities)"
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: culture
 effort: s
 impact: med
 found_by: lane219
 blocked_by: []
 relates: [PW-1477, PW-1489]
-refs: [planet/lineages/gods.py::RECEPT_MID, planet/lineages/gods.py::Pantheons._links, planet/lineages/gods.py::Pantheons._pulls, planet/lineages/attitudes.py, docs/review/culture/faiths/tolerance1.md, docs/review/culture/attitudes/round1.md]
+refs: ["planet/lineages/gods.py::RECEPT_MID", "planet/lineages/gods.py::Pantheons._links", "planet/lineages/gods.py::Pantheons._pulls", planet/lineages/attitudes.py, docs/review/culture/faiths/tolerance1.md, docs/review/culture/attitudes/round1.md]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -24,3 +28,7 @@ Options:
 - C. Receptiveness is fixed at 1 (no tolerance term): simplest, and drops a judgement.
 
 What misleads if never decided: Daniel's "tolerant rulers let faiths mix" does not show in the per-culture minority numbers, and a reader of the viewer may take it for a bug.
+
+## Updates
+- 2026-11-08: Desk D70 (lean A).
+- 2026-11-08: Created from inbox draft draft-religious-tolerance-receptiveness.md (found by lane219).

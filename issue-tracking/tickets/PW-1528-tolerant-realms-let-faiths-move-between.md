@@ -1,15 +1,19 @@
 ---
+id: PW-1528
 title: "Tolerant realms: let faiths move between the cultures of one realm (towns draw people from several cultures), so minorities grow under a tolerant ruler"
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: culture
 effort: m
 impact: med
 found_by: lane219
 blocked_by: []
 relates: [PW-1489, PW-1369]
-refs: [planet/lineages/gods.py::Pantheons._pulls, planet/lineages/gods.py::Pantheons._shares, planet/lineages/gods.py::urban_reader, planet/lineages/settlements.py, docs/review/culture/faiths/tolerance1.md, docs/review/culture/faiths/minorities1.md, "runs 0141d1 3e0eb4 07c755"]
+refs: ["planet/lineages/gods.py::Pantheons._pulls", "planet/lineages/gods.py::Pantheons._shares", "planet/lineages/gods.py::urban_reader", planet/lineages/settlements.py, docs/review/culture/faiths/tolerance1.md, docs/review/culture/faiths/minorities1.md, "runs 0141d1 3e0eb4 07c755"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -28,3 +32,6 @@ What misleads if never done: the viewer shows tolerant empires whose cultures ar
 mixed court has no counterpart. Belongs with the towns-and-minorities model PW-1369 deferred.
 - [ ] a culture's town share takes in the realm's faiths (from its towns' residents or its realm's cultures), at a rate that rises with the ruler's religious tolerance; sourced or labelled JUDGEMENT
 - [ ] measured over re-rolled draws: minorities above 10 % rise in tolerant realms against intolerant ones
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-tolerant-realms-mix-faiths-between-cultures.md (found by lane219).
