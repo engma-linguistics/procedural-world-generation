@@ -1,8 +1,10 @@
 ---
+id: PW-1557
 title: "No living elvish language in a24559 sounds Tolkien-Elvish: should the elf people lean towards Sindarin/Quenya sound texture?"
 type: task
 status: needs-decision
 parent: null
+milestone: null
 subsystem: culture
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: lang-find
 blocked_by: []
 relates: []
 refs: [tools/language/find.py, tools/language/data/reference_profiles.tsv, "run a24559"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## In plain words
@@ -37,3 +41,6 @@ B. Nudge the elf people's proto-language preset towards liquids and nasals (l r 
    Judge on several runs with `find.py --like sindarin --people elves` (distance under ~3 for the best elvish lect).
 
 My lean: B as a light nudge on the proto preset only, if Daniel wants elves to read as elvish; otherwise A.
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-elvish-lects-not-tolkien-elvish.md (found by lang-find).
