@@ -470,3 +470,25 @@ def test_chain_shifts_are_staged_in_drag_order():
     # parallel clusters and long-distance dissimilation
     assert R.apply(tsv("S060"), w("plenum")) == w("pjenum") and R.apply(tsv("S091"), w("peregrinus")) == w("peleɡrinus")
     assert R.apply(tsv("S093"), w("tʰitʰeːmi")) == w("titʰeːmi")
+
+
+def test_harmony_is_structure_preserving():
+    """A harmonized vowel takes the nearest vowel the language has on the target side; with none near, it stays (neutral)."""
+    class Inv:
+        vowels = from_ipa("ieaou")
+    f = lambda x: tuple(from_ipa(x))
+    assert R.harmony_onto(f("tole"), f("tolɑ"), Inv) == f("tole")     # (no back low vowel: e is neutral)
+    assert R.harmony_onto(f("tuli"), f("tulɯ"), Inv) == f("tulu")     # (ɯ is not there: u stands in)
+
+    class Inv2:
+        vowels = from_ipa("ieɛaɔou")
+    assert R.harmony_onto(f("tolɛ"), f("tolɑ"), Inv2) == f("tolɔ")
+
+
+def test_palatalized_series_has_exits():
+    """S221 makes a palatalized series before i; S233-S235 take it away again (sound lane pass 2: lʲ had no exit)."""
+    cat = {r.id: r for r in R.catalogue(HUMAN)}
+    w = tuple(from_ipa("lʲalʲinʲetʲ"))
+    assert word_ipa(R.apply(cat["S233"], w)) == "lalʲinetʲ"
+    assert word_ipa(R.apply(cat["S234"], w)) == "lʲalʲinʲet"
+    assert word_ipa(R.apply(cat["S235"], w)) == "ʎaʎinʲetʲ"

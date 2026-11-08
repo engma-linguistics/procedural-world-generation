@@ -30,6 +30,7 @@ DATA = Path(__file__).parent / "data"
 
 A_FREQ = 1.0            # exponent on the PHOIBLE frequency in the pick weight (tuned by tests: top-20 overlap, quartiles)
 ECON = 0.6              # feature-economy bonus per shared place and per shared series (saturating)
+V_ODDS_CAP = 0.98       # cap on a vowel quality's PHOIBLE frequency in its odds weight f / (1 - f)
 MIN_V_DIST = 1.5        # vowel quality floor in (height 0-6, back 0-4 x1.5, round) space
 TONAL_SHARE = None      # PHOIBLE share of inventories with tones (read from the sizes table)
 STRESS = {"none": 0.44, "initial": 0.19, "penult": 0.27, "final": 0.10}   # WALS 14A (Goedemans & van der Hulst), folded
@@ -441,6 +442,15 @@ def series_members() -> dict:
         return {}
 
 
+@functools.cache
+def v_ratios() -> dict:
+    """vowel series -> PHOIBLE's mean (members / distinct vowel qualities) where present; {} when the table lacks it."""
+    try:
+        return {r["key"]: float(r["value"]) for r in _rows("phoible_series.tsv") if r["kind"] == "v_ratio"}
+    except FileNotFoundError:
+        return {}
+
+
 SIZE_BINS = {"C": (("<=12", 0, 12), ("13-18", 13, 18), ("19-25", 19, 25), ("26+", 26, 10 ** 6)),
              "V": (("<=5", 0, 5), ("6-8", 6, 8), ("9-13", 9, 13), ("14+", 14, 10 ** 6))}   # as the table builder's
 SERIES_FLOOR = 0.002      # least share of a series in any size bin (PHOIBLE's empty bins are small samples, not zeros)
@@ -578,16 +588,22 @@ def _pick_vowels(rng, n: int, profile, have=None) -> tuple[list, dict]:
     qi = np.array([q_idx[q] for q in qual])
     qxyz = np.array([_vq(q) for q in q_idx], float)                      # per distinct quality
     plain = np.array([s == q for s, q in zip(segs, qual)])
+    # Qualities are weighted by their PHOIBLE odds f / (1 - f), not f: drawing a handful without replacement by f flattens
+    # the shares (i, a, u fall to ~0.86 and ɑ, ə, ɨ rise to twice PHOIBLE's), while odds weights make the draw close to
+    # conditional Poisson sampling, whose inclusion shares track f (sound lane pass 2)
+    fq = np.array([x for _, x in pool])
+    base = np.where(plain, base / (1.0 - np.minimum(fq, V_ODDS_CAP)), base)
     _, series = np.unique([f"{s.length}.{s.nasal}.{s.phonation}" for s in segs], return_inverse=True)
     series_cnt = np.zeros(series.max() + 1)
     have_q = np.zeros(len(q_idx), bool)
     blocked_q = np.zeros(len(q_idx), bool)                               # within the floor of a chosen quality
     avail = base > 0
     chosen: list[int] = []
-    while len(chosen) < n:
-        ok = avail & np.where(plain, ~blocked_q[qi], have_q[qi])
+
+    def pick(mask) -> bool:
+        ok = avail & np.where(plain, ~blocked_q[qi], have_q[qi]) & mask
         if not ok.any():
-            break   # the system is full
+            return False   # the system is full
         bonus = np.where(plain, 1.0, 1 + ECON * np.minimum(series_cnt[series], 3) / 3)
         w = base * bonus * ok
         i = int(rng.choice(len(w), p=w / w.sum()))
@@ -596,9 +612,32 @@ def _pick_vowels(rng, n: int, profile, have=None) -> tuple[list, dict]:
         if plain[i]:
             have_q[qi[i]] = True
             d = np.sqrt(((qxyz - qxyz[qi[i]]) ** 2).sum(axis=1))
-            blocked_q |= d < MIN_V_DIST
+            np.logical_or(blocked_q, d < MIN_V_DIST, out=blocked_q)
         else:
             series_cnt[series[i]] += 1
+        return True
+
+    # Vowel series take slots (sound lane pass 2). PHOIBLE's vowel count includes long and nasal vowels, but its number of
+    # distinct qualities hardly depends on them (median 6 with or without a long series). So a proto with a vowel series
+    # first picks n / (1 + sum of the series' member-per-quality ratios) qualities, then the series members on those
+    # qualities; a proto without one spends all n on qualities, as PHOIBLE's series-less inventories do. Before this every
+    # slot went to a new quality whenever the plain picks won the weight race, so rare qualities (ɑ, ɤ, ɘ) entered too
+    # often (pass 1's overuse regression).
+    vser = sorted(k for k in (have or ()) if k.endswith("_v"))
+    ratio = v_ratios()
+    if vser and ratio:
+        nq = max(2, int(round(n / (1.0 + sum(ratio.get(k, 1.0) for k in vser)))))
+        while len(chosen) < nq and pick(plain):
+            pass
+        for k in vser:
+            mask = np.array([SERIES[k](x) for x in segs]) & ~plain
+            m = max(1, int(round(ratio.get(k, 1.0) * int(have_q.sum()))))
+            for _ in range(m):
+                if len(chosen) >= n or not pick(mask):
+                    break
+    allm = np.ones(len(segs), bool)
+    while len(chosen) < n and pick(allm):
+        pass
     return [segs[i] for i in chosen], {segs[i]: float(cost[i]) for i in chosen}
 
 

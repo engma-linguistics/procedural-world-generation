@@ -5,6 +5,7 @@
 # n = 2175 inventories, one per Glottocode (first InventoryID), as phoible_segments.tsv.
 # kind=series: value = share of inventories with at least one member of the series (the predicates of planet/language/inventory.py SERIES over percepts.parse_segment of each phoneme); extra = mean members where present.
 # kind=series_bin: the same share among inventories in one size bin (key series|C<bin> for consonant series by consonant count, series|V<bin> for vowel series by vowel count); extra = inventories in the bin.
+# kind=v_ratio: value = mean of (members of the vowel series / distinct vowel qualities) over inventories with the series; extra = those inventories (sound lane pass 2: how many vowel slots a series takes).
 # kind=rare_c_share: value = mean share of an inventory's consonants with PHOIBLE frequency < 0.1, by consonant count bin; extra = inventories in the bin.
 kind	key	value	extra
 series	labial_velar	0.1522	2.37
@@ -24,6 +25,9 @@ series	geminate	0.0487	11.99
 series	long_v	0.3733	5.66
 series	nasal_v	0.2179	6.03
 series	phonation_v	0.0179	9.85
+v_ratio	long_v	0.8994	812
+v_ratio	nasal_v	0.8683	474
+v_ratio	phonation_v	1.3550	39
 rare_c_share	<=12	0.0733	134
 rare_c_share	13-18	0.1266	566
 rare_c_share	19-25	0.1629	805

@@ -288,6 +288,22 @@ def test_series_shares_near_phoible():
     assert ej and sum(sum(I.SERIES["ejective"](s) for s in v.consonants) for v in ej) / len(ej) >= 3  # (pʼ tʼ kʼ, not a lone kʼ)
 
 
+def test_vowel_qualities_follow_phoible():
+    """Vowel series take slots: the number of distinct vowel qualities stays near PHOIBLE's (median 6) whether or not a
+    proto has long or nasal vowels, and each quality's share is near PHOIBLE's (i, a, u near-universal; ɑ not twice its
+    share), sound lane pass 2."""
+    rng = np.random.default_rng(11)
+    n = 800
+    invs = [I.draw_inventory(rng, P.HUMAN) for _ in range(n)]
+    nq = [len({I._quality(v) for v in inv.vowels}) for inv in invs]
+    assert 5.5 <= float(np.median(nq)) <= 6.5 and 5.8 < float(np.mean(nq)) < 7.0, (np.median(nq), np.mean(nq))
+    with_long = [q for q, inv in zip(nq, invs) if any(v.length for v in inv.vowels)]
+    assert with_long and float(np.median(with_long)) <= 6.5
+    cnt = collections.Counter(to_ipa(I._quality(v)) for inv in invs for v in {I._quality(x) for x in inv.vowels})
+    for q, lo, hi in (("i", 0.9, 1.0), ("a", 0.88, 1.0), ("u", 0.88, 1.0), ("ɑ", 0.03, 0.17), ("ə", 0.12, 0.36)):
+        assert lo <= cnt[q] / n <= hi, (q, cnt[q] / n)
+
+
 def test_small_inventories_use_common_sounds():
     """Small inventories are built from common sounds (PHOIBLE: ~7% of the consonants of a <= 12-consonant inventory are
     in fewer than 10% of languages)."""
@@ -332,3 +348,4 @@ def test_tonal_lect_hears_loans_with_tone():
     a_hi = replace(from_ipa("a")[0], tone=3)
     heard = P.hear_word((from_ipa("p")[0], a_hi), P.HUMAN, I.segments(inv))
     assert heard[1].tone == 3
+

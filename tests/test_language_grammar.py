@@ -691,7 +691,7 @@ def _real_proto(seed, **typ_over):
 
 def test_clusivity_makes_an_inclusive_we_and_loses_it():
     kinds = set()
-    for s in range(6):
+    for s in range(12):   # (a window wide enough for both kinds under any inventory draw)
         rng, inv, lx, g = _real_proto(30 + s, clusivity="yes")
         inc = lx.get("WE (INCLUSIVE)")
         assert inc is not None and inc.form != lx["WE"].form

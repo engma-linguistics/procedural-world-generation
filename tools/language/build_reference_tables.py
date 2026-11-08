@@ -178,7 +178,7 @@ def build_phoible_series(raw: Path, out: Path) -> None:
     share of an inventory's consonants that are rare world-wide (PHOIBLE frequency < 0.1), the target for small
     inventories built from common sounds (sound lane, 2026-11-08)."""
     sys.path.insert(0, str(ROOT))
-    from planet.language.inventory import SERIES, series_of
+    from planet.language.inventory import SERIES, _quality, series_of
     from planet.language.percepts import parse_segment
 
     path = raw / "phoible" / "phoible.csv"
@@ -207,8 +207,10 @@ def build_phoible_series(raw: Path, out: Path) -> None:
     bins = {"<=12": [], "13-18": [], "19-25": [], "26+": []}
     has_bin = Counter()
     n_bin = Counter()
+    v_ratio: dict = defaultdict(list)
     for iid in invs:
         got = Counter()
+        quals = set()
         cons = [ph for ph, cls in set(inv_rows[iid]) if cls == "consonant"]
         nvow = sum(cls == "vowel" for ph, cls in set(inv_rows[iid]))
         for ph, cls in set(inv_rows[iid]):
@@ -224,7 +226,11 @@ def build_phoible_series(raw: Path, out: Path) -> None:
                 continue
             for k in series_of(sg):
                 got[k] += 1
+            if sg.kind == "V":
+                quals.add(_quality(sg))
         for k, c in got.items():
+            if k.endswith("_v") and quals:
+                v_ratio[k].append(c / len(quals))
             has[k] += 1
             members[k] += c
         nc = len(cons)
@@ -238,6 +244,7 @@ def build_phoible_series(raw: Path, out: Path) -> None:
             b = "<=12" if nc <= 12 else "13-18" if nc <= 18 else "19-25" if nc <= 25 else "26+"
             bins[b].append(sum(seg_count[ph] / n < 0.1 for ph in cons) / nc)
     rows = [["series", k, fmt(has[k] / n), fmt(members[k] / has[k], 2) if has[k] else ""] for k in SERIES]
+    rows += [["v_ratio", k, fmt(statistics.fmean(v)), len(v)] for k, v in sorted(v_ratio.items())]
     rows += [["rare_c_share", b, fmt(statistics.fmean(v)) if v else "", len(v)] for b, v in bins.items()]
     for k in SERIES:
         kind = "V" if k.endswith("_v") else "C"
@@ -253,6 +260,8 @@ def build_phoible_series(raw: Path, out: Path) -> None:
             "planet/language/inventory.py SERIES over percepts.parse_segment of each phoneme); extra = mean members where present.",
             "kind=series_bin: the same share among inventories in one size bin (key series|C<bin> for consonant series by "
             "consonant count, series|V<bin> for vowel series by vowel count); extra = inventories in the bin.",
+            "kind=v_ratio: value = mean of (members of the vowel series / distinct vowel qualities) over inventories with "
+            "the series; extra = those inventories (sound lane pass 2: how many vowel slots a series takes).",
             "kind=rare_c_share: value = mean share of an inventory's consonants with PHOIBLE frequency < 0.1, by consonant count "
             "bin; extra = inventories in the bin.",
         ],

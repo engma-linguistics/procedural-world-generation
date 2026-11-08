@@ -437,7 +437,51 @@ def apply(rule: Rule, word, stress_index=None, stem_index=None, inventory=None) 
         out = _apply_one(step, out, stress_index, stem_index)
     if out is not w and out != w:
         out = snap_word(out)
+        if inventory is not None and rule.family == "harmony":
+            out = harmony_onto(w, out, inventory)
     return out
+
+
+HARMONY_SNAP_MAX = 2.3   # furthest an inventory vowel may lie from harmony's target quality to stand in for it ((height,
+#                          back x1.5, round) units, as inventory.vowel_distance): e > ɑ may become ɔ, never o
+
+
+def _vq(v) -> tuple:
+    return (v.height, v.back * 1.5, v.round)
+
+
+def _side(v) -> int:
+    return 0 if v.back < 2 else 1 if v.back == 2 else 2
+
+
+def harmony_onto(before: tuple, after: tuple, inventory) -> tuple:
+    """Harmony is structure-preserving: an affix vowel alternates between vowels the language already has (Turkish e/a,
+    i/ı/ü/u; Finnish ä/a, ö/o, y/u). A harmonized vowel whose quality is not among the inventory's vowels takes the
+    nearest vowel quality the inventory has on the same backness side (front, central, back); with none there it stays as
+    it was. Before this (sound lane pass 2) harmony made new vowels, e > ɑ or o > ɤ, which then spread through whole
+    families (ɑ in 26% of living lects, PHOIBLE 7%)."""
+    if len(before) != len(after):
+        return after
+    quals = {replace(v, length=0, nasal=0, tone=0, phonation=0, source2=0)
+             for v in getattr(inventory, "vowels", ()) if v.kind == "V"}
+    if not quals:
+        return after
+    out = list(after)
+    for i, (a, b) in enumerate(zip(before, after)):
+        if b == a or b.kind != "V":
+            continue
+        q = replace(b, length=0, nasal=0, tone=0, phonation=0, source2=0)
+        if q in quals:
+            continue
+        t = _vq(q)
+        side = [(sum((p - r) ** 2 for p, r in zip(_vq(x), t)) ** 0.5, to_ipa(x), x) for x in quals if _side(x) == _side(q)]
+        best = min(side, default=None)
+        if best is None or best[0] > HARMONY_SNAP_MAX:
+            out[i] = a   # (no partner near enough: the vowel is neutral, as Finnish e and i are)
+            continue
+        x = best[2]
+        out[i] = replace(b, height=x.height, back=x.back, round=x.round)
+    return tuple(out)
 
 
 # ---------------------------------------------------------------------------------------------- output hygiene
