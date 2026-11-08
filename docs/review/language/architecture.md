@@ -466,6 +466,19 @@ word or gram the lect has, every order a typology feature.
   for sex genders, ANIM/INAN for animacy, CL*n* otherwise (and CL*n* whenever the noun's own class is missing and the
   engine falls back on another).
 
+- **Grammar phase A sentences** (2026-11-08): 'the woman gives the child a fish' (`s_give`: DAT case or adposition if
+  the lect has a DAT gram, else serial 'take X give R' if `serial_verbs` yes, else a double object); an imperative
+  (`s_imperative`: the bare stem, no subject; no mood gram exists); a passive where a PASS gram lives (`s_passive`);
+  serial 'take X come' = bring (`s_serial`, `serial_verbs` yes; one subject, the first verb carries the person marker;
+  OV puts each object before its verb); reduplication (`s_redup`, from `processes.redup`: the copy made by
+  `grammar.reduplicant`, glossed ITER/INTS/CONT; an exemplar verb takes its stored cell); split ergativity by person
+  (`s_split`: 'the man sees me', ERG on the noun doer, ACC on the pronoun object; `flagging` decides ERG/ACC for every
+  clause, so an aspect split shows ERG in the tense sentence when its TAM is PERF or PAST and ACC in the transitive one);
+  inclusive 'we' (`s_clusive`, glosses 1PL.INCL and 1PL.EXCL). Notes added: Commands, Pronouns, Voice, Reduplication,
+  Serial verbs, Giving (two objects), Numerals (`numeral_phrase`: decimal 11 'ten one', 30 'three ten' or 'ten three'
+  by the numeral's noun order; vigesimal 30 'twenty ten', 40 'two twenty'), and the Case note names the split. The lect
+  record carries `processes` (`{split?, redup?}`, only when non-empty). About +2.6 KB per living lect.
+
 Output, per living lect (`enrich`): `sentences: [{id, en, w: [[form, gloss]...], ipa, roman, q?, note?}]` (`ipa`: the whole
 sentence after joining, words separated by spaces, for `/api/speak?sentence=1`; `q`: 1 on a yes/no question) and
 `grammar_notes: [{topic, text, ex: [[form line, gloss line, English]]}]` (Number, Case, Gender and noun classes, Tense and

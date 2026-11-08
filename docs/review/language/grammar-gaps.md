@@ -550,4 +550,4 @@ Against Wikipedia's grammatical-category list, after A-C:
 - [x] 6 person paradigm as a set: one-of-six paradigms 60% > 12% of agreeing lects.
 - [x] degrammaticalization (`DEGRAM`), logged as events.
 - [x] 11 synthesis measured vs WALS 22A: in `for-daniel.md` as a decision.
-- [ ] 5 give and imperative sentences, and the notes: waiting for lang-finish to reach lang-design.
+- [x] 5 and task 8: give, imperative, passive, serial-verb, reduplication, split-ergative and inclusive sentences, with notes (Commands, Pronouns, Voice, Reduplication, Serial verbs, Giving, Numerals; Case names the split).

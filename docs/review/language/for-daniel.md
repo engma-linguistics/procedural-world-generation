@@ -100,3 +100,11 @@ hand. Your call.
 - The lexicon's own compound recipes build 6-9 as 'five + one' ... and 10 as 'hand + two' in lects whose counting base
   is decimal (seen in d21). Quinary-built digits in a decimal system are real (many languages), but it ignores the base
   feature; the recipes in data/compounds.tsv could be gated on `numeral_base` later.
+- Sample sentences (task 8): every lect's imperative is the bare stem, because no mood gram exists yet (phase B's mood
+  item will vary it). The 1PL agreement marker came from the old 'we', so in a lect with clusivity it sits beside the
+  inclusive pronoun unchanged ('u fish muh-eat'): plausible (many languages have one 1PL agreement), but clusive
+  agreement is not modelled. The give sentence uses the dative only when a DAT gram lives; otherwise a serial or a
+  double object, never a locative or allative recipient (a reasonable default; Basque/Latin-type dative-as-allative
+  syncretism is not shown).
+- Demo candidates: d191 (split ergativity by person, VSO: 'see-3SG ERG-man DEF ACC-1SG'), d10 (inclusive/exclusive),
+  d1 (whole-stem continuous reduplication), d2 (serial 'take ... come'), from the scratch pass, not the shipped run.
