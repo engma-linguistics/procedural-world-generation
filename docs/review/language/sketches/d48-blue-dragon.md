@@ -31,7 +31,7 @@ The line of descent, oldest first:
 | the blue dragon proto-language, 20 kyr ago | 34: n ɳ n‼ p b d̪ t d ɖ k t̪ʰ tʰ ʈʰ cʰ kʰ ʈʂ tsʰ tʃʰ cçʰ s z ʃ ʒ h ɻ j w j‼ w‼ l ɭ l‼ r r‼ | 37: i i‼ iː i‼ː ɨ ɨː u u‼ uː u‼ː ɪ ɪ‼ ɪː ʊ˯ e e‼ eː e‼ː o˯ oː˯ ə ə‼ əː ɛ ɛ‼ ɛː ɛ‼ː ɔ ɔ‼ ɔː ɔ‼ː a a‼ aː a‼ː ä ɑ | none |
 | now | 32: n n‼ p d̪ t ɖ k t̪ʰ tʰ ʈʰ cʰ kʰ tʃ dʒ ʈʂ tsʰ tʃʰ cçʰ s ʃ θ h ɻ j w j‼ w‼ l ɭ l‼ r r‼ | 33: i i‼ iː i‼ː ɨ ɨː u u‼ uː ɪ ɪ‼ ʊ˯ e e‼ eː o o˯ oː˯ ə ə‼ ɛ ɛ‼ ɛː ɔ ɔ‼ ɔː ɔ‼ː a a‼ aː a‼ː ä ɑ | none |
 
-**Contact.** Sound changes taken up from neighbours by the wave along the line: bronze dragon 10 (12), bronze dragon 5 (8), gnome 20 (5), white dragon 1 (4), brass dragon 9 (3), gnome 1 (3). Loan events in the present vocabulary (by donor): bronze dragon 10 (16), halfling 14 (12), dragonborn 92 (12), gnome 20 (7), gnome 1 (7), dragonborn 10 (6).
+**Contact.** Sound changes taken up from neighbours by the wave along the line: bronze dragon 10 (12), bronze dragon 5 (8), gnome 20 (5), white dragon 1 (4), brass dragon 9 (3), gnome 1 (3). Loan events in the present vocabulary (by donor): bronze dragon 10 (16), halfling 14 (12), dragonborn 92 (12), gnome 20 (7), gnome 1 (7), human 2 (6).
 
 ### Sound changes
 
@@ -117,7 +117,7 @@ Unrounded vowels come before the dot, rounded after it. Length: long vowels ɔː
 No phonemic tone.
 Syllable shapes (share of syllables in the word-shape model): CV 33%, CVC 29%, V 4%, VC 3%. At most 1 consonant(s) before the vowel and 1 after it.
 Stress falls on the first syllable. The IPA on this page marks it with ˈ before the stressed syllable.
-Core words average 1.31 syllables (2.9 sounds); 31% of words share their form with another word.
+Core words average 1.32 syllables (2.9 sounds); 31% of words share their form with another word.
 
 ### Allophony
 
@@ -504,7 +504,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 | red | ti | ti | inherited |
 | road | niː | nii | borrowed |
 | root | kɨ | kï | inherited |
-| round | ˈʃɛkwi | shekwi | borrowed |
+| round | ˈtaʈʂse‼ʃit | tatsserhshit | inherited, remade |
 | sand | ta‼ː | taarh | inherited |
 | say | ˈj‼eiho˯ | yrheihomh | inherited, remade |
 | sit | ˈlɨe | lïe | inherited |
@@ -521,7 +521,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 
 </details>
 
-76% of the core list is inherited unchanged in meaning from the proto-language (the rest was coined, compounded, shifted or borrowed since).
+77% of the core list is inherited unchanged in meaning from the proto-language (the rest was coined, compounded, shifted or borrowed since).
 
 ### Numerals
 
@@ -570,7 +570,7 @@ The largest: **mother** *n‼ä* (N, coined 20 kyr ago in the blue dragon proto-
 
 ### Families a historian reconstructs
 
-The roots a historian reconstructs: every word's family as it was when the word was made, carried forward however opaque it has become since (per-word `etym_roots`, the *bher- 'carry' > burden view). 33 families of 3+ words; 43% of the 727 words share a root with another word.
+The roots a historian reconstructs: every word's family as it was when the word was made, carried forward however opaque it has become since (per-word `etym_roots`, the *bher- 'carry' > burden view). 34 families of 3+ words; 43% of the 727 words share a root with another word.
 
 The largest: **hand** *nu‼ːk* (N, coined 20 kyr ago in the blue dragon proto-language); 12 words have it as their main root, 13 contain it.
 
@@ -919,9 +919,9 @@ Shared-origin share: the share of core-100 meanings whose words go back to the s
 
 | lect | people | split | shared origin | intelligibility |
 | --- | --- | --- | --- | --- |
-| Kyene (dragonborn 10, the north-east of Trojanel) <sub>d172</sub> | dragonborn | not related by descent | 2% | – |
-| Tufi (dragonborn 17, the north of Trojanel) <sub>d226</sub> | dragonborn | not related by descent | 2% | – |
 | Ebi Aviyna (halfling 14, the east of Simath) <sub>d479</sub> | halfling | not related by descent | 2% | – |
 | Gweaf (gnome 13, the west of Simath) <sub>d526</sub> | gnome | not related by descent | 2% | – |
 | Gweaf (gnome 13, the west of Simath) <sub>d526.1</sub> | gnome | not related by descent | 2% | – |
 | Itili (gnome 15, the west of Simath) <sub>d573</sub> | gnome | not related by descent | 2% | – |
+| Iala (gnome 26, the west of Simath) <sub>d793</sub> | gnome | not related by descent | 2% | – |
+| Kyekyegyu (dragonborn 107, the west of Simath) <sub>d828</sub> | dragonborn | not related by descent | 2% | – |

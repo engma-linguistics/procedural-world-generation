@@ -32,7 +32,7 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   ('bird', 'birds', 'not'; myth and word list); halfling **lifukuwu** ('daughter', word families). Fix: a blocklist
   check on book spellings (substring, case-folded) in `planet/language/romanize.py`, re-rolling the spelling choice
   or picking another word for showcase texts; run it in `demo_page.py` checks.
-  *Done (lang-last, ebc40791):* blocklist `planet/language/data/offensive_substrings.txt` (28 entries; case-folded,
+  *Done (lang-last, ebc40791):* blocklist `planet/language/data/offensive_substrings.txt` (28 entries at first, cut to 14 slurs by the owner 11-08 (11759dde): plain swearing such as "shit" inside a word stays; case-folded,
   diacritics stripped, both registers). After the history, words whose spelling hits it are renewed at the source
   (`lexicon.offense_repair` via `history.offense_pass`: loan, derivation, fresh root; god names an epithet); given names
   are redrawn. One spelling per phoneme leaves no alternative spelling for a word, so forms with no word behind them

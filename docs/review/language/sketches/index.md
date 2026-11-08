@@ -55,7 +55,7 @@ No language in the run can reach English's CCCVCCCC syllable: the engine's large
 
 ## What the output does and does not record
 
-Recorded and used by these pages: allophones (229 rules across the living lects, shown under Allophony); root families (391089 roots; each word lists its roots, main first, and the word-family section uses them).
+Recorded and used by these pages: allophones (229 rules across the living lects, shown under Allophony); root families (390902 roots; each word lists its roots, main first, and the word-family section uses them).
 
 Things a Wikipedia article would have that these pages cannot show, because the languages file does not hold them: diphthongs as units; intonation; morphophonology beyond the four exemplar nouns and verbs; any sentence-level data (the phrases are assembled from word order and markers); separate inclusive and exclusive 'we' forms, even where the typology says the language has the distinction; case forms of pronouns; speaker numbers beyond the deme's population estimate; dialect-level variation inside a lect.
 

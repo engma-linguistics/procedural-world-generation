@@ -34,7 +34,7 @@ The line of descent, oldest first:
 
 **Shift away.** 2.5 kyr ago most of this deme took up halfling 41; this language lives on beside it.
 
-**Contact.** Sound changes taken up from neighbours by the wave along the line: gnome 13 (25), gnome 1 (17), halfling 28 (10), halfling 41 (5), human 33 (4), human 14 (4). Loan events in the present vocabulary (by donor): halfling 41 (179), gnome 1 (163), gnome 1 (79), gnome 13 (71), elf 2 (52), halfling 41 (38).
+**Contact.** Sound changes taken up from neighbours by the wave along the line: gnome 13 (25), gnome 1 (17), halfling 28 (10), halfling 41 (5), human 33 (4), human 14 (4). Loan events in the present vocabulary (by donor): halfling 41 (180), gnome 1 (163), gnome 1 (80), gnome 13 (71), elf 2 (52), halfling 41 (38).
 
 ### Sound changes
 
@@ -131,7 +131,7 @@ Unrounded vowels come before the dot, rounded after it. Length: long vowels oː 
 The language has 2 phonemic tones, marked on every vowel in the IPA here.
 Syllable shapes (share of syllables in the word-shape model): CV 33%, CVC 29%, CVCC 6%, V 4%, VC 3%. At most 1 consonant(s) before the vowel and 2 after it.
 Stress falls on the next-to-last syllable. The IPA on this page marks it with ˈ before the stressed syllable.
-Core words average 1.57 syllables (3.5 sounds); 15% of words share their form with another word.
+Core words average 1.58 syllables (3.5 sounds); 15% of words share their form with another word.
 
 ### Allophony
 
@@ -579,7 +579,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 | come | sʷo˦ | swo | inherited, remade |
 | dry | sʲi˦ | syi | borrowed |
 | ear | ˈuː˦ji˨ɫ | uuyill | inherited, remade |
-| earth (soil) | lu˨ | lu | borrowed |
+| earth (soil) | reː˦ˈni˦t.ʃi˦t | rreenit·shit | borrowed |
 | fat (organic substance) | a˨w | aw | borrowed |
 | feather | sæ˦ | sae | inherited |
 | flesh or meat | ˈsa˨li˨ | sali | borrowed |
@@ -606,7 +606,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 | nose | ˈo˨u˨ɫ | oull | coined |
 | raining or rain | ˈʃe˦i˦ʔ | shei' | borrowed |
 | red | ʔɔː˦f | oof | coined |
-| road | ˈmi˦ʔu˦p | mi'up | borrowed |
+| road | ʃi˨t | shit | borrowed |
 | root | i˦ɭ | iḷ | inherited, remade |
 | round | ruː˦ȵa˨ˈbʷo˦u˦ʔ | rruuňapwou' | coined |
 | sand | sa˦la˦ˈwa˦rːa˦f | salawarrraf | borrowed |
@@ -1035,9 +1035,9 @@ Shared-origin share: the share of core-100 meanings whose words go back to the s
 
 | lect | people | split | shared origin | intelligibility |
 | --- | --- | --- | --- | --- |
-| Fyi'iwsyil (gnome 1, the west of Simath) <sub>d445.1</sub> | gnome | 2.5 kyr ago | 73% | 32% |
-| Fibi (gnome 20, the west of Simath) <sub>d669.1</sub> | gnome | 2.5 kyr ago | 71% | 11% |
+| Fyi'iwsyil (gnome 1, the west of Simath) <sub>d445.1</sub> | gnome | 2.5 kyr ago | 74% | 32% |
+| Fibi (gnome 20, the west of Simath) <sub>d669.1</sub> | gnome | 2.5 kyr ago | 73% | 11% |
 | Uab (halfling 42, the east of Simath) <sub>d869</sub> | halfling | 5.5 kyr ago | 42% | 10% |
+| Gweaf (gnome 13, the west of Simath) <sub>d526.1</sub> | gnome | 5.5 kyr ago | 42% | – |
 | Ebi Aviyna (halfling 14, the east of Simath) <sub>d479</sub> | halfling | 5.5 kyr ago | 41% | 7% |
-| Gweaf (gnome 13, the west of Simath) <sub>d526.1</sub> | gnome | 5.5 kyr ago | 41% | – |
-| Ialiiň (halfling 41, the west of Simath) <sub>d776.1</sub> | halfling | not related by descent | 38% | – |
+| Ialiiň (halfling 41, the west of Simath) <sub>d776.1</sub> | halfling | not related by descent | 39% | – |
