@@ -2,7 +2,7 @@
 id: PW-1490
 title: "Tech tree: writing, states and law spread as fast as copper; nearly every people with hands holds the whole core ladder by the present"
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: later
 subsystem: culture
@@ -60,5 +60,6 @@ Not v1-blocking.
 - [ ] the fast techs (crops, copper, iron) unchanged within draw scatter
 
 ## Updates
+- 2026-11-07: Status todo -> done. Lanes 207/207b merged (suite 1064): arm S, carrying, living memory. Neighbour lag measured: Earth-order (round3.md).
 - 2026-11-07: Status needs-decision -> todo. Daniel 11-07: D60 B. His real concern: a people in suitable land, surrounded by neighbours who hold a tech, lagging for hundreds of years or more. Measure that lag (years from first neighbour holding it to taking it up, for techs its land allows) by era, and make sure B doesn't create it. Use the Ethnographic Atlas only as a loose guide: say which era it describes.
 - 2026-11-07: Created from inbox draft draft-slow-techs-spread-like-crops.md (found by scout-206).

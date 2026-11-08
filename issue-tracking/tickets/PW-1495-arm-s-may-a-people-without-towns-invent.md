@@ -1,4 +1,5 @@
 ---
+id: PW-1495
 title: "Arm S: may a people without towns invent a state tech, or only not take one up? (0141d1's writing starts 0.6 kyr later)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-207b
 blocked_by: []
 relates: [PW-1490]
 refs: [docs/review/culture/techtree/round3.md, docs/review/culture/techtree/round3/compare3b.py, "planet/lineages/techtree.py::Calendar.can", "planet/lineages/techtree.py::Calendar.gated", "runs 0141d1 3e0eb4 07c755"]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -36,3 +39,6 @@ Recommendation: (a). The ledger's first town is the model's own evidence that th
 was the early outlier.
 
 **What breaks if never done.** Nothing. 0141d1 simply prints later than before.
+
+## Updates
+- 2026-11-07: Created from inbox draft draft-settled-peoples-lack-state-techs.md (found by lane-207b).

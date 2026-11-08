@@ -1,4 +1,5 @@
 ---
+id: PW-1494
 title: "Sea branch: merfolk reach reef towns but rarely vent metal or records; sea peoples still 10-19 kyr behind on the world clock"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-207
 blocked_by: []
 relates: [PW-1490]
 refs: [docs/review/culture/techtree/round3.md, docs/review/culture/techtree/round3/lag.py, planet/lineages/samples/techtree.toml, "planet/lineages/land.py::_sea_goods", "planet/lineages/techtree.py::is_sea", "planet/lineages/techtree.py::rate_of", "runs 07c755 0141d1 3e0eb4"]
+created: 2026-11-07
+updated: 2026-11-07
 ---
 
 ## Description
@@ -31,3 +34,6 @@ needs its upper rungs.
 
 - [ ] Decide whether "behind" for a people with its own branch should be read on its own ladder (rung reached).
 - [ ] If the upper rungs should come more often: check the pool (S) of the sea peoples against the anchor before touching rates.
+
+## Updates
+- 2026-11-07: Created from inbox draft draft-sea-branch-upper-rungs-rare.md (found by lane-207).

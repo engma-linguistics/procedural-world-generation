@@ -325,3 +325,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-07: scout 206 merged (docs only): PW-1485 closed (D58 A); nobody far behind without cause; admin techs too universal (~95% of handed peoples hold writing) -> PW-1490, desk D60 lean B.
 - 2026-11-07: Daniel D60 B (PW-1490: state techs need towns; measure neighbour lag first) + sea peoples' tech branch (PW-1491). Lane 207 started.
 - 2026-11-07: lane 205 merged (PW-1489 minority faiths; majority faiths identical on 0141d1/3e0eb4/07c755; gods format procgen-gods/2, showcase gods.json rebuilt). Suite 1060. PW-1492 (timeline ignores minorities), PW-1493 wontdo (keep merge cap).
+- 2026-11-07: lanes 207+207b merged (PW-1490 D60 B state techs need towns, carried by townless peoples, 3-generation memory; PW-1491 sea branch). Neighbour lag: 0-1% never after 2 kyr, median 400-700 yr, Earth order. Suite 1064.
