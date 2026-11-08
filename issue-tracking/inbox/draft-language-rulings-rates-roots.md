@@ -1,7 +1,7 @@
 ---
 title: "Language lane rulings: sisters vs horizon (one rate, two checks), per-generation exponent for short-lived peoples, felt vs etymological word families"
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 subsystem: culture
 effort: s
@@ -49,4 +49,17 @@ it was 32 families, the largest 15 words, 62%. Most proto derivations are older 
 - C: a longer opacity (6-10 kyr) for roots only.
 - Lean: B. A linguist reader wants both the speaker's view and the reconstruction view.
 
-- [ ] rulings recorded; checks/bars and the root fields set to match
+## Rulings (Daniel, 2026-11-07)
+Final run numbers at the time of ruling: sisters strict share 0.499 (bar 0.5), human horizon 10.7 kyr (target 6-10).
+1. **A: accept both** as within noise. No rate retune.
+2. **Soften below human generation length**: rate x (28 / generation) ** 0.7 for generations shorter than 28 years;
+   per-generation (exponent 1) at and above it.
+3. **B: store both** felt `roots` and historian's `etym_roots`; pages show both.
+
+Next round (all chosen): shift polysemy guard (brother = sister, I = we) and tone re-phonemicisation; diminutive
+overuse together with coinage share; overused segments (sound check over all lects, attested exits for ɹ ʁ ɫ ɦ);
+languages.json size and pass speed; larger vocabulary, more grammar per language, sample utterances; first-class
+audio in the UI (utterances, not only single words).
+
+- [x] rulings recorded
+- [ ] generation softening, `etym_roots`, and the pages updated to match
