@@ -512,3 +512,17 @@ Norde 2009). Three phases, one lane at a time on grammar.py to avoid conflicts:
 - **Phase C (morphology types):** 13 inflection classes and cumulative exponence (keep merged categories);
   14 applicative, reciprocal, antipassive; 15 infixes, reduplication, stem change across the lexicon; 16 second-position
   clitics and topic fronting; 17 switch-reference; 18 noun incorporation; 19 Austronesian-style voice.
+
+### Phase A progress (branch `lang-gram-a`, 2026-11-08)
+
+- [x] 1 `_unrealised` per function (`PULL_GROUP`), ergative from ABL/LOC/GEN/INS and agentive 'near, with', DAT > ACC,
+  lexical ABL/ALL/INS sources, split ergativity by person or aspect (`Grammar.processes["split"]`); alignment shown as
+  neutral when no ACC/ERG marker lives. ACC 10% > 40% of lects, ERG 0% > 15%, DU 5% > 10%, ABL 0% > 10%, ALL 5% > 9%.
+- [x] 2 inclusive/exclusive 'we' (WE (INCLUSIVE) from we + you, I + you or a root; sketch pronoun table): 0% > 54%.
+- [x] 3 reduplication (a process with its own verb paradigm cell: 74% of lects) and counting base (20, 100, 6-9 built
+  at proto time; sketch numerals table shows 20 and 100). Serial verbs and 11-19 counting phrases: sentences (task 8).
+- [x] 4 passive: G060 mapped; GET/BECOME already give 45% (before and after; WALS 107A about 44%).
+- [x] 6 person paradigm as a set: one-of-six paradigms 60% > 12% of agreeing lects.
+- [x] degrammaticalization (`DEGRAM`), logged as events.
+- [x] 11 synthesis measured vs WALS 22A: in `for-daniel.md` as a decision.
+- [ ] 5 give and imperative sentences, and the notes: waiting for lang-finish to reach lang-design.

@@ -33,7 +33,7 @@ a{color:var(--acc)}
 
 <main>
 <h1>Grammar options and how they get chosen</h1>
-<p class="lede">Every option the generator can give a language's grammar, where it comes from, and the code that picks it. Shares are of the 627 living languages in run a24559 (the run before round 5's final run). Line numbers are for branch <code>lang-design</code> at a6f293a3.</p>
+<p class="lede">Every option the generator can give a language's grammar, where it comes from, and the code that picks it. Shares are of the 623 living languages of a scratch pass over run a24559 on branch <code>lang-gram-a</code> (grammar phase A, 2026-11-08). Line numbers are for branch <code>lang-design</code> at a6f293a3.</p>
 <nav class="toc"><a href="#how">How a grammar is made</a><a href="#features">The 39 features</a><a href="#grams">What can be marked</a><a href="#social">Who speeds it up</a><a href="#pages">Notes and sentences</a><a href="#gaps">Gaps found writing this</a></nav>
 
 <h2 id="how">How a grammar is made</h2>
@@ -57,7 +57,7 @@ a{color:var(--acc)}
 <li><b>Grams climb down the ladder:</b> free word → clitic → affix → fused → lost.
   <ul><li>New markers are recruited from the language's own words along grammaticalization paths. Examples: GO → future, FINISH → perfect, ONE → indefinite article, BACK → "behind".</li>
   <li>The typology steers which functions get recruited, and a feature flip toward marking pulls in a gram.</li>
-  <li>Once a gram is an affix, sound change runs over the inflected forms, so irregular forms arise by themselves. Analogy levels some of them out again.</li></ul>
+  <li>Once a gram is an affix, sound change runs over the inflected forms, so irregular forms arise by themselves. Analogy levels some of them out again. Rarely, a clitic or affix climbs one step back up (degrammaticalization, about 1/50 of the fusion rate; likelier for case and article markers and for the last survivor of a lost paradigm, as the English genitive <i>'s</i>).</li></ul>
   <code>grammar.py:1859 recruit</code> · <code>:1881 step</code> · <code>:1017 _wanted</code> · <code>data/grammaticalization_paths.tsv</code> (78 paths after Heine &amp; Kuteva)</li>
 <li><b>What the page shows.</b> Every feature a gram realises is read off the live grams (<code>grammar.py:1232 realise</code>). A gram that binds even though the typology didn't want it becomes grammar (<code>:1255 _adopt</code>).</li>
 </ol>
@@ -78,7 +78,7 @@ a{color:var(--acc)}
 <tbody>
 <tr><td>number</td><td><span class="sc">pl</span>, <span class="sc">du</span></td><td>number ≠ none; dual only for sg-du-pl</td></tr>
 <tr><td>determiner</td><td><span class="sc">def</span>, <span class="sc">indf</span></td><td>definite / indefinite article present</td></tr>
-<tr><td>case</td><td><span class="sc">gen loc dat</span> · <span class="sc">acc</span> or <span class="sc">erg</span> · <span class="sc">abl all ins com</span></td><td>any case; <span class="sc">acc</span>/<span class="sc">erg</span> by alignment; the last four only for case = many</td></tr>
+<tr><td>case</td><td><span class="sc">gen loc dat</span> · <span class="sc">acc</span> or <span class="sc">erg</span> · <span class="sc">abl all ins com</span></td><td>any case; <span class="sc">acc</span>/<span class="sc">erg</span> by alignment; the last four only for case = many. Each is its own pull (an accusative is wanted even beside a locative). Sources added 2026-11-07: <span class="sc">abl loc gen</span> &gt; <span class="sc">erg</span>, agentive 'near, with' &gt; <span class="sc">erg</span>, <span class="sc">dat</span> &gt; <span class="sc">acc</span>, 'leave, come' &gt; <span class="sc">abl</span>, 'go' &gt; <span class="sc">all</span>, 'take, hold' &gt; <span class="sc">ins</span></td></tr>
 <tr><td>class</td><td>class markers grown from classifier nouns (person, people, plant, animal, liquid, place, small…) or by sex or animacy</td><td>gender ≠ none or numeral classifiers = yes</td></tr>
 <tr><td>derivation</td><td><span class="sc">dim</span>, <span class="sc">agt</span> (one who), <span class="sc">place</span></td><td>diminutive / agent noun = yes; place always</td></tr>
 <tr><td>valence</td><td><span class="sc">caus</span>, <span class="sc">pass</span>, <span class="sc">refl</span></td><td>causative = bound; passive ≠ none; reflexive always</td></tr>
@@ -86,7 +86,8 @@ a{color:var(--acc)}
 <tr><td>tense</td><td><span class="sc">pst</span>, <span class="sc">pst.rct</span>, <span class="sc">fut</span></td><td>past / future marked</td></tr>
 <tr><td>mood</td><td><span class="sc">dir</span> (witnessed), <span class="sc">rep</span> (reported)</td><td>evidentiality</td></tr>
 <tr><td>polarity</td><td><span class="sc">neg</span></td><td>always</td></tr>
-<tr><td>person</td><td><span class="sc">1sg 2sg 3sg 1pl 2pl 3pl</span></td><td>verb agreement ≠ none, or pro-drop</td></tr>
+<tr><td>person</td><td><span class="sc">1sg 2sg 3sg 1pl 2pl 3pl</span></td><td>verb agreement ≠ none, or pro-drop. When one binds, the rest of the pronoun series binds with it (a zero 3SG the commonest gap); gaps fill by analogy</td></tr>
+<tr><td>derivation (process)</td><td><span class="sc">iter</span>, <span class="sc">ints</span>, <span class="sc">cont</span>: verbal reduplication (a copy of the stem, not a gram)</td><td>verb reduplication = yes</td></tr>
 </tbody></table></div>
 
 <h2 id="social">Who speeds it up or slows it down</h2>
@@ -130,7 +131,7 @@ a{color:var(--acc)}
 </main>
 
 <script>
-const S={"word_order":{"SOV":0.52,"SVO":0.3,"free":0.13,"VSO":0.04,"VOS":0.01,"OVS":0.0,"OSV":0.0},"adposition":{"post":0.59,"pre":0.37,"mixed":0.04,"none":0.0},"genitive":{"GN":0.62,"NG":0.35,"mixed":0.03},"adjective":{"NA":0.85,"AN":0.13,"mixed":0.02},"demonstrative":{"DemN":0.63,"NDem":0.36,"mixed":0.01},"numeral":{"NNum":0.5,"NumN":0.41,"mixed":0.1},"relative":{"NRel":0.64,"RelN":0.24,"other":0.12},"definite_article":{"none":0.6,"pre":0.29,"post":0.12},"indefinite_article":{"none":0.81,"present":0.19},"case":{"none":0.56,"few":0.37,"many":0.07},"alignment":{"nom-acc":0.45,"neutral":0.41,"split":0.08,"erg-abs":0.06},"number":{"sg-pl":0.58,"none":0.4,"sg-du-pl":0.02},"gender":{"none":0.65,"classes":0.16,"animacy":0.1,"sex":0.09},"past":{"marked":0.56,"none":0.44},"future":{"marked":0.57,"none":0.43},"perfective":{"marked":0.61,"none":0.39},"progressive":{"none":0.63,"marked":0.37},"habitual":{"none":0.62,"marked":0.38},"evidentiality":{"none":0.76,"indirect":0.2,"direct+indirect":0.04},"negation":{"preverbal":0.59,"postverbal":0.2,"clause_final":0.15,"clause_initial":0.06},"polar_question":{"intonation":0.45,"final_particle":0.41,"initial_particle":0.07,"verb_morph":0.06},"pro_drop":{"yes":0.77,"no":0.23},"alienability":{"no":0.63,"yes":0.37},"numeral_classifiers":{"no":0.82,"yes":0.18},"clusivity":{"no":1.0,"yes":0},"verb_reduplication":{"yes":0.72,"no":0.28},"causative":{"periphrastic":0.89,"bound":0.11},"passive":{"none":1.0,"periphrastic":0,"bound":0},"diminutive":{"no":0.56,"yes":0.44},"agent_noun":{"yes":0.58,"no":0.42},"comparative":{"other":0.45,"exceed":0.36,"locational":0.2},"serial_verbs":{"no":0.5,"yes":0.5},"copula":{"yes":0.59,"no":0.41},"predicative_possession":{"other":0.49,"have":0.41,"locational":0.1},"adjective_verb_like":{"no":0.6,"yes":0.4},"numeral_base":{"decimal":0.58,"other":0.27,"vigesimal":0.15},"wh_in_situ":{"no":0.51,"yes":0.49},"verb_agreement":{"none":0.41,"suffix":0.31,"prefix":0.26,"both":0.02},"object_agreement":{"none":1.0,"suffix":0,"prefix":0}};
+const S={"word_order":{"SOV":0.44,"SVO":0.3,"free":0.13,"VSO":0.11,"VOS":0.01,"OSV":0.0},"adposition":{"post":0.5,"pre":0.46,"mixed":0.04,"none":0.0},"genitive":{"GN":0.57,"NG":0.39,"mixed":0.04},"adjective":{"NA":0.85,"AN":0.13,"mixed":0.02},"demonstrative":{"DemN":0.53,"NDem":0.45,"mixed":0.02},"numeral":{"NNum":0.46,"NumN":0.42,"mixed":0.13},"relative":{"NRel":0.69,"RelN":0.25,"other":0.07},"definite_article":{"none":0.57,"pre":0.23,"post":0.2},"indefinite_article":{"none":0.8,"present":0.2},"case":{"none":0.5,"few":0.33,"many":0.17},"alignment":{"neutral":0.52,"nom-acc":0.33,"erg-abs":0.08,"split":0.07},"number":{"sg-pl":0.53,"none":0.37,"sg-du-pl":0.1},"gender":{"none":0.65,"classes":0.18,"sex":0.12,"animacy":0.06},"past":{"marked":0.58,"none":0.42},"future":{"marked":0.52,"none":0.48},"perfective":{"marked":0.61,"none":0.39},"progressive":{"none":0.57,"marked":0.43},"habitual":{"none":0.68,"marked":0.32},"evidentiality":{"none":0.71,"indirect":0.15,"direct+indirect":0.13},"negation":{"preverbal":0.55,"postverbal":0.22,"clause_final":0.15,"clause_initial":0.08},"polar_question":{"intonation":0.42,"final_particle":0.42,"verb_morph":0.09,"initial_particle":0.07},"pro_drop":{"yes":0.71,"no":0.29},"alienability":{"no":0.62,"yes":0.38},"numeral_classifiers":{"no":0.84,"yes":0.16},"clusivity":{"yes":0.54,"no":0.46},"verb_reduplication":{"yes":0.74,"no":0.26},"causative":{"periphrastic":0.86,"bound":0.14},"passive":{"none":0.55,"periphrastic":0.36,"bound":0.09},"diminutive":{"no":0.54,"yes":0.46},"agent_noun":{"yes":0.59,"no":0.41},"comparative":{"other":0.5,"exceed":0.32,"locational":0.17},"serial_verbs":{"yes":0.58,"no":0.42},"copula":{"yes":0.58,"no":0.42},"predicative_possession":{"other":0.45,"have":0.41,"locational":0.14},"adjective_verb_like":{"no":0.51,"yes":0.49},"numeral_base":{"decimal":0.53,"other":0.29,"vigesimal":0.18},"wh_in_situ":{"yes":0.54,"no":0.46},"verb_agreement":{"none":0.33,"suffix":0.32,"prefix":0.31,"both":0.04},"object_agreement":{"none":1.0},"head_direction":{"final":0.51,"initial":0.49},"tone":{"no":0.68,"yes":0.32}};
 const W="WALS cross-tab on basic order (wals_wordorder.tsv), else Dryer fallback";
 const G=(ids,extra)=>"Grambank "+ids+" with lifts from earlier features"+(extra?"; "+extra:"");
 const F=[
@@ -144,7 +145,7 @@ const F=[
 ["definite_article","fickle",G("GB020/022/023","prefix vs suffix split by their odds")],
 ["indefinite_article","very fickle",G("GB021")],
 ["case","medium",G("GB070 core, GB072 oblique","both → many, one → few")],
-["alignment","stable",G("GB408 accusative, GB409 ergative","both → split")],
+["alignment","stable",G("GB408 accusative, GB409 ergative","both → split; shown from the live ACC/ERG grams, neutral with neither; a split lect divides by person (pronouns accusative) or by aspect (ergative in the perfective)")],
 ["number","medium",G("GB044 plural, GB043 dual","plus GB318 free plural words")],
 ["gender","stable",G("GB051 sex, GB053 animacy (damped ×0.6), GB052/054 shape or plant classes")],
 ["past","fickle",G("GB083","+0.10 for free particles")],
@@ -158,23 +159,23 @@ const F=[
 ["pro_drop","medium",G("GB522")],
 ["alienability","stable",G("GB059")],
 ["numeral_classifiers","medium",G("GB057")],
-["clusivity","stable",G("GB028","shown only when the lexicon has two 'we' words")],
-["verb_reduplication","medium",G("GB158")],
+["clusivity","stable",G("GB028","yes builds an inclusive 'we' (we + you, I + you, or a root); shown from the lexicon")],
+["verb_reduplication","medium",G("GB158","yes builds a reduplication process (iterative, intensive or continuous; CV copy or whole stem), shown in the verb paradigm")],
 ["causative","medium",G("GB155","else periphrastic")],
-["passive","fickle",G("GB147 bound, GB302 periphrastic")],
+["passive","fickle",G("GB147 bound, GB302 periphrastic","sources GET, BECOME, SUFFER and reflexive > middle > passive (G060)")],
 ["diminutive","fickle",G("GB187")],
 ["agent_noun","medium",G("GB048")],
 ["comparative","medium",G("GB265 exceed, GB266 locational")],
-["serial_verbs","medium",G("GB118")],
+["serial_verbs","medium",G("GB118","yes: serial 'take X come' and directional 'go' in the sample sentences")],
 ["copula","fickle",G("GB117")],
 ["predicative_possession","medium",G("GB250 have, GB252 locational","else 'with'")],
 ["adjective_verb_like","stable",G("GB068")],
-["numeral_base","stable",G("GB335 vigesimal, GB333 decimal")],
+["numeral_base","stable",G("GB335 vigesimal, GB333 decimal","builds 20 as 'two ten' (decimal), 100 as 'five twenty' (vigesimal), 6–9 as 'five one'… (other)")],
 ["wh_in_situ","medium",G("GB326")],
 ["verb_agreement","medium",G("GB090 prefix, GB089 suffix")],
 ["object_agreement","fickle",G("GB093 suffix, GB094 prefix")],
 ];
-const zero=new Set(["passive","object_agreement","clusivity"]);
+const zero=new Set(["object_agreement"]);
 const tb=document.getElementById("ftab");
 for(const [k,stab,how] of F){
   const tr=document.createElement("tr");
