@@ -458,9 +458,11 @@ class _Pass:
         from pathlib import Path
         if not hasattr(self, "_gods"):
             d = getattr(self.R, "dir", None)
-            try:
-                g = json.loads((Path(d) / "gods.json").read_text()) if d is not None else {}
-                c = json.loads((Path(d) / "cultures.json").read_text()) if d is not None else {}
+            try:   # (the run's faith readout, re-derived when stored before faiths: inputs.Run.gods_doc)
+                g = (self.R.gods_doc() if hasattr(self.R, "gods_doc") else None) or \
+                    (json.loads((Path(d) / "gods.json").read_text()) if d is not None else {})
+                c = getattr(self.R, "cultures_doc", None) or \
+                    (json.loads((Path(d) / "cultures.json").read_text()) if d is not None else {})
             except Exception:
                 g, c = {}, {}
             self._gods = ({b["id"]: b for b in g.get("beings") or []}, g.get("cultures") or {}, c.get("deme_culture") or [])
@@ -478,7 +480,11 @@ class _Pass:
         con = DOMAIN_CONCEPT.get(dom)
         if con is None:
             return None
-        return con, f"{dom} god", float(b.get("individuation") or 0.5)
+        x, seen = b, set()   # (the god's key: the root of its parent chain, as faiths.Plan names it)
+        while x.get("parent") is not None and x["parent"] in beings and x["id"] not in seen:
+            seen.add(x["id"])
+            x = beings[x["parent"]]
+        return con, f"{dom} god", float(b.get("individuation") or 0.5), x["id"]
 
     def taboo_animal(self, p: str) -> str | None:
         tab = getattr(self.R, "taboos_doc", None)
@@ -594,8 +600,13 @@ class _Pass:
             ws = [W(c) for c in ctx["body"][0]]
             if all(x is not None for x in ws):
                 return _people_name(lect, ws, ctx["body"][1], var)
-        if var == "faith" and ctx.get("faith") and W("GOD") is not None and W(ctx["faith"][0]) is not None:
-            return _people_name(lect, [W(ctx["faith"][0]), W("GOD")], f"the people of the {ctx['faith'][1]}", var)
+        if var == "faith" and ctx.get("faith"):   # (by the god's own name in this lect when it has one: faiths.py)
+            gw = W(f"name:god:{ctx['faith'][3]}") if len(ctx["faith"]) > 3 else None
+            if gw is not None:
+                from .faiths import name_gloss
+                return _people_name(lect, [gw], f"the people of {name_gloss(gw) or 'their god'} (the {ctx['faith'][1]})", var)
+            if W("GOD") is not None and W(ctx["faith"][0]) is not None:
+                return _people_name(lect, [W(ctx["faith"][0]), W("GOD")], f"the people of the {ctx['faith'][1]}", var)
         if var == "many" and W("MANY") is not None:
             return _people_name(lect, [W("MANY")], "the many", var)
         if var == "ancestor" and getattr(lect, "inventory", None) is not None:
@@ -678,6 +689,17 @@ class _Pass:
             via = next((f"kept when deme {s['deme']} shifted from {s['from_lect']} to {s['to_lect']} ({s['kyr']:g} kyr ago)"
                         for s in self.res.get("shifts") or [] if s.get("from_lect") == namer.id), None) \
                 or f"heard from {namer.id} ({namer.people}), who lived on it first"
+            # a tautology (River Avon, Lake Windermere-mere): the newcomers, who no longer understand the old name's
+            # word for water, add their own (personal.SUBSTRATE_TAUTOLOGY, as for settlements)
+            head_c = "RIVER" if kind == "river" else "LAKE"
+            own, old_head = _first(cur, (head_c, "WATER"))[1], base["words"][-1]
+            from .personal import SUBSTRATE_TAUTOLOGY
+            if own is not None and _root(own) != _root(old_head) and _rng(self.seed, "taut", kind, rid, cur.id).random() < SUBSTRATE_TAUTOLOGY:
+                form = _join(cur, own.form, form)
+                taut = f"{_gloss(own.concept)} + the old name (a tautology, like River Avon)"
+                via += "; " + taut
+                base = dict(base, gloss=f"the {_gloss(own.concept)} {base['gloss'].removeprefix('the ')}")
+                words = list(words) + [own]
         g = getattr(cur, "grammar", None)
         loc = GR.place_name(form, g) if g is not None else None
         roman = RO.title_name(_roman_form(cur, form))
@@ -689,7 +711,7 @@ class _Pass:
         if sub:
             etym.append([None, cur.id, f"substrate:{sub}", word_ipa(form), base["gloss"], via or ""])
         return {"kind": kind, "id": int(rid), "ipa": word_ipa(form), "roman": roman, "roman_full": roman_full, "gloss": base["gloss"],
-                "lect": cur.id,
+                "lect": cur.id, "tautology": bool(sub and "tautology" in (via or "")),
                 "named_by": namer.id, "kyr": round(float(k0), 3), "substrate_of": sub, "pattern": "P2" if sub else None,
                 "locative": None if loc is None else {"ipa": loc["ipa"], "roman": _roman_words(cur, loc["words"]),
                                                       "roman_full": _roman_words(cur, loc["words"], False)},

@@ -1466,6 +1466,50 @@ def personal_names(doc: Doc, l: dict) -> list[str]:
     return out
 
 
+def faith_section(doc: Doc, l: dict) -> list[str]:
+    """The lect's faith (languages.json `faiths`, faiths & contact pass 3): its gods' names in this language with their
+    histories and the same names in the faith's other languages, and the liturgy (the frozen sacred register, its
+    formulas, and this language's learned words from it: lects' `systems.learned`)."""
+    fa = doc.d.get("faiths") or {}
+    fid = next((k for k, f in sorted(fa.items(), key=lambda t: int(t[0])) if l["id"] in (f.get("holders") or [])), None)
+    if fid is None:
+        return []
+    F = fa[fid]
+    out = ["## Gods and liturgy", "",
+           f"**Faith.** {F['name'][0].upper() + F['name'][1:]}"
+           + (f", founded {kyr(F['founded_kyr'])} ago" if F.get("founded_kyr") is not None else "")
+           + (f", held by {len(F['holders'])} languages" if len(F.get("holders") or []) > 1 else "") + ".", ""]
+    rows = []
+    for g in F.get("gods") or []:
+        mine = next((n for n in g.get("names") or [] if n[0] == l["id"]), None)
+        if mine is None:
+            continue
+        same = [n for n in g["names"] if n[0] != l["id"] and n[4] == mine[4]]
+        cog = ", ".join(f"{n[2]} ({doc.label(n[0], True)})" for n in same[:3]) + (" ..." if len(same) > 3 else "")
+        rows.append(f"| {g['label']} | **{mine[2]}** | /{mine[1]}/ | '{mine[3]}' | {cog or '—'} |")
+    if rows:
+        out += ["| god | name | IPA | meaning | the same name elsewhere |", "| --- | --- | --- | --- | --- |"] + rows + [""]
+        g0 = next((g for g in F["gods"] if any(n[0] == l["id"] for n in g.get("names") or [])), None)
+        if g0 is not None and g0.get("plain"):
+            out += [f"How the first name came about: {g0['plain']}.", ""]
+    L = F.get("liturgy")
+    if L:
+        out += [f"**Liturgy.** The faith's rites are kept in the {people(L['people'])} speech of {doc.label(L['lect_from'], True)} "
+                f"as it was {kyr(L['kyr'])} ago, frozen since (as Latin, Sanskrit or Ge'ez are).", ""]
+        learned = ((l.get("systems") or {}).get("learned") or {})
+        lex = l.get("lexicon") or {}
+        out += ["| meaning | liturgy | today | learned form | |", "| --- | --- | --- | --- | --- |"]
+        for c, (ipa, rom) in L.get("words", {}).items():
+            le = learned.get(c)
+            out.append(f"| {cname(c)} | {rom} /{ipa}/ | {lex.get(c, {}).get('ipa', '—')} | {('/' + le[0] + '/') if le else ''} "
+                       f"| {le[1] if le else ''} |")
+        out.append("")
+        for f in L.get("formulas") or []:
+            out += interlinear(" ".join(w[0] for w in f["w"]), " ".join(w[1] for w in f["w"]))
+            out += ["", f"'{f['en']}' ({f.get('roman', '')})", ""]
+    return out
+
+
 def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] | None = None) -> str:
     roots_cache = {} if roots_cache is None else roots_cache
     nm = doc.deme_name(l)
@@ -1484,6 +1528,7 @@ def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] 
     out += grammar(doc, l)
     out += vocabulary(doc, l)
     out += personal_names(doc, l)
+    out += faith_section(doc, l)
     out += sample_sentences(l)
     out += comparison(doc, l, roots_cache)
     return "\n".join(out).rstrip() + "\n"

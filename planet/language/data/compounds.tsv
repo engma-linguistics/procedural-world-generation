@@ -295,3 +295,5 @@ FATHER'S SISTER	SISTER	FATHER	3	'father-sister': Swedish faster < fadersyster
 MOTHER'S SISTER	SISTER	MOTHER	3	'mother-sister': Swedish moster < modersyster
 PARALLEL COUSIN	CHILD (DESCENDANT)	FATHER'S BROTHER	2	'father's brother's child': Arabic ibn 'amm
 CROSS COUSIN	CHILD (DESCENDANT)	MOTHER'S BROTHER	2	'mother's brother's child': Arabic ibn khal
+PRIEST	PERSON	GOD	2	'god person' (faiths pass 3, 2026-11-08); Old Irish drui < 'oak-knower', Gothic gudja < 'god'
+TEMPLE	HOUSE	GOD	3	'god house': German Gotteshaus, Akkadian bit ili, Sumerian e2-dingir

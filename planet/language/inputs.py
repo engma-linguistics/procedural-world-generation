@@ -189,6 +189,25 @@ class Run:
             return None
         return cr["by"].get(str(cr["dc"][deme]))
 
+    def gods_doc(self) -> dict | None:
+        """The run's gods.json (gods, faiths, cultures' faiths). One from before the faith records (no "faiths": format
+        procgen-gods/1) is re-derived in memory, read-only (planet.lineages.gods.derive: about 2 minutes on a24559).
+        None without one (no cultures, or a run held in memory: tests set `_gods_doc`)."""
+        if "_gods_doc" not in self.__dict__:
+            doc = None
+            d = getattr(self, "dir", None)
+            if d is not None and getattr(self, "cultures_doc", None):
+                gp = Path(d) / "gods.json"
+                try:
+                    doc = json.loads(gp.read_text()) if gp.exists() else None
+                    if doc is None or not (doc.get("faiths") or {}).get("list"):
+                        from planet.lineages import gods as GD
+                        doc = GD.derive(Path(d))
+                except Exception:   # noqa: BLE001 - no faiths then
+                    doc = None
+            self.__dict__["_gods_doc"] = doc
+        return self.__dict__["_gods_doc"]
+
     def kyr(self, i: int) -> float:
         return self.frames_kyr[i]
 
