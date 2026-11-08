@@ -1,0 +1,346 @@
+<title>Language Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gentium+Book+Plus:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a field linguist's ledger. One reading column; each decision is an entry with its options as tickable chips and a margin note. */
+:root {
+  --bg: #f3f5f7; --paper: #ffffff; --ink: #18212b; --muted: #5b6672; --line: #d8dee5;
+  --accent: #2d4f8a; --accent-soft: #e4ebf6; --lean: #7a5a12; --lean-soft: #f6eedb; --ok: #2f6b45; --ok-soft: #e1f0e6;
+  --serif: "Gentium Book Plus", "Gentium Plus", Georgia, serif;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161b; --paper: #1a2027; --ink: #e5e9ee; --muted: #9aa5b1; --line: #2c343e;
+  --accent: #8fb0e8; --accent-soft: #22324a; --lean: #e2c27a; --lean-soft: #3a3020; --ok: #8fd0a6; --ok-soft: #1e3427; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161b; --paper: #1a2027; --ink: #e5e9ee; --muted: #9aa5b1; --line: #2c343e;
+  --accent: #8fb0e8; --accent-soft: #22324a; --lean: #e2c27a; --lean-soft: #3a3020; --ok: #8fd0a6; --ok-soft: #1e3427; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 17px/1.55 var(--serif);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+main { max-width: 760px; margin: 0 auto; display: grid; gap: 36px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-size: 2.1rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+h2 .tk { font: 500 0.78rem var(--mono); color: var(--muted); }
+h3 { font-size: 1.08rem; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 62ch; }
+.label { font: 600 0.72rem var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 10px; }
+.meter { font: 500 0.9rem var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
+.meter b { color: var(--ink); }
+.status { display: grid; gap: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+.status ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+.status li { font-size: 0.97rem; }
+section { display: grid; gap: 14px; }
+.intro { color: var(--muted); font-size: 0.97rem; }
+.entry { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.entry.done { border-color: color-mix(in srgb, var(--ok) 45%, var(--line)); }
+.entry-head { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+.tag { font: 500 0.72rem var(--mono); color: var(--muted); }
+.saved { font: 500 0.75rem var(--sans); color: var(--ok); background: var(--ok-soft); border-radius: 999px; padding: 1px 9px; }
+.body { font-size: 0.98rem; }
+.body code, .mono { font: 0.85em var(--mono); }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { font: 500 0.88rem var(--sans); border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  border-radius: 5px; padding: 6px 11px; cursor: pointer; text-align: left; max-width: 100%; }
+.opt:hover { border-color: var(--accent); }
+.opt:focus-visible, textarea:focus-visible, .pick input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.opt .lean { font: 600 0.68rem var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--lean);
+  background: var(--lean-soft); border-radius: 3px; padding: 0 5px; margin-left: 6px; }
+textarea { width: 100%; box-sizing: border-box; min-height: 2.6em; resize: vertical; font: 0.93rem var(--sans);
+  background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 5px; padding: 7px 9px; }
+details { font-size: 0.92rem; }
+summary { cursor: pointer; font: 500 0.88rem var(--sans); color: var(--accent); }
+.tbl { overflow-x: auto; margin-top: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+td { border-top: 1px solid var(--line); padding: 5px 8px 5px 0; vertical-align: top; }
+td:last-child { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+.picks { display: grid; gap: 6px; }
+.pick { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: 0.95rem; cursor: pointer; }
+.pick input { margin-top: 5px; accent-color: var(--accent); }
+.pick small { font: 0.75rem var(--mono); color: var(--muted); }
+.offline { font: 0.85rem var(--sans); color: var(--lean); background: var(--lean-soft); border-radius: 5px; padding: 8px 10px; }
+a { color: var(--accent); }
+@media (max-width: 480px) { body { font-size: 16px; } h1 { font-size: 1.7rem; } }
+</style>
+
+<main>
+  <header>
+    <span class="label">procgen_world · the language lane</span>
+    <h1>Language Desk</h1>
+    <p class="lede">Everything in the language lane that waits on you. Pick an option or leave it alone: anything you don't touch keeps the default (marked <em>lean</em> where the lane had a preference). Notes are for "change X to Y" or anything else. Your answers save as you go and I read them from here.</p>
+    <p class="meter" id="meter">Loading your answers…</p>
+    <p class="offline" id="offline" hidden>Answers can't be saved in this view (signed out or storage unavailable). You can still read everything; tell me your picks in chat.</p>
+  </header>
+
+  <div class="status">
+    <span class="label">Under way now (no action needed)</span>
+    <ul>
+      <li><b>Bird two-voice tones.</b> The syrinx's second voice gets its own tone instead of a fixed fifth: level, rising or falling on each side, contrary and oblique contours, how it arises and merges, how humans hear it, and real two-line audio. Measured on a24559, including whether bird words get shorter as the syllable space grows.</li>
+      <li><b>Language finder.</b> <span class="mono">tools/language/find.py</span> plus a skill: find languages by features or by likeness ("Hawaiian", "Sindarin", "Japanese-ish strict CV", "most English"), with sample words.</li>
+      <li>Merged to main 11-08; leftovers are tickets PW-1536 to PW-1555. Demo: <a href="https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs" target="_blank" rel="noopener">10 languages from a24559</a>; viewer <span class="mono">planet langserve a24559</span> on port 8790.</li>
+    </ul>
+  </div>
+
+  <div id="sections"></div>
+</main>
+
+<script>
+const SECTIONS = [
+  { title: "Quick calls", tk: "", intro: "Small things from today.", items: [
+    { id: "blocklist", tag: "spelling guard", q: "Put any of the dropped words back on the blocklist?",
+      body: "The guard now blocks only slurs (14 entries plus nazi and hitler). Swearing is allowed inside words. I also dropped three words that are not swearing: rape (it also shows up inside grape and drape), whore and slut.",
+      opts: [["none", "Leave them off", true], ["rape", "Add back rape"], ["all3", "Add back all three"]] },
+  ]},
+  { title: "Sounds, sound change and spelling", tk: "PW-1539", intro: "Part 1 of the defaults the lanes picked overnight. C (palatalization weight) is already settled: it is at 0.3 after the last run.", items: [
+    { id: "s.A", tag: "A · live rules", q: "Live phonological rules die young",
+      body: "A live rule lives a median 6 kyr and a language keeps at most 8. Real languages keep some far longer (Celtic mutations, Sanskrit sandhi).",
+      opts: [["keep", "Keep (life-cycle reading)"], ["longtail", "Long tail: a few rules last 15+ kyr", true]] },
+    { id: "s.B", tag: "B · dragons", q: "Dragon sub-bass in about 9 of 10 dragon lines",
+      body: "Sub-bass vowels (felt more than heard, below ~20 Hz) appear in nearly every dragon language.",
+      opts: [["hallmark", "Keep as the dragon hallmark", true], ["rarer", "Make it rarer (some dragon tongues without)"]] },
+    { id: "s.D", tag: "D · language shift", q: "A people that shifts language keeps the old language's sounds",
+      body: "A fire-giant language descended from bronze-dragon speech keeps no labials and a growled a. The new speakers' accent could be run over the whole vocabulary at the shift so the language takes on their mouth.",
+      opts: [["keep", "Keep as is"], ["partial", "Nativise partially", true], ["full", "Nativise fully"]] },
+    { id: "s.E", tag: "E · rates", q: "How unevenly languages change speed",
+      body: "Rates differ by lognormal sigma 0.3 between languages. The review suggested ~0.6 plus a burst after a shift or founder split, so some lines change very fast (a Hawaiian-type collapse).",
+      opts: [["keep", "Keep 0.3"], ["s05", "Try 0.5, watch the horizon check", true], ["burst", "0.5 plus founder/shift bursts"]] },
+    { id: "s.table", tag: "the rest", q: "The other 20 sound and spelling defaults",
+      body: "Silence keeps them. Note any you want changed.",
+      table: [
+        ["Rounding harmony onto high vowels only (Turkish type)", "on"],
+        ["Backness harmony: front e going back opens to ɑ (-ler/-lar)", "on"],
+        ["Harmony never coins a vowel the language lacks", "on"],
+        ["Exits from ɖ: ɖ > ɽ between vowels, ɽ > ɾ, ɖ > r word-initially", "S215-S217"],
+        ["Labialized coronals lose labialization", "S226"],
+        ["Non-human voices feel ease drag from their own costs", "EASE_K 0.5"],
+        ["p rare in beaked and lipless mouths; humans p 0.77 vs PHOIBLE 0.85", "not forced"],
+        ["Series-first inventory draw", "SERIES_FILL 0.75"],
+        ["Up to 7 tones; a long-vowel contour counts as two levels", "lect.tonemes"],
+        ["Line drift: per-family and per-row liking, inherited", "0.7 / 1.0 / 0.2"],
+        ["Named laws (Grimm, Verner, GVS) fire once per line", "REFIRE_KYR 4"],
+        ["Chain shifts count half in the change rate", "0.5"],
+        ["New changes start phrase-level, then word, then stem", "1 / 3 kyr"],
+        ["Tonal lines with one tone-sandhi rule", "70%"],
+        ["Prenasal-stop sources S142 and S068 down to weight 1", ""],
+        ["Book letters: purr vr, growl rh, second voice wh, sub-bass mh, ultra ih", "NH_MARKS"],
+        ["Book spelling keeps 2 diacritic letters per language", "budget 2"],
+        ["Clicks written ǀ ǁ ǃ ǂ (no Bantu c q x option)", ""],
+        ["Pinyin-style b/p only where there are no voiced stops", ""],
+        ["In-word letter guard is a middle dot (irh·ll)", ""],
+      ] },
+  ]},
+  { title: "Words, contact, faiths and names", tk: "PW-1540", intro: "Part 2.", items: [
+    { id: "w.A", tag: "A · polysemy", q: "About 22% of meanings share a form with another",
+      body: "Almost all of it is attested polysemy (NOW/TODAY, POT/BOWL); accidental homophones under 1%. The cold review still felt common words sounded alike too often.",
+      opts: [["accept", "Accept", true], ["lower", "Lower it (fewer meaning shifts, or shifts vacate the old meaning)"]] },
+    { id: "w.B", tag: "B · gods", q: "Gods get a sex from kin titles ('sky-father', 'earth-mother'), drawn 50/50",
+      body: "gods.json has no sex field, so the language layer draws one.",
+      opts: [["keep", "Keep", true], ["drop", "Drop kin titles"], ["wait", "Wait for gods.json to carry it"]] },
+    { id: "w.C", tag: "C · liturgy", q: "Liturgies freeze at a faith's first temples (up to ~6.6 kyr old)",
+      body: "Latin, Sanskrit and Ge'ez are 1.5-4 kyr old. Freezing at writing would be better, but there is no usable writing step yet.",
+      opts: [["keep", "Keep until writing exists, then switch", true], ["younger", "Cap liturgy age now"]] },
+    { id: "w.D", tag: "D · after a shift", q: "Minority speech life, adult-learner levels, dialect continuity",
+      body: "Minority speech decays slowly with no tipping point; neighbouring dialects drift into separate languages fast. Dialect continua are in the contact backlog (PW-1554).",
+      opts: [["keep", "Keep for now", true], ["continua", "Prioritise dialect continua"]] },
+    { id: "w.E", tag: "E · borrowed sounds", q: "Segment borrowing is frequent",
+      body: "205 of 618 living languages borrowed sounds, 142 at the cap of 4, with little areal effect to show for it.",
+      opts: [["keep", "Keep"], ["halve", "Halve the borrowing rate", true]] },
+    { id: "w.F", tag: "F · towns", q: "About two thirds of town names are substrate (another people's names)",
+      body: "That follows the settlement history: most towns were founded by an earlier people.",
+      opts: [["fine", "Fine"], ["high", "Reads too high"]] },
+    { id: "w.table", tag: "the rest", q: "The other 21 word, faith and name defaults",
+      body: "Silence keeps them.",
+      table: [
+        ["Fresh root when nothing can renew a frequent meaning", "KEEP_COIN 1.0"],
+        ["Loan steepness against contact (WOLD curve)", "gamma 0.5"],
+        ["Pronoun/numeral/question-word merges repaired next step", "on"],
+        ["Numeral 'other' systems: 60% restricted / 40% five-based", "lexsys"],
+        ["Colour stage weights and split rate (by eye)", "COLOUR_SPLIT 0.0008"],
+        ["Kinship pulled by marriage rules", "KIN_PULL_MAX 3"],
+        ["Name taboos speed word loss", "+30% / +20%"],
+        ["Avoidance register: 20 meanings, half borrowed", "AVOID_LOAN 0.5"],
+        ["Areal feature copying x10", "AREAL_K 0.015"],
+        ["Shift substrate 10-30% of words; accent replaces 80% of missing sounds", "ACCENT_P 0.8"],
+        ["Four gods named per culture", "4"],
+        ["God-name half-life against an epithet", "12 kyr"],
+        ["Learned loans from the liturgy", "0.0025 / gen"],
+        ["Unrelated peoples sharing a faith calque its gods", "on"],
+        ["Petition gifts per god domain", "GIFT"],
+        ["A god name may sound like a grammatical marker", "not vetoed"],
+        ["Naming traditions 50/25/25; bynames 35/30/25/10; 12% drift", "personal.py"],
+        ["Old names ~4 kyr back, worn to two syllables up to 60%", "OPAQUE_CAP 0.6"],
+        ["Towns: 3 per deme; newcomers add their own generic 25%", ""],
+        ["Faith ethnonyms rare", "FAITH_W"],
+        ["Pattern codes mapped to your E/X/P taxonomy", "names.py"],
+      ] },
+  ]},
+  { title: "Grammar, species leanings and the pages", tk: "PW-1538", intro: "Part 3.", items: [
+    { id: "g.A", tag: "A · gender", q: "Half the languages shown with gender have no agreement anywhere",
+      body: "Grambank defines gender by agreement. Relabel those as noun classes?",
+      opts: [["relabel", "Call it 'noun classes (no agreement)'", true], ["none", "Show 'none'"], ["keep", "Keep 'gender'"]] },
+    { id: "g.B", tag: "B · class fallback", q: "A dog can take the 'tools' classifier",
+      body: "A noun whose group has no class falls to the first of abstract, tools, plant or animal the language has.",
+      opts: [["animate", "Animate nouns fall to person/animate first", true], ["keep", "Keep"]] },
+    { id: "g.C", tag: "C · species", q: "Species leanings in grammar (proposal, not in the code)",
+      body: "Long generations: evidentials and miratives recruited more and lost less, slower erosion. Kenku: more reduplication. Short generations: slightly faster recruitment.",
+      opts: [["none", "None"], ["first", "Only the long-generation row", true], ["all", "All rows"]] },
+    { id: "g.D", tag: "D · comparison", q: "Comparatives follow Grambank-drawn shares (locational 18% vs WALS 47%)",
+      body: "Switch the prior to WALS 121A shares (one line).",
+      opts: [["wals", "Switch to WALS", true], ["keep", "Keep"]] },
+    { id: "g.E", tag: "E · sentences", q: "One sentence set for every language",
+      body: "Good for comparing, dull to read.",
+      opts: [["keep", "Keep the set"], ["plus1", "Keep the set, add one sentence per language from its own life", true], ["own", "Per-language sets"]] },
+    { id: "g.F", tag: "F · politeness", q: "Politeness grows with population only; the page claims 'rank is marked'",
+      body: "There is no rank data until polities give it (PW-1549).",
+      opts: [["soften", "Keep, soften the page wording", true], ["wait", "Hide politeness until polities"]] },
+    { id: "g.table", tag: "the rest", q: "The other 18 grammar defaults",
+      body: "Silence keeps them.",
+      table: [
+        ["Split ergativity: person 60%, aspect 40%", "SPLIT_KIND"],
+        ["Inclusive 'we': we+you 45, I+you 15, own root 40", "INCLUSIVE_FROM"],
+        ["Reduplication: iterative 45, intensive 20, continuous 35; CV copy 65%", "REDUP"],
+        ["Numerals: 20 = 'two ten'; vigesimal 100 = 'five twenty'", "NUMERAL_WORDS"],
+        ["Person paradigms bind as a set", "PERSON_JOIN"],
+        ["Degrammaticalization ~1.6 per language per 20 kyr (likely high)", "DEGRAM"],
+        ["Ergative mostly from 'near, with'", "X22"],
+        ["Imperative sources (attention word, widened hortative)", "guess"],
+        ["Genitive pulled in case languages", "PULL_GROUP"],
+        ["Concord: dem 1.0 / adj 0.7 / verb 0.5", "CONCORD_*"],
+        ["Actor voice from 'do, make'", "guess"],
+        ["Remote past from 'long, old'; exceed from 'climb'; obviative from 'that, other'", "guesses"],
+        ["Question particles pulled x3", "PULL_BOOST"],
+        ["Differential object marking rates", ""],
+        ["T-V only where polite 'you' differs", "polite_contrast"],
+        ["Fable ancestor 3-6 kyr back, 2-4 daughters", "FABLE_DEPTH_KYR"],
+        ["Complexity tab window 0.5-3 kyr", "CX_WINDOW"],
+        ["Complexity score formula", "grammar.complexity"],
+      ] },
+  ]},
+  { title: "Bigger calls", tk: "PW-1542 · 1544 · 1551", intro: "Three tickets the lanes left as your call. Each changes many numbers, so each would be its own lane with a full pass.", items: [
+    { id: "b.l2", tag: "PW-1542 · adult learners", q: "The 'adult learners' number is high almost everywhere",
+      body: "We estimate it from how much other peoples share the land. A third of living languages sit at the 0.7 cap, so a remote valley next to one neighbour reads like a trade city.",
+      opts: [["share", "Weight by the neighbour's share of speakers"], ["concave", "Concave map, median ~0.25", true], ["leave", "Leave it"]] },
+    { id: "b.long", tag: "PW-1544 · long-lived peoples", q: "Dragon and other long-lived languages are almost all isolating (93%)",
+      body: "Grammar changes per generation, and dragons get few generations, so endings never grow. A conservative language could instead keep old inflection (Lithuanian, Icelandic).",
+      opts: [["accept", "Accept: their speech is analytic"], ["richer", "Give long-lived protos a richer starting grammar", true], ["peryear", "Count grammar change partly per year"]] },
+    { id: "b.weights", tag: "PW-1551 · change weights", q: "Rare sound changes fire almost as often as common ones",
+      body: "The draw throws away changes that alter no word and redraws, so nearly every applicable change fires. The catalogue's 'how common' weight is mostly ignored, which is why so many one-off caps exist.",
+      opts: [["A", "Draw without redraws, recalibrate (removes caps)", true], ["B", "Per-line availability draw"], ["C", "Leave it, keep adding caps"]] },
+  ]},
+];
+
+const PRIORITY = [
+  ["PW-1537", "Cold-review findings: markers that never wear down, the fable's ancestor, templated recipes and myths, homophony", "high · l"],
+  ["PW-1549", "Languages and polities: empires spread language and loans, states get names, rank drives polite speech", "high · l"],
+  ["PW-1541", "Optional grammar stripped in the full run (3-way demonstratives, graded pasts, intonation-only questions)", "m"],
+  ["PW-1543", "Stress that changes over history and is stored per word; changes that spread word by word", "m"],
+  ["PW-1547", "River, old personal and peak names age through each language's sound changes", "m"],
+  ["PW-1548", "Page slips (loan family shown as native, gods without names, odd recipes)", "s"],
+  ["PW-1545", "Lipless or velum-less voices can't undo their substitute sounds", "m"],
+  ["PW-1550", "Growled sounds in most bird and reptile protos; function words coined instead of grown", "m"],
+  ["PW-1555", "Speed: the language pass takes 21-34 min", "m"],
+  ["PW-1546", "Names backlog: missing taxonomy patterns, spelling traditions per family, landmass and dish names", "l"],
+  ["PW-1553", "Sound backlog: allophony, geminates, bigger clusters, long-distance rules, reconstruction, sandhi", "xl"],
+  ["PW-1554", "Contact backlog: pidgins and creoles, lingua francas, diglossia, dialect continua, ideophones", "xl"],
+  ["PW-1536", "Founding cultures named 'first halflings of ...' in faith names", "xs"],
+];
+
+const state = {};      // id -> {choice, note, picks}
+let db = null;
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function decisionIds() { return SECTIONS.flatMap(s => s.items.filter(i => i.opts).map(i => i.id)); }
+
+function render() {
+  const root = $("#sections");
+  let html = "";
+  for (const s of SECTIONS) {
+    html += `<section><h2>${esc(s.title)}${s.tk ? ` <span class="tk">${esc(s.tk)}</span>` : ""}</h2><p class="intro">${esc(s.intro)}</p>`;
+    for (const it of s.items) html += entry(it);
+    html += `</section>`;
+  }
+  html += `<section><h2>What should the lane do next? <span class="tk">pick up to 4</span></h2>
+    <p class="intro">After the two lanes above finish, these are the language tickets. Tick what you want first.</p>
+    <div class="entry${(state.priority?.picks || []).length ? " done" : ""}" data-id="priority"><div class="picks">` +
+    PRIORITY.map(([id, t, sz]) => `<label class="pick"><input type="checkbox" value="${id}" ${(state.priority?.picks || []).includes(id) ? "checked" : ""}>
+      <span>${esc(t)} <small>${id} · ${sz}</small></span></label>`).join("") +
+    `</div><textarea id="note-priority" data-note="priority" placeholder="Anything else to prioritise, or an order">${esc(state.priority?.note || "")}</textarea></div></section>`;
+  root.innerHTML = html;
+  meter();
+}
+
+function entry(it) {
+  const st = state[it.id] || {};
+  const done = st.choice || (st.note && st.note.trim());
+  let h = `<div class="entry${done ? " done" : ""}" data-id="${it.id}">
+    <div class="entry-head"><h3>${esc(it.q)}</h3><span class="tag">${esc(it.tag)}</span></div>
+    <p class="body">${esc(it.body)}</p>`;
+  if (it.opts) h += `<div class="opts">` + it.opts.map(([v, l, lean]) =>
+    `<button class="opt" data-v="${v}" aria-pressed="${st.choice === v}">${esc(l)}${lean ? `<span class="lean">lean</span>` : ""}</button>`).join("") + `</div>`;
+  if (it.table) h += `<details><summary>Show the ${it.table.length} defaults</summary><div class="tbl"><table>` +
+    it.table.map(([a, b]) => `<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join("") + `</table></div></details>`;
+  h += `<textarea id="note-${it.id}" data-note="${it.id}" placeholder="${it.table ? "Change any of these? e.g. 'clicks: add the c q x option'" : "Note (optional)"}">${esc(st.note || "")}</textarea>`;
+  if (st.at) h += `<span class="saved">saved</span>`;
+  return h + `</div>`;
+}
+
+function meter() {
+  const ids = decisionIds();
+  const n = ids.filter(id => state[id]?.choice).length;
+  const notes = Object.values(state).filter(v => v.note && v.note.trim()).length;
+  $("#meter").innerHTML = db
+    ? `<b>${n}</b> of ${ids.length} calls answered · ${notes} notes · ${(state.priority?.picks || []).length} tickets picked`
+    : `${ids.length} calls, ${PRIORITY.length} tickets to rank`;
+}
+
+async function save(id, patch) {
+  state[id] = { ...(state[id] || {}), ...patch, at: Date.now() };
+  if (!db) return;
+  try { await db.collection("answers").doc(id).set({ ...state[id] }); }
+  catch (e) { $("#offline").hidden = false; $("#offline").textContent = "Couldn't save just now (" + (e?.code || "error") + "). Your pick is on screen; try again or tell me in chat."; }
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest(".opt"); if (!b) return;
+  const id = b.closest(".entry").dataset.id;
+  const v = state[id]?.choice === b.dataset.v ? null : b.dataset.v;
+  save(id, { choice: v }).then(() => { const y = scrollY; render(); scrollTo(0, y); });
+});
+document.addEventListener("change", e => {
+  if (e.target.matches(".pick input")) {
+    const picks = [...document.querySelectorAll(".pick input:checked")].map(x => x.value);
+    save("priority", { picks }); meter();
+  }
+});
+const timers = {};
+document.addEventListener("input", e => {
+  const id = e.target.dataset.note; if (!id) return;
+  clearTimeout(timers[id]);
+  const val = e.target.value;
+  timers[id] = setTimeout(() => { save(id, { note: val }); meter(); }, 700);
+});
+
+render();
+(async () => {
+  try { db = await window.claude?.use?.("db"); } catch { db = null; }
+  if (!db) { $("#offline").hidden = false; meter(); return; }
+  const t = setTimeout(() => { $("#offline").hidden = false; }, 10000);
+  db.collection("answers").onSnapshot(snap => {
+    clearTimeout(t);
+    let changed = false;
+    for (const d of snap.docs) {
+      const v = d.data(); const cur = state[d.id];
+      if (!cur || (v.at || 0) > (cur.at || 0)) { state[d.id] = { ...v }; changed = true; }
+    }
+    const active = document.activeElement;
+    if (changed && !(active && active.tagName === "TEXTAREA")) { const y = scrollY; render(); scrollTo(0, y); }
+    else meter();
+  }, () => { clearTimeout(t); $("#offline").hidden = false; });
+})();
+</script>
