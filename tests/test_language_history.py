@@ -268,6 +268,17 @@ def test_hiatus_is_repaired_after_a_change():
     assert set(l.fired) == {"lenition.h_loss"}
     d = l.copy("y", 0, 0.4, "bud")
     assert d.hiatus_key == "x" and d.hiatus_pref(cat["S126"]) == l.hiatus_pref(cat["S126"])
+    # line drift: a daughter keeps its line's family and row preferences, up to its own small budding jitter
+    r = cat["S001"]
+    ratio = d.line_pref(r) / l.line_pref(r)
+    assert ratio == pytest.approx(LC._lognormal(f"y|bud|{r.id}", LC.LINE_BUD_SIGMA))
+    assert len({round(LC.Lect(id=f"q{k}", deme=None, people="human", parent=None, how="first", born_kyr=1.0, rate=1.0,
+                              inventory=None, lexicon=None).line_pref(r), 6) for k in range(5)}) == 5
+    # a one-off row (a chain shift) fires once a line; an ordinary row again after REFIRE_KYR
+    grimm = cat["S177"]
+    assert LC.one_off(grimm) and not LC.one_off(r)
+    d.fired = {grimm.id: [9.0], r.id: [9.0]}
+    assert not d.may_fire(grimm, 0.0) and d.may_fire(r, 9.0 - LC.REFIRE_KYR)
 
 
 def test_normalize_simplifies_initial_geminates():
@@ -368,6 +379,8 @@ def test_rules_do_not_refire(result):
             line.setdefault(LC.base_id(rid), []).append(c["kyr"])
         for b, ks in line.items():
             cap = LC.HARMONY_MAX if b in cat and cat[b].family == "harmony" else LC.MAX_FIRES
+            if b in cat and LC.one_off(cat[b]):
+                cap = LC.ONE_OFF_MAX
             assert len(ks) <= cap, (l.id, b, ks)
             assert all(a - c >= LC.REFIRE_KYR - 1e-9 for a, c in zip(ks, ks[1:])), (l.id, b, ks)
         assert all(len(v) <= LC.MAX_FIRES for v in l.fired.values())

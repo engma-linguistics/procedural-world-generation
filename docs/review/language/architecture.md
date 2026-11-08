@@ -204,6 +204,14 @@ class Rule:
   with the highest weight x line preference (`hiatus_pref`: a lognormal, sigma `HIATUS_SPREAD` 1, keyed by the line's
   proto, `Lect.hiatus_key`, so daughters keep their parent's strategy) among those that reduce the hiatus of the words that
   have it and do not put most changed words back. Repairs are recorded changes, outside the re-fire memory.
+- **Line drift and the re-fire memory** (sound lane, 2026-11-08; soundchange-gaps.md recommendation 1). `Lect.rule_pool`
+  multiplies each rule's weight by `Lect.line_pref`: a lognormal per rule family (sigma `LINE_FAMILY_SIGMA` 0.7) and per row
+  (`LINE_ROW_SIGMA` 1.0), keyed by the line's proto (`hiatus_key`, inherited, as `hiatus_pref`), times a small jitter of a
+  budded lect's own (`LINE_BUD_SIGMA` 0.2, keyed by its id). A fired rule waits `REFIRE_KYR` (4, was 3) before it can fire
+  again, at most `MAX_FIRES` (2) times a line for epenthesis, tone and S042, once for harmony, and once (`ONE_OFF_MAX`) for
+  the named one-off laws (`lect.one_off`: family `chain_shift`, the dispersion pushes aside, and `ONE_OFF_IDS`: Verner,
+  Grassmann, the voiced-voiceless merger S097, West Germanic gemination and the like). Wave adoption obeys the same memory.
+  Harness effect and the event-rate side effect are in the comment at `LINE_FAMILY_SIGMA`.
 - `apply(rule, word) -> Word`, left to right, regular, on a tuple of Segments; `applies(rule, inv) -> bool` (the lect has
   a target segment).
 - `pick_rule(rng, lect) -> Rule | None`: weighted by `weight`, then vetoed by functional load: estimate the mergers the rule
