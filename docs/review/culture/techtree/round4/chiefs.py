@@ -3,7 +3,8 @@ baseline against the chiefdom variant (a people holding chiefdoms may TAKE UP a 
 python chiefs.py RUN BASE.json OTHER.json   (RUN: the run id, for the peoples' ways of life in run.json; PLANET_DATA: the data root)
 
 Per draw (median and range over draws): the share of peoples with hands holding writing / kingship / chiefdoms at 0.5 kyr ago, and,
-among the peoples with no town of their own by then (towns_first None or later than 0.5 kyr ago, not hosted), the share holding
+among the peoples not settled then (arm S's settled() at 0.5 kyr ago, as lag.py records it: no town of their own within living
+memory; a group or overlay as its hosts), the share holding
 writing, split by whether they hold chiefdoms then and by a mobile way of life (techtree.MOBILE_WAYS)."""
 import json, os, sys
 from pathlib import Path
@@ -25,7 +26,7 @@ def stats(D, way):
         P = d["people"]
         n = len(P) or 1
         r = {t: sum(held(v, t) for v in P.values()) / n for t in ("writing", "kingship", "chiefdoms")}
-        nt = {p: v for p, v in P.items() if not v.get("hosted") and (v.get("towns_first") is None or v["towns_first"] < AT)}
+        nt = {p: v for p, v in P.items() if v.get("settled_05") is False}  # (arm S's own reading at 0.5 kyr ago: no town within living memory, hosts' for a group)
         for lab, sel in (("no town", lambda p, v: True),
                          ("no town, chiefdoms", lambda p, v: held(v, "chiefdoms")),
                          ("no town, no chiefdoms", lambda p, v: not held(v, "chiefdoms")),

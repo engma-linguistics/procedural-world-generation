@@ -2,7 +2,7 @@
 id: PW-1495
 title: "Arm S: may a people without towns invent a state tech, or only not take one up? (0141d1's writing starts 0.6 kyr later)"
 type: task
-status: needs-decision
+status: done
 parent: PW-661
 milestone: later
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1490]
 refs: [docs/review/culture/techtree/round3.md, docs/review/culture/techtree/round3/compare3b.py, "planet/lineages/techtree.py::Calendar.can", "planet/lineages/techtree.py::Calendar.gated", "runs 0141d1 3e0eb4 07c755"]
 created: 2026-11-07
-updated: 2026-11-07
+updated: 2026-11-08
 ---
 
 ## Description
@@ -41,5 +41,6 @@ was the early outlier.
 **What breaks if never done.** Nothing. 0141d1 simply prints later than before.
 
 ## Updates
+- 2026-11-08: Status needs-decision -> done. Lane 208: D62 A stands (no town, no invention of state techs; code unchanged). Daniel's question answered with fetched sources in docs/review/culture/techtree/writing_without_towns.md: the independent inventions came from cities or states (rongorongo, a chiefdom, the one possible exception); taking writing up without towns is common under chiefs (runes, Ogham, Tifinagh, Old Turkic, Hanunoo). The 'towns or chiefdoms' variant read from the chiefdoms tech undoes the gate (96-100% hold it; writing among unsettled peoples 6-40% -> 89-90%, round4.md); not built, inbox draft draft-chiefdom-seat-uptake.md offers a chief seat of its own.
 - 2026-11-07: Status todo -> needs-decision. Desk D62 (lean A: keep, no town no invention; A stands if Daniel says nothing).
 - 2026-11-07: Created from inbox draft draft-settled-peoples-lack-state-techs.md (found by lane-207b).
