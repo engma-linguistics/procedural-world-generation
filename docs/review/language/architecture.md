@@ -205,6 +205,14 @@ class Rule:
   with the highest weight x line preference (`hiatus_pref`: a lognormal, sigma `HIATUS_SPREAD` 1, keyed by the line's
   proto, `Lect.hiatus_key`, so daughters keep their parent's strategy) among those that reduce the hiatus of the words that
   have it and do not put most changed words back. Repairs are recorded changes, outside the re-fire memory.
+- **Line drift and the re-fire memory** (sound lane, 2026-11-08; soundchange-gaps.md recommendation 1). `Lect.rule_pool`
+  multiplies each rule's weight by `Lect.line_pref`: a lognormal per rule family (sigma `LINE_FAMILY_SIGMA` 0.7) and per row
+  (`LINE_ROW_SIGMA` 1.0), keyed by the line's proto (`hiatus_key`, inherited, as `hiatus_pref`), times a small jitter of a
+  budded lect's own (`LINE_BUD_SIGMA` 0.2, keyed by its id). A fired rule waits `REFIRE_KYR` (4, was 3) before it can fire
+  again, at most `MAX_FIRES` (2) times a line for epenthesis, tone and S042, once for harmony, and once (`ONE_OFF_MAX`) for
+  the named one-off laws (`lect.one_off`: family `chain_shift`, the dispersion pushes aside, and `ONE_OFF_IDS`: Verner,
+  Grassmann, the voiced-voiceless merger S097, West Germanic gemination and the like). Wave adoption obeys the same memory.
+  Harness effect and the event-rate side effect are in the comment at `LINE_FAMILY_SIGMA`.
 - `apply(rule, word) -> Word`, left to right, regular, on a tuple of Segments; `applies(rule, inv) -> bool` (the lect has
   a target segment).
 - `pick_rule(rng, lect) -> Rule | None`: weighted by `weight`, then vetoed by functional load: estimate the mergers the rule
@@ -216,6 +224,20 @@ class Rule:
   front vowels, nasalization + nasal loss, s>h, h>0, θ>f, cluster simplification, vowel harmony (one rule), umlaut, rhotacism,
   tonogenesis from coda loss, a chain shift step, metathesis of CC, and epenthesis. The full catalogue is loaded from
   `data/sound_changes.tsv` by a parser of the compact notation; parse failures are logged and skipped, not fatal.
+  (Sound lane, 2026-11-08) `X` is any segment, so `r > l / _X*r` reaches an r later in the word (dissimilation S091-S094,
+  Grassmann staged over aspirated and breathy stops, ATR harmony S134 approximated on height); a parallel list of clusters
+  ("pl, kl, fl > pj, kj, fj") is a staged rule, a step per pair. S218-S225 add common changes the catalogue lacked (t > k,
+  k > ʔ and ŋ > n everywhere as in Hawaiian, secondary palatalization before front vowels, aː > ɔː, ɪ ʊ > i u, t k > s
+  before i, k > tʃ before a); S174 diphthongizes in open syllables only. 7 of 225 rows stay refused: haplology (S106, identity),
+  suffix harmony (S132, S133, morphology), pitch accent (S170), tone loss (S172) and analogy (S183, S184). A staged rule
+  `applies` when any step can act, and `_single` runs its steps in order on a lone segment (the steers see every step).
+  A chain "a > b > c" is staged, a > b then b > c (feeding). The famous chain shifts are single staged events written in
+  drag order, so no two series merge: Grimm S177 (p t k > f θ x after a sonorant or initially, then b d g > p t k, then
+  the breathy stops lose breath), High German S178, the Great Vowel Shift S179 (iː uː > ei ou, then eː oː > iː uː, then
+  ɛː ɔː > eː oː, then aː > ɛː), its diphthongs opening S181 (ei ou > ai au), Northern Cities S182. S097 is a plain
+  voiced/voiceless merger (Tocharian), S180 a plain raising of long mid vowels (iotacism). Chain shifts weigh half
+  (`history.RULE_WEIGHT` "family:chain_shift" 0.5) and fire once a line; harness: Grimm in ~25% of lines, the whole GVS in
+  ~30% (before: T > F 44%, D > T 90%, the three GVS rows all in 50%, in arbitrary order).
 - Rules run on *inflected forms* too: the lect hands `apply` every stored form (stems, paradigm exemplar forms, gram forms,
   names).
 

@@ -14,8 +14,10 @@ The compact notation (``parse_rule``) is the one of ``data/sound_changes.tsv``: 
 and the classes V C N P(stop) T(voiceless stop) D(voiced stop) F(fricative) S(sibilant) L/R(liquid) G(glide), ``#`` word
 edge, ``_`` the focus, ``∅`` zero, ``(X)`` optional, ``X*`` any number, ``{a, b}`` either, brackets ``[+front V]``,
 ``[−voice]``, ``[αplace]`` (assimilation), ``[−stress]``, ``[axis=v]``, ``[axis=lo..hi]``, and the house flags
-``[coda]``, ``[onset]``, ``[final]``, ``[nonfinal]``, ``[open]``, ``[closed]``. Comma lists are parallel changes; a chain
-``a > b > c`` keeps its first step. What the parser cannot express it refuses with a reason, never by raising.
+``[coda]``, ``[onset]``, ``[final]``, ``[nonfinal]``, ``[open]``, ``[closed]``, and ``X`` any segment (``_X*r``: an r
+later in the word, for dissimilation and harmony at a distance). Comma lists are parallel changes; a parallel list of
+clusters ("pl, kl > pj, kj") becomes a staged rule, a step per pair (refused when a step would feed a later one); a chain
+``a > b > c`` is staged, a > b then b > c (a drag chain is written in drag order with "then"). What the parser cannot express it refuses with a reason, never by raising.
 """
 
 from __future__ import annotations
@@ -168,7 +170,8 @@ L = Pattern("L", ("named", "liquid"), "a liquid")
 G = Pattern("G", ("named", "glide"), "a glide")
 SON = Pattern("[+son]", ("named", "son"), "a sonorant")
 OBS = Pattern("[-son]", ("named", "obs"), "an obstruent")
-CLASSES = {"V": V, "C": C, "N": N, "P": P, "T": T, "D": D, "F": F, "S": S, "L": L, "R": L, "G": G}
+X = cls("X", None, "any segment")  # any segment: X* bridges to a non-adjacent context (dissimilation, harmony at a distance)
+CLASSES = {"V": V, "C": C, "N": N, "P": P, "T": T, "D": D, "F": F, "S": S, "L": L, "R": L, "G": G, "X": X}
 CLASS_SETS = {"T": {"manner": 0, "voice": 0}, "D": {"manner": 0, "voice": 1}, "P": {"manner": 0}, "N": {"manner": 3},
               "F": {"manner": 2}}
 
@@ -635,9 +638,13 @@ def _apply_insert(rule: Rule, w, stress_index=None) -> tuple:
 
 
 def applies(rule: Rule, segments: Iterable) -> bool:
-    """True when the lect has a segment the rule can act on (an insertion always can)."""
+    """True when the lect has a segment the rule can act on (an insertion always can); a staged rule when any of its steps
+    can."""
     if rule.target is None:
         return True
+    if rule.then:
+        segs = list(segments)
+        return any(applies(r, segs) for r in (replace(rule, then=()),) + tuple(rule.then))
     return any(rule.target(s) for s in segments)
 
 
@@ -804,7 +811,18 @@ def dispersion_rule(rule: Rule, inventory_segments: Iterable) -> Rule | None:
 
 
 def _single(rule: Rule, seg):
-    """The rule's output for a lone segment (context ignored), or None when it does not act on it."""
+    """The rule's output for a lone segment (context ignored), or None when it does not act on it. A staged rule runs its
+    steps in order on the lone segment (a chain shift in drag order: p > f, then b > p leaves b as p, not f)."""
+    if rule.then:
+        cur, hit = [seg], False
+        for st in (replace(rule, then=()),) + tuple(rule.then):
+            if len(cur) != 1:
+                break
+            o = _single(st, cur[0])
+            if o is not None:
+                hit = hit or list(o) != cur
+                cur = list(o)
+        return cur if hit else None
     ch = rule.change
     if rule.target is None or not rule.target(seg):
         return None
@@ -1467,7 +1485,12 @@ def _parse(src, **meta) -> Rule:
     if len(parts) > 2:
         if any("," in p for p in parts[1:-1]) and "," not in parts[0]:
             raise ParseError("several rules in one row")
-        notes.append("first step of a chain")
+        # a chain "a > b > c" is staged: a > b, then b > c (feeding: a ends as c, and an old b goes with it); every step
+        # takes the environment. A chain that must not merge is written in drag order by hand ("b > c ; then a > b").
+        env = f" / {envtxt}" if envtxt.strip() else ""
+        steps = [_parse(dict(row, id=f"{rid}~{k + 1}", rule=f"{a} > {b}{env}"))
+                 for k, (a, b) in enumerate(zip(parts, parts[1:]))]
+        return replace(steps[0], id=rid, then=tuple(steps[1:]), notation=(row.get("rule") or "").strip())
     lhs, rhs = parts[0], parts[1]
     if not lhs or not rhs:
         raise ParseError("empty side")
@@ -1482,6 +1505,8 @@ def _parse(src, **meta) -> Rule:
 
     in_toks = [_tokens(x) for x in in_items]
     out_toks = [_tokens(x) for x in out_items]
+    if len(in_toks) > 1 and any(len(t) > 1 for t in in_toks):  # parallel clusters ("pl, kl > pj, kj"): one step each
+        return _parallel_clusters(row, rid, in_items, out_items, envtxt, notes)
     if len(in_toks) == len(out_toks) == 1:
         in_toks, out_toks = [_merge_gem(in_toks[0], out_toks[0])], [_merge_gem(out_toks[0], in_toks[0])]
     else:
@@ -1544,7 +1569,7 @@ def _parse(src, **meta) -> Rule:
                     "metathesis" if len(ins) == 2 and [x[0] for x in items] == [1, 0] else "rewrite"
                 if any(t.typ == "lit" for t in outs) and all(t.typ == "lit" for t in ins):
                     out_text = out_items[0].strip()
-                elif len(outs) == 1 and outs[0].base in CLASS_SETS and outs[0].base != ins[0].base:
+                elif len(outs) == 1 and outs[0].base in CLASS_SETS and outs[0].base != ins[0].base and not outs[0].sets:
                     out_text = CLASSES[outs[0].base].words
                 else:
                     out_text = ""
@@ -1581,6 +1606,24 @@ def _parse(src, **meta) -> Rule:
                 notation=(row.get("rule") or "").strip() + (f"  [{'; '.join(notes)}]" if notes else ""))
 
 
+def _parallel_clusters(row: dict, rid: str, in_items: list, out_items: list, envtxt: str, notes: list) -> Rule:
+    """A parallel list whose inputs are clusters ("pl, kl, fl > pj, kj, fj"; "ps, pt > s, t / #_") as one staged rule, a
+    step per pair in the written order. That equals the parallel change only when no step's output holds a later step's
+    input (no feeding), so such a row is refused."""
+    if len(out_items) == 1:
+        out_items = out_items * len(in_items)
+    if len(out_items) != len(in_items):
+        raise ParseError("input and output lists differ in length")
+    for k, inp in enumerate(in_items):
+        if any(inp.strip() in o for o in out_items[:k]):
+            raise ParseError("parallel clusters that feed each other")
+    env = f" / {envtxt}" if envtxt.strip() else ""
+    parsed = [_parse(dict(row, id=f"{rid}~{k + 1}", rule=f"{i} > {o}{env}")) for k, (i, o) in
+              enumerate(zip(in_items, out_items))]
+    note = f"  [{'; '.join(notes)}]" if notes else ""
+    return replace(parsed[0], id=rid, then=tuple(parsed[1:]), notation=(row.get("rule") or "").strip() + note)
+
+
 # Lexical diffusion is the minority: metathesis and dissimilation spread word by word in the record (Wang 1969; Hock
 # 1991 ch. 9), as do the rarest (weight 1) changes.
 DIFFUSING_FAMILIES = frozenset({"metathesis", "dissimilation"})
@@ -1601,8 +1644,18 @@ def _env_words(env: Env) -> str:
     bits = []
     for left_rev, right in env.alts:
         left = list(reversed(left_rev))
-        lw = [_tok_words(t) for t in left]
-        rw = [_tok_words(t) for t in right]
+        far_l = any(t[0] == "star" and t[1].label == "X" for t in left)  # X*: anywhere earlier / later in the word
+        far_r = any(t[0] == "star" and t[1].label == "X" for t in right)
+        lw = [_tok_words(t) for t in left if not (t[0] == "star" and t[1].label == "X")]
+        rw = [_tok_words(t) for t in right if not (t[0] == "star" and t[1].label == "X")]
+        if far_l or far_r:
+            part = []
+            if lw:
+                part.append("after " + " + ".join(x for x in lw if x != "#") + (" earlier in the word" if far_l else ""))
+            if rw:
+                part.append("before " + " + ".join(x for x in rw if x != "#") + (" later in the word" if far_r else ""))
+            bits.append(" and ".join(part))
+            continue
         if lw == ["a vowel"] and rw == ["a vowel"]:
             bits.append("between vowels")
             continue
@@ -1638,7 +1691,7 @@ def describe(rule: Rule) -> str:
     """Plain words for the workbench: 'p became f between vowels (effort: lenition)'. A class rule names what it does to
     real segments ('..., e.g. p > b, t > d'); a staged rule lists its steps."""
     fam = rule.family or rule.id.split(".")[0]
-    steps = "; then ".join(_describe_step(r) for r in (rule,) + tuple(rule.then))
+    steps = "; then ".join(_describe_step(r) for r in (replace(rule, then=()),) + tuple(rule.then))
     return f"{steps} ({rule.cause}: {fam})"
 
 
@@ -1716,7 +1769,7 @@ _SET_WORDS = {("voice", 1): "voiced", ("voice", 0): "voiceless", ("back", 0): "f
               ("round", 1): "rounded", ("round", 0): "unrounded", ("height", 6): "high", ("larynx", 2): "ejective",
               ("larynx", 3): "implosive", ("larynx", 1): "aspirated", ("phonation", 1): "breathy",
               ("phonation", 0): "modal-voiced", ("larynx", 0): "unaspirated",
-              ("secondary", 1): "labialized", ("secondary", 2): "palatalized",
+              ("secondary", 1): "labialized", ("secondary", 2): "palatalized", ("prenasal", 1): "prenasalized",
               **{("tone", t): f"{w}-toned" for t, w in _TONE_WORDS.items()}}
 
 
