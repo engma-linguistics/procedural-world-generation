@@ -46,5 +46,6 @@ follow ("they rose against the khan"). Effort is small: a lookup of the submitte
 - [ ] Daniel picks; then measure on seeds 7, 10, 3 (round12/measure.py) against the round 12 runs.
 
 ## Updates
+- 2026-11-08: Lane 215: option B built as a switch, polity_live.REVOLT, default OFF (docs/review/culture/polities/round13.md). No faction-split event exists in the history, so a rising is read from the polities: a submitted people seats its own polity on a cell its ruler held last century while that ruler still stands; the same ruler's next taking finds it unable to submit (fate at the winner's attitudes then); no new number. Seeds 7/10/3, switch off (= main 96dd22aa) -> on: submitted pairs that later rose 4 of 6 / 7 of 13 / 9 of 21; retaken 3 / 14 / 9; heads lost 0.10 -> 0.11 M, 0.58 -> 2.14 M, 0.94 -> 1.00 M; razed 0 -> 0, 17 -> 21, 0 -> 0; heads moved 0 -> 0, 0.014 -> 0.041 M, 8.27 -> 8.27 M. Seed 10's orcs razed risen humans (1.12 M in one retaking); seed 3's tolerant humans kept 5 of 9 risers. Present population unchanged. Flip REVOLT to True if Daniel picks B.
 - 2026-11-08: Desk D67 (lean B: revolt brings the harsh fate back; no new number).
 - 2026-11-08: Created from inbox draft draft-submission-revocable.md (found by lane208).

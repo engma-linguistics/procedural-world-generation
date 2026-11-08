@@ -3793,6 +3793,26 @@ def test_expelled_peoples_move_to_their_nearest_free_land_and_a_martial_winner_r
     R.att.x[kb] = np.array([0.5, 0.2])  # (a less warlike people submits and is kept, even by a martial, intolerant winner)
     f, b, a = run((0.1, 0.6))
     assert f == ["submitted", 0, 0] and a == b and np.array_equal(h.p[kb], p0)
+    assert R.submissions == [] and R.revolts == []  # (REVOLT off: nothing kept)
+    # PW-1513 (D67 B, switch REVOLT): a submitted people that seats its own polity on its ruler's land, while the ruler stands, has
+    # risen; the same ruler's next taking finds it unable to submit again, and the fate is the winner's attitudes then
+    monkeypatch.setattr(PL, "REVOLT", True)
+    f, b, a = run((0.1, 0.6))
+    assert f == ["submitted", 0, 0] and R.submitted == {"kob": {"folk"}}
+    c = int(cells[0])
+    R.owner = np.full(h.grid.n, -1, np.int64)
+    R.owner[c] = 0
+    R.ruling = [{"key": "c-folk", "people": "folk", "cell": int(kob[-1]), "tier": "state"}]
+    rebel = {"key": f"c{c}", "people": "kob", "cell": c, "tier": "chiefdom"}
+    R._risings([rebel], {"c-folk": 1, rebel["key"]: 0}, 0.9)
+    assert R.revolts == [[0.9, "kob", "folk", c]] and ("kob", "folk") in R.revolted
+    f, b, a = run((0.1, 0.6))  # (retaken by the same martial, intolerant ruler: razed, as it would have been)
+    assert f[0] == "razed" and f[1] > 0 and a < b and R.punished[-1][1:4] == ["kob", "folk", "razed"]
+    f, b, a = run((0.1, 0.6))  # (once punished, the mark is spent: it may submit again)
+    assert f == ["submitted", 0, 0]
+    R.submitted, R.revolted = {"kob": {"folk"}}, {}
+    R._risings([rebel], {rebel["key"]: 0}, 0.8)  # (the ruler's polity no longer stands: no rising against it)
+    assert ("kob", "folk") not in R.revolted
 
 
 def test_aggression_makes_an_intolerant_conqueror_harsher_not_a_tolerant_one():
