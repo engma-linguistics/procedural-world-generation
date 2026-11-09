@@ -1,4 +1,5 @@
 ---
+id: PW-1591
 title: "Faiths: 77 of 108 faiths forbid swine and faiths are founded up to 300 kyr ago, so every myth reads alike and older than its language"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lang-lane5
 blocked_by: []
 relates: [PW-1537]
-refs: ["runs/a24559/languages.json (faiths: taboos, founded_kyr)", "planet/language/texts.py::myth", "planet/language/texts.py::TABOO_CONCEPT", "planet/lineages/gods.py", "planet/lineages/cuisine.py::_taboos", "tools/language/sketch.py::faith_section"]
+refs: ["runs/a24559/languages.json (faiths: taboos, founded_kyr)", "planet/language/texts.py::myth", "planet/language/texts.py::TABOO_CONCEPT", planet/lineages/gods.py, "planet/lineages/cuisine.py::_taboos", "tools/language/sketch.py::faith_section"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -30,3 +33,6 @@ Simoons 1994 *Eat Not This Flesh*), and cap or explain `founded_kyr` against the
 "older than the languages now spoken" instead of a number).
 - [ ] no divine taboo target held by more than ~30% of faiths on a24559
 - [ ] the sketch never prints a founding date older than the run's proto-languages without saying so
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-faith-taboos-mostly-swine.md (found by lang-lane5).

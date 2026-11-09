@@ -2,7 +2,7 @@
 id: PW-1545
 title: "Languages: voices without lips or a velum lose the sound changes that would undo their dear substitutes (exits barred by the needs filter)"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: later
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: ["planet/language/rules.py::catalogue", "planet/language/rules.py::cost_factor", planet/language/data/sound_changes.tsv, planet/language/data/voice_profiles.toml, "docs/review/language/calibration.md#dark-l-and-y-2026-11-08-lang-dark"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -46,4 +46,5 @@ show up as another overuse failure.
   rounded vowels 0.249 -> 0.286 (no unrounding exit in the catalogue); all checks as before (calibration.md "Lane 5")
 
 ## Updates
+- 2026-11-09: Status todo -> done. Merged 1612db8f (lane 5): rules.exit_only keeps a change for a voice lacking lips/velum/teeth when it only removes that gesture (23-32 rows open). Lipless lines: labial share 0.187 -> 0.154, nasal vowels 0.013 -> 0.004. Rounded vowels stay (no unrounding exit in the catalogue).
 - 2026-11-08: Created from inbox draft draft-language-missing-articulator-exits.md (found by lang-dark (dark l and y lane)).

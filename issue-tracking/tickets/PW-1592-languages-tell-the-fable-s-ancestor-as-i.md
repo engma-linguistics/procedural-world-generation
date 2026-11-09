@@ -1,4 +1,5 @@
 ---
+id: PW-1592
 title: "Languages: tell the fable's ancestor as it stood at the split (snapshot state), not a lect that later innovated"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lang-lane5
 blocked_by: []
 relates: [PW-1537]
 refs: ["planet/language/texts.py::pick_family", "planet/language/texts.py::fable", "planet/language/lect.py::Lect.copy", "planet/language/output.py::thin_snapshots", "tools/language/demo_page.py::fable_section", "run a24559 (fable ancestor p320, its copy d767)", "PW-1537 R2 (diagnosis by lang-last)"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -35,3 +38,6 @@ What to try (one of):
 Lean: A.
 - [ ] fable daughters descend from the shown ancestor: a `demo_page.py` check that each daughter's fable word shares
   a root (`etym_roots`) with the ancestor's or is marked replaced or borrowed
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-fable-ancestor-at-split.md (found by lang-lane5).

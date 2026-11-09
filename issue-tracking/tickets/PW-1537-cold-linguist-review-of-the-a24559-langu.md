@@ -229,4 +229,5 @@ All other checks pass except the scholars' horizon (accepted).
 - [ ] a second cold read of the regenerated demo finds none of R1-R3 again
 
 ## Updates
+- 2026-11-09: Lane 5 (1612db8f) did R1 gram wear, R3 recipes by food and myth wording per faith, R5 homophones and frequent-pair damping, R6/R9 myth notes, small slips; R2 fable ancestor -> PW-1592; faith data -> PW-1591. Remaining items listed in the ticket's lane-5 notes.
 - 2026-11-08: Created from inbox draft draft-language-cold-review.md (found by lang-design cold review (fresh agent, no lane history, 2026-11-08)).
