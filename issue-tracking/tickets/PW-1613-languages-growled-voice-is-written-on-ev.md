@@ -1,15 +1,19 @@
 ---
+id: PW-1613
 title: "Languages: growled voice is written on every sound of a syllable (w‼ɔ‼j‼); mark it once per syllable on the page, or make it a syllable feature?"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: m
 impact: low
 found_by: language lane 9 (PW-1537 R6)
 blocked_by: []
 relates: [PW-1537]
-refs: [planet/language/percepts.py, "planet/language/percepts.py::word_ipa", "planet/language/percepts.py::from_ipa", "planet/language/romanize.py", tools/language/demo_page.py, tools/language/sketch.py, docs/review/language/sketches/d48-blue-dragon.md, "run a24559"]
+refs: [planet/language/percepts.py, "planet/language/percepts.py::word_ipa", "planet/language/percepts.py::from_ipa", planet/language/romanize.py, tools/language/demo_page.py, tools/language/sketch.py, docs/review/language/sketches/d48-blue-dragon.md, "run a24559"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -35,3 +39,6 @@ Lean: A. It answers the review at page level without touching the model; B only 
 behave as a register in sound change too.
 
 Coordinator call 2026-11-09: A (page-only, one mark per fully growled syllable); B only if a later lane wants the growl to act as a register in sound change.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-growl-per-syllable.md (found by language lane 9 (PW-1537 R6)).

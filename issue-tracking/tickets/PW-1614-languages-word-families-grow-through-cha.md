@@ -1,8 +1,10 @@
 ---
+id: PW-1614
 title: "Languages: word families grow through chains of compounds (hand > wing > bird > bee); felt families should stop where a speaker no longer hears the root"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: m
 impact: low
@@ -10,6 +12,8 @@ found_by: language lane 9 (PW-1537 R10)
 blocked_by: []
 relates: [PW-1537]
 refs: ["planet/language/lexicon.py::felt_roots", "planet/language/lexicon.py::compound", "planet/language/lexicon.py::refresh_roots", "tools/language/sketch.py::_root_family", "tools/language/sketch.py::felt_members", planet/language/data/compounds.tsv, planet/language/data/derivations.tsv, docs/review/language/sketches/d760-hobgoblin.md, "run a24559"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -34,3 +38,6 @@ the root word. Then read the dragon felt-family share on the same run (their lon
 which may be all it is).
 - [ ] no felt family member more than two compound or derivation steps from the root word in the a24559 sketches
 - [ ] the felt-family share per people reported before and after
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-felt-families-chains.md (found by language lane 9 (PW-1537 R10)).

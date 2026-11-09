@@ -1,8 +1,10 @@
 ---
+id: PW-1615
 title: "Languages: on the second world (de1cc6) current code fails three checks a24559 passes: sisters 0.47, overused ⁿt/ᵑk, pronoun loans 0.10"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: m
 impact: med
@@ -10,6 +12,8 @@ found_by: language lane 9 (PW-1566 second seed)
 blocked_by: []
 relates: [PW-1566, PW-1537]
 refs: [planet/language/checks.py, "planet/language/checks.py::living_sizes", "run de1cc6", docs/review/language/calibration.md]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -37,3 +41,6 @@ list the borrowing pairs (a shift-heavy history may borrow pronouns more). Then 
 whether it is a model fix or a world that is allowed to differ.
 - [ ] a per-check reading of de1cc6 with the cause named
 - [ ] each of the three either passes on de1cc6 or has a written reason it may differ there
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-de1cc6-checks.md (found by language lane 9 (PW-1566 second seed)).
