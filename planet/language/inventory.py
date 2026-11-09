@@ -735,6 +735,59 @@ def _draw_shapes(rng) -> dict:
     return {"shapes": shapes, "max_onset": mo, "max_coda": mc, "kind": kind}
 
 
+def marked_sound(s) -> bool:
+    """A marked series member (PW-1537 R3): aspirated or ejective, growled or purred, or a vowel of the sub-bass or ultra
+    register. Breathy and creaky voice and implosives are left out: they stand without a plain partner in real
+    inventories often enough (Maddieson 1984). Prenasalised stops too (Fijian ᵐb ⁿd have no plain b d): only a
+    prenasalised ejective is barred, by rules.impossible."""
+    return s.larynx in (1, 2) or s.phonation in (3, 4) or bool(s.register)
+
+
+def plain_partners(s) -> set:
+    """The plain partners of a marked sound at its place (length aside; either voicing for a stop that lost an
+    aspirate or ejective mark, so tʰ is partnered by t or d)."""
+    p = replace(s, phonation=0 if s.phonation in (3, 4) else s.phonation, register=0, length=0,
+                larynx=0 if s.larynx in (1, 2) else s.larynx)
+    return {p, replace(p, voice=1 - p.voice)} if s.larynx in (1, 2) else {p}
+
+
+FILL_MANNERS = (0, 1)   # stops and affricates (lateral affricates aside: `_fill_partners`)
+
+
+def _fill_partners(rng, cons: list, ccost: dict, profile) -> list:
+    """PW-1537 R3, the orphans a proto is drawn with: a marked stop or affricate (kʼ, qʰ, tsʰ) needs a plain partner at
+    its place (Maddieson 1984: a marked series member implies the plain one). The draw picks series members and fillers
+    independently, so a quarter of human protos had one with no partner (lane 9: aspirates 124, ejectives 75 in 300
+    draws), and the marked members overshot PHOIBLE (1500 human draws: pʰ 0.195 against 0.165, tʰ 0.177 against 0.124,
+    cʰ 0.073 against 0.027, tsʰ 0.102 against 0.057, tsʼ 0.071 against 0.040). An orphan gives its slot back to the
+    ordinary draw (base weights, never another orphan), so sizes hold: pʰ 0.164, tʰ 0.133, kʰ 0.159, tsʰ 0.033, tʃʰ
+    0.060, tʃʼ 0.039. Adding the partner instead raised ts, t̪ and c by 7-10 points. Lateral affricates are exempt:
+    PHOIBLE has tɬʼ (0.9%) more often than tɬ (0.6%), beside ɬ (Salish, Caucasian)."""
+    pool = _pool_for(profile)[0]
+    segs, base, _ = _base_weights(pool, profile)
+    out = list(cons)
+
+    def orphan(x, have) -> bool:
+        return (x.kind == "C" and marked_sound(x) and x.manner in FILL_MANNERS and not x.lateral
+                and not (plain_partners(x) & have))
+
+    for s in list(out):
+        have = {replace(x, length=0) for x in out}
+        if not orphan(s, have):
+            continue
+        rest = [x for x in out if x != s]
+        h2 = {replace(x, length=0) for x in rest}
+        w = np.array([b if (x not in rest and x != s and not orphan(x, h2)) else 0.0 for x, b in zip(segs, base)])
+        if w.sum() <= 0:
+            continue
+        p = segs[int(rng.choice(len(w), p=w / w.sum()))]
+        i = out.index(s)
+        ccost.pop(s, None)
+        out[i] = p
+        ccost[p] = _cost(profile, p)
+    return out
+
+
 def draw_inventory(rng, profile=None, size_hint=None) -> Inventory:
     """A proto-inventory for a speaker with `profile` (None: human). `size_hint`: (n_consonants, n_vowels), or a scale
     factor on the drawn sizes, or None (PHOIBLE's distribution; fallback lognormal around 22 C / 6 V)."""
@@ -751,6 +804,7 @@ def draw_inventory(rng, profile=None, size_hint=None) -> Inventory:
         clicks = click_system(rng, nc)
     have = draw_series(rng, nc, nv)
     cons, ccost = _pick_consonants(rng, nc - len(clicks), profile, have)
+    cons = _fill_partners(rng, cons, ccost, profile)
     if clicks:
         ccost.update({c: _cost(profile, c) for c in clicks})
         cons = cons + [c for c in clicks if c not in cons]
@@ -1099,11 +1153,14 @@ def epenthetic_vowel(inv: Inventory) -> Segment:
 
 
 def _onset_filler(inv: Inventory) -> Segment:
+    # (a short consonant first: a word-initial geminate is illegal, so a long ʔː filler was cut again at once and the
+    # repair gave up; seen on a drawn inventory whose glottal stop is only long)
+    short = [c for c in inv.consonants if not c.length] or list(inv.consonants)
     for pred in (lambda c: c.manner == 0 and c.place == 8, lambda c: sonority(c) == 8, lambda c: c.place == 8):
-        cs = [c for c in inv.consonants if pred(c)]
+        cs = [c for c in short if pred(c)]
         if cs:
             return max(cs, key=lambda c: inv.freq.get(c, 0))
-    return max(inv.consonants, key=lambda c: inv.freq.get(c, 0))
+    return max(short, key=lambda c: inv.freq.get(c, 0))
 
 
 def _nearest(s: Segment, inv: Inventory) -> Segment | None:

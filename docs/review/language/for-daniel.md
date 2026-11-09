@@ -1277,3 +1277,55 @@ syllable, class concord on every word, CLICS derivation families, and gaps that 
 | how many cases they are born with | 6-7: 37, 8-9: 23, 10-12: 24 (WALS 49A counts of the 6+ bins) | `grammar.CASE_BIRTH_BINS` |
 | the order the endings are taken in | accusative/ergative, genitive, dative and locative, ablative/allative/instrumental/comitative, inessive/superessive, the peripheral ones | `grammar.CASE_BIRTH_ORDER` |
 | Grambank pairs drawn one given the other | core/oblique case, accusative/ergative, plural/dual, bound/free plural | `build_reference_tables.GB_SIBLINGS` |
+
+## Lane 9 (lang-lane9, 2026-11-09): caseless languages stay caseless, sounds that flicker, sounds with no plain partner
+
+- **Case sizes (PW-1605), partly met.** In plain words: a language whose grammar has no case system kept turning its
+  postpositions (little words like Japanese *ni* 'at') into case endings at the same speed as any other language, and
+  once it had an ending its grammar was relabelled 'small case system'. That only ever went one way, so the older a
+  language, the likelier it had a few case endings. Now a postposition in a caseless language fuses into an ending at a
+  tenth of the speed: it stays a word or a clitic, as in Japanese and Korean. Also, a small case system no longer always
+  grows a genitive of its own (real small systems are more often 2 cases than 3 or 4). Same world, before (lane 8's
+  stored output) -> after: no case or clitic-only case 38% -> 48% of living languages (real: 47%); 2-5 cases 33% -> 28%
+  (real: 20%); 6+ cases 29% -> 23.5% (real: 32%); 8+ 13.7% -> 12.7% (18%). Two things are still off: clitic-only case
+  ('borderline' in WALS) is now 20% against 9% real, partly because the model calls any case clitic borderline; and 6+
+  fell, partly run-to-run noise. Left on the ticket.
+- **Sounds that flicker (PW-1537).** In plain words: a language could insert a sound (a glide to break up two vowels)
+  and drop it again a few centuries later, back and forth, many times over a history. A language's sound history now
+  remembers what it inserted or dropped and does not undo it within the wait it already uses for repeated changes.
+  Same world, before -> after: such back-and-forth pairs 4185 -> 1108 across all languages; the typical language has
+  none (it had 3); the worst 47 -> 28.
+- **Sounds with no plain partner (PW-1537).** In plain words: a new proto-language could get an aspirated or ejective
+  sound (tʰ, tsʼ) without the plain one (t, ts), which real languages almost never do. The draw now replaces such a
+  sound with an ordinary one. Protos with such a gap 25% -> 6%; aspirated ts and ejective ts fell to near their real
+  rates (ejective ts 7% -> 1.5%, real 4%). Living languages with an aspirate gap 123 -> 26. Ejective gaps are fewer
+  (141 -> 108) but still there, because later sound changes wear down the plain t and leave the tʼ; not chased.
+  When clicks are lost, every click series now goes with its plain click (a nasal click becomes ŋk, a voiced click ɡ).
+- **Class agreement (PW-1537).** In plain words: serial verbs, verb-like adjectives and the copula example now agree
+  with their subject's noun class, as the main verb did. A language that grows noun classes now picks its first
+  classes by how often real systems have them (people first, then animals and plants) instead of a fixed list order.
+  Concord grown from numeral classifiers is called noun classes on the page.
+- **The raised e (PW-1566).** In plain words: the vowel nearly no real language has stayed at zero on a second world.
+  The second world (de1cc6) had it in 6% of languages on the old code; now none. Same seed, main's code before this
+  lane: also none, so the fix (merged earlier) holds. That world fails three other checks on main's code too
+  (sisters, overused prenasal stops, pronoun loans); filed as a draft to read world by world.
+- **A people that cannot make a sound no longer keeps it after a language shift.** In plain words: stone giants who took
+  up a bird-people's language kept the birds' second voice in some words, because a shift keeps the old sounds in 40%
+  of words (your ruling 11-08, "nativise, partially"). That share now applies only to sounds that are hard for the new
+  speakers; a sound they cannot make at all is replaced in every word.
+- **Left as drafts:** how to show a growled voice per syllable (your call, three options); word families that grow
+  through chains of compounds (bee under 'hand'); the three checks the second world fails.
+- **Checks (same world on the code before this lane):** all pass except the scholars' horizon, as before. Sisters
+  recognisable 0.547 -> 0.572 (pass mark 0.5); pronoun loans 0.071 -> 0.065 (cap 0.08); WOLD rho 0.386 -> 0.41 (at
+  least 0.3). The demo builds with no fable warning.
+
+**Defaults I chose**
+
+| what | default | where |
+| --- | --- | --- |
+| how much slower a case clitic fuses in a caseless language | x0.1 | `grammar.UNWANTED_CASE_FUSE` |
+| small case systems pull a genitive of their own | no (they pull any case) | `grammar._unrealised` |
+| how long an inserted or dropped sound is protected | the existing repeat-change wait | `lect.Lect.alternates`, `refire_kyr` |
+| a sound the shifting people cannot make at all | replaced in every word (hard-but-possible sounds keep the 60% share) | `history.nativise` |
+| a drawn aspirate/ejective with no plain partner | slot redrawn; lateral affricates exempt | `inventory._fill_partners` |
+| order of noun-class groups | weighted draw: person 12, animal 2, plant 2, small 1.5, liquid 1, people 1, place 0.8, abstract 0.8, manner 0.5 (a taste default) | `grammar.CLASS_GROUP_W` |
