@@ -100,6 +100,11 @@ REFIRE_KYR = 4.0  # a rule that fired in a lect is not drawn (nor adopted by wav
 # Kept after the single draw (PW-1551): without it the commonest rows re-fire as soon as their input comes back (harness:
 # apocope 16.5, h-loss 14.6 firings a line in 20 kyr, applied changes 14.4 -> 23.8 per lect-kyr); a law that just ran is
 # a live rule of the lect (phonology.py), not a new change
+REFIRE_GEN_YR = 28.0  # the wait is REFIRE_KYR x (generation / REFIRE_GEN_YR) from this generation length up (= history.SOFT_GEN_YR:
+# rates are per generation there, owner 11-03), so a 430-yr dragon line waits as many generations as a human one (PW-1551
+# lane: with the single draw a human line is bound by its inputs and its wait, a dragon line by its draws, and a wait in
+# years let long-lived lines re-fire their common rows 15x as often per generation: own changes per kyr, dragons 1.7 ->
+# 3.4 against humans 14.5 -> 15.2, failing "long generations change less")
 MAX_FIRES = 2  # ... and fires at most this many times in a lect's life, counting its ancestors' (daughters inherit the memory)
 HARMONY_MAX = 1  # harmony rules (family "harmony") at most once per lect line
 LIFETIME_CAP_FAMILIES = frozenset({"epenthesis", "harmony", "tone"})  # families under the lifetime cap (the rest only wait
@@ -535,6 +540,10 @@ class Lect:
         self.burst_until = None
         return True
 
+    def refire_kyr(self) -> float:
+        """The re-fire wait in kyr: REFIRE_KYR, counted in generations from REFIRE_GEN_YR up (rates are per generation)."""
+        return REFIRE_KYR * max(1.0, self.gen_yr / REFIRE_GEN_YR) if REFIRE_GEN_YR else REFIRE_KYR
+
     def may_fire(self, rule, kyr: float) -> bool:
         """The re-fire memory: a rule fired in the last REFIRE_KYR, or already MAX_FIRES times in the lect's line (HARMONY_MAX
         for harmony, ONE_OFF_MAX for a one-off row: one_off), is not drawn or adopted again."""
@@ -547,7 +556,7 @@ class Lect:
             return False
         if rule.family in LIFETIME_CAP_FAMILIES and len(h) >= (HARMONY_MAX if rule.family == "harmony" else MAX_FIRES):
             return False
-        return h[-1] - kyr >= REFIRE_KYR - 1e-9
+        return h[-1] - kyr >= self.refire_kyr() - 1e-9
 
     def consonants(self) -> frozenset:
         """The proto-like base for the inventory cap: the consonants, and the vowel qualities (tone set aside)."""
