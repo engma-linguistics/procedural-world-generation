@@ -154,7 +154,13 @@ ruler" swing more, because one empire more or less moves a large share of the ru
 L7 (lane 234's world 899985, before this branch; round14.md sections 2-4, and `round16/measure_v1.py` for their /1 live files):
 - seed 7: on 0.18 / 0.64 Mkm², first state 2,600 ya, 85 states now; off 0.46 / 2.33, 4,100 ya, 122.
 - seed 10: on 0.71 / 1.66, 4,100 ya, 116; off 1.12 / 1.58, 4,600 ya, 177.
-The L7 seed-7 pair on this branch (base and nudge) was started in the lane's scratch (section 5).
+L7 seed 7 on this branch, switch on (16b49e; nudge 2b7069; landed after the handoff), against lane 234's switch-off 0a1c30 / 19e53f:
+- first state 3,300 ya, against 4,100 off (2,600 on main);
+- states 2,000 / 1,000 / 0 ya: 89 / 121 / 148, against 50 / 89 / 122 off;
+- largest: median 0.77 / peak 1.23 Mkm², against 0.46 / 2.33 off (0.18 / 0.64 on main); 0/31 centuries at 2.3, against 1/31.
+- Nudge, now: top 10 kept 1/10, 3/10, same ruler 19%. Off: 1/10, 2/10, 20%. On main: 1/10, 0/10, 14%.
+
+At L7, then, switch-on is as good as off or better on states, the median and steadiness, and lower on the peak. It is one seed.
 
 Nudge caveat (lane 234): the nudged tree is loaded by file path, and the humans' share moved much more than round 6's nudge moved it
 (40% to 23% at L7). In `planet/lineages`, the tree's name is used only for labels (output.py: the run's name, `tree_name`, the
