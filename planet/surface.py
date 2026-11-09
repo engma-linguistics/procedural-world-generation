@@ -362,7 +362,7 @@ def surface_rock(rock, cover, top, top_km):
 
 def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_evap, dt, hillslope, tau, h0,
           incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0, iso_dep=None, valley=None,
-          base_rise=0.0, rise=False, slope_k=0.0):
+          base_rise=0.0, rise=False, slope_k=0.0, pet=None):
     """One step of erosion + sediment transport on the world view. Eroded
     cover takes its ingredients (mix: km of each of MIX_ROCKS per cell) with
     it pro rata; what's deposited is plain clastic sediment (the caller
@@ -373,6 +373,7 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     gentle river course over which ~63% of the load settles on land; fan_km:
     km of deep sea floor over which ~63% of what passes the shelf settles.
     valley: m the cells' valleys are already cut (hydrology.lakes').
+    pet: mm/yr, potential evaporation over land (hydrology.lakes' pet_mm).
     base_rise: m the continents' base level stands above the sea (the run's
     ice: how far it has lowered the sea).
     slope_k: km2/Myr, the sea floor's sediment creep at the shore (_creep;
@@ -382,7 +383,7 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
     (what it gained is in deposited_km); lakes is hydrology.lakes' dict (on the terrain before this
     step's erosion) plus 'depth', m of water (level - elev; 0 off lakes)."""
     land = is_land(elev, grid=grid)  # (ground below the sea cut off from it is land: a hollow to fill, PW-1229)
-    lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap, valley=valley, land=land)
+    lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap, valley=valley, land=land, pet_mm=pet)
     flow, down, order, filled = hydrology.route(grid, elev, lk)
 
     c = np.maximum(cover, 1e-9)

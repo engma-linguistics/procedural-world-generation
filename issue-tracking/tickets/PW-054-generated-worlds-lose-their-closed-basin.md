@@ -11,7 +11,7 @@ impact: high
 found_by: water
 blocked_by: []
 relates: [PW-056]
-refs: [planet/tectonics/, planet/surface.py, docs/review/rivers_lakes_deltas.md, planet/tectonics/isostasy.py, planet/hydrology.py]
+refs: [planet/tectonics/, planet/surface.py, docs/review/rivers_lakes_deltas.md, planet/tectonics/isostasy.py, planet/hydrology.py, planet/hydrology.py::_dry_hollows, planet/hydrology.py::_settle, docs/review/basins/scout247.md, docs/review/basins/scout250.md, docs/review/basins/scout251.md]
 created: 2026-10-14
 updated: 2026-11-09
 ---
@@ -23,6 +23,7 @@ and the tectonics makes no new interior basins: foreland basins, intermontane ba
 rift-flank highs. Needs tectonic sources of basins, possibly less filling.
 
 ## Updates
+- 2026-11-09: Scout 251/251b pass 3 (59d14ccc, docs/review/basins/scout251.md): pass 2's dry-catchment rule merged, with the dry mask worked out once per lakes() call and a kept hollow whose lake spills dropped. Forks (main 935ddd0e vs final, same 200-Myr state, 3 re-rolled draws, frames 200-400 Myr): giant-lake frames L6 10.4 -> 13.1% (main's per-draw means 7.1-14.6%; t >= 300: 7.2 -> 6.0%), L7 seed 11 18.4 -> 20.9% (main's draws 16.4-22.4%); the giant events are main's own. Inland median L6 5.1 -> 9.3%, L7 7.1 -> 14.0%. Earth L6/L7 inland 13.5 / 19.4% (false + 3.6 / 6.8%, desert). +15% L7 run time (pass 2 +29% in the same bench). Remaining gap: generated L6 9.3% against the same code's Earth L6 13.5% (real 20.5%).
 - 2026-11-09: Scout 250 pass 2 (ae1bcc52, docs/review/basins/scout250.md, pass2.patch not applied): dry-catchment rule (rain < 0.65 x Oudin pet over the catchment, settled bed, lake short of rim). Earth L6/L7 inland 10.7->13.9 / 16.9->19.4%; false inland 2.1->3.9 / 5.5->6.8% of land, all desert (coordinator accepts: Earth is a plausibility anchor, L7 still under real 21.3%). Generated L6 mean 7.2->12.4%, L7 seed 11 6.1->18.8%. Giant-lake frames doubled on single draws, but 151/156 sit in hollows main also keeps: pass 3 settles that on forks, and cuts the +14% run time.
 - 2026-11-09: Scout 247 pass 1 (3674e408, docs/review/basins/scout247.md): the 21% on Earth was HydroSHEDS basins imposed; the model's own hydrology on Earth terrain gets 10.7% (L6) / 16.9% (L7). Main generated: L6 7.2% (4 seeds), L7 4.2-6.2%. Generated hollows ~80% of Earth's catchment, 35% shallower; deserts sit in hollows 2/3 as often. Candidate 2 (hollows no river leaves stay closed) lifts L6 to 12.6% but brings giant shallow lakes back (PW-430). Pass 2: limit to dry catchments, Earth check first.
 - 2026-10-23: Merged PW-432 (closed as duplicate; PW-597 triage). Evidence from PW-300's valley memory (isostasy.EXTRA `valley`, hydrology.lakes' `valley`: a basin that stops spilling keeps its outlet gap), health --quick, 8 L6 seeds x 500 Myr, frames after 50 Myr, health-pw358-after -> health-pw300-after: lakes median 0.43 -> 0.34% of land (frames below the 0.2% envelope 17 -> 24%), inland drainage median 3.8 -> 3.4%, p90 10.0 -> 7.9% (seed 11's >30% ice-age spike gone). So part of the run's closed-basin area was basins that had lost their outlets, not tectonic basins; Earth's ~18% needs basins that stay closed for real reasons (sinking, rain shadows, rims rising faster than rivers cut). A variant keeping the deepest valley ever cut on active rivers lowered lakes to 0.25% and inland to 2.0%: not landed.
