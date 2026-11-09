@@ -48,7 +48,7 @@ from numba import njit
 from ..geo import R_KM
 from . import trade as TR
 
-VERSION = 9  # (9: boats follow the river's course, the hands on river hauls, herds and horses walk as droves, lane 226, step4c.md; 8: the hands, time and risk of a sea haul, HAND_KM, lane 225, step4b.md; 7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
+VERSION = 10  # (10: a bulk cargo's season at sea, SEASON, PW-1572; a need for dried fish, trade.py, PW-1573; lane 244; 9: boats follow the river's course, the hands on river hauls, herds and horses walk as droves, lane 226, step4c.md; 8: the hands, time and risk of a sea haul, HAND_KM, lane 225, step4b.md; 7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
 # PW-1530; lane 224, step4a.md. 2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
 # 3: a route is judged per good against its carried volume, and last era's routes hold down to half the bar, PW-1515 and PW-1514;
 # 4: grain takers look on until a round finds no more, SEEK_GOODS, lane 216b; 5: market pools and worn ways, lane 218;
@@ -118,6 +118,23 @@ HAND_KM = {
     "middling": 3000.0,
     "precious": 3000.0,
 }
+# --- a bulk cargo's season at sea (PW-1572, lane 244, bought_in_244.md). HAND_KM leaves bulk on freight alone: one hull, port to port. But
+# a hull's voyages are counted in seasons, and the cargo's capital and the sea's risk are paid per season. Rome's farthest regular grain
+# came from Egypt, "a distance of 1,000 miles", and navigation was "strongly discouraged from mid-November to early March"
+# (warhistory.org, "The Roman grain trade"); the Egyptian grain ships "likely only completed one round trip per year", while from Africa
+# or Sicily "several round trips per year could be accomplished" (Wikipedia, Cura Annonae). So a laden leg of ~1,000 miles (SEASON_KM)
+# used up a ship's whole season, and a shorter one a fraction of it. A season of a sea cargo's capital and risk is priced by the sea
+# loan: 22.5% for a season's round trip (Dem. 35.10, HAND_KM's source). Spread over the season's laden leg, a bulk cargo's value e-folds
+# every SEASON_KM / ln(1.225) ~ 7,900 km at sea, on top of the freight: ~18% of it gone on Egypt's leg, ~70% on a 10,000 km haul (which
+# would also take several seasons). It is a share of value, like the hands; what keeps grain's sea hauls short is that its freight and
+# port calls are already a large share of a cheap good's value, and this season's capital adds to them. Dear goods already pay their
+# whole relayed price chains (HAND_KM). Sea only: a river haul is short and runs through the cultures' land, where FALL_KM and the tolls
+# already carry its hands (lane 226 found river hands cut herders' grain). A further leg's own port call (unloading, wintering, reloading)
+# is left out: the walk's cost cannot count legs (it would depend on the path's sea km so far).
+SEASON = True  # False: bulk pays freight alone at sea, as before (main dd82c068)
+SEASON_CLASSES = ("bulk",)
+SEASON_KM = 1000 * 1.609  # one season's laden leg: Egypt to Rome, 1,000 miles (one round trip a year)
+SEASON_LOAN = 0.225  # a season's capital and risk on the cargo's value: the sea loan for a season's round trip (Dem. 35.10)
 AIR = PACK  # a flyer's load per km over any ground, mountain or sea. JUDGEMENT (D65 A): a flying people carries a light load as a pack
 # animal does; no source
 ROUTE = 1.3  # path km per straight km between cell centres (as salt_reach.ROUTE and seafood.ROUTE)
@@ -712,6 +729,8 @@ class _Frame:
                 # haul, lane 226)
                 water = (mode == 2) | ((mode == 1) & RIVER_HANDS)
                 c = np.where((c >= 0) & water, c + e["hop"] * L / HAND_KM[cl], c)
+            if SEASON and cl in SEASON_CLASSES:  # (a bulk cargo's season of capital and risk, spread over a season's laden leg: PW-1572)
+                c = np.where((c >= 0) & (mode == 2), c + e["hop"] * L * math.log1p(SEASON_LOAN) / SEASON_KM, c)
             c = np.where((c >= 0) & e["bord"], c - L * np.log1p(-e["toll"]), c)
             self.costs[(cl, fetch, drove)] = (np.ascontiguousarray(c), mode.astype(np.int64), np.full(len(c), e["hop"]))
         return self.costs[(cl, fetch, drove)]
@@ -1134,6 +1153,7 @@ def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, 
                           "trunk_iters": TRUNK_ITERS, "seek_cap": SEEK_CAP,
                           "handle": HANDLE, "load_days": LOAD_DAYS, "unload_days": UNLOAD_DAYS, "day_km": DAY_KM, "harbour_due": HARBOUR_DUE,
                           "hands": HANDS, "hand_km": HAND_KM, "river_course": RIVER_COURSE, "river_hands": RIVER_HANDS,
+                          "season": SEASON, "season_km": SEASON_KM, "season_loan": SEASON_LOAN,
                           "droves": DROVES, "drove_goods": list(DROVE_GOODS), "drove": DROVE},
             "basis": "trade_flow.py (PW-1503, design1.md step 2): per good one least-cost walk from its surplus cells; supply = surplus x "
                      "exp(-cost / L) by value class; a cell takes min(its lack, the best supply reaching it); summed to cultures. Read-out only."}
