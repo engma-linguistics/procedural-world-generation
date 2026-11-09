@@ -1,0 +1,9 @@
+L6: HydroSHEDS closed 20.5% of ice-free land; obs Koppen B 30.4%
+  model P/PET(Oudin) < 0.3: 19.5% of land, of it obs B 83%, mean rain 151 mm
+  model P/PET(Oudin) < 0.5: 27.4% of land, of it obs B 70%, mean rain 228 mm
+  model P/PET(Oudin) < 0.65: 32.2% of land, of it obs B 64%, mean rain 288 mm
+  model P/PET(Oudin) < 1.0: 42.2% of land, of it obs B 56%, mean rain 439 mm
+  obs-B land: model P/PET median 0.26, p90 1.63; real closed land P/PET median 0.26
+main                         inland  10.7% | of real closed  42% | false +  2.1% of land, obs B 17%, rain 589 mm | lakes 1.77% largest 0.24 Mkm2
+dry catchments AI<0.65       inland  13.5% | of real closed  48% | false +  3.6% of land, obs B 30%, rain 488 mm | lakes 1.80% largest 0.24 Mkm2
+                             added 2.8% (real closed 47%, rain 219 mm); lost 0.0%

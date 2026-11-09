@@ -1,0 +1,6 @@
+main: 30 Myr in 78.8 s; lakes() 15 calls, 3.8 s
+p2: 30 Myr in 103.3 s; lakes() 15 calls, 10.2 s
+cand3: 30 Myr in 89.9 s; lakes() 15 calls, 8.3 s
+cand3: 30 Myr in 81.8 s; lakes() 15 calls, 8.1 s
+p2: 30 Myr in 88.7 s; lakes() 15 calls, 9.5 s
+main: 30 Myr in 70.4 s; lakes() 15 calls, 4.0 s
