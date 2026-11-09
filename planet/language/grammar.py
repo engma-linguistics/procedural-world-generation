@@ -95,7 +95,8 @@ CHUNK = 10.0           # generations per internal sub-step
 # range), never by a species name; `leanings` combines them per lect and grammar.step reads the result. Flavour, not
 # measurement: long memories keep witnessed-vs-reported marking (evidentials, mirative) and wear morphology more slowly;
 # a voice with a wide pitch range copies sounds (reduplication); short generations recruit a little faster.
-LONG_GEN_YR = 150.0    # generation length (yr) from which LEAN_LONG_GEN applies (elves at ~150, giants, dragons at 430)
+LONG_GEN_YR = 140.0    # generation length (yr) from which LEAN_LONG_GEN applies (elves at 144.9, giants, dragons at 430;
+#                       150 -> 140, owner ruling 11-08 on PW-1538 C / PW-1544: elves get the leanings and the deep past)
 LEAN_LONG_GEN = {"evid_recruit": 1.5, "evid_loss": 0.5, "fuse": 0.7, "erode": 0.7}
 SHORT_GEN_YR = 20.0    # generation length (yr) under which LEAN_SHORT_GEN applies (humans 25-28 do not; kobolds at 15 do)
 LEAN_SHORT_GEN = {"recruit": 1.2}
