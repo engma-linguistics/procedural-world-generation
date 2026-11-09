@@ -1,7 +1,8 @@
 ---
+id: PW-1563
 title: "Trade languages turn over every 650-800 years and are mostly a ruling state's tongue: should lingua francas be stickier?"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v4
 subsystem: peoples
@@ -11,6 +12,8 @@ found_by: lane-230
 blocked_by: []
 relates: [PW-1526]
 refs: ["planet/lineages/tongues.py::pick", "planet/lineages/tongues.py::era_rows", docs/review/peoples/trade-languages.md, "runs 0141d1 3e0eb4 a24559 a2b637 07c755 3c1caf"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -32,3 +35,8 @@ Options:
   peoples' tongues (Sogdian, Malay, Swahili) show up more.
 Lean: B (one constant, cheap to check on the six runs: `tongues.ledger` takes 0.1-0.4 s per run once its era inputs are built, and
 `tongues.frame_inputs` builds them in about 20 s to 2 min per L7 run from the cached exchange doc).
+
+Coordinator 11-08: B and C together (sourced: lingua francas outlive the states behind them, T§2/T§4; merchant peoples' tongues should show). HELD grows with the eras a tongue has served; a state's tongue needs its own people to carry a large share. One small pass, checked on the six stored runs.
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-trade-language-persistence.md (found by lane-230).

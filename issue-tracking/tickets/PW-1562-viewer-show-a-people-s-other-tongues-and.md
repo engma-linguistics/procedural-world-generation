@@ -1,4 +1,5 @@
 ---
+id: PW-1562
 title: "Viewer: show a people's other tongues and the era's trade languages (the tongues ledger has no viewer surface)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-230
 blocked_by: []
 relates: [PW-1526, PW-1498]
 refs: [planet/lineages/tongues.py, "planet/server.py::tongues", "planet/server.py::tongues_doc", docs/review/peoples/trade-languages.md, viewer/languages.html, tests/test_tongues.py]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -27,3 +30,6 @@ What to add:
   its source (trade, rule, held over, pidgin) and since when;
 - [ ] a link from a trade language with a language id to its page in viewer/languages.html.
 Columns of a row are in the doc's `columns`; the first call on an L7 run computes the exchange doc (a minute or two) if it is not cached.
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-tongues-viewer-panel.md (found by lane-230).

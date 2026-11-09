@@ -1,4 +1,5 @@
 ---
+id: PW-1560
 title: "Binary grid files: the grid JSON is now what makes an L8 world slow to open, and most of an L9 world's browser memory"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 229
 blocked_by: []
 relates: [PW-1209, PW-1198]
 refs: [docs/review/viewer/binary-layers.md, "planet/store.py::write_grid", "viewer/globe/load.js::gridOf", "viewer/globe/geometry.js::prepareGrid"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -31,3 +34,6 @@ the flat arrays; runs and worlds share the grid file, so both change at once. Me
 (`tools/synth_l9_world.py`).
 
 - [ ] an L8 world opens in < 1.5 s; an L9 world's JS heap after load under 1.5 GB
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-binary-grid-file.md (found by lane 229).

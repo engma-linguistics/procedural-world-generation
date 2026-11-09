@@ -1,4 +1,5 @@
 ---
+id: PW-1561
 title: "Two models of bilingualism: the language pass's l2_share and loans ignore the tongues ledger's trade languages and rulers' tongues"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane-230
 blocked_by: []
 relates: [PW-1526, PW-985]
-refs: [planet/lineages/tongues.py, "planet/language/inputs.py::Run.l2_share", "planet/language/inputs.py::Run._trade_triggers", "planet/language/history.py", docs/review/peoples/trade-languages.md]
+refs: [planet/lineages/tongues.py, "planet/language/inputs.py::Run.l2_share", "planet/language/inputs.py::Run._trade_triggers", planet/language/history.py, docs/review/peoples/trade-languages.md]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -28,3 +31,6 @@ source for every culture speaking it, a ruler's tongue as a prestige donor weigh
 proxy where the run has no trade window (older than 12.5 kyr).
 - [ ] languages.json and the tongues ledger agree on who is bilingual in what, era by era, on one L7 dnd run
 - [ ] a trade language leaves loans in the languages of its speakers
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-pass-reads-tongues-ledger.md (found by lane-230).
