@@ -33,4 +33,5 @@ peoples and inherited small systems. Levers, in order of how much they move the 
 `LOCAL_FORM` 0.01 -> 0.02; (3) thin the 2-4 band (GEN/LOC/DAT bind early in 'few' systems). One small screen pass each.
 
 ## Updates
+- 2026-11-09: Lane 7 (b50a316c): oblique case now drawn conditioned on core case (Grambank pairing). 6+ cases 19.2→21.3% in the full pass (WALS 32%). Remaining cause: protos start with no case and grow it over hundreds of generations. Next: seed each proto's case endings to its aim at birth, as _deep_past does.
 - 2026-11-09: Created from inbox draft draft-language-big-case-systems-still-short.md (found by language lane 4 (PW-1569)).
