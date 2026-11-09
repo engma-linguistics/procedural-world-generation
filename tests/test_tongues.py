@@ -205,3 +205,19 @@ def test_the_tongues_endpoint_asks_for_a_run():
     from planet import server as SV
     body, code = SV.tongues("")
     assert code == 400 and "run=" in body["error"]
+
+
+def test_an_older_lingua_franca_is_harder_to_dislodge():
+    net = {"weight": {0: 0.1, 1: 0.1, 2: 0.8}}  # (2 carries 0.8 of the trade; the incumbent 0 carries 0.1)
+    young = {"kind": "lingua franca", "tongue": 0, "source": "rule", "eras": 1}
+    old = {"kind": "lingua franca", "tongue": 0, "source": "rule", "eras": 20}
+    assert TG.pick(net, {}, young)["tongue"] == 2  # 0.8 >= 2 x HELD (0.25)
+    r = TG.pick(net, {}, old)  # HELD_MAX 0.45: 0.8 < 2 x 0.45
+    assert r["tongue"] == 0 and r["source"] == "held" and r["eras"] == 21
+
+
+def test_a_state_whose_own_people_barely_trade_does_not_win_the_network():
+    net = {"weight": {0: 0.05, 1: 0.55, 2: 0.4}}  # (0 rules 2, but its own people carry 5%; 1 is the busiest trader)
+    r = TG.pick(net, {0: {2}}, None, None)
+    assert r["tongue"] == 1 and r["source"] == "trade"
+    assert TG.pick({"weight": {0: 0.3, 1: 0.1, 2: 0.6}}, {0: {2}}, None, None)["source"] == "rule"
