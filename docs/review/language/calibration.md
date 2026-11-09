@@ -1740,3 +1740,115 @@ The share of big systems no longer depends on a lect's age; at 700 generations t
   3 kyr borrowed back its cousin d216.1's reflex of d584's old SIT (`borrow:d216.1`, contact). The deep root belongs to
   the line, but it came by contact, not descent; the check read the root's coining lect, not the path. The check now
   passes a word with a `borrow` step after the split. The copy was right.
+
+## Lane 9 (2026-11-09, lang-lane9): the case middle band (PW-1605), cold-review leftovers (PW-1537), the raised e (PW-1566)
+
+Measured with lane scripts over all living lects (`scratchpad/lane9/m1.py` cases, `m3.py` i̞ and checks, `m4.py`
+insert/delete alternations read from each lect's rule text, `m5.py` orphans; not kept). Harnesses: `caseharness.py`
+(lane 8's, 400 human protos, social context from a24559's living lects, 700 and 1300 generations) and `schar.py` (48
+isolated lects, sound change only, 20 kyr). One full pass on this lane's code after merging main b469369d (8 workers,
+~30 min), and a second-seed pass on de1cc6 for PW-1566.
+
+### What changed
+
+| ticket | mechanism | where |
+| --- | --- | --- |
+| PW-1605 | a case clitic binds into an affix at 0.1 of the usual hazard while the lect's aim is 'case: none' (a caseless syntax keeps its postpositions as words or clitics, as Japanese and Korean particles; WALS 49A 'borderline') | `grammar.UNWANTED_CASE_FUSE`, `step()` |
+| PW-1605 | a 'few' case system no longer pulls a genitive of its own (it pulls from the shared 'case' group); Grambank's 'few' is core or oblique, not both, and WALS 49A's 2-case bin (23) beats 3+4 (18 of 261) | `grammar._unrealised` |
+| PW-1537 | insert/delete alternation guard: a rule that inserts a sound the line deleted (or deletes one it inserted) within the re-fire wait does not fire; hiatus repairs skip such candidates | `lect.Lect.alternates`, `Lect.insdel`, `lect._ins_del`, `_apply_rule`, `resolve_hiatus` |
+| PW-1537 | an orphan marked stop or affricate (aspirate, ejective, breathy, ... with no plain partner at the same place) drawn into a proto inventory has its slot redrawn from the base weights; lateral affricates exempt (PHOIBLE tɬʼ 0.9% > tɬ 0.6%) | `inventory._fill_partners`, `marked_sound`, `plain_partners` (moved from lect.py) |
+| PW-1537 | declicking takes every click series at its place with its plain click: ᵑǀ > ᵑk, ǀ̬ > ɡ, ǀʰ > kʰ, not only the plain click | `lect._click_member`, `_click_partner`, `_series_drag`, `_remark` |
+| PW-1537 | subject concord on serial verbs, verb-like adjectives in comparatives, and the copula example | `sentences._serial`, `comparative`, the copula block |
+| PW-1537 | a noun-class or classifier system draws its next semantic group by weight (person 12, animal 2, plant 2, small 1.5, ...; Corbett 1991: human/animate is the commonest first split) instead of the fixed list order; concord classifiers are introduced as noun classes grown from numeral classifiers | `grammar.CLASS_GROUP_W`, `add_class`; `sentences` gender lead |
+| (second seed) | at a language shift, a sound the shifting people cannot make at all (infinite make cost: ᴖ for a one-voiced people) is heard through their voice in every word, not in NATIVE_SHARE (60%) of them; costly-but-makeable sounds keep the partial share (owner ruling 11-08) | `history.nativise` |
+| (side fix) | the onset filler prefers a short consonant (a redrawn inventory made a long ʔː word-initially) | `inventory._onset_filler` |
+
+### Case harness (400 protos, 6+ / 2-5 / none+borderline, %)
+
+| variant | 700 generations | 1300 generations |
+| --- | --- | --- |
+| main | ~35 / 25 / 40 | ~37 / 30 / 32 |
+| damping only under 'case: none' + few-GEN pull (kept) | ~34.5 / 19.5 / 46 | ~33.5 / 23 / 43 |
+| L2 strip of case x0.5 / x3 (lever 3) | within noise of main | |
+| unwanted-recruit weight (lever 1 variant) | dropped: it also cuts adpositions in caseless lects | |
+
+On main the caseless share drains with age (40 -> 32% from 700 to 1300 generations) as 'none' lects bind their
+postpositions and `_adopt` turns their aim to 'few'; the middle band refills. Damping every non-'many' aim cut the
+adoption ratchet that also feeds 6+ (a 'few' lect adopting 'many'), and 6+ fell 29 -> 24% in the first full pass; the
+damping is now only under 'case: none'. The few-GEN change improves bin order (2 > 3 > 4, as in WALS).
+
+### Alternation harness (48 isolated lects, 20 kyr)
+
+| measure | main | lane 9 |
+| --- | --- | --- |
+| insert/delete alternations of one segment within the re-fire wait | 718 | 50 |
+| lects with any | 48 / 48 | 27 / 48 |
+| sound changes per lect | 343 | 339 |
+
+### Inventory draws (1500 human protos)
+
+| measure | main | lane 9 | PHOIBLE |
+| --- | --- | --- | --- |
+| protos with an orphan marked stop/affricate | 24.7% | 6.2% (only tɬʼ, tɬʰ, sʼ remain) | |
+| pʰ / tʰ / kʰ | 19.5 / 17.7 / 19.3% | ~16 / 13.3 / ~15.5% | |
+| tsʰ / tsʼ / tʃʼ | 10.2 / 7.1 / 7.9% | 3.0 / 1.5 / 2.9% | tsʼ 4% |
+
+A variant that added the missing plain partner instead of redrawing raised ts, t̪, c by 7-10 points; dropped.
+
+### Full pass (a24559, scratch)
+
+| measure | stored (lane 8) | lane 9, first commit | lane 9, final | anchor |
+| --- | --- | --- | --- | --- |
+| living lects | 621 | 622 | 616 | |
+| checks failing | horizon | horizon | horizon | |
+| sisters (strict) | 0.547 | 0.576 | 0.572 | > 0.5 |
+| WOLD rho; pronoun loans | 0.386; 0.071 | 0.404; 0.068 | 0.41; 0.065 | rho >= 0.3; cap 0.08 |
+| overused segments | pass | pass | pass (worst ɟ 2.6x) | |
+| WALS 49A none / bord / 2 / 3 / 4 / 5 / 6-7 / 8-9 / 10+ | 24/14/9/6/9/9/15/8/6 | | 28.1/20.1/9.6/6.0/5.8/6.8/10.9/6.5/6.2 | 38/9/9/3/3/5/14/9/9 |
+| none + borderline | 38.0% | 49.7% | 48.2% | 47% |
+| 2-5 | 33.0% | 26.4% | 28.2% | 20% |
+| 6+ / 8+ | 29.0 / 13.7% | 24.0 / 11.8% | 23.5 / 12.7% | 32 / 18% |
+| lects with an insert/delete alternation (rule text) | 448 (total 4185, median 3, p90 19, max 47) | 241 | 240 (total 1108, median 0, p90 6, max 28) | |
+| living lects with an orphan marked sound | 32.5% (asp 123, ej 141, growl 84, register 112) | 28.1% | 28.2% (asp 26, ej 108, growl 82, register 137) | |
+| i̞ (any length or tone) | 0 | 0 | 0 | PHOIBLE 0.2% |
+| demo fable warning (this pass, no audio) | none | | none | |
+
+Second seed (de1cc6, PW-1566): i̞ in 0 of 530 living lects (stored de1cc6 on 11-08 code: 6.2%). Main 41c71b12 was run on the same seed as a
+baseline:
+
+| measure (de1cc6) | stored (11-08 code) | main 41c71b12 | lane 9 (final) |
+| --- | --- | --- | --- |
+| living lects | 533 | 529 | 530 |
+| i̞ | 6.2% | 0 | 0 |
+| none+borderline / 2-5 / 6+ | | 36.7 / 44.8 / 18.5 | 44.7 / 36.4 / 18.9 |
+| lects with an insert/delete alternation (total, median) | | 418 (4256, 4) | 209 (832, 0) |
+| living lects with an orphan (asp / ej) | | 27.4% (85 / 115) | 25.5% (22 / 53) |
+| sisters | 0.537 | 0.474 fail | 0.488 fail |
+| overused segments | fail (ᵑk 20%, c̟, ʁ, ⁿt) | fail (ɖ, ⁿt) | fail (ⁿt 12.5%, ᵑk 11%) |
+| WOLD rho; pronoun loans | 0.413; 0.095 fail | 0.391; 0.103 fail | 0.397; 0.092 fail |
+| inventory sizes | pass | pass (vowel median 7) | fail at the edge (vowel median 6, mark 7; consonant tail 0 of 160, mark 1) |
+| second voice only with a syrinx | pass | pass | pass (first lane-9 pass: 3 stone-giant lects with ᴖ, fixed in `nativise`) |
+
+Main fails sisters, overused and WOLD on de1cc6 too: the world, not this lane (draft
+draft-language-de1cc6-checks). The inventory-size miss is chaos at the edge: per-people vowel medians move by 1-2 both
+ways between main and lane 9, and the all-lect median is 7 on both. The a24559 final pass above predates the `nativise`
+change (it passed the second-voice check already).
+
+### Readings
+
+- **Case (PW-1605), partly met.** None + borderline 38 -> 48% (WALS 47%) and 2-5 33 -> 28% (20%); 6+ 29 -> 23.5% (32%).
+  The 6+ fall is partly run-to-run noise (the harness shows 6+ near main's at 700 generations) and partly the lost
+  adoption path. The new no-case side is lopsided: borderline (clitic case only) is 20% against WALS 9%, plain none
+  28% against 38%. That is what the damping does: the clitic stays a clitic. In WALS terms a lect with case clitics
+  on every NP is 'borderline' only when they are phrasal affixes; our clitic level reads as borderline whatever its
+  form, so part of the 20% is a binning question. Left on the ticket.
+- **Alternations (PW-1537).** Insert-then-delete of the same segment within the wait fell 4185 -> 1108 rule pairs
+  across the run; the median lect has none. The leftover are pairs further apart than the wait (allowed: real
+  languages do re-insert a lost sound after centuries) and staged `then` rules (skipped by the guard).
+- **Orphans (PW-1537).** Aspirate orphans 123 -> 26; ejective orphans 141 -> 108 (sound change loses plain stops after
+  the draw: lenition of plain t while tʼ stays). Growl and register orphans are species voices (kobold, dragon,
+  dragonborn), not series in the PHOIBLE sense; register orphans 112 -> 137 (not a series this lane touched; run-to-run spread). The acceptance line "gone or listed as a logged exception" is not met for
+  ejectives.
+- **Nasal-less lects.** 43-45 living lects have no plain m or n, mostly dragons, kobolds and other non-human peoples
+  with species inventories. Left as is (species design, not a draw slip).
+- **Growled voice per syllable** and **CLICS derivations** went to drafts (a notation call; a felt-family depth rule).
