@@ -1,5 +1,6 @@
 ---
-title: "Settlement wars read the live polities' conquests when the history ran them, so a town's 'sacked by' agrees with the state card's 'the conquered'"
+id: PW-1599
+title: Settlement wars read the live polities' conquests when the history ran them, so a town's 'sacked by' agrees with the state card's 'the conquered'
 type: task
 status: todo
 parent: PW-856
@@ -11,6 +12,8 @@ found_by: lane-253
 blocked_by: []
 relates: [PW-1108, PW-1575, PW-1496, PW-1513]
 refs: ["planet/lineages/settlements.py::_War", "planet/lineages/history/polity_live.py::_fates", "planet/lineages/history/polity_live.py (took records, line ~451)", "viewer/globe/polities.js::polityRows", "docs/overview.md 2.25"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -28,3 +31,6 @@ can say "the humans submitted" while the ledger says the town was "razed by the 
   sacked where 'thinned' or 'expelled', occupied where 'kept' or 'submitted'.
 - The displacement stand-in stays for runs without live polities.
 - [ ] a town on land a live conquest took carries that conquest's fate; tests on a small run with polities_live.json
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-ledger-reads-live-conquests.md (found by lane-253).

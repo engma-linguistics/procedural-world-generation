@@ -1,5 +1,6 @@
 ---
-title: "Towns that pay tribute to a dragon realm are still raided by those dragons in the settlement ledger"
+id: PW-1598
+title: Towns that pay tribute to a dragon realm are still raided by those dragons in the settlement ledger
 type: task
 status: todo
 parent: PW-856
@@ -11,6 +12,8 @@ found_by: lane-253
 blocked_by: []
 relates: [PW-1108, PW-961, PW-1431]
 refs: ["planet/lineages/settlements.py::_War.raid", "planet/lineages/polities.py (dragon realms)", "planet/server.py::polities_doc", "run 0141d1", "run a24559"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -31,3 +34,7 @@ ledger would depend on its own read-out.
 - B: The ledger computes the realm reach itself: the cells within a dragon's lair reach, with the read-out's rule.
 
 Lean: A.
+
+## Updates
+- 2026-11-09: Coordinator 11-09: option A (read-out relabels raids on its own tributaries as tribute).
+- 2026-11-09: Created from inbox draft draft-dragon-tribute-not-raids.md (found by lane-253).
