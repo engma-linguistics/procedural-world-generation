@@ -36,7 +36,8 @@ def convert(path) -> tuple[int, int]:
                 continue
             m = re.match(r'  "(\w+)": ', line)
             if m:
-                layers[m.group(1)] = np.array(json.loads(line[m.end():].rstrip().rstrip(",")))
+                a = np.array(json.loads(line[m.end():].rstrip().rstrip(",")))
+                layers[m.group(1)] = a.astype(np.float64) if a.dtype == object else a  # JSON null (no value) -> NaN
     parts = [h for h in head if h.strip()]
     hd = json.loads("{" + ",".join(parts) + "}")
     if hd.get("format") != "procgen-planet/2":
@@ -45,7 +46,7 @@ def convert(path) -> tuple[int, int]:
     specs = S.write_world_layers(wid, layers)
     back = S.read_world_layers(specs)
     for k, v in layers.items():
-        if not np.array_equal(back[k], v) or back[k].dtype.kind != (v.dtype.kind if v.dtype.kind != "u" else "i"):
+        if not np.array_equal(back[k], v, equal_nan=v.dtype.kind == "f") or back[k].dtype.kind != (v.dtype.kind if v.dtype.kind != "u" else "i"):
             raise ValueError(f"{path.name}: layer {k} does not read back the same")
     hd["format"] = "procgen-planet/3"
     lines = [f"{json.dumps(k)}: {json.dumps(v)}" for k, v in hd.items()]
