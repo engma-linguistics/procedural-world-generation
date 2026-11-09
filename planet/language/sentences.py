@@ -1967,7 +1967,7 @@ def s_own(v: View) -> dict | None:
         if not (st and Vc):
             return None
         f, kind = st
-        fen = TX.ANIMAL_EN.get(en(f), en(f) + " meat") if kind == "animal" else en(f)
+        fen = TX.ANIMAL_EN.get(en(f), en(f) + " meat") if f.startswith("animal:") else en(f)
         o = noun_phrase(v, f)
         vw = verb(v, Vc, "1PL")
         return finish(v, "own", f"We eat {fen}.", clause(v, we, vw, o), [f"the people's staple: {fen}"] + vw[2])

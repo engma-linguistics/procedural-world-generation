@@ -1145,17 +1145,93 @@ def natural_weight(n: float) -> float:
     return NATURAL_BASE ** (float(n) - 3.0) if n > 0 else 0.0
 
 
+# PW-1545: the make-cost keys (profiles.keys_of) a segment carries because of an articulator. A row's ``needs`` names the
+# parts of the mouth its change involves; a voice lacking one keeps the row when the change only takes that gesture away
+# (``exit_only``): a lipless people still has costly stand-ins for w, kʷ, m and rounded vowels (its proto-inventory is
+# drawn with their costs), and losing them (kʷ > k, w > ∅, m > ∅ / _#, Ṽ > V) asks nothing of lips or a velum. Articulators
+# with no key here (tongue root, pharynx, beak, syrinx) are never excused.
+ARTICULATOR_KEYS = {"lips": frozenset({"labial", "round_vowel", "labialized", "labiodental", "double"}),
+                    "velum": frozenset({"nasal", "nasal_vowel", "prenasal"}),
+                    "teeth": frozenset({"labiodental"})}
+_EXIT_EXTRA = "tʷ dʷ nʷ sʷ lʷ rʷ gʷ ŋʷ xʷ ᵐb ⁿd ᵑɡ pf ẽ õ ĩ ũ ɔ̃ ɛ̃ ø œ ʏ ʊ β ɸ ʋ ɱ k͡p ɡ͡b ŋ͡m".split()
+
+
+@lru_cache(maxsize=1)
+def _exit_probes() -> tuple:
+    """Probe words for ``exit_only``: each probe segment alone, word-initial, word-final and between vowels (a i u o),
+    and every pair of probe consonants between a's (cluster rows)."""
+    segs = list(_protos())
+    for s in _EXIT_EXTRA:
+        try:
+            x = from_ipa(s)
+        except Exception:  # noqa: BLE001 - a symbol the table lacks
+            continue
+        segs += [y for y in x if y not in segs]
+    vs = [from_ipa(v)[0] for v in "aiuo"]
+    a = vs[0]
+    words = []
+    for s in segs:
+        words += [(s,), (s, a), (a, s), (a, s, a, a)]
+        words += [(v1, s, v2) for v1 in vs for v2 in vs]
+    cs = [s for s in segs if s.kind == "C"]
+    words += [(a, s, t, a) for s in cs for t in cs] + [(s, t, a) for s in cs for t in cs] + [(a, s, t) for s in cs for t in cs]
+    words += [(a, v, c) for v in segs if v.kind == "V" for c in cs]
+    return tuple(words)
+
+
+def _gestures(word, keys: frozenset) -> int:
+    """How many of the ``keys`` (make-cost keys of the missing articulators) the segments of ``word`` carry, summed."""
+    from planet.language import profiles as _p
+    return sum(len(_p.keys_of(s) & keys) for s in word)
+
+
+@lru_cache(maxsize=4096)
+def exit_only(rule: Rule, missing: frozenset) -> bool:
+    """True when ``rule`` never adds a gesture of a ``missing`` articulator on a probe word, and either takes one away
+    somewhere or never touches one (gestures counted as that articulator's make-cost keys per segment: v carries labial
+    + labiodental, b labial only, so v > b takes one away; kʷ > p and p > ɸ trade one for one and stay barred; the j part
+    of a row "∅ > j / i_V, ∅ > w / u_V" listed under the row's lips need never uses lips). False when a missing need has
+    no make-cost keys (``ARTICULATOR_KEYS``) or the rule changes no probe."""
+    if any(m not in ARTICULATOR_KEYS for m in missing):
+        return False
+    from planet.language import profiles as _p
+    keys = frozenset().union(*(ARTICULATOR_KEYS[m] for m in missing))
+    fewer = touched = acted = False
+    for w in _exit_probes():
+        try:
+            o = tuple(apply(rule, w))
+        except Exception:  # noqa: BLE001 - a probe the rule cannot read
+            continue
+        if o == w:
+            continue
+        acted = True
+        gi, go = _gestures(w, keys), _gestures(o, keys)
+        if go > gi:
+            return False
+        fewer = fewer or go < gi
+        if not touched:
+            rest = list(w)
+            for x in o:
+                if x in rest:
+                    rest.remove(x)
+                elif _p.keys_of(x) & keys:
+                    touched = True   # (a new segment that carries the gesture: a lip-to-lip change, p > ɸ)
+                    break
+    return acted and (fewer or not touched)
+
+
 def catalogue(profile, include_tsv: bool = True, path: Path | str = DATA) -> list[Rule]:
-    """DEMO_RULES plus the parsed tsv rules that the species can run (``needs`` within its articulators and heard axes),
-    deduplicated, with ``weight`` the row's naturalness read as a log scale (natural_weight) and scaled by
-    ``cost_factor``. Rules whose every output the species cannot make are dropped."""
+    """DEMO_RULES plus the parsed tsv rules that the species can run (``needs`` within its articulators and heard axes,
+    or a missing articulator that the change only takes away: ``exit_only``, PW-1545), deduplicated, with ``weight`` the
+    row's naturalness read as a log scale (natural_weight) and scaled by ``cost_factor``. Rules whose every output the
+    species cannot make are dropped."""
     caps = profile_capabilities(profile)
     pool = list(DEMO_RULES)
     if include_tsv and Path(path).exists():
         pool += _tsv_cached(str(path))[0]
     out = []
     for r in deduplicated(pool):
-        if not r.needs <= caps:
+        if not r.needs <= caps and not exit_only(r, frozenset(r.needs - caps)):
             continue
         f = cost_factor(r, profile)
         if f <= 0:

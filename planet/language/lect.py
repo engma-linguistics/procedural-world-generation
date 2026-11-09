@@ -916,6 +916,7 @@ class Lect:
         PH.update(self, kyr)  # (age the live rules; the inventory carries them for the words made below)
         rs = ctx.get("replace_scale", 1.0)
         typ = getattr(self.grammar, "typology", None)
+        self.lexicon.gram_forms = _gram_forms(self.grammar)
         LX.step(rng, self.lexicon, n_generations * rs, self.inventory, contact_words=ctx.get("contact_words"), kyr=kyr,
                 lect_id=self.id, niche_weights=ctx.get("niche"), profile=self.profile,
                 head_first=getattr(self.lexicon, "head_first", None), contact_weights=ctx.get("contact_weights"),
@@ -1235,6 +1236,16 @@ def _accepted(fn, kw: dict) -> dict:
     if any(p.kind == p.VAR_KEYWORD for p in ps.values()):
         return kw
     return {k: v for k, v in kw.items() if k in ps}
+
+
+def _gram_forms(g) -> dict:
+    """form -> the source concepts of the live free-word and clitic grams with that form (lexicon._renewal_boost renews a
+    word that sounds like one of them and is not its source)."""
+    out: dict = {}
+    for gr in getattr(g, "grams", None) or ():
+        if gr.live and gr.level <= 1 and gr.form:
+            out.setdefault(tuple(gr.form), set()).add(gr.source[0] if gr.source else "?")
+    return out
 
 
 def _deepcopy(x):

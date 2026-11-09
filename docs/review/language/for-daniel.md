@@ -1083,3 +1083,44 @@ the full table: calibration.md "Lane 4".
 
 **Left for you:** whether the 2.2x test bar is fine or the test should check the hazard directly (draft); the next push
 on big case systems is not a decision, just a queued task (draft-language-big-case-systems-still-short).
+
+## Lane 5 (lang-lane5, 2026-11-09): mouths without lips, homophones, worn markers, recipes and myths
+
+- **Voices without lips or a velum can now lose their stand-in sounds (PW-1545).** In plain words: each sound change
+  lists the parts of the mouth it involves, and a people lacking one never got it. That was right for changes that
+  *make* a lip sound, wrong for changes that *get rid of* one: kobolds, lizardfolk, dragons and bird-folk kept their
+  costly w, kʷ, m and nasal vowels for ever. Now a change that only takes the gesture away (kʷ > k, final m lost, v > b,
+  nasal vowels made oral) is open to them; one that makes or swaps a lip sound (kʷ > p, p > f-like) is still closed.
+  Lipless languages: labials 18.7% -> 15.4% of consonants (other peoples 25%), nasal vowels 1.3% -> 0.4%.
+- **Fewer accidental homophones on common words (PW-1537 R5).** In plain words: a word that sounds like one of the
+  language's grammar particles is now replaced sooner, and new words avoid those sounds; 'mother' taking the word for
+  'woman' (a rare change in real languages) now happens half as often (7.1% -> 3.5% of languages). Common words that
+  sound like an unrelated particle: 9.3% -> 7.9%. Much of what is left is short words meeting short particles, which
+  real languages have too (English I / eye, to / two).
+- **Grammar markers wear down while still separate words (PW-1537 R1).** In plain words: a particle is said far more
+  often than the word it came from, so it now shortens on its own, at the same slow rate you set for function words.
+  The effect is small (markers identical to their source word 34.8% -> 32.5%).
+- **Recipes and myths no longer read as one template (PW-1537 R3).** In plain words: the recipe now follows the food: a
+  grain is ground and boiled into porridge or pounded and baked in the ashes, pulses soaked and boiled, roots boiled
+  and pounded, meat cut and roasted, smoked or boiled, sweet fruit pressed and left to ferment. Onions are no longer the
+  national dish of 189 languages (spices and drink plants are never the food). 6 -> 52 different recipe shapes across
+  the 620 languages. Myths now vary their wording by faith ('hear us', 'help us', 'look upon us', 'listen to us'), say
+  'pigs' rather than 'wild swine', and say when a people took the faith over from another.
+- **Small slips fixed:** "ago ago", "stage other", a false note that inclusive 'we' cannot be shown, a stray key of
+  sound marks, internal god ids in word families, slashes on the as-said line, growled voice counted as non-human.
+- **Checks:** all pass except the scholars' horizon (as before; its fit reads 10.6 thousand years this pass, the
+  lowest of recent passes, inside the run-to-run swing). Sisters 0.514 (pass mark 0.5; was 0.535).
+
+**Defaults I chose**
+1. Which mouth parts can be excused: lips, velum and teeth only (the ones whose sounds the cost table names); tongue root,
+   pharynx, beak and syrinx never (`rules.ARTICULATOR_KEYS`).
+2. A shift that puts two common words (frequency classes 1-3) on one form is taken with chance (families / 12)^2 when
+   fewer than 12 language families show it (`lexicon.FREQ_SHIFT_CLASS` 3).
+3. Particles wear at your function-word rate, 0.1% per generation x the particle's frequency, floor two sounds
+   (`grammar.GRAM_WEAR`).
+4. Recipe ways per food kind and the closing line are my picks (`texts.WAYS`, `CLOSING`), chosen by a fixed hash of
+   the language id so a rebuild gives the same text.
+
+**Left for you:** nothing to decide. The fable's ancestor still does not fit its daughters (it needs the pass to keep
+the ancestor as it was at the split: draft-language-fable-ancestor-at-split), and 77 of 108 faiths forbid pigs, which
+is the faith data's doing (draft-faith-taboos-mostly-swine).
