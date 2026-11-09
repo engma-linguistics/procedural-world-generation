@@ -719,6 +719,7 @@ class Calendar:
         self.rates = {i: rate_of(T, i) for i in techs}
         self.floors = {i: f for i in techs for f in [own_floor(T, i)] if f is not None}  # (D55's floor on own inventing, PW-1471)
         self.regions: dict = {}  # ({people: [(landmass rank, share)]}: its regions, each a learner; none: the people is one)
+        self.regions_t: list | None = None  # (PW-1597: [(kyr ago, regions)] per stored frame, oldest first: the regions then, not today's)
         self.reached = {l["id"]: {int(k): float(v["ago_kyr"]) for k, v in (l.get("reached") or {}).items()} for l in people}
         self.pool = {i: pool_of(techs[i]) for i in techs}
         self.ready: dict[str, dict[str, float]] = {l["id"]: {} for l in people}  # (when each people first met a tech's conditions: the ramp)
@@ -754,14 +755,17 @@ class Calendar:
 
     # ------------------------------------------------------------ what it reads
     def feed(self, lines: list[dict] | None = None, links: list | None = None, forced: dict | None = None, have: dict | None = None,
-             pops: dict | None = None, regions: dict | None = None):
+             pops: dict | None = None, regions: dict | None = None, regions_t: list | None = None):
         """What the tree reads, as known now: the lines' starts, ends and tracks (meta.lineages' fields), the contacts as intervals
-        (links_of), the tamings (forced_of), the goods each people's country holds (goods_held) and its regions (region_shares).
-        None keeps the last."""
+        (links_of), the tamings (forced_of), the goods each people's country holds (goods_held) and its regions (region_shares);
+        regions_t: its regions at each stored frame ([(kyr ago, regions)], regions_through), read at the time of each step instead of
+        `regions` (PW-1597). None keeps the last."""
         if have is not None:
             self.have = have
         if regions is not None:
             self.regions = regions
+        if regions_t is not None:
+            self.regions_t = regions_t
         if lines is not None:
             for l in lines:  # (the landmasses each people has reached so far, dated: crossing.Crossings.reached)
                 if l["id"] in self.reached and l.get("reached") is not None:
@@ -900,10 +904,38 @@ class Calendar:
         return region_shares(present, landmass, {l["id"]: self.idx[l["id"]] for l in self.people}, float(self.D.get("region_min_share", 0.1)),
                              float(self.D.get("region_mkm2", 0.0)))
 
+    def regions_at(self, ago: float) -> dict:
+        """The peoples' regions at a time: those of the last stored frame at or before it (regions_t; its first frame before
+        any), else `regions` (inside the history: its last stored frame, history.tech_live)."""
+        rt = self.regions_t
+        if not rt:
+            return self.regions
+        j = int(np.searchsorted(self._rt_neg, -ago + 1e-9)) - 1  # (frames oldest first: the last whose ago >= this one)
+        return rt[max(j, 0)][1]
+
+    def regions_through(self, frames, landmass) -> list | None:
+        """regions_t from stored frames [(kyr ago, (lines, cells, % shares))] (the presence table's sparse rows, output.write_presence):
+        each people's regions on its range then (PW-1597: the tree read today's range for every century before, which gave a people
+        the learners of land it came to hold only later, and put its inventions centuries before the history's own calendar)."""
+        if not frames or landmass is None or not self.D.get("regions", False):
+            return None
+        n = int(np.asarray(landmass).shape[0])
+        nl = max(self.idx.values()) + 1 if self.idx else 0
+        out = []
+        for a, (pl, pc, ps) in sorted(frames, key=lambda f: -f[0]):
+            P = np.zeros((nl, n), np.float32)
+            pl = np.asarray(pl, np.int64)
+            m = pl < nl
+            P[pl[m], np.asarray(pc, np.int64)[m]] = np.asarray(ps, np.float32)[m] / 100.0
+            out.append((float(a), self.region_shares(P, landmass)))
+        self._rt_neg = np.array([-a for a, _ in out])
+        return out
+
     def learners(self, lid, ago) -> list[tuple[float, float, float]]:
         """[(S of the whole, S of the specialists, share)] per region learner of a people now (PW-1471, D55): its regions reached by
-        now (region_shares, Crossings' dated arrivals), each with its share of the people (renormalised); one learner without them."""
-        rg = [(r, w) for r, w in self.regions.get(lid) or [] if self.reached[lid].get(r, -1.0) >= ago - 1e-9]
+        now (region_shares on its range then, regions_at; Crossings' dated arrivals), each with its share of the people
+        (renormalised); one learner without them."""
+        rg = [(r, w) for r, w in self.regions_at(ago).get(lid) or [] if self.reached[lid].get(r, -1.0) >= ago - 1e-9]
         if len(rg) <= 1:
             s_all, s_spec, _ = self.strengths(lid, ago)
             return [(s_all, s_spec, 1.0)]
@@ -1119,18 +1151,20 @@ class Calendar:
 def build(lines: list[dict], contacts: dict | None, pres: dict | None, present: np.ndarray | None = None,
           goods: dict | None = None, mode: str = "fantasy", era: str | None = "renaissance", seed: int = 0,
           T: dict | None = None, gods_mode: str = "faith_made", towns: dict | None = None, arms: str | None = None,
-          landmass: np.ndarray | None = None) -> dict:
+          landmass: np.ndarray | None = None, frames: list | None = None) -> dict:
     """meta.techtree for a peoples run, after its history (a Calendar fed the whole run and run to the present). gods_mode (PW-1304):
     "faith_made" (default), "belief_only" or "absolute"; a tech marked `gods = true` (divine magic) exists only in faith_made and
     absolute. `lines` as in meta.lineages (id, origin, parents, group_of, overlay, started_kyr,
     ended_kyr, demography, traits), `contacts` as meta.contacts, `pres` as meta.present (crops and animals: the tamings,
     lines: the populations), `present` the presence per line (lines x cells, 0..1), `goods` the world's goods and `landmass` each
     cell's present-day landmass (crossing.Crossings.label: the region learners, PW-1471; None: each people one learner). towns, arms:
-    D52's experiment arms (ARM_DEFAULTS above; towns = {people: (agos oldest first, town cells), "_cell_km2": km2})."""
+    D52's experiment arms (ARM_DEFAULTS above; towns = {people: (agos oldest first, town cells), "_cell_km2": km2}). frames: the
+    presence per stored frame ([(kyr ago, (lines, cells, % shares))], the presence table's rows): the regions are read from the range
+    of each time (regions_through, PW-1597); without them, from `present` for every time."""
     c = Calendar(lines, mode, era, seed, T, gods_mode, towns, arms)
     have = {l["id"]: goods_held(c.T, present, goods, c.idx[l["id"]]) for l in c.people}
     c.feed(lines, links_of(contacts, c.kind), forced_of(pres, c.techs, c.L), have, (pres or {}).get("lines") or {},
-           c.region_shares(present, landmass))
+           c.region_shares(present, landmass), c.regions_through(frames, landmass))
     c.advance()
     return c.result()
 
@@ -1229,7 +1263,22 @@ def rebuild(run_dir: Path, gods_mode: str | None = None, T: dict | None = None, 
         towns = town_footprint(run_dir)
     return build(lines, m.get("contacts"), m.get("present"), present, goods, m.get("mode", "fantasy"),
                  m.get("era"), int(m.get("try_seed") or 0) if seed is None else seed, T=T, gods_mode=gods_mode or m.get("gods_mode", "faith_made"),
-                 towns=towns, arms=arms, landmass=landmass_of(run_dir, m))
+                 towns=towns, arms=arms, landmass=landmass_of(run_dir, m), frames=frames_of(run_dir, run))
+
+
+def frames_of(run_dir: Path, run: dict) -> list | None:
+    """The presence per stored frame of a stored run ([(kyr ago, (lines, cells, % shares))], output.read_presence), for rebuild."""
+    from .output import read_presence
+    pt = read_presence(Path(run_dir), run["meta"])
+    if pt is None:
+        return None
+    off = pt["offsets"].astype(np.int64)
+    nl = off.shape[1] - 1
+    out = []
+    for j, f in enumerate(run["frames"][:off.shape[0]]):
+        a, b = int(off[j, 0]), int(off[j, -1])
+        out.append((-float(f["t"]), (np.repeat(np.arange(nl), np.diff(off[j])), pt["cells"][a:b], pt["share"][a:b])))
+    return out
 
 
 def landmass_of(run_dir: Path, m: dict) -> np.ndarray | None:

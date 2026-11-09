@@ -41,9 +41,9 @@ PEOPLE_LAYERS = {
     "mix_second_share": U8("composition: % of the cell's people that are the second people"),
     "mix_other_share": U8("composition: % of the cell's people that are all the others together"),
 }
-ANIMAL_LAYERS = {  # (bit flags, one bit per animal in animal_defs.TABLE: 7 animals in two layers, not 14)
-    "animal_wild": U8("bit flags: the animals whose wild range (suitability >= 0.35, animal_defs.wild_*) covers the cell; bit i = animal_defs.TABLE[i]; 0 in the deep epochs"),
-    "animal_known": U8("bit flags: the animals tamed and known in the cell (0 before the taming; the front spreads over peopled land and, by boat, over the sea, animals.py); bit i = animal_defs.TABLE[i]"),
+ANIMAL_LAYERS = {  # (bit flags, one bit per animal in animal_defs.TABLE: 13 animals in two uint16 layers, PW-835)
+    "animal_wild": U8("bit flags: the animals whose wild range (suitability >= 0.35, animal_defs.wild_*) covers the cell; bit i = animal_defs.TABLE[i]; 0 in the deep epochs") | {"dtype": "<u2"},
+    "animal_known": U8("bit flags: the animals tamed and known in the cell (0 before the taming; the front spreads over peopled land and, by boat, over the sea, animals.py); bit i = animal_defs.TABLE[i]") | {"dtype": "<u2"},
 }
 U64 = lambda d: {"dtype": "<u8", "scale": 1, "offset": 0, "transform": None, "units": "", "description": d}  # noqa: E731
 U16 = lambda d: {"dtype": "<u2", "scale": 1, "offset": 0, "transform": None, "units": "", "description": d}  # noqa: E731
@@ -154,11 +154,13 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     # town arms (B, E) need the settlement ledger, which needs the tree: the first tree goes without them (PW-1464, _towns_first)
     tt_args = (lines, contacts, pres, res["present"], h.goods, h.tree.mode, h.tree.era, h.seed)
     live_tt = getattr(h.rule, "tech", None)
+    tt_frames = [(float(f["ago"]), f["presence"]) for f in frames]  # (PW-1597: each people's regions on its range of the time)
     town_arms = TT.town_arms() if live_tt is None and world and eraq_meta else ""
     if live_tt is not None:
         techtree = live_tt.result(*tt_args[:5])
     else:
-        techtree = TT.build(*tt_args, gods_mode=h.tree.gods_mode, landmass=h.cross.label, **({"arms": TT.arms_without_towns()} if town_arms else {}))
+        techtree = TT.build(*tt_args, gods_mode=h.tree.gods_mode, landmass=h.cross.label, frames=tt_frames,
+                            **({"arms": TT.arms_without_towns()} if town_arms else {}))
     m = ps.run["meta"]
     label = name or f"peoples: {h.tree.name} on {world or ps.run['id']}"
     events = [{"t": -e["ago_kyr"], "kind": e["kind"], "text": e["text"], "lat": e["lat"] if e["lat"] is not None else 0,
@@ -186,7 +188,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
         S.write_json(out / "polities_live.json", h.rule.doc())
     ledger_done = False
     if town_arms:
-        techtree = _towns_first(out, tt_args, h.tree.gods_mode, techtree, h.cross.label)
+        techtree = _towns_first(out, tt_args, h.tree.gods_mode, techtree, h.cross.label, tt_frames)
         ledger_done = True
     report(out, h, res, pres)
     with open(out / "run.txt", "a") as f:
@@ -224,7 +226,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
 TOWN_PASSES = 3  # (_towns_first: at most this many ledger-and-tree rounds)
 
 
-def _towns_first(out: Path, tt_args: tuple, gods_mode: str, tree0: dict, landmass=None) -> dict:
+def _towns_first(out: Path, tt_args: tuple, gods_mode: str, tree0: dict, landmass=None, frames=None) -> dict:
     """The tech tree with D52's town arms (B, E; PW-1464): the ledger from the tree made without them, then the tree again with the
     ledger's town footprint (techspread.town_footprint), until the techs the ledger reads (settlements.LEDGER_TECHS) stop moving,
     at most TOWN_PASSES rounds. Arm E touches only writing, the alphabet and law, which the ledger does not read, so it stops after
@@ -233,7 +235,7 @@ def _towns_first(out: Path, tt_args: tuple, gods_mode: str, tree0: dict, landmas
     prev = tree0
     for i in range(TOWN_PASSES):
         ST.write(out, report=False)
-        tt = TT.build(*tt_args, gods_mode=gods_mode, towns=town_footprint(out), landmass=landmass)
+        tt = TT.build(*tt_args, gods_mode=gods_mode, towns=town_footprint(out), landmass=landmass, frames=frames)
         S.update_meta(out, lambda r, tt=tt: r["meta"].__setitem__("techtree", tt))
         if ST.ledger_dates(tt["known"]) == ST.ledger_dates(prev["known"]):
             return tt  # (the ledger just written is the one this tree makes)

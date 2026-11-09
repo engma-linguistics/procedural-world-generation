@@ -285,6 +285,35 @@ def test_fast_flood_kernels_match_the_textbook_ones():
                                   kernels.priority_flood(e2, e2 <= 0, g.nbr_off, g.nbr_idx, 0.01)[0])
 
 
+def test_same_flood_only_says_yes_when_the_flood_is_unchanged():
+    """hydrology._same_flood (route()'s reuse of an earlier flood, PW-1606) is exact: whenever it accepts changed
+    heights, a fresh flood gives the earlier one's filled, down and order; it accepts a pit floor raised within
+    its fill and refuses a changed outlet or a height that moves a cell's filled level."""
+    g = build_grid(4)
+    rng = np.random.default_rng(5)
+    yes = no = 0
+    for trial in range(6):
+        e = _tied_heights(g, rng, trial)
+        out = (e <= 0) | (rng.random(g.n) < 0.02)
+        base = kernels.priority_flood_to(e, out, g.nbr_off, g.nbr_idx, hydrology.FLOOD_EPS)
+        prev = (out, base[0], base[1], e)
+        pits = np.nonzero(~out & (base[0] > e))[0]
+        for _ in range(12):
+            e2 = e.copy()
+            pick = rng.choice(g.n, 3, replace=False)
+            if len(pits) and rng.random() < 0.7:
+                pick = rng.choice(pits, min(3, len(pits)), replace=False)
+            e2[pick] += rng.choice([-30.0, -0.5, 0.5, 30.0], len(pick)) * rng.random(len(pick))
+            same = hydrology._same_flood(e2, out, prev)
+            if same:
+                want = kernels.priority_flood_to(e2, out, g.nbr_off, g.nbr_idx, hydrology.FLOOD_EPS)
+                assert all(np.array_equal(a, b) for a, b in zip(want, base))
+            yes += same
+            no += not same
+        assert not hydrology._same_flood(e, ~out, prev)
+    assert yes and no
+
+
 def test_lake_order_reused_across_tries_matches_fresh_lakes():
     """_settle works out kernels.lakes' order of the cells (lake_order) once
     per bed and reuses it for each try's water: the same as kernels.lakes

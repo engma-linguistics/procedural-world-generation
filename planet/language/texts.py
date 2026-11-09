@@ -447,7 +447,8 @@ TITLE_VERB = {"sweet": "keep", "fruit": "eat"}
 
 #: herd animals as English names their meat
 ANIMAL_EN = {"caprine": "goat meat", "cattle": "beef", "ovine": "mutton", "fowl": "fowl", "porcine": "pork",
-             "horse": "horse meat", "camelid": "camel meat", "cervid": "venison"}
+             "horse": "horse meat", "camelid": "camel meat", "cervid": "venison",
+             "pig": "pork", "camel": "camel meat", "reindeer": "reindeer meat", "llama": "llama meat", "buffalo": "buffalo meat", "yak": "yak meat"}
 
 
 def _pick(lj: dict, salt: str, n: int) -> int:

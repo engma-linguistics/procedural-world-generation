@@ -2,7 +2,7 @@
 id: PW-1599
 title: Settlement wars read the live polities' conquests when the history ran them, so a town's 'sacked by' agrees with the state card's 'the conquered'
 type: task
-status: todo
+status: done
 parent: PW-856
 milestone: v4
 subsystem: culture
@@ -33,4 +33,5 @@ can say "the humans submitted" while the ledger says the town was "razed by the 
 - [ ] a town on land a live conquest took carries that conquest's fate; tests on a small run with polities_live.json
 
 ## Updates
+- 2026-11-09: Status todo -> done. Merged lane 254 (f1c313b6).
 - 2026-11-09: Created from inbox draft draft-ledger-reads-live-conquests.md (found by lane-253).
