@@ -4,7 +4,7 @@
 # script: tools/language/build_reference_tables.py
 # features considered (52): GB130 GB131 GB132 GB133 GB136 GB024 GB025 GB065 GB193 GB327 GB328 GB074 GB075 GB421 GB422 GB262 GB263 GB020 GB022 GB023 GB070 GB071 GB072 GB408 GB409 GB410 GB030 GB051 GB053 GB170 GB171 GB057 GB044 GB043 GB318 GB082 GB083 GB084 GB086 GB121 GB521 GB089 GB090 GB091 GB092 GB093 GB094 GB079 GB080 GB124 GB107 GB155
 # (word order, adpositions, possessor-noun, adjective-noun, articles, case, alignment, gender/noun class, classifiers, number, TAM, argument indexing / affixation / incorporation).
-# for every unordered pair coded ('?' excluded) in >= 100 common languages, Cramer's V of the cross-tab; pairs with V >= 0.4 kept (45 of 1326 pairs; rerun with --gb-vmin 0.3 for ~100 pairs). Each kept pair is written in both directions with the full conditional distribution, so for a given (f1, v1) the p_cond over v2 sums to 1.
+# for every unordered pair coded ('?' excluded) in >= 100 common languages, Cramer's V of the cross-tab; pairs with V >= 0.4 kept, plus the sibling pairs GB070/GB072 GB408/GB409 GB044/GB043 GB044/GB318 whatever their V (drawn jointly in grammar.py) (48 of 1326 pairs; rerun with --gb-vmin 0.3 for ~100 pairs). Each kept pair is written in both directions with the full conditional distribution, so for a given (f1, v1) the p_cond over v2 sums to 1.
 # columns: n_given = languages with f1=v1 (and f2 coded); count = those with f2=v2; p_cond = P(f2=v2 | f1=v1); p_marginal = P(f2=v2) on the same common languages; lift = p_cond / p_marginal.
 # raw language counts, NOT family-balanced: big families (Austronesian, Atlantic-Congo) inflate some associations.
 f1	f1_short	v1	f2	f2_short	v2	n_given	count	p_cond	p_marginal	lift	cramers_v
@@ -396,3 +396,27 @@ GB074	Prepositions	0	GB025	DEMOrder	3	920	118	0.1283	0.1232	1.041	0.401
 GB074	Prepositions	1	GB025	DEMOrder	1	1158	277	0.2392	0.4042	0.592	0.401
 GB074	Prepositions	1	GB025	DEMOrder	2	1158	743	0.6416	0.4726	1.358	0.401
 GB074	Prepositions	1	GB025	DEMOrder	3	1158	138	0.1192	0.1232	0.967	0.401
+GB044	PluralBound	0	GB318	PluralFree	0	866	587	0.6778	0.8149	0.832	0.317
+GB044	PluralBound	0	GB318	PluralFree	1	866	279	0.3222	0.1851	1.740	0.317
+GB044	PluralBound	1	GB318	PluralFree	0	1073	993	0.9254	0.8149	1.136	0.317
+GB044	PluralBound	1	GB318	PluralFree	1	1073	80	0.0746	0.1851	0.403	0.317
+GB318	PluralFree	0	GB044	PluralBound	0	1580	587	0.3715	0.4466	0.832	0.317
+GB318	PluralFree	0	GB044	PluralBound	1	1580	993	0.6285	0.5534	1.136	0.317
+GB318	PluralFree	1	GB044	PluralBound	0	359	279	0.7772	0.4466	1.740	0.317
+GB318	PluralFree	1	GB044	PluralBound	1	359	80	0.2228	0.5534	0.403	0.317
+GB044	PluralBound	0	GB043	DualBound	0	989	976	0.9869	0.9220	1.070	0.216
+GB044	PluralBound	0	GB043	DualBound	1	989	13	0.0131	0.0780	0.168	0.216
+GB044	PluralBound	1	GB043	DualBound	0	1241	1080	0.8703	0.9220	0.944	0.216
+GB044	PluralBound	1	GB043	DualBound	1	1241	161	0.1297	0.0780	1.663	0.216
+GB043	DualBound	0	GB044	PluralBound	0	2056	976	0.4747	0.4435	1.070	0.216
+GB043	DualBound	0	GB044	PluralBound	1	2056	1080	0.5253	0.5565	0.944	0.216
+GB043	DualBound	1	GB044	PluralBound	0	174	13	0.0747	0.4435	0.168	0.216
+GB043	DualBound	1	GB044	PluralBound	1	174	161	0.9253	0.5565	1.663	0.216
+GB408	Accusative	0	GB409	Ergative	0	970	755	0.7784	0.7947	0.979	0.047
+GB408	Accusative	0	GB409	Ergative	1	970	215	0.2216	0.2053	1.080	0.047
+GB408	Accusative	1	GB409	Ergative	0	725	592	0.8166	0.7947	1.028	0.047
+GB408	Accusative	1	GB409	Ergative	1	725	133	0.1834	0.2053	0.894	0.047
+GB409	Ergative	0	GB408	Accusative	0	1347	755	0.5605	0.5723	0.979	0.047
+GB409	Ergative	0	GB408	Accusative	1	1347	592	0.4395	0.4277	1.028	0.047
+GB409	Ergative	1	GB408	Accusative	0	348	215	0.6178	0.5723	1.080	0.047
+GB409	Ergative	1	GB408	Accusative	1	348	133	0.3822	0.4277	0.894	0.047

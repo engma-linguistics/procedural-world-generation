@@ -99,13 +99,23 @@ def test_drift_accepts_a_grammar():
 # --- grams on the ladder ----------------------------------------------------------------------------------------------
 
 def test_proto_starts_low():
+    """A proto starts with 1-3 free or clitic grams; one aiming at a big case system (PW-1586) also starts with its case
+    endings already bound, 6+ cases (WALS 49A's bins), and nothing else bound."""
+    many = 0
     for s in range(20):
         _, g = _grammar(s)
-        plain = [x for x in g.grams if not x.function.startswith("CLASS")]
+        born = [x for x in g.grams if x.history[-1:] and "case system it was born with" in x.history[-1][1]]
+        plain = [x for x in g.grams if not x.function.startswith("CLASS") and x not in born]
         assert 1 <= len(plain) <= 3
-        assert all(x.level <= G.CLITIC for x in g.grams)
-        assert G.complexity(g)["obligatory"] == 0
+        assert all(x.level <= G.CLITIC for x in g.grams if x not in born)
+        if G.aims(g)["case"] == "many":
+            many += 1
+            assert all(x.level == G.AFFIX and x.function in G.CASE_FNS for x in born)
+            assert G.case_count(g) >= G.CASE_MANY and G.realised_value("case", g) == "many"
+        else:
+            assert not born and G.complexity(g)["obligatory"] == 0
         assert len([e for e in g.exemplars if e.pos == "N"]) == 4 and len([e for e in g.exemplars if e.pos == "V"]) == 4
+    assert many >= 3
 
 
 def test_go_future_binds_and_enters_verb_cells(monkeypatch):
@@ -311,7 +321,7 @@ def test_allative_concept_is_not_the_allative_marker():
     gr = G.recruit(rng, g, lex(ALL=("wote", "FUNC"), MANY=("", "A")), kyr=20.0, function="PL", source="ALL")
     assert gr is not None and gr.source[0] == "ALL" and gr.source[2] == "concept"
     assert G._origin(gr) == "once the word for 'all'"
-    line = next(x for x in G.describe(g) if "plural" in x)
+    line = next(x for x in G.describe(g) if "plural" in x and "class marker" not in x)
     assert "allative" not in line and "'all'" in line
     # a reanalysed gram names its old function
     gr.source = ("PERF", "G0xx", "gram")
@@ -466,7 +476,7 @@ def test_drift_retention_by_class_and_harmony():
     fickle ~40-70%; 145-yr generations keep more; OV keeps postpositions and VO prepositions after flips."""
     T = G.load_tables()
 
-    def run(gen_yr, n=200, seed=1):
+    def run(gen_yr, n=400, seed=1):   # (n 200 -> 400, PW-1600: at 200 the OV share sat at the 0.85 bar by draw order)
         rng = np.random.default_rng(seed)
         ret = {c: [] for c in G.STABILITY}
         harm = []
@@ -993,8 +1003,8 @@ def test_rulings_species_leanings_deep_past_and_comparison_prior():
     for s in range(6):
         g0 = G.proto_grammar(np.random.default_rng(s), Inv(), lex())
         g1 = G.proto_grammar(np.random.default_rng(s), Inv(), lex(), deep_gens=G.DEEP_PAST_GENS)
-        bound0 += sum(1 for x in g0.live() if x.level >= G.AFFIX)
-        bound1 += sum(1 for x in g1.live() if x.level >= G.AFFIX)
+        bound0 += sum(1 for x in g0.live() if x.level >= G.AFFIX and x.function not in G.CASE_FNS)   # (PW-1586: case at birth)
+        bound1 += sum(1 for x in g1.live() if x.level >= G.AFFIX and x.function not in G.CASE_FNS)
         assert any("deep unrecorded past" in e[1] for e in g1.events)
     assert bound0 == 0 and bound1 >= 6
     rng = np.random.default_rng(3)
@@ -1026,7 +1036,7 @@ def test_proclitics_bind_more_slowly(monkeypatch):
     hits = {"pre": 0, "post": 0}
     monkeypatch.setattr(G, "RECRUIT", 0.0)
     monkeypatch.setattr(G, "PRESSURE", 0.0)
-    for seed in range(40):
+    for seed in range(120):   # (40 -> 120 seeds, PW-1600: 4 vs 7 hits at 40 was within draw noise)
         for side in ("pre", "post"):
             rng, g = _grammar(seed, case="few")
             g.grams = [_gram("LOC", "ka", G.CLITIC, side=side)]
