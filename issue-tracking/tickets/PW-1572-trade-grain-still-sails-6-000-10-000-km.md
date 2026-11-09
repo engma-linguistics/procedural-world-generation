@@ -1,4 +1,5 @@
 ---
+id: PW-1572
 title: "Trade: grain still sails 6,000-10,000 km to some cultures, because bulk goods pay freight alone at sea"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 235
 blocked_by: []
 relates: [PW-1505, PW-1532, PW-1533]
 refs: ["planet/lineages/trade_flow.py::HAND_KM", "planet/lineages/trade_flow.py::_Frame.cost", docs/review/culture/trade/step4b.md, docs/review/culture/trade/review1.md, docs/review/culture/trade/bought_in.md, docs/review/culture/trade/bought_in/stats.py, "run 3e0eb4 cultures 68, 137, 349", "run 1e97dd culture 753"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -33,3 +36,6 @@ If it is never done, briefs keep naming continent-crossing grain shipments that 
 - [ ] source the longest pre-modern bulk grain sea hauls (fetched, not from memory) and set a bound or a relay cost for bulk at sea
 - [ ] on the judge runs: grain's far tenth and maximum against main; herders' grain met (PW-1511's measure) not lowered by more than
   the sourced change explains
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-trade-bulk-grain-sea-tail.md (found by lane 235).

@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1517, PW-1331]
 refs: ["planet/vegetation.py::_year", "planet/vegetation.py::_TUNE (TrBE eps 1.43)", "planet/vegetation.py::KN_RESP", "planet/climate.py::shade_from_hours", docs/review/climate/npp/scout3.md, docs/review/climate/npp/scout3_probe.py, docs/review/climate/npp/scout3/, docs/review/climate/npp/scout2.md, docs/review/vegetation/npp-check/npp_check.py, "Yan et al. 2017 JGR Biogeosci 122:3014 doi:10.1002/2017JG004008 (White Rose eprint 124617)", "Chambers et al. 2004 Ecol Appl 14:S72 (Table 2)", "Atkin et al. 2015 New Phytol 206:614", "Malhi et al. 2009 GCB 15:1255", "world 506694 (Earth L6)"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -42,4 +42,5 @@ unit of light, so a cloudier world's forests are under-credited. The impact is l
 - [ ] then an 8-draw L6 screen, then the 36-draw judge
 
 ## Updates
+- 2026-11-09: Scout 232 pass 1 of 3: diagnosis docs/review/climate/diffuse/diagnosis.md (Yan 2017, Mercado 2009); candidate A (TrBE light-use gain with diffuse share + leaf respiration x1.5, Chambers 2004) meets GPP/NPP/respiration on Earth's climate, other biomes unchanged; LAI 4.28 vs 4.7-5.1. Kept as docs/review/climate/diffuse/pass1.patch, not applied: suite, goldens, scorecard and L6 screen not run (machine load 40-220 from another session). Next: apply and check.
 - 2026-11-08: Created from inbox draft draft-diffuse-light-gain.md (found by scout217).

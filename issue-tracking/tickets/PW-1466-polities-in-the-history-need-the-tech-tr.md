@@ -2,7 +2,7 @@
 id: PW-1466
 title: "Polities in the history need the tech tree in the history: today their gates are an era proxy or a borrowed calendar"
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1434, PW-1460]
 refs: [planet/lineages/history/polity_live.py, "planet/lineages/techtree.py::build", "planet/lineages/output.py::save", docs/review/culture/polities/round7.md]
 created: 2026-11-04
-updated: 2026-11-04
+updated: 2026-11-09
 ---
 
 ## Description
@@ -39,4 +39,5 @@ the present). Then `polity_live.knows` reads the live calendar, and the after-ru
 - [ ] polity_live reads it; CALENDAR and PROXY_LEV go
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 234 (5723d08c): already built by lanes 192/195/196 and PW-1483 (tech_live.LiveTech; PROXY_LEV/CALENDAR gone). Box 1 re-check on today's code queued in lane 234's harness (round14); the switch's real blocker is the two polity maps, PW-157x draft.
 - 2026-11-04: Created from inbox draft draft-techtree-inside-the-history.md (found by lane183).

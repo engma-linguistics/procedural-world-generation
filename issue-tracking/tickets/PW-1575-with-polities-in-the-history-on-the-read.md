@@ -1,5 +1,6 @@
 ---
-title: "With polities in the history on, the read-out should draw the live map, not a second set of polities"
+id: PW-1575
+title: With polities in the history on, the read-out should draw the live map, not a second set of polities
 type: task
 status: todo
 parent: PW-661
@@ -10,7 +11,9 @@ impact: high
 found_by: lane234
 blocked_by: []
 relates: [PW-1434, PW-1466, PW-1488, PW-1460, PW-1456]
-refs: [planet/lineages/polities.py::derive, planet/lineages/history/polity_live.py::LivePolities.doc, planet/lineages/history/polity_live.py::LivePolities._step, planet/lineages/output.py::save, planet/server.py, planet/lineages/gods.py::rule_table, docs/review/culture/polities/round7.md, docs/review/culture/polities/round14.md, docs/review/culture/polities/round14/measure.py]
+refs: ["planet/lineages/polities.py::derive", "planet/lineages/history/polity_live.py::LivePolities.doc", "planet/lineages/history/polity_live.py::LivePolities._step", "planet/lineages/output.py::save", planet/server.py, "planet/lineages/gods.py::rule_table", docs/review/culture/polities/round7.md, docs/review/culture/polities/round14.md, docs/review/culture/polities/round14/measure.py]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -32,3 +35,6 @@ at the capital (derive's `_ruler_culture`); its subjects, names, colours and why
 read-out from the live log. The live step would need to record provinces (`from_rec`) and subject cultures, as derive's maps do.
 - [ ] with the switch on, the Polities layer, the cards and gods.py's rulers read the live polities; with it off, nothing changes
 - [ ] round 14's measures re-run: the read-out and live columns are one column
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-polities-readout-reads-the-live-map.md (found by lane234).

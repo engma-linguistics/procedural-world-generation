@@ -1,4 +1,5 @@
 ---
+id: PW-1573
 title: "Trade: nobody wants dried or salted fish, so salt fish never travels inland and the culinary brief can't show it"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 235
 blocked_by: []
 relates: [PW-1505, PW-692, PW-805, PW-1503]
 refs: ["planet/lineages/trade.py::NEED", "planet/lineages/trade.py::GOODS", "planet/lineages/trade_flow.py::FOODS", planet/lineages/bought_in.py, docs/review/culture/trade/bought_in.md, docs/review/culture/trade/review1.md, docs/review/culture/trade/bought_in/stats.py, "runs 3e0eb4 a24559 1e97dd 07c755"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -30,3 +33,6 @@ salt trade.
   share from the literature, not from memory)
 - [ ] on the judge runs: dried fish flows exist, with the median km and the road reported; the other goods' flows are compared with
   main (the walk is shared)
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-trade-dried-fish-no-want.md (found by lane 235).

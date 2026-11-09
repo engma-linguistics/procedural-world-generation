@@ -1,7 +1,8 @@
 ---
+id: PW-1574
 title: Should every tree get the diffuse-light gain (with EPS_SCALE refitted), or only the rainforest tree?
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: later
 subsystem: surface
@@ -11,6 +12,8 @@ found_by: scout232
 blocked_by: []
 relates: [PW-1518]
 refs: ["planet/vegetation.py::DIFFUSE", "planet/vegetation.py::EPS_SCALE", docs/review/climate/diffuse/screens.md, docs/review/climate/diffuse/probe.py, docs/review/vegetation/npp-check/npp_check.py, "Mercado et al. 2009 Nature 458:1014 (NORA 6771)", "Yan et al. 2017 JGR Biogeosci 122:3014", "world 506694 (Earth L6)"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -34,3 +37,8 @@ Options:
 - C. All trees with one global anchor and EPS_SCALE refitted to keep land NPP. Simpler than B, less grounded.
 
 Lean: A until a v2 vegetation pass; then B.
+
+Coordinator 11-09: TrBE only for now (scout lean; the owner defers physics calls). Revisit with an EPS_SCALE refit if the two-leaf pass shows other forests need it.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-diffuse-gain-all-trees.md (found by scout232).

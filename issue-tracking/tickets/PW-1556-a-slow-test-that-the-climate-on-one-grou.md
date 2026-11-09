@@ -2,7 +2,7 @@
 id: PW-1556
 title: A slow test that the climate on one ground gives the same arid share at L7 as on the nested L6 grid
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: climate
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-290, PW-015]
 refs: [docs/review/climate/levels/scout1.md, "planet/nest.py::climate_coarse", "planet/climate.py::compute", "planet/climate.py::koppen", "run a19366", "commit 14165233", "commit 6926583"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -35,4 +35,5 @@ ships drier L7 showcase worlds (as on 10-15), with nobody noticing until a healt
 - [ ] confirm it fails on `6926583`'s `planet/` (the scout's `old.py` approach: `git archive` into a scratch dir)
 
 ## Updates
+- 2026-11-09: Status todo -> done. Scout 232 (3a877957): slow test tests/test_nest.py::test_the_l7_climate_is_as_arid_and_as_wet_as_its_nested_l6_climate_on_one_ground; arid share within 2.0 pt, land rain within 5% (today +0.98 pt / 0.2% on seed 21; old code +5.86 pt / -32%). docs/review/climate/levels/pw1556.md.
 - 2026-11-08: Created from inbox draft draft-level-pair-climate-guard.md (found by scout221).
