@@ -186,3 +186,22 @@ Chaos: no systematic warm shift in end T or CO2, and the fails split warm and co
 merge with the Earth bar met in full (pass 2). The pass count leans to main in all three rolls (5 vs 1 discordant, p
 0.22; lane 24's null change gave 7 vs 8 of 36). That is the ticket's open step: the 36-draw judge on main after the
 merge.
+
+## 36-draw judge (runner 252, 2026-11-09)
+
+**In plain words.** I ran the full 36-draw test (18 test planets, each at two small starting-climate nudges) on the code
+just before the two-leaf canopy merge and on the merged code, same draws. No planet froze over or boiled in either.
+Main passed 34 of 36, the two-leaf code 30 of 36 (83%, above the 60-70% bar). That leans to main again, but the chance
+of a gap this size from a null change is about 29%. End temperature and CO2 did not move.
+
+Baseline: main before the merge = 00cfe6d3 (99db109f^1); two-leaf = 99db109f. Only planet/climate.py and
+planet/vegetation.py differ. Run with `paired.sh` (rolls 0.0005 0.001, 4 sims x 2 threads), judged with
+`uv run python tools/judge.py paired ROOT main twoleaf --table`; full output `out/judge_36draw.txt`.
+
+- Hard tier (frozen over at the end, hellhouse): 0 in both arms, 36/36 each.
+- Soft tier: main 34/36 (r0.0005 17/18, r0.001 17/18), two-leaf 30/36 (15/18, 15/18). Both 28, main only 6, two-leaf only 2, neither 0; McNemar exact p 0.289.
+- Main-only passes (two-leaf fails): 733847 r0.0005 (+7.2 C), 819014 r0.0005 (+7.4), 957317 l6c_p r0.0005 (-6.1), 733847 r0.001 (+8.4), 639472 l6c_p r0.001 (+3.6, fails another check), 957317 r0.001 (-4.2). Two-leaf-only passes: 958504 l6c_m r0.0005 (main -6.7), 583167 r0.001 (main +9.1 hellhouse-side fail).
+- Paired B - A medians (95% CI): end T +0.38 C [-1.57, +1.70]; late dT -0.00 [-1.20, +1.01]; late CO2 +0.009 [-0.12, +0.13]; land % +0.26 [-0.11, +0.48]; arid % -0.35 [-1.13, +2.66]; hot desert % -0.45 [-1.16, +1.06]; land rain -17 mm [-50, +32]; trees % -0.36 [-2.8, +1.6]. Nothing moved.
+- Reported, not a failure: glacial maximum (land ice >= 25% at some moment) 13 of 36 on main, 18 of 36 on two-leaf.
+- Note: the 8 draws of pass 3 are inside these 36 (l6fix and l6c_0 at 0.0005/0.001; l6c_p at 0.0005 is pass 3's 0.0015 roll), so the 36-draw result is not independent of the 24-pair screen: it adds 20 new pairs and agrees (pass 3 lean 5 vs 1; now 6 vs 2).
+- Sims ran at machine load 15-75 from other lanes; the sims are deterministic, so load changes only the time.
