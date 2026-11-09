@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1539]
 refs: ["planet/language/rules.py::dispersion_rule", "planet/language/rules.py::pick_rule", planet/language/checks.py, docs/review/language/calibration.md, "run a24559", "scratch passes rulings/alone, rulings/bursts (deleted; numbers in calibration.md 'Rulings lane')"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -38,4 +38,5 @@ cap_inventory fold a pushed vowel one axis from a commoner one as it does other 
 - [ ] i̞ under ~1% of living lects; the overused check passes on two seeds
 
 ## Updates
+- 2026-11-09: Fix merged dffed688: a pushed front/back vowel skips in-between heights; raised e (i̞) 10% -> 0 of languages on the a24559 pass. Close after one more seed.
 - 2026-11-08: Created from inbox draft draft-language-push-chain-raised-e.md (found by lang-rulings (2026-11-08)).

@@ -1,8 +1,10 @@
 ---
+id: PW-1579
 title: "Languages: sound-change weights cut while weights did not bite now bite 3-9x harder; review them on the log scale"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: lang-weights (PW-1551 lane)
 blocked_by: []
 relates: [PW-1551]
 refs: [planet/language/data/sound_changes.tsv, "planet/language/rules.py::NATURAL_BASE", "planet/language/history.py::RULE_WEIGHT", "docs/review/language/calibration.md#pw-1551-lane-2026-11-08-lang-weights-the-draw-without-redraws"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -31,3 +35,6 @@ passes its checks with them as they are.
 
 What I'd try: restore each row to its typological naturalness one at a time in the isolated-lect harness and a full
 pass, and fix any overused segment it brings back with an exit row (as S240 did for ɳ) rather than a weight cut.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-saturation-era-weight-cuts.md (found by lang-weights (PW-1551 lane)).

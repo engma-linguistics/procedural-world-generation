@@ -2,7 +2,7 @@
 id: PW-1544
 title: Languages of long-lived peoples stay almost all isolating (93% with 0-1 bound verb categories)
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: ["planet/language/grammar.py::step", planet/language/lect.py, docs/review/language/calibration.md, "run a24559"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -42,5 +42,6 @@ generation. (b) is the cheapest and keeps the per-generation clock. Your call.
 - [ ] if (b) or (c): re-measure the WALS 22A bins by generation class (`scratchpad synth/fullan.py`)
 
 ## Updates
+- 2026-11-09: Status todo -> done. LONG_GEN_YR 150 -> 140 merged dffed688 (c048b619): elves get the long-generation leanings. Elf 22A bound verb categories 0-1/2-3/4-5: 33/67/0 -> 4/56/41 (n=27).
 - 2026-11-08: Created from inbox draft draft-language-long-lived-isolating.md (found by lang-synth (synthesis lane, 2026-11-08)).
 - 2026-11-08: RULING (owner, Language Desk 11-08): option (b), long-lived protos start with a richer grammar.

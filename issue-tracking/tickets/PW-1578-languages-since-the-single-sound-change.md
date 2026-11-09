@@ -1,8 +1,10 @@
 ---
+id: PW-1578
 title: "Languages: since the single sound-change draw, long-lived lines make ~2x more changes per generation than human ones"
 type: task
 status: needs-decision
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: med
@@ -10,6 +12,8 @@ found_by: lang-weights (PW-1551 lane)
 blocked_by: []
 relates: [PW-1551]
 refs: ["planet/language/lect.py::Lect.step", "planet/language/lect.py::REFIRE_GEN_YR", "planet/language/history.py::RATE_SCALE", "planet/language/checks.py::long_generations", "docs/review/language/calibration.md#pw-1551-lane-2026-11-08-lang-weights-the-draw-without-redraws"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -35,3 +39,6 @@ Options:
   applied changes, not chances, are per generation. A new mechanism; needs a pass.
 - C. Lower RATE_SCALE for all and accept a longer horizon (rate 150 read 16.0 kyr against 11.4).
 Lean: A for v1, B if the dragon trees read too shallow.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-change-rate-not-linear-in-generations.md (found by lang-weights (PW-1551 lane)).
