@@ -30,6 +30,12 @@ RATE_REDRAW = 0.1  # lognormal sigma of the re-draw at budding
 BURST_X = 2.0
 BURST_KYR = 1.0
 FOUNDER_SHARE = 0.25
+# Founder drift in inventory size (owner ruling 11-08, PW-1565 b): while a burst holds, the inventory-size anchor
+# (SIZE_ANCHOR, below) is loosened BURST_ANCHOR_X times, so a founder or shifted line can drift off its proto's size
+# (Polynesian-type: a small founder population losing contrasts, Trudgill 2004, 2011); when the burst ends the line
+# re-anchors on the size it has then (Lect.size_base, inherited), and holds that. Nothing pushes it down: which way it
+# drifts is the catalogue's and PHOIBLE's prior's business.
+BURST_ANCHOR_X = 3.0
 # Inventory size has no hard cap: rules are steered by PHOIBLE's size distribution (inventory.size_prior), so small and big
 # inventories stay possible but grow rare in PHOIBLE's proportions (Rotokas' 6 consonants, !Xóõ's 130). A rule that would take
 # the lect's consonant (or vowel-quality) count from n to n + d is drawn (prior(n + d) / prior(n)) ** SIZE_K times as often,
@@ -404,6 +410,7 @@ class Lect:
     dead_rules: list = field(default_factory=list)  # [ref, born, died, why] of the latest rules that died
     sandhi_drawn: bool = False  # the line has drawn its tone sandhi (phonology.draw_sandhi), once
     burst_until: float | None = None  # kyr (ago) until which the rate runs at BURST_X (a shift or founder split; not inherited)
+    size_base: dict | None = None  # {"C", "V"} the size the line re-anchored on after a burst (inherited; None: the proto's)
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -419,7 +426,8 @@ class Lect:
                     grammar=gram, profile=self.profile, profile_key=self.profile_key, gen_yr=self.gen_yr,
                     base_segs=self.base_segs or self.consonants(), fired={k: list(v) for k, v in self.fired.items()},
                     glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id,
-                    live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn)
+                    live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn,
+                    size_base=dict(self.size_base) if self.size_base else None)
 
     def gaps(self) -> list:
         """The major places (GAP_PLACES) the lect has no consonant at though its speakers make the place cheaply
@@ -508,6 +516,25 @@ class Lect:
             return self.rate * BURST_X
         return self.rate
 
+    def in_burst(self, kyr: float | None = None) -> bool:
+        """A burst holds at `kyr` (default: the lect's latest step)."""
+        kyr = getattr(self, "_last_kyr", None) if kyr is None else kyr
+        return self.burst_until is not None and kyr is not None and kyr >= self.burst_until - 1e-9
+
+    def size_anchor(self) -> tuple:
+        """({"C", "V"} counts the size steer anchors on, its sigma): the re-anchored size after a burst, else the proto's
+        (base_segs); sigma SIZE_ANCHOR, x BURST_ANCHOR_X while a burst holds (PW-1565)."""
+        base = self.size_base or {k: sum(1 for u in self.base_segs if u.kind == k) for k in ("C", "V")}
+        return base, SIZE_ANCHOR * (BURST_ANCHOR_X if self.in_burst() else 1.0)
+
+    def end_burst(self, kyr: float) -> bool:
+        """At the first step after a burst: re-anchor the size steer on the inventory as it is now (PW-1565)."""
+        if self.burst_until is None or kyr >= self.burst_until - 1e-9 or self.inventory is None:
+            return False
+        self.size_base = {"C": len(self.inventory.consonants), "V": len({_unit(v) for v in self.inventory.vowels})}
+        self.burst_until = None
+        return True
+
     def may_fire(self, rule, kyr: float) -> bool:
         """The re-fire memory: a rule fired in the last REFIRE_KYR, or already MAX_FIRES times in the lect's line (HARMONY_MAX
         for harmony, ONE_OFF_MAX for a one-off row: one_off), is not drawn or adopted again."""
@@ -539,20 +566,21 @@ class Lect:
         hv = PR.human_voiced(self.profile)
         sb = stop_bin(stop_share(self.load_forms())) if hv and self.lexicon is not None else None
         hit = getattr(self, "_rw", None) if cache else None
-        if hit is not None and hit[0] is rules and hit[1] == segs and hit[3] == (counts, sb):
+        base, sigma = self.size_anchor()
+        key = (counts, sb, tuple(sorted(base.items())), sigma)
+        if hit is not None and hit[0] is rules and hit[1] == segs and hit[3] == key:
             return hit[2]
         units = frozenset(_unit(x) for x in segs)
-        base = {k: sum(1 for u in self.base_segs if u.kind == k) for k in ("C", "V")}
         cn = None if counts is None else {"C": counts[0], "V": counts[1]}
         out = []
         forms = self.load_forms() if hv else None
         for r in rules:
-            f = rule_factor(r, segs, units, hv, base, cn, sb, None if hv else self.profile)
+            f = rule_factor(r, segs, units, hv, base, cn, sb, None if hv else self.profile, sigma)
             if hv and f > 0:
                 f *= keep_part(r, segs, forms, stress_of(inv))
             out.append(replace(r, weight=r.weight * f) if f != 1.0 else r)
         if cache:
-            self._rw = (rules, segs, out, (counts, sb))
+            self._rw = (rules, segs, out, key)
         return out
 
     def cap_inventory(self, kyr: float) -> int:
@@ -847,6 +875,7 @@ class Lect:
         self.isolation = float(ctx.get("isolation", self.isolation))
         self.generations += n_generations
         self._last_kyr = float(kyr)
+        self.end_burst(kyr)
         fired = []
         lam = n_generations * RATE_RULE * ctx.get("rate_scale", 1.0) * self.rate_now(kyr)
         k = int(rng.poisson(lam)) if lam > 0 else 0
@@ -980,14 +1009,14 @@ def human_cost(x) -> float:
     return _HCOST[x]
 
 
-def size_steer(measure: str, n: int, d: int, n0: int = 0) -> float:
+def size_steer(measure: str, n: int, d: int, n0: int = 0, sigma: float = SIZE_ANCHOR) -> float:
     """The size factor of a rule taking a count from n to n + d: PHOIBLE's prior ratio ** SIZE_K times the anchor ratio
-    around the proto count n0 (none when n0 is 0)."""
+    (lognormal of sigma `sigma`) around the line's count n0 (none when n0 is 0)."""
     from . import inventory as INV
     g = (INV.size_prior(measure, n + d) / INV.size_prior(measure, n)) ** SIZE_K
     if n0 > 0 and n + d > 0 and n > 0:
         a, b = math.log((n + d) / n0), math.log(n / n0)
-        g *= math.exp(-(a * a - b * b) / (2.0 * SIZE_ANCHOR ** 2))
+        g *= math.exp(-(a * a - b * b) / (2.0 * sigma ** 2))
     return g
 
 
@@ -1106,7 +1135,8 @@ def ease_factor(rule, lect) -> float:
             * keep_part(rule, frozenset(lect.segments()), forms, stress_of(lect.inventory)))
 
 
-def _size_part(rule, touched: list, units: frozenset, base: dict | None, counts: dict | None) -> float:
+def _size_part(rule, touched: list, units: frozenset, base: dict | None, counts: dict | None,
+               sigma: float = SIZE_ANCHOR) -> float:
     uncond = rule.target is not None and not rule.span and rule.env == RU.ANYWHERE and not rule.then
     outs = {_unit(y) for _x, o in touched for y in o}
     added = outs - units
@@ -1116,7 +1146,7 @@ def _size_part(rule, touched: list, units: frozenset, base: dict | None, counts:
         d = sum(1 for u in added if u.kind == kind) - sum(1 for u in removed if u.kind == kind)
         if d:
             n = counts[kind] if counts else sum(1 for u in units if u.kind == kind)
-            g *= size_steer(measure, n, d, (base or {}).get(kind, 0))
+            g *= size_steer(measure, n, d, (base or {}).get(kind, 0), sigma)
     return min(SIZE_CLAMP[1], max(SIZE_CLAMP[0], g)) if g != 1.0 else 1.0
 
 
@@ -1129,12 +1159,12 @@ def size_factor(rule, lect) -> float:
         return 1.0
     inv = lect.inventory
     counts = None if inv is None else {"C": len(inv.consonants), "V": len({_unit(v) for v in inv.vowels})}
-    base = {k: sum(1 for u in lect.base_segs if u.kind == k) for k in ("C", "V")}
-    return _size_part(rule, touched, frozenset(_unit(x) for x in segs), base, counts)
+    base, sigma = lect.size_anchor()
+    return _size_part(rule, touched, frozenset(_unit(x) for x in segs), base, counts, sigma)
 
 
 def rule_factor(rule, segs: frozenset, units: frozenset, human_voice: bool, base: dict | None = None,
-                counts: dict | None = None, sbin: int | None = None, profile=None) -> float:
+                counts: dict | None = None, sbin: int | None = None, profile=None, sigma: float = SIZE_ANCHOR) -> float:
     """The lect-specific weight multiplier of a catalogue rule: NEW_SEG_WEIGHT when it would bring in a segment the lect
     lacks; the ease drag (EASE_K: PHOIBLE commonness of what it makes vs what it rewrites for human voices, the species cost (`profile`) for others); and the size
     steer (size_steer: PHOIBLE's inventory-size distribution at the count the rule would leave, over the count now, and
@@ -1150,7 +1180,7 @@ def rule_factor(rule, segs: frozenset, units: frozenset, human_voice: bool, base
         f *= _ease(touched) * _stop_part(touched, sbin)
     elif profile is not None:
         f *= _ease(touched, _species_cost_fn(profile))
-    return f * _size_part(rule, touched, units, base, counts)
+    return f * _size_part(rule, touched, units, base, counts, sigma)
 
 
 _SPECIES_COST: dict = {}
