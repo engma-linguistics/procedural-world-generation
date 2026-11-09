@@ -81,13 +81,14 @@ a { color: var(--accent); }
   <div class="status">
     <span class="label">Under way now (no action needed)</span>
     <ul>
-      <li><b>Nothing waits on you right now.</b> I'll only put a card here for a real trade-off (realism vs fantasy, scope or cost, or taste); clear-cut realism fixes I just do and report.</li>
+      <li><b>One small taste card below</b> (spelling looks). It's already running as built, so answer whenever. Clear-cut realism fixes I just do and report.</li>
       <li><b>Your four 11-08 picks: done, in main 11-09.</b> Syllable-final consonants lean to nasals and liquids (share 40% → 47%; real languages ~60%). Grammatical words and pronouns are mostly one short syllable and wear down ("in" median 4 → 2 sounds; nouns and core words unchanged). "Many cases" now means 6+, and nine new cases including in/into/out of grow Finnish-style (6+ cases 3.5% → 16%, WALS 32%; follow-up PW-1586). Markers before the word fuse slower: prefix to suffix 1.1 : 1 → 1 : 2.4 (real ~1 : 2.5).</li>
       <li><b>Sound-change draw (PW-1551): done.</b> How common a change is in real languages sets how often it fires: rare changes run in ~25% of lines, very common ones in ~79%. Elves get the long-generation leanings.</li>
       <li><b>Lipless voices and the first cold-review fixes: done.</b> Peoples without lips or a velum can now lose the sounds they can't make (lip consonants in lipless languages 19% → 15%; nasal vowels in velum-less ones nearly gone). Common words that sound like a grammar particle get renewed; 'mother' = 'woman' halves (7% → 3.5%); recipes follow the staple food (onions were the staple of 189 languages); myth wording varies by faith.</li>
       <li><b>Cold review, second round, and the fable: done, in main 11-09.</b> The fable is now told in the ancestor exactly as it stood at the split. Numeral notes only claim "10 + 1" while both parts can still be heard; the ergative marker shows up where it should; a sound change no longer fires again and again on one language (most firings of one change: 23 → 8); each family leans its own way among the attested sources of grammar markers; gender needs two or more class markers (genderless 39% → 66%, WALS 56%). The lip click is now written ʘ like the other click letters.</li>
-      <li><b>Running now:</b> names (PW-1546), a review of the sound-change weights cut back before weights mattered (PW-1579), and more big case systems (PW-1586). Languages and polities (PW-1549) waits for the other terminal's polities work.</li>
-      <li><b>Checks on the stored run (rebuilt 11-09):</b> all pass except the accepted horizon. Borrowed pronouns sit right at the cap (8.0%); sister languages recognisable 0.51 against a pass mark of 0.5. Both watched.</li>
+      <li><b>Names, sound-change weights, big case systems (lane 7): done, in main 11-09.</b> Each language family writes its words in its own spelling tradition (see the card), and daughters keep it. Personal names are short, mid or long by tradition. The missing ways peoples get named now happen: a name passed on through a third people, a conquered group taking its rulers' name, an insulting name rejected, a people's name turned into an ordinary word, and more. Landmasses, scholars' language families and dishes get names too; it's all in the viewer's Names tab. Five sound changes cut back early got their weight back, and each moved the right way without overshooting (languages with no voiced stops 11.6% → 15.4%, WALS 39%). Big case systems (6+) went 19% → 21% (WALS 32%). The rest of that gap comes from proto-languages starting with no case endings at all.</li>
+      <li><b>Running now:</b> proto-languages born with the case endings they aim for (PW-1586); accusative/ergative and number marking drawn as linked pairs, the same flaw case had (PW-1600); and a remaining fable-check flag (PW-1595). Languages and polities (PW-1549) waits for the other terminal's polities work.</li>
+      <li><b>Checks on the stored run (rebuilt 11-09 after lane 7):</b> 616 living languages; all pass except the accepted horizon. Borrowed pronouns 7.5% (cap 8%); sister languages recognisable 0.53 (pass mark 0.5).</li>
       <li><b>Language finder:</b> ask me in plain words ("fantasy Hawaiian", "Japanese-ish strict CV", "most English") or run <span class="mono">uv run python tools/language/find.py runs/a24559/languages.json --like hawaiian</span>.</li>
       <li>Demo: <a href="https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs" target="_blank" rel="noopener">10 languages from a24559</a> (eSpeak voice); viewer <span class="mono">planet langserve a24559</span> on port 8790.</li>
     </ul>
@@ -97,7 +98,13 @@ a { color: var(--accent); }
 </main>
 
 <script>
-const SECTIONS = [];  // 11-09: all answered (e.coda sonorant, q.case grow, q.func both, q.prefix asym); in the next lane
+const SECTIONS = [
+  { title: "How the book spellings look", tk: "PW-1602", intro: "Each language family now writes its words in one of eight spelling traditions. A family picks its tradition when it starts, its daughters keep it, and one split in twenty brings a spelling reform. Related languages now look alike on the page, and unrelated ones look different. It's built and running as option A; nothing changes unless you pick another.", items: [
+    { id: "o.looks", tag: "PW-1602 · taste", q: "Should the eight looks be real-world spelling traditions or invented ones?",
+      body: "As built, the looks are copied from real languages: English-like (sh ch y), Czech-like (š č ž), Polish-like (sz cz ż), German-like (sch), Basque-like (x tx tz), Turkish-like (ş ç), French-like (ch j gn) and Swedish-like (sj tj). Long vowels are written doubled (aa), with a macron (ā) or with an acute (á). A reader knows at once how to say them. The cost is that a Polish-looking fantasy language reads as 'the Slavic one', a link its history doesn't have. Invented looks have no such links, but they can read like a cipher. On a24559, 151 families use the English-like look and each other look has 42 to 92.",
+      opts: [["real", "Real-world looks (as built)", true], ["mixed", "Real letters, but mix two traditions per family so none matches one real language"], ["invented", "Invented letter sets"]] },
+  ]}
+];
 
 const SHOW_PRIORITY = false;  // answered 11-08: PW-1537, 1549, 1545, 1546
 const PRIORITY = [
