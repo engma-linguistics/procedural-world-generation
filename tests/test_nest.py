@@ -1,6 +1,7 @@
 """The coarser nested grid's climate (planet/nest.py, PW-247) and the run's climate cadence (earth.climate_cadence)."""
 
 import numpy as np
+import pytest
 
 from planet import climate, nest
 from planet.grid import build_grid
@@ -105,3 +106,32 @@ def test_coarse_climate_keeps_the_overturning_total(sim4_60):
     assert abs(tot_b - float(a["overturning"].sum())) < 0.5 * float(a["overturning"].sum())
     # not the per-cell value copied onto 4x the cells
     assert tot_b < 2.0 * float(a["overturning"].sum())
+
+
+@pytest.mark.slow
+def test_the_l7_climate_is_as_arid_and_as_wet_as_its_nested_l6_climate_on_one_ground():
+    """PW-1556 (guards PW-290's fix): one ground's climate computed on L7 itself and through nest.climate_coarse on
+    L6 (what an L7 run's spin-up uses) gives the same arid share and land rain. A level-dependent rain change would
+    pass every L6 check and ship drier L7 showcase worlds: the 10-15 kernel (6926583) made L7 +6 to +8 points more
+    arid with 27% less land rain (docs/review/climate/levels/scout1.md). The ground is seed 21's unrun L7 ground
+    (no tectonics, ~1 min). Tolerances from measurements (docs/review/climate/levels/pw1556.md): on today's code
+    seven unrun grounds gave +1.0 to +1.7 points of Koppen B at L7 (this one +1.0) and land rain within 1.1%;
+    scout 221's nine moments of five L7 runs +0.5 to +1.1 and within 2%. The test allows 2.0 points and 5%."""
+    g = build_grid(7)
+    sim = Simulation(g, 21, Params(run_end=1.0), 2.0)
+    e = sim.w_elev
+    ice = np.where(e > 0, sim.ice, 0.0)
+    a = climate.compute(g, e, sim.dT, sim.params.tilt, ice)
+    b = nest.climate_coarse(g, 6, e, sim.dT, sim.params.tilt, ice)
+    w = cell_area_km2(g) * ((e > 0) & (ice <= 0))
+    arid = [k[0] for k in climate.KOPPEN if k[1].startswith("B")]
+
+    def share(c):
+        return 100.0 * float((w * np.isin(c["koppen"], arid)).sum() / w.sum())
+
+    def rain(c):
+        return float((w * c["precip"]).sum() / w.sum())
+
+    assert 20.0 < share(b) < 60.0  # (the ground has deserts to lose or gain)
+    assert abs(share(a) - share(b)) < 2.0, (share(a), share(b))
+    assert abs(rain(a) / rain(b) - 1.0) < 0.05, (rain(a), rain(b))
