@@ -2,7 +2,7 @@
 id: PW-1523
 title: Regional pantheons v0 - hubs, matched domain gods, peoples' patrons, a Pantheons subtab
 type: story
-status: todo
+status: in-progress
 parent: PW-1308
 milestone: null
 subsystem: culture
@@ -40,4 +40,5 @@ Scope, read-out only (own random stream; majority faiths and conversions identic
       (today only "now") or contact edges over time as a stand-in.
 
 ## Updates
+- 2026-11-08: Status todo -> in-progress. Lane 236 launched 11-08 night on D68 1A+C 2B 3A 4A 5A and Daniel's 'more domains in general' (new domains tied to tectonics, climate, polities, tech tree, trade, crops).
 - 2026-11-08: Created from inbox draft draft-regional-pantheons-build-v0.md (found by scout220).

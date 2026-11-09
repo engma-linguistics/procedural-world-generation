@@ -2,7 +2,7 @@
 id: PW-1531
 title: "Faiths that come through towns stay small (a culture's towns hold ~2 % of its people): keep, add country migration, or soften the ruler's protection?"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: null
 subsystem: culture
@@ -37,5 +37,6 @@ What misleads if never decided: Daniel may read "tolerant rulers allow more inte
 percent.
 
 ## Updates
+- 2026-11-08: Status needs-decision -> done. Daniel ruled D70 A 11-08: keep both as built (religious tolerance shields minorities; town-borne minorities). Regional pantheons (D68) add polytheist mixing on top.
 - 2026-11-08: Folded into desk D70 with PW-1527 (both answer 'why don't minorities grow under tolerant rulers'). Lean A: keep.
 - 2026-11-08: Created from inbox draft draft-town-faiths-small-at-ledger-town-shares.md (found by lane223 (PW-1528; see also PW-1527)).

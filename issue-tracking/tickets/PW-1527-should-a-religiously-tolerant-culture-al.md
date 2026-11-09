@@ -2,7 +2,7 @@
 id: PW-1527
 title: "Should a religiously tolerant culture also take its neighbours' faith more readily? (today it does: the two effects cancel on minorities)"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: null
 subsystem: culture
@@ -30,5 +30,6 @@ Options:
 What misleads if never decided: Daniel's "tolerant rulers let faiths mix" does not show in the per-culture minority numbers, and a reader of the viewer may take it for a bug.
 
 ## Updates
+- 2026-11-08: Status needs-decision -> done. Daniel ruled D70 A 11-08: keep both as built (religious tolerance shields minorities; town-borne minorities). Regional pantheons (D68) add polytheist mixing on top.
 - 2026-11-08: Desk D70 (lean A).
 - 2026-11-08: Created from inbox draft draft-religious-tolerance-receptiveness.md (found by lane219).
