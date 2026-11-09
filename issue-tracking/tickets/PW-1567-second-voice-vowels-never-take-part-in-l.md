@@ -1,4 +1,5 @@
 ---
+id: PW-1567
 title: Second-voice vowels never take part in literal vowel changes (e > i leaves eᴖ alone)
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lang-syrinx
 blocked_by: []
 relates: []
-refs: [planet/language/rules.py::_tonekey, planet/language/rules.py::lit, docs/review/language/syrinx.md]
+refs: ["planet/language/rules.py::_tonekey", "planet/language/rules.py::lit", docs/review/language/syrinx.md]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -30,3 +33,6 @@ inflates the vowel inventory of exactly the lects the second-voice tone work mad
 Fix sketch: strip `source2`/`tone2` (and maybe `register`, growl/purr phonation) in the match key the way tone is, and
 carry them through `_make` onto the output, as tone is carried. Needs a check that the hiatus fusion and harmony paths
 still treat second-voice vowels as their own quality where they should. Golden outputs will change for syrinx lects only.
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-second-voice-vowels-skip-vowel-shifts.md (found by lang-syrinx).

@@ -1,4 +1,5 @@
 ---
+id: PW-1565
 title: "Languages: no line collapses Hawaiian-style; the inventory-size anchor holds every line at its proto size whatever its rate"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lang-rulings (2026-11-08)
 blocked_by: []
 relates: [PW-1539]
 refs: [planet/language/lect.py, "planet/language/lect.py::Lect.rate_now", "planet/language/inventory.py::size_prior", docs/review/language/calibration.md, "run a24559", "scratch passes rulings/base, rulings/alone, rulings/bursts, rulings/final (deleted; numbers in calibration.md 'Rulings lane')"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -36,3 +39,6 @@ or coast founder). Lean: (b), one line, and it is what a founder effect is.
 
 - [ ] decide (a), (b) or (c)
 - [ ] if changed: count living lects under 10 consonants and re-run the inventory-size check
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-no-inventory-collapse.md (found by lang-rulings (2026-11-08)).

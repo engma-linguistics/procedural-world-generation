@@ -1,4 +1,5 @@
 ---
+id: PW-1566
 title: "Languages: the vowel push chain makes a raised e (i̞) in 6-11% of living lects (PHOIBLE 0.2%); one rulings pass failed the overused check on it"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lang-rulings (2026-11-08)
 blocked_by: []
 relates: [PW-1539]
-refs: ["planet/language/rules.py::dispersion_rule", "planet/language/rules.py::pick_rule", "planet/language/checks.py", docs/review/language/calibration.md, "run a24559", "scratch passes rulings/alone, rulings/bursts (deleted; numbers in calibration.md 'Rulings lane')"]
+refs: ["planet/language/rules.py::dispersion_rule", "planet/language/rules.py::pick_rule", planet/language/checks.py, docs/review/language/calibration.md, "run a24559", "scratch passes rulings/alone, rulings/bursts (deleted; numbers in calibration.md 'Rulings lane')"]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -33,3 +36,6 @@ lect lacks (e > i only when the lect has no i; else no push, or centralize to ɪ
 cap_inventory fold a pushed vowel one axis from a commoner one as it does other rare new units.
 
 - [ ] i̞ under ~1% of living lects; the overused check passes on two seeds
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-language-push-chain-raised-e.md (found by lang-rulings (2026-11-08)).
