@@ -1,0 +1,11 @@
+box wet rl x1.0 rw x1.0 eps x1.0: cells 674  T 24.4 C  P 2642 mm  PAR 2992 MJ/m2/yr  LAI 4.58  q10-sum 16.55 (12 = a year at 20 C)  acclim shift -0.22 C
+GPP 2827  NPP 1259  NPP/GPP 0.445  supply factor 1.082
+Rm leaf 432  Rm wood+root 716  Rg 420  Ra 1568
+Ra shares: leaf maint 0.28  wood+root maint 0.46  growth 0.27
+Df stand: mean 0.562  min-month 0.518  max-month 0.607  PAR-weighted 0.561
+cell NPP (mixed stand) 1031  TrBE cover 0.66
+  wet tropics T18-32 P2500+: Df PAR-weighted 0.568  NPP 1012  LAI 3.93
+  T18-32 P1500-2500: Df PAR-weighted 0.543  NPP 905  LAI 3.37
+  temperate T5-15 P600+: Df PAR-weighted 0.524  NPP 629  LAI 3.14
+  boreal T-5..5: Df PAR-weighted 0.529  NPP 346  LAI 2.33
+land NPP 61.9 Pg C/yr  npp_check boxes: T18-32 P2500+ 1012  T18-32 P1500-2500 905  forest 44.6 Mkm2
