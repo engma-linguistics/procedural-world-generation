@@ -2,7 +2,7 @@
 id: PW-1572
 title: "Trade: grain still sails 6,000-10,000 km to some cultures, because bulk goods pay freight alone at sea"
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -38,4 +38,5 @@ If it is never done, briefs keep naming continent-crossing grain shipments that 
   the sourced change explains
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 244 (760c49cc): see docs/review/culture/trade/bought_in_244.md. Salt fish bought by 43-74 cultures per stored L7 run (was 0); grain far tenth 2,260-2,911 -> 1,693-2,355 km; leftovers taken in.
 - 2026-11-09: Created from inbox draft draft-trade-bulk-grain-sea-tail.md (found by lane 235).

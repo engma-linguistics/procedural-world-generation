@@ -2,7 +2,7 @@
 id: PW-1573
 title: "Trade: nobody wants dried or salted fish, so salt fish never travels inland and the culinary brief can't show it"
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: v4
 subsystem: culture
@@ -35,4 +35,5 @@ salt trade.
   main (the walk is shared)
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 244 (760c49cc): see docs/review/culture/trade/bought_in_244.md. Salt fish bought by 43-74 cultures per stored L7 run (was 0); grain far tenth 2,260-2,911 -> 1,693-2,355 km; leftovers taken in.
 - 2026-11-09: Created from inbox draft draft-trade-dried-fish-no-want.md (found by lane 235).

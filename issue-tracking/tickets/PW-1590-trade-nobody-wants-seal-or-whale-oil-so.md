@@ -1,8 +1,10 @@
 ---
+id: PW-1590
 title: "Trade: nobody wants seal or whale oil, so the brief's 'Bought in' line can never show it"
 type: task
 status: todo
 parent: PW-1498
+milestone: null
 subsystem: culture
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: lane 244
 blocked_by: []
 relates: [PW-1573, PW-1505]
 refs: ["planet/lineages/trade.py::NEED", "planet/lineages/trade.py::GOODS", "planet/lineages/bought_in.py::FOOD_GOODS", docs/review/culture/trade/bought_in_244.md, docs/review/culture/trade/review1.md]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -23,3 +27,6 @@ went: Arctic lamp oil traded inland, or whale oil in towns.
 
 If it is never done, no northern inland culture's brief can say "seal oil from the coast", however close the sealing coast is.
 - [ ] a sourced NEED for seal_oil (who, gated by their own coast), with flows and their km reported on the four stored L7 runs
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-trade-seal-oil-no-want.md (found by lane 244).

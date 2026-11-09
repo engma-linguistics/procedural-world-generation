@@ -1,8 +1,10 @@
 ---
+id: PW-1589
 title: "Trade: a few grain rows still come 5,000-11,000 km by sea; a further port call per season's leg needs a walk that counts legs"
 type: task
 status: todo
 parent: PW-1498
+milestone: null
 subsystem: culture
 effort: m
 impact: low
@@ -10,6 +12,8 @@ found_by: lane 244
 blocked_by: []
 relates: [PW-1572, PW-1505]
 refs: ["planet/lineages/trade_flow.py::SEASON", "planet/lineages/trade_flow.py::_seek", "planet/lineages/trade_flow.py::_walk", docs/review/culture/trade/bought_in_244.md, docs/review/culture/trade/bought_in_244/h.py, docs/review/culture/trade/bought_in_244/samp.py, "run 3e0eb4 culture 574", "run 07c755 culture 150", "run 1e97dd culture 741"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -36,3 +40,6 @@ Options:
 
 B looks cheapest.
 - [ ] grain's maximum and the share beyond 5,000 km against main on the four runs; herders' grain met reported
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-trade-grain-sea-tail-legs.md (found by lane 244).

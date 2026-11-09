@@ -1,8 +1,10 @@
 ---
+id: PW-1588
 title: "Trade: salt fish goes a few dozen km at the median; stockfish went ~2,000 km, so dried fish may belong with the middling goods"
 type: task
 status: todo
 parent: PW-1498
+milestone: null
 subsystem: culture
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: lane 244
 blocked_by: []
 relates: [PW-1573, PW-1505]
 refs: ["planet/lineages/trade.py::GOODS", "planet/lineages/trade_flow.py::FALL_CLASS", "planet/lineages/trade_flow.py::FALL_KM", docs/review/culture/trade/bought_in_244.md, docs/review/culture/trade/bought_in_244/cmp.py, "Orton et al. 2016 (Fish for London)", "runs 3e0eb4 a24559 1e97dd 07c755"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -27,3 +31,6 @@ per kg is above grain's.
 If it is never done, briefs show salt fish only from the next coast, never the long stockfish and herring trade that fed inland towns.
 - [ ] fetch a dried-to-fresh weight ratio and a price per kg against grain; if it holds, set FALL_CLASS["dried_fish"] = "middling"
 - [ ] the fish median and far tenth, and its roads, against lane 244's numbers
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-trade-dried-fish-class.md (found by lane 244).
