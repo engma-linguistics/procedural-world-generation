@@ -81,16 +81,19 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   sub-bass o˯ ʊ˯ but no plain o ʊ; silver dragon has a˯ but no plain a (so ˯ there is not contrastive and should not be
   written). Fix: a markedness check (a marked series member implies its plain partner at the same place, or a logged
   exception); declicking as a per-place change across all series; never drop every plain /m n/.
+  *Partly done (lang-lane6):* series drag (`lect._series_drag`): a change that takes a marked sound's last plain partner at its place takes the marked member along (kʼ follows k > tʃ as tʃʼ, a˯ follows a > ɑ; Maddieson 1984, sound changes act on classes). a24559 living lects with a marked sound (aspirate, ejective, growl, register) lacking its plain partner 38% -> 36%; ejective orphans 192 -> 141, growl 102 -> 75 (calibration.md 'Lane 6'). Left: orphans that never had a partner (drawn so, or made by a split/borrowing), declicking per place, never dropping every plain /m n/. Prenasalised stops without a plain partner are left alone (Fijian ᵐb ⁿd).
 - **R6. Growled voice is human.** "22 of its 69 sounds are outside the human voice" (blue dragon) counts harsh voice
   ‼, which human languages use (e.g. !Xóõ, Bai). It is also marked per segment in clumps (w‼ɔ‼j‼ 'dog'), where voice
   quality is a syllable or word register. Fix: count ‼ as a human phonation contrast unless the people's organs say
   otherwise; mark it once per syllable.
   *Partly done (lang-lane5):* the sketch's count leaves harsh voice out (`sketch._nonhuman`). Marking once per syllable
   is left.
+  Left (lang-lane6): marking ‼ once per syllable needs voice quality as a syllable feature in the IPA writer and reader (`percepts.word_ipa` / `from_ipa` round-trip), not a display tweak.
 - **R9. Sound changes that fire again and again.** Elf 7 history: "w was inserted after u and before a vowel" (S125b)
   seven times, "w was lost before u or before o" (S027) four times, e > j (S205) four times; insertion and loss
   alternate. Real changes happen once. Fix: in `rules.py`, cool a rule down for several kyr after it applies and never
   let an insert/delete pair alternate.
+  *Done (lang-lane6):* the repeats were hiatus repairs (`Lect.resolve_hiatus` fires outside the re-fire memory). A repair the line already made within its re-fire wait is now recorded with cause "persistent" (the line's living rule at work on new hiatus, Chafe 1968), and the sketch lists it once ('re-applied N times'). Most repeats of one row in a living lect: median 4 -> 2, p90 13 -> 6, max 23 -> 8. Left: no general guard against an insert/delete pair alternating across steps (only within one step).
 
 ### Morphology and syntax
 - **R1. Markers that never wear down.** Grammaticalised markers stay identical to, and as long as, their sources:
@@ -106,6 +109,7 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   to their source 34.8% -> 32.5% (calibration.md 'Lane 5'). Left: a marker identical to its source can stand beside it
   (Mandarin 把 'take' > object marker is
   the real-world case; no adjacency veto added).
+  *Done (lang-lane6):* a free marker still identical to the word beside it is said once, glossed for both (`sentences.haplology`: the repeated-morph constraint, Stemberger 1981; English the boys'), 21 notes over the living lects' pages.
 - **R4. Noun classes that are not systems.** Dwarf 1: "genders by animacy" with one class that every noun takes
   (one class is not a gender). Blue dragon: default class 4 'de' is never on dog, fish or house in the sentences.
   Halfling 39 calls its class prefixes "classifiers" though they show concord. The same semantic menu recurs ("languages,
@@ -113,17 +117,20 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   'name'). Aarakocra 8 concord is patchy: ANIM lu- on 'see' and 'sleep' but not on 'give' (s11), 'take'/'come' (s13)
   or 'big' in s19. Silver dragon M class marker kɑa˯ never appears. Fix: require two or more classes for a gender
   label; make `sentences.py` apply concord to every target the grammar names; give animals a living-being class.
+  *Partly done (lang-lane6):* a gender label needs two or more distinct live class markers (`grammar._class_state`, Corbett 1991): gender 'none' 39% -> 66% of living lects (WALS 30A 56%); 75 lects keep one bound class marker on every noun with no gender label. Left: concord on every target, a living-being class for animals, the recurring class menus, 'classifiers' wording for concord systems.
 - **R5. Contradictions inside one page.** Aarakocra: COMP "from the relativizer marker" but relatives have "no
   relativizer". Dragonborn (an ergative showcase): the transitive subject lacks ERG in s18 ('says') and s19 (topic
   sentence). Dwarf 1: accusative "marks only animate objects" but the recipe marks 'it' (the vine) ei-sãsu ACC-3SG.
   "Cumulative exponence" is claimed for plain sequences (dragonborn PST.2SG niu = ni + u; hobgoblin HAB.1PL kuːh =
   kuː + h). "As Welsh cath, y gath" is cited for glide formation (dragonborn s20) and final truncation (Bagbeshaï
   tʃutʃu > tʃutʃ), neither of which is an initial mutation. Fix: checks in `sentences.py`/`checks.py` for each.
+  *Done (lang-lane6):* ERG on the sayer and on the subject of a topic sentence (an ergative clause stays transitive: Basque esan); DOM note says pronouns are marked too (top of the animacy scale, Hindi ko); a source gram since lost reads 'from a relativizer marker the language has since lost'; cumulative exponence blurs the join (`grammar._blur_join`) and a portmanteau still equal to its two parts is not called one; the stem-change parallel follows where the stem changed (Welsh for initial changes, German Tag/Tage for final, French petit for loss).
 - **R7. One menu of sources for every language.** Negation from 'nothing' (elf, blue dragon, silver dragon, drow,
   hobgoblin, dwarf, dragonborn), Q and TOP from 'if', past from 'yesterday', 1PL from 'person', every 'exceed'
   comparison "with the verb for 'climb' (as Yoruba ju, Thai kwaa)". Each is attested; all of them in every language is
   not. Fix: weight sources per family and spread them (negation from 'not'-verbs, 'refuse', emphatic doubling; past
   from 'finish', 'leave'; Q from 'or', 'not').
+  *Done (lang-lane6):* each family leans among the sources of a function (`grammar.path_lean`: lognormal sigma 1 from a hash of the proto id and the path, normalised per function so recruitment rates hold).
 
 ### Lexicon and semantics
 - **R5. Homophony on the commonest items.** Human 20: u˦ = one, who, COP, LOC, AGT; u˦f = three, ACC, TOP, OBLG.
@@ -142,10 +149,12 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   "'many' past twenty" yet 30 and 100 exist, and 'forty' = 'man'. Fix: print the composition only when the parts are
   recognisable in the form, otherwise "built as 10 + 1, now opaque"; label subtraction and multiplication correctly
   (`tools/language/sketch.py` numeral note, `sentences.py` numeral section).
+  *Done (lang-lane6):* the composition prints only when both parts can be heard in the form (`sentences._part_heard`), else 'built as 10 + 1, now worn past recognition'; the sketch labels the arithmetic (9 = 10 − 1, 8 = 4 × 2) and 'now opaque'; restricted counting reads 'many for a hundred and more'.
 - **R10. Odd derivation paths and avoidance words.** Hobgoblin 'arm or hand' family holds bird, bee, ant, fly, chick;
   'see' holds 'downstream'. Aarakocra avoidance words called "paraphrase" are single syllables, and one word o˨n
   replaces 'eat', 'see', 'sit' and 'sleep' (Dyirbal Jalnguy merges into general terms, not unrelated verbs); 'head' and
   'foot' share k͡pe˨t. Dragon languages have 3% speaker-felt families against 8-23% elsewhere.
+  *Partly done (lang-lane6):* avoidance words are general terms within a field (eat/drink, see/hear, go/come, sit/sleep, hand/foot share one), never one form across fields (`lexsys.AVOID_GROUPS`). Left: CLICS derivation families ('arm or hand' > bird, bee), dragon felt-family share.
 
 ### Texts
 - **R2. The fable's ancestor does not fit its daughters.** The intro says the triton ancestor (about 6 kyr ago) still
@@ -162,6 +171,7 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   grams, not a full lect, so the fable cannot be told in the split-time state from the output. Fix needs the engine to
   keep a full copy of a lect at a chosen bud (the fable's MRCA), or `texts.pick_family` to pick the MRCA lect and a
   bud time and the pass to store that state. Needs a pass.
+  *Done (lang-lane6, PW-1592):* the ancestor is the daughters' common lect as it stood at its first bud 2-9 kyr ago (`History.splits`, `output.splits_json`, `texts.pick_family`), daughters on 2+ branches; `texts.fable_descent` checks it in `demo_page.py`. a24559: d767 at 4.5 kyr and four daughters, 0 problems.
 - **R3. Every recipe and myth is the same text.** All ten recipes run "Take X. Grind it with a stone. Put it in the
   pot. Cook it at the fire. Eat it with salt. It is good." (grinding cane, alliums, nightshade fruit, bananas; goat
   meat swaps in "cut with a knife"). All five myths forbid wild swine (elf, drow, aarakocra, silver dragon,
@@ -199,6 +209,7 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
 - **R7. Book spellings that cannot be read.** Dragons spell ˯ as "mh" and ‼ as "rh" in every word:
   samhshunwanmhch'samhshun, thurhdeïkhomhwïnerhḷ; human 20 untsumpnampmpufuf. Elf mixes click letters with px for ʘ
   (pxagǂhabu). Fix: at most one non-human mark per word in the book spelling; clicks all letters or all digraphs.
+  *Partly done (lang-lane6):* one non-human mark a word in the book (after its first marked run). Left: the bilabial click letter (draft-language-bilabial-click-spelling, a taste call).
 - **R10. Small slips.** "ago ago" in sketch faith and liturgy lines (`sketch.py` adds "ago" after `kyr()`, which
   already ends in "ago"); "Berlin & Kay stage other"; the index says inclusive/exclusive 'we' cannot be shown, but every
   page shows it; dragonborn lists the ˯ mark though no live word has it; "most English-like" hobgoblin has onsets ʃb-,
@@ -221,13 +232,14 @@ All other checks pass except the scholars' horizon (accepted).
   checked; sketches not regenerated)
 - [x] no voiced or prenasalised ejective in any inventory of the run
 - [ ] a marked series member without its plain partner is either gone or listed as a logged exception
-- [ ] markers that bind shorten; no marker sits next to its identical source
-- [ ] fable daughters descend from the shown ancestor (a check in `demo_page.py`)
+- [x] markers that bind shorten; no marker sits next to its identical source
+- [x] fable daughters descend from the shown ancestor (a check in `demo_page.py`)
 - [x] recipe and myth texts differ in more than the nouns across the ten demo languages
-- [ ] numeral composition notes only where the parts are visible; arithmetic labels right
+- [x] numeral composition notes only where the parts are visible; arithmetic labels right
 - [x] offensive-substring check passes on all book spellings in the demo
 - [ ] a second cold read of the regenerated demo finds none of R1-R3 again
 
 ## Updates
+- 2026-11-09: Lane 6 (lang-lane6) did R1 haplology, R2 (PW-1592), R5, R7 source lean, R8, R9 persistent repairs, and parts of R3, R4, R7 spelling, R10; 'Done (lang-lane6)' notes per item.
 - 2026-11-09: Lane 5 (1612db8f) did R1 gram wear, R3 recipes by food and myth wording per faith, R5 homophones and frequent-pair damping, R6/R9 myth notes, small slips; R2 fable ancestor -> PW-1592; faith data -> PW-1591. Remaining items listed in the ticket's lane-5 notes.
 - 2026-11-08: Created from inbox draft draft-language-cold-review.md (found by lang-design cold review (fresh agent, no lane history, 2026-11-08)).

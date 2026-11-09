@@ -270,7 +270,7 @@ class Doc:
             for lid in ent.get("lects", []):
                 self.scholars[lid] = ent
         self.paths = _gram_paths()
-        for l in self.lects.values():
+        for l in list(self.lects.values()) + list(data.get("fable_splits") or ()):
             self._bookify(l)
 
     @staticmethod
@@ -752,6 +752,8 @@ def history(doc: Doc, l: dict) -> list[str]:
             chs = [c for c in chs if c[0] > cut]
         if not chs:
             continue
+        again = [c for c in chs if c[2] == "persistent"]   # (PW-1537 R9: a hiatus repair re-run on new input)
+        chs = [c for c in chs if c[2] != "persistent"]
         causes = Counter(c[2] for c in chs)
         merges = [c for c in chs if c[1] == "simplification"]
         byk = defaultdict(list)
@@ -759,7 +761,9 @@ def history(doc: Doc, l: dict) -> list[str]:
             if c[1] != "simplification":
                 byk[c[0]].append(c)
         out.append(f"**{doc.label(x['id'])}** ({len(chs)} changes; by cause "
-                   + ", ".join(f"{k} {v}" for k, v in causes.most_common()) + f"; {len(merges)} merger rounds)")
+                   + ", ".join(f"{k} {v}" for k, v in causes.most_common()) + f"; {len(merges)} merger rounds"
+                   + (f"; a hiatus repair already made re-applied {len(again)} times to new hiatus, as a living rule "
+                      "does (listed once)" if again else "") + ")")
         out.append("")
         out += ["| when | changes | rules |", "| --- | --- | --- |"]
         for k in sorted(byk, reverse=True):
@@ -1178,20 +1182,28 @@ HISTORIAN = ("### Families a historian reconstructs",
              "however opaque it has become since (per-word `etym_roots`, the *bher- 'carry' > burden view).")
 
 
-def _bare(ipa: str) -> str:
-    """IPA without tone letters, length and stress marks, for comparing forms by ear."""
-    return re.sub(r"[˥˦˧˨˩ːˑˈˌ\u0300-\u036f]", "", ipa)
+_bare = SN._bare
+audibly_shares = SN.audibly_shares
 
 
-def audibly_shares(root: str, word: str) -> bool:
-    """Does `word` contain the root word's form (tones and length aside), or for a long root its first or last two
-    sounds? A semantic shift or old derivation whose form has drifted away from the root's is not felt."""
-    a, b = _bare(root), _bare(word)
-    if not a:
-        return True
-    if len(a) <= 2:   # (a two-sound root heard only at a word's edge: 'ma' inside any word is chance)
-        return b.startswith(a) or b.endswith(a)
-    return a in b or a[:3] in b or a[-3:] in b
+def numeral_made(c: str, node: list, lex: dict) -> str:
+    """PW-1537 R8: how a numeral built from two words reads: the arithmetic its parts make ('nine = ten - one', 'eight =
+    four x two'; words with no number value, 'ten = two hands', as said), and 'now opaque' when a part can no longer be
+    heard in the form."""
+    from planet.language import lexsys as LS
+    n = LS.NUM_VALUE.get(c)
+    parts = str(node[3]).split(":", 1)[1].split("+")
+    said = str(node[6]).split(":")[0].split(" (")[0].lower() if len(node) > 6 else " ".join(parts).lower()
+    vals = [LS.NUM_VALUE.get(x) for x in parts]
+    how = f"'{said}'"
+    if n is not None and len(parts) == 2 and None not in vals:
+        a, b = vals
+        for sym, ok in (("+", a + b == n), ("×", a * b == n), ("−", a - b == n)):
+            if ok:
+                how = f"{a} {sym} {b} ('{said}')"
+                break
+    heard = all(x in lex and lex.get(c) and audibly_shares(lex[x]["ipa"], lex[c]["ipa"]) for x in parts)
+    return f"{c.lower()} = {how}" + ("" if heard else ", now opaque")
 
 
 def felt_members(doc: Doc, lex: dict, rid: str, members: list) -> list:
@@ -1336,7 +1348,7 @@ def vocabulary(doc: Doc, l: dict) -> list[str]:
                           and str(n[5]).upper() == c), None)
             first = next((n for n in ch if not n[3].startswith("sound_change")), None)
             if built is not None:   # (a numeral built from others: 'twenty = two ten', 'six = five one')
-                made.append(f"{c.lower()} = '{str(built[6]).split(':')[0].split(' (')[0].lower()}'")
+                made.append(numeral_made(c, built, lex))
             elif first is not None and first[5] and str(first[5]).upper() != c:
                 made.append(f"{c.lower()} < '{first[5]}'")
         s = f"Counting base: {base}." if base else ""

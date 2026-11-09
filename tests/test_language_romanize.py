@@ -326,3 +326,10 @@ def test_offensive_substrings_are_caught_and_broken():
         assert RO.offensive(RO.unoffend(s)) is None
     assert RO.offensive(RO.romanize("naziɡuluni", book=True)) is None
     assert RO.romanize("naziɡuluni", book=True, ) != "naziguluni"
+
+
+def test_book_marks_a_non_human_voice_once_a_word():
+    """PW-1537 R7: 'samhshunwanmhch'samhshun' could not be read; the book writes a non-human mark once a word."""
+    from planet.language.percepts import from_ipa
+    sp = R.romanize_word(from_ipa("sa˯ʃunwa˯nsa˯"), book=True)
+    assert sp.count(R.NH_MARKS["sub"]) == 1, sp

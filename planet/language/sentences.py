@@ -469,8 +469,14 @@ def _resegment(v: View, w: Word, pieces: list, k: int) -> list:
     if len(pieces) == 2 and k == 1 and whole.endswith(stem):
         return [whole[:len(whole) - len(stem)], stem]
     if pieces[k] != stem:
-        v.extra.append(f"the stem {stem} is {pieces[k]} in this form (a sound change at the join, as Welsh cath 'cat', "
-                       "y gath 'the cat')")
+        # (PW-1537 R5: Welsh mutation was cited for every change, also glides and cut finals at a word's end; the
+        # parallel now follows where the stem changed)
+        p = pieces[k]
+        head = next((i for i, (x, y) in enumerate(zip(stem, p)) if x != y), min(len(stem), len(p)))
+        like = ("as Welsh cath 'cat', y gath 'the cat'" if head == 0 else
+                "as German Tag [taːk] 'day', Tage [taːɡə] 'days'" if len(p) >= len(stem) else
+                "as French petit [pəti] beside petite [pətit]")
+        v.extra.append(f"the stem {stem} is {p} in this form (a sound change at the join, {like})")
     return pieces
 
 
@@ -933,7 +939,26 @@ def _claims_absent(note: str, gloss: str) -> bool:
     return bool(m) and re.search(rf"(^|[-=.\s<]){re.escape(m.group(1))}($|[-=.\s>])", gloss) is None
 
 
+def haplology(v: View, words: list) -> list:
+    """PW-1537 R1: a free marker still identical to the word it grew from does not stand beside that word ('that COP'
+    ɡbiːnaf ɡbiːnaf, 'ACC take' ʁa‼ ʁa‼): one form serves both, glossed for both (morphological haplology, the
+    repeated-morph constraint: English the boys', not *the boys's; Stemberger 1981, Menn & MacWhinney 1984)."""
+    out: list = []
+    for w in words:
+        p = out[-1] if out else None
+        if (p is not None and p.form == w.form and not (p.pre or p.post or w.pre or w.post or p.infix or w.infix)
+                and (p.concept is None) != (w.concept is None) and w.form):
+            lex, gram = (w, p) if p.concept is None else (p, w)
+            out[-1] = Word(lex.form, f"{lex.gloss}.{gram.gloss}", lex.concept)
+            v.extra.append(f"the {gram.gloss} marker, still the same as the word it came from, is not said again "
+                           f"beside it: one {lex.form} serves both (haplology, as English the boys', not *the boys's)")
+            continue
+        out.append(w)
+    return out
+
+
 def finish(v: View, sid: str, en_text: str, words: list, note: list, q: bool = False) -> dict:
+    words = haplology(v, words)
     rows, surf = [], []
     for w in words:
         fl, gl, s = render_word(v, w)
@@ -1137,12 +1162,12 @@ def s_polar(v: View) -> dict | None:
         lv = qg.get("level") or 0
         if lv >= GR.CLITIC:
             attach(v, words, words.index(vw[0][vw[1]]), "Q")
-            notes.append(f"the question marker is {_how(qg)} ({qg['form_ipa']}, {_src(qg)})")
+            notes.append(f"the question marker is {_how(qg)} ({qg['form_ipa']}, {_src(v, qg)})")
         else:
             w = Word(qg["form_ipa"], "Q")
             words.insert(0, w) if qg.get("side") == "pre" else words.append(w)
             notes.append(f"a {'clause-initial' if qg.get('side') == 'pre' else 'clause-final'} question particle "
-                         f"({qg['form_ipa']}, {_src(qg)})")
+                         f"({qg['form_ipa']}, {_src(v, qg)})")
     elif pq in ("initial_particle", "final_particle") and qp:
         w = Word(qp, "Q")
         if pq == "initial_particle":
@@ -1257,7 +1282,7 @@ def _copula(v: View) -> tuple[str, str] | None:
     copula commonly comes from (G056: a third-person or demonstrative pronoun > copula, as Hebrew hu, Mandarin shi)."""
     g = v.g("COP")
     if g is not None:   # (grammar C: the lect's own copula gram)
-        return g["form_ipa"], f"the copula is {_how(g)} ({g['form_ipa']}, {_src(g)})"
+        return g["form_ipa"], f"the copula is {_how(g)} ({g['form_ipa']}, {_src(v, g)})"
     if v.t.get("copula") != "yes":
         return None
     c = v.w("HE OR SHE OR IT", "THAT", "SIT", "STAND")
@@ -1323,7 +1348,7 @@ def relative(v: View, head: str, rc_verb: str, det: str | None) -> tuple[NP, str
         else:
             rel = [Word(rg["form_ipa"], "REL")]
         np_ = NP(hn.words + rel + rv, hn.head)
-        return np_, f"relative clause after the noun; the relativizer is {_how(rg)} ({rg['form_ipa']}, {_src(rg)})"
+        return np_, f"relative clause after the noun; the relativizer is {_how(rg)} ({rg['form_ipa']}, {_src(v, rg)})"
     if kind == "NRel":
         rel = [Word(v.ipa(that), "REL")] if that else []
         np_ = NP(hn.words + rel + rv, hn.head)
@@ -1392,7 +1417,7 @@ def s_imperative(v: View) -> dict | None:
     om = object_marker(v, words, words[vi], o.person)
     seq = (o.words + words) if v.ov() else (words + o.words)
     g = v.g("IMP")
-    note = (f"the imperative is marked: {_how(g)} ({g['form_ipa']}, {_src(g)}); no subject" if g else
+    note = (f"the imperative is marked: {_how(g)} ({g['form_ipa']}, {_src(v, g)}); no subject" if g else
             "the imperative is the bare verb stem, with no subject and no subject or tense marker")
     if om:
         note += "; the verb still marks its object"
@@ -1412,7 +1437,7 @@ def s_hortative(v: View) -> dict | None:
     object_marker(v, words, words[vi], o.person)
     seq = (o.words + words) if v.ov() else (words + o.words)
     return finish(v, "hortative", f"Let us {_vf(Vc, 0)} the {en(O)}!", seq,
-                  [f"the hortative ('let us') is {_how(g)} ({g['form_ipa']}, {_src(g)})"])
+                  [f"the hortative ('let us') is {_how(g)} ({g['form_ipa']}, {_src(v, g)})"])
 
 
 def s_object(v: View) -> dict | None:
@@ -1442,7 +1467,7 @@ def s_passive(v: View) -> dict | None:
     vw = verb(v, Vc, "3SG", voice="PASS")
     words = clause(v, s, vw, None, None, transitive=False)
     return finish(v, "passive", f"The {en(S)} is {_vf(Vc, 3)}.", words,
-                  [f"the passive is {_how(g)} ({g['form_ipa']}, {_src(g)}); the doer is left out"] + vw[2])
+                  [f"the passive is {_how(g)} ({g['form_ipa']}, {_src(v, g)}); the doer is left out"] + vw[2])
 
 
 def _serial(v: View, sid: str, S: str, v1: tuple, v2: tuple, en_text: str, note: str) -> dict:
@@ -1554,10 +1579,12 @@ def s_complement(v: View) -> dict | None:
         else:
             w = Word(g["form_ipa"], "COMP")
             emb = [w] + emb if g.get("side") == "pre" else emb + [w]
-        note = f"the complementizer is {_how(g)} ({g['form_ipa']}, {_src(g)})"
+        note = f"the complementizer is {_how(g)} ({g['form_ipa']}, {_src(v, g)})"
     else:
         note = "no complementizer: the clause stands bare in the object's place"
     s = noun_phrase(v, S, _the(v))
+    if flagging(v, s, NP(emb, 0))[0]:   # (PW-1537 R5: 'say' with a clause is transitive, ERG on the sayer as in Basque
+        _np_gram(v, s, "ERG")             # esan; the clause itself takes no case)
     vw = verb(v, Vc, "3SG")
     words = clause(v, s, vw, NP(emb, 0), transitive=False)
     return finish(v, "complement", f"The {en(S)} {_vf(Vc, 1)} that the {en(E)} {_vf(Ev, 1)}.", words, [note] + vw[2])
@@ -1576,10 +1603,15 @@ def s_topic(v: View) -> dict | None:
     if g is not None:
         _np_gram(v, t, "TOP")
     s = noun_phrase(v, S, _the(v))
+    e, a = flagging(v, s, t)   # (PW-1537 R5: the clause is still transitive: ERG on its subject; a topic marker
+    if e:                      # stands in for the object's case, as Japanese wa for o, else the object keeps it)
+        _np_gram(v, s, "ERG")
+    if a and g is None:
+        _np_gram(v, t, "ACC")
     vw = verb(v, Vc, "3SG")
     res = object_marker(v, vw[0], vw[0][vw[1]], "3SG")
     words = t.words + clause(v, s, vw, None, transitive=False)
-    note = (f"the topic comes first, marked by {_how(g)} ({g['form_ipa']}, {_src(g)})" if g is not None else
+    note = (f"the topic comes first, marked by {_how(g)} ({g['form_ipa']}, {_src(v, g)})" if g is not None else
             "word order is free: the topic (here the object) comes first")
     return finish(v, "topic", f"The {en(O)}, the {en(S)} {_vf(Vc, 1)} it.", words,
                   [note] + (["the verb's object marker points back to it"] if res else []))
@@ -1595,7 +1627,7 @@ def s_focus(v: View) -> dict | None:
     _np_gram(v, s, "FOC")
     vw = verb(v, Vc, "3SG")
     return finish(v, "focus", f"It is the {en(S)} who {_vf(Vc, 1)} the {en(O)}.", clause(v, s, vw, o),
-                  [f"the focus marker is {_how(g)} ({g['form_ipa']}, {_src(g)})"] + vw[2])
+                  [f"the focus marker is {_how(g)} ({g['form_ipa']}, {_src(v, g)})"] + vw[2])
 
 
 def s_applicative(v: View) -> dict | None:
@@ -1609,7 +1641,7 @@ def s_applicative(v: View) -> dict | None:
     vw = verb(v, Vc, "3SG", voice="APPL")
     words = clause(v, s, vw, b, t)
     return finish(v, "applicative", f"The {en(S)} {_vf(Vc, 1)} {'an' if en(T)[0] in 'aeiou' else 'a'} {en(T)} for the "
-                  f"{en(B)}.", words, [f"the applicative is {_how(g)} ({g['form_ipa']}, {_src(g)}): the one it is done "
+                  f"{en(B)}.", words, [f"the applicative is {_how(g)} ({g['form_ipa']}, {_src(v, g)}): the one it is done "
                                        "for becomes the verb's object, with no adposition"] + vw[2])
 
 
@@ -1622,7 +1654,7 @@ def s_reciprocal(v: View) -> dict | None:
     vw = verb(v, Vc, "3PL", voice="RECP")
     return finish(v, "reciprocal", f"The {EN_PLURAL.get(S, en(S) + 's')} {_vf(Vc, 0)} each other.",
                   clause(v, s, vw, None, transitive=False),
-                  [f"the reciprocal is {_how(g)} ({g['form_ipa']}, {_src(g)})"] + vw[2])
+                  [f"the reciprocal is {_how(g)} ({g['form_ipa']}, {_src(v, g)})"] + vw[2])
 
 
 def s_antipassive(v: View) -> dict | None:
@@ -1634,7 +1666,7 @@ def s_antipassive(v: View) -> dict | None:
     s = noun_phrase(v, S, _the(v))
     vw = verb(v, Vc, "3SG", voice="ANTIP")
     return finish(v, "antipassive", f"The {en(S)} {_vf(Vc, 1)} (something).", clause(v, s, vw, None, transitive=False),
-                  [f"the antipassive is {_how(g)} ({g['form_ipa']}, {_src(g)}): "
+                  [f"the antipassive is {_how(g)} ({g['form_ipa']}, {_src(v, g)}): "
                    + ("the doer takes no ergative and " if v.g("ERG") is not None else "")
                    + "the object is left out"] + vw[2])
 
@@ -1657,7 +1689,7 @@ def s_chain(v: View) -> dict | None:
     second = clause(v, s2, vw, noun_phrase(v, O, _the(v)))
     who = f"the {en(S2)}" if fn == "DS" else "(he)"
     return finish(v, "chain", f"The {en(S)} {_vf(M, 1)} and {who} {_vf(Vc, 1)} the {en(O)}.", first + second,
-                  [f"switch-reference: the first verb's {ABBR[fn]} marker ({_how(g)}, {g['form_ipa']}, {_src(g)}) says "
+                  [f"switch-reference: the first verb's {ABBR[fn]} marker ({_how(g)}, {g['form_ipa']}, {_src(v, g)}) says "
                    f"the next clause has {'the same' if fn == 'SS' else 'a different'} subject"])
 
 
@@ -1697,7 +1729,7 @@ def s_voice(v: View) -> list[dict]:
         en_text = (f"The {en(S)} eats a {en(O)}." if fn == "AV" else f"The {en(S)} eats the {en(O)}.") if Vc == "EAT" else \
             f"The {en(S)} {_vf(Vc, 1)} {'a' if fn == 'AV' else 'the'} {en(O)}."
         out.append(finish(v, sid, en_text, words,
-                          [f"{'actor' if fn == 'AV' else 'patient'} voice ({_how(g)}, {g['form_ipa']}, {_src(g)}): the "
+                          [f"{'actor' if fn == 'AV' else 'patient'} voice ({_how(g)}, {g['form_ipa']}, {_src(v, g)}): the "
                            f"{'doer' if fn == 'AV' else 'undergoer'} is the pivot"
                            + (f", marked by the pivot marker {piv['form_ipa']}" if piv is not None else "")]))
     return out
@@ -1744,7 +1776,7 @@ def s_deixis(v: View) -> dict | None:
     vw = verb(v, Vc, "3SG")
     return finish(v, "deixis", f"That {en(S)} over there {_vf(Vc, 1)} this {en(O)}.", clause(v, s, vw, o),
                   [f"three distances: 'this' (near), 'that' (further) and the far demonstrative ({g['form_ipa']}, "
-                   f"{_src(g)})"] + vw[2])
+                   f"{_src(v, g)})"] + vw[2])
 
 
 def s_remote(v: View) -> dict | None:
@@ -1764,7 +1796,7 @@ def s_remote(v: View) -> dict | None:
                 "there is no plain past beside it: nearer events take the bare verb")
     return finish(v, "remote", f"The {en(S)} {_vf(Vc, 2)} {'an' if en(O)[0] in 'aeiou' else 'a'} {en(O)} long ago.",
                   clause(v, s, vw, o, tam="REMPST"),
-                  [f"the remote past is {_how(g)} ({g['form_ipa']}, {_src(g)}); {rest}"] + vw[2])
+                  [f"the remote past is {_how(g)} ({g['form_ipa']}, {_src(v, g)}); {rest}"] + vw[2])
 
 
 _ASPECT_EN = {"COMPL": ("The {s} has eaten the {o} up.", ("EAT", "DRINK")),
@@ -1787,7 +1819,7 @@ def s_aspect(v: View) -> dict | None:
     s, o = noun_phrase(v, S, _the(v)), noun_phrase(v, O, _the(v))
     vw = verb(v, Vc, "3SG", fn)
     return finish(v, "aspect", tmpl.format(s=en(S), o=en(O)), clause(v, s, vw, o, tam=fn),
-                  [f"the {GR.func_info(fn).gloss.split(' (')[0]} is {_how(g)} ({g['form_ipa']}, {_src(g)})"] + vw[2])
+                  [f"the {GR.func_info(fn).gloss.split(' (')[0]} is {_how(g)} ({g['form_ipa']}, {_src(v, g)})"] + vw[2])
 
 
 def s_mirative(v: View) -> dict | None:
@@ -1801,7 +1833,7 @@ def s_mirative(v: View) -> dict | None:
     src = (g.get("source") or [""])[0]
     same = src in ("PERF", "EVID.REP") and v.g(src) is not None and v.g(src)["form_ipa"] == g["form_ipa"]
     return finish(v, "mirative", f"(Look!) The {en(S)} {_vf(Vc, 2)} the {en(O)}!", clause(v, s, vw, o, tam="MIR"),
-                  [f"the mirative ({_how(g)}, {g['form_ipa']}, {_src(g)}) marks news the speaker did not expect"
+                  [f"the mirative ({_how(g)}, {g['form_ipa']}, {_src(v, g)}) marks news the speaker did not expect"
                    + (f"; it sounds like the {GR.func_info(src).gloss.split(' (')[0]} marker it grew from" if same else "")]
                   + vw[2])
 
@@ -1842,7 +1874,7 @@ def s_polite(v: View) -> dict | None:
              f"{v.ipa(pol['concept'])} ('{'you all' if pol['kind'] == 'plural' else 'they'}') speaks to one person with "
              f"respect; the plain 'you' is {v.ipa('THOU')}" if v.w("THOU") else ""]
     if hon is not None:
-        notes.append(f"the verb takes the honorific marker ({_how(hon)}, {hon['form_ipa']}, {_src(hon)})")
+        notes.append(f"the verb takes the honorific marker ({_how(hon)}, {hon['form_ipa']}, {_src(v, hon)})")
     return finish(v, "polite", f"You (sir) {_vf(Vc, 0)} the {en(O)}.", clause(v, S, vw, o), notes + vw[2])
 
 
@@ -1916,7 +1948,7 @@ def s_obviative(v: View) -> dict | None:
     vw = verb(v, Vc, "3SG")
     return finish(v, "obviative", f"The {en(S)} sees the {en(O)}.", clause(v, s, vw, o),
                   [f"two third persons: the one the story is about is proximate (unmarked), the other obviative "
-                   f"({_how(g)}, {g['form_ipa']}, {_src(g)})"] + vw[2])
+                   f"({_how(g)}, {g['form_ipa']}, {_src(v, g)})"] + vw[2])
 
 
 def s_own(v: View) -> dict | None:
@@ -2025,10 +2057,12 @@ def _ex(v: View, words: list, en_text: str) -> list:
     return [" ".join(fl), " ".join(gl), en_text]
 
 
-def _src(g: dict) -> str:
+def _src(v: "View", g: dict) -> str:
     src = g.get("source") or ["?"]
     s = src[0]
     if len(src) > 2 and src[2] == "gram" and s in GR.FUNCS:
+        if v.g(s) is None or (s == "REL" and v.t.get("relative") == "RelN"):   # (PW-1537 R5: 'from the relativizer marker' beside 'no relativizer': it has gone since)
+            return f"from a {GR.FUNCS[s].gloss} marker the language has since lost"
         return f"from the {GR.FUNCS[s].gloss} marker"
     if s == "I":
         return "from 'I'"
@@ -2045,7 +2079,7 @@ def notes_nouns(v: View) -> list[dict]:
     # number
     nums = [f for f in ("PL", "DU") if v.g(f)]
     if nums and N:
-        txt = "; ".join(f"{GR.FUNCS[f].gloss}: {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})" for f in nums)
+        txt = "; ".join(f"{GR.FUNCS[f].gloss}: {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v, v.g(f))})" for f in nums)
         ex = [_ex(v, noun_phrase(v, N).words, f"{en(N)}")]
         if "PL" in nums:
             ex.append(_ex(v, noun_phrase(v, N, plural=True).words, EN_PLURAL.get(N, en(N) + "s")))
@@ -2086,8 +2120,8 @@ def notes_nouns(v: View) -> list[dict]:
               "tells subject from object.")
     H = v.w("HOUSE", "RIVER", "TREE", "STONE")
     if cases and H:
-        bits = [f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})" for f in bound]
-        fbits = [f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})" for f in free]
+        bits = [f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v, v.g(f))})" for f in bound]
+        fbits = [f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v, v.g(f))})" for f in free]
         txt = ""
         if bits:
             txt += f"Nouns take {len(bits)} case marker{'s' if len(bits) > 1 else ''}: " + "; ".join(bits) + ". "
@@ -2102,7 +2136,8 @@ def notes_nouns(v: View) -> list[dict]:
             _np_gram(v, np_, f)
             ex.append(_ex(v, np_.words, CASE_EN.get(f, "{n}").format(n=en(Hc))))
         if v.proc.get("dom") and v.g("ACC") is not None:
-            al += (" The accusative marks only animate objects (people and animals); a thing as object stays bare "
+            al += (" The accusative marks only animate objects (people and animals) and pronouns, which stand at the top "
+                   "of the animacy scale whatever they point to; a thing named by a noun stays bare "
                    "(differential object marking, as Spanish a and Hindi ko).")
             An, In = v.w("DOG", "MAN", "CHILD (YOUNG HUMAN)"), v.w("STONE", "WATER", "HOUSE")
             Vt = v.w("SEE", "HIT", "HOLD")
@@ -2138,7 +2173,7 @@ def notes_nouns(v: View) -> list[dict]:
                                                                                        ("person", "persons"))
                                 if a not in have and a != grp and default_class(cs, a)[1] == f)
             rows.append(f"class {v.cl_num.get(f, k)} for {GR.GROUP_GLOSS.get(grp, grp)}{dflt}, {how} ({g['form_ipa']}, "
-                        f"{_src(g)})")
+                        f"{_src(v, g)})")
             n = _noun_of_group(v, kind, grp)
             if n and len(ex) < 4:
                 ex.append(_class_example(v, n, f, g, bound_cls))
@@ -2198,7 +2233,7 @@ def notes_verbs(v: View) -> list[dict]:
     tams = [f for f in TAM_ORDER if v.g(f)]
     evs = [f for f in ("EVID.DIR", "EVID.REP") if v.g(f)]
     if Vc and tams:
-        txt = "; ".join(f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})"
+        txt = "; ".join(f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v, v.g(f))})"
                         for f in tams)
         shown = [f for f in ("PAST", "RECPST", "REMPST") if f in tams] + [f for f in tams if f not in
                                                                           ("PAST", "RECPST", "REMPST")]
@@ -2216,13 +2251,13 @@ def notes_verbs(v: View) -> list[dict]:
         ex = []
         if evs:
             bits.append("Speakers mark how they know: " + "; ".join(
-                f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})" for f in evs)
+                f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v, v.g(f))})" for f in evs)
                 + ".")
             ex += [_ex(v, verb(v, Vc, None, f)[0], "(it) " + _vf(Vc, 1) + (", I saw it" if f == "EVID.DIR" else
                                                                            ", they say")) for f in evs]
         if moods:
             bits.append("Mood markers: " + "; ".join(
-                f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})"
+                f"{GR.FUNCS[f].gloss} ({ABBR[f]}): {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v, v.g(f))})"
                 for f in moods) + ".")
             ex += [_ex(v, verb(v, Vc, mood=f)[0], _MOOD_EN[f].format(v=_vf(Vc, 0), v3=_vf(Vc, 1))) for f in moods]
         out.append({"topic": "Mood and evidentiality", "text": " ".join(bits), "ex": ex})
@@ -2234,7 +2269,7 @@ def notes_verbs(v: View) -> list[dict]:
     bound = [f for f in pers if (v.g(f).get("level") or 0) >= GR.CLITIC]
     free = [f for f in pers if f not in bound]
     if bound and Vc:
-        txt = "; ".join(f"{f}: {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})" for f in bound)
+        txt = "; ".join(f"{f}: {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v, v.g(f))})" for f in bound)
         ex = [_ex(v, verb(v, Vc, f)[0], f"{_PERSON_EN[f]} {_vf(Vc, 1 if f == '3SG' else 0)}") for f in bound[:4]]
         pd = (" Subject pronouns are dropped when the marker is there." if v.t.get("pro_drop") == "yes" else "")
         sc = v.proc.get("stem_change") or {}
@@ -2262,7 +2297,7 @@ def notes_verbs(v: View) -> list[dict]:
         host = v.w("SEE", "EAT", "HIT", "HOLD") if ser == "O" else v.w("HOUSE", "DOG", "NAME", "EYE")
         if not b or not host:
             continue
-        txt = "; ".join(f"{ABBR[f]}: {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v.g(f))})" for f in b)
+        txt = "; ".join(f"{ABBR[f]}: {_how(v.g(f))} ({v.g(f)['form_ipa']}, {_src(v, v.g(f))})" for f in b)
         ex = []
         for f in b[:3]:
             p = f.split(".")[0]
@@ -2293,7 +2328,7 @@ def notes_clause(v: View, sents: dict) -> list[dict]:
     g = v.g("NEG")
     nv = v.t.get("negation", "preverbal").replace("_", " ")
     if g is not None:
-        txt = f"Negation is {_how(g)} ({g['form_ipa']}, {_src(g)})"
+        txt = f"Negation is {_how(g)} ({g['form_ipa']}, {_src(v, g)})"
         if (g.get("level") or 0) == GR.CLITIC and v.proc.get("second") and GR.func_info("NEG").host[0] == "V":
             txt += ", but like the verb's other clitics it stands in second position, after the clause's first word"
         txt += "."
@@ -2312,7 +2347,7 @@ def notes_clause(v: View, sents: dict) -> list[dict]:
     out.append({"topic": "Questions", "text": txt, "ex": _sent_ex(sents, "polar") + _sent_ex(sents, "content")})
     if "imperative" in sents:
         g = v.g("IMP")
-        txt = (f"Commands take the imperative marker, {_how(g)} ({g['form_ipa']}, {_src(g)}), and no subject." if g else
+        txt = (f"Commands take the imperative marker, {_how(g)} ({g['form_ipa']}, {_src(v, g)}), and no subject." if g else
                "There is no imperative marker: a command is the bare verb stem, with no subject and no subject or tense "
                "marker.")
         if v.g("HORT") is not None:
@@ -2374,7 +2409,7 @@ def notes_more(v: View, sents: dict) -> list[dict]:
                            _ex(v, pronoun(v, "WE").words, "we (not you)")] + _sent_ex(sents, "clusive")})
     g = v.g("PASS")
     if g is not None:
-        out.append({"topic": "Voice", "text": f"The passive is {_how(g)} ({g['form_ipa']}, {_src(g)}): the object of "
+        out.append({"topic": "Voice", "text": f"The passive is {_how(g)} ({g['form_ipa']}, {_src(v, g)}): the object of "
                     "the active verb becomes its subject and the doer is left out.", "ex": _sent_ex(sents, "passive")})
     rd = v.proc.get("redup")
     if rd:
@@ -2424,7 +2459,7 @@ def notes_phase_d(v: View, sents: dict) -> list[dict]:
                    "once 'that' with a place word, as English 'that there' became 'yon'; sound change has worn it down "
                    "since" if g.get("source", [""])[0] == "THAT" else "")
             txt = (f"Demonstratives count three distances: 'this' {v.ipa('THIS')} (near), 'that' {that} "
-                   f"(further) and a far one, {_how(g)} ({g['form_ipa']}, {_src(g)}" + (f"; {how})" if how else ")"))
+                   f"(further) and a far one, {_how(g)} ({g['form_ipa']}, {_src(v, g)}" + (f"; {how})" if how else ")"))
         else:
             txt = f"Demonstratives count two distances: 'this' {v.ipa('THIS')} (near) and 'that' {v.ipa('THAT')} (far)"
         out.append({"topic": "Demonstratives", "text": txt + ".", "ex": ex + _sent_ex(sents, "deixis")})
@@ -2436,7 +2471,7 @@ def notes_phase_d(v: View, sents: dict) -> list[dict]:
                f"the plain {v.ipa('THOU') if v.w('THOU') else 'you'} (as French vous, German Sie). It arose as the "
                "speech community grew large")
         if hon is not None:
-            txt += f"; the verb adds an honorific marker, {_how(hon)} ({hon['form_ipa']}, {_src(hon)})"
+            txt += f"; the verb adds an honorific marker, {_how(hon)} ({hon['form_ipa']}, {_src(v, hon)})"
         out.append({"topic": "Polite address", "text": txt + ".", "ex": _sent_ex(sents, "polite")})
     cs = sents.get("comparative")
     if cs is not None:
@@ -2445,7 +2480,7 @@ def notes_phase_d(v: View, sents: dict) -> list[dict]:
     g = v.g("OBV")
     if g is not None:
         out.append({"topic": "Obviation", "text": f"When two third persons meet in a clause, the one the talk is about "
-                    f"stays unmarked (proximate) and the other is obviative: {_how(g)} ({g['form_ipa']}, {_src(g)}), as "
+                    f"stays unmarked (proximate) and the other is obviative: {_how(g)} ({g['form_ipa']}, {_src(v, g)}), as "
                     "in the Algonquian languages.", "ex": _sent_ex(sents, "obviative")})
     return out
 
@@ -2486,7 +2521,7 @@ def _syncretic(v: View) -> list[str]:
 
 def _gbit(v: View, fn: str) -> str:
     g = v.g(fn)
-    return f"{GR.FUNCS[fn].gloss} ({ABBR[fn]}): {_how(g)} ({g['form_ipa']}, {_src(g)})"
+    return f"{GR.FUNCS[fn].gloss} ({ABBR[fn]}): {_how(g)} ({g['form_ipa']}, {_src(v, g)})"
 
 
 def notes_phase_c(v: View, sents: dict) -> list[dict]:
@@ -2558,7 +2593,10 @@ def notes_phase_c(v: View, sents: dict) -> list[dict]:
     pm = [fn for fn in v.grams if "+" in fn]
     for fn in sorted(pm):
         a, b = fn.split("+")
-        bits.append(f"{ABBR.get(a, a)} and {ABBR.get(b, b)} together are one ending, {v.g(fn)['form_ipa']}, that does "
+        f, fa, fb = v.g(fn)["form_ipa"], (v.g(a) or {}).get("form_ipa"), (v.g(b) or {}).get("form_ipa")
+        if fa and fb and f in (fa + fb, fb + fa):   # (PW-1537 R5: a plain sequence is not a portmanteau)
+            continue
+        bits.append(f"{ABBR.get(a, a)} and {ABBR.get(b, b)} together are one ending, {f}, that does "
                     "not split into the two (cumulative exponence)")
         r = _portmanteau_example(v, a, b)
         if r:
@@ -2607,8 +2645,31 @@ _SYSTEM_LEAD = {
               "twenty ten')",
     "vigesimal": "Counting is in twenties: twenty, two twenties, a hundred as five twenties",
     "quinary": "Counting builds on five: six to nine are 'five and one' to 'five and four', ten is 'two fives'",
-    "restricted": "Counting is restricted: a few number words, then hands and persons ('two hands' for ten), and "
-                  "'many' past twenty"}
+    "restricted": "Counting is restricted: a few number words, then hands and persons ('two hands' for ten, 'one "
+                  "person' for twenty), and 'many' for a hundred and more"}   # (PW-1537 R8: thirty and forty are built)
+
+
+def _bare(ipa: str) -> str:
+    """IPA without tone letters, length and stress marks, for comparing forms by ear."""
+    return re.sub(r"[˥˦˧˨˩ːˑˈˌ̀-ͯ]", "", ipa)
+
+
+def _part_heard(part: str, word: str) -> bool:
+    """A compound's part can be heard in it: as `audibly_shares`, or its first two sounds anywhere in the word (a
+    compound clips its parts: kawan + pulu > kawpu)."""
+    a = _bare(part)
+    return audibly_shares(part, word) or (len(a) >= 2 and a[:2] in _bare(word))
+
+
+def audibly_shares(root: str, word: str) -> bool:
+    """Does `word` contain the root word's form (tones and length aside), or for a long root its first or last three
+    sounds? A semantic shift, old derivation or compound whose form has drifted away from the root's is not felt."""
+    a, b = _bare(root), _bare(word)
+    if not a:
+        return True
+    if len(a) <= 2:   # (a two-sound root heard only at a word's edge: 'ma' inside any word is chance)
+        return b.startswith(a) or b.endswith(a)
+    return a in b or a[:3] in b or a[-3:] in b
 
 
 def numerals_note(v: View) -> dict | None:
@@ -2628,8 +2689,12 @@ def numerals_note(v: View) -> dict | None:
             continue
         h, m, op = r
         n, a, b = LS.NUM_VALUE[c], LS.NUM_VALUE.get(h, h.lower()), LS.NUM_VALUE.get(m, m.lower())
-        ex.append(_ex(v, [Word(v.ipa(c), str(n), c)], f"{n} = {a} {'+' if op == 'add' else '×'} {b} "
-                                                      f"('{en(h)}' and '{en(m)}')"))
+        how = f"{a} {'+' if op == 'add' else '×'} {b}"
+        if v.w(h) and v.w(m) and _part_heard(v.ipa(h), v.ipa(c)) and _part_heard(v.ipa(m), v.ipa(c)):
+            text = f"{n} = {how} ('{en(h)}' and '{en(m)}')"
+        else:   # (PW-1537 R8: a composition is printed only where both parts can still be heard in the form)
+            text = f"{n}: built as {how} ('{en(h)}' and '{en(m)}'), now worn past recognition"
+        ex.append(_ex(v, [Word(v.ipa(c), str(n), c)], text))
     if not ex:
         return None
     lead = _SYSTEM_LEAD[system]

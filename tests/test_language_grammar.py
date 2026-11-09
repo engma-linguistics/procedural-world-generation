@@ -1046,3 +1046,12 @@ def test_free_gram_wears_like_a_function_word():
     assert G._wear_gram(g, a, None, 1.0) and word_ipa(a.form) == "un"
     assert not G._wear_gram(g, b, None, 1.0) and word_ipa(b.form) == "bin"   # (bi is TOP's form)
     assert not G._wear_gram(g, c, None, 1.0)   # (two segments: at the floor)
+
+
+def test_cumulative_exponence_blurs_the_join():
+    """PW-1537 R5: a portmanteau no longer splits into its two markers (kuː + h was called one when it was not)."""
+    f = G._blur_join(tuple(from_ipa("kuː")), tuple(from_ipa("ha")))
+    assert word_ipa(f) == "kha"   # (the first marker's last sound gone: the whole keeps a vowel)
+    assert word_ipa(G._blur_join(tuple(from_ipa("kuː")), tuple(from_ipa("ham")))) == "kham"
+    assert word_ipa(G._blur_join(tuple(from_ipa("u")), tuple(from_ipa("ni")))) == "ui"
+    assert G._blur_join(tuple(from_ipa("u")), tuple(from_ipa("h"))) is None

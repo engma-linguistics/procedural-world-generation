@@ -1534,3 +1534,68 @@ unrounding rows, which need lips as written).
   passes on the same code. Not a lane 5 effect on its face (no sound-change weight moved for humans).
 - **Fable (R2).** Not done: it needs a full lect state at the split, which the output does not keep
   (draft-language-fable-ancestor-at-split).
+
+
+## Lane 6 (2026-11-09, lang-lane6): the fable's ancestor at the split (PW-1592), cold-review fixes (PW-1537)
+
+Measured with a lane script (`scratchpad/lane6/measure.py`, `marked.py`, `gen.py`, not kept) over all living lects of
+a24559; the stored run is the coordinator's 11-09 07:24 pass on main 3747e8e9 (lane 5 code). Two full passes on this
+lane's code gave identical readings (the second only stored the split states with the core lexicon instead of the full
+one: languages.json 59.6 -> 54.5 MB; stored 52.6 MB).
+
+### What changed
+
+| ticket | mechanism | where |
+| --- | --- | --- |
+| PW-1592 | a lect's state at its first bud 2-9 kyr ago is kept; those with living lines on 2+ branches go out as `fable_splits`; the fable's ancestor is one of them, with daughters on 2+ branches; a descent check by etymological root | `history.SPLIT_KYR`, `History.splits`, `output.splits_json`, `split_branches`, `texts.pick_family`, `fable_descent`, `demo_page.fable_section` |
+| R1 | a free marker identical to the word beside it is said once, glossed for both (repeated-morph constraint: Stemberger 1981, Menn & MacWhinney 1984) | `sentences.haplology` (in `finish`) |
+| R3 | series drag: a change that takes a marked sound's last plain partner takes the marked member along (Maddieson 1984; Lass 1984) | `lect._series_drag`, `_marked`, `_partners`, `_remark` |
+| R4 | a gender label needs 2+ distinct live class markers (Corbett 1991) | `grammar._class_state` |
+| R5 | ERG on the sayer (quote, complement) and on a topic sentence's subject; DOM note names pronouns; 'a ... marker the language has since lost'; portmanteau join blurred, plain sequences not called cumulative; stem-change parallels by where the stem changed | `texts.quote`, `sentences.s_complement`, `s_topic`, `_src`, `grammar._blur_join`, `sentences._resegment` |
+| R7 | a family leans among a function's sources: lognormal sigma 1 per (proto id, path), normalised per function by path weight (Heine & Kuteva 2002) | `grammar.PATH_LEAN`, `path_lean`, `Grammar.lean` |
+| R7 (spelling) | one non-human mark a word in the book | `romanize._romanize_word` |
+| R8 | composition printed only where both parts are heard; sketch arithmetic + − × and 'now opaque'; restricted-counting lead | `sentences._part_heard`, `numerals_note`, `sketch.numeral_made` |
+| R9 | a hiatus repair re-made within the re-fire wait is recorded with cause "persistent" and listed once | `Lect.resolve_hiatus`, `sketch` history |
+| R10 | avoidance words: one general term per field, never one form across fields (Dixon 1972) | `lexsys.AVOID_GROUPS`, `avoidance` |
+
+### Full pass (a24559, scratch, 8 workers, load 20-30, 31 min)
+
+| measure | stored (main) | lane 6 final | anchor |
+| --- | --- | --- | --- |
+| living lects | 620 | 623 | |
+| checks failing | horizon | horizon | |
+| horizon human: reading / logistic | 10.25 / 10.61 | 14.83 / 14.39 | 6-10 (reading noise 4.75-14.6 across lanes) |
+| long-generation ratio; human rules / kyr | 4.72; 18.2 | 4.63; 18.1 | |
+| sisters (strict) | 0.514 | 0.555 | > 0.5 |
+| WOLD rho; pronoun loans | 0.404; 0.074 | 0.396; 0.073 | rho >= 0.3; cap 0.08 |
+| consonants p5/q1/med/q3/p95 | 14/18/22/26/39 | 14/18/21/25/37 | PHOIBLE 12/17/21/27/42 |
+| overused segments; worst ratio | none; ɟ 2.6 | none; c 2.5 | |
+| **PW-1592** fable ancestor; daughters | p320 at 6.0 (arrival proto); d767 + 3 buds of d767 | d767 as at 4.5; d767, d820, d819, d818 (both sides of the split) | |
+| ... split states kept; descent problems | none; (check flags nothing lexical, the shared part was sound change in d767 6.0-4.5) | 56; 0 | |
+| **R3** living lects with a marked sound lacking its plain partner | 236 (38.1%) | 225 (36.1%) | |
+| ... orphans: ejective / aspirated / growl / register | 192 / 127 / 102 / 130 | 141 / 106 / 75 / 114 | |
+| **R9** most firings of one row in a living lect, median / p90 / max | 4 / 13 / 23 | 2 / 6 / 8 | |
+| ... share of changes marked persistent | 0 | 0.019 | |
+| **R4** gender none / sex / animacy / classes (%) | 39 / 12 / 11 / 38 | 66 / 8 / 6 / 20 | WALS 30A none 56% |
+| **R1** haplology notes (living lects' pages) | 0 | 21 | |
+| **R5** stem-change parallels: Welsh / German / French | 566 / 0 / 0 | 178 / 267 / 162 | |
+| ... 'cumulative exponence' claims; 'since lost' sources | 126; 0 | 110; 177 | |
+| **R8** numeral examples 'worn past recognition' | 0 | 1333 | |
+
+The orphan counts leave prenasalised stops out (Fijian ᵐb ⁿd stand without b d).
+
+### Readings
+
+- **Fable.** The pick prefers the demo's peoples, so the demo shows a human family (ancestor 'human 64 as it was then',
+  4.5 kyr, four daughters); the check passes on it too. The descent check reads etymological roots: felt roots are
+  renamed once speakers stop hearing the source (p320 SAY 'p320:SPEAK', its daughter's 'p320:SAY'), so a felt-root
+  comparison gave false alarms.
+- **Gender.** 'none' rose 39% -> 66%, past WALS's 56%: 75 living lects keep one bound class marker that every noun
+  takes (a noun marker in all but name), and 67 a single free classifier. Whether a lone class marker should be read
+  as an article or noun marker on the page is left on PW-1537 R4.
+- **Marked sounds.** The drag helps only where a change removes the partner; most orphans never had one (drawn or
+  split that way), so the share falls 2 points. Left on PW-1537 R3.
+- **Sisters** rose 0.514 -> 0.555 and the horizon reading 10.3 -> 14.8 (logistic 10.6 -> 14.4): inside the range of
+  earlier passes on unchanged sound code; the series drag adds changes to a few words, the source lean is grammar only.
+- **Repeats.** The elf of the review now shows hiatus repairs once with a 're-applied N times' note; the remaining
+  repeats (median 2) are ordinary rows re-firing after their wait.

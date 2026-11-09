@@ -434,6 +434,10 @@ def speech_taboo(rules) -> float:
 AVOID_CONCEPTS = ("EAT", "DRINK", "SEE", "HEAR", "GO", "COME", "SIT", "SLEEP", "WATER", "FIRE", "HAND", "EYE", "FOOT",
                   "HEAD", "HOUSE", "DOG", "FISH", "MEAT", "SPEAK", "GIVE")
 AVOID_LOAN = 0.5
+#: PW-1537 R10: a Jalnguy word is a general term over one semantic field (Dixon 1972: one avoidance verb for several
+#: everyday verbs of a kind), never one word for unrelated meanings ('eat', 'see', 'sit' and 'sleep' all o˨n). Within a
+#: group the first meaning's avoidance word serves the others; across groups a form is never used twice.
+AVOID_GROUPS = (("EAT", "DRINK"), ("SEE", "HEAR"), ("GO", "COME"), ("SIT", "SLEEP"), ("HAND", "FOOT"))
 
 
 def avoidance(rng, lex, inv, kyr: float, lect_id: str, contact_words: dict | None = None, profile=None) -> dict:
@@ -441,11 +445,19 @@ def avoidance(rng, lex, inv, kyr: float, lect_id: str, contact_words: dict | Non
     lex.systems["avoidance"]."""
     out = {}
     donors = sorted(contact_words or {})
+    group_of = {LX.resolve(c): g for g in AVOID_GROUPS for c in g}
+    used: dict = {}   # avoidance ipa -> its group (or concept)
     for k in AVOID_CONCEPTS:
         k = LX.resolve(k)
         if k not in lex.words:
             continue
         cur = lex.words[k].form
+        grp = group_of.get(k)
+        if grp is not None:
+            first = next((LX.resolve(c) for c in grp if LX.resolve(c) in out), None)
+            if first is not None and out[first][0] != LX.word_ipa(cur):
+                out[k] = [out[first][0], "general term", f"the avoidance word for '{first.lower()}' serves for both"]
+                continue
         w, how = None, None
         have = [d for d in donors if k in contact_words[d] and contact_words[d][k].form != cur]
         if have and rng.random() < AVOID_LOAN:
@@ -458,8 +470,12 @@ def avoidance(rng, lex, inv, kyr: float, lect_id: str, contact_words: dict | Non
         if w is None:
             w = LX.derive(rng, lex, k, inv, kyr, lect_id)
             how = "derived" if w is not None else None
+        if w is not None and used.get(LX.word_ipa(w.form), grp or k) != (grp or k):
+            w2 = LX.derive(rng, lex, k, inv, kyr, lect_id)   # (a form another field took: derive instead)
+            w, how = (w2, "derived") if w2 is not None and LX.word_ipa(w2.form) not in used else (None, None)
         if w is None or w.form == cur:
             continue
+        used[LX.word_ipa(w.form)] = grp or k
         out[k] = [LX.word_ipa(w.form), how, w.etym[-1].note or ""]
     lex.systems["avoidance"] = out
     return out

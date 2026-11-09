@@ -1192,6 +1192,8 @@ class Grammar:
     #: split-ergative lect divides its alignment: "person" or "aspect"), "redup" (verbal reduplication: meaning, shape,
     #: side). Set and dropped in `_processes`; read by `realise`, the paradigm cells and the sample sentences.
     processes: dict = field(default_factory=dict)
+    #: the family's leaning among grammaticalization sources (PW-1537 R7: the proto's id, kept down the line; `path_lean`)
+    lean: str = ""
 
     def __post_init__(self):
         if not isinstance(self.typology, Shown):
@@ -1249,7 +1251,7 @@ def copy(g: Grammar) -> Grammar:
             g.class_system.kind, [dataclasses.replace(c) for c in g.class_system.classes]),
         helpers=dict(g.helpers), events=[], _n=g._n,
         aims=None if g.aims is None else Typology(g.aims), shown=dict(g.shown),
-        processes=_copy.deepcopy(g.processes))
+        processes=_copy.deepcopy(g.processes), lean=g.lean)
 
 
 def _side(function: str, typ: Typology, rng: np.random.Generator | None = None) -> str:
@@ -1459,6 +1461,8 @@ def _class_state(g: Grammar) -> tuple[str, str]:
     if not grams:
         return "none", "no"
     if any(x.level >= CLITIC for x in grams):
+        if len({x.form for x in grams}) < 2:   # (PW-1537 R4: one class every noun takes is no gender, Corbett 1991:
+            return "none", "no"                 # a gender system needs two or more agreement classes)
         return ("classes" if cs.kind == "classifiers" else cs.kind), "no"
     return "none", "yes"
 
@@ -2163,7 +2167,7 @@ def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None =
         typ = draw_typology(rng, inv=inv)
     typ = Typology(typ)
     _derive(typ, inv)
-    g = Grammar(typology=typ, aims=Typology(typ), shown=dict(typ))
+    g = Grammar(typology=typ, aims=Typology(typ), shown=dict(typ), lean=str(getattr(lexicon, "lect", "") or ""))
     T = load_tables()
     idx = _lex_index(lexicon)
     for role, cands in _HELPER_ROLES.items():
@@ -2306,6 +2310,34 @@ def _sync_lexicon(g: Grammar, lexicon, kyr: float) -> None:
 _DIST_PLACE = ("THERE", "FAR")
 
 
+#: PW-1537 R7 (cold review: negation from 'nothing', Q and TOP from 'if', past from 'yesterday' in every language): a
+#: family leans to some sources of a function and away from others, as language families and areas do (Heine & Kuteva
+#: 2002 list each source as attested somewhere, not everywhere). Each path's weight is multiplied by a lognormal of
+#: sigma PATH_LEAN drawn from a hash of the family's proto id and the path, divided by the mean over the paths to the
+#: same function, so how often a function is recruited stays as it was and only the choice of source spreads.
+PATH_LEAN = 1.0
+_LEAN_CACHE: dict = {}
+
+
+def path_lean(key: str, p, T) -> float:
+    if not key or PATH_LEAN <= 0:
+        return 1.0
+    tab = _LEAN_CACHE.get((key, id(T.paths)))
+    if tab is None:
+        raw = {q.id: math.exp(PATH_LEAN * float(np.random.default_rng(zlib.crc32(f"{key}|{q.id}".encode())).normal()))
+               for q in T.paths}
+        by: dict = {}
+        for q in T.paths:   # (weighted by the path's own weight: the function's total pull is kept)
+            by.setdefault(q.target, []).append((max(q.weight, 0.0), raw[q.id]))
+        mean = {t: (sum(w * r for w, r in v) / sum(w for w, _r in v)) if sum(w for w, _r in v) > 0 else 1.0
+                for t, v in by.items()}
+        tab = {q.id: raw[q.id] / mean[q.target] for q in T.paths}
+        if len(_LEAN_CACHE) > 4096:
+            _LEAN_CACHE.clear()
+        _LEAN_CACHE[(key, id(T.paths))] = tab
+    return tab.get(p.id, 1.0)
+
+
 def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, targets: set | None = None,
              evid_x: float = 1.0) -> Gram | None:
     """One recruitment draw over the attested paths. `targets`: the aims' pull (PRESSURE), restricted to these functions
@@ -2348,14 +2380,14 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, tar
             src = next((x for s in p.sources for x in live_by_fn.get(s, [])), None)
             if src is None:
                 continue
-            cands.append((p.weight * w_mult, p, src, None))
+            cands.append((p.weight * w_mult * path_lean(g.lean, p, T), p, src, None))
         else:
             key, w = _find(lexicon, idx, p.sources)
             if w is None:
                 if p.id == "X01" and not live_by_fn.get("NEG"):
-                    cands.append((p.weight * w_mult, p, None, None))   # no 'nothing/lack' word: a coined negator
+                    cands.append((p.weight * w_mult * path_lean(g.lean, p, T), p, None, None))   # (a coined negator)
                 continue
-            cands.append((p.weight * w_mult, p, key, w))
+            cands.append((p.weight * w_mult * path_lean(g.lean, p, T), p, key, w))
     if not cands:
         return None
     ws = np.array([c[0] * (evid_x if c[1].target in EVID_FNS else 1.0) for c in cands], dtype=float)
@@ -2677,6 +2709,20 @@ CUMUL = 0.0008
 CUMUL_PAIRS = (("number", "case"), ("aspect", "person"), ("tense", "person"))
 
 
+def _blur_join(x: tuple, y: tuple) -> tuple | None:
+    """The two markers worn into one morph (PW-1537 R5: a plain sequence kuː + h = kuːh was called cumulative
+    exponence, though it still splits): the segment at the join is lost, the first marker's last where it keeps a vowel
+    in the whole, else the second's first (as Latin -ōrum GEN.PL no longer splits into a plural and a genitive piece). None when neither
+    can go (two one-sound markers): nothing can blur, so they stay two."""
+    def has_v(f):
+        return any(s.kind == "V" for s in f)
+    if len(x) >= 2 and has_v(x[:-1] + y):
+        return x[:-1] + y
+    if len(y) >= 2 and has_v(x + y[1:]):
+        return x + y[1:]
+    return None
+
+
 def _cumulate(g: Grammar, rng, kyr: float, p: float) -> bool:
     have = {tuple(x.function.split("+")) for x in g.grams if x.live and "+" in x.function}
     by_slot: dict[str, list[Gram]] = {}
@@ -2688,7 +2734,9 @@ def _cumulate(g: Grammar, rng, kyr: float, p: float) -> bool:
             for b in by_slot.get(sb, ()):
                 if (a.function, b.function) in have or a.side != b.side or a.host[0] != b.host[0] or rng.random() >= p:
                     continue
-                form = tuple(b.form) + tuple(a.form) if a.side == "pre" else tuple(a.form) + tuple(b.form)
+                form = _blur_join(tuple(b.form), tuple(a.form)) if a.side == "pre" else _blur_join(tuple(a.form), tuple(b.form))
+                if form is None:
+                    continue
                 fn = f"{a.function}+{b.function}"
                 g.grams.append(Gram(fn, form, b.host, b.side, FUSED, (fn, "cumul", "gram"), kyr,
                                     [(kyr, f"{a.function} and {b.function} fused into one ending")], id=g.new_id(fn)))

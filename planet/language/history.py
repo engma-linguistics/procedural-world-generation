@@ -125,6 +125,11 @@ def rng_for(seed: int, *key) -> np.random.Generator:
     return np.random.default_rng((int(seed), 986, zlib.crc32(":".join(map(str, key)).encode())))
 
 
+#: PW-1592: the window (kyr ago) in which a lect's state at its first bud is kept (`History.splits`) for the fable's
+#: ancestor (texts.FABLE_DEPTH_KYR 3-6, with room either side for a run without a split there)
+SPLIT_KYR = (2.0, 9.0)
+
+
 class History:
     """The state of the pass; `generate` drives it."""
 
@@ -154,6 +159,7 @@ class History:
         self.forced: dict = {}  # (giver lect, receiver lect) -> wave probability, for the next interval (strong contact, koine)
         self.route_ev: dict = {}  # (lect, concept, kyr, process) of a route event's etymology step -> its food route key
         self._lang: dict = {}
+        self.splits: dict[str, tuple[float, LC.Lect]] = {}  # lect id -> (kyr, frozen copy) at its first bud in SPLIT_KYR
 
     # ------------------------------------------------------------------ helpers
     def say(self, kyr: float, text: str) -> None:
@@ -255,6 +261,10 @@ class History:
             p2 = self.R.parent_deme(parent_deme)
             pl = self.lect_of(p2) if p2 is not None else None
         if pl is not None:
+            if SPLIT_KYR[0] <= kyr <= SPLIT_KYR[1] and pl.id not in self.splits and pl.lexicon is not None:
+                # (PW-1592: the parent as it stood at its first bud in the window, for the fable's ancestor; a bud's
+                # daughters and the parent's own later line share exactly this state, so their common ancestor is it)
+                self.splits[pl.id] = (kyr, pl.copy(f"{pl.id}@{kyr:g}", pl.deme, kyr, "split"))
             l = self.daughter(pl, deme, kyr, "bud", rng_for(self.seed, "bud", deme))
             src = pl.deme if pl.deme is not None else parent_deme
             if src is not None and LC.BURST_X != 1.0 and (self.R.deme_population(deme, i)

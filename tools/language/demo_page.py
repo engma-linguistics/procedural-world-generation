@@ -255,16 +255,20 @@ def fable_section(doc, k: int, au: "Audio", picks: list) -> str | None:
     """The fable (planet/language/texts.py) in a proto-language and three of its living daughters, sentence by sentence
     side by side, each with audio: Schleicher's way of showing sound change and grammar change through one text."""
     from planet.language import texts as TX
-    fam = TX.pick_family(doc.lects, doc.intel, tuple(l["people"] for _h, l, _w in picks))
+    fam = TX.pick_family(doc.lects, doc.intel, tuple(l["people"] for _h, l, _w in picks), doc.d.get("fable_splits"))
     if fam is None:
         return None
     proto, ds = fam
+    bad = TX.fable_descent(proto, ds, doc.d.get("roots") or {}, doc.lects)
+    if bad:   # (PW-1592: the page's reconstruction must hold; say so where the page is built)
+        print(f"fable: the daughters do not all descend from the shown ancestor ({len(bad)}): " + "; ".join(bad[:4]),
+              file=sys.stderr)
     lects = [proto] + ds
     tells = [TX.fable(l) for l in lects]
 
     def name(l):
         if l is proto:
-            return f"their common ancestor ({doc.label(l['id'], short=True)})"
+            return f"their common ancestor ({doc.label(l.get('split_of') or l['id'], short=True)}, as it was then)"
         nm = doc.deme_name(l)
         return nm["roman"] if nm and l.get("parent") else doc.label(l["id"], short=True)
     age = f"{int(round(float(proto.get('died_kyr') or 0) * 10)) * 100:,} years"

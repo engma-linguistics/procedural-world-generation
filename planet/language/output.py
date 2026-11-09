@@ -306,6 +306,48 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
             "snapshots": thin_snapshots(lect.snapshots, snap_every)}
 
 
+def split_branches(lects_by_id: dict, mid: str, t: float, living: list) -> dict:
+    """{living lect id: branch} for the living lects that came down from lect `mid` at or after its bud at `t` kyr ago: the
+    branch is the child that budded off at `t` (its id), or "line" for `mid` itself and the buds it made later. Lects of
+    `mid`'s earlier buds are left out (their common ancestor with the rest is older than the split)."""
+    out = {}
+    for lid in living:
+        x, prev, seen = lects_by_id.get(lid), None, set()
+        while x is not None and x["id"] != mid and x["id"] not in seen:
+            seen.add(x["id"])
+            prev = x
+            x = lects_by_id.get(x.get("parent"))
+        if x is None or x["id"] != mid:
+            continue
+        if prev is None:
+            out[lid] = "line"
+        elif abs(float(prev["born_kyr"]) - t) < 1e-6:
+            out[lid] = prev["id"]
+        elif float(prev["born_kyr"]) < t:
+            out[lid] = "line"
+    return out
+
+
+def splits_json(h, lects: list, living_ids: set, et: "EtymTable") -> list:
+    """PW-1592: the lects kept as they stood at their first bud in history.SPLIT_KYR (`History.splits`), as lect json with
+    `split_of` (the lect), `split_kyr` and `branches` ({living descendant: branch}), for the fable's ancestor; only those
+    with living descendants on two or more branches (a real split of living lines)."""
+    by = {l.id: {"id": l.id, "parent": l.parent, "born_kyr": l.born_kyr} for l in lects}
+    living = sorted(living_ids)
+    out = []
+    for mid, (t, cp) in sorted(getattr(h, "splits", {}).items()):
+        br = split_branches(by, mid, t, living)
+        if len(set(br.values())) < 2:
+            continue
+        m = h.lects.get(mid)
+        x = lect_json(cp, full=False, et=et)   # (the core lexicon, as a dead lect keeps: enough for the fable)
+        x.update({"id": f"{mid}@{t:g}", "split_of": mid, "split_kyr": _r(t), "parent": m.parent if m else cp.parent,
+                  "how": m.how if m else cp.how, "born_kyr": _r(m.born_kyr if m else cp.born_kyr), "died_kyr": _r(t),
+                  "end": "split", "branches": br, "snapshots": []})
+        out.append(x)
+    return out
+
+
 def thin_dead(doc: dict, result: dict, every: int) -> None:
     """Keep every `every`-th snapshot (and the last) of the dead lects in a built doc (document(thin_dead=every) without
     building the doc again)."""
@@ -414,6 +456,7 @@ def document(result: dict, thin_dead: int = 1) -> dict:
                 x["home"] = hf   # (the landscape the per-lect sentence names: sentences.s_own)
             SN.enrich(x)
     intel = intelligibility_json(R, h)
+    splits = splits_json(h, lects, living_ids, et)
     doc = {
         "format": FORMAT, "run": R.id, "seed": result["seed"], "start_kyr": R.frames_kyr[0], "frames_kyr": R.frames_kyr,
         "romanization": RO.ROMANIZATION,
@@ -430,6 +473,7 @@ def document(result: dict, thin_dead: int = 1) -> dict:
         "families": fam,
         "intelligibility": intel,
         "continua": result.get("continua") or [],
+        "fable_splits": splits,
         "checks": result.get("checks") or [],
         "landscape": land,
         "peoples_without_lects": {"ids": no_demes, "why": "hybrids, templates and overlays have no demes in the run, so no lects yet"},

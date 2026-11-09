@@ -1124,3 +1124,50 @@ on big case systems is not a decision, just a queued task (draft-language-big-ca
 **Left for you:** nothing to decide. The fable's ancestor still does not fit its daughters (it needs the pass to keep
 the ancestor as it was at the split: draft-language-fable-ancestor-at-split), and 77 of 108 faiths forbid pigs, which
 is the faith data's doing (draft-faith-taboos-mostly-swine).
+
+
+## Lane 6 (lang-lane6, 2026-11-09): the fable's ancestor, and most of the cold review
+
+- **The fable's ancestor is now the real common ancestor (PW-1592).** In plain words: the fable used to be told in a
+  language that died 6,000 years ago, but all four daughters came down through one later language that had already
+  changed many words and sounds, so they agreed with each other against the "ancestor". Now the pass keeps a copy of
+  a language exactly as it was the moment it first split, and the fable is told in that copy, with daughters from both
+  sides of the split. A check confirms every daughter's words come from the ancestor or were borrowed. On a24559 the
+  demo's fable is a human family split 4,500 years ago, with four daughters; 0 problems.
+- **Particles no longer stand beside an identical word (R1).** In plain words: where a grammar particle still sounds
+  exactly like the word it came from and they would stand side by side ('that' + the copula from 'that'), one form
+  serves both, as English writes the boys' and not the boys's.
+- **Sound changes take whole series along (R3).** In plain words: when plain k changes, kʼ and kʰ now change with it,
+  so a language no longer keeps a "marked" sound whose plain partner is gone. It helps only where a change caused the
+  gap: languages with such a gap 38% -> 36%; most of the rest never had the partner. Still open.
+- **"Gender" needs at least two genders (R4).** In plain words: a language with one class marker on every noun is no
+  longer called gendered. Languages with no gender 39% -> 66% (real languages: 56%).
+- **Fewer contradictions on a page (R5).** The ergative subject of 'say' and of the topic sentence now carries its
+  marker; "marks only animate objects" now says pronouns too; a marker "from the relativizer" says when that
+  relativizer has since been lost; endings called fused now really are fused; the Welsh example only appears for
+  changes at the start of a word.
+- **Each family has its own favourite sources for grammar (R7).** In plain words: negation no longer comes from
+  'nothing' in nearly every language; each family leans its own way among the attested sources.
+- **Numeral notes match the words (R8).** "11 = 10 + 1" only where 'ten' and 'one' can still be heard in the word,
+  else "built as 10 + 1, now worn past recognition"; nine from ten and one is labelled ten minus one.
+- **A sound change is listed once (R9).** The elf's "w inserted" seven times was the language's hiatus rule at work on
+  new input; the history now lists it once and says how often it re-applied.
+- **Avoidance words are general terms (R10).** One mother-in-law word may cover 'eat' and 'drink', never 'eat', 'see'
+  and 'sleep'.
+- **Book spellings:** a dragon word writes its "mh" or "rh" mark once, not after every sound.
+- **Checks:** all pass except the scholars' horizon (as before). Sisters 0.555 (pass mark 0.5; was 0.514).
+
+**Defaults I chose**
+
+| what | default | where |
+| --- | --- | --- |
+| how far back a split is kept for the fable | first bud 2 to 9 thousand years ago | `history.SPLIT_KYR` |
+| how strongly a family leans among grammar sources | spread x2.7 per standard deviation, overall rate per function unchanged | `grammar.PATH_LEAN` 1.0 |
+| which sounds count as "marked" for the series rule | aspirated, ejective, growled, purred, sub-bass/ultra vowels (not prenasalised, breathy, creaky or implosive) | `lect._marked` |
+| which avoidance words share a general term | eat/drink, see/hear, go/come, sit/sleep, hand/foot | `lexsys.AVOID_GROUPS` |
+| fused endings | lose the sound at the join (the first marker's last, else the second's first) | `grammar._blur_join` |
+| examples cited for a stem change | Welsh (start), German Tag/Tage (end), French petit/petite (loss) | `sentences._resegment` |
+
+**Left for you:** one taste call, how to spell the lip click ʘ beside the click letters ǀ ǁ ǃ ǂ
+(draft-language-bilabial-click-spelling; lean: allow the letter ʘ). Still open on PW-1537: growled voice marked once a
+syllable, class concord on every word, CLICS derivation families, and gaps that never had a plain partner.
