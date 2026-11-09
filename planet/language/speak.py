@@ -463,7 +463,8 @@ def pitch_shift(x: np.ndarray, semis: float, sr: int = SR) -> np.ndarray:
 
 def envelope(x: np.ndarray, sr: int = SR, ms: float = 12.0) -> np.ndarray:
     k = max(1, int(sr * ms / 1000))
-    return np.convolve(np.abs(x), np.ones(k) / k, mode="same").astype(np.float32)
+    return np.convolve(np.abs(x), np.ones(k) / k, mode="same")[:len(x)].astype(np.float32)  # ("same" is the longer input:
+    # a span shorter than the window, a growled sound under 12 ms, came back window-long)
 
 
 def _rng(key: str) -> np.random.Generator:

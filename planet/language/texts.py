@@ -328,7 +328,9 @@ def fable_descent(anc: dict, ds: list[dict], roots: dict, lects: dict) -> list[s
                 e = roots.get(r) or {}
                 if e.get("kyr") is None or e.get("lect") is None:
                     continue
-                if float(e["kyr"]) >= t - 1e-6:
+                same_frame = abs(float(e["kyr"]) - t) < 1e-6 and r not in have   # (coined in the split's own frame,
+                # after the bud copied the parent: history.birth runs before the lects step)
+                if float(e["kyr"]) >= t - 1e-6 and not same_frame:
                     seen_c = anc.get("lexicon_full", True) or e.get("concept") in (anc.get("lexicon") or {})
                     if e["lect"] in line and r not in have and seen_c:   # (a partial lexicon shows only its words)
                         out.append(f"{d['id']} {c}: root {r} is older than the split but not in the ancestor")
