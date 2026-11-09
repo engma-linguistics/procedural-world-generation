@@ -70,6 +70,10 @@ REVOLT = True  # switch (PW-1513, desk D67 B, Daniel 11-08: on, 'as long as the 
 # No new number: the trigger is the polities' own seats and claims, the fate is _fates' own. Off: output byte-identical to before
 
 
+# ---- PW-1594 (lane 248) diagnosis switches: each off is the code as before
+SEAT_MOVE = False  # a seat whose best cell moved one ring keeps its key (incumbency, record, luck)
+
+
 def harshness(hostility: float, tol: float, agg: float) -> float:
     """A winner's harshness to a people on the land it took (PW-1481, PW-1487): its people's old enmity to theirs, + TOL_X x (0.5 -
     tolerance), + TOL_X x (aggression - AGG_HARSH) x (1 - tolerance). Read against FATE_AT: kept, thinned, expelled."""
@@ -98,6 +102,8 @@ class LivePolities(StandIns):
         pairs = np.unique(np.concatenate([np.stack([np.arange(g.n), np.arange(g.n)], 1), np.stack([self.src, self.idx], 1),
                                           np.stack([self.src[e], far], 1)]), axis=0)
         self.r2a, self.r2b = pairs[:, 0], pairs[:, 1]
+        self.r2off = np.searchsorted(self.r2a, np.arange(g.n + 1))  # (pairs are sorted by cell: each cell's two rings, r2b[r2off[c]:r2off[c+1]])
+        self.seat_at: dict = {}  # (SEAT_MOVE: key -> the cell its seat stands on now)
         L = h.lines
         self.ppl = np.array([i for i, l in enumerate(L) if not (l.overlay or l.megafauna or l.marine)], np.int64)  # (peoples that may hold towns)
         self.dragons = [i for i, l in enumerate(L) if l.megafauna and "dragon" in l.id and l.trait("flies", 0.0)]
@@ -246,6 +252,25 @@ class LivePolities(StandIns):
         own = own * CONST["MINORITY_MAX"] / (own + CONST["MINORITY_MAX"]) * q
         return own, np.where(ok, second, -1)
 
+    def _hem_local(self, c, k, people, ago, land, ice, el) -> float:
+        """How hemmed in the seat at cell c is, 0..1, as the read-out reads it (polities._hemmed): over the cells within two rings of it,
+        sea (for a people without boats), ice and peaks of 3,000 m or more bar fully; land other peoples hold and its own does not bars
+        SOCIAL_Q; the rest bars nothing."""
+        ring = self.r2b[self.r2off[c]:self.r2off[c + 1]]
+        ring = ring[ring != c]
+        if not len(ring):
+            return 1.0
+        boats = any(self.knows(people, t, ago) for t in PO.BOATS)
+        h = self.h
+        others = np.zeros(len(ring), bool)
+        for j in self.ppl:
+            if j != k and h.active.get(h.lines[j].id):
+                others |= h.p[j][ring] >= EST
+        own = h.p[k][ring] >= EST
+        bar = np.where(~land[ring], 0.0 if boats else 1.0,
+                       np.where(ice[ring] | (el[ring] >= 3000), 1.0, np.where(others & ~own, PM.SOCIAL_Q, 0.0)))
+        return float(bar.mean())
+
     def _stage(self, people: str, ago: float) -> int:
         """A town-knowing people's settlement stage (settlements' TOWN_MIN index): 4 with cities and roads, 3 with cities, else 2."""
         return 4 if self.knows(people, "roads", ago) and self.knows(people, "cities", ago) else 3 if self.knows(people, "cities", ago) else 2
@@ -310,10 +335,33 @@ class LivePolities(StandIns):
         m = own > size  # (one seat per cell, as derive: the bigger place; its people holds the seat, and a second people's is a town at most)
         size, hold, city = np.where(m, own, size), np.where(m, second, lead), np.where(m, 0.0, city)
         city_min = float(CONST["CITY_MIN"])
-        inc_cells = np.array([int(k[1:]) for k in self.prev_cap if k.startswith("c")], np.int64)
+        if SEAT_MOVE:
+            at_cell = {c_: key_ for key_, c_ in self.seat_at.items() if key_ in self.prev_cap}
+            inc_cells = np.array(sorted(at_cell), np.int64)
+        else:
+            inc_cells = np.array([int(k[1:]) for k in self.prev_cap if k.startswith("c")], np.int64)
         thr = np.full(g.n, float(min(CONST["TOWN_MIN"])))
         thr[inc_cells] *= PO.HOLD
         cand = np.flatnonzero(peopled & land & (size >= thr))
+        if SEAT_MOVE:  # (a seat whose own cell is no longer a place passes its key to a place one ring away of the same people)
+            prev_ppl = {s["key"]: s["people"] for s in self.ruling if s}
+            cset = set(cand.tolist())
+            moved: dict = {}
+            used = set()
+            for c in cand.tolist():
+                if c in at_cell:
+                    continue
+                for b in sorted(self.idx[self.off[c]:self.off[c + 1]].tolist()):
+                    key_ = at_cell.get(b)
+                    if key_ is None or b in cset or key_ in used or prev_ppl.get(key_) != L[int(hold[c])].id:
+                        continue
+                    moved[c] = key_
+                    used.add(key_)
+                    break
+            taken_keys = set(at_cell.values()) | used
+        # (PW-1594: a state seat is tested on its place whichever its tier, as derive tests a site's people; the ledger caps a town
+        # under a city's size, so a town (the best of its ring) passes only where the seat is hemmed in, a city (the best of two) anywhere)
+        place_st = np.maximum(np.minimum(size, city_min - 1e-6), city)
         wcell = np.zeros(g.n, bool)  # (cells where a people that knows proto-writing or writing lives, and their neighbours: D49's lenience)
         for k in heads:
             if any(self.knows(L[k].id, t, ago) for t in PO.WRITING_TECHS):
@@ -324,6 +372,13 @@ class LivePolities(StandIns):
             k = int(hold[c])
             ppl = L[k].id
             key = f"c{c}"
+            if SEAT_MOVE:
+                if c in at_cell:
+                    key = at_cell[c]
+                elif c in moved:
+                    key = moved[c]
+                elif key in taken_keys:  # (its own cell's key travelled with a seat that moved off it: a fresh one)
+                    key = f"c{c}~{k_}"
             if not wcell[c] or not self.knows(ppl, "chiefdoms", ago):
                 continue
             tmin = float(CONST["TOWN_MIN"][self._stage(ppl, ago)])  # (PW-1583: a town by its people's stage, as the ledger and town_cells)
@@ -332,11 +387,14 @@ class LivePolities(StandIns):
             tier = "chiefdom"
             if (self.knows(ppl, "kingship", ago) or self.knows(ppl, "law", ago)) and self.knows(ppl, PO.STATE_WRITING, ago) \
                     and self.cool.get(key, -1) < k_ and self.knows(ppl, "cities", ago):  # (D49: a state needs its own people's writing)
-                need = city_min * (1 - PO.HEMMED_X * float(self.hem[k])) * (PO.HOLD if self.prev_cap.get(key) in ("state", "empire") else 1.0)
-                if city[c] >= need:
+                hem = self._hem_local(c, k, ppl, ago, land, ice, el)  # (PW-1594: the seat's own two rings, as derive)
+                need = city_min * (1 - PO.HEMMED_X * hem) * (PO.HOLD if self.prev_cap.get(key) in ("state", "empire") else 1.0)
+                if place_st[c] >= need:
                     tier = "state"
             strong = tier == "state" and self.knows(ppl, PO.STRONG_TECH, ago)
             self.founded.setdefault(key, ago)
+            if SEAT_MOVE:
+                self.seat_at[key] = c
             seats.append({"key": key, "cell": c, "people": ppl, "line": k, "uid": None, "pop": float(size[c]), "tier": tier,
                           "cls": 0 if strong else (2 if tier == "state" else 3), "rank": float(size[c]) * (PO.INCUMBENT if key in self.prev_cap else 1.0)})
         # 1b. confederations (polities' step 1b, Turchin 2009's mirror empires, PW-1583): the read-out's rule on the history's own places
@@ -514,6 +572,8 @@ class LivePolities(StandIns):
                            "largest_mkm2": round(big[0] * self.cell_km2 / 1e6, 3), "largest_people": big[1],
                            "over1": int(sum(s * self.cell_km2 / 1e6 > 1 for s in sizes)), "taken": taken_log, "collapsed": n_fell})
         self.maps.append(step_map)
+        if SEAT_MOVE:
+            self.seat_at = {key_: c_ for key_, c_ in self.seat_at.items() if key_ in cur}
         self.owner = owner
         self.ruling = ruling
         self.tier_of = tiers
