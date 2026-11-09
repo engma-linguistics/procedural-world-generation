@@ -1,6 +1,6 @@
 # State
 
-**Last updated: 2026-11-04** (main 940c338b, after lane 175). Overwrite this page; never append (the history is in the repo log). Refresh the counts with `uv run python issue-tracking/board.py milestones`.
+**Last updated: 2026-11-09 ~16:00** (main after runner 252). Overwrite this page; never append (the history is in the repo log). Refresh the counts with `uv run python issue-tracking/board.py milestones`.
 
 ## Release
 - **v0.1.0 tagged 2026-11-01** (the v1 milestone, epic PW-244). Hard failures 0 over 42 draws; soft pass L6 29/36, L7 5/6
@@ -12,33 +12,33 @@
 - **v0.2.0** waits on Daniel's look. v2 open: PW-728, 856, 1308 (epics/briefs nearly done), PW-1312, PW-1444 (showcase re-runs).
 - Physics is a side track: 1-3 passes per scout lane, regional metrics (not global dT), tickets in `later` ranked "physics side track".
 
-## Lanes running (11-04)
-- **Lane 170**: D47 C (one carbon yardstick per grid level, weathering on plant cover, frozen-over read at the end); paired judge
-  and Earth check before merge. The NPP lever (branch `scout-173-npp`, 19512a3a) waits for it.
-- **Lane 176**: the peoples mechanisms ledger (docs plus tests; touches history/, spread.py, ladder.py).
-- **Lane 177**: invasions you schedule (PW-1433), polity level, rows in runs/<id>/authored.json; must not touch history/.
-- Peoples runs must start from a finished world id, never a time zoom id (no world means no goods, settlements or polities).
+## Lanes running (11-09 afternoon)
+- **Lane 258**: live polities' town cells as the ledger counts them (PW-1608), the on/off calendar check (PW-1597), then the flip
+  (PW-1596) only if on/off agree within ~100 years on 5 pairs and steadiness holds over re-rolled nudges. Switch still off.
+- **Lane 259**: war as a counter-pressure (PW-1172, PW-1243): early/late dials, troubles, refugees, lost-to shares in the viewer.
+- Merged 11-09 (details in [decisions.md](decisions.md)): trade (salt fish, grain season loan), trade gods read the ledger
+  (lineages/readout.py), live states test towns too, war in the settlement ledger (sacked/razed/walled/raided; 9 runs rebuilt),
+  names slot + gloss names + culture calendars, herd animals (pig..yak) + food fit per body, tech tree reads each frame's range
+  (default dates a few centuries later), closed basins (PW-054 pass 3, inland L6 ~9%, L7 ~14%) + recheck speed-up, two-leaf canopy
+  (PW-1518; 36-draw judge 30/36 vs 34/36, watch ticket).
 - **Languages merged 11-08** (lang-design folded into main, worktrees removed): `planet languages <run>` writes
   languages.json + sidecars; viewer `planet langserve`; guide docs/review/language/ (for-daniel.md, sketches, calibration).
   Leftovers are the language tickets taken in at the merge. Never delete runs a24559, b4d502, 3c1caf (a24559 is the language run).
   11-08 later: owner rulings + syrinx two-voice tone merged (3fb356ff). Open language calls live on the separate Language Desk
   (https://claude.ai/artifact/HYNL244a8zVvfSGFWK5Fgw, db 'answers'), not the Owner's Desk. 11-09: PW-1551 lane merged (dffed688: one sound-change draw, naturalness on a log scale, caps removed; elves long-generation; founder size drift); a24559 language files rebuilt in place. 11-09 morning: lane 4 merged (PW-1557 sonorant codas, PW-1569 case by WALS bins + local series, PW-1570 short function words/pronouns + wear, PW-1571 PRE_FUSE suffixing preference) plus river floors in m3/s (PW-820 units); a24559 rebuilt. Lane 5 merged 11-09 (PW-1545 done, PW-1537 part; 1612db8f), a24559 rebuilt. Lane 6 merged 11-09 (PW-1592 done, PW-1537 mostly; growl envelope and fable-check fixes; PW-1595 left). a24559 rebuilt (pronoun loans at the 0.08 cap, sisters 0.51: watch). Lane 7 merged 11-09 (b50a316c; PW-1546 + PW-1579 done, PW-1586 partial; PW-1600..1602 taken in, PW-1602 spelling looks on the Language Desk as built=A). a24559 rebuilt (616 living; pronoun loans 0.075, sisters 0.535). Lane 8 merged 11-09 (2df49bab; PW-1586/1600/1595 done; PW-1605 taken in); a24559 rebuilt (621 living, pronoun loans 0.071, sisters 0.547, 6+ cases 29%; demo fable warning gone). Lane 9 running: PW-1537 rest + PW-1605 + PW-1566. PW-1549 waits for the other terminal's polities work.
-- Merged 11-03/04 (details in [decisions.md](decisions.md)): board triage (v2 382 -> 12), milestones v2-v5, crops cross the sea
-  only with colonists or ocean ships, years-ago dates (NumFmt), stable culture uids, cuisine sheet per culture, written faiths and a
-  gods disk cache, the workbench tree, polities v0 and war v0 (Polities globe layer, `/api/polities`), summit heights (PW-846),
-  scouts 171-173 (summer excess gone, mountains are cell averages, NPP lever held), keyframe streaming (PW-801).
-- **Waiting on Daniel**: D49 (PW-1448, writing gate; lean B), the v0.2.0 tag.
+- **Waiting on Daniel**: D71 (PW-1577, how big once-stranded peoples end up; lean B, a 1 Mkm² floor).
+- Peoples runs must start from a finished world id, never a time zoom id.
 
-## Milestones (2026-11-04)
+## Milestones (2026-11-09)
 | milestone | open | done |
 |---|---|---|
 | v1 | 0 | 157 |
-| v2 | 5 | 272 |
-| v3 | 7 | 7 |
-| v4 | 9 | 1 |
-| v5 | 17 | 0 |
-| later | 527 | 8 |
-| unscheduled | 136 | 303 |
+| v2 | 4 | 275 |
+| v3 | 3 | 15 |
+| v4 | 17 | 53 |
+| v5 | 17 | 8 |
+| later | 546 | 33 |
+| unscheduled | 161 | 322 |
 
 Standing priorities: always one fun lane on peoples/lineages (PW-692 frames the end goal; cultures, languages and polities next per
 the proposal), physics lanes take the most useful physics ticket, then speed, resources (PW-155), zoom quality (PW-516).

@@ -2,7 +2,7 @@
 id: PW-1518
 title: Plants get no extra photosynthesis from diffuse (cloudy-sky) light; the rainforest's leaf upkeep waits on it
 type: task
-status: todo
+status: done
 parent: null
 milestone: later
 subsystem: surface
@@ -43,6 +43,7 @@ unit of light, so a cloudier world's forests are under-credited. The impact is l
 - [x] then the 36-draw judge (on main after the merge; watch the pass count, see the 2026-11-09 pass 3 update)
 
 ## Updates
+- 2026-11-09: Status todo -> done. Runner 252 36-draw judge (a61b5454): hard 36/36 both; soft 30/36 vs main 34/36 (p 0.29); continuous measures unmoved. Lean watched in the new ticket.
 - 2026-11-09: Runner 252: 36-draw L6 judge, two-leaf (99db109f) vs main before the merge (00cfe6d3), same draws, rolls 0.0005 0.001. Hard tier 0/0 (36/36 each). Soft pass 30/36 (83%) vs 34/36 (94%); discordant main-only 6, two-leaf-only 2, McNemar p 0.29. End T +0.38 C [-1.57, +1.70], late CO2 +0.009 [-0.12, +0.13], nothing moved. Above the bar; PW-1518 stays merged. Glacial maximum 18 vs 13 of 36 (reported only). docs/review/climate/diffuse/screens.md#36-draw-judge-runner-252-2026-11-09.
 - 2026-11-09: Scout 243 pass 3 of 3: rolls 0.001 and 0.0015 of the same 8 L6 draws (l6fix + l6c_0) on both arms. Pass counts main 8/8, 7/8, 8/8 (23/24), two-leaf 6/8, 6/8, 7/8 (19/24); McNemar 5 vs 1 discordant, p 0.22. Hard tier 100% in both arms (no frozen, no hellhouse). On the 24 pairs, end T +0.20 C [-1.71, +1.80] and late CO2 +0.02 [-0.20, +0.15], so no measure moved. Two-leaf's fails go both ways: warm on 733847 (r0.0005, r0.001; it passes at r0.0015 +2.9) and 819014 (r0.0005), cold on 957317 (r0.001 -4.2, r0.0015 -6.1). Verdict: chaos, not a warm shift; merged squashed. The pass count leans to main in all three rolls, so the 36-draw judge stays open. docs/review/climate/diffuse/screens.md#pass-3-scout-243-three-rolls-and-the-verdict.
 - 2026-11-09: Scout 239 pass 2 of 3: Yan et al. 2017's two-leaf canopy for TrBE (vegetation._two_leaf, climate.months df/mu) + TrBE rl x1.5. Earth (world 506694): LAI 4.85 (4.7-5.1), GPP 3038, NPP 1253, leaf respiration ~804 (710-980); other biomes unchanged. 8-draw L6 screen r0.0005: no measure moved, passes main 8/8 vs 6/8. docs/review/climate/diffuse/screens.md#pass-2-scout-239-candidate-b-yans-two-leaf-canopy-in-planet
