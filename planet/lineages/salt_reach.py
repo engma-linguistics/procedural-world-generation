@@ -13,11 +13,12 @@ import numpy as np
 from numba import njit
 
 from ..geo import R_KM
+from ..hydrology import discharge
 
 RIVER_COST = 0.5  # a river step costs this share of a land step
 TRADE_COST = 0.6  # so does a step in a contact zone (peoples that meet carry goods across)
 TRADE_CAP_KM = 450.0  # cost-km: salt is not traded further than this from its source (1.5x the km people walk for it)
-RIVER_FLOW = 2.0  # flow (cells of runoff) that counts as a river for the route (as seafood.LICK_FLOW)
+RIVER_Q = 200.0  # m3/s: a river this big is a route (boats, towpaths) (JUDGEMENT, as seafood.LICK_Q; PW-820: the old 2 cells of runoff at L7)
 UNREACHED = 5000.0
 ROUTE = 1.3  # as seafood.ROUTE
 MINED_CAP = 1.6  # salt a mining people works, or its colony (mining.py), is traded this much further (cost-km) than the salt of unworked beds: a mine is a salt works
@@ -82,7 +83,7 @@ def reach(g, land: np.ndarray, own_km: np.ndarray, flow: np.ndarray, zone: np.nd
     src = np.flatnonzero(land & (own_km == 0))
     cost = np.where(land, 1.0, 0.0)
     cost = np.where(land & zone, TRADE_COST, cost)
-    cost = np.where(land & (flow >= RIVER_FLOW), np.minimum(cost, RIVER_COST), cost)
+    cost = np.where(land & (discharge(g, flow) >= RIVER_Q), np.minimum(cost, RIVER_COST), cost)
     hop_km = float(g.spacing * R_KM * ROUTE)
     km = _spfa(src.astype(np.int64), cost, g.nbr_off.astype(np.int64), g.nbr_idx.astype(np.int64), hop_km, UNREACHED - 1.0)
     km = np.where(land & (km <= UNREACHED - 1.0), km, UNREACHED)
