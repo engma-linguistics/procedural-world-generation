@@ -84,6 +84,19 @@ def test_a_lingua_franca_outlives_the_state_that_made_it_until_a_much_stronger_t
     assert l3[0]["tongue"] == 2 and l3[0]["id"] != l1[0]["id"]
 
 
+def test_a_split_network_hands_its_id_to_one_half_only():
+    """PW-1564: a network that splits in two between eras keeps its id (and since) in the half sharing most of its towns; the other half
+    gets a new id from this era, still speaking the forerunner's tongue, so no id shows twice in one era."""
+    hubs = [_hub(1, 0, 0, 0.4), _hub(2, 1, 1, 0.05), _hub(3, 2, 0, 0.35), _hub(4, 3, 2, 0.1), _hub(5, 4, 1, 0.1)]
+    _, l1, nets, ruled = TG.era_rows(_era(2.0, routes=[_route(0, 1), _route(1, 2), _route(2, 3), _route(3, 4)], hubs=hubs), [], {}, NOLANG)
+    assert len(l1) == 1 and l1[0]["tongue"] == 0
+    _, l2, *_ = TG.era_rows(_era(1.5, routes=[_route(0, 1), _route(2, 3), _route(3, 4)], hubs=hubs), nets, ruled, NOLANG)  # (cut at 1-2)
+    assert len(l2) == 2 and len({x["id"] for x in l2}) == 2
+    by = {len(x["towns"]): x for x in l2}
+    assert by[3]["id"] == l1[0]["id"] and by[3]["since_kyr"] == 2.0  # (the half with three of the five towns is the heir)
+    assert by[2]["since_kyr"] == 1.5 and by[2]["tongue"] == 0  # (the other half: a new id, the same tongue)
+
+
 def test_a_pidgin_gives_way_to_the_first_real_trade_language():
     routes = [_route(0, 2), _route(2, 4)]
     _, l1, nets, ruled = TG.era_rows(_era(2.0, routes=routes, hubs=[_hub(1, 0, 0, 0.3), _hub(2, 2, 1, 0.25), _hub(3, 4, 2, 0.2)]), [], {}, NOLANG)

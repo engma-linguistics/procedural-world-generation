@@ -9,13 +9,13 @@ import numpy as np
 from .. import spec as SP
 
 from ..crossing import modes, short_hop
-from ..spread import EST, jump_reach, rings, spread
+from ..spread import EST, graph_dist, jump_reach, rings, spread
 from ..gridops import nbr_reduce
 from .gridops import _csr_gather
 from . import megafauna as MG
 from .habitat import hold_mask
 from .pressure import crowding
-from .params import JUMP_HEMMED, JUMP_KM, JUMP_MAX, JUMP_RATE, JUMP_SHAPE, JUMP_SWIM_KM, FOUNDER_KM, CONVERGE, PERSIST_EXP, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P
+from .params import ARRIVAL_ROOM, LAST_LAND_REACH, JUMP_HEMMED, JUMP_KM, JUMP_MAX, JUMP_RATE, JUMP_SHAPE, JUMP_SWIM_KM, FOUNDER_KM, CONVERGE, PERSIST_EXP, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P
 
 
 class DispersalMixin:
@@ -155,21 +155,63 @@ class DispersalMixin:
                 self.crossings_n[l.id] = self.crossings_n.get(l.id, 0) + 1
                 self.cross.note(l.id, blob, step.ago, way, self.events, l.label(), gap)
 
-    def _hold_out(self, l, k, K, step):
+    def _hold_out(self, l, k, K, step, held0=None):
         """A line given as living at the present isn't lost: at its lowest it holds out in a refuge; so is a stem with splits still to
-        come (PW-1184: it is as much given as living until its last split, so its children arise by it)."""
+        come (PW-1184: it is as much given as living until its last split, so its children arise by it). One that holds nothing at all
+        (a daughter's founding took the last of it, _take, or it went this step) holds out by its last land, in the nearest country it
+        can actually live in (PW-1558: _refuge_cell), not at the best habitat anywhere."""
         g = self.grid
         if not l.overlay and l.extinct_kyr is None and (l.id in self._living or self._unsplit(l)) and (self.p[k] >= EST).sum() < 3 \
                 and K.max() > 2 * EST:
             # a line given as living at the present isn't lost: at its lowest it holds out in a refuge,
             # its best habitat near where it was (as the ice-age refugia did)
-            near = self._dilate(self.p[k] > 0, 3) if (self.p[k] > 0).any() else np.ones(g.n, bool)
-            cell = int(np.argmax(np.where(near, K, 0) + 1e-3 * K))
+            if (self.p[k] > 0).any():
+                near = self._dilate(self.p[k] > 0, 3)
+                cell = int(np.argmax(np.where(near, K, 0) + 1e-3 * K))
+            else:
+                last = held0 if held0 is not None and held0.any() else self._last_held.get(k)
+                cell = self._refuge_cell(l, K, last)
             blob = rings(cell, K > EST, 1, g.nbr_off, g.nbr_idx)
             self.p[k][blob] = np.maximum(self.p[k][blob], np.clip(K[blob], 2 * EST, 0.5))
             if l.id not in self._refuged:
                 self._refuged.add(l.id)
                 self._event_at(step.ago, "refuge", l, f"{l.label()} hold out in a refuge", cell)
+
+    def _refuge_cell(self, l, K, last):
+        """PW-1558: where a line left with no land holds out: within LAST_LAND_REACH x FOUNDER_KM of its last land (over land and sea, as a
+        split founds by its parent, _origin_fallback), in a free country (connected cells whose free room, its habitat less what the
+        peoples alive there take, is of the first ARRIVAL_ROOM tier, a share of its best habitat, that has one) at least as big as one
+        founders' country (the cells within FOUNDER_KM: a split's founding take, _origin_split, so the next daughter does not empty it
+        again), the nearest first (exp(-d / FOUNDER_KM)). The refuge is the stem's people moving out of the country its daughter took
+        into the nearest land with room for its splits to come: not a jump to the best cell of another continent (main before PW-1558),
+        and not a pocket among its neighbours or on an islet (lane 228: there its daughters were born on a few cells and stayed at the
+        share floor). No last land on record, or nothing habitable within reach: its best habitat anywhere."""
+        g = self.grid
+        if last is None or not last.any():
+            return int(np.argmax(K))
+        maxd = int(np.ceil(LAST_LAND_REACH * FOUNDER_KM / self.cell_km))
+        d = graph_dist(last, maxd, g.nbr_off, g.nbr_idx)
+        live = (d >= 0) & (K > 2 * EST)
+        if not live.any():
+            live = (d >= 0) & (K > EST)
+            if not live.any():
+                return int(np.argmax(K))
+        free = np.clip(K - self._rivals_here(l, K), 0, None) * (K > EST)
+        r = max(2, int(round(FOUNDER_KM / self.cell_km)))
+        need = int(rings(int(np.argmax(K)), np.ones(g.n, bool), r, g.nbr_off, g.nbr_idx).sum())  # (a founders' country, in cells)
+        ok = np.zeros(g.n, bool)
+        for share in ARRIVAL_ROOM:
+            room = (free >= max(share * K.max(), EST)) & (K > EST)
+            lab, n = g.components(room)
+            if n:
+                big = np.bincount(lab[room], minlength=n) >= need
+                ok = live & room & big[np.maximum(lab, 0)]
+            if ok.any():
+                break
+        if not ok.any():  # (no free country of that size within reach: the freest cell within reach)
+            ok = live
+        near = np.exp(-np.maximum(d, 0) * self.cell_km / FOUNDER_KM)
+        return int(np.argmax(np.where(ok, (free + 1e-3 * K) * near, -1.0)))
 
     def _jump_push(self, k, K, room, held) -> float:
         """How hard a hemmed-in people pushes founders out, 0..1 (PW-920): its crowding by rivals, or the share of the land it holds that

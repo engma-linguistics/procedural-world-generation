@@ -298,7 +298,7 @@ class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, O
                 self._mvp_dt[k] = 0.0
         if PM.LEARN:  # (PW-1155: niche learning at the edges of its range)
             self._learn(l, k, step, tags)
-        self._hold_out(l, k, K, step)
+        self._hold_out(l, k, K, step, held0)
         if not (self.p[k] > EST).any() and not l.overlay:
             if held0.any():
                 self._last_held[k] = held0
