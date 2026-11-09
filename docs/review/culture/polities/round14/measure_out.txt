@@ -1,0 +1,32 @@
+=== 746ed2 (l234-s7on)  live: polities_live.json
+  live     first state  2,600 ya | states 2,000/1,000/0 ya 35/64/85 | largest last 3 kyr: median 0.18, >= 2.3 in 0/31, peak 0.64 Mkm2, now 0.19 | most > 1 Mkm2 0
+  readout  first state  3,800 ya | states 2,000/1,000/0 ya 37/87/124 | largest last 3 kyr: median 0.42, >= 2.3 in 0/31, peak 1.56 Mkm2, now 1.39 | most > 1 Mkm2 1
+  writing (12 largest): 12/12 write; median 3,796 ya, earliest 4,462 ya
+  shares now: human 40.2, hobgoblin 13.0, halfling 8.8, orc 8.5, leonin 6.7, kenku 4.9
+=== 0a1c30 (l234-s7off)  live: off
+  readout  first state  4,100 ya | states 2,000/1,000/0 ya 50/89/122 | largest last 3 kyr: median 0.46, >= 2.3 in 1/31, peak 2.33 Mkm2, now 1.15 | most > 1 Mkm2 3
+  writing (12 largest): 12/12 write; median 3,936 ya, earliest 4,625 ya
+  shares now: human 39.6, hobgoblin 13.5, halfling 8.8, orc 8.5, leonin 6.6, kenku 5.0
+=== 097927 (l234-s10on)  live: polities_live.json
+  live     first state  4,100 ya | states 2,000/1,000/0 ya 95/97/116 | largest last 3 kyr: median 0.71, >= 2.3 in 0/31, peak 1.66 Mkm2, now 0.34 | most > 1 Mkm2 4
+  readout  first state  4,100 ya | states 2,000/1,000/0 ya 105/127/164 | largest last 3 kyr: median 1.13, >= 2.3 in 0/31, peak 1.90 Mkm2, now 1.90 | most > 1 Mkm2 6
+  writing (12 largest): 12/12 write; median 5,061 ya, earliest 5,948 ya
+  shares now: human 61.3, halfling 12.0, hobgoblin 5.1, elf 4.6, kenku 3.9, orc 2.7
+=== 7de58b (l234-s10off)  live: off
+  readout  first state  4,600 ya | states 2,000/1,000/0 ya 114/145/177 | largest last 3 kyr: median 1.12, >= 2.3 in 0/31, peak 1.58 Mkm2, now 1.46 | most > 1 Mkm2 3
+  writing (12 largest): 12/12 write; median 4,710 ya, earliest 5,536 ya
+  shares now: human 61.1, halfling 11.9, hobgoblin 5.1, elf 4.9, kenku 4.0, orc 2.7
+=== f5e523 (l234-n7on)  live: polities_live.json
+  live     first state  3,800 ya | states 2,000/1,000/0 ya 55/70/81 | largest last 3 kyr: median 0.34, >= 2.3 in 0/31, peak 1.83 Mkm2, now 0.28 | most > 1 Mkm2 3
+  readout  first state  4,600 ya | states 2,000/1,000/0 ya 62/82/106 | largest last 3 kyr: median 1.01, >= 2.3 in 2/31, peak 3.41 Mkm2, now 2.80 | most > 1 Mkm2 4
+  writing (12 largest): 12/12 write; median 4,544 ya, earliest 5,536 ya
+  shares now: human 23.1, hobgoblin 19.7, orc 12.5, tabaxi 12.1, halfling 7.3, leonin 7.0
+=== 19e53f (l234-n7off)  live: off
+  readout  first state  4,100 ya | states 2,000/1,000/0 ya 63/95/116 | largest last 3 kyr: median 1.24, >= 2.3 in 4/31, peak 3.12 Mkm2, now 3.12 | most > 1 Mkm2 5
+  writing (12 largest): 12/12 write; median 4,229 ya, earliest 4,795 ya
+  shares now: human 23.5, hobgoblin 20.3, orc 12.3, tabaxi 11.8, halfling 7.2, leonin 6.7
+  746ed2 vs f5e523 [live]  1,000 ya: top 10 kept 5/10, 4/10; same ruler 21% | 0 ya: top 10 kept 1/10, 0/10; same ruler 14%
+  746ed2 vs f5e523 [readout]  1,000 ya: top 10 kept 6/10, 4/10; same ruler 22% | 0 ya: top 10 kept 5/10, 2/10; same ruler 16%
+  0a1c30 vs 19e53f [readout]  1,000 ya: top 10 kept 6/10, 4/10; same ruler 19% | 0 ya: top 10 kept 1/10, 2/10; same ruler 20%
+  746ed2 vs 097927 [live]  1,000 ya: top 10 kept 1/10, 0/10; same ruler 6% | 0 ya: top 10 kept 2/10, 2/10; same ruler 8%
+  746ed2 vs 097927 [readout]  1,000 ya: top 10 kept 2/10, 3/10; same ruler 9% | 0 ya: top 10 kept 4/10, 3/10; same ruler 10%
