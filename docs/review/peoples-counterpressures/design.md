@@ -313,6 +313,15 @@ people pulled back to strongholds (Turchin 2009 p. 10: "In a stateless society p
 - **Constants (params.py):** H_WAY (table above), WAR_N0 10, STATE_Q 3, MALE_W 0.25, WAR_STAGE_W (0.1, 0.3, 1, 0.3), LAND_Q 0.3,
   H_MAX 0.01, TROUBLE_PER_KYR 2, COUNTER_FLOOR 0.05.
 
+**As built (lanes 97, 101, 259; history.counter, params.py).** War-torn land (lane 97) and in-fighting (lane 101) as above, under the
+master dial `meta.war`. Lane 259 (PW-1172, PW-1243) added: `war_early` / `war_late` (x meta.war, on war-torn land only), per-line
+`war_x` and the `aggressive` x2; times of troubles sized from Turchin 2009 Table 1 instead of TROUBLE_PER_KYR (chance TROUBLE_SHARE
+0.41 x dt / TROUBLE_KYR 0.107 kyr a step, x3); refugees on jumps only (the share of a people war drives off in a step adds to its
+`_jump_push`); each people's `lost_to` shares, troubles and refugee jumps in the run output and the workbench. Not built, by D31: war
+deaths through the life tables (lane 101 measured 0-0.2% of any people). `war_external` stays the constant WAR_EXT. The state term
+still reads the farm share in the stand-ins: a town share exists inside the history only with live polities, whose pacification
+already reads the ruling state's tier.
+
 ## (c) Epidemics
 
 ### What the literature says
