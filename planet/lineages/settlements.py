@@ -25,8 +25,8 @@ The model (every judgement constant is in the block below; `derive(..., **overri
   factor (SITE_MIN..SITE_MAX) adds for a harbour on a coast that is still a coast at that time, a navigable river, fresh
   water on site, fertile ground and a pass (the world's human-use layers, humanuse.py), and is capped by the tier allowed.
 - Lifecycle, every STEP_KYR from the first frame within the land-use window (landuse.ERA_WINDOW_KYR) to the present, the
-  frames' density, farm share and rain interpolated linearly in time, the land, ice and who lives there taken from the nearer
-  frame: a site is founded when the target holds FOUND or more for FOUND_STEPS steps; its people relax toward the target
+  stored frame at or before the step read as it stands (density, farm share, rain, the land, ice and who lives there; PW-1612:
+  no look-ahead, the read-out sees no frame later than its step; frames every 0.5 kyr): a site is founded when the target holds FOUND or more for FOUND_STEPS steps; its people relax toward the target
   with TAU_KYR; it is abandoned when the target stays under ABANDON for ABANDON_STEPS steps, or at once when the cell goes
   under the sea or the ice. Why (the first that holds): the sea, the ice, drought (rain DROUGHT or more below the rain at
   its founding), driven out (the holder changed in the last HAND_KYR, or the new holder cannot keep sites), else its people
@@ -716,16 +716,12 @@ def derive(run_dir: Path, **over) -> dict:
         return np.where(np.isfinite(score.max(0)), li[best], NONE)
 
     for ago in steps:
-        j = int(np.searchsorted(-np.asarray(fago), -ago, side="right") - 1)  # (the frame at or before this step)
+        # the stored frame at or before this step, as it stands (PW-1612: no look-ahead; before, the density, farm share and
+        # rain were drawn toward the next frame and who lives there taken from the nearer one, up to 0.5 / 0.25 kyr ahead)
+        j = int(np.searchsorted(-np.asarray(fago), -ago + 1e-9, side="right") - 1)
         j = min(max(j, 0), len(fago) - 1)
-        k2 = min(j + 1, len(fago) - 1)
-        span = fago[j] - fago[k2]
-        w = 0.0 if span <= 0 else (fago[j] - ago) / span
-        dens = (1 - w) * dens_f[j] + w * dens_f[k2]
-        farm = (1 - w) * farm_f[j] + w * farm_f[k2]
-        rain = (1 - w) * rain_f[j] + w * rain_f[k2]
-        jn = j if w < 0.5 else k2
-        e = frame_env(jn)
+        dens, farm, rain = dens_f[j], farm_f[j], rain_f[j]
+        e = frame_env(j)
         lead = e["mix_lead"].astype(np.int64)
         second = e["mix_second"].astype(np.int64)
         has = lead != NONE
@@ -789,7 +785,7 @@ def derive(run_dir: Path, **over) -> dict:
         town_now = np.zeros(n, bool)
         ac = np.flatnonzero(active[0] >= 0)
         town_now[ac] = [sites[i]["tier"] >= 2 for i in active[0][ac].tolist()]
-        need = (farm + (1 - w) * herd_f[j] + w * herd_f[k2]) >= c["MINE_NEED"]
+        need = (farm + herd_f[j]) >= c["MINE_NEED"]
         want_ = need | town_now[R2].any(1)
 
         def ore_ok(li):
@@ -809,7 +805,7 @@ def derive(run_dir: Path, **over) -> dict:
         lm = np.where(take_sec, second, np.where(lead_ok, lead, NONE))
         # a colony: the nearest of the most inclined mining kinds within COLONY_KM works a rich ore district held by others
         # (settled ground, the cell's people feed it) when it is clearly more inclined than whoever would work it here
-        col = colony_line(j if w < 0.5 else k2, ago)
+        col = colony_line(j, ago)
         a_c, a_cur = affinity[np.minimum(col, nl)], np.where(lm != NONE, affinity[np.minimum(lm, nl)], 0.0)
         take_col = rich & has & e["land"] & (col != NONE) & (a_c >= a_cur + c["MINE_EDGE"]) & (col != lead) & (col != second)
         lm = np.where(take_col, col, lm)
@@ -902,7 +898,7 @@ def derive(run_dir: Path, **over) -> dict:
                             inc = war.incursion(cell, old_h, s["holder"], ago)
                             ev = (f, s["holder"]) if inc is None else (f, s["holder"], inc.get("from_deg"))
                     if ev is None and s["tier"] >= 2:
-                        r = war.raid(u("raid", k, cell, yr), cell, s["holder"], walls, fidx[jn])
+                        r = war.raid(u("raid", k, cell, yr), cell, s["holder"], walls, fidx[j])
                         if r is not None:
                             ev = ("raided", r)
                     if ev is not None:

@@ -155,7 +155,7 @@ class LivePolities(StandIns):
     # ------------------------------------------------------------ one polity step
     def begin_step(self, step):
         if step.epoch == "recent" and getattr(self.tech, "towns", None) is not None:  # (D52's town arms B, E: the live seats' towns, PW-1472)
-            self.tech.note_towns(float(step.ago), self.town_cells(float(step.ago)))
+            self.tech.note_towns(float(step.ago), self.town_cells(float(step.ago), fresh=step.store))
         self.tech.step(step)  # (every step: the tree runs down to the history's time before anything reads it)
         if step.epoch != "recent":
             return
@@ -284,7 +284,7 @@ class LivePolities(StandIns):
         al = min(int(self.knows(lid, TECH[1], ago)) + int(cities) + 1, 3)
         return al, al + int(al >= 3 and self.knows(lid, "roads", ago))
 
-    def town_cells(self, ago: float) -> dict:
+    def town_cells(self, ago: float, fresh: bool = True) -> dict:
         """Each people's town cells now (PW-1472: the town footprint D52's arms B, E and S read, techtree.Calendar.towns), counted
         as the settlement ledger counts them (techspread.town_footprint): a cell counts for a people where it holds a *site* of town
         size for its stage (settlements' TOWN_MIN). Call once per century step (begin_step does): the sites carry over.
@@ -303,7 +303,12 @@ class LivePolities(StandIns):
         people has led the cell for HAND_KYR. Before, the history sized places on its own densities and lead peoples and counted
         every cell whose place was of town size that step: mid-history a third more town cells than the ledger at L7 and other
         peoples' towns (lane 254b, round19.md). Not kept: war's sacks and razings, the ledger's seeded river shifts, and its
-        blending of the frames on either side of a step. {people: cells}."""
+        blending of the frames on either side of a step.
+
+        PW-1612: the ledger reads each step from the stored frame at or before it, held until the next (frames every 0.5 kyr); so
+        do these: `fresh` (begin_step: a step that stores a frame) takes the inputs from the history now, any other step keeps the
+        last ones taken. (The history takes them at the start of the frame's step, the frame at its end: one step, not kept.)
+        {people: cells}."""
         from ..settlements import CONST as C
         from .. import landuse as LU
         L, h, g = self.h.lines, self.h, self.g
@@ -318,20 +323,23 @@ class LivePolities(StandIns):
                                    "cand_run": np.zeros(n, np.int64), "lead": None, "lead_since": np.full(n, np.inf)}
         dt = C["STEP_KYR"] if st["ago"] is None else max(st["ago"] - ago, 0.0)
         relax = 1 - np.exp(-dt / C["TAU_KYR"])
-        env = h._env_now
-        # the ledger's inputs now, as a frame stores them (history.frame._frame)
-        own = np.array([not l.overlay for l in L])[:, None] | h._linger
-        P = np.where(own, h.p, 0)
-        comp, land = h._composition(ago, env, h.rollup(P))
-        land = np.asarray(land, bool)
-        fi = LU.frame_inputs(h, P, land)
-        area = self.cell_km2
-        dens = (2.0 ** (fi["dens"].astype(float) * LU.PEOPLE_SCALE) - 1) * area  # (people per cell)
-        farm = fi["farm"].astype(float) / 100
+        if fresh or "inp" not in st:
+            env = h._env_now
+            # the ledger's inputs now, as a frame stores them (history.frame._frame)
+            own = np.array([not l.overlay for l in L])[:, None] | h._linger
+            P = np.where(own, h.p, 0)
+            comp, land = h._composition(ago, env, h.rollup(P))
+            land = np.asarray(land, bool)
+            fi = LU.frame_inputs(h, P, land)
+            coastal = land & (nbr_reduce(g, np.maximum, (~land)[self.idx].astype(np.int8)) > 0)
+            st["inp"] = {"land": land, "comp": comp, "coastal": coastal,
+                         "dens": (2.0 ** (fi["dens"].astype(float) * LU.PEOPLE_SCALE) - 1) * self.cell_km2,  # (people per cell)
+                         "farm": fi["farm"].astype(float) / 100,
+                         "ice": (np.asarray(env["ice"], float) > 0.5) if "ice" in env else np.zeros(n, bool)}
+        inp = st["inp"]
+        land, comp, coastal, dens, farm, ice = (inp[k] for k in ("land", "comp", "coastal", "dens", "farm", "ice"))
         lead, second = (np.where(comp[x] < 255, comp[x].astype(np.int64), -1) for x in ("mix_lead", "mix_second"))
         lead_sh, second_sh = comp["mix_lead_share"].astype(float), comp["mix_second_share"].astype(float)
-        ice = (np.asarray(env["ice"], float) > 0.5) if "ice" in env else np.zeros(n, bool)
-        coastal = land & (nbr_reduce(g, np.maximum, (~land)[self.idx].astype(np.int8)) > 0)
         q = self.SE._site_factor(self.W, coastal, C)
         water = ((np.asarray(self.W["harbour"]) > 0) & coastal) | (np.asarray(self.W["river_nav"]) > 0)
         al_x, stage_x = np.zeros(nl + 1, np.int64), np.zeros(nl + 1, np.int64)  # (by line; the last row, index -1, is none)
