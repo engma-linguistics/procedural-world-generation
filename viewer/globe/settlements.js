@@ -144,6 +144,19 @@ const name = (id) => {
 };
 const n0 = (x) => Math.round(x).toLocaleString('en-US');
 const yrs = (kyr) => globalThis.NumFmt.ago(kyr >= 1 ? +kyr.toFixed(1) : Math.max(0.1, Math.round(kyr * 10) / 10));  // a coarse date (PW-1429: '1,100 years ago' or 'year 900')
+// PW-1108: a place's wars and raids up to the slider's moment (settlements.json war: [kyr ago, taken|sacked|razed|raided, by, bearing?]),
+// newest first, and its walls (its holders knew fortifications)
+const COMPASS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+const WAR_WORD = { taken: 'taken by force by', sacked: 'sacked by', razed: 'razed by', raided: 'raided by' };
+function warRow(s, ago, R) {
+  const ev = (s.war || []).filter(([a]) => a >= ago - 1e-6);
+  const walls = s.walled_kyr != null && s.walled_kyr >= ago - 1e-6 ? `walled since ${yrs(s.walled_kyr)}` : '';
+  if (!ev.length && !walls) return;
+  const txt = ev.slice(-5).reverse().map(([a, how, by, deg]) => `${WAR_WORD[how] || how} the ${name(by)} ${yrs(a)}`
+    + (deg != null ? ` (in their incursion from the ${COMPASS[Math.round(deg / 45) % 8]})` : '')).join('; ') + (ev.length > 5 ? `; + ${ev.length - 5} earlier` : '');
+  R('place', '', [txt, walls].filter(Boolean).join('; '), { lab: 'war', ess: true });
+}
+
 // the hover card: the sites of cell i at the slider's moment (the living one first, then the ruins)
 export function settlementRows(i, R) {
   const list = S.V.settleByCell?.get(i);
@@ -155,6 +168,7 @@ export function settlementRows(i, R) {
     if (isRuin(s, ago)) {
       R('place', '', `ruin of a ${s.tier_peak}${s.kind === 'minority' ? ' (a second people\'s own place)' : ''} of the ${name(holderAt(s, s.abandoned_kyr))} (at most ~${n0(s.peak_pop)} people); ${by}; abandoned ${yrs(s.abandoned_kyr)}: ${esc(s.why)}`,
         { lab: 'settlement', ess: true });
+      warRow(s, ago, R);
       continue;
     }
     const h = holderAt(s, ago), p = popAt(s, ago), hands = s.holders.filter(([a]) => a >= ago - 1e-6).slice(1);
@@ -174,5 +188,6 @@ export function settlementRows(i, R) {
     R('place', '', `${what} of the ${name(h)}, ~${n0(p)} people; ${by}${hands.length ? `; changed hands: ${hands.map(([a, x]) => `the ${name(x)} ${yrs(a)}`).join(', ')}` : ''}`
       + `${s.abandoned_kyr != null ? `; left ${yrs(s.abandoned_kyr)} (${esc(s.why)})` : ''}`, { lab: 'settlement', ess: true });
     if (who) R('place', '', `${who} (${s.who_when})`, { lab: 'its people', ess: true });
+    warRow(s, ago, R);
   }
 }

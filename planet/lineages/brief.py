@@ -38,7 +38,7 @@ from ..geo import is_land, world_land
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 21  # 21: bought-in foods from the exchange doc (trade_reach, the cuisine sheet's "Bought in" line and its staple, drink and fuel notes; bought_in.py, PW-1505); 20: names and words per people from languages.json where the run has one (lang lane, PW-972, PW-986); 19: a culture's cuisine sheet has a "has / lacks" line from the goods ledger (trade.py, PW-1502); 18: gods and taboos are the Religion tab's docs, authored faiths and saved gods mode included (PW-1440); 17: a culture's brief and its cuisine sheet (fuel, staple, drink, who eats together, what outsiders get wrong, what it won't eat; PW-1391, PW-1312); 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 22  # 22: the ruins count "razed" (war, settlements PW-1108) and each listed ruin its wars and raids; 21: bought-in foods from the exchange doc (trade_reach, the cuisine sheet's "Bought in" line and its staple, drink and fuel notes; bought_in.py, PW-1505); 20: names and words per people from languages.json where the run has one (lang lane, PW-972, PW-986); 19: a culture's cuisine sheet has a "has / lacks" line from the goods ledger (trade.py, PW-1502); 18: gods and taboos are the Religion tab's docs, authored faiths and saved gods mode included (PW-1440); 17: a culture's brief and its cuisine sheet (fuel, staple, drink, who eats together, what outsiders get wrong, what it won't eat; PW-1391, PW-1312); 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -437,11 +437,12 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
            "mining_colonies": sorted(colonies, key=lambda r: -r["pop"])[:SETTLE_TOP],
            "ruins": {"count": len(ruins), "why": {}, "largest": [
                {"id": s["id"], "tier": s["tier_peak"], "peak_pop": s["peak_pop"], "people": _holder_at(s, s["abandoned_kyr"]),
-                "founded_kyr": s["founded_kyr"], "abandoned_kyr": s["abandoned_kyr"], "why": s["why"], "lat": s["lat"], "lon": s["lon"]}
+                "founded_kyr": s["founded_kyr"], "abandoned_kyr": s["abandoned_kyr"], "why": s["why"], "lat": s["lat"], "lon": s["lon"],
+                "war": [w[:3] for w in s.get("war") or []]}
                for s in sorted(ruins, key=lambda s: -s["peak_pop"])[:SETTLE_TOP]]},
            "names": {}}
     for s in ruins:
-        k = "driven out" if (s["why"] or "").startswith("driven out") else s["why"]
+        k = "driven out" if (s["why"] or "").startswith("driven out") else "razed" if (s["why"] or "").startswith("razed by") else s["why"]
         out["ruins"]["why"][k] = out["ruins"]["why"].get(k, 0) + 1
     if people:  # (the people's own places world-wide, at the era; a group's are its people's)
         people = ctx.lines[ctx.idx[people]].get("group_of") or people
@@ -455,7 +456,7 @@ def _settlements(ctx: Ctx, sel: np.ndarray, era: float, people: str | None) -> d
                          "taken_from_others": sum(s["founded_by"] != people and s.get("kind") not in ("mine", "pit") for s, _ in mine_),
                          "ruins_of_its_founding": sum(1 for s in doc["sites"] if s["founded_by"] == people and s["tier_now"] == "ruin"
                                                       and s["abandoned_kyr"] >= era - 1e-6)}
-    used = {r["people"] for r in out["largest"]} | {r["founded_by"] for r in out["largest"]} | set(own) | set(mines) | set(pits) | {r["people"] for r in colonies} | {r["people"] for r in out["ruins"]["largest"]}
+    used = {r["people"] for r in out["largest"]} | {r["founded_by"] for r in out["largest"]} | set(own) | set(mines) | set(pits) | {r["people"] for r in colonies} | {r["people"] for r in out["ruins"]["largest"]} | {w[2] for r in out["ruins"]["largest"] for w in r["war"]}
     out["names"] = {k: name.get(k, k) for k in sorted(used)}
     return out
 
@@ -1335,7 +1336,9 @@ def _settlements_md(st: dict | None) -> list[str]:
     if st["ruins"]["count"]:
         t += ["- Ruins, why abandoned: " + ", ".join(f"{k} {v}" for k, v in sorted(st["ruins"]["why"].items(), key=lambda kv: -kv[1]))]
         t += [f"  - the ruin of a {r['tier']} of the {nm(r['people'])} (at most ~{r['peak_pop']:,} people), {r['lat']}, {r['lon']}: "
-              f"founded {SP.years_ago(r['founded_kyr'])}, abandoned {SP.years_ago(r['abandoned_kyr'])} ({r['why']})" for r in st["ruins"]["largest"]]
+              f"founded {SP.years_ago(r['founded_kyr'])}, abandoned {SP.years_ago(r['abandoned_kyr'])} ({r['why']})"
+              + "".join(f"; {how} by the {nm(by)} {SP.years_ago(a)}" for a, how, by in (r.get("war") or [])[-3:] if how != "razed")
+              for r in st["ruins"]["largest"]]
     pp = st.get("people")
     if pp:
         pc = pp["counts"]

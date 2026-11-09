@@ -885,7 +885,7 @@ def main():
 
     se = sub.add_parser("settlements", help="add or redo a peoples run's settlement ledger: villages, towns and cities over the last ~12 kyr, "
                                              "founded when a people's technology and the land allow, abandoned (sea, ice, drought, a river moving, "
-                                             "driven out, left), leaving ruins; in place (PW-1011)")
+                                             "driven out, left, razed in war), sacked and raided (PW-1108), leaving ruins; in place (PW-1011)")
     se.add_argument("runs", nargs="+", help="peoples run ids")
     se.add_argument("--set", nargs="*", metavar="KEY=VALUE", help="override settlements.CONST for this call (JSON values), e.g. FOUND=500")
     se.set_defaults(func=cmd_settlements)
