@@ -2,7 +2,7 @@
 id: PW-1571
 title: "Languages: no suffixing preference; noun class and gender markers are prefixes more often than suffixes, subject agreement too"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1538]
 refs: ["planet/language/grammar.py (gram side from the source word's position)", "run a24559"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -27,5 +27,6 @@ Options: (a) asymmetric fusion rate (pre-side binding x0.4-0.5); (b) leave. Lean
 - [ ] if (a): WALS 26A bins, class-marker side by kind, agreement side
 
 ## Updates
+- 2026-11-09: Status todo -> done. Merged (lane 4): grammar.PRE_FUSE 0.1 (proclitics bind and fuse at a tenth the rate). Prefix:suffix 1.13:1 -> 1:2.4; WALS 26A strongly suffixing 17% -> 29%, strongly prefixing 19% -> 9% (WALS 42%/6%).
 - 2026-11-08: Created from inbox draft draft-language-prefix-heavy.md (found by language lane (owner question, 2026-11-08)).
 - 2026-11-08: RULING (owner, Language Desk q.prefix): (a) markers before the host fuse more slowly; re-measure WALS 26A. Queued after PW-1551.

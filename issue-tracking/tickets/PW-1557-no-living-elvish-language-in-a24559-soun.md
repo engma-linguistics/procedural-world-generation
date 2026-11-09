@@ -2,7 +2,7 @@
 id: PW-1557
 title: "No living elvish language in a24559 sounds Tolkien-Elvish: should the elf people lean towards Sindarin/Quenya sound texture?"
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: null
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: [tools/language/find.py, tools/language/data/reference_profiles.tsv, "run a24559"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## In plain words
@@ -43,6 +43,7 @@ B. Nudge the elf people's proto-language preset towards liquids and nasals (l r 
 My lean: B as a light nudge on the proto preset only, if Daniel wants elves to read as elvish; otherwise A.
 
 ## Updates
+- 2026-11-09: Status needs-decision -> done. Merged (lane 4, 8580088f; main e4661a71): proto codas weighted by manner, nasals/liquids x2.6, stops x0.7 (inventory.CODA_MANNER). Sonorant share of syllable-final consonants 0.40 -> 0.47 on a24559 (literature median ~0.6).
 - 2026-11-08: Created from inbox draft draft-elvish-lects-not-tolkien-elvish.md (found by lang-find).
 - 2026-11-08: RULING (owner, Language Desk): leave the elves as their own (no nudge), but check that a Tolkien-like language could arise from the generator at all. Measurement running (elf proto draws scored with the finder's Sindarin/Quenya profiles).
 - 2026-11-08: MEASURED (read-only, 9,000 proto draws with the generator's own draw_inventory/proto_lexicon/proto_grammar, scored by tools/language/find.py; scratch scratchpad/elvish/). Elves draw the same protos as humans (voice_profiles same_as_human). Calibration: Welsh scores 2.09 vs Sindarin, Finnish 3.08 vs Quenya, Spanish 2.66 vs Quenya, so "under 2" is stricter than Tolkien's own models.

@@ -2,7 +2,7 @@
 id: PW-1569
 title: "Languages: 'many cases' label fires on 35% of living lects while real case counts run light (no 8+ systems; catalogue has 9 case functions)"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1538]
 refs: ["planet/language/grammar.py::RICH_CASE", "planet/language/grammar.py (typology case label, line ~1459)", "run a24559"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -30,5 +30,6 @@ Options: (1, slam dunk) label by count in WALS 49A bins, affixes only (clitic ca
 - [ ] owner: grow the case catalogue (2)?
 
 ## Updates
+- 2026-11-09: Status todo -> done. Merged (lane 4): 'many cases' = 6+ by WALS 49A count (grammar.CASE_MANY), typology.case_count; nine new cases incl. in/into/out of/on/onto/off series grown Finnish-style. 6+ cases 3.5% -> 16%, 8+ 0 -> 5% (WALS 32%/18%); the gap is PW.
 - 2026-11-08: Created from inbox draft draft-language-case-label-and-ceiling.md (found by language lane (owner question, 2026-11-08)).
 - 2026-11-08: RULING (owner, Language Desk q.case): fix the label by count and grow the case catalogue (local-case series etc.) so big systems can form. Queued after PW-1551.

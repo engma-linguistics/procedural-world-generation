@@ -2,7 +2,7 @@
 id: PW-1570
 title: "Languages: free function words run about one segment longer than real ones (you, this/that, and, in: median 4 segments)"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1537]
 refs: [planet/language/lexicon.py, "planet/language/grammar.py (free-word grams)", "run a24559"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -31,5 +31,6 @@ Options: (a) draw proto function words (FUNC, pronouns, deictics) at 1 syllable 
 - [ ] measure FUNC median segments and the list above; keep the FUNC-vs-noun gap near real-language values
 
 ## Updates
+- 2026-11-09: Status todo -> done. Merged (lane 4): function words and pronouns one short syllable 80% of the time, wear 0.1%/generation (floor 2 segments). Function words mean 4.11 -> 3.03 segments, pronouns median 3 -> 2; nouns and Leipzig-Jakarta core unchanged (checked per Daniel's note).
 - 2026-11-08: Created from inbox draft draft-language-function-words-long.md (found by language lane (owner question, 2026-11-08)).
 - 2026-11-08: RULING (owner, Language Desk q.func): (c) both: draw function words short and let frequent unstressed words wear down faster. Also check pronouns and the most basic words (the core list), not only FUNC. Queued after PW-1551.
