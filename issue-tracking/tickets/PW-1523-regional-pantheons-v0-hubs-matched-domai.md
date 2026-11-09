@@ -2,7 +2,7 @@
 id: PW-1523
 title: Regional pantheons v0 - hubs, matched domain gods, peoples' patrons, a Pantheons subtab
 type: story
-status: todo
+status: done
 parent: PW-1308
 milestone: null
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1308, PW-1489, PW-1477, PW-986]
 refs: [docs/review/culture/faiths/pantheon1.md, docs/review/culture/faiths/pantheon1/pantheons.py, "planet/lineages/gods.py::replay", "planet/lineages/gods.py::Pantheons.frame", "planet/lineages/gods.py::rule_table", "planet/lineages/gods.py::inputs", planet/lineages/attitudes.py, planet/lineages/settlements.py, "planet/server.py::gods_doc", "run 0141d1", "run 3e0eb4"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -40,4 +40,6 @@ Scope, read-out only (own random stream; majority faiths and conversions identic
       (today only "now") or contact edges over time as a stand-in.
 
 ## Updates
+- 2026-11-09: Status in-progress -> done. Lane 236 (538b2469): planet/lineages/pantheons.py read-out (own stream, faiths identical on/off), Religion -> Pantheons subtab, reach circles; 30 domains in 6 groups (moon, winter, earthquake, feast, healing, craft, kingship, law, wisdom, trade), each from a world or culture driver; gods/5. Living pantheons 0-5 on the D&D runs, 15 on 07c755 (over target, ticket taken in). The new domains change faith history on purpose (0141d1: 80% of cultures keep main's faith).
+- 2026-11-08: Status todo -> in-progress. Lane 236 launched 11-08 night on D68 1A+C 2B 3A 4A 5A and Daniel's 'more domains in general' (new domains tied to tectonics, climate, polities, tech tree, trade, crops).
 - 2026-11-08: Created from inbox draft draft-regional-pantheons-build-v0.md (found by scout220).

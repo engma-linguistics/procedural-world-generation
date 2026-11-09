@@ -437,6 +437,9 @@ GOD_DOMAIN_CONCEPT = {
     "storm": "STORM", "mountain": "MOUNTAIN", "fire": "FIRE", "forest": "FOREST", "desert": "DESERT", "herd": "HERD",
     "hunt": "HUNT", "harvest": "HARVEST", "fertility": "FERTILITY", "hearth": "HEARTH", "smithing": "SMITHING",
     "death": "DEATH", "war": "WAR", "ancestors": "ANCESTORS",
+    # (gods/5, PW-1523: the ten newer domains, on the nearest existing concepts until the language lane coins better ones)
+    "moon": "MOON", "winter": "WINTER", "earthquake": "EARTH (SOIL)", "feast": "FEAST", "healing": "MEDICINE",
+    "craft": "MAKE", "kingship": "KING", "law": "RULE", "wisdom": "KNOW", "trade": "TRADE OR BARTER",
 }
 
 # crop id -> (CLICS gloss, base concepts, freq_class)

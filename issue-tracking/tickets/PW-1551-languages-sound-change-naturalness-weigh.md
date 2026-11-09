@@ -2,7 +2,7 @@
 id: PW-1551
 title: "Languages: sound-change naturalness weights barely set how often a change fires (the draw renormalises over the changes that apply)"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: later
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: ["planet/language/rules.py::pick_rule", "planet/language/rules.py::PICK_REDRAWS", "planet/language/lect.py::Lect.step", "planet/language/lect.py::Lect.line_pref", "planet/language/lect.py::REFIRE_KYR", "planet/language/history.py::RATE_SCALE", planet/language/data/sound_changes.tsv, "docs/review/language/calibration.md#sound-lane-pass-3-2026-11-08-evening-coda-drift-and-tone-shares", "scratchpad sound3/codah.py (isolated-lect harness)"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -43,5 +43,6 @@ Options:
 Lean: A, as its own lane with a full pass, since it removes caps rather than adding them.
 
 ## Updates
+- 2026-11-09: Status todo -> done. Merged dffed688 (lane commit 7ba5019d): one draw with no redraw against the full pool; naturalness read as a log scale (rules.NATURAL_BASE 3); RATE_SCALE 5 -> 220; once-per-line caps removed except S099/S124 and the epenthesis/harmony/tone lifetime caps (each measured without). Final pass: naturalness-1 change on 25% of lines, naturalness-5 on 79%. Follow-ups PW-1578 (long-lived lines ~2x changes per generation), PW-1579 (old weight cuts now bite).
 - 2026-11-08: Created from inbox draft draft-language-rule-weights-saturate.md (found by lang-sound (sound lane pass 3)).
 - 2026-11-08: RULING (owner, Language Desk 11-08): option A, draw without redraws and recalibrate, removing caps; its own lane with a full pass.

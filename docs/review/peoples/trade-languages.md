@@ -206,6 +206,24 @@ mix = network-eras by source (rule / trade / held / pidgin).
   T§4: the ids also end when a network re-forms between eras with no shared trading town, which neither rule touches.
 - Constants are JUDGEMENT (no source gives numbers); RULE_OWN 0.1 gives the same lifetimes with rule at 32-60%.
 
+### Lane 233: one heir per network id (PW-1564)
+
+A network that splits between eras now hands its id (and `since_kyr`) to one successor only, the one sharing most trading towns with it;
+the other halves get new ids from that era but still take up its tongue (pick() sees the same forerunner). Kinds and tongues are unchanged,
+so the six runs were re-measured by replaying the ids over the server's ledger (GET /api/tongues per era, read-only; the server's doc
+matches lane 231's numbers, a24559 1.56, 11). Lifetime = eras one id lasts (mean, max); baseline = main on 2026-11-08 (lane 231's "after").
+
+| run | ids shown twice in one era (summed over 26 eras) | lifetime before | after | distinct ids before -> after |
+|---|---|---|---|---|
+| 0141d1 | 47 -> 0 | 1.68, 8 | 1.60, 7 | 182 -> 220 |
+| 3e0eb4 | 86 -> 0 | 1.96, 15 | 1.87, 15 | 294 -> 353 |
+| a24559 | 46 -> 0 | 1.56, 11 | 1.55, 10 | 214 -> 245 |
+| a2b637 | 62 -> 0 | 1.84, 13 | 1.76, 13 | 316 -> 366 |
+| 07c755 (Seven Meals, measured only) | 101 -> 0 | 1.93, 17 | 1.88, 17 | 277 -> 338 |
+| 3c1caf (Seven Meals, measured only) | 79 -> 0 | 1.76, 14 | 1.73, 14 | 245 -> 295 |
+
+Lifetimes fall by 0.01-0.09 eras: the doubled ids had counted a split half's eras as the same language's.
+
 ## Robustness
 
 The lane 77 stress suite (`tools/peoples_robust.py`) runs the peoples history on many trees and keeps only its numbers; it saves no run, so

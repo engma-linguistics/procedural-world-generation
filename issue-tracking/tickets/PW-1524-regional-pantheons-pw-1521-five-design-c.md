@@ -2,7 +2,7 @@
 id: PW-1524
 title: Regional pantheons (PW-1521) - five design choices before building
 type: task
-status: needs-decision
+status: done
 parent: PW-1308
 milestone: null
 subsystem: culture
@@ -65,5 +65,6 @@ fully, and those domains never lead. So the shared roster will be sea, sky, fire
 as they are.
 
 ## Updates
+- 2026-11-08: Status needs-decision -> done. Daniel ruled D68 11-08 (desk answers): 1 A+C (match, sometimes a new joint god), 2B, 3A, 4A, 5A, plus 'We need more domains in general I think.' Building in lane 236 (PW-1523), with more domains tied to world and culture drivers.
 - 2026-11-08: Desk D68 (lean 1A 2B 3A 4A 5A).
 - 2026-11-08: Created from inbox draft draft-regional-pantheons-design-choices.md (found by scout220).

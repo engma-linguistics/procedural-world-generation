@@ -149,3 +149,39 @@ def test_your_faiths_view_lists_results_and_saves_a_new_faith(tmp_path):
     new = saved[2]
     assert new["name"] == "Sky Father" and new["people"] == "human" and new["culture"] is None and abs(new["ago_kyr"] - 12.0) < 1e-9
     assert new["gods"] == [{"name": "Ana", "domains": ["sea"]}] and new["spreads"] is False
+
+
+_PAN = r"""
+const fs = require('fs');
+const mkEl = () => ({ innerHTML: '', style: {}, querySelectorAll: () => [], onclick: null });
+const els = {};
+global.document = { head: { insertAdjacentHTML() {} }, getElementById: (id) => els[id] || (els[id] = mkEl()) };
+global.location = { hash: '#religion/pantheons', search: '?run=r1' };
+global.history = { replaceState() {} };
+global.window = global; global.NumFmt = { kyr: String, ago: (k) => k + ' ago' };
+const b = (id, label, c) => ({ id, label, culture: c, individuation: 0.6, top: [['sea', 1]], how: 'founded', status: 'living' });
+const gods = { faiths: { list: [], rule: '' }, beings: [b(0, 'god of sea', 0), b(1, 'god of sea and storm', 1), b(2, 'god of the hunt', 0)],
+  summary: { living: 3, faiths: {} }, frames: [[0, 0]], cultures: {}, from_kyr: 10,
+  pantheons: { rule: 'the rule', constants: { PANTHEON_KM: 1200 }, events: [{ kyr: 0.5, kind: 'identified', text: 'culture 1 matched' }],
+    summary: { living: 1, ever: 1, land_share: 0.1, seats_living: 1, adopted_gods: 0, joint_gods: 0 },
+    list: [{ id: 0, name: 'the Luki pantheon', hub: 0, kind: 'city', founded_kyr: 1, ended_kyr: null, reach: [0, 1], under: [], peoples: ['elf', 'human'],
+      cells: 40, head: 0, patrons: { human: 2 }, track: [[0, 10, 20, 2]],
+      seats: [{ id: 0, domain: 'sea', ended_kyr: null, joint: null, members: [{ being: 0, culture: 0, people: 'human', how: 'founded' }, { being: 1, culture: 1, people: 'elf', how: 'founded' }] }] }] } };
+global.fetch = (u) => Promise.resolve({ ok: true, json: () => Promise.resolve(u.includes('/gods') ? gods : u.includes('/cultures') ? { cultures: [{ name: 'Luki' }, { name: 'Ash' }] } : {}) });
+(0, eval)(fs.readFileSync(process.argv[2], 'utf8'));
+const el = mkEl();
+ReligionTab.draw(el, { id: 'r1', lineages: [{ id: 'elf', name: 'Elves' }] });
+setTimeout(() => console.log(JSON.stringify({ main: els['rl-main'].innerHTML, bar: els['rl-bar'].innerHTML })), 50);
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+def test_pantheons_view_draws_a_roster(tmp_path):  # (PW-1523: seats down the side, peoples across, the patrons under)
+    import json
+    f = tmp_path / "p.js"
+    f.write_text(_PAN)
+    out = subprocess.run(["node", str(f), str(VIEWER / "religiontab.js")], capture_output=True, text=True, check=True)
+    r = json.loads(out.stdout.strip().splitlines()[-1])
+    assert "the Luki pantheon" in r["main"] and "god of sea and storm" in r["main"] and "Elves" in r["main"]
+    assert "its own god" in r["main"] and "god of the hunt" in r["main"] and "1 living pantheons" in r["bar"]
+    assert "Luki matched" in r["main"] or "Ash matched" in r["main"]

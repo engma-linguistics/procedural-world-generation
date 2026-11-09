@@ -5,6 +5,7 @@ from __future__ import annotations
 HOP_EVERY_KYR = 1.0  # long sea crossings are drawn about this often (with the time since)
 PIONEER_P = 1.0  # pressure a people's frontier carries into empty country, at most (its habitat there); 0: only its presence
 FOUNDER_KM = 400.0  # a split's founders hold the suitable country within this of the origin
+LAST_LAND_REACH = 20.0  # a split whose parent is gone founds, and a line left with no land holds out, within this x FOUNDER_KM of the last land (PW-1184, PW-1558)
 CONVERGE = 400  # passes at a deep (Myr) step: ranges fill what is connected
 FARM_KYR = 6.0  # agricultural lines speed up from then
 MIX_DROP = 0.6  # competition falls by this share by the present (from mixing_start), in full corridors

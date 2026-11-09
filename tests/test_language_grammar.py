@@ -524,7 +524,7 @@ def test_short_history_has_no_typology_clashes():
     from test_language_history import TinyRun
     from planet.language import checks as CK, history as H
     old = (H.RATE_SCALE, H.WORKERS)
-    H.RATE_SCALE, H.WORKERS = 8.0, 1
+    H.RATE_SCALE, H.WORKERS = 240.0, 1
     try:
         res = H.generate(None, run=TinyRun(), analyse=False)
     finally:
@@ -984,6 +984,7 @@ def test_rulings_species_leanings_deep_past_and_comparison_prior():
     protos start with a deep past of bound grams (PW-1544 b); the comparison aim follows WALS 121A (PW-1538 D)."""
     assert G.leanings(25.0, 1.0) == {}
     assert G.leanings(G.LONG_GEN_YR, 1.0) == G.LEAN_LONG_GEN
+    assert G.leanings(144.9, 1.0) == G.LEAN_LONG_GEN and G.deep_past_gens(144.9) == G.DEEP_PAST_GENS  # elves (ruling 11-08)
     assert G.leanings(G.SHORT_GEN_YR - 1, 1.0) == G.LEAN_SHORT_GEN
     assert G.leanings(25.0, G.WIDE_PITCH) == G.LEAN_WIDE_PITCH
     assert G.deep_past_gens(G.LONG_GEN_YR) == G.DEEP_PAST_GENS and G.deep_past_gens(25.0) == 0.0

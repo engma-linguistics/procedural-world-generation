@@ -536,7 +536,8 @@ def measure(h, res, pres) -> dict:
         kinds[e.get("kind")] = kinds.get(e.get("kind"), 0) + 1
     # (lane 97: per line, the share of its K each brake held off at its last step, history.counter)
     brakes = dict(getattr(h, "lost", None) or {})
-    return {"peoples": out, "n_peoples": len(peoples), "lost": lost, "brakes": brakes, "event_kinds": kinds, "runtime_s": round(getattr(h, "runtime", 0.0), 1), "blocs": blocs,
+    origins_all = {lid: o.get("why") for lid, o in h.origins.items()}  # (every line's founding reason, stems included: the fallback counts)
+    return {"peoples": out, "n_peoples": len(peoples), "origins_all": origins_all, "refuges": list(getattr(h, "_refuges", [])), "lost": lost, "brakes": brakes, "event_kinds": kinds, "runtime_s": round(getattr(h, "runtime", 0.0), 1), "blocs": blocs,
             "total_pop": float(tot), "megafauna": {k: v.get("count") if isinstance(v, dict) else None for k, v in (pres.get("megafauna") or {}).items()}}
 
 
@@ -547,6 +548,16 @@ def run_one(spec: dict) -> dict:
         def _record_origin(self, line, step, cell, why):
             self.__dict__.setdefault("_found_mkm2", {})[line.id] = round(float((self.p[self.idx[line.id]] >= 0.12).sum() * self.cell_mkm2), 3)
             return super()._record_origin(line, step, cell, why)
+
+        def _hold_out(self, l, k, K, step, held0=None):  # (PW-1558: a refuge of a line that held nothing, and how far from its last land)
+            empty = not (self.p[k] > 0).any()
+            last = held0 if held0 is not None and held0.any() else self._last_held.get(k)
+            super()._hold_out(l, k, K, step, held0)
+            if empty and (self.p[k] > 0).any():
+                from planet.lineages.gridops import dist_km
+                c = int(np.argmax(self.p[k]))
+                km = float(dist_km(self.grid, float(self.grid.lat[c]), float(self.grid.lon[c]))[last].min()) if last is not None and last.any() else None
+                self.__dict__.setdefault("_refuges", []).append({"line": l.id, "ago_kyr": round(step.ago, 3), "km": None if km is None else round(km)})
 
         def _end_parent(self, line, step, env, tags):
             before = {c: float((self.p[self.idx[c]] >= 0.12).sum()) for c in self._realm_kids(line)}

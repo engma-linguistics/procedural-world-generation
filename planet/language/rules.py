@@ -22,6 +22,7 @@ clusters ("pl, kl > pj, kj") becomes a staged rule, a step per pair (refused whe
 
 from __future__ import annotations
 
+import bisect
 import csv
 import unicodedata
 import math
@@ -819,50 +820,51 @@ def veto_probability(load: float) -> float:
     return 1.0 - math.exp(-FL_K * load)
 
 
-def _weighted_choice(rng, rules, weights):
-    tot = sum(weights)
-    if tot <= 0:
-        return None
-    x = rng.random() * tot
-    acc = 0.0
-    for r, wt in zip(rules, weights):
-        acc += wt
-        if x < acc:
-            return r
-    return rules[-1]
+PICK_STATS = {"picks": 0, "noop_draws": 0, "vetoed": 0}  # diagnostics, per process
 
 
-PICK_REDRAWS = 16  # (8 until the sound lane's line drift, 2026-11-08: strongly preferred no-op rows exhausted 8) draws pick_rule makes before giving up when the drawn rules would change no form
-PICK_STATS = {"picks": 0, "noop_draws": 0, "exhausted": 0, "vetoed": 0}  # diagnostics, per process
+def cumulative_weights(rules: Sequence[Rule]) -> list:
+    """Running sums of the rules' weights (pick_rule draws on them by bisection)."""
+    out, acc = [], 0.0
+    for r in rules:
+        acc += max(0.0, r.weight)
+        out.append(acc)
+    return out
 
 
 def pick_rule(rng, rules: Sequence[Rule], lexicon_forms: Sequence, inventory_segments: Iterable,
-              stress_index=None) -> Rule | None:
-    """Draw one rule by weight among those that apply to the inventory; a draw that would change none of
-    ``lexicon_forms`` (its environment never met) is set aside and redrawn, up to PICK_REDRAWS times (counted in
-    ``PICK_STATS["noop_draws"]``). Then veto it with probability ``1 - exp(-FL_K * functional_load)``. A vetoed vowel
-    merger offers a dispersion rule that moves the crowded vowel away instead (itself subject to the veto). Returns None
-    when nothing fires this time. ``rng`` is a ``numpy.random.Generator`` or ``random.Random`` (only ``.random()`` is
-    used)."""
+              stress_index=None, mass: float | None = None, cum: list | None = None) -> Rule | None:
+    """Draw one rule by weight, once (PW-1551, owner ruling 11-08: no redraw). A draw that lands on a rule whose input the
+    inventory lacks, or that would change none of ``lexicon_forms`` (its environment never met), fires nothing (counted
+    in ``PICK_STATS["noop_draws"]``), so each rule fires in proportion to its weight wherever it applies and the
+    catalogue's naturalness sets how often it fires. ``mass`` is the total weight the draw is made against when the
+    caller has set some rules aside (lect.Lect.rule_pool: rows waiting out their re-fire memory); a draw landing in that
+    set-aside mass also fires nothing, so a row being blocked does not make the others commoner. Then veto the rule with
+    probability ``1 - exp(-FL_K * functional_load)``. A vetoed vowel merger offers a dispersion rule that moves the crowded
+    vowel away instead (itself subject to the veto). Returns None when nothing fires this time. ``rng`` is a
+    ``numpy.random.Generator`` or ``random.Random`` (only ``.random()`` is used). ``cum``: the rules' cumulative weights
+    (cumulative_weights), when the caller draws many times from one pool (most draws fire nothing, so the draw itself is
+    the cost).
+
+    (Until PW-1551 a no-op draw was set aside and redrawn up to 16 times: the draw was then among the few rules that
+    applied now, and nearly every one fired as soon as its re-fire wait allowed, whatever its weight.)"""
     PICK_STATS["picks"] += 1
-    inv = list(inventory_segments)
-    cand = [r for r in rules if applies(r, inv)]
-    forms = [tuple(f) for f in lexicon_forms]
-    rule = outs = None
-    for _ in range(PICK_REDRAWS):
-        if not cand:
-            break
-        r = _weighted_choice(rng, cand, [x.weight for x in cand])
-        if r is None:
-            break
-        o = apply_all(r, forms, stress_index)
-        if not forms or any(a != b for a, b in zip(o, forms)):
-            rule, outs = r, o
-            break
+    if cum is None:
+        cum = cumulative_weights(rules)
+    tot = cum[-1] if cum else 0.0
+    x = rng.random() * max(tot, mass or 0.0)
+    if x >= tot:  # (the set-aside mass, or nothing to draw)
         PICK_STATS["noop_draws"] += 1
-        cand = [x for x in cand if x is not r]
-    if rule is None:
-        PICK_STATS["exhausted"] += 1
+        return None
+    rule = rules[min(bisect.bisect_right(cum, x), len(rules) - 1)]
+    inv = list(inventory_segments)
+    if rule is None or not applies(rule, inv):
+        PICK_STATS["noop_draws"] += 1
+        return None
+    forms = [tuple(f) for f in lexicon_forms]
+    outs = apply_all(rule, forms, stress_index)
+    if forms and all(a == b for a, b in zip(outs, forms)):
+        PICK_STATS["noop_draws"] += 1
         return None
     load = functional_load(rule, forms, stress_index, outputs=outs)
     if rng.random() >= veto_probability(load):
@@ -902,6 +904,13 @@ def dispersion_rule(rule: Rule, inventory_segments: Iterable) -> Rule | None:
             moved = replace(o, height=max(0, o.height - 1))
         if _tonekey(moved) == _tonekey(o):
             continue
+        if dh and moved.back in (0, 4) and moved.height in (1, 3, 5):  # (a front or back vowel stepping onto an in-between
+            # height, i̞ e̞ o̞ ɛ̞, goes on to the next full one, as a push chain moves e to i, not to a raised e (PW-1566:
+            # one-step pushes put i̞ in 10% and e̞ in 16% of living lects, PHOIBLE 0.2% and 2%); where that one is taken it
+            # would merge, so no push)
+            moved = replace(moved, height=min(6, max(0, moved.height + dh)))
+            if _tonekey(moved) in keys:
+                continue
         sets = tuple((a, getattr(moved, a)) for a in ("height", "back") if getattr(moved, a) != getattr(o, a))
         tgt = lit(_tonekey(o))
         return Rule(
@@ -1122,10 +1131,24 @@ def deduplicated(pool: Sequence[Rule]) -> list[Rule]:
     return out
 
 
+# PW-1551 (owner ruling 11-08, option A): the naturalness column (1 rare, needs special conditions .. 5 extremely common) is
+# an ordinal judgement; the draw reads it as a log scale, each step NATURAL_BASE times as often as the one below (weight
+# NATURAL_BASE ** (n - 3): 1 -> 0.11, 2 -> 0.33, 3 -> 1, 4 -> 3, 5 -> 9). Read linearly, 1 .. 5 spans only 5x, less than
+# one standard deviation of the line drift (lect.LINE_ROW_SIGMA x LINE_FAMILY_SIGMA, combined sigma 1.2, x3.4), and a row
+# whose input is there fires within a kyr or so either way, so rare changes ran on most lines. Isolated-lect harness
+# (calibration.md, PW-1551 lane): firings a line, naturalness 1 vs 5 rows, 0.55 vs 1.59 before (2.9x), 0.20 vs 2.08 now.
+NATURAL_BASE = 3.0
+
+
+def natural_weight(n: float) -> float:
+    """The draw weight of a row of naturalness ``n`` (NATURAL_BASE ** (n - 3); 0 for 0)."""
+    return NATURAL_BASE ** (float(n) - 3.0) if n > 0 else 0.0
+
+
 def catalogue(profile, include_tsv: bool = True, path: Path | str = DATA) -> list[Rule]:
     """DEMO_RULES plus the parsed tsv rules that the species can run (``needs`` within its articulators and heard axes),
-    deduplicated, with ``weight`` scaled by ``cost_factor``. Rules whose every output the species cannot make are
-    dropped."""
+    deduplicated, with ``weight`` the row's naturalness read as a log scale (natural_weight) and scaled by
+    ``cost_factor``. Rules whose every output the species cannot make are dropped."""
     caps = profile_capabilities(profile)
     pool = list(DEMO_RULES)
     if include_tsv and Path(path).exists():
@@ -1137,7 +1160,7 @@ def catalogue(profile, include_tsv: bool = True, path: Path | str = DATA) -> lis
         f = cost_factor(r, profile)
         if f <= 0:
             continue
-        out.append(replace(r, weight=r.weight * f) if f != 1.0 else r)
+        out.append(replace(r, weight=natural_weight(r.weight) * f))
     return out
 
 

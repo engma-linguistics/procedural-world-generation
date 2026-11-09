@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1184, PW-1152, PW-1181]
 refs: ["planet/lineages/history/dispersal.py::_hold_out", "planet/lineages/history/origins.py::_origin_split", "planet/lineages/history/origins.py::_take", "planet/lineages/history/model.py::_advance", tools/peoples_robust.py, docs/review/peoples/origins-spread.md, "lane 228 numbers: exports/lane228/ in the lane worktree (after/, base2/)", "world af2677 (time zoom f2201f)"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## In plain words
@@ -39,4 +39,5 @@ live in; or let the founding take leave the stem the cells outside the founders'
   not below main's median
 
 ## Updates
+- 2026-11-09: Lane 233 (12f38974) merged: refuge within LAST_LAND_REACH x FOUNDER_KM (8,000 km) of the last land, in a free country at least one founders' country in size; refuge distance median 9,795 -> 1,876-3,280 km; jitter brittle 9 -> 4; leonin swing 998 -> 84. Range bar (measured against the teleport) not met; asked on the desk (D71).
 - 2026-11-08: Created from inbox draft draft-stem-refuge-teleport-carries-peoples.md (found by lane228).

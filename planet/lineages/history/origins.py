@@ -355,8 +355,8 @@ class OriginsMixin:
 
     def _take(self, pk, blob, P):
         """A daughter takes the stem's land under its founding blob (D20). Where that is the last of it, the stem's land is kept as its
-        last land (lane 228, PW-1184): a sibling due at the same step then arises by it, not at the best habitat anywhere. (The stem's
-        own refuge, _hold_out, still searches the whole world when it holds nothing: see docs/review/peoples/origins-spread.md.)"""
+        last land (lane 228, PW-1184): a sibling due at the same step then arises by it, not at the best habitat anywhere, and the stem's
+        own refuge (_hold_out, PW-1558) holds out by it, in the nearest country with free room."""
         if not (P & ~blob).any():
             self._last_held[pk] = P.copy()
         self.p[pk][blob & P] = 0.0
@@ -429,7 +429,7 @@ class OriginsMixin:
         score = K * self._noise(line)
         if near is not None and near.any():
             g = self.grid
-            maxd = int(np.ceil(20 * FOUNDER_KM / self.cell_km))
+            maxd = int(np.ceil(PM.LAST_LAND_REACH * FOUNDER_KM / self.cell_km))
             d = graph_dist(near, maxd, g.nbr_off, g.nbr_idx)
             d = np.where(d < 0, maxd + 1, d) * self.cell_km
             ok = K > 2 * EST if (K > 2 * EST).any() else K > EST

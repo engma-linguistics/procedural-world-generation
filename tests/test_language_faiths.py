@@ -40,7 +40,7 @@ class FaithRun(TinyRun):
 @pytest.fixture(scope="module")
 def faith_result():
     old = (H.RATE_SCALE, H.SHIFT_K, H.WORKERS, FT.NAME_HALF_KYR, FT.LEARNED_RATE)
-    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 8.0, 0.0, 1
+    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 240.0, 0.0, 1
     FT.NAME_HALF_KYR, FT.LEARNED_RATE = 1e9, 0.05   # (no renaming: the cognates stay readable; learned loans often)
     try:
         res = H.generate(None, run=FaithRun())

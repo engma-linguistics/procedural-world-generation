@@ -18,7 +18,8 @@ from . import lexicon as LX
 from . import rules as RU
 from .inventory import fuse_vowels, hiatus_count, hiatus_in  # noqa: F401 (hiatus helpers, shared with repair)
 
-RATE_RULE = 0.1  # sound-change events per generation at rate 1 (calibrated by the horizon check; see calibration.md)
+RATE_RULE = 0.1  # sound-change draws per generation at rate 1, x history.RATE_SCALE (calibrated by the horizon check; see
+# calibration.md); since PW-1551 a draw fires only when it lands on a row that changes something (rules.pick_rule)
 RATE_SIGMA = 0.5  # lognormal sigma of a proto lect's rate (0.3 -> 0.5, owner ruling 11-08, PW-1539 E: some lines change
 #                  fast, a Hawaiian-type collapse; the review suggested ~0.6)
 RATE_REDRAW = 0.1  # lognormal sigma of the re-draw at budding
@@ -29,6 +30,12 @@ RATE_REDRAW = 0.1  # lognormal sigma of the re-draw at budding
 BURST_X = 2.0
 BURST_KYR = 1.0
 FOUNDER_SHARE = 0.25
+# Founder drift in inventory size (owner ruling 11-08, PW-1565 b): while a burst holds, the inventory-size anchor
+# (SIZE_ANCHOR, below) is loosened BURST_ANCHOR_X times, so a founder or shifted line can drift off its proto's size
+# (Polynesian-type: a small founder population losing contrasts, Trudgill 2004, 2011); when the burst ends the line
+# re-anchors on the size it has then (Lect.size_base, inherited), and holds that. Nothing pushes it down: which way it
+# drifts is the catalogue's and PHOIBLE's prior's business.
+BURST_ANCHOR_X = 3.0
 # Inventory size has no hard cap: rules are steered by PHOIBLE's size distribution (inventory.size_prior), so small and big
 # inventories stay possible but grow rare in PHOIBLE's proportions (Rotokas' 6 consonants, !Xóõ's 130). A rule that would take
 # the lect's consonant (or vowel-quality) count from n to n + d is drawn (prior(n + d) / prior(n)) ** SIZE_K times as often,
@@ -89,27 +96,34 @@ PHONO_MIN = 0.2    # ... when at least this share of the words it rewrites would
 PHONO_STATS = {"vetoed": 0}
 LOAD_SAMPLE = 120  # forms handed to rules.pick_rule for the functional-load estimate (the most frequent words first)
 REFIRE_KYR = 4.0  # a rule that fired in a lect is not drawn (nor adopted by wave) again for this long ... (3 until the
-# sound lane, 2026-11-08: a line re-ran ~half the catalogue it fired, so "the same law again" was most of a late history)
+# sound lane, 2026-11-08: a line re-ran ~half the catalogue it fired, so "the same law again" was most of a late history).
+# Kept after the single draw (PW-1551): without it the commonest rows re-fire as soon as their input comes back (harness:
+# apocope 16.5, h-loss 14.6 firings a line in 20 kyr, applied changes 14.4 -> 23.8 per lect-kyr); a law that just ran is
+# a live rule of the lect (phonology.py), not a new change
+REFIRE_GEN_YR = 28.0  # the wait is REFIRE_KYR x (generation / REFIRE_GEN_YR) from this generation length up (= history.SOFT_GEN_YR:
+# rates are per generation there, owner 11-03), so a 430-yr dragon line waits as many generations as a human one (PW-1551
+# lane: with the single draw a human line is bound by its inputs and its wait, a dragon line by its draws, and a wait in
+# years let long-lived lines re-fire their common rows 15x as often per generation: own changes per kyr, dragons 1.7 ->
+# 3.4 against humans 14.5 -> 15.2, failing "long generations change less")
 MAX_FIRES = 2  # ... and fires at most this many times in a lect's life, counting its ancestors' (daughters inherit the memory)
 HARMONY_MAX = 1  # harmony rules (family "harmony") at most once per lect line
 LIFETIME_CAP_FAMILIES = frozenset({"epenthesis", "harmony", "tone"})  # families under the lifetime cap (the rest only wait
-# REFIRE_KYR; tonogenesis uses up the coda/onset contrast that conditions it, so a line does not re-run it every 3 kyr)
-LIFETIME_CAP_IDS = frozenset({"S042"})  # ʔ-prothesis before initial vowels
-# One-off rows (sound lane, 2026-11-08): named laws that are the signature of one branch fire at most ONE_OFF_MAX times per
-# line (wave adoptions included): every chain shift (family "chain_shift": Grimm S177, High German S178, the Great Vowel
-# Shift S179 and its diphthongs' opening S181, Northern Cities S182, the demo raise_mid; not the dispersion pushes made on
-# the fly; history.RULE_WEIGHT also halves the family), and these named
-# changes: S097 the merger of the voiced and voiceless stops (Tocharian), S098 loss of breathy voice, S173 Verner, S093
-# Grassmann, S046 West Germanic gemination, S047 raddoppiamento, S063 First Slavic palatalization, S064 French a > ɛ, S128
-# Slavic liquid metathesis, S139 Old English breaking, S148 uvular r, S174 Romance diphthongization, S176 high-vowel
-# diphthongization, S185 click replacement. Before, Grimm's T > F fired in 83% of the lects of a24559 and D > T in 93%.
-# Sound lane pass 3 adds the two whole-class coda changes, S099 (every final consonant lost, Hawaiian-type) and S124
-# (paragoge: a vowel added after every final consonant): each re-firing undid the codas apocope had just made, so lines
-# flip-flopped to fully open syllables every few kyr (calibration.md, sound lane pass 3).
+# REFIRE_KYR; tonogenesis uses up the coda/onset contrast that conditions it, so a line does not re-run it every 3 kyr;
+# epenthesis and harmony feed themselves: PW-1551 harness without the cap, back harmony 4.2 and S123 4.5 firings a line)
+# (LIFETIME_CAP_IDS, S042 ʔ-prothesis, went with the single draw, PW-1551: at naturalness 1 x RULE_WEIGHT 0.15 it fires on
+# 0.12 of the harness lines uncapped, against 0.55 before)
+# One-off rows (sound lane pass 3, 2026-11-08): the two whole-class coda changes, S099 (every final consonant lost,
+# Hawaiian-type) and S124 (paragoge: a vowel added after every final consonant), fire at most ONE_OFF_MAX times per line
+# (wave adoptions included): each re-firing undid the codas apocope had just made, so lines flip-flopped to fully open
+# syllables every few kyr (calibration.md, sound lane pass 3). Kept after the single draw (PW-1551): without it, and even
+# with S099 at naturalness 2, the share of harness lines ending under 5% of words in a consonant rose 0.18 -> 0.22-0.26
+# (S099 then fires 2.2 times on the lines that have it). The other one-offs (every chain shift, and the named laws S097,
+# S098, S173, S093, S046, S047, S063, S064, S128, S139, S148, S174, S176, S185), added because under the old redraw
+# Grimm's law fired in 83% of lects, went with PW-1551: the naturalness weight now sets how many lines get them (Grimm
+# 0.34 of harness lines, S148 uvular r 0.06 against 0.53 before) and the ones that recur on a line (Verner, Slavic
+# palatalization, diphthongization) recur as the generic changes they are once their input comes back.
 ONE_OFF_MAX = 1
-ONE_OFF_FAMILIES = frozenset({"chain_shift"})
-ONE_OFF_IDS = frozenset({"S097", "S098", "S173", "S093", "S046", "S047", "S063", "S064", "S128", "S139", "S148", "S174",
-                         "S176", "S185", "S099", "S124"})
+ONE_OFF_IDS = frozenset({"S099", "S124"})
 # Line drift (sound lane, 2026-11-08; soundchange-gaps.md recommendation 1, Sapir's drift): each proto line draws a standing
 # preference per rule family (lognormal sigma LINE_FAMILY_SIGMA) and per row (LINE_ROW_SIGMA), keyed like hiatus_pref by
 # the line's proto (hiatus_key) so every daughter keeps it, and each budded lect a small jitter of its own (LINE_BUD_SIGMA,
@@ -119,9 +133,10 @@ ONE_OFF_IDS = frozenset({"S097", "S098", "S173", "S093", "S046", "S047", "S063",
 # sc/harness.py), before -> after (with REFIRE_KYR 3 -> 4 and the one-off cap): distinct rows fired per line 97.5 -> 87.5,
 # rows fired twice or more 49 -> 34, rows fired in >= 80% of lects 45 -> 19, fired-row overlap (Jaccard) of unrelated lects
 # 0.50 -> 0.40 with sisters 0.81 -> 0.84. Side effect: ~1/3 fewer changes fire after the split (106 -> 70 a lect), because
-# draws that land on a strongly preferred row that changes nothing are redrawn only rules.PICK_REDRAWS times; the horizon
-# (calibration.md) must be re-checked (raise history.RATE_SCALE, or PICK_REDRAWS 8 -> 16: 85 changes, distinct rows 97).
-# Saturation is mostly structural: ~200 drawn changes a line in 20 kyr against ~100-140 applicable rows.
+# draws that land on a strongly preferred row that changes nothing were redrawn only rules.PICK_REDRAWS times (gone since
+# PW-1551: one draw, no redraw). Saturation is mostly structural: ~200 drawn changes a line in 20 kyr against ~100-140
+# applicable rows, so a row whose input is there fires within a kyr or so; the naturalness weight (rules.NATURAL_BASE)
+# sets how often the rest fire.
 LINE_FAMILY_SIGMA = 0.7
 LINE_ROW_SIGMA = 1.0
 LINE_BUD_SIGMA = 0.2
@@ -400,6 +415,7 @@ class Lect:
     dead_rules: list = field(default_factory=list)  # [ref, born, died, why] of the latest rules that died
     sandhi_drawn: bool = False  # the line has drawn its tone sandhi (phonology.draw_sandhi), once
     burst_until: float | None = None  # kyr (ago) until which the rate runs at BURST_X (a shift or founder split; not inherited)
+    size_base: dict | None = None  # {"C", "V"} the size the line re-anchored on after a burst (inherited; None: the proto's)
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -415,7 +431,8 @@ class Lect:
                     grammar=gram, profile=self.profile, profile_key=self.profile_key, gen_yr=self.gen_yr,
                     base_segs=self.base_segs or self.consonants(), fired={k: list(v) for k, v in self.fired.items()},
                     glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id,
-                    live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn)
+                    live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn,
+                    size_base=dict(self.size_base) if self.size_base else None)
 
     def gaps(self) -> list:
         """The major places (GAP_PLACES) the lect has no consonant at though its speakers make the place cheaply
@@ -504,6 +521,29 @@ class Lect:
             return self.rate * BURST_X
         return self.rate
 
+    def in_burst(self, kyr: float | None = None) -> bool:
+        """A burst holds at `kyr` (default: the lect's latest step)."""
+        kyr = getattr(self, "_last_kyr", None) if kyr is None else kyr
+        return self.burst_until is not None and kyr is not None and kyr >= self.burst_until - 1e-9
+
+    def size_anchor(self) -> tuple:
+        """({"C", "V"} counts the size steer anchors on, its sigma): the re-anchored size after a burst, else the proto's
+        (base_segs); sigma SIZE_ANCHOR, x BURST_ANCHOR_X while a burst holds (PW-1565)."""
+        base = self.size_base or {k: sum(1 for u in self.base_segs if u.kind == k) for k in ("C", "V")}
+        return base, SIZE_ANCHOR * (BURST_ANCHOR_X if self.in_burst() else 1.0)
+
+    def end_burst(self, kyr: float) -> bool:
+        """At the first step after a burst: re-anchor the size steer on the inventory as it is now (PW-1565)."""
+        if self.burst_until is None or kyr >= self.burst_until - 1e-9 or self.inventory is None:
+            return False
+        self.size_base = {"C": len(self.inventory.consonants), "V": len({_unit(v) for v in self.inventory.vowels})}
+        self.burst_until = None
+        return True
+
+    def refire_kyr(self) -> float:
+        """The re-fire wait in kyr: REFIRE_KYR, counted in generations from REFIRE_GEN_YR up (rates are per generation)."""
+        return REFIRE_KYR * max(1.0, self.gen_yr / REFIRE_GEN_YR) if REFIRE_GEN_YR else REFIRE_KYR
+
     def may_fire(self, rule, kyr: float) -> bool:
         """The re-fire memory: a rule fired in the last REFIRE_KYR, or already MAX_FIRES times in the lect's line (HARMONY_MAX
         for harmony, ONE_OFF_MAX for a one-off row: one_off), is not drawn or adopted again."""
@@ -514,10 +554,9 @@ class Lect:
         # every other rule just waits REFIRE_KYR, so a fast-changing line does not use up the catalogue
         if one_off(rule) and len(h) >= ONE_OFF_MAX:
             return False
-        capped = rule.family in LIFETIME_CAP_FAMILIES or base_id(rule.id) in LIFETIME_CAP_IDS
-        if capped and len(h) >= (HARMONY_MAX if rule.family == "harmony" else MAX_FIRES):
+        if rule.family in LIFETIME_CAP_FAMILIES and len(h) >= (HARMONY_MAX if rule.family == "harmony" else MAX_FIRES):
             return False
-        return h[-1] - kyr >= REFIRE_KYR - 1e-9
+        return h[-1] - kyr >= self.refire_kyr() - 1e-9
 
     def consonants(self) -> frozenset:
         """The proto-like base for the inventory cap: the consonants, and the vowel qualities (tone set aside)."""
@@ -536,20 +575,21 @@ class Lect:
         hv = PR.human_voiced(self.profile)
         sb = stop_bin(stop_share(self.load_forms())) if hv and self.lexicon is not None else None
         hit = getattr(self, "_rw", None) if cache else None
-        if hit is not None and hit[0] is rules and hit[1] == segs and hit[3] == (counts, sb):
+        base, sigma = self.size_anchor()
+        key = (counts, sb, tuple(sorted(base.items())), sigma)
+        if hit is not None and hit[0] is rules and hit[1] == segs and hit[3] == key:
             return hit[2]
         units = frozenset(_unit(x) for x in segs)
-        base = {k: sum(1 for u in self.base_segs if u.kind == k) for k in ("C", "V")}
         cn = None if counts is None else {"C": counts[0], "V": counts[1]}
         out = []
         forms = self.load_forms() if hv else None
         for r in rules:
-            f = rule_factor(r, segs, units, hv, base, cn, sb, None if hv else self.profile)
+            f = rule_factor(r, segs, units, hv, base, cn, sb, None if hv else self.profile, sigma)
             if hv and f > 0:
                 f *= keep_part(r, segs, forms, stress_of(inv))
             out.append(replace(r, weight=r.weight * f) if f != 1.0 else r)
         if cache:
-            self._rw = (rules, segs, out, (counts, sb))
+            self._rw = (rules, segs, out, key)
         return out
 
     def cap_inventory(self, kyr: float) -> int:
@@ -817,20 +857,24 @@ class Lect:
         self._dirty = True
         return n
 
-    def rule_pool(self, rules, kyr: float, weights: dict | None = None) -> list:
+    def rule_pool(self, rules, kyr: float, weights: dict | None = None, with_mass: bool = False):
         """The rules this lect may draw now: the down-weighted catalogue (weighted_rules) with the driver's weight overrides
-        (history.RULE_WEIGHT) and the line's drift (line_pref), epenthesis re-pointed at the lect's epenthetic vowel, and the re-fire memory applied."""
+        (history.RULE_WEIGHT) and the line's drift (line_pref), epenthesis re-pointed at the lect's epenthetic vowel, and the
+        re-fire memory applied. ``with_mass``: also the total weight including the rows the re-fire memory sets aside (the
+        mass rules.pick_rule draws against, so a blocked row's share fires nothing rather than going to the others)."""
         weights = weights or {}
         out = []
+        mass = 0.0
         for r in self.weighted_rules(rules):
-            if not self.may_fire(r, kyr):
-                continue
             w = weight_override(weights, r)
             w = self.line_pref(r) * (1.0 if w is None else w)
+            mass += r.weight * w
+            if not self.may_fire(r, kyr):
+                continue
             r = replace(r, weight=r.weight * w)
             v = reduction_variant(epenthesis_variant(r, self.inventory), self.inventory)
             out.append(v)
-        return out
+        return (out, mass) if with_mass else out
 
     def step(self, rng, n_generations: float, kyr: float, ctx: dict) -> list:
         """Advance by n generations in one batch (one frame interval). ctx: contact_words {lect id: Lexicon}, niche, l2,
@@ -840,23 +884,30 @@ class Lect:
         self.isolation = float(ctx.get("isolation", self.isolation))
         self.generations += n_generations
         self._last_kyr = float(kyr)
+        self.end_burst(kyr)
         fired = []
         lam = n_generations * RATE_RULE * ctx.get("rate_scale", 1.0) * self.rate_now(kyr)
         k = int(rng.poisson(lam)) if lam > 0 else 0
         if k:
             rules = catalogue_for(self.profile, self.profile_key)
-            pool = self.rule_pool(rules, kyr, ctx.get("rule_weight"))
+            pool, mass = self.rule_pool(rules, kyr, ctx.get("rule_weight"), with_mass=True)
+            forms = segs = stress = None
+            cum = RU.cumulative_weights(pool)
             for _ in range(k):
-                r = RU.pick_rule(rng, pool, self.load_forms(), self.segments(), stress_of(self.inventory))
+                if forms is None:  # (read again only after a change: most draws now fire nothing)
+                    forms, segs, stress = self.load_forms(), self.segments(), stress_of(self.inventory)
+                r = RU.pick_rule(rng, pool, forms, segs, stress, mass=mass, cum=cum)
                 if r is None:
                     continue
                 if self.phonotactic_veto(r, rng):
                     continue
                 if not self.may_fire(r, kyr):  # (a dispersion push made on the fly that fired already)
                     continue
+                forms = None
                 if self.apply_rule(r, kyr) > 0:
                     fired.append(r)
-                    pool = [x for x in pool if base_id(x.id) != base_id(r.id)]
+                    pool = [x for x in pool if base_id(x.id) != base_id(r.id)]  # (its weight stays in mass: set aside)
+                    cum = RU.cumulative_weights(pool)
         self.gap_fill(rng, n_generations, kyr)
         self.cap_inventory(kyr)  # (also catches segments brought by wave adoptions applied before this step)
         self.sync()
@@ -883,9 +934,7 @@ class Lect:
 
 
 def one_off(rule) -> bool:
-    """A named one-off row (ONE_OFF_IDS, family "chain_shift"; not a dispersion push): at most ONE_OFF_MAX firings a line."""
-    if rule.family in ONE_OFF_FAMILIES and not rule.id.startswith("dispersion."):
-        return True
+    """A one-off row (ONE_OFF_IDS: the whole-class coda changes): at most ONE_OFF_MAX firings a line."""
     return base_id(rule.id) in ONE_OFF_IDS
 
 
@@ -969,14 +1018,14 @@ def human_cost(x) -> float:
     return _HCOST[x]
 
 
-def size_steer(measure: str, n: int, d: int, n0: int = 0) -> float:
+def size_steer(measure: str, n: int, d: int, n0: int = 0, sigma: float = SIZE_ANCHOR) -> float:
     """The size factor of a rule taking a count from n to n + d: PHOIBLE's prior ratio ** SIZE_K times the anchor ratio
-    around the proto count n0 (none when n0 is 0)."""
+    (lognormal of sigma `sigma`) around the line's count n0 (none when n0 is 0)."""
     from . import inventory as INV
     g = (INV.size_prior(measure, n + d) / INV.size_prior(measure, n)) ** SIZE_K
     if n0 > 0 and n + d > 0 and n > 0:
         a, b = math.log((n + d) / n0), math.log(n / n0)
-        g *= math.exp(-(a * a - b * b) / (2.0 * SIZE_ANCHOR ** 2))
+        g *= math.exp(-(a * a - b * b) / (2.0 * sigma ** 2))
     return g
 
 
@@ -1095,7 +1144,8 @@ def ease_factor(rule, lect) -> float:
             * keep_part(rule, frozenset(lect.segments()), forms, stress_of(lect.inventory)))
 
 
-def _size_part(rule, touched: list, units: frozenset, base: dict | None, counts: dict | None) -> float:
+def _size_part(rule, touched: list, units: frozenset, base: dict | None, counts: dict | None,
+               sigma: float = SIZE_ANCHOR) -> float:
     uncond = rule.target is not None and not rule.span and rule.env == RU.ANYWHERE and not rule.then
     outs = {_unit(y) for _x, o in touched for y in o}
     added = outs - units
@@ -1105,7 +1155,7 @@ def _size_part(rule, touched: list, units: frozenset, base: dict | None, counts:
         d = sum(1 for u in added if u.kind == kind) - sum(1 for u in removed if u.kind == kind)
         if d:
             n = counts[kind] if counts else sum(1 for u in units if u.kind == kind)
-            g *= size_steer(measure, n, d, (base or {}).get(kind, 0))
+            g *= size_steer(measure, n, d, (base or {}).get(kind, 0), sigma)
     return min(SIZE_CLAMP[1], max(SIZE_CLAMP[0], g)) if g != 1.0 else 1.0
 
 
@@ -1118,12 +1168,12 @@ def size_factor(rule, lect) -> float:
         return 1.0
     inv = lect.inventory
     counts = None if inv is None else {"C": len(inv.consonants), "V": len({_unit(v) for v in inv.vowels})}
-    base = {k: sum(1 for u in lect.base_segs if u.kind == k) for k in ("C", "V")}
-    return _size_part(rule, touched, frozenset(_unit(x) for x in segs), base, counts)
+    base, sigma = lect.size_anchor()
+    return _size_part(rule, touched, frozenset(_unit(x) for x in segs), base, counts, sigma)
 
 
 def rule_factor(rule, segs: frozenset, units: frozenset, human_voice: bool, base: dict | None = None,
-                counts: dict | None = None, sbin: int | None = None, profile=None) -> float:
+                counts: dict | None = None, sbin: int | None = None, profile=None, sigma: float = SIZE_ANCHOR) -> float:
     """The lect-specific weight multiplier of a catalogue rule: NEW_SEG_WEIGHT when it would bring in a segment the lect
     lacks; the ease drag (EASE_K: PHOIBLE commonness of what it makes vs what it rewrites for human voices, the species cost (`profile`) for others); and the size
     steer (size_steer: PHOIBLE's inventory-size distribution at the count the rule would leave, over the count now, and
@@ -1139,7 +1189,7 @@ def rule_factor(rule, segs: frozenset, units: frozenset, human_voice: bool, base
         f *= _ease(touched) * _stop_part(touched, sbin)
     elif profile is not None:
         f *= _ease(touched, _species_cost_fn(profile))
-    return f * _size_part(rule, touched, units, base, counts)
+    return f * _size_part(rule, touched, units, base, counts, sigma)
 
 
 _SPECIES_COST: dict = {}
