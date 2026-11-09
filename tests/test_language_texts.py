@@ -46,12 +46,28 @@ def test_fable_family_pick_and_missing_words():
 def test_recipe_uses_the_peoples_own_food():
     lj = _fable_lect()
     lj["lexicon"].update({c: {"ipa": f, "roman": f, "pos": p} for c, f, p in (
-        ("crop:millet", "jawa", "N"), ("TAKE", "ambil", "V"), ("GRIND", "giling", "V"), ("PUT", "taruh", "V"),
-        ("POT", "periuk", "N"), ("COOK", "masak", "V"), ("SALT", "garam", "N"), ("STONE", "batu", "N"))})
+        ("crop:rice", "padi", "N"), ("crop:chili", "cabai", "N"), ("TAKE", "ambil", "V"), ("GRIND", "giling", "V"),
+        ("PUT", "taruh", "V"), ("POT", "periuk", "N"), ("BOIL", "rebus", "V"), ("SALT", "garam", "N"),
+        ("STONE", "batu", "N"), ("BAKE", "bakar", "V"), ("POUND", "tumbuk", "V"), ("MORTAR", "lesung", "N"),
+        ("ASH", "abu", "N"), ("HONEY", "madu", "N"), ("MILK", "susu", "N"))})
     title, sents = TX.recipe(lj)
-    assert title == "How to cook millet" and len(sents) == 6
-    assert sents[0]["en"] == "Take some millet." and "millet" in " ".join(w[1] for w in sents[0]["w"])
+    assert title == "How to cook rice" and len(sents) >= 4   # (chili is a spice, never the meal)
+    assert sents[0]["en"] == "Take some rice." and "rice" in " ".join(w[1] for w in sents[0]["w"])
     assert all(s["roman"] for s in sents)
+    assert sents[1]["en"] in ("Grind it with a stone.", "Pound it in a mortar.")   # (a grain's ways, WAYS["grain"])
+    # (PW-1537 R3: lects of one people tell different recipes, not one template with the noun swapped)
+    told = set()
+    for i in range(12):
+        lj2 = dict(lj, id=f"d{i}")
+        told.add(tuple(s["en"] for s in TX.recipe(lj2)[1]))
+    assert len(told) >= 3, told
+    meat = copy.deepcopy(lj)
+    meat["lexicon"] = {c: w for c, w in meat["lexicon"].items() if not c.startswith("crop:")}
+    meat["lexicon"].update({c: {"ipa": f, "roman": f, "pos": p} for c, f, p in (
+        ("animal:caprine", "kambin", "N"), ("CUT", "potong", "V"), ("KNIFE", "pisau", "N"), ("ROAST OR FRY", "panggan", "V"),
+        ("FIRE", "api", "N"))})
+    title, sents = TX.recipe(meat)
+    assert title == "How to cook goat meat" and not any("Grind" in s["en"] for s in sents)
 
 
 def test_myth_tells_only_the_faith_data():
@@ -67,7 +83,7 @@ def test_myth_tells_only_the_faith_data():
     title, sents = TX.myth(lj, faith)
     en = [s["en"] for s in sents]
     assert title.startswith("What the gods hold") and en[0] == "Laut holds the sea."
-    assert "Laut gives us fish." in en and "We do not eat wild swine." in en and en[-1] == "Laut, hear us!"
+    assert "Laut gives us fish." in en and "We do not eat pigs." in en and en[-1].startswith("Laut, ") and en[-1].endswith(" us!")
     assert not any("eels" in e or "fire" in e for e in en)   # (no word for eels; the fire god has no name here)
     assert "Laut" in " ".join(w[1] for w in sents[0]["w"]) and all(s["roman"] for s in sents)
     assert TX.myth(lj, None) == ("", [])
@@ -109,6 +125,6 @@ def test_invocation_marks_the_object_once():
     faith = {"name": "f", "gods": [{"key": 7, "domain": "sea", "label": "g", "high": True,
                                     "names": [["d1", "laut", "Laut", "x", None]]}], "taboos": []}
     _t, sents = TX.myth(lj, faith)
-    inv = next(s for s in sents if s["en"].endswith("hear us!"))
+    inv = next(s for s in sents if s["en"].endswith(" us!"))
     gl = " ".join(w[1] for w in inv["w"])
     assert gl.count("1PL.OBJ") == 1, gl

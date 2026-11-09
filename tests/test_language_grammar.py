@@ -1033,3 +1033,16 @@ def test_proclitics_bind_more_slowly(monkeypatch):
             G.step(rng, g, 20, lexicon=lex(), kyr=10.0)
             hits[side] += any(x.function == "LOC" and x.level >= G.AFFIX for x in g.grams)
     assert hits["pre"] < 0.5 * hits["post"], hits
+
+
+def test_free_gram_wears_like_a_function_word():
+    """PW-1537 R1: a free or clitic gram longer than GRAM_WEAR_FLOOR loses its last syllable (or a one-syllable gram its
+    final consonant) by wear, never onto another gram's form and never to no vowel."""
+    _rng, g = _grammar(10, gender="none", numeral_classifiers="no")
+    a = G.Gram("DEF", tuple(from_ipa("untsu")), "N", "pre", G.FREE, ("THAT", "G001"), 5.0, id="DEF#1")
+    b = G.Gram("COP", tuple(from_ipa("bin")), "V", "pre", G.CLITIC, ("THAT", "G002"), 5.0, id="COP#1")
+    c = G.Gram("TOP", tuple(from_ipa("bi")), "N", "post", G.FREE, ("IF", "G003"), 5.0, id="TOP#1")
+    g.grams = [a, b, c]
+    assert G._wear_gram(g, a, None, 1.0) and word_ipa(a.form) == "un"
+    assert not G._wear_gram(g, b, None, 1.0) and word_ipa(b.form) == "bin"   # (bi is TOP's form)
+    assert not G._wear_gram(g, c, None, 1.0)   # (two segments: at the floor)

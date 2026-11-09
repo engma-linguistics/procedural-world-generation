@@ -961,3 +961,30 @@ def test_function_words_wear_down():
     assert got["WE"] == "noso" and got["I"] == "jo" and got["WATER"] == "akwala" and got["IN"] == "a"
     assert got["AND"] == "and"   # (worn, it would be THOU's an)
     assert lex.words["WE"].etym[-1].process == "sound_change:wear"
+
+
+def test_word_sounding_like_a_gram_is_renewed():
+    """PW-1537 R5: a word with the form of a live particle or clitic of another source is renewed as an accidental
+    homophone; the gram's own source word is not."""
+    lex = L.Lexicon("L")
+    for c, f in (("ONE", "u"), ("THAT", "ta"), ("WATER", "akwa")):
+        lex.words[c] = L.Word(c, tuple(from_ipa(f)), "N", 1)
+    lex.gram_forms = {tuple(from_ipa("u")): {"WHO"}, tuple(from_ipa("ta")): {"THAT"}}
+    boost = L._renewal_boost(lex)
+    assert boost.get("ONE") == L.HOMOPHONE_BOOST and "THAT" not in boost and "WATER" not in boost
+
+
+def test_frequent_pair_shift_is_damped(concepts):
+    """PW-1537 R5: 'mother' taking 'woman's word (7 CLICS3 families) is taken about (7/12)^2 of the time."""
+    got = 0
+    for s in range(200):
+        lex = L.Lexicon("L")
+        lex.words["WOMAN"] = L.Word("WOMAN", tuple(from_ipa("ka")), "N", L.concept_info("WOMAN").freq_class)
+        lex.words["MOTHER"] = L.Word("MOTHER", tuple(from_ipa("ma")), "N", L.concept_info("MOTHER").freq_class)
+        lex.gen = 1e4
+        w = L.shift_word(np.random.default_rng(s), lex, "MOTHER", 1.0, "L")
+        got += w is not None and word_ipa(w.form) == "ka"
+    if L.concept_info("MOTHER").freq_class <= L.FREQ_SHIFT_CLASS and L.concept_info("WOMAN").freq_class <= L.FREQ_SHIFT_CLASS:
+        assert 20 <= got <= 120, got
+    else:
+        assert got >= 120, got

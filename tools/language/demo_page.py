@@ -396,10 +396,11 @@ HOUSE_MARKS = (("‼", "harsh, growled voice (the Voice Quality Symbols' mark)")
                ("ʞ", "a beak or mandible clap (the withdrawn IPA letter, reused)"))
 
 
-def house_marks(l, shown: str = "") -> str:
-    """A key to the non-human sound marks this language's sounds use, or its section shows (an old root reconstructed
-    from a people with other mouths can carry one), or ''."""
-    inv = l.get("inventory") or {}
+def house_marks(l, shown: str = "", whole: bool = True) -> str:
+    """A key to the non-human sound marks this language's sounds use (`whole`), or its section shows (an old root
+    reconstructed from a people with other mouths can carry one), or ''. With `whole` False only the marks in `shown`
+    (a card that shows a few forms: PW-1537 R10, a key under forms that had none of the marks)."""
+    inv = (l.get("inventory") or {}) if whole else {}
     segs = "".join((inv.get("consonants") or []) + (inv.get("vowels") or [])) + shown
     used = [(m, t) for m, t in HOUSE_MARKS if m in segs]
     if not used:
@@ -437,7 +438,7 @@ def lang_section(doc, l, why_head, why, au: Audio, k: int) -> str:
     for i, (s, cid) in enumerate(zip(sents, sc)):
         form, gloss = " ".join(w[0] for w in s["w"]), " ".join(w[1] for w in s["w"])
         h.append(f"<div class='sent'><div class='en'><span class='muted'>({i + 1})</span> ‘{E(s['en'])}’ {play(cid)}</div>"
-                 f"{interlinear(form, gloss)}<div class='l2'><span class='ipa'>/{E(s['ipa'])}/</span> · "
+                 f"{interlinear(form, gloss)}<div class='l2'><span class='ipa' title='as said: allophones and joins between words'>[{E(s['ipa'])}]</span> · "
                  f"<i>{E(s.get('roman') or '')}</i>{' · rising intonation' if s.get('q') else ''}</div>"
                  + (f"<div class='note'>{E(s['note'])}</div>" if s.get("note") else "") + "</div>")
     if not sents:
@@ -803,7 +804,7 @@ def complexity_section(doc, k: int) -> str:
                         "<p class='note'>No gram came or went: the score moved through paradigm irregularity (sound change "
                         "made or levelled alternants).</p>")
                      + (f"<div class='scroll'><table class='t'><tr><th>gram</th><th>{since:g} kyr ago</th><th>now</th></tr>{ba}</table></div>"
-                        if ba else "") + house_marks(l, evh + ba) + "</div>")
+                        if ba else "") + house_marks(l, evh + ba, whole=False) + "</div>")
     h.append("</section>")
     return "".join(h)
 

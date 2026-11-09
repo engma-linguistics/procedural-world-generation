@@ -33,9 +33,16 @@ check today, but nasal vowels, labialized series and prenasals in those lines ca
 What misleads if never done: non-human lines accumulate whatever dear stand-ins a change brings in (as y and ɫ did:
 half of all kobold, dragonborn, aarakocra and kenku lects before the fix), and the next new row that makes one will
 show up as another overuse failure.
-- [ ] decide the rule: a row's needs should count only what its *output* requires (a change that removes a gesture needs
+- [x] decide the rule: a row's needs should count only what its *output* requires (a change that removes a gesture needs
   nothing for it), or keep per-row needs and audit the exits above by hand
+  *Done (lang-lane5):* `rules.exit_only`: a voice lacking lips, velum or teeth keeps a row whose change, over probe words,
+  never adds a gesture of the missing part (counted as its make-cost keys per segment, `rules.ARTICULATOR_KEYS`) and
+  takes one away somewhere, or never touches one (the j half of S125). Kept for lipless and velum-less voices: S067,
+  S072, S100, S196, S226, S241, S027, S028, S040, S141, S145, S084a/b, S111, nasal.nasal_loss and others (23-32 rows);
+  still barred: kʷ > p (S065/066, one gesture for another), p > ɸ, rounding and nasalization rows. Weight still by
+  `cost_factor` (an exit from a dear sound gets up to x5).
 - [ ] apply, re-run the species harness (scratchpad dark/sph.py: isolated protos per voice) and one full pass
+  (harness gone; lane 5's full pass measures labial, nasal, rounded-vowel shares in lipless lines: calibration.md)
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-missing-articulator-exits.md (found by lang-dark (dark l and y lane)).

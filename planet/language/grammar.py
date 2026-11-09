@@ -3015,6 +3015,8 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                     _degram(g, gr, kyr)
                     changed = True
                     continue
+            if gr.level <= CLITIC and GRAM_WEAR and rng.random() < _p(GRAM_WEAR * gr.info.freq, dn) and _wear_gram(g, gr, lexicon, kyr):
+                changed = True
             if gr.level < FUSED:
                 h = FUSE * gr.info.freq * min(1.0 + gr.age_gens / AGE_SCALE, AGE_CAP) * soc["fuse"] * FUSE_LEVEL[gr.level]
                 if gr.side == "pre" and gr.level >= CLITIC:
@@ -3065,6 +3067,33 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
         _check_lost(g, kyr)
         _processes(g, rng, kyr, dn, soc, lexicon, inv, kw.get("lect"))
     realise(g, lexicon)
+
+
+# Wear of free and clitic grams (PW-1537 R1, cold review: markers stay identical to, and as long as, their sources, 'that
+# COP' read ɡbiːnaf ɡbiːnaf). A gram is said far more often than its source word and unstressed, so it reduces on its own
+# (Bybee 2001, 2003; Heine & Kuteva 2002 'erosion'; Hopper 1991 'divergence': the source word goes its own way): the
+# same step and rate as the function words' wear (lexicon.WEAR, owner ruling 11-08 on PW-1570 "both"), x the gram's
+# frequency. Binding clips a gram to one syllable (clitic) or its first syllable (affix) as before; this is the wear in
+# between. A step that would leave no vowel, or give the gram the form of a word or of another gram, is not taken.
+GRAM_WEAR = 0.001
+GRAM_WEAR_FLOOR = 2
+
+
+def _wear_gram(g: Grammar, gr: Gram, lexicon, kyr: float) -> bool:
+    from planet.language import lexicon as LX   # noqa: PLC0415
+    form = tuple(gr.form)
+    if sum(1 for x in form if getattr(x, "kind", "C") != "T") <= GRAM_WEAR_FLOOR:
+        return False
+    f = LX._worn_down(form)
+    if f == form or not LX.has_nucleus(f):
+        return False
+    if any(o is not gr and o.live and tuple(o.form) == f for o in g.grams):
+        return False
+    if lexicon is not None and any(w.form == f for w in getattr(lexicon, "words", {}).values()):
+        return False
+    gr.history.append((kyr, f"worn {ipa(form)} > {ipa(f)}"))
+    gr.form = f
+    return True
 
 
 def analogy(g: Grammar, ex: Exemplar, key: tuple[str, ...], kyr: float) -> None:

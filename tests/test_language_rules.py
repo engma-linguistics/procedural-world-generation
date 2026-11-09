@@ -238,6 +238,19 @@ def tsv(rid):
     return next(r for r in R.load_tsv()[0] if r.id == rid)
 
 
+def test_missing_articulator_keeps_the_exits():
+    """PW-1545: a voice without lips or a velum keeps a row that only takes the gesture away (kʷ > k, m > ∅ / _#, v > b,
+    Ṽ > V) and loses a row that makes or trades one (kʷ > p, p > ɸ, V > Ṽ)."""
+    reptile = VoiceProfile(id="reptile", source="spec", articulators=HUMAN_ARTICULATORS - {"lips", "velum"})
+    cat = {r.id for r in R.catalogue(reptile)}
+    for rid in ("S067", "S100", "S196", "S141", "S226", "S241", "nasal.nasal_loss"):
+        assert rid in cat, rid
+    for rid in ("S065", "S001", "lenition.p_f", "nasal.vowel_nasalization", "S068", "S137"):
+        assert rid not in cat, rid
+    no_root = VoiceProfile(id="noroot", source="spec", articulators=HUMAN_ARTICULATORS - {"tongue_root"})
+    assert "S107" not in {r.id for r in R.catalogue(no_root)}   # (no make-cost keys: never excused)
+
+
 def test_hear_axes_do_not_stand_in_for_articulators():
     from planet.language.profiles import load_profiles, resolve_profile
 

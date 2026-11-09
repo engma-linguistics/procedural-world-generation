@@ -143,6 +143,13 @@ COLEX_BOOST = 4.0             # and x this for the rarer member of a deliberate 
 # often, and a contrast pair that does share a form is renewed like an accidental homophone (HOMOPHONE_BOOST), proto or
 # not. English you (< plural ye) for thou is the attested exception kept open.
 CONTRAST_DAMP = 0.1
+# Frequent pairs (PW-1537 R5, cold review: 'mother' = 'woman' in three of ten demo languages, 9% of a24559's living lects,
+# against 7 CLICS3 families for the edge). A shift that leaves two frequent words (frequency class <= FREQ_SHIFT_CLASS
+# both) on one form makes a homophone heard all the time, the lexical side of functional load (Wedel, Kaplan & Jackson
+# 2013): it is taken with chance (families / COLEX_MIN_FAMILIES) ** 2 below the proto-colexification floor, so the strong
+# edges (TREE ~ WOOD, DRINK ~ EAT) shift as before and a 7-family edge about a third as often. Attested pathways
+# (data/derivations.tsv 'shift' rows) are not damped.
+FREQ_SHIFT_CLASS = 2
 _PRONOUNS = ("I", "THOU", "HE OR SHE OR IT", "HE", "SHE", "IT", "WE", "WE (INCLUSIVE)", "YOU", "THEY")
 _NUMERALS = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "TWENTY", "HUNDRED", "THOUSAND",
              "ELEVEN", "TWELVE", "FIFTEEN", "THIRTY", "FORTY")
@@ -652,6 +659,9 @@ class Lexicon:
                                                               # "numeral" {label, system, quinary, recipes}, "colour"
                                                               # {groups}, "intensity" (last contact intensity)
     share_cache: dict = field(default_factory=dict, repr=False, compare=False)   # affix_share's cache
+    gram_forms: dict = field(default_factory=dict, repr=False, compare=False)    # form -> source concepts of the lect's
+                                                              # live free and clitic grams (set by Lect.step before each
+                                                              # lexicon step; `_renewal_boost`)
 
     def __contains__(self, concept: str) -> bool:
         return resolve(concept) in self.words
@@ -1812,6 +1822,11 @@ def shift_word(rng, lex: Lexicon, concept: str, kyr: float, lect_id: str | None 
     via = _pick(rng, nb)
     if contrast_pair(via, c.id) and rng.random() >= CONTRAST_DAMP:
         return None   # (a shift that would neutralize a contrast set: mostly not taken; the caller falls back)
+    fam = dict(nb).get(via, 0.0)
+    if (c.freq_class <= FREQ_SHIFT_CLASS and concept_info(via).freq_class <= FREQ_SHIFT_CLASS
+            and (via, c.id) not in shift_paths() and fam < COLEX_MIN_FAMILIES
+            and rng.random() >= (fam / COLEX_MIN_FAMILIES) ** 2):
+        return None   # (two frequent words on one form: see FREQ_SHIFT_CLASS)
     src = lex.words[via]
     root = _shift_root(lex, via)
     note = "" if root == via else f"via {via}"
@@ -2002,6 +2017,11 @@ def _renewal_boost(lex: Lexicon) -> dict[str, float]:
         for k in cs:
             if k != keep:
                 out[k] = b
+    if lex.gram_forms:   # (PW-1537 R5: a word sounding like a live particle or clitic of another source is renewed as
+        for k, w in lex.words.items():   # an accidental homophone; the gram, said far more often, keeps the form)
+            src = lex.gram_forms.get(w.form)
+            if src is not None and k not in src and w.pos != "NAME":
+                out[k] = max(out.get(k, 1.0), HOMOPHONE_BOOST)
     return out
 
 

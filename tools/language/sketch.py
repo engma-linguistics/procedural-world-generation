@@ -363,6 +363,8 @@ _KIND = {"good": "trade good", "kin": "kin term"}
 
 def cname(c: str) -> str:
     """A concept as a reader sees it: WATER -> water, crop:foxtail_millet -> foxtail millet (crop)."""
+    if c.startswith("name:god:"):
+        return "a god's name"   # (the internal id 'god:31' is no reader's word; the form beside it is the name)
     if ":" in c:
         kind, rest = c.split(":", 1)
         return f"{rest.replace('_', ' ')} ({_KIND.get(kind, kind)})"
@@ -1376,7 +1378,9 @@ def systems_section(l: dict) -> list[str]:
     col = sy.get("colour") or {}
     if col.get("categories"):
         cats = ["/".join(cname(c) for c in g) for g in col["categories"]]
-        out += ["### Colour terms", "", f"Berlin & Kay stage {col.get('stage')}: {len(cats)} basic colour words ("
+        stg = col.get("stage")
+        stg = (f"Berlin & Kay stage {stg}" if stg != "other" else "a partition outside the Berlin & Kay stages (after a loan)")
+        out += ["### Colour terms", "", f"{stg[0].upper() + stg[1:]}: {len(cats)} basic colour words ("
                 + "; ".join(cats) + ").", ""]
     av = sy.get("avoidance") or {}
     if av:
@@ -1583,7 +1587,11 @@ def myth_of(doc: Doc, l: dict) -> tuple[str, list]:
     F = next((f for _k, f in sorted(fa.items(), key=lambda t: int(t[0])) if l["id"] in (f.get("holders") or [])), None)
     if F is None:
         return "", []
-    return TX.myth(l, dict(F, name=faith_label(F["name"])))
+    name = faith_label(F["name"])
+    pe = people(l["people"])
+    if pe.split()[-1] not in name and pe not in name:   # (PW-1537 R6: the elves telling a hill-giant myth say whose it was)
+        name += f", which the {pe} people took over"
+    return TX.myth(l, dict(F, name=name))
 
 
 def faith_section(doc: Doc, l: dict) -> list[str]:
@@ -1597,7 +1605,7 @@ def faith_section(doc: Doc, l: dict) -> list[str]:
     F = fa[fid]
     out = ["## Gods and liturgy", "",
            f"**Faith.** {faith_label(F['name'])[0].upper() + faith_label(F['name'])[1:]}"
-           + (f", founded {kyr(F['founded_kyr'])} ago" if F.get("founded_kyr") is not None else "")
+           + (f", founded {kyr(F['founded_kyr'])}" if F.get("founded_kyr") is not None else "")
            + (f", held by {len(F['holders'])} languages" if len(F.get("holders") or []) > 1 else "") + ".", ""]
     rows = []
     for g in F.get("gods") or []:
@@ -1615,7 +1623,7 @@ def faith_section(doc: Doc, l: dict) -> list[str]:
     L = F.get("liturgy")
     if L:
         out += [f"**Liturgy.** The faith's rites are kept in the {people(L['people'])} speech of {doc.label(L['lect_from'], True)} "
-                f"as it was {kyr(L['kyr'])} ago, frozen since (as Latin, Sanskrit or Ge'ez are).", ""]
+                f"as it was {kyr(L['kyr'])}, frozen since (as Latin, Sanskrit or Ge'ez are).", ""]
         learned = ((l.get("systems") or {}).get("learned") or {})
         lex = l.get("lexicon") or {}
         out += ["| meaning | liturgy | today | learned form | |", "| --- | --- | --- | --- | --- |"]
@@ -1914,7 +1922,6 @@ def index_page(doc: Doc, picks, ranking, src: str) -> str:
         recorded.append("no root families (the word family is inferred from compound and derivation steps)")
     missing = ["diphthongs as units", "intonation", "morphophonology beyond the four exemplar nouns and verbs",
                "any sentence-level data (the phrases are assembled from word order and markers)",
-               "separate inclusive and exclusive 'we' forms, even where the typology says the language has the distinction",
                "case forms of pronouns",
                "speaker numbers beyond the deme's population estimate", "dialect-level variation inside a lect"]
     if not has_allo:

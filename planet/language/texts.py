@@ -15,6 +15,7 @@ domain, what the high god gives, which foods are forbidden because they belong t
 from __future__ import annotations
 
 import re
+import zlib
 
 from . import grammar as GR
 from . import sentences as SN
@@ -271,28 +272,122 @@ def pick_family(lects: dict, intel: dict | None = None, prefer: tuple = ()) -> t
 
 # ---- the recipe (grammar phase D: a connected text per demo language) -------------------------------------------------------
 
-#: the recipe's English, with {f} for the food (the people's own crop or herd animal where the lexicon has one)
-RECIPE_EN = ("Take some {f}.", "{prep} it with a {tool}.", "Put it in the pot.", "Cook it on the fire.",
-             "Eat it with salt.", "It is good.")
-#: food by kind: (what is done to it in step 2, the tool)
-_PREP = {"crop": ("GRIND", "STONE"), "animal": ("CUT", "KNIFE"), "plain": ("CUT", "KNIFE")}
+# PW-1537 R3 (cold review: all ten recipes ran "Take X. Grind it with a stone. Put it in the pot. Cook it at the fire. Eat
+# it with salt. It is good."): the recipe follows the food. Each kind of staple has its own ways (a grain is ground and
+# boiled into porridge or baked in the ashes, a pulse soaked then boiled, a tuber boiled and pounded in a mortar as fufu
+# is or roasted in the ashes, meat and fish roasted, smoked or boiled, sweet fruit pressed and left to ferment or dried);
+# among the ways a kind has, the lect picks by a fixed hash of its id (`_pick`), not by a draw, and a way whose first
+# words the lexicon lacks is passed over. The steps say only what the language has words for.
 
+#: crops by kind (planet.lineages.crop_defs ids; a crop missing here is cooked as a fruit)
+CROP_KIND = {**{c: "grain" for c in ("wheat", "foxtail_millet", "rice", "sorghum", "maize", "rye", "stonegrain",
+                                     "pseudograin")},
+             **{c: "pulse" for c in ("pulses", "beans", "soybean", "cowpea", "peanut")},
+             **{c: "tuber" for c in ("potato", "roots", "sweet_potato")},
+             **{c: "sweet" for c in ("vine", "date_palm", "cane", "sap_sugar")},
+             **{c: "green" for c in ("greens", "alliums", "squash", "nightshade_fruit")}}
+#: the staple's kind in order of preference (a people's main food first: grain, then roots, then pulses ...)
+KIND_ORDER = ("grain", "tuber", "pulse", "fruit", "green", "sweet")
+#: crops no one makes a meal of (spices, drink plants, flavourings): never the recipe's food
+NOT_A_MEAL = ("spice_tree", "chili", "tea", "cacao", "vanilla", "oil_seeds")
+
+
+def _o(fn, adps, noun, prep, art):
+    """An oblique: (function, adposition concepts, noun, English preposition, English article)."""
+    return (fn, adps, noun, prep, art)
+
+
+_IN, _AT = ("IN", "AT"), ("AT", "IN")
+_WITH = ("WITH",)
+#: the ways of each kind, each a tuple of steps (verb concept, English verb, oblique or None[, English after 'it'])
+WAYS = {
+    "grain": (
+        (("GRIND", "grind", _o("INS", _WITH, "STONE", "with", "a")), ("PUT", "put", _o("LOC", _IN, "POT", "in", "the")),
+         ("BOIL", "boil", _o("COM", _WITH, "WATER", "with", "")), ("EAT", "eat", _o("COM", _WITH, "MILK", "with", ""))),
+        (("POUND", "pound", _o("LOC", _IN, "MORTAR", "in", "a")), ("BAKE", "bake", _o("LOC", _IN, "ASH", "in", "the")),
+         ("EAT", "eat", _o("COM", _WITH, "HONEY", "with", ""))),
+        (("GRIND", "grind", _o("INS", _WITH, "STONE", "with", "a")), ("BAKE", "bake", _o("LOC", _AT, "FIRE", "on", "the")),
+         ("EAT", "eat", _o("COM", _WITH, "SALT", "with", ""))),
+    ),
+    "pulse": (
+        (("PUT", "put", _o("LOC", _IN, "WATER", "in", "")), ("BOIL", "boil", _o("LOC", _IN, "POT", "in", "the")),
+         ("EAT", "eat", _o("COM", _WITH, "SALT", "with", ""))),
+        (("ROAST OR FRY", "roast", _o("LOC", _AT, "FIRE", "on", "the")), ("GRIND", "grind", _o("INS", _WITH, "STONE", "with", "a")),
+         ("EAT", "eat", _o("COM", _WITH, "SALT", "with", ""))),
+    ),
+    "tuber": (
+        (("WASH", "wash", _o("LOC", _IN, "WATER", "in", "")), ("BOIL", "boil", _o("LOC", _IN, "POT", "in", "the")),
+         ("POUND", "pound", _o("LOC", _IN, "MORTAR", "in", "a")), ("EAT", "eat", None)),
+        (("CUT", "cut", _o("INS", _WITH, "KNIFE", "with", "a")), ("ROAST OR FRY", "roast", _o("LOC", _IN, "ASH", "in", "the")),
+         ("EAT", "eat", _o("COM", _WITH, "SALT", "with", ""))),
+    ),
+    "fruit": (
+        (("ROAST OR FRY", "roast", _o("LOC", _AT, "FIRE", "on", "the")), ("EAT", "eat", None)),
+        (("CUT", "cut", _o("INS", _WITH, "KNIFE", "with", "a")), ("PUT", "put", _o("LOC", _IN, "SUN", "in", "the")),
+         ("KEEP", "keep", None)),
+        (("BOIL", "boil", _o("LOC", _IN, "POT", "in", "the")), ("EAT", "eat", _o("COM", _WITH, "HONEY", "with", ""))),
+    ),
+    "green": (
+        (("CUT", "cut", _o("INS", _WITH, "KNIFE", "with", "a")), ("BOIL", "boil", _o("LOC", _IN, "POT", "in", "the")),
+         ("EAT", "eat", _o("COM", _WITH, "SALT", "with", ""))),
+        (("CUT", "cut", _o("INS", _WITH, "KNIFE", "with", "a")),
+         ("ROAST OR FRY", "fry", _o("COM", _WITH, "FAT (ORGANIC SUBSTANCE)", "with", "")), ("EAT", "eat", None)),
+    ),
+    "sweet": (
+        (("SQUEEZE", "press", _o("INS", _WITH, "STONE", "with", "a")), ("PUT", "put", _o("LOC", _IN, "POT", "in", "a")),
+         ("FERMENT", "leave", None, "to ferment"), ("DRINK", "drink", None)),
+        (("PUT", "put", _o("LOC", _IN, "SUN", "in", "the")), ("KEEP", "keep", None)),
+    ),
+    "meat": (
+        (("CUT", "cut", _o("INS", _WITH, "KNIFE", "with", "a")), ("ROAST OR FRY", "roast", _o("LOC", _AT, "FIRE", "on", "the")),
+         ("EAT", "eat", _o("COM", _WITH, "SALT", "with", ""))),
+        (("CUT", "cut", _o("INS", _WITH, "KNIFE", "with", "a")), ("SALT (FOOD)", "salt", None),
+         ("SMOKE (FOOD)", "smoke", _o("LOC", _AT, "FIRE", "over", "the")), ("KEEP", "keep", None)),
+        (("CUT", "cut", _o("INS", _WITH, "KNIFE", "with", "a")), ("BOIL", "boil", _o("LOC", _IN, "POT", "in", "the")),
+         ("EAT", "eat", None)),
+    ),
+}
+WAYS["fish"] = WAYS["meat"]
+
+#: the closing line, picked by the lect's hash: (quality concept, English)
+CLOSING = (("GOOD", "good"), ("TASTY", "tasty"), ("GOOD", "good"))
+CLOSING_SWEET = (("SWEET", "sweet"), ("GOOD", "good"), ("TASTY", "tasty"))   # (fruit and sweet crops)
+#: English for an oblique's noun where the bare concept name reads wrong ('in the ash')
+OBL_EN = {"ASH": "ashes"}
+#: the title's verb by kind
+TITLE_VERB = {"sweet": "keep", "fruit": "eat"}
 
 #: herd animals as English names their meat
 ANIMAL_EN = {"caprine": "goat meat", "cattle": "beef", "ovine": "mutton", "fowl": "fowl", "porcine": "pork",
              "horse": "horse meat", "camelid": "camel meat", "cervid": "venison"}
 
 
+def _pick(lj: dict, salt: str, n: int) -> int:
+    """A fixed choice among n for this lect (a hash of its id and `salt`): two lects pick differently, a rebuild the same."""
+    return zlib.crc32(f"{lj.get('id')}:{salt}".encode()) % max(n, 1)
+
+
+def food_kind(concept: str) -> str:
+    if concept.startswith("crop:"):
+        return CROP_KIND.get(concept[5:], "fruit")
+    return "fish" if concept == "FISH" else "meat"
+
+
 def staple(lj: dict) -> tuple[str, str] | None:
-    """(concept, kind) of the recipe's food: one of the people's own crops (the cuisine data the lexicon lane put in),
-    else one of their herd animals, else fish or meat. Picked by a fixed order (the first by name), not by taste."""
+    """(concept, kind) of the recipe's food: the people's own crop of the most staple kind (KIND_ORDER; spices and drink
+    plants never), else one of their herd animals, else fish or meat. Among several of one kind the lect picks by
+    `_pick`."""
     lex = lj.get("lexicon") or {}
-    for pre, kind in (("crop:", "crop"), ("animal:", "animal")):
-        cs = sorted(c for c in lex if c.startswith(pre) and lex[c].get("ipa"))
+    crops = sorted(c for c in lex if c.startswith("crop:") and lex[c].get("ipa") and c[5:] not in NOT_A_MEAL)
+    for kind in KIND_ORDER:
+        cs = [c for c in crops if food_kind(c) == kind]
         if cs:
-            return cs[0], kind
+            return cs[_pick(lj, "crop", len(cs))], kind
+    an = sorted(c for c in lex if c.startswith("animal:") and lex[c].get("ipa"))
+    if an:
+        return an[_pick(lj, "animal", len(an))], "meat"
     c = next((c for c in ("FISH", "FLESH OR MEAT", "EGG") if lex.get(c, {}).get("ipa")), None)
-    return (c, "plain") if c else None
+    return (c, food_kind(c)) if c else None
 
 
 def _it(v: SN.View, many: bool = False) -> SN.NP | None:
@@ -315,53 +410,78 @@ def _imp(v: SN.View, Vc: str, O: SN.NP | None, X: SN.NP | None = None) -> list:
     return SN.clause(v, None, vw, O, X, transitive=O is not None)
 
 
+def _usable(v: SN.View, way: tuple) -> bool:
+    """A way is told when the lexicon has the words of its first two steps (the rest are left out where missing)."""
+    return all(v.w(st[0]) and (st[2] is None or v.w(st[2][2])) for st in way[:2])
+
+
 def recipe(lj: dict) -> tuple[str, list[dict]]:
-    """(title, sentences): a short recipe in this lect, as commands; a step whose words are missing is left out."""
+    """(title, sentences): a short recipe in this lect, as commands; the way of cooking follows the food (WAYS), a step
+    whose words are missing is left out."""
     v = SN.View(lj)
     st = staple(lj)
     if st is None:
         return "", []
     food, kind = st
-    prep, tool = _PREP[kind]
-    fen = ANIMAL_EN.get(SN.en(food), SN.en(food) + " meat") if kind == "animal" else SN.en(food)
-    many = kind != "animal" and fen.endswith("s") and not fen.endswith("ss")   # (alliums, beans: 'them', not 'it')
+    fen = ANIMAL_EN.get(SN.en(food), SN.en(food) + " meat") if food.startswith("animal:") else SN.en(food)
+    many = kind not in ("meat", "fish") and fen.endswith("s") and not fen.endswith("ss")   # (alliums, beans: 'them')
     it_en, It_en = ("them", "They are") if many else ("it", "It is")
     out = []
 
-    def has(*cs):   # (View.w is "the first it has"; a step needs every word)
-        return all(v.w(c) for c in cs)
-
-    def add(i, words, en, notes=()):
-        out.append(SN.finish(v, f"recipe{i}", en, words, list(notes)))
-    if has("TAKE"):
-        add(1, _imp(v, "TAKE", SN.noun_phrase(v, food, SN._a(v))),
-            f"Take some {fen}.", ["a command: the bare verb or the imperative marker"])
-    if has(prep, tool):
-        x = SN.oblique(v, SN.noun_phrase(v, tool, SN._a(v)), "INS", ("WITH",))
-        if x:
-            add(2, _imp(v, prep, _it(v, many), x[0]), f"{SN.en(prep).capitalize()} {it_en} with a {SN.en(tool)}.",
-                [x[1]])
-    if has("PUT", "POT"):
-        loc = locative(v, "POT", True)
-        add(3, _imp(v, "PUT", _it(v, many), loc), f"Put {it_en} {_prep_en(loc, 'in')} the pot.")
-    if has("COOK", "FIRE"):
-        loc = locative(v, "FIRE", True, ("AT", "IN"))
-        add(4, _imp(v, "COOK", _it(v, many), loc), f"Cook {it_en} {_prep_en(loc, 'on')} the fire.")
-    if has("EAT", "SALT"):
-        x = SN.oblique(v, SN.noun_phrase(v, "SALT"), "COM", ("WITH",))
-        if x:
-            add(5, _imp(v, "EAT", _it(v, many), x[0]), f"Eat {it_en} with salt.", [x[1]])
-    if has("GOOD"):
+    def add(words, en, notes=()):
+        out.append(SN.finish(v, f"recipe{len(out) + 1}", en, words, list(notes)))
+    if v.w("TAKE"):
+        add(_imp(v, "TAKE", SN.noun_phrase(v, food, SN._a(v))), f"Take some {fen}.",
+            ["a command: the bare verb or the imperative marker"])
+    ways = [w for w in WAYS[kind] if _usable(v, w)]
+    for step in (ways[_pick(lj, "way", len(ways))] if ways else ()):
+        verb, ven, obl = step[0], step[1], step[2]
+        tail = f" {step[3]}" if len(step) > 3 else ""
+        if not v.w(verb):
+            continue
+        X, note, xen = None, [], ""
+        if obl is not None:
+            fn, adps, noun, prep, art = obl
+            if not v.w(noun):
+                continue
+            np_ = SN.noun_phrase(v, noun, SN._the(v) if art == "the" else SN._a(v) if art == "a" else None)
+            x = SN.oblique(v, np_, fn, adps)
+            if not x:
+                continue
+            X, note = x[0], [x[1]]
+            if fn == "LOC":
+                prep = _prep_en(X, prep)
+            xen = f" {prep} {art + ' ' if art else ''}{OBL_EN.get(noun, SN.en(noun))}"
+        add(_imp(v, verb, _it(v, many), X), f"{ven.capitalize()} {it_en}{tail}{xen}.", note)
+    cl = CLOSING_SWEET if kind in ("fruit", "sweet") else CLOSING
+    q, qen = cl[_pick(lj, "close", len(cl))]
+    if not v.w(q):
+        q, qen = "GOOD", "good"
+    if v.w(q):
         subj = SN.pronoun(v, "THEY" if many else "HE OR SHE OR IT")
         if subj is not None:
-            pred = SN.NP([SN.Word(v.ipa("GOOD"), "good", "GOOD")], 0)
-            words = (subj.words + SN.verb(v, "GOOD", "3PL" if many else "3SG")[0]) \
+            pred = SN.NP([SN.Word(v.ipa(q), SN.lgloss(q), q)], 0)
+            words = (subj.words + SN.verb(v, q, "3PL" if many else "3SG")[0]) \
                 if v.t.get("adjective_verb_like") == "yes" else subj.words + SN.cop_phrase(v, pred)
-            add(6, words, f"{It_en} good.")
-    return f"How to cook {fen}", out
+            add(words, f"{It_en} {qen}.")
+    return f"How to {TITLE_VERB.get(kind, 'cook')} {fen}", out
 
 
 # ---- the faith myth ---------------------------------------------------------------------------------------------------------
+
+#: (PW-1537 R3: five faiths' myths read alike) the verb of the gods' lines and the closing invocation, each picked by a
+#: hash of the faith's name, so a faith keeps one wording in all its languages and two faiths differ: (concept, English)
+MYTH_HOLD = (("HOLD", "holds"), ("KEEP", "keeps"), ("HOLD", "holds"))
+INVOCATION = (("HEAR", "hear"), ("SEE", "look upon"), ("HELP", "help"), ("LISTEN", "listen to"))
+
+
+def _plural_en(concept: str) -> str:
+    """The English plural of a taboo concept as its word says it (BIRD 'birds', PIG 'pigs'; crops and goods as named)."""
+    e = SN.en(concept)
+    if ":" in concept or e.endswith("s") or e.endswith("fish"):
+        return e
+    return e + ("es" if e.endswith(("sh", "ch", "x")) else "s")
+
 
 def _god(v: SN.View, g: dict, lid: str) -> tuple[str, str] | None:
     """(concept, book-spelled name) of a faith god in this lect, when its name is a word of the lect."""
@@ -403,12 +523,17 @@ def myth(lj: dict, faith: dict | None) -> tuple[str, list[dict]]:
     def god_np(x):
         return SN.noun_phrase(v, x[0], gloss=x[1])
 
+    fh = zlib.crc32(str([g.get("key") for g in faith.get("gods") or []] + [faith.get("founded_kyr")]).encode())   # (one
+    # faith, one wording: every holder says it the same way)
+    hv, hen = MYTH_HOLD[fh % len(MYTH_HOLD)]
+    if not v.w(hv):
+        hv, hen = "HOLD", "holds"
     for g, x in gods[:3]:
         dom = FA._domain_word(g["domain"])
         if dom == "GOD" or not v.w(dom):
             continue
-        add(tclause(v, god_np(x), "HOLD", SN.noun_phrase(v, dom, SN._the(v))),
-            f"{x[1]} holds the {SN.en(dom)}.", [f"{x[1]}: the god's name in this language"] if not out else [])
+        add(tclause(v, god_np(x), hv, SN.noun_phrase(v, dom, SN._the(v))),
+            f"{x[1]} {hen} the {SN.en(dom)}.", [f"{x[1]}: the god's name in this language"] if not out else [])
     g0, x0 = gods[0]
     gift = FA.GIFT.get(g0.get("domain") or "")
     if gift and _need(v, gift, "GIVE", "WE"):
@@ -426,16 +551,19 @@ def myth(lj: dict, faith: dict | None) -> tuple[str, list[dict]]:
         if v.g("NEG") is None and not v.w("NOT"):
             continue
         seen.add(con)
-        add(tclause(v, god_np(x), "HOLD", SN.noun_phrase(v, con, plural=True)), f"{x[1]} holds the {label}.")
+        ten = _plural_en(con)   # (PW-1537 R9: the English says what the words say, 'pigs', not the label 'wild swine')
+        add(tclause(v, god_np(x), hv, SN.noun_phrase(v, con, plural=True)), f"{x[1]} {hen} the {ten}.")
         add(tclause(v, pron(v, "WE"), "EAT", SN.noun_phrase(v, con, plural=True), neg=True, person="1PL"),
-            f"We do not eat {label}.", ["a food taboo: the animal belongs to the god's domain"])
+            f"We do not eat {ten}.", [f"a food taboo: the {label} belong to the god's domain"])
         if len(seen) >= 2:
             break
-    if _need(v, "HEAR", "WE"):
+    inv = [c for c in INVOCATION[(fh // 7) % len(INVOCATION):] + INVOCATION if _need(v, c[0], "WE")]
+    if inv:
+        iv, ien = inv[0]
         we = pron(v, "WE")
         if we is not None:
-            vw = SN.verb(v, "HEAR", mood="IMP")   # (clause() marks the object on the verb: once, not twice)
+            vw = SN.verb(v, iv, mood="IMP")   # (clause() marks the object on the verb: once, not twice)
             name = god_np(x0)
-            add(name.words + SN.clause(v, None, vw, we, transitive=True), f"{x0[1]}, hear us!",
+            add(name.words + SN.clause(v, None, vw, we, transitive=True), f"{x0[1]}, {ien} us!",
                 ["the invocation that ends the rites"])
     return f"What the gods hold ({faith['name']})", out
