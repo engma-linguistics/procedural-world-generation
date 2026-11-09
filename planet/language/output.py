@@ -340,7 +340,7 @@ def splits_json(h, lects: list, living_ids: set, et: "EtymTable") -> list:
         if len(set(br.values())) < 2:
             continue
         m = h.lects.get(mid)
-        x = lect_json(cp, full=True, et=et)
+        x = lect_json(cp, full=False, et=et)   # (the core lexicon, as a dead lect keeps: enough for the fable)
         x.update({"id": f"{mid}@{t:g}", "split_of": mid, "split_kyr": _r(t), "parent": m.parent if m else cp.parent,
                   "how": m.how if m else cp.how, "born_kyr": _r(m.born_kyr if m else cp.born_kyr), "died_kyr": _r(t),
                   "end": "split", "branches": br, "snapshots": []})
