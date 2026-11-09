@@ -28,6 +28,10 @@ class Ctx(BR.Ctx):
                 tb = server.taboos_doc(self.dir)
             except (SystemExit, FileNotFoundError, KeyError):
                 gd = tb = None
+            cu = self.cultures() if gd is not None and hasattr(self, "cultures") else None
+            if cu:  # (faith names in the names slot, PW-1436)
+                from . import nameslot as NS
+                NS.apply_faiths(gd, cu["cultures"])
             self._religion = (gd, tb)
         return self._religion
 

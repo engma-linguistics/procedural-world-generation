@@ -103,6 +103,7 @@
     <button id="run" class="primary">Run on world</button>
     <span id="status" class="muted"></span> <a id="globe" hidden>Open on the globe</a>
     <label class="muted" title="Optional: the year the present is, so dates read as years ('year 1400') and can be typed that way. Empty: '12,400 years ago'. Kept in this browser, per run."><nobr>present is year <input id="presentYear" type="number" step="1" style="width:70px" placeholder="(not set)"></nobr></label>
+    <label class="muted" title="Dates in a culture's own calendar (PW-1435): the counts the run's cultures started from a faith or state founded, a conquest, an incursion, a sack or a flood. Pick one and every date on this page (and the brief) reads 'year 212 of the Founding of ...'; 'years ago' is the default. Kept in this browser, per run."><nobr>dates in <select id="calPick" style="max-width:260px"><option value="">years ago</option></select></nobr></label>
   </div>
   <span style="flex:1"></span>
   <a href="languages.html" title="The languages of the peoples runs: families, a language over time, who understands whom, names, food words">Languages</a>
@@ -1062,6 +1063,11 @@ function drawCultures() {
     const faiths = sh ? `<br><span class="muted" title="${esc(gd.shares?.rule || '')}">faiths: ${sh.map(([f, v]) => `${f == null ? 'others' : esc(fl[f]?.name || 'faith ' + f)} ${Math.round(100 * v) || '<1'}%`).join(', ')}</span>` : '';
     return `<span title="${esc(tip)}">${esc(bs[0].label)}${bs.length > 1 ? ` <span class="muted">+${bs.length - 1}</span>` : ''}</span>${faiths}`;
   };
+  const calCell = (c) => {  // (PW-1435: the calendars it founded or took up, and the event behind each; a click reads dates in it)
+    const cd = result.calDoc, ids = cd?.by_culture?.[c.id] || [];
+    return ids.map((i) => cd.calendars[i]).map((k) => { const h = k.holders.find((x) => x.culture === c.id), own = k.culture === c.id;
+      return `<a href="#" class="calUse" data-cal="${k.id}" title="${esc(k.event)} (${esc(ago(k.epoch_kyr, null))}); ${own ? 'it started the count' : 'took it up'}${h ? ', kept ' + (h.to_kyr == null ? 'to this day' : 'until ' + ago(h.to_kyr, null)) : ''}; ${esc(k.fade)}. Click: read every date in it">${esc(k.name)}</a>${own ? ` <span class="muted">from ${esc(k.event)}</span>` : ' <span class="muted">(took it up)</span>'}`; }).join('<br>');
+  };
   const C = doc.cultures, L = Object.fromEntries((result.lineages || []).map((l) => [l.id, l]));
   const pname = (p) => esc((L[p]?.name || p).replace(/ \(.*$/, ''));
   const by = {};
@@ -1088,7 +1094,7 @@ function drawCultures() {
     for (const c of cs) if (keep.has(c.id)) { const k = c.parent != null && ids.has(c.parent) ? c.parent : 'root'; (kids[k] = kids[k] || []).push(c); }
     const st = cs.reduce((o, c) => { o[c.how] = (o[c.how] || 0) + 1; return o; }, {});
     h += `<h2>${pname(p)} <span class="muted" style="font-weight:normal;font-size:12px">${living(p)} living of ${cs.length}: ${st.founding || 0} founding, ${st.adapted || 0} adapted, ${st.apart || 0} apart; ${cs.filter((c) => c.end === 'merged').length} merged, ${cs.filter((c) => c.end === 'died out').length} died out</span></h2>
-      <table class="t"><tr><th>culture</th><th>how</th><th>life <span class="muted">(${ago(doc.from_kyr ?? 300)} → now)</span></th><th>Mkm²</th><th>country now</th><th>way of life now</th><th>skills</th><th>gods <span class="muted">(${esc(gd?.gods_mode || '…')})</span></th><th>what changed</th><th></th></tr>`;
+      <table class="t"><tr><th>culture</th><th>how</th><th>life <span class="muted">(${ago(doc.from_kyr ?? 300)} → now)</span></th><th>Mkm²</th><th>country now</th><th>way of life now</th><th>skills</th><th>gods <span class="muted">(${esc(gd?.gods_mode || '…')})</span></th><th title="The counts of years this culture keeps or kept (PW-1435): the event each starts from. Click one to read every date in it">calendars</th><th>what changed</th><th></th></tr>`;
     const row = (c, d) => {
       const par = c.parent != null ? C[c.parent] : null;
       const from = par && par.people !== c.people ? ` <span class="muted">(from ${esc(par.name)})</span>` : '';
@@ -1096,11 +1102,12 @@ function drawCultures() {
       const ended = c.end ? ` <span class="muted">${c.end === 'merged' && c.into != null ? 'merged into ' + esc(C[c.into].name) : esc(c.end)} ${ago(c.ended_kyr)}</span>` : '';
       const t = -(c.end ? c.ended_kyr : 0);
       const map = c.lat != null ? `<a href="index.html?run=${encodeURIComponent(result.id)}&layer=demes&demes_of=${encodeURIComponent(c.people)}&t=${t}&lat=${c.lat}&lon=${c.lon}" target="_blank" title="the globe at ${c.end ? ago(c.ended_kyr) : 'the present'}, showing the regional populations of the ${esc(c.people)} (whose demes: theirs, over or beside other peoples)">map</a>` : '';
-      return `<tr style="${c.end ? 'opacity:.6' : ''}"><td style="white-space:nowrap;padding-left:${4 + 14 * d}px">${d ? '<span class="muted">↳ </span>' : ''}<span class="sw" style="background:${c.color}"></span>${esc(c.name)}${from}${ended}</td>
+      return `<tr style="${c.end ? 'opacity:.6' : ''}"><td style="white-space:nowrap;padding-left:${4 + 14 * d}px">${d ? '<span class="muted">↳ </span>' : ''}<span class="sw" style="background:${c.color}"></span><span title="${c.name_from === 'language' ? 'its name in its own language (languages.json, PW-972); in plain words: ' + esc(c.gloss_name) : 'a gloss name (PW-1249): the run has no languages yet, or this culture has no living speakers'}">${esc(c.name)}</span>${c.name_from === 'language' ? ` <span class="muted">${esc(c.gloss_name)}</span>` : ''}${from}${ended}</td>
         <td><span style="color:${HOW_COL[c.how] || '#ccc'}">${esc(c.how)}</span></td><td style="white-space:nowrap">${bar(c)} <span class="muted">${fmt(c.born_kyr)}</span></td><td class="n">${c.area_mkm2}</td>
         <td class="muted">${esc(c.country_now || '')}</td><td>${w ? `${wayName(c, w[0])} <span class="muted">${Math.round(100 * w[1])}%</span>` : ''}</td>
         <td style="white-space:nowrap">${[skill(c.traits.sea_craft, 'sea craft'), skill(c.traits.open_country, 'herding lore')].filter(Boolean).join('<br>')}</td>
         <td style="max-width:200px">${godCell(c)}</td>
+        <td style="max-width:240px">${calCell(c)}</td>
         <td class="muted" style="max-width:340px">${esc(c.changes.join('; '))}</td><td>${map}</td></tr>`;
     };
     const walk = (k, d) => (kids[k] || []).sort((a, b) => b.born_kyr - a.born_kyr).forEach((c) => { h += row(c, d); walk(c.id, d + 1); });
@@ -1109,6 +1116,7 @@ function drawCultures() {
   }
   el.innerHTML = h;
   $('cuPeople').onchange = (e) => { cultUI.people = e.target.value; drawCultures(); };
+  for (const a of el.querySelectorAll('a.calUse')) a.onclick = (e) => { e.preventDefault(); useCalendar(a.dataset.cal); };
   $('cuAll').onchange = (e) => { cultUI.all = e.target.checked; drawCultures(); };
 }
 // ---- the religion tab (gods.py, taboos.py, faithmap.py; its four views: religiontab.js, PW-1358) ---------------------------------
@@ -1165,7 +1173,8 @@ async function loadBrief() {
   const id = result.id, q = briefUI.culture ? `culture=${briefUI.culture}` : `people=${encodeURIComponent(briefUI.people)}`;
   $('brText').textContent = 'Building the brief…';
   try {
-    const r = await fetch(`../api/brief?run=${encodeURIComponent(id)}&${q}&era=${Math.max(0, +$('brEra').value || 0)}`), j = await r.json();
+    const cal = NumFmt.calendar();  // (PW-1435: the brief's dates in the chosen calendar)
+    const r = await fetch(`../api/brief?run=${encodeURIComponent(id)}&${q}&era=${Math.max(0, +$('brEra').value || 0)}${cal ? '&calendar=' + cal.id : ''}`), j = await r.json();
     if (!r.ok) throw new Error(j.error || r.status);
     if (result?.id !== id) return;
     briefUI.md = j.markdown; briefUI.json = j.brief; briefUI.era = Math.max(0, +$('brEra').value || 0);
@@ -1381,6 +1390,7 @@ async function showResult(id) {
   const run = await (await fetch(`../runs/${id}/run.json`, { cache: 'no-store' })).json();
   NumFmt.run = id; $('presentYear').value = NumFmt.present() ?? '';
   result = { id, ...run.meta };  // (result.culturesDoc: fetched by the Cultures tab when first shown, /api/cultures)
+  loadCalendars(id);
   if (run.meta.demes?.file) try { result.demesDoc = await (await fetch(`../runs/${id}/${run.meta.demes.file}`, { cache: 'no-store' })).json(); } catch { result.demesDoc = null; }  // (PW-981)
   status(`run ${id}`);
   const g = $('globe');
@@ -1405,6 +1415,30 @@ $('favBtn').onclick = async () => {
 $('favOnly').onchange = () => listWorlds();
 $('presentYear').value = NumFmt.present() ?? '';  // "the present is year N" (numfmt.js, PW-1429): every date reads as a year; kept per run
 $('presentYear').onchange = () => { NumFmt.setPresent($('presentYear').value); redraw(); };
+// the calendars the run's cultures founded (GET /api/calendars: planet/lineages/calendars.py, PW-1435): the "dates in" picker
+async function loadCalendars(id) {
+  const sel = $('calPick');
+  sel.innerHTML = '<option value="">years ago</option>'; sel.disabled = true;
+  if (result?.kind !== 'peoples') return;
+  let doc = null;
+  try { const r = await fetch(`../api/calendars?run=${encodeURIComponent(id)}`, { cache: 'no-store' }); doc = await r.json(); } catch (e) { doc = { error: e.message }; }
+  if (result?.id !== id) return;
+  result.calDoc = doc && !doc.error ? doc : null;
+  const cs = result.calDoc?.calendars || [], cur = NumFmt.calendar();
+  if (!cs.length) { sel.title = doc?.error || 'no culture of this run started a count of its own'; if (cur) { NumFmt.setCalendar(null); redraw(); } return; }
+  const opt = (c) => `<option value="${c.id}" ${cur && cur.id === c.id ? 'selected' : ''} title="${esc(c.event)}; ${esc(c.fade)}">${esc(c.name)} (${esc(c.culture_name)}${c.alive ? '' : ', gone'})</option>`;
+  const live = cs.filter((c) => c.alive).sort((a, b) => b.holders.length - a.holders.length || b.epoch_kyr - a.epoch_kyr);
+  const gone = cs.filter((c) => !c.alive).sort((a, b) => a.epoch_kyr - b.epoch_kyr);
+  sel.innerHTML = `<option value="">years ago</option><optgroup label="in use now (${live.length})">${live.map(opt).join('')}</optgroup><optgroup label="gone (${gone.length})">${gone.map(opt).join('')}</optgroup>`;
+  sel.disabled = false;
+  if (cur && !cs.some((c) => c.id === cur.id && c.name === cur.name)) { NumFmt.setCalendar(null); redraw(); } else if (tab === 'cultures') redraw();
+}
+function useCalendar(cid) {
+  const c = (result?.calDoc?.calendars || []).find((x) => String(x.id) === String(cid)) || null;
+  NumFmt.setCalendar(c); $('calPick').value = c ? String(c.id) : '';
+  briefUI.md = ''; redraw();
+}
+$('calPick').onchange = (e) => useCalendar(e.target.value);
 // the world picker: finished worlds whose time zoom is still stored, newest first; ?world= / ?timezoom= name one not listed
 async function listWorlds() {
   const get = async (u) => { try { return await (await fetch(u, { cache: 'no-store' })).json(); } catch { return []; } };

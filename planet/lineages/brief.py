@@ -158,6 +158,13 @@ class Ctx:
                 self._cultures = CU.derive(self.dir)["doc"]
             else:
                 self._cultures = None
+            if self._cultures is not None:  # (the names slot, PW-1436: the languages' names, else the gloss names of PW-1249)
+                from . import nameslot as NS
+                lang = self._languages if self._languages is not False else None
+                if lang is None and (self.dir / "languages.json").exists():
+                    from ..language import output as LO
+                    lang = LO.load(self.dir / "languages.json", sidecars=False)
+                NS.apply_cultures(self._cultures, self.lines, lang, NS.deme_cells(self.dir))
         return self._cultures
 
     def languages(self) -> dict | None:

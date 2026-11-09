@@ -2,7 +2,7 @@
 id: PW-1249
 title: "Emergent cultures: placeholder names repeat ('temperate humans of the south of Gugiki (7)'); give each a gloss name"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v4
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-670, PW-972, PW-767]
 refs: [planet/lineages/cultures.py]
 created: 2026-10-31
-updated: 2026-11-03
+updated: 2026-11-09
 ---
 
 ## Description
@@ -24,5 +24,6 @@ of the Kesh river, 12 kyr"). Later, a gloss name from PW-972's endonym patterns.
 - [ ] no two living cultures share a name on cc22df or 622c00
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 255: cultures.document writes distinct gloss names (planet/lineages/nameslot.py::gloss_names): a repeated base name takes ', founded <date>', then its way of life, then western/central/eastern; no '(n)'. Also applied at read-out, so stored runs read distinct names: 0 repeats among living or all cultures on a24559 (305 living; the old base name was repeated 67 times), 1e97dd (269; 35), 07c755 (272; 26), 3c1caf (332; 33). 622c00 and cc22df are no longer stored. Tests: tests/test_nameslot_calendars.py.
 - 2026-11-03: Milestones 11-03: null -> v4: v4 must-have: gloss names as the fallback in the names slot until the language worktree's names land
 - 2026-10-31: Created from inbox draft draft-cultures-names.md (found by lane107).
