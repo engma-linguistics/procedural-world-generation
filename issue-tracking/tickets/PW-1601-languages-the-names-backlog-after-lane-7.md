@@ -1,8 +1,10 @@
 ---
+id: PW-1601
 title: "Languages: the names backlog after lane 7 (spelling depth, type-site scholars' names, E11/X6, name-words in the lexicon)"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: m
 impact: low
@@ -10,6 +12,8 @@ found_by: language lane 7 (PW-1546)
 blocked_by: []
 relates: [PW-1546]
 refs: [docs/review/language/names-spelling-gaps.md, "planet/language/names.py::_Pass.scholars", "planet/language/names.py::_Pass.rejections_and_words", "planet/language/romanize.py::Orthography"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -29,3 +33,6 @@ word). These pieces are left:
 **What misleads if never done:** spellings look like perfect phonetic transcriptions for every language, so no
 language reads as old or literary; and a P6 word appears on the names page but cannot be found in its own language's
 dictionary.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-names-backlog-rest.md (found by language lane 7 (PW-1546)).

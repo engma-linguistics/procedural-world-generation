@@ -1,8 +1,10 @@
 ---
+id: PW-1602
 title: "Languages: should book spellings borrow real-world looks (Polish sz cz, Czech š č, German sch) or invented ones?"
 type: task
 status: needs-decision
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: language lane 7 (PW-1546)
 blocked_by: []
 relates: [PW-1546]
 refs: ["planet/language/romanize.py::LETTER_STYLES", "planet/language/romanize.py::LETTER_W", "planet/language/romanize.py::LENGTH_W", "planet/language/romanize.py::Orthography._styled", "planet/language/history.py::History.make_proto", docs/review/language/names-spelling-gaps.md, docs/review/language/for-daniel.md]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -33,3 +37,6 @@ Options:
 
 Lean: A. Real orthographies are the best-tested answer to "how do I write ʃ in Latin letters", and the house style is
 still the commonest (30% of families). The weights (`LETTER_W`, `LENGTH_W`) are taste calls either way.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-spelling-traditions-look.md (found by language lane 7 (PW-1546)).

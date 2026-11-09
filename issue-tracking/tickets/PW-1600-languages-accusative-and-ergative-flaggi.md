@@ -1,8 +1,10 @@
 ---
+id: PW-1600
 title: "Languages: accusative and ergative flagging are drawn independently, as case was before lane 7"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: language lane 7 (PW-1586)
 blocked_by: []
 relates: [PW-1586]
 refs: ["planet/language/grammar.py::_draw_feature"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -26,3 +30,6 @@ raw values). Check `number` (GB043/GB044) for the same pattern while there.
 
 **What misleads if never done:** the share of split-ergative languages is set by an accident of the draw, not by the
 data, and the alignment check would agree only by luck.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-alignment-joint-draw.md (found by language lane 7 (PW-1586)).

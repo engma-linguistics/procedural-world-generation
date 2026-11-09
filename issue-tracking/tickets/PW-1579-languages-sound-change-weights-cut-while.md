@@ -2,7 +2,7 @@
 id: PW-1579
 title: "Languages: sound-change weights cut while weights did not bite now bite 3-9x harder; review them on the log scale"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -37,4 +37,5 @@ What I'd try: restore each row to its typological naturalness one at a time in t
 pass, and fix any overused segment it brings back with an exit row (as S240 did for ɳ) rather than a weight cut.
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 7 (b50a316c): restored S097 1→2, S068 1→2, S086 2→3, family:tone 0.3→0.5, S073 0.1→0.3; all moved the right way, none overshot; others kept with reasons in sound_changes.tsv and history.RULE_WEIGHT.
 - 2026-11-09: Created from inbox draft draft-language-saturation-era-weight-cuts.md (found by lang-weights (PW-1551 lane)).
