@@ -2,7 +2,7 @@
 id: PW-1600
 title: "Languages: accusative and ergative flagging are drawn independently, as case was before lane 7"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -32,4 +32,5 @@ raw values). Check `number` (GB043/GB044) for the same pattern while there.
 data, and the alignment check would agree only by luck.
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 8 (8fd43582): GB409 drawn given GB408, GB318 given GB044=0, GB043 given GB044, from Grambank raw joints (sibling pairs kept in grambank_correlations.tsv; _p1 given=). GB408/409 are nearly independent in Grambank (both 8%, P(erg|acc) 0.18 vs 0.22), so split aims moved 11.4 -> 10.2%. Number: GB318 had been read as 0.5 by _p1; 'none' aims 36 -> 30% (Grambank 30%), realised 31 -> 25%.
 - 2026-11-09: Created from inbox draft draft-language-alignment-joint-draw.md (found by language lane 7 (PW-1586)).

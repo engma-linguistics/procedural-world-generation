@@ -151,6 +151,15 @@ def test_fable_ancestor_is_the_state_at_the_split():
     assert {split["branches"][d["id"]] for d in ds} == {"line", "d2"}
     roots = {"m1:OLD@10": {"lect": "m1", "kyr": 10.0}, "m1:SAY@4": {"lect": "m1", "kyr": 4.0}}
     assert TX.fable_descent(anc, ds, roots, lects) == []
+    # (PW-1595: a word borrowed back after the split from a cousin that kept the line's old root the ancestor replaced)
+    d0 = ds[0]
+    d0["lexicon"]["SIT"]["roots"], d0["lexicon"]["SIT"]["etym_roots"] = ["d9:SIT@3"], ["m1:SIT@8"]
+    d0["lexicon"]["SIT"]["etym"] = 2
+    roots["m1:SIT@8"] = {"lect": "m1", "kyr": 8.0}
+    nodes = [[-1, 8.0, "m1", "coin", "riː", "sit"], [0, 6.0, "c1", "sound_change:S1", "ri", 0],
+             [1, 3.0, d0["id"], "borrow:c1", "ri", 0, "contact"]]
+    assert any("SIT" in x for x in TX.fable_descent(anc, ds, roots, lects))
+    assert TX.fable_descent(anc, ds, roots, lects, nodes) == []
     for d in ds:   # (a change of the line after the split, shared across it: the cold review's R2)
         d["lexicon"]["SAY"]["roots"] = ["m1:SAY@4"]
     assert any("shared by branches" in x for x in TX.fable_descent(anc, ds, roots, lects))

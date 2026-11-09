@@ -1242,3 +1242,38 @@ syllable, class concord on every word, CLICS derivation families, and gaps that 
 
 **Left for you:** one taste call: should the spelling looks borrow real ones (Polish sz, Czech š) or be invented
 (draft-language-spelling-traditions-look; lean: real ones, as built).
+
+## Lane 8 (lang-lane8, 2026-11-09): big case systems at birth, alignment and number draws, the fable check
+
+- **Big case systems (PW-1586).** In plain words: a proto-language whose grammar leans to a big case system (about 4 in
+  10) now starts life with those case endings already in place, as reconstructed proto-languages do (Proto-Indo-European
+  had about 8 cases). Before, every proto started with no endings at all and had to grow them over hundreds of
+  generations, so most living languages showed a half-built system of 2-5 cases. The number of cases at birth follows
+  the real spread of big systems (WALS: 6-7 cases most often, then 8-9 and 10+), and the endings come in the order
+  languages usually gain them (accusative or ergative first, then genitive, dative, locative, then the rest). Small and
+  no-case protos start as before. Same world, before -> after: 6+ cases 21% -> 29% of living languages (real
+  languages: 32%), 8+ 7% -> 14% (18%), 2-5 cases 42% -> 33% (20%), no case 37% -> 38% (47%). Young and old languages
+  now have big systems equally often (about 29-30%), instead of 18% for the young.
+- **Alignment and number (PW-1600).** In plain words: "does it mark the object (accusative)?" and "does it mark the
+  transitive subject (ergative)?" were two separate coin flips; now the second is drawn knowing the first, from
+  Grambank's real counts. It turns out the two really are nearly independent in Grambank, so this changed little
+  ('split' aims 11% -> 10%). The number draw had a real slip: the chance of a separate plural word was read as 50%
+  (its real rate is 18%) in one step and the real link to the plural ending was ignored; now languages with no plural
+  marking at all are 30% of aims, as in Grambank (it was 36%). Living languages with no plural: 31% -> 25%.
+- **The fable check (PW-1595).** In plain words: the warning was a false alarm. The ancestor shown had coined a new
+  word for 'sit'; one daughter later borrowed back an older word for 'sit' from a cousin language that had kept it,
+  as English took *skirt* from Norse beside its own *shirt*. The check saw an old family root missing from the
+  ancestor and complained; it now knows a borrowed word need not come from the ancestor. The demo builds with no fable
+  warning, on the stored world and on a fresh run.
+- **Checks (same world on the code before this lane):** all pass except the scholars' horizon, as before. Sisters
+  recognisable 0.535 -> 0.547 (pass mark 0.5); pronoun loans 0.075 -> 0.071 (cap 0.08); WOLD rho 0.396 -> 0.386 (at
+  least 0.3); consonant counts unchanged (median 21).
+
+**Defaults I chose**
+
+| what | default | where |
+| --- | --- | --- |
+| which protos are born with case endings | only those whose aim is a big ('many') case system | `grammar._case_at_birth` |
+| how many cases they are born with | 6-7: 37, 8-9: 23, 10-12: 24 (WALS 49A counts of the 6+ bins) | `grammar.CASE_BIRTH_BINS` |
+| the order the endings are taken in | accusative/ergative, genitive, dative and locative, ablative/allative/instrumental/comitative, inessive/superessive, the peripheral ones | `grammar.CASE_BIRTH_ORDER` |
+| Grambank pairs drawn one given the other | core/oblique case, accusative/ergative, plural/dual, bound/free plural | `build_reference_tables.GB_SIBLINGS` |

@@ -419,8 +419,8 @@ _FB_GB = {
     "GB068": 0.485, "GB070": 0.342, "GB072": 0.467, "GB083": 0.524, "GB084": 0.454, "GB086": 0.670, "GB089": 0.406,
     "GB090": 0.419, "GB093": 0.344, "GB094": 0.224, "GB107": 0.470, "GB117": 0.567, "GB118": 0.528, "GB120": 0.323,
     "GB147": 0.424, "GB155": 0.726, "GB158": 0.731, "GB187": 0.448, "GB250": 0.435, "GB252": 0.181, "GB257": 0.512,
-    "GB262": 0.147, "GB263": 0.392, "GB265": 0.320, "GB266": 0.318, "GB286": 0.177, "GB302": 0.105, "GB322": 0.15,
-    "GB323": 0.298, "GB326": 0.533, "GB333": 0.708, "GB335": 0.162, "GB408": 0.443, "GB409": 0.220, "GB522": 0.737,
+    "GB262": 0.147, "GB263": 0.392, "GB265": 0.320, "GB266": 0.318, "GB286": 0.177, "GB302": 0.105, "GB318": 0.181,
+    "GB322": 0.15, "GB323": 0.298, "GB326": 0.533, "GB333": 0.708, "GB335": 0.162, "GB408": 0.443, "GB409": 0.220, "GB522": 0.737,
 }
 
 
@@ -852,15 +852,20 @@ def _ctx(typ: dict, skip: str | None = None) -> dict[str, str]:
     return out
 
 
-def _p1(gb: str, ctx: dict[str, str], T: Tables, own: Iterable[str] = (), k: int = 3) -> float:
+def _p1(gb: str, ctx: dict[str, str], T: Tables, own: Iterable[str] = (), k: int = 3,
+        given: dict[str, str] | None = None) -> float:
     """P(gb = 1 | ctx): Grambank marginal times the lifts of the k strongest already-known correlates (naive Bayes over the
-    strongest few, so correlated parents are not counted many times)."""
+    strongest few, so correlated parents are not counted many times). `given` is the sibling Grambank value just drawn
+    for the same feature (case, alignment, number): its lift always counts, whatever its strength, and takes one of the k
+    places (PW-1600: GB408/GB409 are nearly independent, V 0.05, so ranked by strength the pair would never be read)."""
     p = T.gb_marg.get(gb, 0.5)
-    own = set(own) | {gb}
+    given = given or {}
+    own = set(own) | {gb} | set(given)
     cands = [(cv, f1, v1, lifts) for f1, v1, lifts, cv in T.gb_corr.get(gb, ()) if f1 not in own and ctx.get(f1) == v1]
     cands.sort(key=lambda x: -x[0])
+    forced = [(cv, f1, v1, lifts) for f1, v1, lifts, cv in T.gb_corr.get(gb, ()) if given.get(f1) == v1]
     w1, w0 = p, 1.0 - p
-    for _, _, _, lifts in cands[:k]:
+    for _, _, _, lifts in forced + cands[:max(k - len(forced), 0)]:
         w1 *= lifts.get("1", 1.0)
         w0 *= lifts.get("0", 1.0)
     tot = w1 + w0
@@ -910,15 +915,23 @@ def _draw_feature(rng: np.random.Generator, name: str, typ: Typology, T: Tables)
         # for both, 50% have neither, 4% core only, 15% oblique only, 31% both. Drawn independently they gave 'few' 43%
         # and 'many' 16% before context, so big case systems were half as common as WALS 49A's 6+ (32%))
         core = _bern(rng, p("GB070", ("GB072",)))
-        obl = _bern(rng, _p1("GB072", {**ctx, "GB070": "1" if core else "0"}, T))
+        obl = _bern(rng, _p1("GB072", ctx, T, given={"GB070": "1" if core else "0"}))
         return "many" if core and obl else ("few" if core or obl else "none")
     if name == "alignment":
-        acc, erg = _bern(rng, p("GB408", ("GB409",))), _bern(rng, p("GB409", ("GB408",)))
+        # (PW-1600: ergative flagging drawn given the accusative draw. Grambank, 1695 languages coded for both: neither
+        # 45%, accusative only 35%, ergative only 13%, both ('split') 8%; P(erg | acc) 0.18 against 0.22 without)
+        acc = _bern(rng, p("GB408", ("GB409",)))
+        erg = _bern(rng, _p1("GB409", ctx, T, given={"GB408": "1" if acc else "0"}))
         return "split" if acc and erg else "nom-acc" if acc else "erg-abs" if erg else "neutral"
     if name == "number":
-        if not _bern(rng, max(p("GB044", ("GB043",)), 0.0) + (1 - p("GB044", ("GB043",))) * T.gb_marg.get("GB318", 0.18)):
+        # (PW-1600: bound plural (GB044) first; a free plural word (GB318) given no bound plural, P 0.32 against its
+        # marginal 0.19, which drew 'none' 36% before against Grambank's 30%; dual (GB043) given the plural draw,
+        # P(dual | bound plural) 0.13, P(dual | none) 0.013)
+        bound = _bern(rng, p("GB044", ("GB043", "GB318")))
+        if not bound and not _bern(rng, _p1("GB318", ctx, T, own=("GB043",), given={"GB044": "0"})):
             return "none"
-        return "sg-du-pl" if _bern(rng, p("GB043", ("GB044",)) / max(T.gb_marg.get("GB044", 0.56), 0.1)) else "sg-pl"
+        dual = _bern(rng, _p1("GB043", ctx, T, own=("GB318",), given={"GB044": "1" if bound else "0"}))
+        return "sg-du-pl" if dual else "sg-pl"
     if name == "gender":
         own = ("GB051", "GB052", "GB053", "GB054")
         if _bern(rng, max(p("GB054", own), p("GB052", own))):
@@ -2219,10 +2232,63 @@ def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None =
     _redup(g, rng, kyr, 1.0, 0.0)
     _numerals(g, rng, lexicon, inv, kyr)
     _compare(g, rng, kyr, lexicon)
+    _case_at_birth(g, rng, inv, lexicon, kyr, T, idx)
     realise(g, lexicon)
     if deep_gens > 0:
         _deep_past(g, rng, inv, lexicon, kyr, deep_gens)
     return g
+
+
+#: big case systems at birth (PW-1586). A proto whose aim is 'case: many' starts with the bound case endings such a
+#: system has, as a reconstructed proto-language does (Proto-Indo-European 8 cases, Proto-Uralic 6-7, Proto-Dravidian
+#: 7-8): grown from nothing, a 6+ system takes hundreds of generations (lane 7: 'many' 18% of living lects under 200
+#: generations old, 27% over 600, a proto 'none' 59 times in 60), so most lects showed one half-built, in the 2-5 band
+#: (42% of lects against WALS 49A's 20%). The case count is drawn from WALS 49A's 6+ bins (6-7: 37, 8-9: 23, 10+: 24
+#: languages of 261), each cut to the cases the aims want; the markers are taken in CASE_BIRTH_ORDER (Blake 2001's case
+#: hierarchy: core, then genitive, dative, locative, then the other obliques), each from its attested source word
+#: when the lexicon has one, already an affix. 'few' and 'none' protos start as before: a small system forms in
+#: 100-200 generations, and seeding it would only fill the middle band.
+CASE_BIRTH_BINS = {(6, 7): 37, (8, 9): 23, (10, 12): 24}
+CASE_BIRTH_ORDER = (("ACC", "ERG"), ("GEN",), ("DAT", "LOC"), ("ABL", "ALL", "INS", "COM"), ("INE", "SUPE"),
+                    PERIPHERAL_CASE)
+
+
+def _case_at_birth(g: Grammar, rng, inv, lexicon, kyr: float, T: Tables, idx) -> None:
+    """Seed a 'case: many' proto's case endings (CASE_BIRTH_BINS, CASE_BIRTH_ORDER): bound, from their source words."""
+    a = aims(g)
+    if a.get("case") != "many":
+        return
+    bins = list(CASE_BIRTH_BINS)
+    w = np.array([CASE_BIRTH_BINS[b] for b in bins], dtype=float)
+    lo, hi = bins[int(rng.choice(len(bins), p=w / w.sum()))]
+    n = int(rng.integers(lo, hi + 1)) - 1   # (cases = bound markers + the unmarked one)
+    order: list[str] = []
+    for tier in CASE_BIRTH_ORDER:
+        fs = [f for f in tier if _wanted(f, a)]
+        order += [fs[i] for i in rng.permutation(len(fs))]
+    have = {x.function for x in g.grams if x.live}
+    T = dataclasses.replace(T, paths=[p for p in T.paths if not p.from_gram])   # (from words only: no reanalysis here)
+    n_ev = len(g.events)
+    made = []
+    for f in order:
+        if len(made) >= n:
+            break
+        if f in have:
+            continue
+        gr = _recruit(rng, g, lexicon, kyr, T, idx, inv, targets={f}) if lexicon is not None else None
+        if gr is None or gr.function != f:
+            form, _ = _recruited_form(_draw_morph(rng, inv), kyr)
+            gr = Gram(f, form, func_info(f).host, _side(f, a), FREE, ("?", "proto", "unknown"), kyr, [], id=g.new_id(f))
+            g.grams.append(gr)
+        gr.level = AFFIX
+        gr.side = _side(f, a)
+        gr.form = first_syllable(gr.form) or gr.form
+        gr.history = [(kyr, "proto"), (kyr, "already affix (an unrecorded past: the case system it was born with)")]
+        made.append(f)
+    del g.events[n_ev:]
+    if made:
+        g.events.append((kyr, f"born with {len(made) + 1} cases: {', '.join(made)} already bound"))
+        _sync_cells(g)
 
 
 def _deep_past(g: Grammar, rng, inv, lexicon, kyr: float, gens: float) -> None:

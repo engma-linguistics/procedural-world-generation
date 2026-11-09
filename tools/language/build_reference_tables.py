@@ -316,6 +316,9 @@ def grambank_data(raw: Path):
 
 
 GB_VMIN = 0.40
+#: pairs one grammar feature is drawn from (planet/language/grammar.py `_draw_feature`: case, alignment, number); each is
+#: kept whatever its Cramer's V, so the second of the pair is drawn given the first from the real joint count (PW-1600)
+GB_SIBLINGS = [("GB070", "GB072"), ("GB408", "GB409"), ("GB044", "GB043"), ("GB044", "GB318")]
 
 
 def build_grambank(raw: Path, out: Path) -> None:
@@ -374,7 +377,8 @@ def build_grambank(raw: Path, out: Path) -> None:
         pairs.append((cv, f1, f2, nn, tab, a, b))
     pairs.sort(key=lambda t: -t[0])
     VMIN = GB_VMIN
-    strong = [p for p in pairs if p[0] >= VMIN]
+    sib = {frozenset(x) for x in GB_SIBLINGS}
+    strong = [p for p in pairs if p[0] >= VMIN or frozenset((p[1], p[2])) in sib]
     short = {f: params[f]["Grambank_ID_desc"].split(" ", 1)[-1] for f in feats}
     crow = []
     for cv, f1, f2, nn, tab, a, b in strong:
@@ -394,7 +398,8 @@ def build_grambank(raw: Path, out: Path) -> None:
             "(word order, adpositions, possessor-noun, adjective-noun, articles, case, alignment, gender/noun class, "
             "classifiers, number, TAM, argument indexing / affixation / incorporation).",
             f"for every unordered pair coded ('?' excluded) in >= 100 common languages, Cramer's V of the cross-tab; pairs with "
-            f"V >= {VMIN} kept ({len(strong)} of {len(pairs)} pairs; rerun with --gb-vmin 0.3 for ~100 pairs). Each kept pair is written in both directions with the full "
+            f"V >= {VMIN} kept, plus the sibling pairs {' '.join('/'.join(x) for x in GB_SIBLINGS)} whatever their V "
+            f"(drawn jointly in grammar.py) ({len(strong)} of {len(pairs)} pairs; rerun with --gb-vmin 0.3 for ~100 pairs). Each kept pair is written in both directions with the full "
             "conditional distribution, so for a given (f1, v1) the p_cond over v2 sums to 1.",
             "columns: n_given = languages with f1=v1 (and f2 coded); count = those with f2=v2; p_cond = P(f2=v2 | f1=v1); "
             "p_marginal = P(f2=v2) on the same common languages; lift = p_cond / p_marginal.",
