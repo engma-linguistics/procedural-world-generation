@@ -2,7 +2,7 @@
 id: PW-1592
 title: "Languages: tell the fable's ancestor as it stood at the split (snapshot state), not a lect that later innovated"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -40,6 +40,7 @@ Lean: A.
   a root (`etym_roots`) with the ancestor's or is marked replaced or borrowed
 
 ## Updates
+- 2026-11-09: Status todo -> done. Merged 7f7dcf0a (lane 6): ancestor snapshot at its first split 2-9 kyr ago (history.SPLIT_KYR); fable told in it with daughters from both sides; new fable-ancestry check finds 0 problems on a24559.
 - 2026-11-09: Done (lang-lane6), option A. `History.splits` keeps a lect as it stood at its first bud 2-9 kyr ago
   (`history.SPLIT_KYR`); `output.splits_json` writes those with living lines on 2+ branches as the doc's `fable_splits`
   (core lexicon, as a dead lect keeps; 56 on a24559); `texts.pick_family` picks among them with daughters on 2+

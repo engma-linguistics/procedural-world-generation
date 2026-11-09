@@ -240,6 +240,7 @@ All other checks pass except the scholars' horizon (accepted).
 - [ ] a second cold read of the regenerated demo finds none of R1-R3 again
 
 ## Updates
+- 2026-11-09: Lane 6 merged 7f7dcf0a: R1 repeated morph, R3 marked partners follow, R4 gender needs 2+ markers, R5 contradictions, R7 sources per family and book spellings (ʘ now a letter, coordinator call), R8 numeral notes, R9 persistent repairs, R10 avoidance terms. Left: growled voice per syllable, class agreement display, CLICS derivations, marked sounds with no partner, insert/delete alternation guard. Note: full suite had one flaky failure (test_make peoples run, passes alone).
 - 2026-11-09: Lane 6 (lang-lane6) did R1 haplology, R2 (PW-1592), R5, R7 source lean, R8, R9 persistent repairs, and parts of R3, R4, R7 spelling, R10; 'Done (lang-lane6)' notes per item.
 - 2026-11-09: Lane 5 (1612db8f) did R1 gram wear, R3 recipes by food and myth wording per faith, R5 homophones and frequent-pair damping, R6/R9 myth notes, small slips; R2 fable ancestor -> PW-1592; faith data -> PW-1591. Remaining items listed in the ticket's lane-5 notes.
 - 2026-11-08: Created from inbox draft draft-language-cold-review.md (found by lang-design cold review (fresh agent, no lane history, 2026-11-08)).
