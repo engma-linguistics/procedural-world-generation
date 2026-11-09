@@ -1,6 +1,6 @@
 ---
 title: "Languages: fable ancestry check flags d754 SAY (deep root p314:NAME not in the split copy) on a24559"
-type: bug
+type: task
 status: todo
 parent: PW-1537
 subsystem: culture
