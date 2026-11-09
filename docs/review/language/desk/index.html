@@ -81,11 +81,12 @@ a { color: var(--accent); }
   <div class="status">
     <span class="label">Under way now (no action needed)</span>
     <ul>
-      <li><b>Your 11-08 late answers:</b> elves join the long-generation group (cut lowered to 140 years), and the sound-set anchor loosens during bursts. Both are going in with the sound-change lane (PW-1551), which is running now. Lingua franca status from the ledger is left to the trade-language lane (PW-1561). The six syrinx choices are kept. Stored a24559 languages are current as of 11-08 evening; demo and viewer updated.</li>
-      <li><b>Your rulings (11-08): done.</b> All in and checked (every check passes except the accepted horizon; full test suite green). Sound rules now have a long tail (15 kyr+ rules: 17 → 130). A shift carries the new speakers' accent into 60% of words, and empty places of articulation fill slowly (lipped languages with no labials: 3 → 1). Rates: I ran both versions. 0.5 alone failed two checks (a raised e in 11% of languages, too many borrowed pronouns), and 0.5 plus bursts passed, so the bursts stay. Borrowed sounds halved. Gender relabelled where nothing agrees. Comparatives now follow WALS (locational is now the most common). Adult-learner median 0.54 → 0.25. Long-lived languages with 0–1 verb endings: 93% → 1%. Three calls came out of it, below.</li>
-      <li><b>Next:</b> the sound-change draw (PW-1551), then your four tickets: cold review, polities, lipless voices, names.</li>
-      <li><b>Language finder: done, in main.</b> Ask me in plain words ("fantasy Hawaiian", "Japanese-ish strict CV", "most English") or run <span class="mono">uv run python tools/language/find.py runs/a24559/languages.json --like hawaiian</span>. Its 16 likeness profiles include Sindarin, Quenya, Klingon and Black Speech.</li>
-      <li>Merged to main 11-08; leftovers are tickets PW-1536 to PW-1555. Demo: <a href="https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs" target="_blank" rel="noopener">10 languages from a24559</a>; viewer <span class="mono">planet langserve a24559</span> on port 8790.</li>
+      <li><b>Nothing waits on you right now.</b> I'll only put a card here for a real trade-off (realism vs fantasy, scope or cost, or taste); clear-cut realism fixes I just do and report.</li>
+      <li><b>Sound-change draw (PW-1551): done, in main 11-09.</b> How common a change is in real languages now sets how often it fires: a rare change runs in about 25% of lines, a very common one in about 79% (before, nearly everything ran everywhere). Elves get the long-generation leanings (40% of elvish languages now carry 4-5 verb endings, none before). Founder groups can drift in sound-set size; on this world none collapses, and I didn't force one. Stored a24559 languages rebuilt; demo and viewer updated.</li>
+      <li><b>Running now:</b> your four 11-08 picks in one lane: sonorant-leaning syllable ends (PW-1557), case label by count plus local-case series (PW-1569), shorter grammatical words, pronouns and basic words (PW-1570), slower fusion before the word (PW-1571). After it: cold review, polities, lipless voices, names (PW-1537, 1549, 1545, 1546).</li>
+      <li><b>Checks on the stored run:</b> all pass except the accepted horizon and borrowed pronouns (8.9% against a cap of 8%, PW-1568).</li>
+      <li><b>Language finder:</b> ask me in plain words ("fantasy Hawaiian", "Japanese-ish strict CV", "most English") or run <span class="mono">uv run python tools/language/find.py runs/a24559/languages.json --like hawaiian</span>.</li>
+      <li>Demo: <a href="https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs" target="_blank" rel="noopener">10 languages from a24559</a> (eSpeak voice); viewer <span class="mono">planet langserve a24559</span> on port 8790.</li>
     </ul>
   </div>
 
@@ -93,24 +94,7 @@ a { color: var(--accent); }
 </main>
 
 <script>
-const SECTIONS = [
-  { title: "Elvish, measured", tk: "PW-1557", intro: "You asked whether a Tolkien-like language could show up at all. I drew 9,000 starting languages with the generator's own code and scored them with the finder. For scale: Welsh (Tolkien's model for Sindarin) scores 2.09 against Sindarin, and Finnish scores 3.08 against Quenya. So 'under 2' is a stricter bar than Tolkien's own models reach. Quenya-like: yes, rarely. About 1 in 63 starting languages is as Quenya-like as Finnish, and a run like a24559 has about a 1-in-9 chance of one among its elves. Sindarin-like: no. The best was 3.01, and nothing came under 3.", items: [
-    { id: "e.coda", tag: "PW-1557 · syllable ends", q: "Syllable-final consonants are drawn like syllable-initial ones",
-      body: "What blocks Sindarin is mostly texture. r, l and n are rare (r is 1.1% of sounds against Sindarin's 5.2%), and almost no word ends in n, r, l or θ. That is because a syllable's last consonant is drawn with the same weights as its first, where stops outweigh liquids about 2 to 1. Real languages favour sonorants (nasals, liquids) at the end of a syllable, and n, r and l are among the commonest consonants in running speech. Fixing that is a realism gain in its own right and opens the Sindarin corner as a side effect. Two smaller limits: a starting language never has fewer than a third of its words ending in a vowel (Sindarin: 8%), and θ/ð, ɬ, y and long vowels are each drawn on their own.",
-      opts: [["sonorant", "Weight syllable-final consonants toward sonorants (its own small lane)", true], ["leave", "Leave it: Sindarin-like stays out of reach"]] },
-  ]},
-  { title: "From your four questions", tk: "PW-1569 · 1570 · 1571", intro: "Measured on the 617 living languages of a24559 against WALS. Details in chat and on the tickets.", items: [
-    { id: "q.case", tag: "PW-1569 · case", q: "Case systems: the label says heavy, the counts say light",
-      body: "35% of languages are labelled 'many cases', because the label fires at 4 markers (clitics counted) or on any single 'rich' case. Counted properly, ours bunch at 2-4 cases (62% against WALS's 15%), and none reach 8 or more (WALS: 18%). The catalogue has only 9 case functions. I'll fix the label by count either way; the question is growing big systems.",
-      opts: [["grow", "Fix the label and add local-case series etc. so big systems can grow", true], ["label", "Just fix the label"]] },
-    { id: "q.func", tag: "PW-1570 · short words", q: "Little grammatical words run about one sound too long",
-      body: "Affixes are fine (median 2 sounds). Free grammatical words are not: 'you', 'this', 'that', 'and', 'in' and 'with' have a median of 4 sounds, where real languages mostly use 1-3. Frequent words are shorter than rare ones, as they should be, but function words start long and don't wear down enough.",
-      opts: [["both", "Draw them short and let frequent unstressed words wear down faster", true], ["draw", "Only draw them short"], ["leave", "Leave it"]] },
-    { id: "q.prefix", tag: "PW-1571 · prefixes", q: "No suffixing preference",
-      body: "Noun class and gender markers come out as prefixes more often than suffixes (sex-based gender: 171 prefixes against 115 suffixes), and so does subject agreement. Real languages prefer suffixes about 2.5 to 1, and gender is mostly suffixal. A known mechanism: markers before the word fuse more slowly than markers after it (Himmelmann 2014).",
-      opts: [["asym", "Markers before the word fuse more slowly", true], ["leave", "Leave it"]] },
-  ]}
-];
+const SECTIONS = [];  // 11-09: all answered (e.coda sonorant, q.case grow, q.func both, q.prefix asym); in the next lane
 
 const SHOW_PRIORITY = false;  // answered 11-08: PW-1537, 1549, 1545, 1546
 const PRIORITY = [
@@ -178,7 +162,7 @@ function meter() {
   const n = ids.filter(id => state[id]?.choice).length;
   const notes = Object.values(state).filter(v => v.note && v.note.trim()).length;
   $("#meter").innerHTML = db
-    ? `<b>${n}</b> of ${ids.length} calls answered · ${notes} notes · ${(state.priority?.picks || []).length} tickets picked`
+    ? (ids.length === 0 ? `No open calls` : `<b>${n}</b> of ${ids.length} calls answered`) + ` · ${notes} notes · ${(state.priority?.picks || []).length} tickets picked`
     : `${ids.length} calls, ${PRIORITY.length} tickets to rank`;
 }
 
