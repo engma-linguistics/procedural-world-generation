@@ -89,6 +89,13 @@ PRESSURE = 0.03        # per generation (x social recruit factor), for each cate
                        # shown value = aim in ~80% of lects for number/past/future/progressive (55-65% at 0), median 10 live
                        # functions (6 at 0)
 UNWANTED_LOSS = 0.002  # a bound gram (level >= 2) whose category the aims no longer mark erodes away, x social loss
+UNWANTED_CASE_FUSE = 0.1  # (PW-1605) clitic > affix hazard x this for a case clitic the aims do not want. Before, an
+                          # unwanted case clitic bound as fast as any and `_adopt` then turned the aim to 'few': a one-way
+                          # flow (none -> few in 25% of caseless protos over 700 generations, few -> none 5%), so the
+                          # caseless share drained with age (harness, 400 human protos x 2 seeds: none + borderline 60% at
+                          # 100 generations, 41% at 700, 32% at 1300; 2-5 cases 8 -> 25 -> 30%). A postposition in a language
+                          # whose syntax marks no case mostly stays a word or a clitic (Japanese and Korean particles, WALS
+                          # 49A's 'borderline'); at 0.1 the shares hold steady at WALS 49A's (6+ ~30, 2-5 ~20, none ~48%)
 DEGRAM = 1 / 50        # degrammaticalization (Norde 2009): a clitic or affix climbs one level back up at this share of
                        # the hazard of the step it undoes (English genitive -es > ='s, Irish -mid > muid 'we'); x
                        # DEGRAM_EDGE for phrase-edge markers (case, articles: host NP) and x DEGRAM_ORPHAN when the
@@ -251,6 +258,10 @@ GROUP_GLOSS = {
     "masculine": "men, and by default most other nouns", "feminine": "women and female beings",
     "animate": "living beings", "inanimate": "things",
 }
+#: the draw weight of each class group for the next class of a 'classes' or 'classifiers' system (`add_class`): persons
+#: first by far, then animals, plants and small things, the masses and places, abstracts and tools least (a taste default)
+CLASS_GROUP_W = {"person": 12.0, "animal": 2.0, "plant": 2.0, "small": 1.5, "liquid": 1.0, "people": 1.0, "place": 0.8,
+                 "abstract": 0.8, "manner": 0.5}
 #: lexical sources for classifiers that become class markers (first concept the lexicon has wins)
 CLASS_SOURCES = {
     "person": ("PERSON", "MAN"), "people": ("PEOPLE", "THEY", "ALL"), "manner": ("TONGUE", "MOUTH", "SAY"),
@@ -1697,6 +1708,11 @@ def _unrealised(g: Grammar, a: Typology) -> dict[str, set[str]]:
         if not feature_of(fn) or fn == "NEG" or not _wanted(fn, a):
             continue
         grp = pull_group(fn)
+        if grp == "case:GEN" and a.get("case") == "few":
+            # (PW-1605: under a 'few' aim the genitive is not a demand of its own; any case gram answers it. 'few' is
+            # Grambank's core case or oblique case but not both, and WALS 49A's 2-case languages outnumber 3 and 4 put
+            # together (23 against 18 of 261); pulling GEN beside LOC/DAT and the core case built 3-4 cases first)
+            grp = "case"
         if grp in answered:
             continue
         out.setdefault(grp, set()).add(fn)
@@ -2105,7 +2121,15 @@ def add_class(g: Grammar, rng: np.random.Generator, inv, lexicon, kyr: float, gr
         free = [x for x in pool if x not in cs.groups()]
         if not free:
             return None
-        group = free[0]
+        if cs.kind in ("classes", "classifiers"):
+            # (PW-1537 R4: the classes came in one fixed order, so every class language had 'languages, ways and tools'
+            # from 'tongue' and 'lands, qualities and abstractions' from 'name' among its first four. The first class is
+            # nearly always for persons (Corbett 1991: the semantic core of class systems is human / animate); the
+            # rest are drawn by CLASS_GROUP_W, so the menus differ from language to language)
+            w = np.array([CLASS_GROUP_W.get(x, 1.0) for x in free], dtype=float)
+            group = free[int(rng.choice(len(free), p=w / w.sum()))]
+        else:
+            group = free[0]
     if cs.by_group(group) is not None:
         return cs.by_group(group)
     k = 1 + max([int(x.function.split(":")[1]) for x in g.grams if x.function.startswith("CLASS:")] + [0])
@@ -3139,6 +3163,8 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                 h = FUSE * gr.info.freq * min(1.0 + gr.age_gens / AGE_SCALE, AGE_CAP) * soc["fuse"] * FUSE_LEVEL[gr.level]
                 if gr.side == "pre" and gr.level >= CLITIC:
                     h *= PRE_FUSE   # (a proclitic binds and fuses more slowly than an enclitic: the suffixing preference)
+                if gr.level == CLITIC and not wanted and gr.function in CASE_FNS:
+                    h *= UNWANTED_CASE_FUSE
                 if rng.random() < _p(h, dn):
                     gr.level += 1
                     gr.history.append((kyr, f"now {LEVELS[gr.level]}"))

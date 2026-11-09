@@ -1474,8 +1474,9 @@ def _serial(v: View, sid: str, S: str, v1: tuple, v2: tuple, en_text: str, note:
     """S V1 O1 V2 (O2) as one clause with one subject: VO lects put each object after its verb, OV lects before; only
     the first verb carries the subject's person marker."""
     s = noun_phrase(v, S, _the(v))
-    w1 = verb(v, v1[0], "3SG")[0]
+    w1, i1, _n1 = verb(v, v1[0], "3SG")
     w2 = verb(v, v2[0])[0]
+    _verb_concord(v, w1[i1], s)   # (PW-1537 R4: the verb that carries the subject's marker agrees in class, as in clause)
     n1 = noun_phrase(v, v1[1], _the(v)) if v1[1] else None
     n2 = noun_phrase(v, v2[1], _the(v)) if v2[1] else None
     e, a = flagging(v, s, n1 or n2)   # (the clause is transitive: the doer takes the ergative, an object the accusative)
@@ -1886,7 +1887,8 @@ def comparative(v: View, a: str, b: str, adj: str) -> tuple[list, str] | None:
     A, B = noun_phrase(v, a, _the(v)), noun_phrase(v, b, _the(v))
     pred = [Word(v.ipa(adj), lgloss(adj), adj)]
     if v.t.get("adjective_verb_like") == "yes":
-        pw = verb(v, adj, "3SG")[0]
+        pw, pi, _n = verb(v, adj, "3SG")
+        _verb_concord(v, pw[pi], A)   # (PW-1537 R4: a verb-like adjective agrees with its subject's class too)
     else:
         pw = cop_phrase(v, NP(pred, 0))
     if kind == "exceed":
@@ -1920,8 +1922,11 @@ def comparative(v: View, a: str, b: str, adj: str) -> tuple[list, str] | None:
     opp = {"BIG": "SMALL", "SMALL": "BIG", "OLD": "NEW", "NEW": "OLD", "LONG": "SHORT", "GOOD": "BAD"}.get(adj)
     if not opp or not v.w(opp):
         return None
-    pw2 = verb(v, opp, "3SG")[0] if v.t.get("adjective_verb_like") == "yes" else \
-        cop_phrase(v, NP([Word(v.ipa(opp), lgloss(opp), opp)], 0))
+    if v.t.get("adjective_verb_like") == "yes":
+        pw2, pi2, _n = verb(v, opp, "3SG")
+        _verb_concord(v, pw2[pi2], B)
+    else:
+        pw2 = cop_phrase(v, NP([Word(v.ipa(opp), lgloss(opp), opp)], 0))
     return A.words + pw + B.words + pw2, f"a conjoined comparison: 'A is {en(adj)}, B is {en(opp)}' (no comparative " \
                                          "construction, as in many languages of New Guinea and Australia)"
 
@@ -2178,7 +2183,10 @@ def notes_nouns(v: View) -> list[dict]:
             if n and len(ex) < 4:
                 ex.append(_class_example(v, n, f, g, bound_cls))
         lead = {"sex": "Nouns fall into genders by sex", "animacy": "Nouns fall into genders by animacy",
-                "classes": "Nouns fall into noun classes by meaning", "classifiers": "Nouns are counted with classifiers"
+                "classes": "Nouns fall into noun classes by meaning",
+                # (PW-1537 R4: bound classifiers that something agrees with are noun classes, not classifiers any more:
+                # the halfling page called concord prefixes 'classifiers')
+                "classifiers": "Nouns fall into noun classes by meaning (grown from numeral classifiers)"
                 }.get(kind, "Nouns fall into classes")
         if not bound_cls:
             lead = "Nouns are counted with classifiers (free words, not yet bound to the noun)"
@@ -2389,7 +2397,10 @@ def notes_clause(v: View, sents: dict) -> list[dict]:
     if W and C:
         s = noun_phrase(v, W, _the(v))
         if v.t.get("adjective_verb_like") == "yes":
-            pred = verb(v, C, "3SG")[0]
+            pred, pi, _n = verb(v, C, "3SG")
+            keep = list(v.extra)
+            _verb_concord(v, pred[pi], s)   # (PW-1537 R4; the note belongs to no sentence here)
+            v.extra[:] = keep
             words = s.words + pred if not v.order().startswith("V") else pred + s.words
         else:
             words = s.words + cop_phrase(v, NP([Word(v.ipa(C), lgloss(C), C)], 0))

@@ -1065,3 +1065,30 @@ def test_cumulative_exponence_blurs_the_join():
     assert word_ipa(G._blur_join(tuple(from_ipa("kuː")), tuple(from_ipa("ham")))) == "kham"
     assert word_ipa(G._blur_join(tuple(from_ipa("u")), tuple(from_ipa("ni")))) == "ui"
     assert G._blur_join(tuple(from_ipa("u")), tuple(from_ipa("h"))) is None
+
+
+def test_unwanted_case_clitic_binds_slowly(monkeypatch):
+    """PW-1605 (lane 9): a case clitic the aims do not want ('case: none') takes the clitic > affix step at
+    UNWANTED_CASE_FUSE of the rate of a wanted one, so a caseless language keeps its postpositions as words or clitics
+    (WALS 49A 'borderline') instead of adopting a case system from every one that binds."""
+    hits = {"none": 0, "few": 0}
+    monkeypatch.setattr(G, "RECRUIT", 0.0)
+    monkeypatch.setattr(G, "PRESSURE", 0.0)
+    monkeypatch.setattr(G, "ABANDON", 0.0)
+    for seed in range(120):
+        for aim in ("none", "few"):
+            rng, g = _grammar(seed, case=aim)
+            g.grams = [_gram("LOC", "ka", G.CLITIC, side="post")]
+            G.step(rng, g, 20, lexicon=lex(), kyr=10.0)
+            hits[aim] += any(x.function == "LOC" and x.level >= G.AFFIX for x in g.grams)
+    assert hits["none"] < 0.4 * hits["few"], hits
+
+
+def test_a_small_case_system_does_not_pull_the_genitive_on_its_own():
+    """PW-1605 (lane 9): under 'case: few' any live case gram answers the genitive's pull (Grambank 'few' is core or
+    oblique case, not both); under 'many' the genitive is still a demand of its own."""
+    _rng, g = _grammar(3, case="few", alignment="neutral")
+    g.grams = [_gram("LOC", "ka", G.AFFIX)]
+    assert "case:GEN" not in G._unrealised(g, G.aims(g))
+    G.aims(g)["case"] = "many"
+    assert "case:GEN" in G._unrealised(g, G.aims(g))

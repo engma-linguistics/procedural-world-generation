@@ -705,3 +705,51 @@ def test_gap_fill_splits_into_an_empty_cheap_place():
         l2.lexicon.words[w.concept] = LX.Word(w.concept, tuple(from_ipa("kuta")), "N", 3, (), 0.0)
     l2.touch()
     assert l2.gaps() == []
+
+
+def _tiny_lect(forms, extra_cons="", born=1.0):
+    from planet.language import lect as LC, profiles as PR
+    from planet.language import lexicon as LX
+    from planet.language import inventory as INV
+    from planet.language.percepts import from_ipa
+    lex = LX.Lexicon("x", {}, {}, True)
+    for k, f in enumerate(forms):
+        lex.words[f"W{k}"] = LX.Word(f"W{k}", tuple(from_ipa(f)), "N", 3, (), 0.0)
+    segs = sorted({x for f in forms for x in from_ipa(f)}, key=repr)
+    inv = INV.Inventory(consonants=[x for x in segs if x.kind == "C"] + list(from_ipa(extra_cons)),
+                        vowels=[x for x in segs if x.kind == "V"], shapes={"CV": 1.0}, stress="initial")
+    return LC.Lect(id="x", deme=0, people="human", parent=None, how="proto", born_kyr=born, lexicon=lex, inventory=inv,
+                   profile=PR.HUMAN, profile_key="human")
+
+
+def test_declicking_takes_every_click_series_at_its_place():
+    """PW-1537 R3 (lane 9): a change that takes the plain click at a place takes its voiced, nasal and aspirated clicks
+    along, each keeping its accompaniment on the new stop (ǀ > k: ǀ̬ > ɡ, ᵑǀ > ᵑk, ǀʰ > kʰ), so no click series is left
+    without its plain member (elf 7 had lost plain ǀ ǁ ǃ ǂ and kept the rest)."""
+    from planet.language import rules as RU
+    from planet.language.percepts import word_ipa
+    l = _tiny_lect(["aǀa", "iǀ̬u", "uᵑǀa", "aǀʰi", "tama", "kilu"] * 4)
+    r, why = RU.parse_rule("ǀ > k", id="declick.test", cause="effort")
+    assert r is not None, why
+    assert l.apply_rule(r, 0.5) > 0
+    out = {word_ipa(w.form) for w in l.lexicon.words.values()}
+    assert {"aka", "iɡu", "uᵑka", "akʰi"} <= out
+    assert not any(x.kind == "C" and x.manner == 8 for w in l.lexicon.words.values() for x in w.form)
+
+
+def test_an_inserted_sound_is_not_lost_again_within_the_wait():
+    """PW-1537 R9 (lane 9): a sound the line inserted is not lost again (nor a lost one inserted again) within its
+    re-fire wait (elf 7 put w in after u seven times and took it out before u four times); after the wait it may."""
+    from planet.language import rules as RU
+    l = _tiny_lect(["pia", "kiu", "tia", "mio", "sia", "lie"] * 3, "j", born=10.0)
+    ins, why = RU.parse_rule("∅ > j / i_V", id="glide.test", cause="coarticulation")
+    assert ins is not None, why
+    loss, why = RU.parse_rule("j > ∅ / V_V", id="jloss.test", cause="effort")
+    assert loss is not None, why
+    wait = l.refire_kyr()
+    assert l._apply_rule(ins, 9.0) > 0
+    assert l._apply_rule(loss, 9.0 - 0.5 * wait) == 0          # (within the wait: the loss waits)
+    assert l._apply_rule(loss, 9.0 - wait - 0.1) > 0           # (after it, the loss may come)
+    assert l._apply_rule(ins, 9.0 - wait - 0.2) == 0           # (and the glide may not come straight back)
+    d = l.copy("y", 0, 4.0, "bud")
+    assert d.insdel == l.insdel                                # (a daughter inherits the memory)
