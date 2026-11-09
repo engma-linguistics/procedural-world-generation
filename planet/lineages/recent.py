@@ -100,6 +100,7 @@ class Pass:
         if p.seed is None:
             p.seed = int(self.run["id"], 16) % 100000 + int(round(self.now * 10))
         self.rng = np.random.default_rng(p.seed)
+        self.world_ref = world_ref  # (the world, if any: the history's polities read its site layers, PW-1587)
         self._rain_ref(world_ref)
         self._variability()
         self._clim: tuple[np.ndarray, np.ndarray] | None = None  # (node times kyr rel. to the present, rain per node)

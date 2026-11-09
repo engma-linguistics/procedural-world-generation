@@ -3737,6 +3737,32 @@ def test_live_confederation_bands_a_peoples_villages_beside_a_foreign_state(fake
     assert R._confederations([], place * 0.8, lead, *args) == []  # (9,600: short of a city's worth)
 
 
+def test_live_central_places_read_the_ledgers_site_factor(faketz, monkeypatch):
+    """PW-1587 (lane 245): the history's central places are sized and chosen as the ledger's (settlements._site_factor): a harbour
+    on a cell that is a coast now makes its town bigger and the best of its ring on even ground; a harbour inland counts for nothing.
+    Without a world every cell is an ordinary site (1)."""
+    from planet.lineages import settlements as SE
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R, g = h.rule, h.rule.g
+    assert np.all(R._site() == 1.0)  # (the stand-in pass has no world: no site layers)
+    lm = np.asarray(env["land"], bool)
+    deg = np.diff(R.off)
+    coast = [int(c) for c in np.flatnonzero(lm) if (~lm[R.idx[R.off[c]:R.off[c + 1]]]).any()
+             and lm[R.idx[R.off[c]:R.off[c + 1]]].sum() >= 3]
+    inland = next(int(c) for c in np.flatnonzero(lm) if lm[R.idx[R.off[c]:R.off[c + 1]]].all() and deg[c] >= 5)
+    c0 = coast[0]
+    R.W["harbour"][[c0, inland]] = 3.0
+    q = R._site()
+    assert q[c0] == pytest.approx(1.0 + SE.CONST["SITE_HARBOUR"][3]) and q[inland] == 1.0
+    sed = np.where(lm, 100.0, 0.0)
+    town1, _ = R._places(sed, np.ones(g.n))
+    town, _ = R._places(sed, q)
+    ring = R.idx[R.off[c0]:R.off[c0 + 1]]
+    assert town[c0] > 0 and np.all(town[ring] == 0.0)  # (the harbour is the best of its ring)
+    H1 = sed[c0] + sed[ring].sum()
+    assert town[c0] >= SE.CONST["SHARE"][2] * H1 * q[c0] * (1 - 1e-6) and town[c0] > town1[c0]  # (x the site factor, as the ledger)
+
+
 def test_live_refugees_skip_land_their_people_has_already_left(faketz, monkeypatch):
     """PW-1583 (lane 241): a people cut twice in one step (two conquests) has heads left on the books of a cell its presence has
     left (under EST after the first cut). The refugees of the second expulsion go only to cells it still holds, so the heads moved
