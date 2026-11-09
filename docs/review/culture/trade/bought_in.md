@@ -110,7 +110,7 @@ do: the herders live far from the farmland).
 - **Spices make sense.** Their median is 2,200-5,500 km and their far tenth 4,700-9,000 km, mostly by sea. Pepper's ~8,000 km
   sets the far end. These are lane 226's numbers seen from the taker's side.
 - **Wine stays near the vine.** Its median is 78-378 km, and its far tenth stays under ~1,700 km.
-- **Salt fish never moves.** No culture on any of the four runs buys dried or salted fish. The goods ledger writes no want for
+- **Salt fish never moves** (lane 244 since gave it a want: 43-74 cultures now buy it, [bought_in_244.md](bought_in_244.md)). Before it, no culture on any of the four runs buys dried or salted fish. The goods ledger writes no want for
   it (trade.py: "dried fish, obsidian and sea-mammal oil: no need written yet"). So "salt fish far inland" cannot appear. This is
   draft 1.
 - **Grain goes too far by sea in the tail.** Some cultures get grain over 6,000-10,000 km of sea. Examples on 3e0eb4: the continental

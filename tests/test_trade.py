@@ -59,6 +59,23 @@ def test_herders_lack_grain_farmers_have_it_and_salt_follows_the_walk(tmp_path):
     assert forage["lack"]["grain"] < 0.6  # (cell 5 has no farmers: no starch wanted there)
 
 
+def test_farmers_and_towns_away_from_fish_want_dried_fish(tmp_path, monkeypatch):
+    """PW-1573 (lane 244): sea fish reached inland towns and then inland farms (Barrett et al. 2004, Orton et al. 2016); a cell's own fish
+    (sea, river runs, big lakes) meets the want first; herders and foragers are not given it; a people that keeps no smoked or salted food
+    has no want."""
+    fish = np.zeros(N)
+    led = TR.ledger_at(_ctx(tmp_path, goods={"fish": fish}), 0)
+    assert led[1]["lack"]["dried_fish"] > 0.8  # (the farmers' plain has no fish)
+    assert led[0]["lack"].get("dried_fish", 0) < 0.1 and led[2]["lack"].get("dried_fish", 0) < 0.1  # (herders, foragers)
+    river = TR.ledger_at(_ctx(tmp_path, goods={"fish": np.array([0.0, 0.0, 1.0, 0.0, 0.0, 0.0])}), 0)
+    assert river[1]["lack"]["dried_fish"] == pytest.approx(led[1]["lack"]["dried_fish"] / 2, rel=0.1)  # (cell 2's river fish meets its want)
+    assert river[1]["surplus"].get("dried_fish", 0) > 0  # (and its catch beyond the want is cured for trade, once salting is known)
+    know = {"herder": ["herding", "animal_cattle"], "farmer": ["cultivation", "crop_wheat"], "forager": []}
+    assert TR.ledger_at(_ctx(tmp_path, goods={"fish": fish}, know=know), 0)[1]["lack"].get("dried_fish", 0) == 0
+    monkeypatch.setattr(TR, "FISH_NEED", False)
+    assert TR.ledger_at(_ctx(tmp_path, goods={"fish": fish}), 0)[1]["lack"].get("dried_fish", 0) == 0
+
+
 def test_tin_is_lacked_by_bronze_users_and_held_where_the_ore_is(tmp_path):
     led = TR.ledger_at(_ctx(tmp_path), 0)
     assert led[1]["lack"]["tin"] > 0.85 and led[0]["lack"]["tin"] > 0.85

@@ -331,7 +331,29 @@ def test_a_sea_km_costs_a_share_of_value_for_the_hands(tmp_path, monkeypatch):
     for cl in ("middling", "precious"):
         assert np.allclose((on[cl] - off[cl])[sea_e] / fr.L[cl], fr.e["hop"] / TF2.HAND_KM[cl])  # (a share of value, per class)
         assert np.array_equal(on[cl][~sea_e], off[cl][~sea_e])
-    assert "bulk" not in TF2.HAND_KM and np.array_equal(on["bulk"], off["bulk"])  # (bulk: freight alone)
+    assert "bulk" not in TF2.HAND_KM and np.array_equal(on["bulk"], off["bulk"])  # (bulk: no hands; its season is SEASON's, below)
+
+
+def test_a_bulk_cargo_pays_a_season_of_capital_per_season_leg_at_sea(tmp_path, monkeypatch):
+    """PW-1572 (lane 244): a bulk cargo's value e-folds every SEASON_KM / ln(1 + SEASON_LOAN) km at sea (a season's capital and risk spread
+    over a season's laden leg: Egypt to Rome, one round trip a year); land and river edges and the dearer classes are untouched."""
+    import planet.lineages.trade_flow as TF2
+    from planet.lineages import trade as TR
+    monkeypatch.setattr(TR, "is_land", lambda e, ice: (np.asarray(e) > 0) & ~np.asarray(ice))  # (six cells are no sphere grid)
+    know = {"herder": ["herding", "animal_cattle", "salting", "sails"], "farmer": ["cultivation", "crop_wheat", "salting", "sails"],
+            "forager": ["ornament", "sails"]}
+    fr = TF._Frame(_line_ctx(tmp_path, elev=[100.0, 100.0, -200.0, 100.0, 100.0, 100.0], know=know), 0, None, None)  # (cell 2 is sea)
+    on = {cl: fr.cost(cl)[0].copy() for cl in ("bulk", "middling", "precious")}
+    monkeypatch.setattr(TF2, "SEASON", False)
+    fr.costs = {}
+    off = {cl: fr.cost(cl)[0] for cl in ("bulk", "middling", "precious")}
+    sea_e = (fr.cost("bulk")[1] == 2) & (on["bulk"] >= 0)
+    assert sea_e.any()
+    assert np.allclose((on["bulk"] - off["bulk"])[sea_e] / fr.L["bulk"], fr.e["hop"] * np.log1p(TF2.SEASON_LOAN) / TF2.SEASON_KM)
+    assert np.array_equal(on["bulk"][~sea_e], off["bulk"][~sea_e])
+    for cl in ("middling", "precious"):
+        assert np.array_equal(on[cl], off[cl])
+    assert 7000 < TF2.SEASON_KM / np.log1p(TF2.SEASON_LOAN) < 9000  # (~7,900 km a value e-fold: ~18% of a cargo's value on Egypt's leg)
 
 
 _CANOES = {"herder": ["herding", "animal_cattle", "salting", "canoes"], "farmer": ["cultivation", "crop_wheat", "salting", "canoes"],

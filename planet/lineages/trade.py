@@ -34,7 +34,7 @@ import numpy as np
 
 from ..geo import R_KM, is_land
 
-VERSION = 3  # (3: craft and luxury goods made in towns, silver, incense and horses: PW-1522, step4a.md; 2: giants trade or take tribute by kind, GIANT_MODE; a mining kind's hold wants as a town does: PW-1503) (bump when the rules change: the server's cached docs are remade)
+VERSION = 4  # (4: a need for dried fish, FISH_NEED, PW-1573, lane 244; 3: craft and luxury goods made in towns, silver, incense and horses: PW-1522, step4a.md; 2: giants trade or take tribute by kind, GIANT_MODE; a mining kind's hold wants as a town does: PW-1503) (bump when the rules change: the server's cached docs are remade)
 CLASSES = ("bulk", "middling", "precious")
 # good: (label, value class, where it comes from). Classes per review1.md section 6 ("value per weight is the switch") and design1.md step 1.
 GOODS = {
@@ -105,10 +105,23 @@ NEED = {
     "horses": "towns that know riding (cavalry and post)",
     "silk": "towns (elite cloth)", "cloth": "towns", "dyes": "towns (elite cloth)", "glass": "towns", "porcelain": "towns",
     "arms": "towns that know swords or armour",
-}  # dried fish, obsidian and sea-mammal oil: no need written yet (flint is not modelled, so want of edge stone would be overstated)
+    "dried_fish": "towns and farmers away from fishing waters, who know smoked or salted food (the 'fish event horizon': sea fish reached "
+                  "inland towns first, then inland farms; Barrett et al. 2004, Orton et al. 2016; PW-1573, bought_in_244.md)",
+}  # obsidian and sea-mammal oil: no need written yet (flint is not modelled, so want of edge stone would be overstated; seal oil: see
+# bought_in_244.md)
+# PW-1573 (lane 244, bought_in_244.md): who wants dried and salted fish. English fish bones (127 assemblages, AD 600-1600; Barrett, Locker
+# & Roberts 2004, Proc. R. Soc. B 271) show sea fish (herring, then cod) at inland sites from c. AD 1000, "initially ... linked primarily to
+# urban sites, with widespread marine fish consumption at inland rural settlements argued to be a slightly later development" (Orton,
+# Locker, Morris & Barrett 2016, "Fish for London"): towns "require a significant hinterland to meet demand. Turning to marine resources is
+# one way to expand this resource base". Barrett et al. name the drivers as "Christian fasting regulations, population growth, urbanism and
+# declining freshwater fish resources": so a cell's own fish (sea shelf, river runs, big lakes: land.GOODS "fish", fresh, before any
+# curing tech) meets its want first, and only the rest is a lack. Towns and farmers want it alike (a share of people, like salt's farmers:
+# no diet share is sourced); a fasting rule is not modelled (the faiths carry no food calendar). Herders and foragers are not given it.
+FISH_NEED = True  # False: nobody wants dried fish (main dd82c068)
 NEED_GATE = {"copper": ("native_copper", "copper"), "tin": ("bronze",), "iron": ("iron", "bloomery"), "spices": ("feasting",),
              "mithril": ("mithril_work",), "ornaments": ("ornament",), "oil_wine": ("wine", "oil_press"), "sugar": ("sugar_making",),
-             "incense": ("incense",), "horses": ("riding",), "arms": SWORDS}
+             "incense": ("incense",), "horses": ("riding",), "arms": SWORDS,
+             "dried_fish": ("smoking_drying", "salting")}  # (a people that keeps no smoked or salted food has no want of it)
 TRIBUTE_ROWS = True  # tribute-taking kinds keep a ledger row (marked mode "tribute"): D65 (PW-1501, owner): a dragon realm's needs and surplus
 # are traded on its behalf by its kobolds, so step 2 needs them; False leaves them out
 # D65 / PW-1507 (coordinator 11-08: the lane's lean B, a mode set by hand per giant kind; the trees' kind ids). A JUDGEMENT per kind, with
@@ -298,6 +311,7 @@ def ledger_at(ctx, i: int) -> dict | None:
         "salt": np.where(land, np.clip(settled + band * near_farm, 0.0, 1.0), 0.0),
         "timber": urban, "stone": urban, "firewood": urban, "livestock": urban, "furs": urban, "gold": urban, "gems": urban,
         "ornaments": band, "silver": urban, "incense": urban, "horses": urban,
+        "dried_fish": np.where(land, np.clip(farm + urban, 0.0, 1.0), 0.0) * FISH_NEED,
     }
     for g in ("copper", "tin", "iron"):
         need[g] = settled
@@ -343,7 +357,12 @@ def ledger_at(ctx, i: int) -> dict | None:
             sur[g] = mean(out)
             continue
         pair_sur[g] = np.maximum(0.0, out - nd)
-        pair_lack[g] = nd * (1.0 - X["salt_own"][cell]) if g == "salt" else np.maximum(0.0, nd - out)
+        if g == "salt":
+            pair_lack[g] = nd * (1.0 - X["salt_own"][cell])
+        elif g == "dried_fish":  # (the cell's own fresh fish meets its want first, cured or not: PW-1573)
+            pair_lack[g] = np.maximum(0.0, nd - v)
+        else:
+            pair_lack[g] = np.maximum(0.0, nd - out)
         sur[g] = mean(pair_sur[g])
         lack[g] = mean(pair_lack[g])
     ways = {k: mean(v) for k, v in (("farm", farm), ("herd", herd), ("forage", forage), ("urban", urban))}
