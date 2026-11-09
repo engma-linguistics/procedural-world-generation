@@ -185,7 +185,7 @@ a	base	a	a	exact
 ̂	mod			effect	tone_5	falling
 ‼	mod			effect	growl	VoQS harsh/ventricular phonation: ~80 Hz amplitude modulation plus noise
 ᵣ	mod			effect	purr	house purr: ~28 Hz amplitude modulation
-ᴖ	mod			effect	source2	house second source: a copy a fifth up mixed in
+ᴖ	mod			effect	source2	house second source: a second line a fifth up (its own contour from tone letters after ᴖ; speak.second_voice)
 ˯	mod			effect	sub	house sub-bass register: octave down plus a sub-bass rumble (the real one is below hearing)
 ˰	mod			effect	ultra	house ultra register: octave up plus a faint high whistle (the real one is above hearing)
 ̬	mod			near		voiced mark dropped

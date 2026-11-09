@@ -218,6 +218,7 @@ DIACRITICS = {"ː": ("length", 1), "̃": ("nasal", 1), "ʰ": ("larynx", 1), "ʼ"
               "ʲ": ("secondary", 2), "ˠ": ("secondary", 3), "ˤ": ("secondary", 4), "̤": ("phonation", 1),
               "̰": ("phonation", 2)}
 STRESS_MARK = "́"
+SOURCE2_MARK = "ᴖ"
 
 
 # ------------------------------------------------------------------------------------------------------------- the rule
@@ -503,7 +504,7 @@ def harmony_onto(before: tuple, after: tuple, inventory) -> tuple:
     families (ɑ in 26% of living lects, PHOIBLE 7%)."""
     if len(before) != len(after):
         return after
-    quals = {replace(v, length=0, nasal=0, tone=0, phonation=0, source2=0)
+    quals = {replace(v, length=0, nasal=0, tone=0, phonation=0, source2=0, tone2=0)
              for v in getattr(inventory, "vowels", ()) if v.kind == "V"}
     if not quals:
         return after
@@ -511,7 +512,7 @@ def harmony_onto(before: tuple, after: tuple, inventory) -> tuple:
     for i, (a, b) in enumerate(zip(before, after)):
         if b == a or b.kind != "V":
             continue
-        q = replace(b, length=0, nasal=0, tone=0, phonation=0, source2=0)
+        q = replace(b, length=0, nasal=0, tone=0, phonation=0, source2=0, tone2=0)
         if q in quals:
             continue
         t = _vq(q)
@@ -1171,6 +1172,21 @@ class ParseError(ValueError):
     pass
 
 
+def _axis_words(ax: str, lo: int, hi: int) -> str:
+    """Plain words for an [axis=v] bracket (the second voice's; others as 'axis v')."""
+    if ax == "source2" and lo == hi:
+        return "second-voice" if lo else "one-voice"
+    if ax == "tone2":
+        if lo == hi == 0:
+            return "parallel second voice"
+        if lo == hi:
+            return f"{_TONE_WORDS.get(lo, lo)} second voice"
+        if (lo, hi) == (4, 5):
+            return "rising or falling second voice"
+        return "own-tone second voice"
+    return f"{ax} {lo}" + (f"..{hi}" if hi != lo else "")
+
+
 def _bracket(body: str) -> _Tok:
     """Contents of [...]: features (+voice, −son, αplace), class letters, axis=v / axis=lo..hi, stress, house flags."""
     tok = _Tok("cls", text=f"[{body}]")
@@ -1196,7 +1212,7 @@ def _bracket(body: str) -> _Tok:
             lo, hi = (int(x) for x in val.split("..")) if ".." in val else (int(val),) * 2
             if ax not in AXES:
                 raise ParseError(f"unknown axis {ax!r}")
-            p = Pattern(f"[{item}]", ("b", None, ((ax, lo, hi),)), f"{ax} {val}")
+            p = Pattern(f"[{item}]", ("b", None, ((ax, lo, hi),)), _axis_words(ax, lo, hi))
             if lo == hi:
                 tok.sets[ax] = lo
         elif item in FEATURES or (item[0] in "+-" and item[1:] in FEATURES):
@@ -1311,14 +1327,24 @@ def _ipa(run: str):
 
 
 def _diacritics(s: str, i: int, t: _Tok) -> int:
-    while i < len(s) and (s[i] in DIACRITICS or s[i] == STRESS_MARK or s[i] in TONE_LETTERS):
+    s2 = False  # just after ᴖ: tone letters are the second voice's (Vᴖ˨˦, as percepts.from_ipa reads them)
+    while i < len(s) and (s[i] in DIACRITICS or s[i] == STRESS_MARK or s[i] in TONE_LETTERS or s[i] == SOURCE2_MARK):
+        if s[i] == SOURCE2_MARK:  # Vᴖ: a second-voice vowel (syrinx lane, 2026-11-08)
+            t.sets["source2"] = 1
+            t.pat = t.pat & cls("ᴖ", None, "second-voice", source2=1)
+            s2 = True
+            i += 1
+            continue
         if s[i] in TONE_LETTERS:  # V˨: a vowel with that tone (Chao letters, as percepts.from_ipa reads them)
             j = i
             while j < len(s) and s[j] in TONE_LETTERS:
                 j += 1
             tone = from_ipa("a" + s[i:j])[0].tone
-            t.sets["tone"] = tone
-            t.pat = t.pat & cls(s[i:j], None, f"{_TONE_WORDS.get(tone, tone)}-toned", tone=tone)
+            ax = "tone2" if s2 else "tone"
+            t.sets[ax] = tone
+            t.pat = t.pat & cls(s[i:j], None, f"{_TONE_WORDS.get(tone, tone)}-toned" + (" second voice" if s2 else ""),
+                                **{ax: tone})
+            s2 = False
             i = j
             continue
         if s[i] == STRESS_MARK:
@@ -1875,7 +1901,9 @@ _SET_WORDS = {("voice", 1): "voiced", ("voice", 0): "voiceless", ("back", 0): "f
               ("larynx", 3): "implosive", ("larynx", 1): "aspirated", ("phonation", 1): "breathy",
               ("phonation", 0): "modal-voiced", ("larynx", 0): "unaspirated",
               ("secondary", 1): "labialized", ("secondary", 2): "palatalized", ("prenasal", 1): "prenasalized",
-              **{("tone", t): f"{w}-toned" for t, w in _TONE_WORDS.items()}}
+              **{("tone", t): f"{w}-toned" for t, w in _TONE_WORDS.items()},
+              ("source2", 1): "second-voiced", ("source2", 0): "one-voiced", ("tone2", 0): "with its second voice in parallel",
+              **{("tone2", t): f"with a {w} second voice" for t, w in _TONE_WORDS.items()}}
 
 
 def _sets_words(sets) -> str:
@@ -1955,6 +1983,34 @@ def _build_demo() -> tuple[Rule, ...]:
               "Vietnamese hỏi/ngã tones from a lost final *-h < *-s (Haudricourt 1954)",
               target=lit(from_ipa("h")[0]), change=Change.delete(tone=5), env=_AFTER_V_CODA,
               text="h > ∅ / V_ [coda], vowel takes falling tone"),
+        # second-voice tone (syrinx lane, 2026-11-08; docs/review/language/syrinx.md): the coda pathways again, the lost
+        # consonant's pitch perturbation landing on the second voice; a phrase-final rise frozen onto it; and the ways
+        # out: contours level, the low tone merges into parallel motion, all of it merges into parallel motion, and the
+        # second voice itself is lost. Only syrinx-voiced peoples that hear the second voice's pitch have them.
+        _demo("tone2.glottal_coda_rising", "[V source2=1 tone2=0]ʔ > Vᴖ˨˦ / _{C, #}", "tonogenesis",
+              "syrinx, hear:tone2", 3, "after Vietnamese sắc/nặng from a lost final glottal stop (Haudricourt 1954), "
+              "the rise taken up by the second voice (fantasy analogue)", family="tone"),
+        _demo("tone2.h_coda_falling", "[V source2=1 tone2=0]h > Vᴖ˦˨ / _{C, #}", "tonogenesis",
+              "syrinx, hear:tone2", 3, "after Vietnamese hỏi/ngã from a lost final *-h (Haudricourt 1954), the fall "
+              "taken up by the second voice (fantasy analogue)", family="tone"),
+        _demo("tone2.final_rise", "[V source2=1 tone2=0] > Vᴖ˨˦ / _C*#", "prosody", "syrinx, hear:tone2", 1,
+              "a phrase-final rise frozen onto the second voice of the last syllable, as Swedish accent 2 grew out of "
+              "word prosody (fantasy analogue)", family="tone"),
+        # (weight 1, not S227's 3: the duration argument for levelling short contours (Zhang 2002) is weaker for a voice
+        # that sweeps an octave in tens of milliseconds, as a syrinx does; at 2 it was the commonest second-voice change
+        # of pass B, 18 firings, and the drawn contour sets levelled to all-high and were stripped)
+        _demo("tone2.contour_level", "[V source2=1 tone2=4..5] > [tone2=3]", "perception", "syrinx, hear:tone2", 1,
+              "as S227/S228 for the first voice: a contour simplifies to its high end (Yip 2002, ch. 2)", family="tone"),
+        _demo("tone2.low_parallel", "Vᴖ˨ > [tone2=0]", "perception", "syrinx, hear:tone2", 2,
+              "a category merger (as S230): the low second voice falls in with parallel motion", family="tone"),
+        _demo("tone2.parallel", "[V source2=1 tone2=1..7] > [tone2=0]", "perception", "syrinx, hear:tone2", 1,
+              "the second voice stops moving on its own and follows the first again (a whole tier lost, as Swahili "
+              "lost Proto-Bantu tone)", family="tone"),
+        # (unstressed syllables only, word by word: as written first, for every second-voice vowel at once, it fired in
+        # 23 aarakocra and kenku lines of pass A and left one living lect of 52 with a second voice; 22 kept it before)
+        _demo("voice2.loss", "[V source2=1 −stress] > [source2=0 tone2=0]", "effort", "syrinx", 1,
+              "the two voices merge onto one in weak syllables first, word by word, as reduction spreads through the "
+              "lexicon (Wang 1969 on lexical diffusion)", "diffusing"),
         _demo("chain_shift.raise_mid", "e, o > i, u / [+stress]", "dispersion", "tongue_body", 2,
               "Great Vowel Shift: Middle English feet [feːt] > [fiːt]"),
         _demo("metathesis.cc", "sk > ks", "perception", "tongue_tip, tongue_body", 2, "Old English ascian > dialectal ax",

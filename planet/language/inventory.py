@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .percepts import AXES, SONORITY, Segment, distance, from_ipa, parse_segment, to_ipa
+from .percepts import AXES, SONORITY, Segment, distance, from_ipa, is_nonhuman, parse_segment, to_ipa
 
 DATA = Path(__file__).parent / "data"
 
@@ -121,7 +121,7 @@ def fuse_vowels(f: tuple, long_ok: bool = True) -> tuple:
         y = out[-1]
         if _fusible(y, x):
             out[-1] = replace(y, length=1 if (long_ok or y.length or x.length) else 0, nasal=max(y.nasal, x.nasal),
-                              tone=_fused_tone(y.tone, x.tone))
+                              tone=_fused_tone(y.tone, x.tone), tone2=_fused_tone(y.tone2, x.tone2))
         else:
             out.append(x)
     return tuple(out)
@@ -395,7 +395,7 @@ def vowel_distance(a: Segment, b: Segment) -> float:
 
 
 def _quality(v: Segment) -> Segment:
-    return replace(v, length=0, nasal=0, tone=0, phonation=0, source2=0)
+    return replace(v, length=0, nasal=0, tone=0, phonation=0, source2=0, tone2=0)
 
 
 # --- series (sound lane, 2026-11-08) ------------------------------------------------------------------------------------
@@ -688,6 +688,27 @@ _TONE_SETS = {2: [1, 3], 3: [1, 2, 3], 4: [1, 2, 3, 5], 5: [1, 2, 3, 4, 5], 6: [
               7: [1, 2, 3, 4, 5, 6, 7]}   # (6 and 7: Cantonese- and Hmong-size systems, PHOIBLE 6+ about 7%)
 
 
+# Second-voice tone (syrinx lane, 2026-11-08; docs/review/language/syrinx.md). A syrinx-voiced proto whose vowels include
+# second-voice ones gives its second voice a tone of its own with TONE2_SHARE x hear.tone2 / make_cost.tone2; else the
+# second voice moves in parallel with the first (tone2 0). The set is drawn from TONE2_SETS: two levels (the simple
+# systems, as for the first voice), level / rising / falling (sweeps, what a syrinx does best), or both kinds. The tone is
+# stored on the vowel (iᴖ˦, iᴖ˨ are two vowels), so the syllable space multiplies by itself (lexicon._space).
+TONE2_SHARE = 0.5
+TONE2_SETS = (((3, 1), 0.5), ((3, 4, 5), 0.3), ((1, 3, 4, 5), 0.2))
+
+
+def draw_tone2(rng, profile, vows: list) -> tuple:
+    """The second voice's tone set for a proto with vowels `vows` (empty: no second-voice vowel, or no contrast)."""
+    if profile is None or not any(v.source2 for v in vows):
+        return ()
+    mk = _profile_get(profile, "make_cost", "tone2", math.inf)
+    hear = _profile_get(profile, "hear", "tone2", 1.0)
+    if not math.isfinite(mk) or hear <= 0 or rng.random() >= min(0.95, TONE2_SHARE * hear / max(mk, 1e-6)):
+        return ()
+    k = int(rng.choice(len(TONE2_SETS), p=[w for _, w in TONE2_SETS]))
+    return TONE2_SETS[k][0]
+
+
 def _profile_get(profile, attr: str, key: str, default: float) -> float:
     d = getattr(profile, attr, None) or {}
     try:
@@ -746,6 +767,14 @@ def draw_inventory(rng, profile=None, size_hint=None) -> Inventory:
         p = np.where(k[m] == 2, TONE_SIMPLE, (1.0 - TONE_SIMPLE) * np.where(k[m] == 2, 0.0, p) / p[k[m] > 2].sum())
         nt = int(rng.choice(k[m], p=p / p.sum()))
         tones = list(_TONE_SETS[min(7, nt)])
+    t2 = draw_tone2(rng, profile, vows)
+    if t2:
+        split = {v: [replace(v, tone2=t) for t in t2] for v in vows if v.source2}
+        vows = [x for v in vows for x in split.get(v, [v])]
+        for v, xs in split.items():
+            vcost.pop(v, None)
+            for x in xs:
+                vcost[x] = _cost(profile, x)
     sh = _draw_shapes(rng)
     coda = "any"
     if sh["max_coda"] >= 1 and sh["kind"] != "complex":
@@ -759,6 +788,8 @@ def draw_inventory(rng, profile=None, size_hint=None) -> Inventory:
         onset_required=bool(sh["kind"] == "simple" and rng.random() < 0.5), stress=stress,
         repair_style="epenthesis" if rng.random() < 0.7 else "deletion",
         cost={**ccost, **vcost}, freq={s: (CLICK_LEX_FREQ if s in clicks else pool_f.get(s, 0.01)) for s in cons + vows})
+    if t2:   # (k second-voice tones share their vowel's lexical weight: freq / k^2 keeps the vowel's total sqrt weight)
+        inv.freq.update({v: pool_f.get(replace(v, tone2=0), 0.01) / len(t2) ** 2 for v in vows if v.tone2})
     return inv
 
 
@@ -994,7 +1025,8 @@ def _resolve_vowels(w: list, inv: Inventory) -> list:
         kind, i = bad
         a, b = w[i], w[i + 1]
         if kind == "fuse":
-            v = replace(a, length=1, nasal=max(a.nasal, b.nasal), tone=_fused_tone(a.tone, b.tone))
+            v = replace(a, length=1, nasal=max(a.nasal, b.nasal), tone=_fused_tone(a.tone, b.tone),
+                        tone2=_fused_tone(a.tone2, b.tone2))
             if not _seg_ok(v, inv):
                 v = replace(v, length=0)
             if not _seg_ok(v, inv):
@@ -1025,6 +1057,9 @@ def epenthetic_vowel(inv: Inventory) -> Segment:
     lowest tone when tonal). The commonest one, inserted in every lect and every repair, made i (earlier ə, ɨ) the vowel of
     the run; the rarest spreads the insertions over the high vowels."""
     plain = [v for v in inv.vowels if v.length == 0 and v.nasal == 0] or list(inv.vowels)
+    # (a second voice, a register or a growl is never the inserted vowel when a plain one is there: Iulahad's recurring
+    # epenthetic u˨ᴖ was the rarest high vowel being a second-voice one; syrinx lane 2026-11-08)
+    plain = [v for v in plain if not is_nonhuman(v)] or plain
     top = max(v.height for v in plain)
     high = [v for v in plain if v.height == top]
     high = [v for v in high if not (v.round and v.back < 3)] or high

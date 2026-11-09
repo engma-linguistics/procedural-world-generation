@@ -15,7 +15,8 @@ downdrift, so lexical tones stay intact).
      replaced by the nearest one it was trained on.
    "auto" = piper when its model is on disk, else espeak.
 3. numpy post-processing on each segment's span: tones (pitch shift), clicks and percussives (synthesized transients over the
-   backend's glottal closure), growl ‼ (~80 Hz AM + noise), purr ᵣ (~28 Hz AM), second source ᴖ (a copy a fifth up), sub ˯ /
+   backend's glottal closure), growl ‼ (~80 Hz AM + noise), purr ᵣ (~28 Hz AM), second source ᴖ (a second line on its own staff a fifth up, with its own contour when tone letters
+   follow ᴖ: a˦ᴖ˨˦, else moving in parallel; syrinx lane), sub ˯ /
    ultra ˰ (octave shifts + an audible stand-in rumble / whistle: the real registers are outside human hearing), breathy,
    creaky. Then the profile's register: the whole word resampled down (bigger, slower) or up (smaller, quicker).
 """
@@ -97,6 +98,7 @@ class Seg:
     vowel: bool
     effects: set = field(default_factory=set)
     tone: tuple | None = None  # (start, end) semitones
+    tone2: tuple | None = None  # the second voice's own (start, end) semitones on its staff (letters after ᴖ); None: parallel
     stress: str = ""
 
 
@@ -112,15 +114,21 @@ def tokenize(ipa: str) -> list[list[Seg]]:
     pre, stress, i, n = "", "", 0, len(s)
     attach = False  # just after a segment: a prenasal letter there is a nasal release (ignored), as in percepts
     levels: list[int] = []
+    s2 = False  # just after ᴖ: tone letters are the second voice's (a˦ᴖ˨˦)
 
     def flush_levels():
-        nonlocal levels
+        nonlocal levels, s2
         if levels:
             w = words[-1]
             target = next((x for x in reversed(w) if x.vowel), None) or (w[-1] if w else None)
             if target is not None:
-                target.tone = (TONE_LEVEL_SEMIS[levels[0]], TONE_LEVEL_SEMIS[levels[-1]])
+                t = (TONE_LEVEL_SEMIS[levels[0]], TONE_LEVEL_SEMIS[levels[-1]])
+                if s2 and "source2" in target.effects:
+                    target.tone2 = t
+                else:
+                    target.tone = t
             levels = []
+            s2 = False
 
     while i < n:
         ch = s[i]
@@ -129,6 +137,7 @@ def tokenize(ipa: str) -> list[list[Seg]]:
             i += 1
             continue
         flush_levels()
+        s2 = False
         if ch.isspace() or ch in "‿-":
             if words[-1]:
                 words.append([])
@@ -166,6 +175,7 @@ def tokenize(ipa: str) -> list[list[Seg]]:
                 seg.effects.add(b.effect)
             words[-1].append(seg)
             pre, stress, attach = "", "", True
+            s2 = b.effect == "source2"
             i += m
             continue
         if r is not None and r.kind == "mod":
@@ -178,6 +188,7 @@ def tokenize(ipa: str) -> list[list[Seg]]:
                     seg.tone = TONE_CODE_SEMIS[int(r.effect[5:])]
                 elif r.effect:
                     seg.effects.add(r.effect)
+                s2 = r.effect == "source2"
             i += 1
             continue
         if ch in IGNORED:
@@ -510,8 +521,40 @@ def _apply_span(y: np.ndarray, a: int, b: int, fn, fade: int) -> None:
     y[a0:b0] = seg * (1 - w) + new[:len(seg)] * w
 
 
+SECOND_STAFF_ST = 7.0   # the second voice's staff sits a fifth above the first's (syrinx: each side has its own range)
+SECOND_GAIN = 0.6       # the second voice is the weaker line (the shared tract is tuned to one fundamental: Riede et al. 2006)
+SECOND_VIB = (6.0, 0.25)  # its slight vibrato (Hz, semitones): a separate pitch motion the ear streams as a second line
+
+
+def second_voice(x0: np.ndarray, t2: tuple | None, s1: tuple | None, sr: int = SR, steps: int = 8) -> np.ndarray:
+    """The second voice for an (untoned) vowel span x0: on its own staff (SECOND_STAFF_ST up), following its own contour t2
+    ((start, end) semitones) with a slight vibrato; with t2 None it follows the first voice's contour s1 (parallel motion,
+    the old fixed fifth). Stepped, crossfaded pitch shifts as `_contour`; length kept."""
+    a, b = t2 if t2 is not None else (s1 or (0.0, 0.0))
+    n = len(x0)
+    if n < 8:
+        return x0.copy()
+    out = np.zeros(n, np.float32)
+    edges = np.linspace(0, n, steps + 1).astype(int)
+    xf = max(1, int(0.004 * sr))
+    for q in range(steps):
+        mid = (q + 0.5) / steps
+        st = SECOND_STAFF_ST + a + (b - a) * mid
+        if t2 is not None:
+            st += SECOND_VIB[1] * np.sin(2 * np.pi * SECOND_VIB[0] * mid * n / sr)
+        sh = pitch_shift(x0, float(st), sr)
+        lo, hi = max(0, edges[q] - xf), min(n, edges[q + 1] + xf)
+        w = np.ones(hi - lo, np.float32)
+        if q > 0:
+            r = min(2 * xf, hi - lo)
+            w[:r] = np.linspace(0, 1, r)
+        out[lo:hi] = out[lo:hi] * (1 - w) + sh[lo:hi] * w
+    return out
+
+
 def _effects(y: np.ndarray, sr: int, words, spans, key: str) -> np.ndarray:
     rng = _rng(key)
+    y0 = y.copy()  # (the backend's untoned voice: a second voice with its own contour starts from it, not from the first's)
     fade = int(0.008 * sr)
     t_all = np.arange(len(y)) / sr
     overlay = np.zeros_like(y)
@@ -553,7 +596,13 @@ def _effects(y: np.ndarray, sr: int, words, spans, key: str) -> np.ndarray:
                         return (s * (0.25 + 0.75 * am) + rumble).astype(np.float32)
                     _apply_span(y, a, b, purr, fade)
                 elif e == "source2":
-                    _apply_span(y, a, b, lambda s, i, j: (0.75 * s + 0.6 * pitch_shift(s, 7, sr)).astype(np.float32), fade)
+                    def two(s, i, j, a=a, x=x):
+                        lo = a - i
+                        x0 = y0[lo:lo + len(s)]
+                        if len(x0) < len(s):
+                            x0 = np.pad(x0, (0, len(s) - len(x0)))
+                        return (0.75 * s + SECOND_GAIN * second_voice(x0, x.tone2, x.tone, sr)).astype(np.float32)
+                    _apply_span(y, a, b, two, fade)
                 elif e == "sub":
                     def sub(s, i, j):
                         t = np.arange(len(s)) / sr

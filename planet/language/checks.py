@@ -503,12 +503,42 @@ def possible_segments(result: dict) -> dict:
     return _row("no impossible segments (all lects)", n, "0", n == 0, note)
 
 
+def second_voice(result: dict) -> dict:
+    """Second-voice tone (syrinx lane, 2026-11-08; docs/review/language/syrinx.md): among living syrinx-voiced lects, the
+    share with a second voice and the share whose second voice carries a tone contrast of its own (two or more categories
+    over its vowels, parallel motion counting as one); the pass is that no lect of the run whose people has no syrinx has a
+    second voice at all (loans heard by one-voiced ears lose it). The shares are shown, not judged."""
+    bad: dict = {}
+    syr = []
+    for l in result["lects"]:
+        if getattr(l, "lexicon", None) is None:
+            continue
+        has = "syrinx" in (getattr(getattr(l, "profile", None), "articulators", ()) or ())
+        if not has:
+            if any(s.kind == "V" and (s.source2 or s.tone2) for s in l.segments()):
+                bad.setdefault(l.people, []).append(l.id)
+        elif l.alive and l.deme is not None and l.inventory is not None:
+            syr.append(l)
+    n = len(syr)
+    s2 = [l for l in syr if any(v.source2 for v in l.inventory.vowels)]
+    t2 = [l for l in s2 if len({v.tone2 for v in l.inventory.vowels if v.source2}) >= 2]
+    cats = sorted(len({v.tone2 for v in l.inventory.vowels if v.source2}) for l in t2)
+    val = {"syrinx_lects": n, "with_second_voice": len(s2), "with_second_voice_tone": len(t2),
+           "share_second_voice": round(len(s2) / n, 3) if n else None,
+           "share_second_voice_tone": round(len(t2) / n, 3) if n else None, "categories": cats,
+           "one_voiced_with_second_voice": sum(len(v) for v in bad.values())}
+    note = ("; ".join(f"{p}: {len(v)} lects ({', '.join(v[:3])})" for p, v in sorted(bad.items())) or
+            "no one-voiced lect has a second voice") + "; shares informative (design: about half of second-voice protos)"
+    return _row("second voice only where there is a syrinx; second-voice tone shares", val, "0 one-voiced lects with ᴖ",
+                not bad, note)
+
+
 def run_all(result: dict) -> list[dict]:
     out = []
     for fn, arg in ((proto_inventories, result["lects"]), (sister_distant, result), (horizon, result), (shifts, result),
                     (long_generations, result), (complexity, result), (living_sizes, result), (living_segments, result),
                     (living_overuse, result), (typology_consistency, result), (borrowability, result), (areal, result),
-                    (possible_segments, result)):
+                    (possible_segments, result), (second_voice, result)):
         try:
             out.append(fn(arg))
         except Exception as e:  # (a check that cannot run says so; it never stops the pass)

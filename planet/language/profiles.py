@@ -39,11 +39,11 @@ PERCEPT_KEYS = PLACE_KEYS + MANNER_KEYS + (
     "voiced", "aspirated", "ejective", "implosive", "breathy", "creaky", "harsh", "purr", "labialized", "palatalized",
     "velarized", "pharyngealized", "sibilant", "retroflex", "labiodental", "prenasal", "double",
     "round_vowel", "nasal_vowel", "front_vowel", "back_vowel", "high_vowel", "low_vowel", "tone", "long",
-    "source2", "sub_register", "ultra_register")
+    "source2", "tone2", "sub_register", "ultra_register")
 HEAR_KEYS = AXES + ("sub", "ultra")
 VOICE_KEYS = ("modality", "articulators", "make_cost", "hear", "register", "pitch_range", "notes", "sources", "same_as_human")
 MODALITIES = ("spoken", "signed")
-NONHUMAN_KEYS = ("harsh", "purr", "percussive", "source2", "sub_register", "ultra_register")
+NONHUMAN_KEYS = ("harsh", "purr", "percussive", "source2", "tone2", "sub_register", "ultra_register")
 
 
 @dataclass
@@ -88,10 +88,10 @@ HUMAN_HARSH = 30.0
 HUMAN = VoiceProfile(
     id="human_default", source="human_default",
     make_cost={**{k: INF for k in NONHUMAN_KEYS}, "harsh": HUMAN_HARSH},
-    hear={"source2": 0.3, "sub": 0.0, "ultra": 0.0},
+    hear={"source2": 0.3, "tone2": 0.3, "sub": 0.0, "ultra": 0.0},
     notes=["Human default: costs from PHOIBLE frequencies; harsh (epiglottalized) voice very dear (x30: contrastive in a few "
            "languages, !Xóõ, Bai); no purr, percussive, second voice or sub-bass/ultra speech; "
-           "a second simultaneous voice is heard only faintly, as timbre; nothing below ~20 Hz or above ~20 kHz is heard."],
+           "a second simultaneous voice is heard only faintly, as timbre, and its own pitch contour barely at all; nothing below ~20 Hz or above ~20 kHz is heard."],
     sources=["Moran & McCloy (eds.) 2019, PHOIBLE 2.0 (opened: phoible/dev data/phoible.csv via planet/language/data/phoible_segments.tsv)"])
 
 
@@ -221,7 +221,7 @@ def human_freq() -> tuple[dict[Segment, float], str]:
 
 def _nonhuman_core(seg: Segment) -> Segment:
     """The human-makeable part of a percept (for the base of a non-human species' cost)."""
-    return replace(seg, source2=0, register=0, phonation=0 if seg.phonation in (3, 4) else seg.phonation,
+    return replace(seg, source2=0, tone2=0, register=0, phonation=0 if seg.phonation in (3, 4) else seg.phonation,
                    manner=0 if (seg.kind == "C" and seg.manner == 9) else seg.manner)
 
 
@@ -235,7 +235,7 @@ def human_cost(seg: Segment) -> float:
     """-ln(PHOIBLE share), clamped to [0.1, 8]; 8 if never attested; harsh phonation as species_cost(HUMAN) (x HUMAN_HARSH);
     inf for any other non-human percept. A toned vowel costs its vowel plus its tone letter (PHOIBLE lists tones as separate
     segments)."""
-    if seg.phonation == 3 and not (seg.source2 or seg.register or (seg.kind == "C" and seg.manner == 9)):
+    if seg.phonation == 3 and not (seg.source2 or seg.tone2 or seg.register or (seg.kind == "C" and seg.manner == 9)):
         return species_cost(HUMAN, seg)  # harsh voice: rare in human languages, dear (HUMAN_HARSH), not impossible
     if is_nonhuman(seg):
         return INF
@@ -290,6 +290,8 @@ def keys_of(seg: Segment) -> frozenset[str]:
         k.add("long")
     if seg.source2:
         k.add("source2")
+    if seg.tone2:
+        k.add("tone2")
     if seg.register < 0:
         k.add("sub_register")
     if seg.register > 0:
