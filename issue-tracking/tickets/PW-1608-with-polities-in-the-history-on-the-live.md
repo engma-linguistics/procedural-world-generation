@@ -11,7 +11,7 @@ impact: med
 found_by: lane254b
 blocked_by: []
 relates: [PW-1597, PW-1596, PW-1472]
-refs: ["planet/lineages/history/polity_live.py::LivePolities.town_cells", "planet/lineages/techspread.py::town_footprint", "planet/lineages/techtree.py::rebuild", docs/review/culture/polities/round19.md, docs/review/culture/polities/round19/footprint.py, docs/review/culture/polities/round19/replay.py, docs/review/culture/polities/round19/live_run.py, docs/review/culture/polities/round16/measure_v1.py, "world 899985", "world 4360a3"]
+refs: ["planet/lineages/history/frame.py::FrameMixin._composition", "planet/lineages/landuse.py::frame_inputs", "planet/lineages/settlements.py::derive", docs/review/culture/polities/round20.md, docs/review/culture/polities/round20/rebuild_live_foot.py, "planet/lineages/history/polity_live.py::LivePolities.town_cells", "planet/lineages/techspread.py::town_footprint", "planet/lineages/techtree.py::rebuild", docs/review/culture/polities/round19.md, docs/review/culture/polities/round19/footprint.py, docs/review/culture/polities/round19/replay.py, docs/review/culture/polities/round19/live_run.py, docs/review/culture/polities/round16/measure_v1.py, "world 899985", "world 4360a3"]
 created: 2026-11-09
 updated: 2026-11-09
 ---
@@ -43,4 +43,5 @@ than the same history gives with the switch off, for a counting reason, not a hi
 - [ ] live and after-run town cells within ~10% at L6 and L7 on the same run; then PW-1597's five pairs within ~100 years
 
 ## Updates
+- 2026-11-09: Lane 258 (3a52d1bc, round20.md): LivePolities.town_cells now keeps the ledger's sites in the history (chief and second people's places founded, grown, handed on and left by settlements.derive's rule) on the ledger's own inputs taken as a frame takes them (landuse.frame_inputs, compose via frame._composition); no new numbers. Live / same run's ledger town cells: L6 4360a3 seed 7 3 kyr 2,409/2,414, 1 kyr 3,735/3,784; L7 899985 seed 7 3 kyr 2,806/2,853, 1 kyr 5,846/5,796; L7 seed 10 within 9%. First half of the check met. The five pairs still fail (PW-1597): each people's first towns come 0.2-0.5 kyr later live than in the ledger, which reads density from the next stored frame (draft draft-ledger-reads-next-frame.md). Suggest closing this ticket and carrying the calendar on PW-1597 and the draft.
 - 2026-11-09: Created from inbox draft draft-live-town-cells-overcount-l7.md (found by lane254b).

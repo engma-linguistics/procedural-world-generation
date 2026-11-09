@@ -272,60 +272,149 @@ class LivePolities(StandIns):
         """A town-knowing people's settlement stage (settlements' TOWN_MIN index): 4 with cities and roads, 3 with cities, else 2."""
         return 4 if self.knows(people, "roads", ago) and self.knows(people, "cities", ago) else 3 if self.knows(people, "cities", ago) else 2
 
+    def _allowed(self, k: int, ago: float) -> tuple:
+        """(the largest place tier a line's techs allow, its settlement stage), as the ledger's allowed and stage_of: villages
+        first (no towns without them), then one tier for each of villages, towns and cities known (a mining people's 'delving' or
+        'fortifications' counting as cities); stage 4 with cities and roads."""
+        from ..settlements import TECH
+        lid = self.h.lines[k].id
+        if not self.knows(lid, TECH[0], ago):
+            return 0, 0
+        cities = self.knows(lid, TECH[2], ago) or (self._miner(k) and any(self.knows(lid, t, ago) for t in ("delving", "fortifications")))
+        al = min(int(self.knows(lid, TECH[1], ago)) + int(cities) + 1, 3)
+        return al, al + int(al >= 3 and self.knows(lid, "roads", ago))
+
     def town_cells(self, ago: float) -> dict:
-        """Each people's town cells now (PW-1472: the town footprint D52's arms B, E and S read, techtree.Calendar.towns), as the
-        settlement ledger's footprint counts them (techspread.town_footprint, PW-1597): a cell counts for a people where its chief
-        place (the lead people's) or its second people's own place is of town size for the stage that people knows (settlements'
-        TOWN_MIN), where it knows towns. Both places are sized as the ledger sizes them: the settled are the farmers, FISHER_SHARE of
-        the others on a harbour or navigable river, and a mining people's halls (HOLD_SHARE of its heads, once it knows 'mines');
-        a second people's place is MINORITY_SHARE of its settled heads saturating toward MINORITY_MAX, + its halls levelling off
-        toward HOLD_MAX. (Without the second peoples' places and the halls the history booked about a seventh of the ledger's town
-        cells: lane 254, round19.md.) {people: cells}."""
+        """Each people's town cells now (PW-1472: the town footprint D52's arms B, E and S read, techtree.Calendar.towns), counted
+        as the settlement ledger counts them (techspread.town_footprint): a cell counts for a people where it holds a *site* of town
+        size for its stage (settlements' TOWN_MIN). Call once per century step (begin_step does): the sites carry over.
+
+        PW-1608: the ledger's own rule (settlements.derive) on the ledger's own inputs, taken from the history now as a stored frame
+        takes them: the land use's people and farmers per cell (landuse.frame_inputs, quantised as stored) and the cells'
+        composition (who leads a cell and who is second, by compose's heads: frame._composition). Each cell has a chief place (its
+        lead people's) and a second people's own place. The target is the ledger's: the largest of a village on the cell's own
+        settled, a town on its ring where the cell is the best of it and a city on two rings where it is the best of those, each
+        capped by the holder's stage; a second people's place, MINORITY_SHARE of its settled heads saturating toward MINORITY_MAX,
+        + its halls toward HOLD_MAX. The settled are the farmers, FISHER_SHARE of the others on a harbour or navigable river, and
+        a mining people's halls (HOLD_SHARE of its heads, once it knows 'mines'). A site is founded where the target holds FOUND
+        for FOUND_STEPS (a second people's place only once that people has been the cell's second for MINORITY_STEPS), grows toward
+        its target with TAU_KYR, changes hands with the cell's lead (a chief place), and is left when its target stays under
+        ABANDON for ABANDON_STEPS (MINORITY_ABANDON_STEPS), under the sea or ice, or (a second people's place) merged once its own
+        people has led the cell for HAND_KYR. Before, the history sized places on its own densities and lead peoples and counted
+        every cell whose place was of town size that step: mid-history a third more town cells than the ledger at L7 and other
+        peoples' towns (lane 254b, round19.md). Not kept: war's sacks and razings, the ledger's seeded river shifts, and its
+        blending of the frames on either side of a step. {people: cells}."""
         from ..settlements import CONST as C
+        from .. import landuse as LU
         L, h, g = self.h.lines, self.h, self.g
-        _, lead, heads = self._heads()
-        q = self._site()
-        land = np.asarray(h._env_now["land"], bool)
+        n, nl = g.n, len(self.h.lines)
+        st = getattr(self, "_towns_st", None)
+        if st is not None and st["ago"] == ago:
+            return st["out"]
+        if st is None:
+            st = self._towns_st = {"ago": None, "out": {}, "act": np.zeros((2, n), bool), "pop": np.zeros((2, n)),
+                                   "streak": np.zeros((2, n), np.int64), "low": np.zeros((2, n), np.int64),
+                                   "holder": np.full((2, n), -1, np.int64), "cand": np.full(n, -1, np.int64),
+                                   "cand_run": np.zeros(n, np.int64), "lead": None, "lead_since": np.full(n, np.inf)}
+        dt = C["STEP_KYR"] if st["ago"] is None else max(st["ago"] - ago, 0.0)
+        relax = 1 - np.exp(-dt / C["TAU_KYR"])
+        env = h._env_now
+        # the ledger's inputs now, as a frame stores them (history.frame._frame)
+        own = np.array([not l.overlay for l in L])[:, None] | h._linger
+        P = np.where(own, h.p, 0)
+        comp, land = h._composition(ago, env, h.rollup(P))
+        land = np.asarray(land, bool)
+        fi = LU.frame_inputs(h, P, land)
+        area = self.cell_km2
+        dens = (2.0 ** (fi["dens"].astype(float) * LU.PEOPLE_SCALE) - 1) * area  # (people per cell)
+        farm = fi["farm"].astype(float) / 100
+        lead, second = (np.where(comp[x] < 255, comp[x].astype(np.int64), -1) for x in ("mix_lead", "mix_second"))
+        lead_sh, second_sh = comp["mix_lead_share"].astype(float), comp["mix_second_share"].astype(float)
+        ice = (np.asarray(env["ice"], float) > 0.5) if "ice" in env else np.zeros(n, bool)
         coastal = land & (nbr_reduce(g, np.maximum, (~land)[self.idx].astype(np.int8)) > 0)
+        q = self.SE._site_factor(self.W, coastal, C)
         water = ((np.asarray(self.W["harbour"]) > 0) & coastal) | (np.asarray(self.W["river_nav"]) > 0)
-        tot = np.zeros(g.n)
-        for hk in heads.values():
-            tot += hk
-        sed = np.zeros(g.n)
-        settled, halls = {}, {}
-        for k, hk in heads.items():
-            f = 0.0 if h._era[k] == "forager" else float(h._farm_share[k])
-            settled[k] = hk * np.where(water, f + C["FISHER_SHARE"] * (1 - f), f)
-            sed += settled[k]
-            if self._miner(k) and self.knows(L[k].id, "mines", ago):
-                halls[k] = C["HOLD_SHARE"] * hk
-                sed += np.where(lead == k, halls[k], 0.0)  # (the lead's halls: settlements' settled_p, HOLD_SHARE x its share of the heads)
-        size = self._places(sed, q)[0]
-        # the second people's own place (settlements' minority place: the cell's second people by heads, SECOND_MIN of them or more)
-        best, second = np.zeros(g.n), np.full(g.n, -1, np.int64)
-        for k, hk in heads.items():
-            m = (hk > best) & (lead != k)
-            best[m], second[m] = hk[m], k
-        own = np.zeros(g.n)
-        for k in np.unique(second[second >= 0]).tolist():
-            m = (second == k) & (best >= C["SECOND_MIN"] * np.maximum(tot, 1e-12)) & (lead >= 0)
-            m &= np.array([not self._kin(L[k].id, L[j].id) for j in range(len(L))] + [False])[np.where(lead >= 0, lead, len(L))]
-            o = C["MINORITY_SHARE"] * settled[k][m]
-            o = o * C["MINORITY_MAX"] / (o + C["MINORITY_MAX"]) * q[m]
-            if k in halls:
-                hl = halls[k][m] * q[m]
-                o = o + hl / np.sqrt(1 + (hl / C["HOLD_MAX"]) ** 2)
-            own[m] = o
-        tm = C["TOWN_MIN"]
+        al_x, stage_x = np.zeros(nl + 1, np.int64), np.zeros(nl + 1, np.int64)  # (by line; the last row, index -1, is none)
+        hold_x = np.zeros(nl + 1, bool)  # (a mining people that knows 'mines': its halls)
+        for k in np.unique(np.concatenate([lead, second, st["holder"].ravel()])).tolist():
+            if k >= 0:
+                al_x[k], stage_x[k] = self._allowed(k, ago)
+                hold_x[k] = self._miner(k) and self.knows(L[k].id, "mines", ago)
+        people = [l.group_of or l.id for l in L]
+        same = np.zeros((nl + 1, nl + 1), bool)
+        for a in range(nl):
+            same[a, :nl] = [people[a] == p for p in people]
+        TM, SH, CITY_CAP = np.asarray(C["TOWN_MIN"], float), C["SHARE"], np.asarray(C["CITY_CAP"], float)
+
+        def caps(stage):  # (settlements' caps_of: the largest a village, town, city can be, by stage)
+            return (TM[stage] - 1, np.where(stage >= 3, C["CITY_MIN"] - 1, C["TOWN_CAP"]), CITY_CAP[stage])
+        # the chief place's target: the largest tier the lead may build and the cell may hold
+        fish = farm + C["FISHER_SHARE"] * (1 - farm) * water
+        sed = np.where(land, dens * (fish + C["HOLD_SHARE"] * hold_x[lead] * lead_sh / 100), 0.0)
+        al0, stage0 = al_x[lead], stage_x[lead]
+        cap0 = caps(stage0)
+        tie = 1.0 + 1e-9 * (n - np.arange(n)) / n  # (equal hinterlands: the lower cell id is the best of its ring)
+        H1 = sed + nbr_reduce(g, np.add, sed[self.idx])
+        H2 = np.bincount(self.r2a, weights=sed[self.r2b], minlength=n)
+        s1, s2 = H1 * q * tie, H2 * q * tie
+        best1 = s1 >= np.maximum(s1, nbr_reduce(g, np.maximum, s1[self.idx]))
+        mx2 = np.maximum(s2, nbr_reduce(g, np.maximum, s2[self.idx]))
+        best2 = s2 >= np.maximum(mx2, nbr_reduce(g, np.maximum, mx2[self.idx]))
+        tgt0 = np.zeros(n)
+        for t, hin, best in ((1, sed, True), (2, H1, best1), (3, H2, best2)):
+            tgt0 = np.maximum(tgt0, np.minimum(np.where(best & (al0 >= t), SH[t] * hin * q, 0.0), cap0[t - 1]))
+        tgt0 = np.where(land & (lead >= 0), tgt0, 0.0)
+        # the second people's own place: the cell's second people (SECOND_MIN of its people or more, not the lead's own people);
+        # once founded, the line that founded it
+        cand = np.where((second >= 0) & (second_sh >= 100 * C["SECOND_MIN"]) & ~same[lead, second], second, -1)
+        line1 = np.where(st["act"][1], st["holder"][1], cand)
+        sh1 = np.where(line1 < 0, 0.0, np.where(lead == line1, lead_sh, np.where(second == line1, second_sh, 0.0))) / 100
+        heads1 = dens * sh1
+        own1 = C["MINORITY_SHARE"] * heads1 * fish
+        own1 = own1 * C["MINORITY_MAX"] / (own1 + C["MINORITY_MAX"])
+        hold1 = hold_x[line1] & (line1 >= 0)
+        hall1 = C["HOLD_SHARE"] * heads1 * hold1 * q
+        hall1 = hall1 / np.sqrt(1 + (hall1 / C["HOLD_MAX"]) ** 2)
+        al1, stage1 = al_x[line1], stage_x[line1]
+        cap1 = caps(stage1)
+        ti1 = np.where(hold1, al1, np.minimum(al1, 2))  # (a hold may grow into a city of its own)
+        tgt1 = np.where(land & (al1 >= 1), np.minimum(own1 * q + hall1, np.select([ti1 == 1, ti1 == 2, ti1 >= 3], list(cap1), 0.0)), 0.0)
+        st["cand_run"] = np.where(cand >= 0, np.where(cand == st["cand"], st["cand_run"] + 1, 1), 0)
+        st["cand"] = cand
+        if st["lead"] is not None:
+            st["lead_since"] = np.where(lead != st["lead"], ago, st["lead_since"])
+        st["lead"] = lead
+        # the sites: founded, grown, handed on and left as the ledger's
+        act, pop, streak, low, holder = st["act"], st["pop"], st["streak"], st["low"], st["holder"]
+        for s, tgt, hl, ready, quit_ in ((0, tgt0, lead, True, C["ABANDON_STEPS"]),
+                                          (1, tgt1, line1, st["cand_run"] >= C["MINORITY_STEPS"], C["MINORITY_ABANDON_STEPS"])):
+            grow = act[s].copy()
+            streak[s] = np.where(~act[s] & (tgt >= C["FOUND"]) & ready, streak[s] + 1, 0)
+            new = ~act[s] & (streak[s] >= C["FOUND_STEPS"]) & (hl >= 0)
+            act[s] |= new
+            pop[s] = np.where(new, np.maximum(C["FOUND"], np.minimum(tgt, 2 * C["FOUND"])), pop[s])
+            holder[s] = np.where(new, hl, holder[s])
+            streak[s][new] = 0
+            pop[s] = np.where(grow, pop[s] + (tgt - pop[s]) * relax, pop[s])
+            if s == 0:
+                holder[s] = np.where(grow & (hl >= 0), hl, holder[s])
+            low[s] = np.where(grow, np.where(tgt < C["ABANDON"], low[s] + 1, 0), low[s])
+            gone = grow & (~land | ice | (low[s] >= quit_))
+            if s == 1:  # (merged into the chief place once its own people has led the cell for HAND_KYR)
+                gone |= grow & (holder[s] >= 0) & same[lead, holder[s]] & (st["lead_since"] - ago >= C["HAND_KYR"] - 1e-9)
+            act[s] &= ~gone
+            low[s][gone] = 0
+            if s == 1:
+                holder[s][gone] = -1
+        town = act & (pop >= TM[np.stack([stage0, stage1])])  # (the size class in force: each slot's people's stage now, PW-1114)
+        names = sorted(set(people))
+        pid = np.array([names.index(p) for p in people] + [-1])  # (by line -> its people; a group's places are its people's)
+        hp = pid[holder]
         out: dict = {}
-        for k in np.unique(np.concatenate([lead[land & (size >= min(tm))], second[land & (own >= min(tm))]])).tolist():
-            if k < 0:
-                continue
-            lid = L[k].id
-            if not self.knows(lid, "towns", ago):
-                continue
-            t = tm[self._stage(lid, ago)]
-            out[lid] = int((land & (((lead == k) & (size >= t)) | ((second == k) & (own >= t)))).sum())
+        for i in np.unique(hp[town]).tolist():
+            if i >= 0:
+                out[names[i]] = int((((hp[0] == i) & town[0]) | ((hp[1] == i) & town[1])).sum())
+        st["ago"], st["out"] = ago, out
         return out
 
     def _miner(self, k: int) -> bool:
@@ -333,12 +422,6 @@ class LivePolities(StandIns):
         l = self.h.lines[k]
         up = self.lines[self.lidx[l.group_of]]["traits"] if l.group_of in self.lidx else []
         return bool(self.SE.MINERS & (set(l.traits or []) | set(up)))
-
-    def _kin(self, a: str, b: str) -> bool:
-        """Two lines of one people (the ledger's same_people for a minority place: a group counts as its people)."""
-        L = self.h.lines
-        pa, pb = L[self.lidx[a]].group_of or a, L[self.lidx[b]].group_of or b
-        return pa == pb
 
     def _step(self, step):
         h, g = self.h, self.g

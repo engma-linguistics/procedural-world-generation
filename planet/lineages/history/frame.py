@@ -27,12 +27,7 @@ class FrameMixin:
         # the cell's composition (PW-689) and the body flags given as a share of a people (PW-701)
         den = self.fold(P)
         freq = {k: self.fold(P * f[:, None]) / np.maximum(den, 1e-9) for k, f in self.share_traits.items()}
-        ramp = self._mix_ramp(step.ago)
-        land = env["land"] & ~(env["ice"] > 0.5) if "ice" in env else env["land"]
-        Pr = CP.reach(self.grid, Pw, self._suit(), self._corr_now if self._corr_now is not None else np.ones(self.grid.n), land, ramp, EST)
-        # (before the farming onset foragers meet other peoples only at their ranges' edges, PW-927)
-        edge = CP.edges(self.grid, Pw, land, EST) if step.ago > HYBRID_FROM_KYR else None
-        comp = CP.compose(Pw, Pr, self.cohab, ramp, EST, freq, self.dens, edge)
+        comp, land = self._composition(step.ago, env, Pw, freq)
         CT.cline(self, comp, whole, land)  # (a body share spreads over the border of a close people; output only, PW-727)
         if self.contacts is not None and self._tags_now is not None:
             self.contacts.update(Pw, step, self._tags_now, self._corr_now if self._corr_now is not None else np.ones(self.grid.n), land)
@@ -66,6 +61,17 @@ class FrameMixin:
                 **(self.animals.frame_layers() if self.animals is not None else {}),
                 **(self.crops.frame_layers() if self.crops is not None else {}),
                 "stats": {**step.stats, "peoples": areas, "population": pops, **cstats, **({"learned": lstats} if lstats else {})}}
+
+    def _composition(self, ago, env, Pw, freq=None):
+        """(the cells' composition, PW-689: compose's mix_lead, mix_second and their shares, from the peoples as wholes Pw, their
+        reach and the mixing ramp now; the open land it reads). A stored frame's, and the live town count's (PW-1608: the
+        settlement ledger reads a frame's)."""
+        ramp = self._mix_ramp(ago)
+        land = env["land"] & ~(env["ice"] > 0.5) if "ice" in env else env["land"]
+        Pr = CP.reach(self.grid, Pw, self._suit(), self._corr_now if self._corr_now is not None else np.ones(self.grid.n), land, ramp, EST)
+        # (before the farming onset foragers meet other peoples only at their ranges' edges, PW-927)
+        edge = CP.edges(self.grid, Pw, land, EST) if ago > HYBRID_FROM_KYR else None
+        return CP.compose(Pw, Pr, self.cohab, ramp, EST, freq, self.dens, edge), land
 
     def _learned_frame(self, whole, env):
         """Niche learning in a frame (PW-1155): the learned acceptance per cell, % (peoples_learned), of the people leading it as a whole
