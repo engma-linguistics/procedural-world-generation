@@ -1,16 +1,19 @@
 ---
+id: PW-1603
 title: "Calendars: how many counts should a world have? States give hundreds on Seven Meals"
 type: task
-status: needs-decision
+status: todo
 parent: null
-milestone: v4
+milestone: later
 subsystem: culture
 effort: xs
 impact: low
 found_by: lane255
 blocked_by: []
 relates: [PW-1435]
-refs: [planet/lineages/calendars.py, "planet/lineages/calendars.py::derive", "planet/lineages/calendars.py::P_STATE", run:1e97dd, run:a24559, run:07c755, docs/overview.md]
+refs: [planet/lineages/calendars.py, "planet/lineages/calendars.py::derive", "planet/lineages/calendars.py::P_STATE", "run:1e97dd", "run:a24559", "run:07c755", docs/overview.md]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -31,3 +34,7 @@ Lean: A for v4. B is a one-line change if Daniel finds the list too long in the 
 11-03 north star warns against.
 
 Nothing breaks if this is never decided. The only cost is a long picker on busy worlds.
+
+## Updates
+- 2026-11-09: Coordinator 11-09: keep the odds (lane's lean); picker lists counts in use first. Moved to later; revisit if Daniel finds it long.
+- 2026-11-09: Created from inbox draft draft-calendars-how-many.md (found by lane255).
