@@ -15,6 +15,7 @@
   GET    /api/thumb?kind=run|world&id=<id>   a small PNG preview (thumbs.py; &proj=equal-earth|equirect &w=192|512|1024)
   GET    /api/make/options, /api/make/estimate?seed=&preset=&level=...   the New planet form (make.py)
   GET    /api/jobs/<id>               a job's progress / result
+  GET    /api/jobs?type=refine        {"active": the queued or running job of that type, or null} (a page opened later follows it)
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
   GET    /api/brief?run=<id>&people=<id>|culture=<id>[&era=<kyr>] or &region=lat,lon[,km]   the culinary brief (brief()); a culture's has its cuisine sheet
   GET    /api/speak?ipa=<url-encoded IPA>[&people=<lineage id>][&backend=auto|espeak|piper][&sentence=1[&q=1]][&stress=initial|penult|final]   a word
@@ -105,6 +106,13 @@ def make_estimate(query: str) -> tuple[dict, int]:
     except (ValueError, api.BadRequest) as e:
         return {"error": str(e)}, 400
     return {"spec": spec, **make.estimate(spec)}, 200
+
+
+def active_job(jobs: api.Jobs | None, query: str) -> dict:
+    """GET /api/jobs?type=refine: {"active": the queued or running job of that type (its id, label fields and
+    progress), or None}. The viewer asks on load, so a refine started in another page shows its progress (PW-1438)."""
+    jid = jobs.active(dict(parse_qsl(query)).get("type", "")) if jobs else None
+    return {"active": jobs.get(jid) if jid else None}
 
 
 def refine_estimate(jobs: api.Jobs | None, query: str) -> tuple[dict, int]:
@@ -698,20 +706,10 @@ _grid_lat: dict = {}  # level -> cell latitudes
 
 
 def world_columns(path: Path, keys) -> dict:
-    """{layer: array} for some of a saved world's layers, parsing only their
-    lines (world.save writes one line per layer); the whole file if the
-    lines aren't there (a world edited by hand)."""
+    """{layer: float array} for some of a saved world's layers: only their files are read."""
     import numpy as np
-    keys, out = set(keys), {}
-    with open(path) as fh:
-        for line in fh:
-            m = re.match(r'  "(\w+)": ', line)
-            if m and m.group(1) in keys:
-                out[m.group(1)] = np.array(json.loads(line[m.end():].rstrip().rstrip(",")), float)
-                if len(out) == len(keys):
-                    return out
-    layers = json.loads(path.read_text())["layers"]
-    return {k: np.array(layers[k], float) for k in keys}
+    specs = json.loads(Path(path).read_text())["layers"]
+    return {k: np.asarray(v, float) for k, v in S.read_world_layers(specs, list(keys)).items()}
 
 
 def cell(query: str) -> tuple[dict, int]:
@@ -756,7 +754,7 @@ def cell(query: str) -> tuple[dict, int]:
 
 # ---------------------------------------------------------------- gzip
 GZIP_SUFFIXES = (".bin", ".json")  # run layers, worlds, grids, run.json
-GZIP_MIN = 256 << 10  # smaller files go as they are
+GZIP_MIN = 64 << 10  # smaller files go as they are (64 KB: an L7 world's one-byte layers, 160 KB, shrink 3-50x; PW-1209)
 # level 1: an L7 run's default layers 330 -> ~87 MB, ~1.4 s for the biggest
 # file (level 6: ~3% smaller, twice the time). An int16 elevation barely
 # shrinks (78 -> 67 MB); the int8 and mostly-zero layers 5-50x.
@@ -771,9 +769,19 @@ def gz_path(src: Path, st: os.stat_result) -> Path:
     return S.root() / GZIP_DIR / f"{rel}.{st.st_size}-{st.st_mtime_ns}.gz"
 
 
-def prune_gz() -> None:
+PRUNE_GZ_EVERY_S = 60.0
+_pruned_at = [float("-inf")]
+
+
+def prune_gz(force: bool = False) -> None:
     """Drop cached copies whose file is gone or has changed (deleted runs and
-    worlds, regenerated layers)."""
+    worlds, regenerated layers). At most once a minute unless forced: it walks
+    the whole cache, and a world's ~180 layer files are cached together (an L8
+    world's first opening took 11 s with a walk after each; PW-1209)."""
+    import time
+    if not force and time.monotonic() - _pruned_at[0] < PRUNE_GZ_EVERY_S:
+        return
+    _pruned_at[0] = time.monotonic()
     top = S.root() / GZIP_DIR
     for p in top.rglob("*.gz"):
         src = S.root() / p.relative_to(top).parent / p.name.rsplit(".", 2)[0]
@@ -931,6 +939,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             os.replace(tmp, cache)
         finally:
             tmp.unlink(missing_ok=True)
+        for old in cache.parent.glob(f"{src.name}.*.gz"):  # (this file's older copies at once; the rest: prune_gz)
+            if old != cache and old.name.rsplit(".", 2)[0] == src.name:
+                old.unlink(missing_ok=True)
         prune_gz()
 
     def gzippable(self) -> Path | None:
@@ -1020,6 +1031,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*make_estimate(url.query))
         if url.path == "/api/refine/estimate":
             return self.send_json(*refine_estimate(self.jobs, url.query))
+        if url.path == "/api/jobs":  # ?type=refine: the queued or running job of that type, so a page opened later follows it
+            return self.send_json(active_job(self.jobs, url.query))
         if url.path == "/api/thumb":
             q = dict(parse_qsl(url.query))
             w = q.get("w", "")
@@ -1151,6 +1164,9 @@ def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads
                                 contexts=True)
         http.server.ThreadingHTTPServer.allow_reuse_address = True
         http.server.ThreadingHTTPServer.daemon_threads = True
+        # a world's ~180 layer files are asked for at once, each on its own connection (HTTP/1.0): a deeper accept
+        # queue than socketserver's default of 5, so a burst is not dropped and retried (PW-1209)
+        http.server.ThreadingHTTPServer.request_queue_size = 256
         with http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler) as httpd:
             url = f"http://127.0.0.1:{port}/viewer/"
             print(f"Viewer at {url}   (data: {S.root()}; {jobs} jobs at once, {pool.threads} threads each; "

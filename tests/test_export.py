@@ -150,7 +150,7 @@ def world(data_root):
     S.worlds_dir().mkdir(parents=True, exist_ok=True)
     (S.worlds_dir() / "tw1.json").write_text(json.dumps(
         {"format": "x", "name": "synthetic", "id": "tw1", "meta": meta,
-         "layers": {k: np.asarray(v).tolist() for k, v in L.items()}}))
+         "layers": S.write_world_layers("tw1", L)}))
     return L
 
 

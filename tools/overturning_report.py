@@ -150,8 +150,9 @@ def world(wid, tune):
     d = json.loads(store.find("world", wid).read_text())
     m = d["meta"]
     grid = build_grid(int(m["level"]))
-    elev = np.asarray(d["layers"]["elevation"], np.float64)
-    ice = np.asarray(d["layers"].get("ice", np.zeros(grid.n)), np.float64)
+    L = store.world_layers(wid, ("elevation", "ice"))
+    elev = np.asarray(L["elevation"], np.float64)
+    ice = np.asarray(L.get("ice", np.zeros(grid.n)), np.float64)
     p = m.get("params", {})
     c = _with_tune(tune, lambda: climate.compute(grid, elev, float(p.get("dT", 0.0)), float(p.get("tilt", 23.4)), ice))
     return grid, c, is_land(elev, ice)

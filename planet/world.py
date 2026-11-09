@@ -1,19 +1,21 @@
 """Pipeline (generate -> climate -> erosion/rivers -> biomes) and file I/O.
 
-On-disk format: worlds/<id>.json (paths: store.py)
+On-disk format: worlds/<id>.json + worlds/layers/<id>/<name>.bin (paths: store.py)
 -----------------------------------
 {
-  "format": "procgen-planet/2",
+  "format": "procgen-planet/3",
   "name", "id",
   "meta":    {...how it was made: method, seed, params...},
   "summary": {...headline stats...},
   "legend":  {"rocks", "koppen", "biomes": ids -> names/colours (store.legends)},
   "grid":    "../grids/L<level>.json"  (the shared grid file, as runs use:
               lat, lon, corner_lat, corner_lon, cells, pentagons, nbr),
-  "layers":  {"elevation": [m per cell], "temperature": [...], ...}
+  "layers":  {"elevation": {"file": "layers/<id>/elevation.bin", "dtype": "int16",
+              "shape": [cells], "kind": "int"}, "temperature": {..., "decimals": 1}, ...}
 }
-Every array in "layers" is indexed by cell id; layer names are store.LAYERS'
-vocabulary. A plain-text companion, worlds/<id>.txt, has the summary plus
+Each layer is a binary file of little-endian numbers indexed by cell id (PW-1209: an L8 world was a 450 MB JSON
+text, near the longest string a browser reads, and an L9 one could not be opened); its spec says how to read it
+(store.world_layer_encode / world_layer_decode, viewer/globe/load.js). Layer names are store.LAYERS' vocabulary. A plain-text companion, worlds/<id>.txt, has the summary plus
 ASCII maps. That's the conversation-friendly view.
 """
 
@@ -508,15 +510,16 @@ _np = S.jsonable  # json.dumps default= for numpy values
 
 
 def save(world: dict, name: str, file_id: str | None = None) -> Path:
-    """Saves worlds/<id>.json (+ .txt); `name` is the human-readable label."""
+    """Saves worlds/<id>.json, its layer files and <id>.txt; `name` is the human-readable label."""
     S.worlds_dir().mkdir(parents=True, exist_ok=True)
     file_id = file_id or S.new_id("world")
     g: Grid = world["grid"]
     world["name"] = name
     summary = summarize(world)
     S.write_grid(g)
+    specs = S.write_world_layers(file_id, world["layers"])  # (before the .json, which lists the world)
     parts = [
-        ('"format"', json.dumps("procgen-planet/2")),
+        ('"format"', json.dumps("procgen-planet/3")),
         ('"name"', json.dumps(name)),
         ('"id"', json.dumps(file_id)),
         ('"meta"', json.dumps(world["meta"], default=_np)),
@@ -524,9 +527,7 @@ def save(world: dict, name: str, file_id: str | None = None) -> Path:
         ('"legend"', json.dumps(S.legends())),
         ('"grid"', json.dumps(f"../grids/L{g.level}.json")),
     ]
-    layer_lines = ",\n".join(
-        f'  {json.dumps(k)}: {json.dumps(np.asarray(v).tolist(), separators=(",", ":"))}'
-        for k, v in world["layers"].items())
+    layer_lines = ",\n".join(f"  {json.dumps(k)}: {json.dumps(v)}" for k, v in specs.items())
     body = ",\n".join(f"{k}: {v}" for k, v in parts)
     text = "{\n" + body + ',\n"layers": {\n' + layer_lines + "\n}\n}\n"
     path = S.path_of("world", file_id)
@@ -544,7 +545,7 @@ def load(path: str | Path) -> dict:
     d = json.loads(Path(path).read_text())
     level = d["meta"]["level"]
     grid = build_grid(level)
-    layers = {k: np.array(v) for k, v in d["layers"].items()}
+    layers = S.read_world_layers(d["layers"])
     return {"grid": grid, "layers": layers, "meta": d["meta"], "name": d.get("name")}
 
 

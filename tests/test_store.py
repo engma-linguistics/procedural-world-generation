@@ -470,3 +470,29 @@ def test_highlights_cache_follows_the_world_file(data_root, monkeypatch):
     st = w.stat()
     os.utime(w, ns=(st.st_atime_ns, st.st_mtime_ns + 10**9))
     assert H.cached(w) is None
+
+
+def test_world_layer_encoding_is_exact_and_small():
+    """PW-1209: each world layer in the smallest type that gives back exactly its values."""
+    rng = np.random.default_rng(1)
+    cases = {
+        "ids": (rng.integers(0, 20, 500), "int8", "int"),
+        "metres": (rng.integers(-9000, 9000, 500), "int16", "int"),
+        "big": (np.array([0, 2 ** 40]), "float64", "float"),
+        "flag": (rng.random(500) > 0.5, "uint8", "bool"),
+        "one_decimal": (np.round(rng.normal(10, 20, 500), 1), "int16", "float"),
+        "whole_floats": (np.round(rng.normal(0, 3000, 500)), "int16", "float"),
+        "f32": (rng.random(500).astype(np.float32).astype(np.float64), "float32", "float"),
+        "f64": (rng.random(500), "float64", "float"),
+        "nan": (np.array([1.5, np.nan]), "float32", "float"),
+        "rows": (np.round(rng.normal(0, 0.005, (100, 3)), 3), "int8", "float"),
+        "empty": (np.zeros(0, int), "uint8", "int"),
+    }
+    for name, (v, dtype, kind) in cases.items():
+        arr, spec = S.world_layer_encode(v)
+        assert (spec["dtype"], spec["kind"]) == (dtype, kind), name
+        back = S.world_layer_decode(arr, spec)
+        assert back.shape == np.shape(v) and np.array_equal(back, v, equal_nan=back.dtype.kind == "f"), name
+        assert back.dtype == {"int": np.int64, "float": np.float64, "bool": bool}[kind], name
+    with pytest.raises(TypeError):
+        S.world_layer_encode(np.array(["a"]))

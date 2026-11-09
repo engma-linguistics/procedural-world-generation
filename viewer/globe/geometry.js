@@ -427,5 +427,5 @@ export function plateVelocity(i) {
     const p = [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)];
     return [w[1] * p[2] - w[2] * p[1], w[2] * p[0] - w[0] * p[2], w[0] * p[1] - w[1] * p[0]];
   }
-  const v = S.V.layers._plate_velocity; return v ? v[i] : null;
+  const v = S.V.layers._plate_velocity; return v ? [v[3 * i], v[3 * i + 1], v[3 * i + 2]] : null;  // (flat: cell i at 3i..3i+2, PW-1209)
 }

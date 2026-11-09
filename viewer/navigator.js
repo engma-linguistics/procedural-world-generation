@@ -139,7 +139,7 @@ export function createNavigator(host) {
   }
   // a world from a run, below L9: refine it onto a finer global grid (POST /api/refine, PW-1438). "Check the cost"
   // first asks the server what it costs and whether there is room (GET /api/refine/estimate); Start is offered then.
-  const RF_MAX = 9, VIEWER_MAX_LEVEL = 8;  // (api.REFINE_MAX_LEVEL; api.VIEWER_MAX_LEVEL: an L9 world is too big for the browser, PW-1209)
+  const RF_MAX = 9, VIEWER_MAX_LEVEL = 9;  // (api.REFINE_MAX_LEVEL; api.VIEWER_MAX_LEVEL: every level opens since PW-1209)
   function refineForm(n, dis) {
     const lv = +n.level;
     if (!(lv < RF_MAX) || (n.t_myr == null && !n.timezoom)) return '';
@@ -375,6 +375,12 @@ export function createNavigator(host) {
     }
     renderAll();
   }
+  // a refine already queued or running on the server (started before a reload, or in another tab): the bar follows
+  // it as if this page had started it, ETA and Cancel included, and opens the world when it is done
+  fetch('../api/jobs?type=refine', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((o) => {
+    const j = o?.active;
+    if (j && !job) follow(j.id, `Refine ${j.request?.world ?? ''} to L${j.request?.level ?? '?'}`, 'world');
+  }).catch(() => {});
 
   return {
     // the view changed: redraw the chain (fetches the planets again if this one isn't known yet)
