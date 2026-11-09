@@ -1,0 +1,90 @@
+diff --git a/planet/hydrology.py b/planet/hydrology.py
+index c90035f1..f9ccedf4 100644
+--- a/planet/hydrology.py
++++ b/planet/hydrology.py
+@@ -96,6 +96,11 @@ MIN_DEPTH = 20.0  # m: shallower hollows in the cell-mean terrain are drained by
+ # m per km: a wide hollow must also fall at least this steeply from its rim
+ # to its middle (depth / sqrt(area / pi)), or it is a plain that rivers cross
+ MIN_SLOPE = 0.1
++# keep the hollows their own inflow can't fill however shallow or flat (_dry_hollows; PW-054 scout 247)
++DRY_HOLLOWS = True
++# ...if they lie in drylands: rain below this share of the open-water evaporation over the hollow (the
++# aridity index's drylands bound, P / PET < 0.65)
++DRYLAND_AI = 0.65
+ # depth of the valley a river runs in below its cells' mean height, m:
+ # CHANNEL_K x (discharge in m^3/s) ** CHANNEL_B
+ CHANNEL_K, CHANNEL_B = 0.1, 0.7
+@@ -125,7 +130,21 @@ def _bed(grid, ground, sea, min_depth, min_slope):
+     return np.where(keep, h, kernels.flood_fill(h, sea, grid.nbr_off, grid.nbr_idx, 0.01))
+ 
+ 
+-def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
++def _dry_hollows(grid, ground, land, src, loss):
++    """Cells of the hollows (below their spill point) that their own inflow
++    can't fill: on the unfiltered ground, the lake each basin's water makes
++    evaporates it all before reaching the rim. _bed's min_depth and
++    min_slope stand for channels too small to see that a river cuts through
++    a shallow rim, or a plain it crosses; a hollow no river leaves has no
++    such channel, so it stays closed however shallow (a playa or a terminal
++    lake on a flat floor)."""
++    sea, rcv, asc = kernels.lake_order(ground, ~land, grid.nbr_off, grid.nbr_idx)
++    open0 = kernels.lakes_on(ground, grid.nbr_off, grid.nbr_idx, src, loss, sea, rcv, asc)[1]
++    filled = kernels.priority_flood(ground, ~land, grid.nbr_off, grid.nbr_idx, 0.0)[0]
++    return land & ~open0 & (filled > ground)
++
++
++def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4, dry=None):
+     """kernels.lakes on _bed(ground), made to agree with the rivers.
+     kernels.lakes gives each basin the water that runs downhill into it,
+     but a lake that spills where its basin meets the sea's drainage can
+@@ -133,9 +152,38 @@ def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
+     (route() follows the river there): that basin then gets the river too
+     and fills further, and may spill in turn (the Nile into the Nubian
+     hollow, PW-122). Returns ((bed, wet, open, out_z, pit, catch, basin),
+-    (flow, down, order, sink)) of the last try."""
++    (flow, down, order, sink)) of the last try. dry (optional): (rain,
++    open-water evaporation) per cell, mm/yr: only hollows in drylands are
++    _dry_hollows (DRYLAND_AI)."""
+     extra = np.zeros(grid.n)
+-    bed = _bed(grid, ground, ~land, min_depth, min_slope)
++    if DRY_HOLLOWS and min_depth > 0:
++        # (each dry hollow's lowest cell is deepened past the depth test for _bed, so the hollow stays a basin
++        # while dips in its floor still join it as one lake; that cell gets its own height back after)
++        from .ocean import cell_area_km2
++        lab, k = grid.components(_dry_hollows(grid, ground, land, src, loss))
++        if k and dry is not None:  # (a hollow on wet ground is a swamp or a lake a river crosses: _bed's)
++            m = lab >= 0
++            p_sum = np.bincount(lab[m], dry[0][m], minlength=k)
++            e_sum = np.bincount(lab[m], dry[1][m], minlength=k)
++            ok = p_sum < DRYLAND_AI * e_sum
++            remap = np.where(ok, np.cumsum(ok) - 1, -1)
++            lab = np.where(m, remap[np.maximum(lab, 0)], -1)
++            k = int(ok.sum())
++        low = np.full(k, -1, np.int64)
++        if k:
++            m = np.flatnonzero(lab >= 0)
++            srt = m[np.lexsort((ground[m], lab[m]))]
++            first = np.r_[True, lab[srt][1:] != lab[srt][:-1]]
++            low[lab[srt][first]] = srt[first]
++            area = np.bincount(lab[m], cell_area_km2(getattr(grid, "base", grid))[m], minlength=k)
++            dug = ground.copy()
++            dug[low] -= min_depth + min_slope * np.sqrt(area / np.pi) + 1.0
++            bed = _bed(grid, dug, ~land, min_depth, min_slope)
++            bed[low] = np.maximum(bed[low], ground[low])
++        else:
++            bed = _bed(grid, ground, ~land, min_depth, min_slope)
++    else:
++        bed = _bed(grid, ground, ~land, min_depth, min_slope)
+     order0 = kernels.lake_order(bed, ~land, grid.nbr_off, grid.nbr_idx)  # (the same bed each try)
+     for _ in range(tries):
+         wet, open_, out_z, pit, catch, basin = kernels.lakes_on(bed, grid.nbr_off, grid.nbr_idx, src + extra, loss,
+@@ -214,7 +262,8 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
+     carved = ground
+     for k in range(CARVE_TRIES + 1 if channel > 0 else 1):
+         (elev, wet, open_, out_z, pit, catch, _), (flow, down, order, sink) = _settle(grid, carved, land, src, loss,
+-                                                                                  min_depth, min_slope)
++                                                                                  min_depth, min_slope,
++                                                                                  dry=(runoff_mm + aet_mm, lake_evap_mm))
+         if k == CARVE_TRIES or channel <= 0:
+             break
+         # the same with the rivers' valleys cut in (only where they reach the
