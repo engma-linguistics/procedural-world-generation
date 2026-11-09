@@ -93,8 +93,17 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <p class="meter" id="meter">Loading your answers…</p>
 <p class="offline" id="offline" hidden>Answers can't be saved in this view (signed out or storage unavailable). You can still read everything; tell me in chat.</p>
 <div class="card" id="general"><div class="id">ANYTHING ELSE</div>
-<p>No decisions waiting tonight. Questions, requests, "look at X", priorities: anything that isn't a card.</p>
+<p>Questions, requests, "look at X", priorities: anything that isn't a card.</p>
 <div class="ask" data-id="general"></div></div>
+<div class="card" id="d71"><div class="id">D71 · PW-1577 · how big should once-stranded peoples end up?</div>
+<p><b>In plain words:</b> when a family of peoples lost all its land, the model used to quietly teleport it to the best empty spot in the world, often 10,000–13,000 km away. That is what gave leonins, goblins and halflings their huge ranges on one test world. Lane 233 removed the jump (merged): a stranded family now holds out within 8,000 km of where it lived, in a free country big enough to found daughters. Results, against yesterday's code on the same seeds: fewer brittle peoples (9 → 4 across the nudged runs), and swings narrower (leonin's range varied 998-fold, now 84-fold). But leonins, goblins and halflings now end smaller (median 5.5, 4.7 and 7.6 Mkm² against 27.8, 10.4 and 32.9), and hobgoblins spread widest. The ticket's bar asked for ranges like before, which only the teleport gave.</p>
+<ul>
+<li><b>A.</b> Drop the range bar. Judge on steadiness, brittleness and no long jumps, which all improved.</li>
+<li><b>B (lean).</b> A floor instead: none of these peoples under 1 Mkm² in any test run. Today a couple of nudged runs still leave leonins or halflings at about 0.1, so more work is needed.</li>
+<li><b>C.</b> Keep the old ranges as the aim, and give peoples before boats some other way across the sea (a separate mechanism).</li>
+</ul>
+<div class="ask" data-id="D71" data-opts="A:Drop the range bar|B:A 1 Mkm² floor*|C:Old ranges, by sea crossings"></div>
+</div>
 <div class="card" id="map"><div class="id">THE ROAD TO V1.0 ON 1 DECEMBER</div>
 <div class="tbl"><table>
 <tr><th>Tag</th><th>Target</th><th>What you can do</th><th>Where it is</th></tr>
@@ -110,7 +119,6 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>233 · peoples: no hidden jumps (overnight)</td><td>A people that loses all its land should hold out near where it was, choosing by free room, instead of jumping to the world's best spot. Plus the duplicate trade-language names in the legend.</td></tr>
 <tr><td>238 · states: one map, not two (v0.4, overnight)</td><td>With states-in-history switched on, a run keeps two maps of states: the one that fought in the history, and a second one the viewer draws afterwards. This makes the viewer, the state cards and the gods' rulers all read the map that fought. It is the last big step before the switch can go on; you'll get a card if the numbers support it.</td></tr>
 <tr><td>237 · physics: Andes-type ranges, second try (overnight)</td><td>Your ask tonight. Rigid plates can't squeeze, so the model has few coastal mountain ranges like the Andes. This try makes the continent's edge actually shorten toward the trench, so the crust piles up without breaking the land and volume balance that sank the first try. Written diagnosis first, small test runs, then the full check. Second of three tries.</td></tr>
 <tr><td>236 · regional pantheons and more god domains (overnight)</td><td>Your D68 answers and "more domains in general".</td></tr>
@@ -118,7 +126,8 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <p><b>Next for physics</b> (scouts run side by side, 1–3 passes each): a guard test so L7 and L6 can't drift apart again; plants using cloud-softened light (the rainforest's last gap); plates that can shrink (Andes-type ranges, a bigger job). Rain inland waits at the back of the line (three strikes); ice ages stay after v1.</p>
 
 <h2 id="settled">Settled since last night</h2>
-<ul><li><b>Bought-in foods in the culinary brief</b> (PW-1505, lane 235, merged). Each culture's brief and cuisine sheet now have a "Bought in" line: what it buys, from whom, how far and by which road. Examples: desert humans buy salt carried 844 km by caravan; kobolds get herds driven 1,413 km on the hoof and tea flown in; temperate kobolds drink cacao shipped 8,842 km. Inland salt travels a median 680–1,200 km (Sahara salt went 1,000 km and more). Two gaps filed: nobody buys salt fish yet, and grain still sails too far.</li>
+<ul><li><b>No more hidden jumps for stranded peoples</b> (PW-1558, lane 233, merged; see D71). Also: a trade language no longer shows twice in the legend (PW-1564).</li>
+<li><b>Bought-in foods in the culinary brief</b> (PW-1505, lane 235, merged). Each culture's brief and cuisine sheet now have a "Bought in" line: what it buys, from whom, how far and by which road. Examples: desert humans buy salt carried 844 km by caravan; kobolds get herds driven 1,413 km on the hoof and tea flown in; temperate kobolds drink cacao shipped 8,842 km. Inland salt travels a median 680–1,200 km (Sahara salt went 1,000 km and more). Two gaps filed: nobody buys salt fish yet, and grain still sails too far.</li>
 <li><b>L7 can't quietly turn drier than L6 again</b> (PW-1556, scout 232, merged). A test catches it. The old bug would fail it by about 6 points; today's code passes by about 1.</li>
 <li><b>Cloudy-sky light for plants: first try promising, not in yet</b> (PW-1518, scout 232, pass 1 of 3). Rainforest photosynthesis and leaf breathing land in the measured range, and no other biome moves. But leaves come out a little thin (4.3 layers against 4.7–5.1 measured), and the full checks couldn't run because the machine was overloaded. Kept as a patch to finish.</li>
 <li><b>States in the history: the tech tree was already in</b> (PW-1466, lane 234). The history already knows who has writing, kingship and law at each step. The real blocker is the two maps of states; lane 238 is on it.</li>
@@ -137,10 +146,9 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>"Submit or else", and where the expelled go</b> (PW-1496, lane 208, your D61 C plus Genghis, merged; the states-in-history switch is still off). Conquest is far less deadly. Against the same worlds on yesterday's code, heads lost to conquest over the last 2,000 years drop from 0.15 to 0.10, 5.2 to 0.58, and 20 to 0.94 million. On one seed 8.3 million people move instead of dying. Today's population changes by under 1%. With the switch off, nothing changes. D67 above is the follow-up.</li>
 <li><b>Trade step 2: goods move between neighbours</b> (PW-1503, lane 213, merged; worked out after the run, so worlds don't change). Every good walks the map at sourced costs (by sea about 1/28 of a pack animal, rivers 1/8 downstream). Grain overland travels a median of about 100 km, and bulk goods go further by water, as the sources say. Spices cross 1,500–3,000 km, nearly all by ship. Middling goods stay within about 300 km, like obsidian did. Borders charge a toll, cut by tolerance and closed by war. Dragons take tribute and their kobolds trade, and hill, stone, cloud and storm giants trade while frost and fire giants take tribute. To see it: Culinary brief &rarr; a culture &rarr; Trade: goods now shows "comes from" and "goes to", and a list of trading partners. The first open of a run takes about a minute.</li>
 <li><b>Trade step 1: what each culture has spare and lacks</b> (PW-1502, lane 212, merged). 20 goods, read from each culture's own land, crops, herds, ores and way of life. It is worked out after the run, so worlds don't change. Herders lack grain in 98–99% of cases, farmers lack copper and tin (bronze users lack tin 91–97% of the time, and tin is spare almost nowhere), and the salt-poor interiors match the culinary brief's. To see it: Peoples workbench &rarr; Culinary brief &rarr; pick a people and a culture &rarr; Show the brief. The sheet gets a "Has / lacks" line and a Trade: goods panel below.</li>
-<li><b>Andes-type ranges: first try didn't work, parked</b> (PW-1497, scout 209, strike 1 of 3). The squeeze rate has good sources (the central Andes shorten 1–1.75 cm a year). The trouble is that our plates are rigid, so every way of stacking crust at the coast either adds crust from nowhere (land 1–4 °C colder, high ground doubled) or eats the continent's area. It needs plates that can actually shrink, a bigger job. Until then, high ground stays mostly from continent collisions, a known difference from Earth.</li>
 </ul>
 
-<footer>Desk v217 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v218 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
 <script>
 /* Answers live in the artifact's db, collection "answers", one doc per .ask (id = data-id): {choice, note, at, reply}.
