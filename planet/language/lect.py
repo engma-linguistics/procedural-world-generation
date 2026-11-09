@@ -147,7 +147,9 @@ HIATUS_SAMPLE = 80  # hiatus words a candidate repair is tried on
 # neighbours first, as kʷ > p, θ > f, x > f arise) moves there next to the vowels that favour it (rounded for a labial,
 # back for a dorsal, front for a coronal) and in GAP_SPLIT of its other words (a lexical-diffusion split, Wang 1969).
 # Mild on purpose: one split per event, a few events per line where a gap is cheap to fill, none where it is dear.
-GAP_PLACES = {"labial": ((0,), 0), "coronal": ((1, 2, 3), 2), "dorsal": ((5,), 5)}   # place group, the place filled
+GAP_PLACES = {"labial": ((0,), 0), "coronal": ((1, 2, 3), 2), "dorsal": ((4, 5, 6), 5)}   # place group, place filled
+# (a place counts as held by a stop, affricate, fricative or nasal there; glides and liquids do not: w and j are not a
+# labial or dorsal series. Dorsal is palatal, velar or uvular, so a lect with c or q but no k has no dorsal gap)
 GAP_COST = 1.0
 GAP_RATE = 0.002
 GAP_SPLIT = 0.3
@@ -422,7 +424,7 @@ class Lect:
         from .percepts import Segment
         if self.profile is None or self.lexicon is None:
             return []
-        have = {x.place for x in self.segments() if x.kind == "C" and not x.double and x.manner not in (8, 9)}
+        have = {x.place for x in self.segments() if x.kind == "C" and not x.double and x.manner <= 3}
         out = []
         for name, (group, at) in GAP_PLACES.items():
             if have & set(group):
