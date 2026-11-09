@@ -120,6 +120,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 <tr><td>258 · states: count towns the same way, then switch it on</td><td>With the earlier fix, the switch-on history now runs a little <i>early</i> (by 100–550 years on 3 of 5 test worlds), because it counts more town cells than the town ledger does. This counts them the same way, rechecks the five worlds, and switches it on only if the map is as steady when nudged.</td></tr>
+<tr><td>259 · war: a pressure inside the history (v4)</td><td>Crowded, stateless peoples next to enemies already lose some land to war (one dial). This adds early and late dials, times of troubles every couple of centuries, refugees who move when war takes their land, and each people's "lost to war, raids, feuds" shares in the viewer.</td></tr>
 <tr><td>252 · physics: the bigger check on cloudy-sky light</td><td>The 36-history check the plant-light change still owes. If it falls below the bar, it comes back out.</td></tr>
 </table></div>
 <p><b>Next for physics</b> (scouts run side by side, 1–3 passes each): a guard test so L7 and L6 can't drift apart again; plants using cloud-softened light (the rainforest's last gap); plates that can shrink (Andes-type ranges, a bigger job). Rain inland waits at the back of the line (three strikes); ice ages stay after v1.</p>
@@ -147,7 +148,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>Bought-in foods in the culinary brief</b> (PW-1505, lane 235, merged). Each culture's brief and cuisine sheet now have a "Bought in" line: what it buys, from whom, how far and by which road. Examples: desert humans buy salt carried 844 km by caravan; kobolds get herds driven 1,413 km on the hoof and tea flown in; temperate kobolds drink cacao shipped 8,842 km. Inland salt travels a median 680–1,200 km (Sahara salt went 1,000 km and more). Two gaps filed: nobody buys salt fish yet, and grain still sails too far.</li>
 </ul>
 
-<footer>Desk v233 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v234 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
 <script>
 /* Answers live in the artifact's db, collection "answers", one doc per .ask (id = data-id): {choice, note, at, reply}.
