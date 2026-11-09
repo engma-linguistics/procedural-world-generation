@@ -349,3 +349,13 @@ def test_tonal_lect_hears_loans_with_tone():
     heard = P.hear_word((from_ipa("p")[0], a_hi), P.HUMAN, I.segments(inv))
     assert heard[1].tone == 3
 
+
+def test_drawn_marked_stops_have_their_plain_partner(draws):
+    """PW-1537 R3 (lane 9): no drawn proto has an aspirated or ejective stop or affricate without a plain partner at its
+    place (lateral affricates aside: PHOIBLE has tɬʼ beside ɬ more often than tɬ)."""
+    for inv in draws:
+        have = {replace(x, length=0) for x in inv.consonants}
+        for s in inv.consonants:
+            if s.larynx in (1, 2) and s.manner in (0, 1) and not s.lateral:
+                assert I.plain_partners(s) & have, (to_ipa(s), [to_ipa(x) for x in inv.consonants])
+

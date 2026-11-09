@@ -59,7 +59,8 @@ ACCENT_P = 0.8  # share of the missing sounds the shifting speakers replace (con
 # another body kept that body's sounds (fire giants speaking a bronze-dragon lect with a growled a). Now every sound of
 # the new lect that costs the shifting people at least NATIVE_HARD x what it cost the people they learned it from (or that
 # they cannot make) is heard through their own voice (profiles.hear_word, onto the cheap sounds of both lects), in
-# NATIVE_SHARE of the words (a stable draw per form: lect.partial_pick), lexicon and grammar alike; the rest keep it, so
+# NATIVE_SHARE of the words (a stable draw per form: lect.partial_pick; every word for a sound they cannot make at all,
+# lane 9), lexicon and grammar alike; the rest keep it, so
 # the sound lingers as a minority variant the ease drag can finish off or keep (substrate phonology, Thomason & Kaufman
 # 1988 ch. 5; imperfect learning by a shifting population keeps some of the target's marked sounds).
 NATIVE_HARD = 3.0
@@ -856,11 +857,17 @@ class History:
         if not mapping:
             return []
         salt = f"native|{new.id}"
+        # (a sound the shifting people cannot make at all is heard through their voice in every word, not NATIVE_SHARE of
+        # them: a one-voiced people cannot keep a second voice ᴖ as a minority variant; lane 9, de1cc6: stone giants that
+        # took up an aarakocra lect kept uᴖ in 3 living lects and failed the second-voice check)
+        never = {x for x in mapping if not math.isfinite(PR.species_cost(sp, x))}
 
         def fn(f, stem_index=0):
             f = tuple(f)
-            if not any(x in mapping for x in f) or not LC.partial_pick(f, NATIVE_SHARE, salt):
+            if not any(x in mapping for x in f):
                 return f
+            if not LC.partial_pick(f, NATIVE_SHARE, salt):
+                return tuple(mapping[x] if x in never else x for x in f) if any(x in never for x in f) else f
             return tuple(mapping.get(x, x) for x in f)
         LX.apply_rule_to_lexicon(new.lexicon, fn, f"native:{new.people}", kyr, new.id)
         GR = LC._gr_mod()

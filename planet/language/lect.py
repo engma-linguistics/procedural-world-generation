@@ -17,6 +17,7 @@ import numpy as np
 from . import lexicon as LX
 from . import rules as RU
 from .inventory import fuse_vowels, hiatus_count, hiatus_in  # noqa: F401 (hiatus helpers, shared with repair)
+from .inventory import marked_sound, plain_partners
 
 RATE_RULE = 0.1  # sound-change draws per generation at rate 1, x history.RATE_SCALE (calibrated by the horizon check; see
 # calibration.md); since PW-1551 a draw fires only when it lands on a row that changes something (rules.pick_rule)
@@ -417,6 +418,8 @@ class Lect:
     burst_until: float | None = None  # kyr (ago) until which the rate runs at BURST_X (a shift or founder split; not inherited)
     size_base: dict | None = None  # {"C", "V"} the size the line re-anchored on after a burst (inherited; None: the proto's)
     orth: tuple = ("house", "double")  # the book-spelling tradition (romanize.LETTER_STYLES, LENGTH_W; inherited, PW-1546)
+    insdel: dict = field(default_factory=dict)  # segment (tone aside) -> (kyr, "ins" | "del"): the line's last insertion or
+    #                                             loss of it (inherited; `alternates`, PW-1537 R9)
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -433,7 +436,8 @@ class Lect:
                     base_segs=self.base_segs or self.consonants(), fired={k: list(v) for k, v in self.fired.items()},
                     glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id,
                     live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn,
-                    size_base=dict(self.size_base) if self.size_base else None, orth=tuple(self.orth))
+                    size_base=dict(self.size_base) if self.size_base else None, orth=tuple(self.orth),
+                    insdel=dict(self.insdel))
 
     def gaps(self) -> list:
         """The major places (GAP_PLACES) the lect has no consonant at though its speakers make the place cheaply
@@ -558,6 +562,21 @@ class Lect:
         if rule.family in LIFETIME_CAP_FAMILIES and len(h) >= (HARMONY_MAX if rule.family == "harmony" else MAX_FIRES):
             return False
         return h[-1] - kyr >= self.refire_kyr() - 1e-9
+
+    def alternates(self, rule, segs, kyr: float) -> bool:
+        """PW-1537 R9: would this rule insert a segment the line lost, or lose one it inserted, within its re-fire wait?
+        (cold review: elf 7 inserted w after u before a vowel seven times and lost w before u four times, j went in after
+        i and out between vowels in turn: 448 of 621 living a24559 lects had such a pair within 4 kyr.) A sound change
+        undone and redone on that time scale is the engine's ping-pong, not history; the second change waits."""
+        kd = _ins_del(rule, segs)
+        if kd is None or not self.insdel:
+            return False
+        wait = self.refire_kyr()
+        for x in kd[1]:
+            last = self.insdel.get(x)
+            if last is not None and last[1] != kd[0] and last[0] - kyr < wait - 1e-9:
+                return True
+        return False
 
     def consonants(self) -> frozenset:
         """The proto-like base for the inventory cap: the consonants, and the vowel qualities (tone set aside)."""
@@ -774,6 +793,8 @@ class Lect:
             stress = stress_of(self.inventory)
             best = None
             for r in self.hiatus_pool():
+                if self.alternates(r, segs, kyr):
+                    continue   # (no glide back in where the line just lost it: PW-1537 R9)
                 fn = filtered_apply(r, stress, segs, self.inventory)
                 gain = 0
                 for f in sample:
@@ -839,9 +860,9 @@ class Lect:
         have = {replace(x, length=0) for x in now}
         moves = {}
         for s in now:
-            if s.kind not in ("C", "V") or not _marked(s):
+            if s.kind not in ("C", "V") or not (_marked(s) or _click_member(s)):
                 continue
-            cands = _partners(s)
+            cands = _click_partner(s) if _click_member(s) else _partners(s)
             if cands & have:
                 continue
             for c in sorted(cands & before, key=lambda x: x.voice):
@@ -873,6 +894,8 @@ class Lect:
             memo = self._step_pairs = (round(float(kyr), 6), [])
         if any(_undoes(rule, y, x) for x, y in memo[1]):  # (a change and its reverse never fire in one step)
             return 0
+        if self.alternates(rule, segs0, kyr):
+            return 0
         stress = stress_of(self.inventory)
         fn = filtered_apply(rule, stress, segs0, self.inventory)
         self.touch()
@@ -895,6 +918,10 @@ class Lect:
             self.rule_text[rule.id] = RU.describe(rule)
         from . import phonology as PH
         PH.on_change(self, rule, kyr)  # (a conditioned change lives on as a rule of the lect's phonology)
+        kd = _ins_del(rule, segs0)
+        if kd is not None:
+            for x in kd[1]:
+                self.insdel[x] = (round(float(kyr), 3), kd[0])
         if remember:  # (a hiatus repair is not drawn, so it keeps no re-fire memory)
             self.fired.setdefault(base_id(rule.id), []).append(round(float(kyr), 3))
         if base_id(rule.id) == "S042" and not had_glottal and not self.glottal_phonetic:
@@ -994,20 +1021,20 @@ def _lognormal(key: str, sigma: float) -> float:
     return v
 
 
-def _marked(s) -> bool:
-    """A marked series member (PW-1537 R3): aspirated or ejective, growled or purred, prenasalised stop, or a vowel of the
-    sub-bass or ultra register. Breathy and creaky voice and implosives are left out: they stand without a plain partner
-    in real inventories often enough (Maddieson 1984). Prenasalised stops too (Fijian ᵐb ⁿd have no plain b d): only
-    a prenasalised ejective is barred, by rules.impossible."""
-    return s.larynx in (1, 2) or s.phonation in (3, 4) or bool(s.register)
+_marked = marked_sound   # (PW-1537 R3; inventory.py, shared with the proto draw)
+_partners = plain_partners
 
 
-def _partners(s) -> set:
-    """The plain partners of a marked sound at its place (length aside; either voicing for a stop that lost an
-    aspirate or ejective mark, so tʰ is partnered by t or d)."""
-    p = replace(s, phonation=0 if s.phonation in (3, 4) else s.phonation, register=0, length=0,
-                larynx=0 if s.larynx in (1, 2) else s.larynx)
-    return {p, replace(p, voice=1 - p.voice)} if s.larynx in (1, 2) else {p}
+def _click_member(s) -> bool:
+    """A click of a series other than the plain one (voiced, nasal, breathy, aspirated or glottalized accompaniment): it
+    goes where the plain click at its place goes (PW-1537 R3, declicking per place: elf 7 lost plain ǀ ǁ ǃ ǂ and kept
+    the voiced, nasal and ejective clicks at those places; a click language that declicks replaces a place across its
+    accompaniments: sound changes act on classes)."""
+    return s.kind == "C" and s.manner == 8 and bool(s.voice or s.prenasal or s.phonation or s.larynx)
+
+
+def _click_partner(s) -> set:
+    return {replace(s, voice=0, prenasal=0, phonation=0, larynx=0, length=0)}
 
 
 def _remark(q, s):
@@ -1021,7 +1048,27 @@ def _remark(q, s):
                 length=s.length)
     if s.larynx in (1, 2):
         t = replace(t, larynx=s.larynx, voice=0 if s.larynx == 2 else s.voice)
+    if _click_member(s):   # (the click's accompaniment rides on the stop it became: ᵑǀ > ᵑk, ǀ̬ > ɡ, ǀ̬ʱ > ɡʱ)
+        if q.kind != "C" or q.manner not in (0, 1, 8):
+            return None
+        t = replace(t, voice=0 if s.larynx == 2 else s.voice, prenasal=s.prenasal,
+                    phonation=s.phonation if s.phonation else t.phonation)
     return t
+
+
+def _ins_del(rule, segs) -> tuple | None:
+    """("ins", {segment}) for an insertion, ("del", {segments of `segs` it targets}) for a loss, tone set aside; None for
+    any other change (a staged rule's later steps are its own business: S056's j lost after the sibilant it made)."""
+    ch = rule.change
+    if rule.then:
+        return None
+    if ch.kind == "insert" and ch.items:
+        lit = ch.items[0][1]
+        return ("ins", {RU._tonekey(lit)}) if lit is not None else None
+    if ch.kind == "delete" and rule.target is not None and not rule.span:
+        hit = {RU._tonekey(x) for x in segs if rule.target(x)}
+        return ("del", hit) if hit else None
+    return None
 
 
 def _undoes(rule, y, x) -> bool:

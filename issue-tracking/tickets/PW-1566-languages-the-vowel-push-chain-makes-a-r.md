@@ -2,7 +2,7 @@
 id: PW-1566
 title: "Languages: the vowel push chain makes a raised e (i̞) in 6-11% of living lects (PHOIBLE 0.2%); one rulings pass failed the overused check on it"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -35,8 +35,9 @@ What I'd try: in `dispersion_rule`, move the pushed vowel to the nearest *common
 lect lacks (e > i only when the lect has no i; else no push, or centralize to ɪ), rather than one height step; or let
 cap_inventory fold a pushed vowel one axis from a commoner one as it does other rare new units.
 
-- [ ] i̞ under ~1% of living lects; the overused check passes on two seeds
+- [x] i̞ under ~1% of living lects; the overused check passes on two seeds (i̞ 0 on both; de1cc6's overused failure is ⁿt/ᵑk, on main too)
 
 ## Updates
+- 2026-11-09: Lane 9 (lang-lane9) second seed: de1cc6 full pass, i̞ in 0 of 530 living lects (stored 11-08 code 6.2%; main 41c71b12 also 0). a24559 lane 9 pass: 0. The overused check fails on de1cc6 for ⁿt and ᵑk (main too, not i̞): filed as draft-language-de1cc6-checks. Done.
 - 2026-11-09: Fix merged dffed688: a pushed front/back vowel skips in-between heights; raised e (i̞) 10% -> 0 of languages on the a24559 pass. Close after one more seed.
 - 2026-11-08: Created from inbox draft draft-language-push-chain-raised-e.md (found by lang-rulings (2026-11-08)).
