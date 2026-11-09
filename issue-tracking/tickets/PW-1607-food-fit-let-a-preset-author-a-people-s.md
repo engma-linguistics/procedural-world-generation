@@ -1,4 +1,5 @@
 ---
+id: PW-1607
 title: "Food fit: let a preset author a people's fit (a body `fit` table and an alcohol flush share), so owner canon and drink-flush peoples can be said"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane256
 blocked_by: []
 relates: [PW-905, PW-692]
 refs: ["planet/lineages/food_fit.py::fit", "planet/lineages/spec.py::parse_body", "planet/lineages/spec.py::BODY_DEFAULT", docs/review/food/lane256.md, planet/lineages/samples/dnd.toml]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -25,3 +28,6 @@ alcohol" or "this people thrives on X" directly. So:
 What breaks if never done: every people's fit is the derived default. The culinary side has to overrule it by hand in the book.
 - [ ] a body `fit` table (food id -> thrives | tolerates | poor | harmful) that wins over the derived row, inherited like other body keys; the viewer's body editor must cope with a table value
 - [ ] an `alcohol_flush` share (0..1) read as "tolerates, x% flush"
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-food-fit-authored-overrides.md (found by lane256).

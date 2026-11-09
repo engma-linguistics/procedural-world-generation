@@ -2,7 +2,7 @@
 id: PW-1606
 title: The dry-hollow recheck reroutes rivers up to 25 times per lakes() call (+15% L7 run time)
 type: task
-status: todo
+status: done
 parent: null
 milestone: later
 subsystem: hydrology
@@ -32,6 +32,7 @@ reuse the first try's routing when the carve leaves the kept hollows' catchments
 - [ ] same `lakes()` outputs (golden unchanged), `lakes()` call <= ~0.35 s on the same profile state
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 257 (3995260f): reuse unchanged floods, bit-identical; lakes() 0.49 -> 0.39 s, L7 30 Myr bench 42.0 -> 39.9 s (pre-PW-054 37.5). Rest -> PW-1610.
 - 2026-11-09: Created from inbox draft draft-dry-hollow-recheck-cost.md (found by scout251b).
 - 2026-11-09: Lane 257 (partial): route() reuses an earlier flood of the same lakes() call when the new heights leave
   it bit-identical (hydrology._same_flood; 5 of 24 floods per call on the profile state). lakes() on the profile

@@ -1,4 +1,5 @@
 ---
+id: PW-1610
 title: The dry-hollow recheck still costs ~0.1 s per lakes() call after the flood reuse (needs an incremental flood or a speculative recheck)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane257
 blocked_by: []
 relates: [PW-1606, PW-054]
 refs: ["planet/hydrology.py::_settle", "planet/hydrology.py::route", "planet/hydrology.py::_same_flood", "planet/kernels.py::priority_flood_to", "planet/kernels.py::lakes_on", docs/review/basins/scout251/prof.py, docs/review/basins/scout251/bench.py, "L7 seed 11 at 200 Myr (run a19366's 000200.0.ckpt)"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -34,3 +37,6 @@ after round r's first try, keep it only if the final drop set agrees; exact, but
 (output changes, goldens regenerate; a physics call).
 If never done: nothing is wrong, L7 runs stay about 5% (2-3 min per Gyr) slower than before PW-054 pass 3.
 - [ ] `lakes()` on the profile state <= 0.35 s with identical outputs
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-dry-hollow-recheck-rest.md (found by lane257).

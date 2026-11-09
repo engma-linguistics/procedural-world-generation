@@ -1,4 +1,5 @@
 ---
+id: PW-1608
 title: With polities in the history on, the live tech tree counts a third more town cells than the ledger at L7, so writing comes early
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane254b
 blocked_by: []
 relates: [PW-1597, PW-1596, PW-1472]
 refs: ["planet/lineages/history/polity_live.py::LivePolities.town_cells", "planet/lineages/techspread.py::town_footprint", "planet/lineages/techtree.py::rebuild", docs/review/culture/polities/round19.md, docs/review/culture/polities/round19/footprint.py, docs/review/culture/polities/round19/replay.py, docs/review/culture/polities/round19/live_run.py, docs/review/culture/polities/round16/measure_v1.py, "world 899985", "world 4360a3"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -38,3 +41,6 @@ mechanism (count as the ledger places sites), then re-check the five pairs.
 so the switch cannot be flipped on (PW-1596); if it were, every L7 world's first states and writing would read centuries earlier
 than the same history gives with the switch off, for a counting reason, not a historical one.
 - [ ] live and after-run town cells within ~10% at L6 and L7 on the same run; then PW-1597's five pairs within ~100 years
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-live-town-cells-overcount-l7.md (found by lane254b).
