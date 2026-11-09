@@ -54,7 +54,14 @@ RULE_TOWNS = 0.5  # a state's tongue is the trade language when its ruling cultu
 # trade (Aramaic, Greek koine: imperial tongues as lingua francas, T§2). JUDGEMENT: a majority, as LF_LEAD
 HELD = 0.25  # an established trade language counts as carrying this share of the network's trade even when its own people no longer
 # trade there (lingua francas outlive the empires that made them: Koine, Latin, T§4). JUDGEMENT
-INERTIA = 2.0  # a new tongue replaces an established trade language only when it carries this many times the incumbent's weight. JUDGEMENT
+HELD_GROWTH = 0.05  # ... and this much more for every era (0.5 kyr) it has served: an old lingua franca is harder to dislodge (Koine Greek
+# for centuries after Alexander, Latin ~1,500 years after Rome: persistence builds with use, T§4). JUDGEMENT: no source gives a rate; it
+# takes five eras (2.5 kyr) to double HELD
+HELD_MAX = 0.45  # ... up to this cap, so a newcomer needs INERTIA x 0.45 = 0.9 of the trade: even the oldest can fall to a near-monopoly. JUDGEMENT
+RULE_OWN = 0.2  # a state's tongue wins a network only if the ruling culture's own people carry at least this share of the network's trade,
+# not just its subjects (a state rules the roads but the merchant peoples' tongue carries the trade: Sogdian under the Turks, T§2).
+# JUDGEMENT: no source gives a number; a fifth is "a large share" among the few cultures of a network
+INERTIA = 2.0 # a new tongue replaces an established trade language only when it carries this many times the incumbent's weight. JUDGEMENT
 ALONG = 0.25  # the share of the people living on a network's route cells (carriers, innkeepers, porters) who speak its trade language;
 # the trading towns' own people all count (it is "used especially by traders", T§2). JUDGEMENT
 QUARTER_FOLK = 0.05  # a merchant quarter's people as a share of its host town's people. JUDGEMENT: Curtin's institution, no size
@@ -163,7 +170,7 @@ def networks(F: dict) -> list:
 
 def pick(net: dict, rules: dict, last: dict | None, states: set | None = None) -> dict:
     """The network's trade language: {"kind": "lingua franca" | "pidgin", "tongue": culture (the pidgin's: its main word-giver),
-    "source": "rule" | "trade" | "held" | "pidgin"}. last: the record this network inherits from the era before (or None)."""
+    "source": "rule" | "trade" | "held" | "pidgin", "eras": eras served as this lingua franca}. last: the record this network inherits from the era before (or None)."""
     w = net["weight"]
     top = max(w, key=lambda c: (w[c], -c))
     cand = None
@@ -172,17 +179,18 @@ def pick(net: dict, rules: dict, last: dict | None, states: set | None = None) -
             continue
         foreign = sum(v for c, v in w.items() if c != r and c in subj)
         rw = w.get(r, 0.0) + foreign
-        if foreign > 0 and rw >= RULE_TOWNS and (cand is None or rw > cand[1]):  # (a state ruling peoples who trade on the network)
+        if foreign > 0 and rw >= RULE_TOWNS and w.get(r, 0.0) >= RULE_OWN and (cand is None or rw > cand[1]):  # (a state ruling peoples who trade on the network)
             cand = (r, rw, "rule")
     if cand is None and w[top] >= LF_LEAD:
         cand = (top, w[top], "trade")
     if last is not None and last["kind"] == "lingua franca":
         inc = last["tongue"]
-        iw = max(w.get(inc, 0.0), HELD)
+        iw = max(w.get(inc, 0.0), min(HELD_MAX, HELD + HELD_GROWTH * (last.get("eras", 1) - 1)))
         if cand is None or cand[0] == inc or cand[1] < INERTIA * iw:
-            return {"kind": "lingua franca", "tongue": inc, "source": "held" if cand is None or cand[0] != inc else cand[2]}
+            return {"kind": "lingua franca", "tongue": inc, "source": "held" if cand is None or cand[0] != inc else cand[2],
+                    "eras": last.get("eras", 1) + 1}
     if cand is not None:
-        return {"kind": "lingua franca", "tongue": cand[0], "source": cand[2]}
+        return {"kind": "lingua franca", "tongue": cand[0], "source": cand[2], "eras": 1}
     if last is not None and last["kind"] == "pidgin":
         return {"kind": "pidgin", "tongue": last["tongue"], "source": "pidgin"}
     return {"kind": "pidgin", "tongue": top, "source": "pidgin"}

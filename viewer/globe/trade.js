@@ -34,6 +34,39 @@ export function loadTradeRoutes(onReady) {
   }).catch((e) => { v.tradeBusy = null; console.error(e); status('no trade routes: ' + e.message); });
   return null;
 }
+// the era's trade languages (GET /api/tongues&ago=, planet/lineages/tongues.py, PW-1526): one per long-haul network with trading towns of two or
+// more cultures. Fetched after the routes (its first call for a run works out the tongues, a minute or two more), then drawn in the legend.
+const SRC_LAB = { rule: "a ruling state's tongue", trade: "the busiest trader's tongue", held: 'held over from before', pidgin: 'a mixed trade speech' };
+function loadTongues(onReady) {
+  const v = S.V;
+  v.tradeTongues ??= new Map();
+  const key = Math.round(agoNow() * 2) / 2;
+  if (v.tradeTongues.has(key)) return v.tradeTongues.get(key);
+  if (v.tongueBusy === key) return null;
+  v.tongueBusy = key;
+  fetch(`../api/tongues?run=${encodeURIComponent(v.dir)}&ago=${key}`, { cache: 'no-store' }).then((r) => r.json()).then((j) => {
+    if (S.V !== v) return;
+    v.tongueBusy = null;
+    v.tradeTongues.set(key, j);
+    onReady();
+  }).catch((e) => { v.tongueBusy = null; console.error(e); });
+  return null;
+}
+function tongueLegend(onReady) {
+  const T = loadTongues(onReady);
+  if (!T) return '<br><span class="muted">Trade languages: working out the tongues (a minute or two the first time for a run)…</span>';
+  if (T.error) return `<br><span class="muted">No trade languages: ${esc(T.error)}</span>`;
+  const tl = (T.trade_languages || []).slice().sort((a, b) => b.speakers - a.speakers);
+  if (!tl.length) return '<br><span class="muted">Trade languages: none at this moment (no network joins towns of two cultures).</span>';
+  const ago = (k) => (globalThis.NumFmt?.ago ? globalThis.NumFmt.ago(k || 0.0001) : k + ' kyr ago');
+  const nm = (c) => esc(T.names?.[c] ?? String(c));
+  const one = (x) => {
+    const lk = x.lect ? ` <a href="languages.html?run=${encodeURIComponent(S.V.dir)}#grammar/sel=${encodeURIComponent(x.lect)}" target="_blank" title="Open ${esc(x.lect)} in the Languages page">${esc(x.language || x.lect)}</a>` : '';
+    const what = x.kind === 'pidgin' ? `pidgin on ${nm(x.tongue)} words` : `${nm(x.tongue)}${lk}`;
+    return `<li title="${esc((x.places || []).join(', '))}"><b>${what}</b> · ${x.kind === 'pidgin' ? 'trade pidgin' : 'trade language'}, ${esc(SRC_LAB[x.source] || x.source)}, since ${esc(ago(x.since_kyr))} · ${x.towns.length} town${x.towns.length === 1 ? '' : 's'} of ${x.cultures.length} peoples, ~${Math.round(x.speakers).toLocaleString('en')} speakers</li>`;
+  };
+  return `<br><b>Trade languages</b> (${tl.length}, the biggest first; hover for the towns):<ul style="margin:2px 0 0 16px;padding:0">${tl.slice(0, 8).map(one).join('')}</ul>${tl.length > 8 ? `<span class="muted">+${tl.length - 8} more</span>` : ''}`;
+}
 function status(t) { const el = $('tradeStatus'); if (el) el.innerHTML = t; }
 
 export function tradeOverlays(globe, ribbonObj, onReady) {
@@ -74,7 +107,7 @@ export function tradeOverlays(globe, ribbonObj, onReady) {
   const sw = (c, t) => `<span style="display:inline-block;width:10px;height:3px;background:${c};vertical-align:middle;margin-right:3px"></span>${t}`;
   status(`${esc(globalThis.NumFmt?.ago ? globalThis.NumFmt.ago(D.ago_kyr || 0.0001) : D.ago_kyr + ' kyr ago')}: ${nl} long-haul stretches, ${nx} local (${local ? 'shown faint' : 'tick Local exchange'}), ${nT} trading towns, ${D.hubs.length - nT} market towns on the local web (small rings)<br>`
     + Object.keys(GROUP_COL).map((g) => sw(GROUP_COL[g], GROUP_LAB[g])).join(' ') + '<br>'
-    + Object.keys(KIND_COL).map((k) => sw(KIND_COL[k], `${k} ${nk(k)}`)).join(' '));
+    + Object.keys(KIND_COL).map((k) => sw(KIND_COL[k], `${k} ${nk(k)}`)).join(' ') + tongueLegend(onReady));
   return out;
 }
 

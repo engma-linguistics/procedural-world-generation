@@ -109,12 +109,12 @@ One era (`tongues.era_rows`), in order:
    h's tongue (T§2: trading colonies).
 4. **Trade languages.** The long-haul route stretches are joined into networks; a network with trading towns of two or more cultures (merchant
    quarters count) gets one trade language (`tongues.pick`):
-   - a ruling culture whose own trade plus its foreign subjects' trade on the network is at least RULE_TOWNS of the network's trade, and
-     which rules at least one other people trading there: its tongue (Aramaic, Greek; T§2, T§3);
+   - a ruling culture whose own trade plus its foreign subjects' trade on the network is at least RULE_TOWNS of the network's trade, whose own
+     people carry at least RULE_OWN of it (lane 231: a state's tongue needs its own merchants, not just its subjects), and which rules at least one other people trading there: its tongue (Aramaic, Greek; T§2, T§3);
    - else the busiest trading culture, when it carries at least LF_LEAD (Sogdian; T§2);
    - else a pidgin whose main word-giver is the busiest trader (T§2: a pidgin between groups without a common language, its superstrate
      the dominant one);
-   - an established lingua franca counts as carrying at least HELD of the trade, and is replaced only by a tongue carrying INERTIA times
+   - an established lingua franca counts as carrying at least HELD of the trade, plus HELD_GROWTH for every era it has served (up to HELD_MAX), and is replaced only by a tongue carrying INERTIA times
      that (T§4); a pidgin gives way to any real trade language that qualifies (Chinook Jargon; T§2).
    A network inherits last era's trade language from the network it shares most trading towns with (ids and `since_kyr` carry over).
    Speakers: the trading towns' people, the merchant quarters, and ALONG of the people living on the route cells. The trade language's own
@@ -136,6 +136,8 @@ own (languages.json) is no second tongue.
 | RULE_MAX | 0.9 | JUDGEMENT |
 | LF_LEAD, RULE_TOWNS | 0.5 | JUDGEMENT: a majority; "clearly dominant" from T§2 |
 | HELD, INERTIA | 0.25, 2.0 | JUDGEMENT; persistence itself from T§4 |
+| HELD_GROWTH, HELD_MAX | 0.05 per era, 0.45 | JUDGEMENT (lane 231): persistence building with use from T§4, no rate in the source |
+| RULE_OWN | 0.2 | JUDGEMENT (lane 231): "a large share" of the network's trade carried by the state's own people; T§2 gives no number |
 | ALONG | 0.25 | JUDGEMENT; "used especially by traders" from T§2 |
 | QUARTER_FOLK | 0.05 | JUDGEMENT: Curtin's institution (review1.md section 5) has no size |
 | LITURGY_SHARE | 0.01 | JUDGEMENT: an order of size for a clergy |
@@ -178,10 +180,31 @@ What it shows:
   more trading cultures lie inside a state that rules some of them.
 - **Trade languages turn over fast**: a trade language lasts 1.3-1.6 eras (650-800 years) on average, up to 5-11 eras (2.5-5.5 kyr). The
   networks themselves re-form between eras (they are traced afresh each era from the routes), and a new state with a majority of a network's
-  trade replaces the incumbent at once. Whether lingua francas should be stickier is a judgement call (needs-decision draft
-  `draft-trade-language-persistence.md`).
+  trade replaces the incumbent at once. (This table is the first version; lane 231 made lingua francas stickier and gave the
+  state's own merchants a say, see the section below.)
 - Cost: the ledger itself takes 0.1-0.4 s per run; reading its inputs (the goods ledger's cell pairs per era, polities, gods) about 20 s to
   2 min; the exchange doc it reads costs 1.5-5 min at L7 the first time (cached by the server).
+
+### Lane 231: stickier lingua francas and trade over rule (PW-1563, rulings B and C together)
+
+Same six runs, same inputs, read-only; the baseline is main on 2026-11-08 (the table above). Lifetime = eras one trade-language id lasts;
+mix = network-eras by source (rule / trade / held / pidgin).
+
+| run | lifetime before (mean, max) | after | mix before | mix after |
+|---|---|---|---|---|
+| 0141d1 | 1.38, 10 | 1.68, 8 | 331 / 11 / 8 / 2 | 152 / 144 / 40 / 16 |
+| 3e0eb4 | 1.55, 10 | 1.96, 15 | 598 / 17 / 35 / 11 | 319 / 222 / 94 / 26 |
+| a24559 | 1.28, 5 | 1.56, 11 | 329 / 21 / 22 / 7 | 214 / 97 / 50 / 18 |
+| a2b637 | 1.50, 8 | 1.84, 13 | 585 / 13 / 33 / 13 | 301 / 229 / 90 / 24 |
+| 07c755 (Seven Meals, measured only) | 1.48, 11 | 1.93, 17 | 541 / 35 / 56 / 4 | 274 / 220 / 115 / 27 |
+| 3c1caf (Seven Meals, measured only) | 1.33, 6 | 1.76, 14 | 385 / 70 / 29 / 27 | 158 / 222 / 84 / 47 |
+
+- B (HELD grows 0.05 per era served, to HELD_MAX 0.45) alone moves little: lifetime 1.28-1.56 mean, and more "held" network-eras.
+- C (RULE_OWN 0.2: the state's own people must carry a fifth of the network's trade) does most of the work: a state that rules the roads
+  but whose merchants are other peoples no longer takes the language, so rule falls from 75-94% to 31-56% of network-eras and a
+  busiest-trader's tongue takes 28-53% (before 4-19%). Lifetimes rise by about 0.3-0.45 eras, still short of the centuries-long lingua francas of
+  T§4: the ids also end when a network re-forms between eras with no shared trading town, which neither rule touches.
+- Constants are JUDGEMENT (no source gives numbers); RULE_OWN 0.1 gives the same lifetimes with rule at 32-60%.
 
 ## Robustness
 
@@ -202,7 +225,9 @@ A suite that saves its runs' read-outs would be the way to judge read-outs on an
 
 - The language pass does not read this ledger: its own l2_share and loan donors know nothing of trade languages or rulers' tongues (draft
   `draft-language-pass-reads-tongues-ledger.md`).
-- No viewer surface yet (draft `draft-tongues-viewer-panel.md`).
+- Viewer (lane 231): a "Speaks also" table on the Lineages brief's culture card (`viewer/lineages.html`, `drawTongues`) and the era's trade
+  languages in the Trade routes legend (`viewer/globe/trade.js`, `tongueLegend`); screenshots in `docs/review/viewer/culture_speaks_also.png`,
+  `trade_languages_legend.png`, `trade_routes_with_languages.png`. The legend lists, it does not colour the networks on the map.
 - A pidgin that lasts does not creolise or expand here (Tok Pisin, Swahili-like growth): the pidgin is a row, not a lect; the language pass
   would have to make it a lect for it to have words. Noted here, not drafted.
 - A ruler's tongue is not kept after rule ends, except as a trade language (T§4 covers lingua francas, not every former subject).
