@@ -468,7 +468,8 @@ _CROP = {
 _ANIMAL = {
     "horse": ("HORSE", ("ANIMAL", "RUN")), "dog": ("DOG", ("ANIMAL",)), "caprine": ("GOAT", ("ANIMAL", "HORN (ANATOMY)")),
     "cattle": ("COW", ("ANIMAL", "BIG")), "fowl": ("CHICKEN", ("BIRD",)), "great_elk": ("DEER", ("DEER", "BIG")),
-    "riding_lizard": ("LIZARD", ("SNAKE", "BIG")),
+    "riding_lizard": ("LIZARD", ("SNAKE", "BIG")), "pig": ("PIG", ("ANIMAL",)), "reindeer": (None, ("DEER",)),
+    "camel": (None, ("ANIMAL", "BIG")), "llama": (None, ("ANIMAL",)), "buffalo": (None, ("COW",)), "yak": (None, ("COW",)),  # (PW-835)
 }
 # fuels.FUELS: id -> (core concept it is the same as | None, CLICS gloss, proto, base)
 _FUEL = {

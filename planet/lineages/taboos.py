@@ -56,7 +56,7 @@ DOMESTIC_STRADDLE = {"dog": ["a land beast that eats flesh and lives in the hous
 # a god's domain -> the kinds it can make forbidden: ("herd",) = the culture's top herd animal, ("crop",) = its top crop
 DIVINE = {"herd": ("herd",), "harvest": ("crop",), "sea": ("sea_beasts", "shellfish"), "river": ("eels",), "storm": ("waterfowl",), "sky": ("waterfowl",),
           "death": ("carrion_birds",), "hunt": ("swine",)}
-HERD = ("cattle", "caprine", "horse", "great_elk")
+HERD = ("cattle", "caprine", "horse", "great_elk", "buffalo", "yak", "camel", "reindeer", "llama", "pig")  # (in order of preference: the first kept is "the herd"; PW-835 rows after the old ones)
 BAD = ("feared", "despised")
 
 

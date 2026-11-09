@@ -590,7 +590,8 @@ function drawSide() {
         ${p ? `now ${num(p.population ?? 0)} people on ${p.area_mkm2} Mkm² in ${p.patches} patch(es); neighbours ${Object.keys(p.neighbours).join(', ')}` : res.ended_kyr != null ? `ended ${ago(res.ended_kyr)}` : 'absent at the present'}</div>
         ${res.story ? `<div class="muted" style="margin-top:4px">${esc(res.story)}</div>` : ''}` : ''}`;
   }
-  const ANIMALS = [['horse', 'horses'], ['dog', 'dogs'], ['caprine', 'sheep and goats'], ['cattle', 'cattle'], ['fowl', 'fowl'], ['great_elk', 'great elk (fantasy, rare)'], ['riding_lizard', 'riding lizards (fantasy, rare)']];
+  const ANIMALS = [['horse', 'horses'], ['dog', 'dogs'], ['caprine', 'sheep and goats'], ['cattle', 'cattle'], ['fowl', 'fowl'], ['great_elk', 'great elk (fantasy, rare)'], ['riding_lizard', 'riding lizards (fantasy, rare)'],
+    ['pig', 'pigs'], ['reindeer', 'reindeer'], ['camel', 'camels'], ['llama', 'llamas and alpacas'], ['buffalo', 'water buffalo'], ['yak', 'yaks']];
   const onAn = T.meta?.animals || ANIMALS.filter(([id]) => !id.match(/great_elk|riding_lizard/)).map(([id]) => id);
   h += `<h3>Tree</h3><div class="row">${ANIMALS.map(([id, nmx]) => `<label class="trait" title="Domesticated animals (animals.py): wild range from the land, a taming homeland and date, and use spreading with the peoples who take it up, over the sea only in boats able to carry it. The fantasy animals are rare, and only in fantasy mode."><input type="checkbox" data-animal="${id}" ${onAn.includes(id) ? 'checked' : ''}> ${esc(nmx)}</label>`).join('')}</div>
     <div class="row">${field('name', `<input data-m="name" value="${esc(T.meta?.name || '')}">`)}${field('seed', `<input type="number" data-m="seed" value="${T.meta?.seed ?? 1}">`)}${field('mixing from', `<input data-m="mixing_start" size="7" value="${esc(T.meta?.mixing_start || '3 kyr')}">`)}</div>
@@ -671,7 +672,7 @@ function onChange(e) {
   }
   if (el.dataset.animal) {  // (meta.animals: the list of animals on; fantasy ones are rare and only in fantasy mode)
     T.meta = T.meta || {};
-    const all = ['horse', 'dog', 'caprine', 'cattle', 'fowl', 'great_elk', 'riding_lizard'], cur = new Set(T.meta.animals || all.slice(0, 5));
+    const all = ['horse', 'dog', 'caprine', 'cattle', 'fowl', 'great_elk', 'riding_lizard', 'pig', 'reindeer', 'camel', 'llama', 'buffalo', 'yak'], cur = new Set(T.meta.animals || all.filter((x) => !x.match(/great_elk|riding_lizard/)));
     el.checked ? cur.add(el.dataset.animal) : cur.delete(el.dataset.animal);
     T.meta.animals = all.filter((x) => cur.has(x)); redraw(); return;
   }

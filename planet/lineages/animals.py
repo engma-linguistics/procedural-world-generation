@@ -442,10 +442,10 @@ class Animals:
     # -- results ------------------------------------------------------------------------------------
     def frame_layers(self) -> dict:
         n = self.h.grid.n
-        known, wild = np.zeros(n, np.uint8), np.zeros(n, np.uint8)
+        known, wild = np.zeros(n, np.uint16), np.zeros(n, np.uint16)  # (13 animals since PW-835: uint16)
         for s in self.stocks:
-            known |= ((s.rd >= EST) * (1 << s.a.bit)).astype(np.uint8)
-            wild |= ((s.wild >= WILD_MIN) * (1 << s.a.bit)).astype(np.uint8)
+            known |= ((s.rd >= EST) * (1 << s.a.bit)).astype(np.uint16)
+            wild |= ((s.wild >= WILD_MIN) * (1 << s.a.bit)).astype(np.uint16)
         return {"animal_known": known, "animal_wild": wild}
 
     def summary(self, P: np.ndarray) -> dict:
@@ -468,5 +468,5 @@ class Animals:
                 dairy[l.id] = {"lactase_share": round(lac, 2), "milks_share": round(milks, 2), "animals": [i for _, i in sorted(best, reverse=True)],
                                "dairy_share": round(milks * max(b for b, _ in best), 3)}
         return {"mode": h.tree.mode, "stocks": stocks, "dairy": dairy,
-                "craft": [{"name": n, "since_kyr": s, "reach_km": r, "carries_up_to": ["people only", "dogs and fowl", "sheep, goats", "horses and cattle"][b + 1], "sea_share_needed": need}
+                "craft": [{"name": n, "since_kyr": s, "reach_km": r, "carries_up_to": ["people only", "dogs, fowl and pigs", "sheep, goats", "horses and cattle"][b + 1], "sea_share_needed": need}
                           for n, s, r, b, need in craft_ladder()]}

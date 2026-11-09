@@ -41,9 +41,9 @@ PEOPLE_LAYERS = {
     "mix_second_share": U8("composition: % of the cell's people that are the second people"),
     "mix_other_share": U8("composition: % of the cell's people that are all the others together"),
 }
-ANIMAL_LAYERS = {  # (bit flags, one bit per animal in animal_defs.TABLE: 7 animals in two layers, not 14)
-    "animal_wild": U8("bit flags: the animals whose wild range (suitability >= 0.35, animal_defs.wild_*) covers the cell; bit i = animal_defs.TABLE[i]; 0 in the deep epochs"),
-    "animal_known": U8("bit flags: the animals tamed and known in the cell (0 before the taming; the front spreads over peopled land and, by boat, over the sea, animals.py); bit i = animal_defs.TABLE[i]"),
+ANIMAL_LAYERS = {  # (bit flags, one bit per animal in animal_defs.TABLE: 13 animals in two uint16 layers, PW-835)
+    "animal_wild": U8("bit flags: the animals whose wild range (suitability >= 0.35, animal_defs.wild_*) covers the cell; bit i = animal_defs.TABLE[i]; 0 in the deep epochs") | {"dtype": "<u2"},
+    "animal_known": U8("bit flags: the animals tamed and known in the cell (0 before the taming; the front spreads over peopled land and, by boat, over the sea, animals.py); bit i = animal_defs.TABLE[i]") | {"dtype": "<u2"},
 }
 U64 = lambda d: {"dtype": "<u8", "scale": 1, "offset": 0, "transform": None, "units": "", "description": d}  # noqa: E731
 U16 = lambda d: {"dtype": "<u2", "scale": 1, "offset": 0, "transform": None, "units": "", "description": d}  # noqa: E731
