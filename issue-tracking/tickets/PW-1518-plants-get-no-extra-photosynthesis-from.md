@@ -32,15 +32,18 @@ carbon read-out that splits GPP into respiration and growth is off. Cloudy and s
 unit of light, so a cloudier world's forests are under-credited. The impact is low: the rainforest's NPP and NPP/GPP
 (0.445, measured 0.32-0.49) are inside the measured ranges today.
 
-- [ ] derive a monthly diffuse fraction Df from the model's cloud (the shade the PAR already uses), as Yan et al. did
+- [x] derive a monthly diffuse fraction Df from the model's cloud (the shade the PAR already uses), as Yan et al. did
   from the sky clearness index
-- [ ] a two-leaf or Df-linear efficiency for trees (Yan: sunlit 1.11, shaded 4.35 x (0.25 + 0.75 Df^1.8) g C/MJ), with
+- [x] a two-leaf or Df-linear efficiency for trees (Yan: sunlit 1.11, shaded 4.35 x (0.25 + 0.75 Df^1.8) g C/MJ), with
   the clear-sky floor kept at today's eps; check whether the optimal LAI rises toward the measured 4.7-5.1
-- [ ] then TrBE rl x1.5 (Chambers' in-situ canopy leaf rate 0.54 umol/m2/s against the model's 0.33 at 25 C)
-- [ ] Earth screens with scout3_probe.py and npp_check.py: wet-tropics NPP near 1011-1160, LAI, NPP/GPP; temperate
+- [x] then TrBE rl x1.5 (Chambers' in-situ canopy leaf rate 0.54 umol/m2/s against the model's 0.33 at 25 C)
+- [x] Earth screens with scout3_probe.py and npp_check.py: wet-tropics NPP near 1011-1160, LAI, NPP/GPP; temperate
   boxes against MOD17 if the gain applies to all trees (EPS_SCALE is fitted there)
-- [ ] then an 8-draw L6 screen, then the 36-draw judge
+- [x] then an 8-draw L6 screen (3 rolls, scout 243)
+- [ ] then the 36-draw judge (on main after the merge; watch the pass count, see the 2026-11-09 pass 3 update)
 
 ## Updates
+- 2026-11-09: Scout 243 pass 3 of 3: rolls 0.001 and 0.0015 of the same 8 L6 draws (l6fix + l6c_0) on both arms. Pass counts main 8/8, 7/8, 8/8 (23/24), two-leaf 6/8, 6/8, 7/8 (19/24); McNemar 5 vs 1 discordant, p 0.22. Hard tier 100% in both arms (no frozen, no hellhouse). On the 24 pairs, end T +0.20 C [-1.71, +1.80] and late CO2 +0.02 [-0.20, +0.15], so no measure moved. Two-leaf's fails go both ways: warm on 733847 (r0.0005, r0.001; it passes at r0.0015 +2.9) and 819014 (r0.0005), cold on 957317 (r0.001 -4.2, r0.0015 -6.1). Verdict: chaos, not a warm shift; merged squashed. The pass count leans to main in all three rolls, so the 36-draw judge stays open. docs/review/climate/diffuse/screens.md#pass-3-scout-243-three-rolls-and-the-verdict.
+- 2026-11-09: Scout 239 pass 2 of 3: Yan et al. 2017's two-leaf canopy for TrBE (vegetation._two_leaf, climate.months df/mu) + TrBE rl x1.5. Earth (world 506694): LAI 4.85 (4.7-5.1), GPP 3038, NPP 1253, leaf respiration ~804 (710-980); other biomes unchanged. 8-draw L6 screen r0.0005: no measure moved, passes main 8/8 vs 6/8. docs/review/climate/diffuse/screens.md#pass-2-scout-239-candidate-b-yans-two-leaf-canopy-in-planet
 - 2026-11-09: Scout 232 pass 1 of 3: diagnosis docs/review/climate/diffuse/diagnosis.md (Yan 2017, Mercado 2009); candidate A (TrBE light-use gain with diffuse share + leaf respiration x1.5, Chambers 2004) meets GPP/NPP/respiration on Earth's climate, other biomes unchanged; LAI 4.28 vs 4.7-5.1. Kept as docs/review/climate/diffuse/pass1.patch, not applied: suite, goldens, scorecard and L6 screen not run (machine load 40-220 from another session). Next: apply and check.
 - 2026-11-08: Created from inbox draft draft-diffuse-light-gain.md (found by scout217).

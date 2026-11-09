@@ -2044,6 +2044,24 @@ def _par_k(ra, cj, cn, days, out):
             out[m, i] = 0.48 * ra[m, i] * (0.25 + 0.5 * sun) * days[m]
 
 
+def diffuse_fraction(si) -> np.ndarray:
+    """The diffuse share of the light at the ground for a sky clearness index si (the ground's shortwave over the
+    top of the atmosphere's, 0..1): He et al. 2013's empirical fit, which Yan et al. 2017 (JGR Biogeosci 122:3014,
+    eq. 13) checked against monthly diffuse-fraction measurements at three Amazon sites (R2 0.76-0.96, RMSE
+    0.06-0.07). ~0.23 under the clearest sky months' si 0.725 here, ~0.62 at 0.45, ~0.96 at 0.25 (overcast)."""
+    x = np.asarray(si, float)
+    return np.clip(0.7527 + x * (3.8453 + x * (-16.316 + x * (18.962 - 7.0802 * x))), 0.0, 1.0)
+
+
+def noon_cos_zenith(lat, tilt: float = 23.4) -> np.ndarray:
+    """cos of each month's noon solar zenith angle at mid-month, shape (12, n) (the sun's height Yan et al. 2017's
+    two-leaf canopy uses, eq. 8, 11); floored at 0.05 for the polar months the sun barely or never clears."""
+    phi = np.radians(np.asarray(lat, float))[None, :]
+    mid = np.cumsum(MONTH_DAYS) - MONTH_DAYS / 2
+    decl = np.radians(tilt) * np.sin(2 * np.pi * (mid - 80.0) / 365.25)[:, None]
+    return np.maximum(np.cos(phi - decl), 0.05)
+
+
 def _par(ra, jul, c_jul, c_jan):
     """months' par: 0.48 x top-of-atmosphere sunshine x (0.25 + 0.5 x the sunshine share) x days (one pass per cell)."""
     n = ra.shape[1]
@@ -2077,6 +2095,9 @@ def months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_ju
              cloud given should be the light's (compute's shade_jul /
              shade_jan, or shade_from_hours of a world's sunshine layers),
              not the sky's cover: showers leave sunny mornings
+      df     the diffuse share of that light (diffuse_fraction of the month's clearness, 0.25 + 0.5 x the
+             sunshine share)
+      mu     cos of the month's noon solar zenith angle (noon_cos_zenith)
       snow   mm: snowpack at the month's end (snow falls below 0 C, half of
              it between -2 and +2 C, and melts SNOW_DDF mm per degree-day;
              two years spun up from bare ground)
@@ -2091,13 +2112,14 @@ def months(lat, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, cloud_ju
     c_jul = 0.5 if cloud_jul is None else np.asarray(cloud_jul)
     c_jan = 0.5 if cloud_jan is None else np.asarray(cloud_jan)
     par = _par(ra, jul, c_jul, c_jan)
+    df = diffuse_fraction(0.25 + 0.5 * sunshine(np.where(jul, c_jul, c_jan)))
     snow, water = np.empty_like(t_m), np.empty_like(t_m)
     _snowpack(t_m, p_m, MONTH_DAYS, SNOW_DDF, snow, water)
     # degree-days above 5 C, the days scattered around each month's mean (sd
     # 4 C, as Reeh 1991 for melt): a month averaging 5 C still has warm days
     gdd5 = np.empty(t_m.shape[1])
     _gdd5_k(t_m, MONTH_DAYS, gdd5)
-    return dict(t=t_m, p=p_m, pet=_pet(ra, t_m), par=par, snow=snow, water=water, gdd5=gdd5)
+    return dict(t=t_m, p=p_m, pet=_pet(ra, t_m), par=par, df=df, mu=noon_cos_zenith(lat, tilt), snow=snow, water=water, gdd5=gdd5)
 
 
 def pet_halves(lat, temp, t_warm, t_cold, tilt: float = 23.4) -> np.ndarray:
