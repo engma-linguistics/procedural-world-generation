@@ -119,7 +119,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>258 · states: count towns the same way, then switch it on</td><td>With the earlier fix, the switch-on history now runs a little <i>early</i> (by 100–550 years on 3 of 5 test worlds), because it counts more town cells than the town ledger does. This counts them the same way, rechecks the five worlds, and switches it on only if the map is as steady when nudged.</td></tr>
+<tr><td>262 · states: the town ledger peeks ahead, then switching it on</td><td>Lane 258 made the live history count towns exactly as the town ledger does (within 3%). Dates still differ by 150–330 years, because the ledger quietly reads its numbers from up to 500 years in the future, so its first towns come early. This stops it peeking (your dates move a little later again, for the same reason as before), rechecks five worlds, and switches states on if steady.</td></tr>
 <tr><td>259 · war: a pressure inside the history (v4)</td><td>Crowded, stateless peoples next to enemies already lose some land to war (one dial). This adds early and late dials, times of troubles every couple of centuries, refugees who move when war takes their land, and each people's "lost to war, raids, feuds" shares in the viewer.</td></tr>
 <tr><td>261 · physics: wetlands that lose their water to the sky (pass 2 of 3)</td><td>Pass 1 confirmed it: rivers gain water crossing our swamps, where the real Sudd loses about half the White Nile and the Okavango nearly all of its water. Its fix worked but got only a third of the Sudd's loss, so pass 2 lets rivers spill over their banks above what a flat channel can carry. It also found the new closed-basin rule wrongly closes the Niger's inland delta (a river from wet hills crossing the Sahel counted as "dry"); that is fixed first.</td></tr>
 </table></div>
@@ -148,7 +148,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>No more hidden jumps for stranded peoples</b> (PW-1558, lane 233, merged; see D71). Also: a trade language no longer shows twice in the legend (PW-1564).</li>
 </ul>
 
-<footer>Desk v236 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v237 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
 <script>
 /* Answers live in the artifact's db, collection "answers", one doc per .ask (id = data-id): {choice, note, at, reply}.
