@@ -1468,3 +1468,69 @@ approximation of Dryer's cut, so that bin is not comparable.
 - **Tests.** `test_replacement_rate_matches_calibration`: sample 60 -> 120 draws, and the class-5 / class-1 bar 2.5 ->
   2.2 (main 2.71, lane 2.39 over 240 draws; not the wear, which the test now counts as no replacement); owner review in
   draft-language-replacement-ratio-threshold.
+
+
+## Lane 5 (2026-11-09, lang-lane5): exits for missing articulators (PW-1545), cold-review fixes (PW-1537)
+
+Measured with a lane script (`scratchpad/lane5/measure.py`, `compare.py`, not kept) over all living lects of a24559; the
+stored run is the coordinator's 11-09 05:14 pass on main 64f95d6d (identical readings to lane 4's final pass).
+
+### What changed
+
+| ticket | mechanism | where |
+| --- | --- | --- |
+| PW-1545 | a voice lacking lips, a velum or teeth keeps a catalogue row whose change never adds a gesture of the missing part (counted as its make-cost keys per segment) and takes one away somewhere, or never touches one; kʷ > p and p > ɸ (one gesture for another) stay barred | `rules.exit_only`, `ARTICULATOR_KEYS`, `catalogue` |
+| PW-1537 R5 | a word with the form of a live free or clitic gram of another source is renewed (HOMOPHONE_BOOST); renewals, coinages and wear avoid those forms | `Lect.step` sets `Lexicon.gram_forms`; `lexicon._renewal_boost`, `_clashes`, `wear` |
+| PW-1537 R5 | a colexification shift leaving two frequent words (class <= 3 both) on one form is taken with chance (families / 12)^2 below the proto-colexification floor (Wedel, Kaplan & Jackson 2013) | `lexicon.FREQ_SHIFT_CLASS`, `shift_word` |
+| PW-1537 R1 | free and clitic grams wear like function words (`GRAM_WEAR` 0.001 x frequency per generation, the owner's PW-1570 rate; Bybee 2003, Hopper 1991 divergence), never onto a word's or another gram's form | `grammar._wear_gram`, `step` |
+| PW-1537 R3 | recipes follow the food (grain, pulse, tuber, fruit, green, sweet, meat, fish; 2-3 ways each, a fixed hash of the lect id picks); spices and drink plants are never the food; the myth's god-line verb and invocation vary by faith (one wording per faith) | `texts.WAYS`, `staple`, `recipe`, `MYTH_HOLD`, `INVOCATION` |
+| PW-1537 R6, R9, R4, R10 | myth title says when the people took the faith over; taboo English says 'pigs', 'birds'; as-said line in [ ]; 'ago ago'; B&K 'other'; false clusivity caveat; stray marks key; harsh voice not counted non-human; god ids in word families | `sketch.myth_of`, `texts._plural_en`, `demo_page.py`, `sketch.py` |
+
+### Full passes (a24559, scratch, 8 workers, load 20-40)
+
+| measure | stored (main) | pass 1 | final (pass 2) | anchor |
+| --- | --- | --- | --- | --- |
+| living lects | 618 | 620 | 620 | |
+| checks failing | horizon | horizon | horizon | |
+| horizon human: reading / logistic | 4.75 / 12.1 | 14.6 / 14.9 | 10.3 / 10.6 | 6-10 (reading noise: 4.75-14.6 across lanes) |
+| long-generation ratio | 4.87 | 4.66 | 4.72 | |
+| sisters (strict) | 0.535 | 0.536 | 0.514 | > 0.5 |
+| WOLD rho; pronoun loans | 0.407; 0.077 | 0.398; 0.078 | 0.404; 0.074 | rho >= 0.3; cap 0.08 |
+| consonants p5/q1/med/q3/p95 | 14/18/21/25/35 | 14/17/21/25/40 | 14/18/22/26/39 | PHOIBLE 12/17/21/27/42 |
+| overused segments; worst ratio | none; ɟ 2.6 | none; c 3.0 | none; ɟ 2.6 | |
+| **PW-1545** lipless lines (289): labial share of consonants | 0.187 | 0.159 | 0.154 | other lects 0.253 |
+| ... nasal vowels share of vowels | 0.013 | 0.002 | 0.004 | other 0.019 |
+| ... nasals (incl. prenasal) share of consonants | 0.122 | 0.126 | 0.127 | other 0.175 |
+| ... rounded vowels share of vowels | 0.249 | 0.280 | 0.286 | other 0.330 |
+| **R5** MOTHER = WOMAN | 7.1% | 6.9% (class 2 only) | 3.5% | CLICS3 7 families |
+| frequent words (class 1-2) sharing a form with a free or clitic gram | 9.3% | 8.2% | 7.9% | |
+| gram = unrelated frequent word, per lect | 14.1 | 12.7 | 12.2 | |
+| lects whose largest homophone group (frequent words + grams) is 6+ | 45% | 44% | 42% | |
+| **R1** free / clitic grams identical to their living source | 34.8% | 34.2% | 32.5% | |
+| free grams; clitics (mean segments) | 3.35; 2.05 | 3.24; 2.08 | 3.23; 2.10 | |
+| **R3** recipes: distinct step sequences (food as X); commonest | 6; 30% (main texts.py) | 52; 19% | 52; 20% | |
+| ... recipe food | alliums 189, goat 74, cane 67 | maize 131, wheat 113, millet 85 | maize 130, wheat 111, millet 83 | |
+| ... myth invocations (one holder per faith) | 'hear us' 116 | hear 37, help 25, look upon 24, listen to 22 | same | |
+
+PW-1545, catalogue rows gained (kobold / lizardfolk / tortle / dragons as tested): 23 with "never adds, takes one away",
+32 with "or never touches one" (S067 kʷ > k, S072 m > n / _#, S100 m > ∅ / _#, S196 v > b, S226 labialization loss,
+S241 ŋ͡m > m, S027/S028 w loss, S141 denasalization, S145 full nasal loss, S084a/b prenasal loss, S111 mb > m / _#,
+nasal.nasal_loss, the j half of S125, S090 e > i / _N ...); still barred 41-48 (S065/S066 kʷ gʷ > p b, S001 p > ɸ,
+S014 β > v, S194 pf > f (equal gestures), rounding and nasalization rows). Lipless lines lose labials (0.187 -> 0.154)
+and nasal vowels (0.013 -> 0.004); rounded vowels rose (0.249 -> 0.286), as w-loss before u and denasalization now
+leave rounded oral vowels, and no rounding exit exists in the catalogue (a vowel's rounding is lost only by
+unrounding rows, which need lips as written).
+
+### Readings
+
+- **Homophony.** The gram-side renewal moves the gram-word coincidences a little (14.1 -> 12.2 per lect; 9.3% -> 7.9% of
+  frequent words), the shift damping halves mother = woman. Most of the remaining coincidences are one-syllable
+  clitics and function words (lane 4 made them CV) meeting closed-class words (I ~ ONE ~ THREE ~ WHAT, ~5% of lects
+  each): a CV space of ~100 syllables holds ~100 frequent words and grams, so some meet. English has the same (I / eye,
+  to / two / too); left as it is.
+- **Sisters** fell 0.535 -> 0.514 (still above 0.5): fewer frequent-pair shifts means frequent words are renewed by the
+  other sources (fresh roots among them) when they go. Watch it on the next pass.
+- **Horizon.** Logistic fit 10.6 is the lowest of the recent passes (11.2-14.9); the reading moves 4.75-14.6 between
+  passes on the same code. Not a lane 5 effect on its face (no sound-change weight moved for humans).
+- **Fable (R2).** Not done: it needs a full lect state at the split, which the output does not keep
+  (draft-language-fable-ancestor-at-split).

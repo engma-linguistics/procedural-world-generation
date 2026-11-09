@@ -41,8 +41,9 @@ show up as another overuse failure.
   S072, S100, S196, S226, S241, S027, S028, S040, S141, S145, S084a/b, S111, nasal.nasal_loss and others (23-32 rows);
   still barred: kʷ > p (S065/066, one gesture for another), p > ɸ, rounding and nasalization rows. Weight still by
   `cost_factor` (an exit from a dear sound gets up to x5).
-- [ ] apply, re-run the species harness (scratchpad dark/sph.py: isolated protos per voice) and one full pass
-  (harness gone; lane 5's full pass measures labial, nasal, rounded-vowel shares in lipless lines: calibration.md)
+- [x] apply, re-run the species harness (scratchpad dark/sph.py: isolated protos per voice) and one full pass
+  *Done (lang-lane5):* final pass, lipless lines: labials 0.187 -> 0.154 of consonants, nasal vowels 0.013 -> 0.004,
+  rounded vowels 0.249 -> 0.286 (no unrounding exit in the catalogue); all checks as before (calibration.md "Lane 5")
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-missing-articulator-exits.md (found by lang-dark (dark l and y lane)).

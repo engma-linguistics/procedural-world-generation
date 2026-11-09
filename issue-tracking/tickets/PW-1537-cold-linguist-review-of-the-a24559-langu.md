@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-986]
 refs: [docs/review/language/sketches/, docs/review/language/sketches/index.md, docs/review/language/sketches/d551-elf.md, docs/review/language/sketches/d292-aarakocra.md, docs/review/language/sketches/d48-blue-dragon.md, docs/review/language/sketches/d704.2-halfling.md, docs/review/language/sketches/d261-silver-dragon.md, docs/review/language/sketches/d760-hobgoblin.md, tools/language/demo_page.py, tools/language/sketch.py, planet/language/sentences.py, planet/language/grammar.py, planet/language/rules.py, planet/language/inventory.py, planet/language/lexicon.py, planet/language/romanize.py, planet/language/texts.py, planet/language/faiths.py, docs/review/language/queue.md, docs/review/language/grammar-gaps.md, "run a24559", "demo build: lang-design scratchpad final/languages-demo-stripped.html"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -85,6 +85,8 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   ‼, which human languages use (e.g. !Xóõ, Bai). It is also marked per segment in clumps (w‼ɔ‼j‼ 'dog'), where voice
   quality is a syllable or word register. Fix: count ‼ as a human phonation contrast unless the people's organs say
   otherwise; mark it once per syllable.
+  *Partly done (lang-lane5):* the sketch's count leaves harsh voice out (`sketch._nonhuman`). Marking once per syllable
+  is left.
 - **R9. Sound changes that fire again and again.** Elf 7 history: "w was inserted after u and before a vowel" (S125b)
   seven times, "w was lost before u or before o" (S027) four times, e > j (S205) four times; insertion and loss
   alternate. Real changes happen once. Fix: in `rules.py`, cool a rule down for several kyr after it applies and never
@@ -98,6 +100,12 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   take' = **ʁa‼ ʁa‼**. Fix: in `grammar.py`, each bonding step (free > clitic > affix) shortens the form (lose
   syllables, tone, length; clitics at most one syllable, affixes usually one segment or CV), and a marker that is
   still identical to its source cannot stand next to it.
+  *Partly done (lane 4 PW-1570 and lang-lane5):* binding clips to one syllable (clitic) and the first syllable (affix)
+  (lane 4); free and clitic grams now also wear like function words (`grammar.GRAM_WEAR` 0.001 x frequency, the
+  owner's PW-1570 rate; never onto a word's or another gram's form). Free grams 3.35 -> 3.23 segments, grams identical
+  to their source 34.8% -> 32.5% (calibration.md 'Lane 5'). Left: a marker identical to its source can stand beside it
+  (Mandarin 把 'take' > object marker is
+  the real-world case; no adjacency veto added).
 - **R4. Noun classes that are not systems.** Dwarf 1: "genders by animacy" with one class that every noun takes
   (one class is not a gender). Blue dragon: default class 4 'de' is never on dog, fish or house in the sentences.
   Halfling 39 calls its class prefixes "classifiers" though they show concord. The same semantic menu recurs ("languages,
@@ -123,6 +131,11 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   hu = 1PL.EXCL. Hobgoblin: hiː = 3SG, HORT, 'eat'. Dwarf: 'fifteen' ujo̞ = 'woman'. Aarakocra: 'river' = 'big'.
   'Mother' = 'woman' in aarakocra, halfling and hobgoblin. Fix: the homophony veto in `lexicon.py` should weigh
   frequency (core list and live grams) and the mother/woman colexification should be rare.
+  *Partly done (lang-lane5):* a word with the form of a live particle or clitic of another source is renewed as an
+  accidental homophone (`lexicon._renewal_boost` via `Lexicon.gram_forms`), new words and wear keep off those forms
+  (`_clashes`, `wear`); a shift leaving two frequent words (class <= 3) on one form is taken with chance
+  (families / 12)^2 (`FREQ_SHIFT_CLASS`). Readings in calibration.md 'Lane 5'. Left: closed-class mergers by sound
+  change (I ~ ONE ~ THREE in ~5% of lects) and gram-gram homophony of one-syllable clitics.
 - **R8. Numeral notes that the forms do not support.** "11 = 10 + 1 ('ten' and 'one')" is printed for forms holding
   neither (hobgoblin iæ, dwarf mãwɛwnḭv, aarakocra u˦ᴖwʔa˦l, silver dragon kujie). The sketches' numeral line says
   "nine = 'ten + one'" and "eight = 'four + two'" (elf, aarakocra; wrong arithmetic for 9 and 8). Blue dragon:
@@ -155,12 +168,21 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   dragonborn, three different faiths); all use "X holds Y. X gives us water/rain.
   X, hear us!". Fix: recipe steps from the cuisine data (boil, roast, ferment, dry, pound, soak), a few sentence frames
   per step, and myth lines drawn from the faith's own data or left out when thin (`texts.py`).
+  *Done (lang-lane5):* recipes follow the food (`texts.WAYS`: grain, pulse, tuber, fruit, green, sweet, meat, fish;
+  2-3 ways each, picked by a hash of the lect id; spices and drink plants never the food). a24559 living lects: 6 ->
+  52 distinct step sequences, commonest 30% -> 19%; staple alliums 189 lects -> 0 (maize, wheat, millet lead). Myths:
+  the gods' verb and the invocation vary per faith (`MYTH_HOLD`, `INVOCATION`; one wording per faith in all its
+  languages): 'hear us' 116 of 116 -> 37 / 25 / 24 / 22 over four invocations. The swine taboo itself is faith data
+  (77 of 108 faiths): draft-faith-taboos-mostly-swine.
 - **R6. Myths of the wrong people.** Elf 7 and drow 2 show "the sky faith of the earliest hill giants of the east of
   Ratal" with no word on how elves came by it; the faith is "founded 300 kyr ago" (silver dragons: 250 kyr), 15 times
   older than any proto-language here (20 kyr). Fix: say "a faith the elves took from the hill giants" and cap founding
   dates at the founding people's own language age, or explain the gap.
+  *Partly done (lang-lane5):* the myth title says when the people took the faith over ('..., which the elf people
+  took over', `sketch.myth_of`). Founding dates: draft-faith-taboos-mostly-swine.
 - **R9. Translations add words.** "the carrion birds" / "the wild swine" for plain bird-PL / pig-PL (elf, drow,
   aarakocra, silver, dragonborn myths). Fix: gloss what is there ('birds', 'pigs'), or coin the compound.
+  *Done (lang-lane5):* the English says 'pigs', 'birds'; the label goes in the note (`texts._plural_en`).
 
 ### Names
 - Mostly convincing (sentence names like Yegǀuwizi 'the child came', matronymics, settlement etymologies). Two slips:
@@ -168,10 +190,12 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   vowel (u 'soul', i 'sing', i 'give'); internal ids leak into word families as **god:31 (name)**, **god:255**,
   **god:289** (elf, aarakocra, halfling, silver dragon). Fix: print the god's name; apply the minimal-word rule to
   liturgical languages too.
+  *Partly done (lang-lane5):* word families print "a god's name" for name:god:N (`sketch.cname`).
 
 ### Presentation
 - **R4. Slash brackets on phonetic output.** The joined line under each sentence is written /…/ but carries
   allophones (elf [d] for /t/, [ʘ̬] for /ʘ/) and phrase sandhi. Use [ ] or label it "as said".
+  *Done (lang-lane5):* [ ] with an 'as said' tooltip (`demo_page.py`).
 - **R7. Book spellings that cannot be read.** Dragons spell ˯ as "mh" and ‼ as "rh" in every word:
   samhshunwanmhch'samhshun, thurhdeïkhomhwïnerhḷ; human 20 untsumpnampmpufuf. Elf mixes click letters with px for ʘ
   (pxagǂhabu). Fix: at most one non-human mark per word in the book spelling; clicks all letters or all digraphs.
@@ -180,6 +204,9 @@ index plus the elf, aarakocra and hobgoblin sketches in depth (others skimmed). 
   page shows it; dragonborn lists the ˯ mark though no live word has it; "most English-like" hobgoblin has onsets ʃb-,
   hb- that the score ignores; the complexity section prints a stray "Marks beyond the standard IPA" line after the
   tortle and kobold entries.
+  *Done (lang-lane5):* 'ago ago', the B&K 'other' stage wording, the false inclusive/exclusive caveat, the stray marks
+  line (complexity cards key only the marks they show). Left: ˯ listed with no live word; the English-likeness score
+  ignoring onsets.
 
 ### Side effect of the last fixes (lang-last full pass, 2026-11-08): overused nʲ
 The single full pass after the three fixes (scratchpad `last/a24559`) fails "overused segments (all living lects)":
@@ -196,7 +223,7 @@ All other checks pass except the scholars' horizon (accepted).
 - [ ] a marked series member without its plain partner is either gone or listed as a logged exception
 - [ ] markers that bind shorten; no marker sits next to its identical source
 - [ ] fable daughters descend from the shown ancestor (a check in `demo_page.py`)
-- [ ] recipe and myth texts differ in more than the nouns across the ten demo languages
+- [x] recipe and myth texts differ in more than the nouns across the ten demo languages
 - [ ] numeral composition notes only where the parts are visible; arithmetic labels right
 - [x] offensive-substring check passes on all book spellings in the demo
 - [ ] a second cold read of the regenerated demo finds none of R1-R3 again
