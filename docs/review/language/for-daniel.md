@@ -1171,3 +1171,74 @@ is the faith data's doing (draft-faith-taboos-mostly-swine).
 **Left for you:** one taste call, how to spell the lip click ʘ beside the click letters ǀ ǁ ǃ ǂ
 (draft-language-bilabial-click-spelling; lean: allow the letter ʘ). Still open on PW-1537: growled voice marked once a
 syllable, class concord on every word, CLICS derivation families, and gaps that never had a plain partner.
+
+## Lane 7 (lang-lane7, 2026-11-09): the names list, sound-change weights, big case systems
+
+- **Each family spells its words its own way (PW-1546 item 12).** In plain words: the book spelling now has eight
+  "looks", picked when a family begins and kept by its daughters (1 split in 20 reforms it): English-like (sh ch y),
+  Czech-like (š č ž), Polish-like (sz cz ż), German-like (sch tsch), Basque-like (x tx tz), Turkish-like (ş ç c),
+  French-like (ch j gn) and Swedish-like (sj tj). Long vowels are doubled, take a macron (ā) or an acute (á). So
+  sister languages look alike on the page and strangers look different. The workbench spelling is unchanged. On a24559:
+  English-like 151 of 616 living languages, the other seven 42-92 each; length doubled 285, macron 216, acute 115.
+- **Bantu-style click letters.** A language whose clicks are only the dental, alveolar and lateral ones (ǀ ǃ ǁ) writes
+  them c q x as Zulu and Xhosa do, if those letters are free; otherwise it keeps ǀ ǃ ǁ. ʘ is left as your draft has it.
+- **Name length by tradition (item 14).** In plain words: some families give short names (1-2 syllables, Chinese-like),
+  most mid-length ones, some long ones that join three themes (Malagasy-like). On a24559: short names average 1.8 syllables, mid 2.6, long 3.8 (up to 11).
+- **The missing name patterns now fire (item 15).** In plain words: a people can now be known by a name passed on by a
+  third people (X4: the Persians' name for the Greeks reached the Chinese via others; it never fired before because only
+  rare reputation rows say who passed a name on); a people taken for another from the same direction (X9: 'Turks'
+  for turkey); a conquered deme taking its rulers' name (P1: the Bulgars, the Franks); a people adopting the Common's
+  name for itself (P3/E12); a people rejecting an insult and asking for its own name (P5); a feared people's name
+  becoming an ordinary word ('a wrecker', as vandal, P6); one root given to two peoples by different namers (P7). Each
+  people has a short "how their names changed" history.
+- **A language can be named from another root (item 16):** 'our speech' or the place it was first spoken (as Hittite
+  *nešili* 'of Neša'), in a quarter of peoples.
+- **Land names from the languages (item 18).** In plain words: each landmass gets a name in the language of its first
+  settlers ('the long land', 'the white land'), and as today's main language there says it (inherited, or heard from
+  the first namers). The world's own names (and yours) stay the display names.
+- **Scholars' family names (item 19):** from a river (as before), from a reconstructed word ('person', as *Bantu*), or
+  from the land.
+- **Dish names (item 20, for the culinary end goal):** each living language names its staple after a place ('the
+  Ratal-style millet'), after a person ('Ana's stew', as pavlova) and, where a food came along a food route, after the
+  people it came from (as turkey).
+- **The language viewer shows all of this** on the Names tab: the name history, the adopted name, rejected and split
+  exonyms, words made from names, lands named, and dishes beside each deme's places.
+- **Sound-change weights (PW-1579).** In plain words: some rare changes were turned down when weights did nothing; now
+  weights matter a lot (3x per step), so we checked each against how common its result is in real languages. Turned
+  back up where the result is still too rare: all voiced stops merging with voiceless (no b d g: 12% of languages,
+  real 39%), rounding before u/o (kʷ 1%, real 12%), Swedish-type rt > ʈ (ʈ 5%, real 16%), tone (31% tonal, real 42%),
+  u > y (y 3%, real 5%). Kept down where the result is already at or above the real share: prenasal stops (27-32%,
+  real ~12%), dark l (4%, real 0.7%), palatalized consonants (1-3% each, as real), glottal stop (67%, real 38%), the
+  added final vowel. The effect is modest: each of these changes needs the right sounds to act on.
+- **Big case systems (PW-1586).** In plain words: a language's case system was drawn as two separate coin flips (core
+  cases? other cases?), so too many languages ended up with a small system. Drawing the second given the first follows
+  the real pairing (Grambank), and in a 1,400-language-history test 6+ cases went 26% -> 32-34% (WALS 32%). In the
+  full run the gain is smaller: 6+ cases 19% -> 21% of living languages, no case at all 35% -> 37% (WALS 47%), the
+  2-5 middle 46% -> 42% (WALS 20%). Protos draw a big system 38% of the time but start with no case endings and must
+  grow them; most living languages have not had the time yet. Still open on PW-1586.
+- **Checks (same world on the code before this lane):** all pass except the scholars' horizon, as before. Sisters
+  recognisable 0.511 -> 0.535 (pass mark 0.5); pronoun loans 0.080 -> 0.075 (cap 0.08).
+
+**Defaults I chose**
+
+| what | default | where |
+| --- | --- | --- |
+| how often each spelling look is picked | English-like 30%, Czech-like 12%, Polish-like 8%, the other five 10% each | `romanize.LETTER_W` |
+| how long vowels are written | doubled 50%, macron 30%, acute 20% | `romanize.LENGTH_W` |
+| how often a daughter reforms its spelling | 5% a split | `romanize.STYLE_REFORM` |
+| Bantu c q x for clicks | only when every click is ǀ ǃ or ǁ, and c q x are free | `romanize.BANTU_CLICKS` |
+| given-name length traditions | short 20%, mid 60%, long 20% (1-2, 2-4, 4-9 syllables) | `personal.NAME_LENGTH_W`, `NAME_LENGTH` |
+| language named from another root | same as the people 75%, 'our speech' 12%, a place 13% | `names.GLOSSONYM_W` |
+| misattributed origin (X9) weight beside the other exonym patterns | 0.5 | `names.X9_W` |
+| a relayed name of 4+ syllables keeps only its last two (Sioux) | 35% | `names.RELAY_CLIP` |
+| a conquered deme takes its rulers' name (P1) | 60% of shifts with a ruler | `names.P1_TAKE` |
+| a people adopts the Common's name for itself (P3) | 15% | `names.P3_ADOPT` |
+| an insulted, as-numerous people rejects the name (P5) | 50% | `names.P5_REJECT` |
+| a feared or despised people's name becomes a word (P6) | 30%, after 1,000+ years | `names.P6_WORD`, `P6_KYR` |
+| scholars' family name basis | river 60%, reconstructed word 40%; no river: word 60%, else land | `names.SCHOLAR_W` |
+| landmass name modifiers | big, long, white, old, good, high, red, black, green, cold, warm (when the language has the word); 70% take one | `names.LAND_MODS` |
+| dishes per language | up to 3 (place, person, foreign people) | `names.DISH_MAX` |
+| sound-change weights | as above; reasons in the catalogue's version line | `sound_changes.tsv`, `history.RULE_WEIGHT` |
+
+**Left for you:** one taste call: should the spelling looks borrow real ones (Polish sz, Czech š) or be invented
+(draft-language-spelling-traditions-look; lean: real ones, as built).

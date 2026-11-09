@@ -1599,3 +1599,74 @@ The orphan counts leave prenasalised stops out (Fijian ᵐb ⁿd stand without b
   earlier passes on unchanged sound code; the series drag adds changes to a few words, the source lean is grammar only.
 - **Repeats.** The elf of the review now shows hiatus repairs once with a 're-applied N times' note; the remaining
   repeats (median 2) are ordinary rows re-firing after their wait.
+
+## Lane 7 (2026-11-09, lang-lane7): names backlog (PW-1546), sound-change weights (PW-1579), big case systems (PW-1586)
+
+Measured with a lane script (`scratchpad/lane7/measure.py`, `caseharness.py`, not kept) over all living lects of
+a24559; the stored run is the coordinator's 11-09 09:38 pass (lane 6 code). Two full passes on this lane's code, before
+and after merging main 81876f6c (growl envelope, fable boundary, ʘ letter), gave identical readings (31 and 35 min,
+load 20-30).
+
+### What changed
+
+| ticket | mechanism | where |
+| --- | --- | --- |
+| PW-1546 12 | book letter style (8) and vowel-length mark (double/macron/acute) per proto, inherited, reform 0.05 a split; the style's letters are exempt from the diacritic budget; a clashing override is dropped (one at a time) | `romanize.LETTER_STYLES`, `draw_style`, `reform_style`, `Orthography._styled`, `Lect.orth` |
+| PW-1546 6 | Bantu c q x (g+ for voiced) when every click is ǀ ǃ ǁ and the letters are free; all or none | `romanize.BANTU_CLICKS`, `_click_letters` |
+| PW-1546 14 | given-name length tradition short/mid/long (caps 1-2, 2-4, 4-9; long joins a third theme) | `personal.NAME_LENGTH_W`, `NAME_LENGTH` |
+| PW-1546 15 | X4 relay round (a third people's own name, clipped 35% when 4+ syllables); X9 misattributed origin (row's `from_dir`); P1 rulers' name for a shifted deme; P3/E12 Common's name adopted; P5 rejection; P6 name > word; P7 one root to two peoples; per-people `history` | `names._Pass.relay`, `misattributed`, `conquerors`, `adopted`, `rejections_and_words`, `split_roots`, `note` |
+| PW-1546 16 | glossonym from 'our speech' or the first place's 'like' form | `names.GLOSSONYM_W`, `glossonym_drift` |
+| PW-1546 18-20 | landmass names (first settlers, E6; today's form, inherited or P2); scholars' basis river/reconstruction/land; dishes (toponym, eponym, exonym along food routes) | `names.landmasses`, `scholars`, `dishes` |
+| viewer | Names tab: history, adopted, rejected/split exonyms, name-words, lands, dishes | `viewer/langmore.js` |
+| PW-1579 | S097 1->2, S068 1->2, S086 2->3, tone 0.3->0.5, S073 0.1->0.3; kept S142 1, S152 2, S221 0.3, S124 1, S042 0.15, voicing split 0.05, reduction 0.5 | `sound_changes.tsv` version line, `history.RULE_WEIGHT` |
+| PW-1586 | GB072 drawn given the drawn GB070 (Grambank, n=2157: neither 50%, core only 4%, oblique only 15%, both 31%) instead of independently | `grammar._draw_feature` |
+
+### Full pass (a24559, scratch, 8 workers)
+
+| measure | stored (main, lane 6) | lane 7 final | anchor |
+| --- | --- | --- | --- |
+| living lects | 621 | 616 | |
+| checks failing | horizon | horizon | |
+| horizon human: reading / logistic | 14.63 / 14.23 | 14.63 / 12.46 | 6-10 |
+| long-generation ratio; human rules / kyr | 4.69; 18.4 | 4.60; 18.3 | |
+| sisters (strict) | 0.511 | 0.535 | > 0.5 |
+| WOLD rho; pronoun loans | 0.401; 0.080 | 0.396; 0.075 | rho >= 0.3; cap 0.08 |
+| consonants p5/q1/med/q3/p95 | 14/18/21/25/39 | 13/18/21/25/40 | PHOIBLE 12/17/21/27/42 |
+| vowels p5/q1/med/q3/p95 | 3.3/6/8/10/15.7 | 4.1/6/8/11/16 | |
+| overused segments; worst ratio | none; ɟ 2.6 | none; c 2.6 | |
+| **PW-1579** no voiced plain stop (S097) | 11.6% | 15.4% | WALS 4A no voicing 39% |
+| ... kʷ / ɡʷ; any labialized (S068) | 0.8 / 3.9%; 13.2% | 1.1 / 4.4%; 14.8% | PHOIBLE kʷ 12.5%, ɡʷ 6.4% |
+| ... ʈ / ɖ / ɳ / ʂ (S086) | 5.2 / 14.8 / 6.4 / 7.2% | 4.7 / 13.1 / 7.8 / 6.5% | 15.5 / 7.1 / 14.1 / 5.8% |
+| ... tonal (family:tone) | 31.2% | 31.5% | WALS 13A 42% |
+| ... y (S073) | 2.9% | 4.9% | 5.1% |
+| ... kept: prenasal any; ɫ; tʲ nʲ lʲ rʲ; ʔ | 27.2%; 4.5%; 2.9/1.3/1.1/2.1%; 66.7% | 32.0%; 3.9%; 4.1/0.8/1.8/3.1%; 67.2% | ~12%; 0.7%; 2.7/1.9/2.2/1.1%; 37.6% |
+| ... words ending in a consonant | 0.328 | 0.308 | |
+| **PW-1586** WALS 49A none/bord/2/3/4/5/6-7/8-9/10+ | 18/16/19/13/8/6/11/6/2 | 25/12/14/11/10/8/15/5/2 | WALS 100 langs: 47 (with bord.)/.../32 at 6+ |
+| ... 6+ / 8+ | 19.2 / 7.9% | 21.3 / 6.7% | 32 / 18% |
+| ... case label few / many / none | 388 / 119 / 114 | 330 / 131 / 155 | |
+| **PW-1546** exonym patterns X1/X7/X8/X9/X4/X3/X2/X5 | 379/318/183/0/0/53/61/37 | 379/250/155/58/65/53/37/34 | |
+| ... name history P1/P5/P6/P3 | none | 28/28/5/4 | |
+| ... glossonym drift ('our speech' / a place) of 37 peoples | 0 | 5 / 2 | |
+| ... spelling looks house/iberian/german/french/hacek/turkic/nordic/polish | all house | 151/92/77/73/70/56/55/42 | |
+| ... length double/macron/acute | all double | 285/216/115 | |
+| ... given-name syllables short/mid/long (mean, max) | mid 2.72, 6 | 1.8, 3 / 2.6, 6 / 3.8, 11 | |
+| ... scholars' basis river/reconstruction/land (57 families) | all river | 17/30/10 | |
+| ... landmasses named; dishes | 0; 0 | 6; 1422 | |
+
+### Readings
+
+- **Weights (PW-1579).** Every restored row moves its segment the right way, but by little (kʷ +0.3 points, tone
+  +0.3, ʈ within noise): each row needs its input (rt clusters, Cu sequences, voiced stops) and competes with the
+  rows that clear the result again. Under-shares that remain (kʷ, ʈ, ɳ, tone, voicing) are inventory-draw and exit
+  matters, not weights; none overshot. y rose to PHOIBLE's share. Prenasal stops rose 27 -> 32% with S142 unchanged:
+  a run-to-run swing (S083 and the nasal-cluster rows feed it), left at weight 1.
+- **Case (PW-1586).** The harness (40 protos x 2 seeds, 700 generations, L2 0.3) gave 6+ 32-34% and 8+ 21-29% with
+  the joint draw (26% before; per-function pull variants moved mass to 10+ without raising 6+, so they were dropped).
+  The full pass moves less, 19 -> 21%: protos draw 'many' 38% of the time but start with no case grams (a proto shows
+  'none' 59 of 60 times) and grow them over hundreds of generations; living lects under 200 generations old show
+  'many' 18%, those over 600, 27%. The 2-5 middle (42% against WALS 20%) is the remaining gap: lects with a 'many'
+  aim pass through it. Seeding a proto's case grams by its aim (as `_deep_past` does for long-generation peoples)
+  would close it; left on PW-1586 with this diagnosis.
+- **Names.** X4 fires 65 times now that the relay has its own round (a24559 has `borrowed_from` only on exotic, edge
+  and feared rows); X9 58. P1 renames 28 shifted demes; the rejected names (P5) stay listed, marked. A few landmass
+  names are short or start with a glottal ('De): the first settlers' LAND word as it is.
