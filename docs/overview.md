@@ -918,6 +918,25 @@ Key anything stored per culture (lects, notes) on the string **`uid`** (PW-1283)
 
 Design: [docs/review/emergent-cultures/design.md](review/emergent-cultures/design.md).
 
+**Names slot** (`lineages/nameslot.py`, PW-1436; gloss names PW-1249). Every culture, faith, state and place has one `name` that the
+brief and the viewer read, plus `gloss_name` and `name_from` ("language", "gloss" or "authored"). Where the run has a
+`languages.json`, a culture is named by the endonym its largest living deme speaks (repeats take their river or lake name), a
+place by its settlement name, a state by its capital's name, and a faith as "the sky faith of <culture>". Otherwise the gloss
+names apply: `cultures.document` writes distinct ones (a repeated "temperate humans of the south of Gugiki" takes ", founded 12,400
+years ago", then its way of life, then western/eastern), with no "(7)". The slot is filled at read-out (`/api/cultures`,
+`/api/gods`, `/api/polities`, the brief's `Ctx`), so a stored run gets it without a re-run.
+
+**Calendars cultures found** (`lineages/calendars.py`, PW-1435). A literate culture (its people knows `writing`) may start
+counting years from a faith founded or split, a state founded or risen to state or empire rank, a conquest, an incursion, a
+town razed or sacked, or a town lost to a shifting river. The count spreads with the faith or state and fades without one
+(module docstring: the odds, which are judgement calls; the sources, Wikipedia's "Calendar era", "Islamic calendar" and
+"Chinese era name"). The event's year is year 1. `GET /api/calendars?run=` lists them. The workbench's **dates in** picker,
+next to "present is year", makes every date on the page read "year 212 of the Founding of Iligya" (`NumFmt.setCalendar`).
+A culture's row in the Cultures tab lists its calendars (click one to use it). The brief takes `&calendar=<id>`
+(`years.in_calendar`). "X years ago" stays the default. On stored L7 runs (11-09) the count is 78 calendars (10 still in use)
+on a24559, 308 (45) on 1e97dd and 206 (51) on 07c755. Most come from states, because the polities layer has hundreds of
+states and empires and few faiths are founded after writing.
+
 ### 2.25c Gods, faiths and taboos (`lineages/gods.py`, `taboos.py`, `taboo_defs.py`, `faithmap.py`; PW-1306, PW-1305, PW-1311, PW-1358)
 
 Readouts after the cultures, never read back by the history. Each culture with spirit ritual has 3-15 gods and spirits whose domains drift

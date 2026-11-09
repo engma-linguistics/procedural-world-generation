@@ -404,7 +404,6 @@ def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dic
     from .demes import _colors
     idx = {l["id"]: l for l in lines}
     D = doc["demes"]
-    names: dict[str, int] = {}
     per: dict[str, int] = {}
     out = []
     held = np.zeros(len(cultures), np.int64)  # (cells its living demes hold now, as leading or second people: a culture that leads nowhere)
@@ -428,9 +427,6 @@ def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dic
         place = big.get("place")
         pn = _short_people(l)
         nm = f"{u.adapted + ' ' if u.adapted else ''}{'first ' if u.how == 'founding' else ''}{pn}" + (f" of {place}" if place else "")
-        names[nm] = names.get(nm, 0) + 1
-        if names[nm] > 1:
-            nm += f" ({names[nm]})"
         trs = list(l.get("traits") or [])
         ways0, ways = u.ways0 or {}, u.ways or {}
         w0 = next(iter(ways0), None)
@@ -466,6 +462,9 @@ def document(cultures: list[Culture], dc: np.ndarray, doc: dict, lines: list[dic
         })
     for x, c in zip(out, _colors(out, lines)):
         x["color"] = c
+    from .nameslot import gloss_names, people_short
+    for x, nm in zip(out, gloss_names(out, people_short(lines))):  # (PW-1249: distinct names, no "(7)"; the names slot's fallback)
+        x["name"] = nm
     by = {}
     for x in out:
         b = by.setdefault(x["people"], {"cultures": 0, "alive": 0, "founding": 0, "adapted": 0, "apart": 0, "merged": 0, "died_out": 0})

@@ -16,6 +16,10 @@
 //             per run (key 'pw-present-year:<run>', plus '*' = last chosen, the default for runs with none);
 //             NumFmt.run is the run the page is showing (set it when a run opens). Pages re-draw after a change.
 //   yearsAgo(k)  k kyr as 'N years' (3 significant figures, thousands separated): a span in plain years.
+//   setCalendar(cal, runId) / calendar(runId)  a culture's own calendar for the run's dates (PW-1435: /api/calendars;
+//             cal = {id, name, epoch_kyr}, null = years ago), kept in localStorage per run ('pw-calendar:<run>'). While one is
+//             chosen, ago(k) reads 'year 212 of the Founding of Iligya' (the epoch's year is year 1) or '340 years before the
+//             Founding of Iligya'; it wins over 'present is year N'. calDate(k, cal) writes a date in a given calendar.
 (function (g) {
   const trim = (x, d) => String(+x.toFixed(d));
   const num = (v) => {
@@ -40,11 +44,27 @@
   };
   const sig3 = (y) => { if (y < 1000) return Math.round(y); const m = 10 ** (Math.floor(Math.log10(y)) - 2); return Math.round(y / m) * m; };
   const yearsAgo = (k) => { const y = sig3(k * 1000); return `${y.toLocaleString('en')} ${y === 1 ? 'year' : 'years'}`; };
-  const calendar = (k, p) => { const y = Math.round(p - k * 1000); return y >= 1 ? `year ${y.toLocaleString('en').replace(/,/g, '')}` : `${(1 - y).toLocaleString('en').replace(/,/g, '')} before year 1`; };
+  const yearOf = (k, p) => { const y = Math.round(p - k * 1000); return y >= 1 ? `year ${y.toLocaleString('en').replace(/,/g, '')}` : `${(1 - y).toLocaleString('en').replace(/,/g, '')} before year 1`; };
+  const CKEY = 'pw-calendar:';
+  const calendar = (run) => {
+    try { const v = store()?.getItem(CKEY + (run === undefined ? NumFmt.run : run)); const c = v ? JSON.parse(v) : null; return c && c.name && c.epoch_kyr != null ? c : null; } catch (e) { return null; }
+  };
+  const setCalendar = (cal, run) => {
+    const id = run === undefined ? NumFmt.run : run;
+    if (!id) return;
+    try { if (cal) store()?.setItem(CKEY + id, JSON.stringify({ id: cal.id, name: cal.name, epoch_kyr: cal.epoch_kyr })); else store()?.removeItem(CKEY + id); } catch (e) { /* no storage */ }
+  };
+  const calDate = (k, cal) => {
+    const d = (cal.epoch_kyr - Math.max(k, 0)) * 1000;
+    if (d > -0.5) return `year ${(Math.floor(d + 1e-6) + 1).toLocaleString('en')} of ${cal.name}`;
+    const n = Math.round(-d);
+    return `${n.toLocaleString('en')} ${n === 1 ? 'year' : 'years'} before ${cal.name}`;
+  };
   const ago = (k, p) => {
     if (k == null || Number.isNaN(k)) return '?';
+    if (p === undefined) { const c = calendar(); if (c) return calDate(k, c); }
     p = p === undefined ? present() : p;
-    if (p != null) return calendar(Math.max(k, 0), p);
+    if (p != null) return yearOf(Math.max(k, 0), p);
     return k <= 0.0005 ? 'the present' : `${yearsAgo(k)} ago`;
   };
   const date = ago;
@@ -64,5 +84,5 @@
     const x = +m[1], u = m[2] || (dflt === 'ago' ? 'yr' : 'kyr');
     return ['myr', 'ma', 'mya'].includes(u) ? x * 1000 : ['yr', 'y', 'year', 'years', 'bp'].includes(u) ? x / 1000 : x;
   };
-  g.NumFmt = { num, count, kyr, ago, date, since, yearsAgo, parseDate, present, setPresent, run: null };
+  g.NumFmt = { num, count, kyr, ago, date, since, yearsAgo, parseDate, present, setPresent, calendar, setCalendar, calDate, run: null };
 })(globalThis);

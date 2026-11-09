@@ -264,7 +264,7 @@ def speak(query: str) -> tuple[bytes | dict, int]:
 
 
 def brief(query: str) -> tuple[dict, int]:
-    """GET /api/brief?run=<run>&people=<id>|culture=<id>[&era=<kyr ago>] or &region=lat,lon[,radius_km]: the culinary brief
+    """GET /api/brief?run=<run>&people=<id>|culture=<id>[&era=<kyr ago>][&calendar=<id>] or &region=lat,lon[,radius_km]: the culinary brief
     (lineages/brief.py, PW-728) as {markdown, brief} (PW-837: the viewer's Peoples panel shows it)."""
     q = dict(parse_qsl(query))
     try:
@@ -281,8 +281,17 @@ def brief(query: str) -> tuple[dict, int]:
         culture = int(q["culture"]) if q.get("culture") not in (None, "") else None
         if region is None and culture is None and not q.get("people"):
             raise ValueError("give people=<id>, culture=<id> or region=lat,lon[,radius_km]")
-        b = RO.build(run, region=None if culture is not None else region, people=None if culture is not None else q.get("people"), era_kyr=era, culture=culture)
-        return {"markdown": BR.markdown(b), "brief": b}, 200
+        cal = None
+        if q.get("calendar") not in (None, ""):  # (PW-1435: its dates in a culture's calendar; "X years ago" without)
+            from .lineages import calendars as CA
+            cal = CA.calendar_of(calendars_doc(S.find_run(run)), q["calendar"])
+            if cal is None:
+                raise ValueError(f"no calendar {q['calendar']} in this run")
+        from .lineages.years import in_calendar
+        with in_calendar(cal):
+            b = RO.build(run, region=None if culture is not None else region, people=None if culture is not None else q.get("people"), era_kyr=era, culture=culture)
+            md = BR.markdown(b)
+        return {"markdown": md, "brief": b, "calendar": None if cal is None else {"id": cal["id"], "name": cal["name"]}}, 200
     except ValueError as e:
         return {"error": str(e)}, 400
     except SystemExit as e:  # no such run / people
@@ -299,21 +308,92 @@ def cultures(query: str) -> tuple[dict, int]:
     tab: the run's cultures.json if it has one, else derived from its demes (a few seconds) and kept in memory, never written into the run."""
     q = dict(parse_qsl(query))
     try:
-        from .lineages import cultures as CU
         if not q.get("run"):
             raise ValueError("run= is required")
         d = S.find_run(q["run"])
+        if not (d / "cultures.json").exists():
+            run = json.loads((d / "run.json").read_text())
+            if not (run.get("meta") or {}).get("demes"):
+                return {"error": "this run has no demes (older than PW-981): run the peoples again"}, 404
+        return named_cultures(d), 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
+def _mtime(f: Path) -> float:
+    return f.stat().st_mtime if f.exists() else 0.0
+
+
+_lang_cache: dict = {}  # (run id, languages.json mtime) -> languages.json main file (names, PW-972), or None
+
+
+def languages_main(d: Path) -> dict | None:
+    """A run's languages.json without its sidecars (the names block is in the main file), None where it has none; kept in memory."""
+    f = d / "languages.json"
+    key = (d.name, _mtime(f))
+    if key not in _lang_cache:
+        from .language import output as LO
+        _lang_cache.clear()
+        _lang_cache[key] = LO.load(f, sidecars=False) if f.exists() else None
+    return _lang_cache[key]
+
+
+def named_cultures(d: Path) -> dict:
+    """A run's cultures doc with the names slot filled (lineages/nameslot.py, PW-1436: the languages' names, else the PW-1249 gloss
+    names): its cultures.json, else derived from its demes (a few seconds); kept in memory, never written into the run."""
+    from .lineages import cultures as CU, nameslot as NS
+    key = (d.name, _mtime(d / "run.json"), _mtime(d / "cultures.json"), _mtime(d / "languages.json"))
+    if key not in _cultures_cache:
         f = d / "cultures.json"
-        if f.exists():
-            return json.loads(f.read_text()), 200
-        run = json.loads((d / "run.json").read_text())
-        if not (run.get("meta") or {}).get("demes"):
-            return {"error": "this run has no demes (older than PW-981): run the peoples again"}, 404
-        key = (d.name, (d / "run.json").stat().st_mtime)
-        if key not in _cultures_cache:
-            _cultures_cache.clear()
-            _cultures_cache[key] = CU.derive(d)["doc"]
-        return _cultures_cache[key], 200
+        doc = json.loads(f.read_text()) if f.exists() else CU.derive(d)["doc"]
+        meta = json.loads((d / "run.json").read_text()).get("meta") or {}
+        NS.apply_cultures(doc, meta.get("lineages") or [], languages_main(d), NS.deme_cells(d))
+        _cultures_cache.clear()
+        _cultures_cache[key] = doc
+    return _cultures_cache[key]
+
+
+_calendars_cache: dict = {}  # (run id, mtimes, authored keys, version) -> calendars doc (PW-1435)
+
+
+def calendars_doc(d: Path) -> dict:
+    """A run's calendars (lineages/calendars.py, PW-1435), read from its named cultures, faiths, states, incursions and settlement
+    ledger; kept in memory. Without a polities doc (no settlements.json) the states give none."""
+    from .lineages import calendars as CA, nameslot as NS
+    key = (d.name, _mtime(d / "run.json"), _mtime(d / "cultures.json"), _mtime(d / "languages.json"), _authored_key(d),
+           _authored_key(d, "invasions"), CA.VERSION)
+    if key not in _calendars_cache:
+        meta = json.loads((d / "run.json").read_text()).get("meta") or {}
+        C = named_cultures(d)["cultures"]
+        try:
+            gd = NS.apply_faiths(gods_doc(d), C)
+        except (SystemExit, FileNotFoundError, KeyError):
+            gd = None
+        has_sites = (d / "settlements.json").exists()
+        pd = NS.apply_polities(polities_doc(d), languages_main(d), C) if has_sites else None
+        sites = json.loads((d / "settlements.json").read_text()).get("sites") if has_sites else None
+        _calendars_cache.clear()
+        _calendars_cache[key] = CA.derive(C, meta, gods=gd, polities=pd, sites=sites, place_names=NS.place_names(languages_main(d)))
+    return _calendars_cache[key]
+
+
+def calendars(query: str) -> tuple[dict, int]:
+    """GET /api/calendars?run=<id>: the calendars a peoples run's cultures founded (PW-1435): {calendars: [{id, name, epoch_kyr, kind,
+    event, culture, holders, alive, ended_kyr, p, fade}], by_culture, counts, rule, sources}. The viewer's "dates in" picker."""
+    q = dict(parse_qsl(query))
+    try:
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        if json.loads((d / "run.json").read_text()).get("meta", {}).get("kind") != "peoples":
+            raise ValueError("calendars are read from a peoples run")
+        if not (d / "cultures.json").exists():
+            return {"error": "this run has no cultures (it is older than PW-670): run the peoples again"}, 404
+        return calendars_doc(d), 200
     except ValueError as e:
         return {"error": str(e)}, 400
     except SystemExit as e:
@@ -558,7 +638,8 @@ def polities(query: str) -> tuple[dict, int]:
         doc = polities_doc(d)
         if q.get("ago") not in (None, ""):
             return PO.step_view(doc, float(q["ago"])), 200
-        return PO.summary(doc), 200
+        from .lineages import nameslot as NS
+        return NS.apply_polities(PO.summary(doc), languages_main(d), named_cultures(d)["cultures"]), 200  # (the names slot, PW-1436)
     except ValueError as e:
         return {"error": str(e)}, 400
     except SystemExit as e:
@@ -757,7 +838,8 @@ def gods(query: str) -> tuple[dict, int]:
         mode = q.get("mode") or None  # (none asked: the run's saved mode, authored.json, PW-1309)
         if mode is not None and mode not in GD.GODS_MODES:
             raise ValueError(f"mode must be one of {GD.GODS_MODES}")
-        return gods_doc(d, mode), 200
+        from .lineages import nameslot as NS
+        return NS.apply_faiths(gods_doc(d, mode), named_cultures(d)["cultures"]), 200  # (the names slot, PW-1436)
     except ValueError as e:
         return {"error": str(e)}, 400
     except SystemExit as e:
@@ -1061,6 +1143,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*cultures(url.query))
         if url.path == "/api/gods":
             return self.send_json(*gods(url.query))
+        if url.path == "/api/calendars":
+            return self.send_json(*calendars(url.query))
         if url.path == "/api/authored":
             return self.send_json(*authored_get(url.query))
         if url.path == "/api/taboos":
