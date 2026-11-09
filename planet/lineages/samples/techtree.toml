@@ -3811,6 +3811,90 @@ earth_origins = 2
 source = "date: the history's own anchor (animal_defs.py). Catalogue: Liu et al. 2026 Animals 16(5):776 (taurine cattle ~10,500 yr, Fertile Crescent); Peters 2017 summary and LMU press release 'Long process of taming' (pigs, sheep, goats, cattle ~10,500 yr on the Upper Euphrates)"
 
 [[tech]]
+id = "animal_pig"
+name = "pigs"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 10.5
+stock = "animals:pig"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 2
+source = "date: the history's own anchor (animal_defs.py, PW-835). Catalogue: Frantz et al. 2019 PNAS (PMC6717267): pig domestication had begun by ~10,500 BP in the Near East; separately ~8 ka in East Asia (PMC6889691)"
+
+[[tech]]
+id = "animal_reindeer"
+name = "reindeer"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 2.0
+stock = "animals:reindeer"
+rate = 0
+spread = 0
+era = "classical"
+earth_origins = 2
+source = "date: the history's own anchor (animal_defs.py, PW-835). Catalogue: JUDGEMENT anchor between PMC7366605 (reindeer herding certain from the Late Iron Age, ca. 800-900 AD; two poles, Fennoscandia and western Russia) and a suggested ~1500 BC"
+
+[[tech]]
+id = "animal_camel"
+name = "camels"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 4.5
+stock = "animals:camel"
+rate = 0
+spread = 0
+era = "bronze age"
+earth_origins = 2
+source = "date: the history's own anchor (animal_defs.py, PW-835). Catalogue: PMC6946651 (Bactrian camels first domesticated in Central Asia before 4.45 ka); Almathen et al. 2016 PNAS via phys.org (dromedary first domesticated in the southeast Arabian Peninsula, ~3 ka)"
+
+[[tech]]
+id = "animal_llama"
+name = "llamas and alpacas"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 6.0
+stock = "animals:llama"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (animal_defs.py, PW-835). Catalogue: Florida Museum, Origins of animal domestication in the Andes: camelids domesticated approximately 6000 years ago in the central Andean highlands"
+
+[[tech]]
+id = "animal_buffalo"
+name = "water buffalo"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 6.3
+stock = "animals:buffalo"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 2
+source = "date: the history's own anchor (animal_defs.py, PW-835). Catalogue: Wikipedia, Water buffalo (river type probably domesticated about 6,300 years ago, western India); PMC8289072 (swamp type in mainland Southeast Asia, 3-7 ka)"
+
+[[tech]]
+id = "animal_yak"
+name = "yaks"
+track = "food"
+domains = ["food"]
+needs = ["herding"]
+earliest_kyr = 7.3
+stock = "animals:yak"
+rate = 0
+spread = 0
+era = "stone age"
+earth_origins = 1
+source = "date: the history's own anchor (animal_defs.py, PW-835). Catalogue: Qiu et al. 2015 Nat Commun (PMC4703879): yak domestication dated to 7,300 yr BP on the Qinghai-Tibet Plateau, most likely by nomadic people"
+
+[[tech]]
 id = "animal_great_elk"
 name = "great elk"
 track = "food"
@@ -3832,7 +3916,7 @@ name = "milking and dairying"
 track = "food"
 domains = ["food"]
 needs = ["herding", "containers"]
-needs_any = ["animal_caprine", "animal_cattle", "animal_great_elk"]
+needs_any = ["animal_caprine", "animal_cattle", "animal_great_elk", "animal_buffalo", "animal_yak", "animal_camel", "animal_reindeer"]
 earliest_kyr = 9
 era = "stone age"
 earth_origins = 2
@@ -3855,14 +3939,14 @@ name = "horses"
 track = "food"
 domains = ["food"]
 needs = ["herding"]
-earliest_kyr = 5.5
+earliest_kyr = 4.2
 pool = "all"
 stock = "animals:horse"
 rate = 0
 spread = 0
 era = "bronze age"
 earth_origins = 2
-source = "date: the history's own anchor (animal_defs.py). Catalogue: Outram et al. 2009. The earliest horse harnessing and milking. Science 323:1332-1335 (Botai, ~3500 BC, mare's milk, bit wear). Librado et al. 2021. The origins and spread of domestic horses from the Western Eurasian steppes. Nature 598:634-640, doi 10.1038/s41586-021-04018-9 (modern domestic horses spread from ~2000 BC)"
+source = "date: the history's own anchor (animal_defs.py). Catalogue: Outram et al. 2009. The earliest horse harnessing and milking. Science 323:1332-1335 (Botai, ~3500 BC, mare's milk, bit wear). Librado et al. 2021. The origins and spread of domestic horses from the Western Eurasian steppes. Nature 598:634-640, doi 10.1038/s41586-021-04018-9 (modern domestic horses spread from ~2000 BC; the anchor is its DOM2 homeland date, lower Volga-Don after ~2200 BC, PW-835)"
 
 [[tech]]
 id = "animal_riding_lizard"
@@ -5041,7 +5125,7 @@ name = "fowl"
 track = "food"
 domains = ["food"]
 needs = ["herding"]
-earliest_kyr = 8
+earliest_kyr = 3.5
 stock = "animals:fowl"
 rate = 0
 spread = 0

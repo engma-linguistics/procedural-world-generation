@@ -443,7 +443,7 @@ export async function loadDemes() {  // (demes.json beside run.json: the tree, n
 // (the animal's own colour, spreading from the taming homeland over peopled land and, by boat, over the sea); both: its colour over green.
 // The layers hold one bit per animal (animal_wild, animal_known; meta.animals.stocks[id].bit).
 const ANIMAL_WILD = new THREE.Color('#3f9d4a');
-export const ANIMAL_COLS = ['#e8a23a', '#c4553a', '#d9d4c2', '#8a5a2b', '#e6c829', '#3a7bd5', '#9b59b6', '#16a085'];
+export const ANIMAL_COLS = ['#e8a23a', '#c4553a', '#d9d4c2', '#8a5a2b', '#e6c829', '#3a7bd5', '#9b59b6', '#e88fa0', '#7fb3c8', '#c9a46a', '#b0a08a', '#4a4a5a', '#5b3a29', '#16a085'];  // (bits 7-12: pig, reindeer, camel, llama, buffalo, yak, PW-835)
 export function animalStocks() { return S.V.run?.meta?.animals?.stocks || {}; }
 export function animalsColor(i, c, id) {
   const L = S.V.layers, elev = L.elevation, st = animalStocks()[id];
@@ -453,7 +453,7 @@ export function animalsColor(i, c, id) {
   const w = ((L.animal_wild?.[i] || 0) >> st.bit) & 1, r = ((L.animal_known?.[i] || 0) >> st.bit) & 1;
   c.copy(BARE);
   if (w) c.lerp(ANIMAL_WILD, 0.75);
-  if (r) c.lerp(new THREE.Color(ANIMAL_COLS[st.bit % 8]), 0.8);
+  if (r) c.lerp(new THREE.Color(ANIMAL_COLS[st.bit % ANIMAL_COLS.length]), 0.8);
   return c;
 }
 // Crops (planet/lineages/crops.py, PW-721): the same as the animals, per crop: its wild range (green) and where it is known (its colour);

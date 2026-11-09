@@ -338,7 +338,8 @@ def drink(ctx, brief: dict, p: dict, bi: dict | None = None) -> dict:
     elif "sap_sugar" in grown:
         out.append(FRUIT_DRINKS["sap_sugar"])
     if ferm and d and not farms:
-        out.append("fermented mare's or ewe's milk is the drink of feasts" if "horse" in d["animals"] or "caprine" in d["animals"] else "fermented milk at feasts")
+        out.append("fermented mare's or ewe's milk is the drink of feasts" if "horse" in d["animals"] or "caprine" in d["animals"] else
+                   f"fermented {_label(ctx, 'animals', d['animals'][0])} milk at feasts" if d["animals"] else "fermented milk at feasts")
     if "distilling" in p["know"] and ferm:
         out.append("spirits distilled from " + ("the beer and wine" if len(out) > 1 else "what ferments"))
     out += [INFUSIONS[c] for c in INFUSIONS if c in grown]
@@ -497,6 +498,14 @@ def wont_eat(p: dict) -> dict:
             "basis": "the taboos doc (present-day: the culture's taboos now)" if rows else "no food taboos (or no cultures in this run)"}
 
 
+def food_fit(p: dict) -> dict:
+    """The culture's people's body against food (PW-905, food_fit.py): what it thrives on, is poorly suited to or harmed by, with the
+    foods its own fields grow that do not suit it."""
+    from . import food_fit as FF
+    out = FF.summary(p["body"], p["crops"])
+    return {**out, "text": FF.line(p["body"], p["crops"])}
+
+
 def sheet(ctx, brief: dict, c: int, i: int, era: float) -> dict:
     mask = mask_of(ctx, i, era, c)
     p = profile(ctx, i, era, c, mask)
@@ -506,7 +515,7 @@ def sheet(ctx, brief: dict, c: int, i: int, era: float) -> dict:
     return {"culture": {k: p[k] for k in ("id", "name", "people", "people_name", "ways", "dairy", "faith", "cells")},
             "fuel": fuel(ctx, brief, p, bi), "staple": staple(ctx, brief, p, bi), "drink": drink(ctx, brief, p, bi),
             "who_eats_together": who_eats_together(ctx, brief, p, mask, era), "outsiders_get_wrong": outsiders(ctx, i, era, p, others),
-            "wont_eat": wont_eat(p), "goods": goods(ctx, c, i), "bought_in": bought_in(bi),
+            "wont_eat": wont_eat(p), "food_fit": food_fit(p), "goods": goods(ctx, c, i), "bought_in": bought_in(bi),
             "basis": "rule-based from this run at this era (cuisine.py); every line is for the culinary side to overrule"}
 
 
@@ -549,6 +558,8 @@ def markdown(s: dict, era: float) -> list[str]:
             t.append(f"  - {r['label']} ({r['scope']}; {r['origin']}: {r['why']})")
     else:
         t.append("- Won't eat: nothing forbidden")
+    if s.get("food_fit"):
+        t.append(f"- Body and food ({cu['people_name']}): {s['food_fit']['text']}")
     t.append(f"- Ways of life: farm {w.get('farm')}, herd {w.get('herd')}, wild {w.get('forage')}" + (f" ({w['note']})" if w.get("note") else "")
              + (f"; faith: {cu['faith']['name']}" if cu.get("faith") else ""))
     if s["outsiders_get_wrong"]["neighbours"]:
@@ -583,11 +594,13 @@ def suggested(brief: dict) -> dict:
                      "season with plant ash before salt")
     elif sa and sa["within_100km_share"] >= 0.5 and sa["source_share_of_land"].get("sea", 0) >= 0.3:
         notes.append("the sea is the salt: cheap, so curing, brining and fish sauce are possible")
+    pigs = any(a.get("id") == "pig" for a in brief.get("animals") or [])
     for m in (brief.get("mining") or {}).get("list", []):
         if "salt" not in m["kind"]:
             continue
         also = " and ore" if m["kind"] == "salt and ore" else ""
-        notes.append(f"{m['name']} ({m['id']}) mine rock salt{also}: salt is their trade good, so their halls cure and brine freely (salt pork, brined cheese, "
+        cured = "salt pork" if pigs else "salt meat"  # (PW-835: pork only where pigs are kept on the region's land)
+        notes.append(f"{m['name']} ({m['id']}) mine rock salt{also}: salt is their trade good, so their halls cure and brine freely ({cured}, brined cheese, "
                      f"pickles) and the neighbours ({', '.join(m['trades_with']) or 'whoever comes to trade'}) buy it; they buy back {', '.join(m['gets_back'])}")
     if fi.get("fish_mix") and fi.get("coast_fish") is not None and fi["coast_fish"] >= 0.6:
         notes.append("a rich fishery on this coast: fish is a staple, salted or dried for the lean months")

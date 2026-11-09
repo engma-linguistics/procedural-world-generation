@@ -10,7 +10,14 @@ over the sea (`size`). `fantasy` rows are animals Earth never domesticated: off 
 (`rare` = the chance a world has such a taming at all), always there when forced (`meta.animals_force`, for tests),
 and dropped in the real-world mode (PW-695, PW-710).
 
-Bit i of the stored `animal_known` / `animal_wild` layers (uint8) is the animal with `bit` i here.
+Bit i of the stored `animal_known` / `animal_wild` layers (uint16 since PW-835: 13 animals) is the animal with `bit` i here.
+
+Anchors and ranges (PW-835, lane 256; quotes in docs/review/food/lane256.md): chicken 3.5 ka (Peters et al. 2022 PNAS, Ban Non Wat,
+1650-1250 BCE; it was 8 ka), horse 4.2 ka (Librado et al. 2021 Nature, DOM2 from the lower Volga-Don after ~2200 BC; it was 5.5 ka,
+Botai), pig 10.5 ka (Frantz et al. 2019, PMC6717267), reindeer 2 ka (JUDGEMENT between herding certain from ~800-900 AD and a
+suggested ~1500 BC, PMC7366605), camel 4.5 ka (Bactrian before 4.45 ka, PMC6946651; the dromedary ~3 ka, Almathen et al. 2016),
+llama and alpaca 6 ka (Florida Museum: ~6000 years ago in the central Andean highlands), water buffalo 6.3 ka (river type, Wikipedia;
+swamp type 3-7 ka, PMC8289072), yak 7.3 ka (Qiu et al. 2015 Nat Commun, PMC4703879).
 """
 
 from __future__ import annotations
@@ -86,6 +93,53 @@ def wild_lizard(env, tags, land):
     return np.where(land, _win(t, (18.0, 24.0, 34.0, 42.0)) * _win(r, (200.0, 500.0, 2500.0, 3500.0)) * _open(env, 40.0, 80.0), 0.0)
 
 
+def wild_pig(env, tags, land):
+    """Wild boar: forest and woodland edge over most of Eurasia (Frantz 2019), temperate to tropical, not the driest or coldest
+    land, below high mountains. The climate edges are JUDGEMENT (no numbers in the sources)."""
+    t, r = env["temperature"], env["precipitation"]
+    tc = env.get("tree_cover", np.zeros(len(t)))
+    return np.where(land, _win(t, (-4.0, 3.0, 28.0, 34.0)) * _win(r, (250.0, 450.0, 3000.0, 4500.0)) * _win(tc, (3.0, 15.0, 90.0, 101.0))
+                    * _win(_elev(env), (-1.0, 0.0, 2500.0, 3500.0)), 0.0)
+
+
+def wild_reindeer(env, tags, land):
+    """Reindeer: tundra and taiga, adapted for extreme cold (tundra herds on hard snow, forest herds in deep soft snow): mean annual
+    temperature well below freezing to a little above (edges JUDGEMENT)."""
+    t, r = env["temperature"], env["precipitation"]
+    return np.where(land, _win(t, (-22.0, -15.0, -2.0, 4.0)) * _win(r, (80.0, 180.0, 1000.0, 1600.0)), 0.0)
+
+
+def wild_camel(env, tags, land):
+    """Camels, hot and cold: dromedaries in arid land with a long dry season (southern limit ~550 mm a year in the Sahel, sensitive
+    to cold and damp), Bactrians in the cold deserts and steppe of Central Asia (coat good from -30 to 50 C). Open dry country."""
+    t, r = env["temperature"], env["precipitation"]
+    return np.where(land, _win(t, (-6.0, 0.0, 30.0, 36.0)) * _win(r, (10.0, 40.0, 350.0, 600.0)) * _open(env, 5.0, 25.0)
+                    * _win(_elev(env), (-1.0, 0.0, 3000.0, 4200.0)), 0.0)
+
+
+def wild_llama(env, tags, land):
+    """Llamas and alpacas (guanaco and vicuna): the high Andean puna grassland, alpacas at 3500-5000 m: cold, open, high."""
+    t, r = env["temperature"], env["precipitation"]
+    return np.where(land, _win(_elev(env), (2600.0, 3400.0, 5000.0, 5600.0)) * _win(t, (-6.0, -1.0, 11.0, 15.0))
+                    * _win(r, (100.0, 250.0, 1200.0, 1800.0)) * _open(env, 10.0, 40.0), 0.0)
+
+
+def wild_buffalo(env, tags, land):
+    """Water buffalo: hot and humid lowlands, wallowing in wet ground (both types 'well adapted to a hot and humid climate'; the swamp
+    type follows rice). Wetlands count double."""
+    t, r = env["temperature"], env["precipitation"]
+    wet = np.where(tags["wetland"], 1.0, 0.7)
+    return np.where(land, _win(t, (16.0, 21.0, 30.0, 34.0)) * _win(r, (700.0, 1100.0, 4000.0, 5500.0)) * wet
+                    * _win(_elev(env), (-1.0, 0.0, 1200.0, 2000.0)), 0.0)
+
+
+def wild_yak(env, tags, land):
+    """Yak: the high plateau (Qinghai-Tibet, average 4200 m; pastures 3000-5000 m), heat exhaustion above about 15 C: cold, high, open."""
+    t, r = env["temperature"], env["precipitation"]
+    return np.where(land, _win(_elev(env), (2500.0, 3200.0, 5200.0, 5900.0)) * _win(t, (-14.0, -8.0, 4.0, 9.0))
+                    * _win(r, (100.0, 200.0, 900.0, 1400.0)) * _open(env, 15.0, 45.0), 0.0)
+
+
 @dataclass(frozen=True)
 class Animal:
     id: str
@@ -120,7 +174,7 @@ class Animal:
 
 
 TABLE: tuple[Animal, ...] = (
-    Animal("horse", "horses", "horse", 0, wild_horse, 5.5, 2, {"herd": 1.0}, 0.4, 0.15, {"herd": 0.85}, 1.8,
+    Animal("horse", "horses", "horse", 0, wild_horse, 4.2, 2, {"herd": 1.0}, 0.4, 0.15, {"herd": 0.85}, 1.8,
            excl=("flies", "swims", "subterranean"), uptake="contact", speed=2.5, speed_open=True, k={"herd": 0.3}, herd_land=0.5, dairy=True),
     Animal("dog", "dogs", "dog", 1, wild_dog, 15.0, 0, {"forage": 1.0}, 0.5, 0.6, {"forage": 0.4}, 3.0,
            excl=("flies", "swims", "subterranean"), gap=0.9, again=0.15, speed=1.15, k={"forage": 0.1}),
@@ -128,12 +182,26 @@ TABLE: tuple[Animal, ...] = (
            {"farm": 0.6, "herd": 0.9}, 1.2, excl=("flies", "swims", "subterranean"), k={"herd": 0.15}, herd_land=0.3, dairy=True),
     Animal("cattle", "cattle", "cattle", 3, wild_cattle, 10.5, 2, {"farm": 1.0, "herd": 1.0}, 0.4, 0.1, {"farm": 0.6, "herd": 0.9}, 1.2,
            excl=("flies", "swims", "subterranean"), k={"herd": 0.15}, plough=(6.0, 0.1), herd_land=0.2, crop_land=0.25, dairy=True),
-    Animal("fowl", "fowl", "fowl", 4, wild_fowl, 8.0, 0, {"farm": 1.0, "forage": 1.0}, 0.5, 0.5, {"farm": 0.5}, 1.5,
+    Animal("fowl", "fowl", "fowl", 4, wild_fowl, 3.5, 0, {"farm": 1.0, "forage": 1.0}, 0.5, 0.5, {"farm": 0.5}, 1.5,
            excl=("swims", "subterranean"), k={"farm": 0.05, "forage": 0.05}),
     Animal("great_elk", "great elk", "great elk", 5, wild_elk, 6.0, 2, {"herd": 1.0, "forage": 1.0}, 0.5, 0.1, {"herd": 0.9}, 1.5,
            excl=("flies", "swims", "subterranean"), speed=1.5, fantasy=True, rare=0.3),
     Animal("riding_lizard", "riding lizards", "riding lizard", 6, wild_lizard, 5.0, 2, {"farm": 1.0, "herd": 1.0, "forage": 1.0}, 0.5, 0.3,
            {"herd": 0.7}, 1.5, excl=("flies", "swims", "subterranean"), speed=1.4, fantasy=True, rare=0.25),
+    # PW-835: who tames and takes up each by way of life is JUDGEMENT after the existing rows (pigs: farmers and settled foragers, not
+    # nomads; the cold and dry herds: herders, reindeer also hunters); pigs ride canoes (Lapita settlers brought dogs, pigs and jungle fowl, PMC428491)
+    Animal("pig", "pigs", "pig", 7, wild_pig, 10.5, 0, {"farm": 1.0, "forage": 0.5}, 0.5, 0.1, {"farm": 0.8}, 1.2,
+           excl=("flies", "swims", "subterranean"), k={"farm": 0.05}),
+    Animal("reindeer", "reindeer", "reindeer", 8, wild_reindeer, 2.0, 1, {"herd": 1.0, "forage": 1.0}, 0.5, 0.1, {"herd": 0.9, "forage": 0.3}, 1.5,
+           excl=("flies", "swims", "subterranean"), k={"herd": 0.1}, herd_land=0.2, dairy=True),
+    Animal("camel", "camels", "camel", 9, wild_camel, 4.5, 2, {"herd": 1.0}, 0.4, 0.1, {"herd": 0.9}, 1.5,
+           excl=("flies", "swims", "subterranean"), speed=1.3, speed_open=True, k={"herd": 0.1}, herd_land=0.3, dairy=True),
+    Animal("llama", "llamas and alpacas", "llama", 10, wild_llama, 6.0, 1, {"herd": 1.0, "farm": 0.5}, 0.4, 0.1, {"herd": 0.9, "farm": 0.3}, 1.0,
+           excl=("flies", "swims", "subterranean"), k={"herd": 0.1}, herd_land=0.2),
+    Animal("buffalo", "water buffalo", "water buffalo", 11, wild_buffalo, 6.3, 2, {"farm": 1.0, "herd": 1.0}, 0.4, 0.1, {"farm": 0.7, "herd": 0.6}, 1.0,
+           excl=("flies", "swims", "subterranean"), k={"herd": 0.1}, herd_land=0.2, crop_land=0.15, dairy=True),
+    Animal("yak", "yaks", "yak", 12, wild_yak, 7.3, 2, {"herd": 1.0}, 0.4, 0.1, {"herd": 0.9}, 1.0,
+           excl=("flies", "swims", "subterranean"), k={"herd": 0.1}, herd_land=0.2, dairy=True),
 )
 BY_ID = {a.id: a for a in TABLE}
 IDS = tuple(a.id for a in TABLE)
@@ -143,7 +211,7 @@ REAL_IDS = tuple(a.id for a in TABLE if not a.fantasy)
 # -- craft that carry animals over open sea, on a rough Earth timeline (PW-688 part 2) ----------------------------------
 # (name, since kyr ago, reach km, biggest animal size carried, the sea share a people needs to man it). People themselves
 # cross by the same craft (crossing.modes: canoes since CANOES_KYR over short gaps, voyaging since BOATS[3]); animals need a
-# bigger boat than people: dogs and fowl ride in canoes and outriggers, sheep and goats need planked boats, horses and cattle
+# bigger boat than people: dogs, fowl and pigs ride in canoes and outriggers, sheep and goats need planked boats, horses and cattle
 # a sailing ship. Before them only drift rafts, which carry no animals.
 def craft_ladder() -> tuple[tuple, ...]:
     from . import spec as SP

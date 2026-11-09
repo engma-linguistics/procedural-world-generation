@@ -443,7 +443,7 @@ const FAMILIES = {
     color: ({ layer }) => { const id = layer.slice(8); return (i, c) => animalsColor(i, c, id); },
     legend: (sw) => {
       const id = state.layer.slice(8), h = animalStocks()[id], t = h?.tamed?.[0];
-      return sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(ANIMAL_COLS[(h?.bit || 0) % 8], 'tamed and known') +
+      return sw('#3f9d4a', `wild range of ${h?.label || id} (from the land)`) + sw(ANIMAL_COLS[(h?.bit || 0) % ANIMAL_COLS.length], 'tamed and known') +
         `<span class="muted">${h?.fantasy ? `fantasy animal (${S.V.run.meta.mode} mode); ` : ''}${t ? `tamed ${NumFmt.ago(t.ago_kyr)} by the ${esc(t.people)} on the ${esc(t.country)} of ${esc(t.landmass_name)} (${t.lat}, ${t.lon})` : h ? 'never tamed on this world: ' + esc(h.never || '') : ''}${h && h.tamed.length > 1 ? `; again, on its own: ${h.tamed.slice(1).map((x) => `${esc(x.people)}, ${NumFmt.ago(x.ago_kyr)}`).join('; ')}` : ''}${h && h.crossed ? `; carried over the sea ${h.crossed} times` : ''}</span>`;
     } },
   'crop: ': { group: 'peoples', in: { tz: 'crop_wild' }, expand: () => Object.keys(cropStocks()).map((k) => 'crop: ' + k),
