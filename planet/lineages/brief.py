@@ -38,7 +38,7 @@ from ..geo import is_land, world_land
 from .gridops import dist_km
 from .spread import graph_dist
 
-BRIEF_VERSION = 20  # 20: names and words per people from languages.json where the run has one (lang lane, PW-972, PW-986); 19: a culture's cuisine sheet has a "has / lacks" line from the goods ledger (trade.py, PW-1502); 18: gods and taboos are the Religion tab's docs, authored faiths and saved gods mode included (PW-1440); 17: a culture's brief and its cuisine sheet (fuel, staple, drink, who eats together, what outsiders get wrong, what it won't eat; PW-1391, PW-1312); 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
+BRIEF_VERSION = 21  # 21: bought-in foods from the exchange doc (trade_reach, the cuisine sheet's "Bought in" line and its staple, drink and fuel notes; bought_in.py, PW-1505); 20: names and words per people from languages.json where the run has one (lang lane, PW-972, PW-986); 19: a culture's cuisine sheet has a "has / lacks" line from the goods ledger (trade.py, PW-1502); 18: gods and taboos are the Religion tab's docs, authored faiths and saved gods mode included (PW-1440); 17: a culture's brief and its cuisine sheet (fuel, staple, drink, who eats together, what outsiders get wrong, what it won't eat; PW-1391, PW-1312); 16: gods and food taboos per culture, where the run has gods.json / taboos.json (PW-1306, PW-1305); 15: the emergent cultures in the region (PW-670, cultures.py); 14: mining districts and the mining colonies of incomers (D12); 13: towns and cities from the settlement ledger (PW-1103); 12: interfertility stages (viable, absorbed, sterile, impossible) and the mixed people per contact pair (PW-752); 11: megafauna density natural where no people presses them, and the age of dragons (PW-957); dragons by stage, their food in cattle and the bounty hook (PW-958, PW-961); 10: counted megafauna per pocket (PW-924); 9: salt works and mining colonies instead of a salt-dwarf group (PW-854), hybrid fertility in the contact pairs (PW-851); 8: salt miners (PW-797); 7: salt reach with trade (PW-745); 6: sea peoples (PW-775); 5: reputation and exonyms (PW-731); 4: contact history, interfertility tiers and substrate (PW-727); 3: ways of life (PW-723), mineral licks (PW-746)
 DEFAULT_RADIUS_KM = 500.0
 PRESENCE_MIN = 10  # % of a cell's habitat: a people is present there (presence_present.bin)
 RING_KM = 600.0
@@ -127,6 +127,7 @@ class Ctx:
         self._overlap = False  # (the presence table and every people's demes on it, on first use: overlap())
         self._presence = False  # (the presence table alone, on first use: presence_table())
         self._languages = False  # (languages.json, if the run has one: languages())
+        self._trade_flows = False  # (the exchange doc, server.trade_flow_doc, on first use: trade_flows())
 
     def presence_table(self) -> dict | None:
         """The run's presence table (output.read_presence: every people's cells per frame, PW-1259), None on a run made before it."""
@@ -181,6 +182,19 @@ class Ctx:
             from ..language import output as LO   # (format /2: the main file and its etymology sidecar)
             self._languages = LO.load(f, sidecars=("etym",)) if f.exists() else None
         return self._languages
+
+    def trade_flows(self) -> dict | None:
+        """The run's exchange doc (trade_flow.py, PW-1503) as the Trade tab shows it (server.trade_flow_doc, with the .godscache disk cache:
+        a minute or two at L7 the first time for a run), None on a run without a land-use window or a world. A harness may set it first."""
+        if self._trade_flows is False:
+            self._trade_flows = None
+            if self.meta.get("eraq") and self.world_id and self.meta.get("kind") == "peoples":
+                from .. import server
+                try:
+                    self._trade_flows = server.trade_flow_doc(self.dir)
+                except (SystemExit, FileNotFoundError, KeyError):
+                    self._trade_flows = None
+        return self._trade_flows
 
     def frame_at(self, era_kyr: float) -> int:
         return int(np.argmin(np.abs(self.ts - (-era_kyr))))
@@ -341,7 +355,7 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
     brief["neighbours"] = _neighbours(ctx, i, sel, place)
     brief["mining"] = _mining(ctx, i, sel, land, brief)
     brief["settlements"] = _settlements(ctx, sel, era, people if culture is None else None)
-    brief["trade_reach"] = None
+    brief["trade_reach"] = _trade_reach(ctx, culture, brief.get("cultures"), era)
     brief["events"] = _events(ctx, place, era)
     brief["reputation"] = _reputation(ctx, brief)
     brief["suggested"] = CZ.suggested(brief)
@@ -349,7 +363,10 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
         brief["cuisine"] = CZ.sheet(ctx, brief, culture, i, era)
     elif people:
         brief["people"] = _people(ctx, people)
-    brief["not_modelled"] = {k: NOT_MODELLED for k in ("trade_reach", "honey", "mast", "fungi")}
+    brief["not_modelled"] = {k: NOT_MODELLED for k in ("honey", "mast", "fungi")}
+    if brief["trade_reach"] is None:
+        brief["not_modelled"]["trade_reach"] = ("no exchange at this era (the trade read-out covers the land-use window, the last ~12.5 kyr, of a "
+                                                "peoples run with a world)")
     if brief["reputation"] is None:
         brief["not_modelled"]["reputation"] = "this run has no reputation table (made before PW-731)"
     if brief["substrate"] is None:
@@ -675,6 +692,41 @@ def _salt(ctx: Ctx, land: np.ndarray, i: int) -> dict | None:
     else:
         out["poor"] = out["poor_on_foot"]
     return out
+
+
+def _trade_reach(ctx: Ctx, culture: int | None, cultures: list | None, era: float) -> dict | None:
+    """The bought-in foods (PW-1505, bought_in.py, from the exchange doc): a culture's own, or a region's or people's largest cultures'."""
+    from . import bought_in as BI
+    if culture is None and not cultures:
+        return None
+    doc = ctx.trade_flows()
+    if doc is None:
+        return None
+    if culture is not None:
+        return BI.of_culture(ctx, doc, culture, era)
+    return BI.region(ctx, doc, cultures, era)
+
+
+def _bought_in_md(tr: dict | None) -> list:
+    """The brief's "Bought-in food" section (PW-1505): a culture's foods one per line with their givers, or a region's cultures one per line."""
+    if not tr:
+        return []
+    from . import bought_in as BI
+    t = ["", "## Bought-in food", ""]
+    if "foods" in tr:
+        for fd in tr["foods"] + tr.get("fuel", []):
+            t.append(f"- {fd['label']}: {_pc(fd['share'])} of the people get it from other cultures"
+                     + (f", {_pc(fd['home'])} from their own land elsewhere" if fd["home"] >= 0.01 else "")
+                     + (f", {_pc(fd['unmet'])} go without" if fd["unmet"] >= 0.01 else "") + "; "
+                     + (f"each giver under {_pc(BI.SHOW_MIN)}" if not fd["givers"] else "") + "; ".join(("taken from " if g["road"] == "tribute" else "from ") + BI.giver_text(g)
+                                 + (f": {BI._and(g['what'])}" if g.get("what") else "") for g in fd["givers"]))
+        for fl in tr.get("flown_in", []):
+            t.append(f"- {fl['crop'].replace('_', ' ')} (not grown here): flown in by {fl['by_name']}")
+        if len(t) == 3:
+            t.append(f"- {tr['text']}")
+    else:
+        t += [f"- {r['name']} (culture {r['culture']}): {r['text']}" for r in tr["cultures"]]
+    return t + [f"- ({tr['basis']})"]
 
 
 def _salt_reach(ctx: Ctx, i: int) -> dict | None:
@@ -1378,6 +1430,7 @@ def markdown(b: dict) -> str:
                   + (f"; sells {m['sells']}; buys back {', '.join(m['gets_back'])}; trades with {', '.join(m['trades_with']) or 'no one named here'}" if m.get("sells") else "")]
         t += [f"- ({mi['basis']})"]
     t += _settlements_md(b.get("settlements"))
+    t += _bought_in_md(b.get("trade_reach"))
     for key, title, kind in (("crops", "Crops known (staples)", "staple"), ("crops", "Cuisine plants known (fruit, oil, spice, sugar, infusions, greens)", "cuisine"),
                              ("animals", "Animals known", None)):
         t += ["", f"## {title}", ""]
