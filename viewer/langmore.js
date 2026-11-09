@@ -89,15 +89,19 @@
         const set = nm.set || {};
         names = `<div class="ngrid">${nameCard('Their own name (endonym)', nm.endonym)}${nameCard('Name of their speech (glossonym)', nm.glossonym)}
           ${['land', 'people', 'person', 'language'].map((k) => nameCard(`The ${k}`, set[k])).join('')}
-          ${inCommon ? nameCard(`In the Common (${V.peopleName(common.people)} ${common.lect}, ${common.why || 'the trade speech'})`, inCommon) : ''}</div>
+          ${inCommon ? nameCard(`In the Common (${V.peopleName(common.people)} ${common.lect}, ${common.why || 'the trade speech'})`, inCommon) : ''}
+          ${nm.adopted ? nameCard('Also call themselves (a name others gave them, taken up)', nm.adopted) : ''}</div>
           ${scholars.length ? `<details class="sec"><summary>The scholars' names for the families this people's lects fall in (${scholars.length})</summary><table class="t"><tr><th>family</th><th>name</th><th>why</th><th>pattern</th><th>lects</th><th>ended</th></tr>
             ${scholars.map(([id, x]) => `<tr><td class="muted">${esc(id)}</td><td>${rom(x)}</td><td style="font-size:12px">${esc(x.gloss || '')}</td><td>${esc(x.pattern || '')}</td><td style="font-size:11px">${(x.lects || []).slice(0, 12).map((l) => lk(l, l)).join(' ')}${(x.lects || []).length > 12 ? ' …' : ''}</td><td>${x.died_kyr != null ? esc(ago(x.died_kyr)) : '<span class="ok">spoken now</span>'}</td></tr>`).join('')}</table></details>` : ''}
           <h3>What others call them (exonyms)</h3>
           <table class="t"><tr><th>by</th><th>name</th><th>IPA</th><th>meaning</th><th>pattern</th><th>why</th><th>when</th><th>passed through</th><th></th></tr>
           ${(nm.exonyms || []).map((x, k) => `<tr><td>${sw(V.peopleColor(x.by_people))}${esc(V.peopleName(x.by_people))}${x.by_lect ? ' ' + lk(x.by_lect, x.by_lect) : ''}</td><td>${rom(x)}</td><td class="ipa">${esc(x.ipa || '')}${say(x.ipa, x.by_people)}</td>
-            <td>${esc(x.gloss || '')}</td><td title="${esc(patText(S, x.pattern))}">${esc(x.pattern || '')}</td><td class="muted">${esc(x.basis || '')}</td><td>${x.era_kyr != null ? esc(ago(x.era_kyr)) : ''}</td>
+            <td>${esc(x.gloss || '')}${x.rejected ? ' <span class="muted">(rejected by them as an insult)</span>' : ''}${x.split ? ` <span class="muted">(${esc(x.split.join('; '))})</span>` : ''}</td><td title="${esc(patText(S, x.pattern))}">${esc(x.pattern || '')}</td><td class="muted">${esc(x.basis || '')}</td><td>${x.era_kyr != null ? esc(ago(x.era_kyr)) : ''}</td>
             <td class="muted">${(x.relay || []).map((r) => esc(typeof r === 'string' ? r : r.lect || r.people || JSON.stringify(r))).join(' → ')}</td>
-            <td>${x.etym != null ? `<span class="lk" data-ex="${k}">etymology</span>` : ''}</td></tr><tr class="exr" data-exr="${k}" hidden><td colspan="9">${x.etym != null ? etymHtml(S, chainOf(S, x.etym), x.by_people) : ''}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">none recorded</td></tr>'}</table>`;
+            <td>${x.etym != null ? `<span class="lk" data-ex="${k}">etymology</span>` : ''}</td></tr><tr class="exr" data-exr="${k}" hidden><td colspan="9">${x.etym != null ? etymHtml(S, chainOf(S, x.etym), x.by_people) : ''}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">none recorded</td></tr>'}</table>
+          ${(nm.history || []).length ? `<h3>How their names changed</h3><table class="t"><tr><th>when</th><th>what happened</th><th>name</th><th>pattern</th></tr>
+            ${nm.history.map((h) => `<tr><td>${h.era_kyr != null ? esc(ago(h.era_kyr)) : ''}</td><td>${esc(h.cause || '')}</td><td>${h.from ? esc(h.from) : ''}${h.to ? ' → ' + esc(h.to) : ''}</td><td title="${esc(patText(S, h.process))}">${esc(h.process)}</td></tr>`).join('')}</table>` : ''}
+          ${(nm.words || []).length ? `<h3>Their name became a word</h3><table class="t">${nm.words.map((x) => `<tr><td>${sw(V.peopleColor(x.by_people))}${esc(V.peopleName(x.by_people))}</td><td><b>${esc(x.roman)}</b> <span class="ipa">${esc(x.ipa || '')}</span>${say(x.ipa, x.by_people)}</td><td>‘${esc(x.meaning)}’</td><td class="muted">${esc(x.plain || '')}</td></tr>`).join('')}</table>` : ''}`;
       } else {
         const lex = (best && best.lexicon) || {};
         const roots = ['PERSON', 'MAN', 'WOMAN', 'WE', 'NAME', 'EARTH (SOIL)', 'LAND', 'MOUNTAIN', 'RIVER', 'SPEAK', 'SAY'].filter((c) => lex[c]);
@@ -111,7 +115,7 @@
       for (const [rid, r] of Object.entries(rivers)) for (const [d] of r.demes || []) (riverDemes[d] = riverDemes[d] || []).push(rid);
       const drow = (d) => {
         const n = nd[d] || nd[String(d)], ls = land[String(d)] || {};
-        const places = ((n && n.places) || []).concat((n && n.settlements) || []);
+        const places = ((n && n.places) || []).concat((n && n.settlements) || []).concat(((n && n.dishes) || []).map((x) => ({ ...x, kind: 'dish' })));
         return `<tr><td>${esc(demeName(S, d))}</td><td>${n && n.name ? `${rom(n.name)} <span class="ipa">${esc(n.name.ipa || '')}</span>${say(n.name.ipa, p)}${n.name.gloss ? ` <span class="muted">‘${esc(n.name.gloss)}’</span>` : ''}` : '<span class="muted">–</span>'}</td>
           <td>${places.length ? places.map((x) => `<div>${esc(x.kind || '')}: ${rom(x)} <span class="ipa">${esc(x.ipa || '')}</span>${say(x.ipa, p)} <span class="muted">${x.gloss ? '‘' + esc(x.gloss) + '’ ' : ''}${x.lect ? 'from ' + esc(x.lect) : ''}${x.kyr != null ? ', ' + esc(ago(x.kyr)) : ''}${x.substrate_of ? ', kept from ' + esc(x.substrate_of) : ''}${x.tautology ? ', a tautology' : ''}${x.tier ? `, a ${esc(x.tier)} of ${esc(x.pop)}` : ''}</span></div>`).join('')
             : `<span class="muted">${esc(ls.part || '')}${ls.river != null ? ` · river ${esc(ls.river)} (${Math.round(ls.river_flow || 0).toLocaleString()} m³/s)` : ''}${ls.lake != null ? ` · lake ${esc(ls.lake)}` : ''}${ls.mountain_m ? ` · hills to ${Math.round(ls.mountain_m)} m` : ''}${ls.coast_share ? ` · ${Math.round(ls.coast_share * 100)}% coast` : ''}</span>`}</td></tr>`;
@@ -124,13 +128,17 @@
         <div class="ngrid">${plects.map((l) => { const x = pn[l.id]; return `<div class="card"><h3>${lk(l.id)}</h3><div class="muted" style="font-size:12px">${tradText(x.tradition)}</div>
           <table class="t" style="font-size:12px">${(x.given || []).map((g) => `<tr><td>${esc(g.roman)}${g.opaque ? ' <span class="muted" title="opaque: its parts are no longer plain words">◦</span>' : ''}</td><td class="ipa">${esc(g.ipa)}${say(g.ipa, p)}</td><td>‘${esc(g.gloss)}’</td><td class="muted">${esc(g.age)}</td></tr><tr><td colspan="4" class="muted" style="font-size:11px">${esc(g.etym)}</td></tr>`).join('')}
           ${(x.bynames || []).map((b) => `<tr><td><b>${esc(b.roman)}</b></td><td class="ipa">${esc(b.ipa)}${say(b.ipa, p)}</td><td>‘${esc(b.gloss)}’</td><td class="muted">${esc(b.kind)}</td></tr><tr><td colspan="4" class="muted" style="font-size:11px">${esc(b.etym)}</td></tr>`).join('')}</table></div>`; }).join('')}</div>` : '';
+      // landmasses this people named first, or speaks on now (names.landmasses)
+      const lmx = Object.values((doc.names && doc.names.landmasses) || {}).filter((x) => x.people === p || (x.today && x.today.people === p));
+      const lands = lmx.length ? `<h3>Lands they named <span class="muted" style="font-weight:normal">(the first settlers' name, and as it is said there now)</span></h3><table class="t"><tr><th>land</th><th>first name</th><th>meaning</th><th>named by</th><th>said there now</th></tr>
+        ${lmx.map((x) => `<tr><td>${esc(x.called)}</td><td>${rom(x)} <span class="ipa">${esc(x.ipa || '')}</span>${say(x.ipa, x.people)}</td><td>‘${esc(x.gloss || '')}’</td><td>${lk(x.named_by, x.named_by)} ${x.kyr != null ? esc(ago(x.kyr)) : ''}</td><td>${x.today ? `${rom(x.today)} <span class="muted">in ${lk(x.today.lect, x.today.lect)}, ${esc(x.today.how)}</span>` : '<span class="muted">same</span>'}</td></tr>`).join('')}</table>` : '';
       // any word's etymology in the picked lect
       const sl = ix.by.get(S.sel), slex = (sl && sl.lexicon) || {};
       const concepts = Object.keys(slex).sort();
       if (!slex[NM.concept]) NM.concept = concepts.includes('WATER') ? 'WATER' : concepts[0];
       const w = slex[NM.concept];
       el.innerHTML = `<div class="row" style="margin-bottom:8px"><span class="muted">people</span><select id="nmP">${peoples.map((x) => `<option value="${esc(x)}" ${x === p ? 'selected' : ''}>${esc(V.peopleName(x))} (${living[x]} lects)</option>`).join('')}</select></div>
-        ${names}${personal}
+        ${names}${lands}${personal}
         <h3>Its places now <span class="muted" style="font-weight:normal">(${demes.length} demes)</span></h3>
         <div style="max-height:360px;overflow:auto"><table class="t"><tr><th>deme</th><th>its name</th><th>places and rivers</th></tr>${demes.slice(0, 200).map(drow).join('')}</table></div>
         <h3>Trace a word of ${sl ? lk(sl.id) : 'the picked lect'}</h3>

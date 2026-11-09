@@ -906,7 +906,11 @@ def _draw_feature(rng: np.random.Generator, name: str, typ: Typology, T: Tables)
     if name == "indefinite_article":
         return "present" if _bern(rng, p("GB021")) else "none"
     if name == "case":
-        core, obl = _bern(rng, p("GB070", ("GB072",))), _bern(rng, p("GB072", ("GB070",)))
+        # (PW-1586: oblique case drawn given the core-case draw, as the two co-occur in Grambank: of 2157 languages coded
+        # for both, 50% have neither, 4% core only, 15% oblique only, 31% both. Drawn independently they gave 'few' 43%
+        # and 'many' 16% before context, so big case systems were half as common as WALS 49A's 6+ (32%))
+        core = _bern(rng, p("GB070", ("GB072",)))
+        obl = _bern(rng, _p1("GB072", {**ctx, "GB070": "1" if core else "0"}, T))
         return "many" if core and obl else ("few" if core or obl else "none")
     if name == "alignment":
         acc, erg = _bern(rng, p("GB408", ("GB409",))), _bern(rng, p("GB409", ("GB408",)))

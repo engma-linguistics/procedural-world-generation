@@ -58,6 +58,85 @@ ALL_CONTRASTS = frozenset(("aspiration", "schwa", "dental", "tone", "round_i", "
 BOOK_DIACRITIC_BUDGET = 2
 # Non-human marks (ASCII, after the sound). Purr is not rr (the trill). Taste calls for the owner: one row each.
 NH_MARKS = {"growl": "rh", "purr": "vr", "second": "wh", "sub": "mh", "ultra": "ih"}
+# Book-spelling traditions (PW-1546, names-spelling-gaps.md item 12; romanization only, not scripts): a family's book
+# spelling has a look of its own, drawn at the proto and inherited down the tree (`draw_style`, `reform_style`), as related
+# languages share a look (Polish sz cz, Czech š č, German sch tsch) and unrelated ones differ. Book mode only: the
+# workbench keeps the house spelling. A style's letters replace the house book letters for these sounds (core IPA ->
+# letters); `Orthography` drops any that would merge two of the lect's sounds. The letters a style gives are the lect's
+# own and never fold to ASCII under the diacritic budget, as ġ x̣ do not.
+LETTER_STYLES = {
+    "house": {},
+    "hacek": {"ʃ": "š", "ʒ": "ž", "tʃ": "č", "dʒ": "dž", "x": "ch", "ts": "c", "j": "j", "ɲ": "ň"},          # Czech, Slovak
+    "polish": {"ʃ": "sz", "ʒ": "ż", "tʃ": "cz", "dʒ": "dż", "x": "ch", "ts": "c", "j": "j", "ɲ": "ń"},       # Polish
+    "german": {"ʃ": "sch", "tʃ": "tsch", "dʒ": "dsch", "x": "ch", "j": "j", "ɲ": "nj"},                     # German
+    "iberian": {"ʃ": "x", "tʃ": "tx", "ʒ": "j", "dʒ": "dj", "ts": "tz", "ɲ": "ñ"},                          # Basque, Catalan
+    "turkic": {"ʃ": "ş", "ʒ": "j", "tʃ": "ç", "dʒ": "c"},                                                   # Turkish
+    "french": {"ʃ": "ch", "ʒ": "j", "tʃ": "tch", "dʒ": "dj", "ɲ": "gn"},                                     # French
+    "nordic": {"ʃ": "sj", "ʒ": "zj", "tʃ": "tj", "dʒ": "dj", "j": "j", "ɲ": "nj", "x": "ch"},                # Swedish, Dutch
+}
+LETTER_W = {"house": 0.30, "hacek": 0.12, "polish": 0.08, "german": 0.10, "iberian": 0.10, "turkic": 0.10, "french": 0.10,
+            "nordic": 0.10}
+LETTER_LOOK = {"house": "English-like sh ch y", "hacek": "Czech-like š č ž", "polish": "Polish-like sz cz ż",
+               "german": "German-like sch tsch", "iberian": "Basque-like x tx tz", "turkic": "Turkish-like ş ç c",
+               "french": "French-like ch j gn", "nordic": "Swedish-like sj tj j"}
+#: how a long vowel is written in the book: doubled (Finnish aa), a macron (Latvian, Maori ā), an acute (Czech, Irish á)
+LENGTH_W = {"double": 0.5, "macron": 0.3, "acute": 0.2}
+_LENGTH_MARK = {"macron": "̄", "acute": "́"}
+HOUSE_STYLE = ("house", "double")
+#: the Bantu click letters (dental, alveolar, lateral), used where a lect's clicks are only these (Orthography._click_letters)
+BANTU_CLICKS = {"ǀ": "c", "ǃ": "q", "ǁ": "x"}
+STYLE_REFORM = 0.05   # chance a daughter lect redraws one of its line's two style choices (a spelling reform)
+
+
+def _style_rng(seed: int, *key):
+    import zlib
+
+    import numpy as np
+    return np.random.default_rng((int(seed), 1546, zlib.crc32(":".join(map(str, key)).encode())))
+
+
+def _draw(rng, w: dict) -> str:
+    ks = sorted(w)
+    tot = sum(w.values())
+    return ks[int(rng.choice(len(ks), p=[w[k] / tot for k in ks]))]
+
+
+def draw_style(seed: int, lect_id: str) -> tuple[str, str]:
+    """A proto's book-spelling tradition (letters, vowel length), drawn from a hash of its id (no draw from the history's
+    random streams, so the run is otherwise unchanged)."""
+    rng = _style_rng(seed, "style", lect_id)
+    return _draw(rng, LETTER_W), _draw(rng, LENGTH_W)
+
+
+def reform_style(seed: int, lect_id: str, style: tuple | None) -> tuple[str, str]:
+    """A daughter's style: its parent's, with chance STYLE_REFORM one of the two choices redrawn."""
+    rng = _style_rng(seed, "reform", lect_id)
+    style = tuple(style or HOUSE_STYLE)
+    if rng.random() >= STYLE_REFORM:
+        return style
+    if rng.random() < 0.5:
+        return _draw(rng, LETTER_W), style[1]
+    return style[0], _draw(rng, LENGTH_W)
+
+
+@lru_cache(maxsize=1024)
+def _style_of(cs: frozenset) -> tuple[dict, str]:
+    """(core IPA -> letters, length style) from a contrast set's style tokens ('L:ʃ=sz', 'len:macron', which Orthography
+    adds; no tokens: the house letters and doubled length)."""
+    ov, ln = {}, "double"
+    for t in cs:
+        if t.startswith("L:"):
+            k, v = t[2:].split("=", 1)
+            ov[k] = v
+        elif t.startswith("len:"):
+            ln = t[4:]
+    return ov, ln
+
+
+def _style(contrasts) -> tuple[dict, str]:
+    return _style_of(contrasts if isinstance(contrasts, frozenset) else frozenset(contrasts))
+
+
 # documented mergers: sounds that share a spelling on purpose (near-identical as heard, or a contrast almost no language makes)
 MERGES = [frozenset(x) for x in (
     ("ɾ", "r"),  # a long tap is the trill rr (the approximant ɹ has its own ř, owner 11-04)
@@ -338,7 +417,8 @@ BOOK_KEEP = frozenset(("ġ", "x̣"))  # the uvular letters keep their dot in boo
 _BOOK_DROP = "·ˠˤ"  # the Catalan dot, velarized and pharyngealized
 # the combining marks a book letter may carry (ṭ ġ č ś ḇ ü ğ ŵ ơ ç); every other mark (tone, nasal, phonation, dental, voicing,
 # the IPA fallback's advanced/lowered/retracted) is dropped
-_BOOK_MARKS = frozenset("̧̛̣̱̇̌́̈̆̂")
+# (the tilde reaches a book consonant only from a spelling tradition ñ, LETTER_STYLES; a book nasal vowel is vowel + n)
+_BOOK_MARKS = frozenset("̧̛̣̱̇̌́̈̆̂̃")
 
 
 def _book_fold(sp: str) -> str:
@@ -409,8 +489,12 @@ def spell(seg: Segment, contrasts: set[str] | frozenset = ALL_CONTRASTS, book: b
         if nh:
             sp = _ascii(sp) or sp
         if seg.length:
-            g = _graphemes(sp)
-            sp = sp + g[-1]
+            mk = None if nh else _LENGTH_MARK.get(_style(contrasts)[1])
+            if mk:
+                sp = _mark_first_letter(sp, mk)
+            else:
+                g = _graphemes(sp)
+                sp = sp + g[-1]
         if seg.nasal:
             sp += "n"
     elif seg.kind == "V":
@@ -442,6 +526,8 @@ def spell(seg: Segment, contrasts: set[str] | frozenset = ALL_CONTRASTS, book: b
         sp = _base_spelling(c, asp_letter, contrasts)
         if book:
             sp = book_table().get(unicodedata.normalize("NFC", to_ipa(c)), sp)
+            if not nh:   # (the lect's spelling tradition, PW-1546)
+                sp = _style(contrasts)[0].get(unicodedata.normalize("NFC", to_ipa(c)), sp)
         if nh:
             sp = _ascii(sp)
         pre = ("n" if seg.manner == 8 else _PREN.get(seg.place, "n")) if seg.prenasal else ""
@@ -632,8 +718,13 @@ def _book_folds(inv: frozenset, cs: frozenset, counts: tuple | None) -> tuple:
     w = dict(counts or ())
     spellings = {s: spell(s, cs, book=True, marks=False) for s in inv if s.kind != "T"}
     letters: dict = {}
+    ov, ln = _style(cs)   # (the style's letters and length marks are the lect's own: never folded)
+    own = {unicodedata.normalize("NFC", g) for v in ov.values() for g in _graphemes(v)}
+    lmark = _LENGTH_MARK.get(ln)
     for s, sp in spellings.items():
         for g in {unicodedata.normalize("NFC", g) for g in _graphemes(sp)}:
+            if g in own or (lmark and s.kind == "V" and s.length and lmark in unicodedata.normalize("NFD", g)):
+                continue
             if is_diacritic_letter(g) and g not in BOOK_KEEP and _ascii(g):
                 letters[g] = letters.get(g, 0.0) + float(w.get(s, 1.0))
     n0 = len(set(spellings.values()))
@@ -665,12 +756,18 @@ class Orthography:
     segments: the lect's surface segments (lect.segments()); allophones: inventory.allophones ({allophone: (phoneme | None,
     test)}); counts: segment -> tokens in the lexicon (ranks the book diacritics)."""
 
-    def __init__(self, segments: Iterable[Segment], allophones: dict | None = None, counts: dict | None = None):
+    def __init__(self, segments: Iterable[Segment], allophones: dict | None = None, counts: dict | None = None,
+                 style: tuple | None = None):
         self.allo = {x: p for x, (p, _t) in (allophones or {}).items()}
         phon = {self._phoneme(s) for s in segments}
         phon.discard(None)
         self.inv = frozenset(phon)
         self.cs = frozenset(contrasts_of(self.inv))
+        self.style = tuple(style or HOUSE_STYLE)
+        self.dropped: list = []   # (style letters left out because they would merge two of the lect's sounds)
+        self.bantu_clicks = False
+        if self.style != HOUSE_STYLE or any(s.kind == "C" and s.manner == 8 for s in self.inv):
+            self.cs = self._styled(self.cs)
         if counts is not None:
             pc: dict = {}
             for s, v in counts.items():
@@ -682,6 +779,65 @@ class Orthography:
             ((s, float(v)) for s, v in counts.items()), key=lambda x: (to_ipa(x[0]), repr(x[0])))))
         self.folds = {g: a for g, a, _l in plan}
         self.lossy = [[g, a] for g, a, lossy in plan if lossy]  # (the merging folds: the orthography line names them)
+
+    def _styled(self, cs: frozenset) -> frozenset:
+        """The contrast set with the style's tokens: a style letter for each sound the lect has, less those that would
+        spell two of its sounds alike (dropped one at a time; that sound keeps its house letter)."""
+        segs = sorted((s for s in self.inv if s.kind != "T"), key=lambda s: (to_ipa(s), repr(s)))
+        key = lambda s: unicodedata.normalize("NFC", to_ipa(core(s)))  # noqa: E731
+        keys = {key(s) for s in segs if s.kind == "C"}
+        ov = {k: v for k, v in LETTER_STYLES.get(self.style[0], {}).items() if k in keys}
+        ov.update(self._click_letters(segs, key))
+        toks = {f"len:{self.style[1]}"} if self.style[1] != "double" else set()
+        base = {s: spell(s, cs, book=True, marks=False) for s in segs}
+        while True:
+            trial = cs | toks | {f"L:{k}={v}" for k, v in ov.items()}
+            seen: dict = {}
+            bad = None
+            for s in segs:
+                o = seen.setdefault(spell(s, trial, book=True, marks=False), s)
+                if o is not s and base[o] != base[s]:
+                    bad = (o, s)
+                    break
+            if bad is None:
+                return frozenset(trial)
+            k = next((key(x) for x in bad if key(x) in ov), None)
+            if k is None:   # (the clash is the length mark's: length stays doubled)
+                if not toks:
+                    return frozenset(cs)
+                toks = set()
+                continue
+            self.dropped.append(k)
+            del ov[k]
+            if self.bantu_clicks and any(s.kind == "C" and s.manner == 8 and key(s) == k for s in segs):
+                for s in segs:   # (one click letter that would merge: the Khoisan letters for all of them)
+                    if s.kind == "C" and s.manner == 8:
+                        ov.pop(key(s), None)
+                self.bantu_clicks = False
+
+    def _click_letters(self, segs, key) -> dict:
+        """Bantu-style click letters (Zulu, Xhosa: c dental, q alveolar, x lateral; voiced gc gq gx) for a lect whose
+        clicks are only those three types, as in the Bantu languages that took clicks from Khoisan neighbours; a lect with
+        the palatal ǂ or the bilabial ʘ keeps the Khoisan letters ǀ ǃ ǁ ǂ ʘ (PW-1546)."""
+        clicks = [s for s in segs if s.kind == "C" and s.manner == 8]
+        if not clicks:
+            return {}
+        plain = {s: unicodedata.normalize("NFC", to_ipa(replace(core(s), voice=0))) for s in clicks}
+        if not set(plain.values()) <= set(BANTU_CLICKS):
+            return {}
+        self.bantu_clicks = True
+        return {key(s): ("g" if core(s).voice else "") + BANTU_CLICKS[plain[s]] for s in clicks}
+
+    def describe(self) -> str:
+        """The book spelling's tradition in words (the sketch's orthography line); '' for the house style."""
+        out = []
+        if self.style != HOUSE_STYLE:
+            ln = {"double": "long vowels doubled (aa)", "macron": "long vowels with a macron (ā)",
+                  "acute": "long vowels with an acute (á)"}.get(self.style[1], self.style[1])
+            out.append(f"{LETTER_LOOK.get(self.style[0], self.style[0])} letters, {ln}")
+        if self.bantu_clicks:
+            out.append("clicks written c q x as in Zulu and Xhosa")
+        return "; ".join(out)
 
     def _phoneme(self, s: Segment):
         if not self.allo:

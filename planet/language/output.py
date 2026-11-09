@@ -59,7 +59,7 @@ def orthography(lect) -> RO.Orthography:
             for s in w.form:
                 counts[s] = counts.get(s, 0) + 1
     inv = getattr(lect, "inventory", None)
-    orth = RO.Orthography(segs, getattr(inv, "allophones", None) or {}, counts)
+    orth = RO.Orthography(segs, getattr(inv, "allophones", None) or {}, counts, getattr(lect, "orth", None))
     try:
         lect._orth = (getattr(lect, "_segs", None), orth)
     except Exception:
@@ -284,7 +284,7 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
     gj = grammar_json(lect, sp)
     return {"id": lect.id, "deme": lect.deme, "people": lect.people, "parent": lect.parent, "how": lect.how,
             "substrate": lect.substrate, "born_kyr": _r(lect.born_kyr), "died_kyr": _r(lect.died_kyr), "end": lect.end,
-            "minority": bool(getattr(lect, "minority", False)),
+            "minority": bool(getattr(lect, "minority", False)), "orth": list(getattr(lect, "orth", None) or ()),
             "rate": _r(lect.rate), "gen_yr": _r(lect.gen_yr, 1), "language": lect.language, "family_true": lect.family_true,
             "family_scholars": lect.family_scholars, "deme_name": lect.deme_name,
             "inventory": None if inv is None else {"consonants": INV.to_json(inv)["consonants"], "vowels": INV.to_json(inv)["vowels"],

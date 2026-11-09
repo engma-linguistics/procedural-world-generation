@@ -36,6 +36,7 @@ from . import lect as LC
 from . import lexicon as LX
 from . import lexsys as LS
 from . import rules as RU
+from . import romanize as RO
 
 START_KYR = I.START_KYR
 RATE_SCALE = float(__import__("os").environ.get("LANG_RATE_SCALE", "220.0"))  # multiplies lect.RATE_RULE (calibration lever;
@@ -115,8 +116,11 @@ AREAL_WEIGHT = {"word_order": 1.0, "adposition": 1.0, "genitive": 1.5, "adjectiv
 # driver-side draw (and wave adoption) weight overrides, by rule id, catalogue id or `family:<name>` (lect.weight_override):
 # ʔ-prothesis is rare; tonogenesis (which needs the conditioning coda/onset contrast lost) and vowel reduction are not drawn in
 # every lect; the onset-voicing split, never vetoed (it merges nothing), was the tone source of nearly every lect at 0.3
-RULE_WEIGHT = {"S042": 0.15, "family:tone": 0.3, "tone.onset_voicing_split": 0.05, "family:reduction": 0.5,
-               "S073": 0.1}  # (u > y: with y > i after it, the u of every lect drained into i)
+RULE_WEIGHT = {"S042": 0.15, "family:tone": 0.5, "tone.onset_voicing_split": 0.05, "family:reduction": 0.5,
+               "S073": 0.3}  # (u > y: with y > i after it, the u of every lect drained into i)
+# (lane 7, PW-1579, on the log-scale draw: tone 0.3 -> 0.5, tonal living lects 31% against WALS 13A's 42%; S073
+# 0.1 -> 0.3, y in 2.9% against PHOIBLE's 5.1% (4.9% after); S042 0.15 kept, ʔ in 67% against 38%; the voicing split
+# 0.05 and reduction 0.5 kept)
 # (family:chain_shift 0.5, added because a chain shift at weight 2 still fired on ~half the harness lines, went with the
 # single draw, PW-1551: at naturalness 2 Grimm S177 and the Great Vowel Shift S179 now fire on 0.34 and 0.39 of them)
 
@@ -216,6 +220,7 @@ class History:
                     lexicon=lex, grammar=gram, profile=prof, profile_key=people, gen_yr=self.R.generation_yr(people))
         p.died_kyr = float(kyr)
         p.end = "split"
+        p.orth = RO.draw_style(self.seed, pid)   # (the family's book-spelling tradition, PW-1546: a hash, no history draw)
         return self.add(p)
 
     def daughter(self, parent: LC.Lect, deme: int, kyr: float, how: str, rng=None) -> LC.Lect:
@@ -225,6 +230,7 @@ class History:
             self._n_shift[deme] = n
             lid = f"d{deme}.{n}"
         l = parent.copy(lid, deme, kyr, how, rng)
+        l.orth = RO.reform_style(self.seed, lid, parent.orth)
         people = self.R.people_of(deme)
         if people != parent.people:  # (a deme of another people speaking it: its own voice)
             l.people = people

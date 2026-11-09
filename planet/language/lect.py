@@ -416,6 +416,7 @@ class Lect:
     sandhi_drawn: bool = False  # the line has drawn its tone sandhi (phonology.draw_sandhi), once
     burst_until: float | None = None  # kyr (ago) until which the rate runs at BURST_X (a shift or founder split; not inherited)
     size_base: dict | None = None  # {"C", "V"} the size the line re-anchored on after a burst (inherited; None: the proto's)
+    orth: tuple = ("house", "double")  # the book-spelling tradition (romanize.LETTER_STYLES, LENGTH_W; inherited, PW-1546)
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -432,7 +433,7 @@ class Lect:
                     base_segs=self.base_segs or self.consonants(), fired={k: list(v) for k, v in self.fired.items()},
                     glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id,
                     live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn,
-                    size_base=dict(self.size_base) if self.size_base else None)
+                    size_base=dict(self.size_base) if self.size_base else None, orth=tuple(self.orth))
 
     def gaps(self) -> list:
         """The major places (GAP_PLACES) the lect has no consonant at though its speakers make the place cheaply

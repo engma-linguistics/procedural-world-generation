@@ -616,6 +616,17 @@ def infobox(doc: Doc, l: dict) -> list[str]:
     ex = (com.get("exonyms") or {}).get(l["people"])
     if ex and com.get("lect") != l["id"]:
         rows.append(("Called in the Common", f"{ex['roman']} /{ex['ipa']}/, '{ex.get('gloss', '')}'"))
+    ad = pe.get("adopted")
+    if ad:
+        rows.append(("Also call themselves", f"{ad['roman']} /{ad['ipa']}/, {ad.get('gloss', '')}"))
+    hist = pe.get("history") or []   # (PW-1546: the taxonomy's name processes, P1 to P7)
+    if hist:
+        rows.append(("Name history", "; ".join(f"{h['process']}: {h.get('cause', '')}"
+                                                + (f" ({h['from']} > {h['to']})" if h.get("from") and h.get("to") else "")
+                                                for h in hist[:4])))
+    dm = (doc.names.get("demes") or {}).get(str(l.get("deme"))) or {}
+    if dm.get("lect") == l["id"] and dm.get("dishes"):
+        rows.append(("Dishes", "; ".join(f"**{d['roman']}** '{d['gloss']}'" for d in dm["dishes"])))
     dn = l.get("deme_name") or ""
     region = dn[dn.find("(") + 1:dn.rfind(")")] if "(" in dn else "?"
     rows.append(("Speakers", f"{people(l['people'])} of deme {l['deme']}, {region}; about "
@@ -939,6 +950,10 @@ def orthography(l: dict) -> list[str]:
                                                                     if t in TONES) + " (Yoruba-style).")
         out.append("")
     out.append("Where two spellings are given the second is the book spelling.")
+    if o.describe():
+        out.append(f" The book spelling follows the family's tradition: {o.describe()}"
+                   + (f" (the house letter kept for {', '.join(o.dropped)}, where the tradition's would merge two sounds)"
+                      if o.dropped else "") + ".")
     if o.lossy:
         out.append(" Book folds that merge two sounds: " + ", ".join(f"‹{g}› is written ‹{a}›" for g, a in o.lossy) + ".")
     out.append("")
