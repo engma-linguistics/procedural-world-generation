@@ -89,13 +89,15 @@ PRESSURE = 0.03        # per generation (x social recruit factor), for each cate
                        # shown value = aim in ~80% of lects for number/past/future/progressive (55-65% at 0), median 10 live
                        # functions (6 at 0)
 UNWANTED_LOSS = 0.002  # a bound gram (level >= 2) whose category the aims no longer mark erodes away, x social loss
-UNWANTED_CASE_FUSE = 0.1  # (PW-1605) clitic > affix hazard x this for a case clitic the aims do not want. Before, an
-                          # unwanted case clitic bound as fast as any and `_adopt` then turned the aim to 'few': a one-way
+UNWANTED_CASE_FUSE = 0.1  # (PW-1605) clitic > affix hazard x this for a case clitic while the aims say 'case: none'.
+                          # Before, such a clitic bound as fast as any and `_adopt` then turned the aim to 'few': a one-way
                           # flow (none -> few in 25% of caseless protos over 700 generations, few -> none 5%), so the
                           # caseless share drained with age (harness, 400 human protos x 2 seeds: none + borderline 60% at
                           # 100 generations, 41% at 700, 32% at 1300; 2-5 cases 8 -> 25 -> 30%). A postposition in a language
                           # whose syntax marks no case mostly stays a word or a clitic (Japanese and Korean particles, WALS
-                          # 49A's 'borderline'); at 0.1 the shares hold steady at WALS 49A's (6+ ~30, 2-5 ~20, none ~48%)
+                          # 49A's 'borderline'); at 0.1 the shares hold near WALS 49A's (6+ ~33, 2-5 ~20, none ~46%) from
+                          # 700 to 1300 generations. A 'few' system binding an oblique it did not ask for grows as before
+                          # (case systems grow from postpositions: the few -> many flow is kept)
 DEGRAM = 1 / 50        # degrammaticalization (Norde 2009): a clitic or affix climbs one level back up at this share of
                        # the hazard of the step it undoes (English genitive -es > ='s, Irish -mid > muid 'we'); x
                        # DEGRAM_EDGE for phrase-edge markers (case, articles: host NP) and x DEGRAM_ORPHAN when the
@@ -3163,8 +3165,8 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                 h = FUSE * gr.info.freq * min(1.0 + gr.age_gens / AGE_SCALE, AGE_CAP) * soc["fuse"] * FUSE_LEVEL[gr.level]
                 if gr.side == "pre" and gr.level >= CLITIC:
                     h *= PRE_FUSE   # (a proclitic binds and fuses more slowly than an enclitic: the suffixing preference)
-                if gr.level == CLITIC and not wanted and gr.function in CASE_FNS:
-                    h *= UNWANTED_CASE_FUSE
+                if gr.level == CLITIC and gr.function in CASE_FNS and a.get("case") == "none":
+                    h *= UNWANTED_CASE_FUSE   # (PW-1605: a caseless syntax keeps its postpositions as clitics)
                 if rng.random() < _p(h, dn):
                     gr.level += 1
                     gr.history.append((kyr, f"now {LEVELS[gr.level]}"))
