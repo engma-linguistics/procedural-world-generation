@@ -1,7 +1,8 @@
 ---
+id: PW-1585
 title: "Fish runs need a 300 m3/s river and lake fisheries a 3,150 km2 lake: lower them towards real-world sizes, or keep the grid floor?"
 type: task
-status: needs-decision
+status: todo
 parent: PW-692
 milestone: later
 subsystem: food
@@ -10,7 +11,9 @@ impact: med
 found_by: scout-242
 blocked_by: []
 relates: [PW-820]
-refs: [planet/lineages/seafood.py::seafood, planet/lineages/seafood.py::RUN_Q, planet/lineages/seafood.py::LAKE_KM2, docs/review/pw820-water-units/README.md, tools/water_units_check.py, "FAO CIFA lake yield models https://www.fao.org/4/u6650e/U6650E07.htm", "Swift 1977 USGS OFR 77-422"]
+refs: ["planet/lineages/seafood.py::seafood", "planet/lineages/seafood.py::RUN_Q", "planet/lineages/seafood.py::LAKE_KM2", docs/review/pw820-water-units/README.md, tools/water_units_check.py, "FAO CIFA lake yield models https://www.fao.org/4/u6650e/U6650E07.htm", "Swift 1977 USGS OFR 77-422"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## In plain words
@@ -35,3 +38,8 @@ Options:
   small rivers count at every level. More work (m), the honest version of B.
 
 If never done: peoples on small rivers and lakes read as less fish-reliant than their real analogues; no crash.
+
+Coordinator 11-09: A (keep the L7 values, now in real units; the owner defers physics calls). Revisit if refined L8/L9 worlds show too few fish runs.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-real-world-fish-run-and-lake-thresholds.md (found by scout-242).

@@ -1,5 +1,6 @@
 ---
-title: "People mechanics still count cells and rings (raids, barter, reach, deme sizes), so L8/L9 refined worlds will play differently"
+id: PW-1584
+title: People mechanics still count cells and rings (raids, barter, reach, deme sizes), so L8/L9 refined worlds will play differently
 type: task
 status: todo
 parent: null
@@ -10,7 +11,9 @@ impact: med
 found_by: scout-242
 blocked_by: []
 relates: [PW-820]
-refs: [planet/lineages/ladder.py::RAID_REACH, planet/lineages/ladder.py::BARTER_REACH, planet/lineages/compose.py::REACH_CELLS, planet/lineages/demes.py::MIN_CELLS, planet/lineages/demes.py::ADAPT_MIN_CELLS, planet/lineages/animals.py::OVERLAP_MIN, planet/lineages/history/params.py::CHAIN_CELLS, planet/language/inputs.py::RIVER_FLOW, planet/lineages/seafood.py::rings_for, docs/review/pw820-water-units/README.md]
+refs: ["planet/lineages/ladder.py::RAID_REACH", "planet/lineages/ladder.py::BARTER_REACH", "planet/lineages/compose.py::REACH_CELLS", "planet/lineages/demes.py::MIN_CELLS", "planet/lineages/demes.py::ADAPT_MIN_CELLS", "planet/lineages/animals.py::OVERLAP_MIN", "planet/lineages/history/params.py::CHAIN_CELLS", "planet/language/inputs.py::RIVER_FLOW", "planet/lineages/seafood.py::rings_for", docs/review/pw820-water-units/README.md]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## In plain words
@@ -29,3 +32,6 @@ distances shrink by 2-4x and the areas by 4-16x, so the same world's peoples rai
 
 If never done: the December refine (v5) gives peoples on L8/L9 worlds shorter raids, smaller trade circles and more
 deme splits than the same planet at L7, and the language river list changes with level.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-people-mechanics-in-cell-rings.md (found by scout-242).
