@@ -431,7 +431,7 @@ def cmd_speak(args):
 
 def cmd_brief(args):
     """The culinary brief of a peoples run's region or people at an era (PW-728): JSON and Markdown."""
-    from .lineages import brief as BR
+    from .lineages import brief as BR, readout as RO
     region = None
     if args.region:
         v = [float(x) for x in args.region.split(",")]
@@ -439,10 +439,10 @@ def cmd_brief(args):
             raise SystemExit("--region lat,lon[,radius_km]")
         region = (v[0], v[1], v[2] if len(v) == 3 else BR.DEFAULT_RADIUS_KM)
     if args.all:
-        BR.all_briefs(args.run, args.out or "briefs", eras=tuple(float(x) for x in args.eras.split(",")) if args.eras else BR.DEFAULT_ERAS)
+        RO.all_briefs(args.run, args.out or "briefs", eras=tuple(float(x) for x in args.eras.split(",")) if args.eras else BR.DEFAULT_ERAS)
         return
-    ctx = BR.Ctx(args.run)
-    b = BR.build(args.run, region=region, people=args.people, era_kyr=args.era, ctx=ctx, culture=args.culture)
+    ctx = RO.Ctx(args.run)
+    b = RO.build(args.run, region=region, people=args.people, era_kyr=args.era, ctx=ctx, culture=args.culture)
     if args.out:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)

@@ -123,11 +123,9 @@ class Ctx:
             self.fuels = {k: _read_single(self.dir, spec) for k, spec in fl.items()}
         self._frame_cache: dict = {}
         self._cultures = False  # (cultures.json, or worked out from the demes on first use: cultures())
-        self._religion = False  # (gods.json and taboos.json, if the run has them: religion())
         self._overlap = False  # (the presence table and every people's demes on it, on first use: overlap())
         self._presence = False  # (the presence table alone, on first use: presence_table())
         self._languages = False  # (languages.json, if the run has one: languages())
-        self._trade_flows = False  # (the exchange doc, server.trade_flow_doc, on first use: trade_flows())
 
     def presence_table(self) -> dict | None:
         """The run's presence table (output.read_presence: every people's cells per frame, PW-1259), None on a run made before it."""
@@ -149,19 +147,6 @@ class Ctx:
                     self._overlap = (pt, allv)
         return self._overlap
 
-    def religion(self) -> tuple[dict | None, dict | None]:
-        """(gods doc, taboos doc) of the run as the Religion tab shows them: its authored faiths and saved gods mode included (server.gods_doc /
-        taboos_doc, with the .godscache disk cache; PW-1440). Each None where the run has no cultures to derive from."""
-        if self._religion is False:
-            from .. import server
-            try:
-                gd = server.gods_doc(self.dir)
-                tb = server.taboos_doc(self.dir)
-            except (SystemExit, FileNotFoundError, KeyError):
-                gd = tb = None
-            self._religion = (gd, tb)
-        return self._religion
-
     def cultures(self) -> dict | None:
         """The run's emergent cultures (PW-670): its cultures.json, else derived from its demes (not written), None without demes."""
         if self._cultures is False:
@@ -182,19 +167,6 @@ class Ctx:
             from ..language import output as LO   # (format /2: the main file and its etymology sidecar)
             self._languages = LO.load(f, sidecars=("etym",)) if f.exists() else None
         return self._languages
-
-    def trade_flows(self) -> dict | None:
-        """The run's exchange doc (trade_flow.py, PW-1503) as the Trade tab shows it (server.trade_flow_doc, with the .godscache disk cache:
-        a minute or two at L7 the first time for a run), None on a run without a land-use window or a world. A harness may set it first."""
-        if self._trade_flows is False:
-            self._trade_flows = None
-            if self.meta.get("eraq") and self.world_id and self.meta.get("kind") == "peoples":
-                from .. import server
-                try:
-                    self._trade_flows = server.trade_flow_doc(self.dir)
-                except (SystemExit, FileNotFoundError, KeyError):
-                    self._trade_flows = None
-        return self._trade_flows
 
     def frame_at(self, era_kyr: float) -> int:
         return int(np.argmin(np.abs(self.ts - (-era_kyr))))
@@ -280,7 +252,8 @@ def build(run_ref, region: tuple | None = None, people: str | None = None, era_k
           culture: int | None = None) -> dict:
     """The brief of a region (a circle), a people's range or a culture's land at an era. With `culture` (an id in cultures.json) the
     region is the culture's cells at the era (a merged culture's heir's), and the brief carries its cuisine sheet (cuisine.py, PW-1391)."""
-    ctx = ctx or Ctx(run_ref)
+    if ctx is None:
+        raise TypeError("brief.build needs a read-out context (readout.Ctx, which can read the Religion and Trade tabs' docs): use readout.build")
     g, m = ctx.g, ctx.meta
     i = ctx.frame_at(era_kyr)
     era = round(-float(ctx.ts[i]), 3) + 0.0
@@ -1538,11 +1511,10 @@ def markdown(b: dict) -> str:
 DEFAULT_ERAS = (0.0, 0.5, 1.0, 2.0, 3.0, 6.0, 9.0, 12.0)  # kyr ago: the era slices of --all (the nearest stored frame each; repeats are dropped)
 
 
-def all_briefs(run_ref, out_dir, eras=DEFAULT_ERAS, log=print) -> list[Path]:
+def all_briefs(ctx: Ctx, out_dir, eras=DEFAULT_ERAS, log=print) -> list[Path]:
     """PW-742 --all: one brief per people (peoples and groups, not overlays) at each era slice, and per mixing zone at the present,
     into out_dir/<run>/ as people_<id>_<era>kyr and zone_<lat>_<lon>_present (.json and .md). A Ctx opens the run once.
     A people with no cells at an era is skipped (a group falls back to its people's range; place.basis says so)."""
-    ctx = Ctx(run_ref)
     out = Path(out_dir) / ctx.dir.name
     out.mkdir(parents=True, exist_ok=True)
     frames, written = [], []

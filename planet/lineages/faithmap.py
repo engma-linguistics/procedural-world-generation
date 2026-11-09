@@ -1,4 +1,4 @@
-"""Where each faith was at one stored moment of a peoples run (PW-1358): an equirectangular PNG for the workbench's Religion tab.
+"""Where each faith was at one stored moment of a peoples run (PW-1358): an equirectangular PNG for the workbench's Religion tab (drawn by faithmap_png.py, which the gods' code hash leaves out with the server it reads).
 
 Each cell held by a culture (the presence table and demes_all, mapped to cultures through cultures.json, merges followed as gods.py
 does) takes the colour of that culture's faith then (gods.json: cultures[c].faiths, faiths.list[f].color); peopled cells with no faith
@@ -11,8 +11,6 @@ import json
 from pathlib import Path
 
 import numpy as np
-
-from ..images import hex_rgb, png_bytes
 
 NONE = 65535
 SEA, LAND, NOFAITH = (22, 34, 52), (58, 62, 66), (150, 150, 150)
@@ -69,25 +67,3 @@ def cell_faiths(run_dir: Path, gods: dict, frame: int) -> tuple[np.ndarray, np.n
     o = np.argsort(f_of, kind="stable")  # (a cell shared by cultures of several faiths: the highest faith id drawn last wins; stable)
     fa[cells[o]] = f_of[o]
     return fa, peopled, ago
-
-
-def render(run_dir: Path, gods: dict, frame: int, width: int = 1024, only: int | None = None) -> bytes:
-    """The PNG; only: one faith in colour, the other faiths' cells pale."""
-    from .. import timeline as T
-    from ..thumbs import _cells
-    run, arr, _ = _load(Path(run_dir))
-    fa, peopled, _ = cell_faiths(run_dir, gods, frame)
-    elev = np.asarray(T.frame(run, arr, "elevation", frame), float)
-    ice = np.asarray(T.frame(run, arr, "ice", frame), float)
-    cols = np.zeros((len(elev), 3), np.uint8)
-    land = elev >= 0
-    cols[:] = SEA
-    cols[land] = LAND
-    cols[land & (ice > 0)] = (120, 130, 140)
-    cols[peopled & (fa < 0)] = NOFAITH
-    pal = {f["id"]: hex_rgb(f["color"]) for f in (gods.get("faiths") or {}).get("list", [])}
-    for f in np.unique(fa[fa >= 0]):
-        cols[fa == f] = pal.get(int(f), (255, 0, 255)) if only is None or int(f) == only else (96, 100, 106)
-    idx, valid = _cells(run["meta"]["level"], "equirect", width)
-    img = cols[idx]
-    return png_bytes(np.concatenate([img, np.where(valid, 255, 0).astype(np.uint8)[..., None]], -1))

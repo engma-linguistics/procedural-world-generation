@@ -268,7 +268,7 @@ def brief(query: str) -> tuple[dict, int]:
     (lineages/brief.py, PW-728) as {markdown, brief} (PW-837: the viewer's Peoples panel shows it)."""
     q = dict(parse_qsl(query))
     try:
-        from .lineages import brief as BR
+        from .lineages import brief as BR, readout as RO
         run, era = q.get("run"), float(q.get("era") or 0.0)
         if not run:
             raise ValueError("run= is required")
@@ -281,7 +281,7 @@ def brief(query: str) -> tuple[dict, int]:
         culture = int(q["culture"]) if q.get("culture") not in (None, "") else None
         if region is None and culture is None and not q.get("people"):
             raise ValueError("give people=<id>, culture=<id> or region=lat,lon[,radius_km]")
-        b = BR.build(run, region=None if culture is not None else region, people=None if culture is not None else q.get("people"), era_kyr=era, culture=culture)
+        b = RO.build(run, region=None if culture is not None else region, people=None if culture is not None else q.get("people"), era_kyr=era, culture=culture)
         return {"markdown": BR.markdown(b), "brief": b}, 200
     except ValueError as e:
         return {"error": str(e)}, 400
@@ -503,7 +503,7 @@ def faithmap(query: str) -> tuple[bytes | dict, int]:
     """GET /api/faithmap?run=<id>&frame=<f>[&w=512|1024|2048]: the faiths at one stored frame as an equirectangular PNG (faithmap.py)."""
     q = dict(parse_qsl(query))
     try:
-        from .lineages import faithmap as FM
+        from .lineages import faithmap_png as FM
         d = S.find_run(q.get("run", ""))
         w = int(q.get("w", 1024))
         if w not in (512, 1024, 2048):
