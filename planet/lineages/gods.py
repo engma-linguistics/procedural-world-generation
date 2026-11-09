@@ -1136,10 +1136,6 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
             quake[src[pb[dst]]] = True
         except (SystemExit, KeyError):
             pass
-    ledger = {}  # (PW-1523: the goods ledger, trade.py, inside the land-use window: run frame -> {culture: row}, for the trade domain)
-    if m.get("eraq"):
-        from . import trade as TRL
-        ledger = {f["frame"]: f["cultures"] for f in TRL.derive(run_dir)["frames"]}
     for j in use:
         ago = agos[j]
         elev, ice = T.frame(run, arr, "elevation", j).astype(float), T.frame(run, arr, "ice", j).astype(float)
@@ -1181,7 +1177,6 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
         }
         share = {k: np.bincount(cul, weights=v[cell].astype(float), minlength=nC) / np.maximum(n, 1) for k, v in feats.items()}
         urb = urban(j, ago, cell, cul, nC) if urban is not None else {}
-        led = ledger.get(j) or {}
         ends = []
         while ei < len(endev) and endev[ei][3] >= ago - 1e-9:  # (the frame's culture ends and merges, before its beings are tended)
             ends.append(endev[ei])
@@ -1196,9 +1191,7 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
                 continue
             ln = lines.get(u["people"]) or {}
             tr = tuple(ln.get("traits") or ())
-            lr = led.get(str(c)) or {}
-            fx = {k: float(v[c]) for k, v in share.items()} | {"urban": urb.get(c, 0.0),
-                                                                "ledger": min(1.0, (len(lr.get("has") or ()) + len(lr.get("lacks") or ())) / TRADE_FULL)}
+            fx = {k: float(v[c]) for k, v in share.items()} | {"urban": urb.get(c, 0.0)}  # ("ledger" not read yet: PW-1582)
             sal = salience(fx, kn, (u.get("traits") or {}).get("ways_now"), tr)
             if c not in seen:
                 seen.add(c)

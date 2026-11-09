@@ -1,8 +1,10 @@
 ---
+id: PW-1581
 title: Regional pantheons run over D68's 2-8 on the Seven Meals tree world 07c755 (15 living)
 type: task
 status: todo
 parent: PW-1308
+milestone: null
 subsystem: culture
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: lane236
 blocked_by: []
 relates: [PW-1523]
 refs: ["planet/lineages/pantheons.py::HUB_SUBJ", "planet/lineages/pantheons.py::HUB_URBAN", "planet/lineages/pantheons.py::Regional.step", docs/review/culture/faiths/domains1.md, "run 07c755", "run 0141d1", "run a24559", "run a2b637"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -24,3 +28,6 @@ is lost there. The land share is still well under a third.
 Fix: find out why 07c755 has so many qualifying empire hubs (rule_table rows: the foreign land per ruler), then try a relative test, for
 example the top N realms by foreign land, or HUB_KYR on the empire side. Check on 3+ worlds with re-rolled draws before changing it.
 Seven Meals is frozen: measure only, don't tune for it alone.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-pantheons-over-target-on-07c755.md (found by lane236).
