@@ -924,11 +924,10 @@ class Run:
     def world(self) -> dict | None:
         if self._world_layers is None and self._load_world and self.meta.get("world"):
             p = S.find_world(self.meta["world"])
-            doc = json.loads(Path(p).read_text())
             keep = ("downstream", "flow", "lake", "coast_type", "elevation")
-            self._world_layers = {k: np.asarray(doc["layers"][k]) for k in keep if k in doc["layers"]}
-            self.world_summary = doc.get("summary", {})
-            del doc
+            # layers live in their own .bin files (PW-1209); the .json keeps their specs and the summary
+            self._world_layers = {k: np.asarray(v) for k, v in S.world_layers(p, keep).items()}
+            self.world_summary = json.loads(Path(p).read_text()).get("summary", {})
         return self._world_layers
 
     @cached_property
