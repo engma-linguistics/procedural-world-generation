@@ -28,7 +28,9 @@ STEP_KYR = 0.5
 NONE = 65535
 R_KM = 6371.0
 
-RIVER_FLOW = 50.0  # world `flow` floor for a river cell (m^3/s as stored; ~2,200 cells on dba204)
+RIVER_FLOW = 4900.0  # m^3/s floor for a river cell (hydrology.discharge of the world `flow` layer, which is stored in
+#                     cells x m/yr of runoff; was 50 flow units, ~4,930 m^3/s at L7 and ~19,700 at L6, so the same planet
+#                     named different rivers at each level; PW-820 units; ~2,200 cells on dba204)
 RIVER_MIN_CELLS = 3  # river cells (above the floor) a basin needs to count as a river
 INCURSION_TAIL_KYR = 1.0  # elite rule outlasts the incursion's own span by this much
 INCURSION_RADIUS_KM = 150.0  # added to the incursion's own radius when locating the demes involved
@@ -944,6 +946,8 @@ class Run:
             if np.array_equal(o2, out):
                 break
             out = o2
+        from ..hydrology import discharge
+        flow = discharge(self.g, flow)  # (m^3/s)
         riv = flow >= RIVER_FLOW
         rid = np.where(riv, out, -1)
         u, c = np.unique(rid[riv], return_counts=True)

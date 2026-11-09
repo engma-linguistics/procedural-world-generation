@@ -46,7 +46,8 @@ from . import romanize as RO
 from .percepts import word_ipa
 
 TICKET = 972
-BIG_RIVER = 300.0  # world flow (as stored) above which a river is big enough to name a people (E4/E6)
+BIG_RIVER = 29600.0  # m^3/s (inputs.RIVER_FLOW units) above which a river is big enough to name a people (E4/E6; was 300
+#                      flow units, ~29,600 m^3/s at L7, ~118,000 at L6; PW-820 units)
 COAST_SHARE = 0.25  # share of a deme's cells on the coast for a sea name
 PEAK_M = 1500.0  # highest cell for a peak name
 MAX_SYLL = 4  # an ethnonym or place name root keeps to this many syllables (parts clipped to 2 first), in a language of

@@ -179,7 +179,7 @@ def build(seed: int = 1, n_lects: int = 30, n_frames: int = 10) -> dict:
                          "horizon_kyr": 8.0, "horizon_by": {"human": {"horizon_kyr": 7.0}}},
             "intelligibility": {"frames": frames, "pairs": pairs, "now": now}, "continua": cont,
             "checks": [{"name": "fake check", "value": {"a": 1}, "target": "> 0", "pass": True, "note": "synthetic"}],
-            "landscape": {"rivers": {}, "lakes": {}, "demes": {}, "river_flow_floor": 50.0}, "log": [], "timing": {}, "constants": {}}
+            "landscape": {"rivers": {}, "lakes": {}, "demes": {}, "river_flow_floor": 4900.0}, "log": [], "timing": {}, "constants": {}}
 
 
 if __name__ == "__main__":
