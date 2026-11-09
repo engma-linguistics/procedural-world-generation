@@ -1,7 +1,7 @@
 ---
 title: "Languages: growled voice is written on every sound of a syllable (w‼ɔ‼j‼); mark it once per syllable on the page, or make it a syllable feature?"
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 subsystem: culture
 effort: m
@@ -33,3 +33,5 @@ Options:
 
 Lean: A. It answers the review at page level without touching the model; B only if the dragons' growl should
 behave as a register in sound change too.
+
+Coordinator call 2026-11-09: A (page-only, one mark per fully growled syllable); B only if a later lane wants the growl to act as a register in sound change.
