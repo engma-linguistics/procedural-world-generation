@@ -128,3 +128,29 @@ def test_invocation_marks_the_object_once():
     inv = next(s for s in sents if s["en"].endswith(" us!"))
     gl = " ".join(w[1] for w in inv["w"])
     assert gl.count("1PL.OBJ") == 1, gl
+
+
+def test_fable_ancestor_is_the_state_at_the_split():
+    """PW-1592: the ancestor is a lect as it stood at its first bud (a split state), and the daughters come from both
+    sides of that split; a root the line coined after the split and both branches share is caught by fable_descent."""
+    m = _fable_lect()
+    m.update(id="m1", parent=None, died_kyr=None, born_kyr=10.0, deme=1, people="human", population=500)
+    for w in m["lexicon"].values():
+        w["roots"] = ["m1:OLD@10"]
+    bud = copy.deepcopy(m)
+    bud.update(id="d2", parent="m1", born_kyr=5.0, deme=2, population=300)
+    late = copy.deepcopy(m)
+    late.update(id="d3", parent="m1", born_kyr=3.0, deme=3, population=200)
+    early = copy.deepcopy(m)
+    early.update(id="d4", parent="m1", born_kyr=8.0, deme=4, population=900)
+    split = copy.deepcopy(m)
+    split.update(id="m1@5", split_of="m1", split_kyr=5.0, died_kyr=5.0, branches={"m1": "line", "d2": "d2", "d3": "line"})
+    lects = {x["id"]: x for x in (m, bud, late, early)}
+    anc, ds = TX.pick_family(lects, splits=[split])
+    assert anc["id"] == "m1@5" and "d4" not in {d["id"] for d in ds}
+    assert {split["branches"][d["id"]] for d in ds} == {"line", "d2"}
+    roots = {"m1:OLD@10": {"lect": "m1", "kyr": 10.0}, "m1:SAY@4": {"lect": "m1", "kyr": 4.0}}
+    assert TX.fable_descent(anc, ds, roots, lects) == []
+    for d in ds:   # (a change of the line after the split, shared across it: the cold review's R2)
+        d["lexicon"]["SAY"]["roots"] = ["m1:SAY@4"]
+    assert any("shared by branches" in x for x in TX.fable_descent(anc, ds, roots, lects))

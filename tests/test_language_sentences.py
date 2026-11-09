@@ -639,3 +639,23 @@ def test_rulings_class_labels_animate_fallback_and_own_sentence():
         lj["id"] = f"d{k}"
         ens.add(by_id(lj)["own"]["en"])
     assert ens == {"We eat millet.", "We live by the river.", "We pray to Lato."}
+
+
+def test_marker_beside_its_identical_source_is_said_once():
+    """PW-1537 R1: a free marker still identical to the word it came from is not said twice beside it (haplology)."""
+    v = SN.View(lect())
+    out = SN.haplology(v, [SN.Word("ɡbinaf", "that", "THAT"), SN.Word("ɡbinaf", "COP"), SN.Word("ka", "dog", "DOG")])
+    assert [w.gloss for w in out] == ["that.COP", "dog"] and v.extra
+
+
+def test_numeral_note_only_where_the_parts_are_heard():
+    """PW-1537 R8: '11 = 10 + 1' only when 'ten' and 'one' can be heard in the form."""
+    lj = lect()
+    lj["systems"] = {"numeral": {"system": "decimal"}}
+    lj["lexicon"].update({"TEN": {"ipa": "pulu", "pos": "NUM"}, "ONE": {"ipa": "sa", "pos": "NUM"},
+                          "ELEVEN": {"ipa": "pulusa", "pos": "NUM"}, "FIFTEEN": {"ipa": "kito", "pos": "NUM"},
+                          "FIVE": {"ipa": "lima", "pos": "NUM"}})
+    n = SN.numerals_note(SN.View(lj))
+    texts = [e[2] for e in n["ex"]]
+    assert any(t.startswith("11 = 10 + 1") for t in texts), texts
+    assert any(t.startswith("15: built as 10 + 5") and "worn" in t for t in texts), texts

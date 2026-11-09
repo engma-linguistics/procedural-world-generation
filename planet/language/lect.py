@@ -784,7 +784,12 @@ class Lect:
                 sc = r.weight * self.hiatus_pref(r)
                 if best is None or sc > best[0]:
                     best = (sc, r)
-            if best is None or self._apply_rule(best[1], kyr, origin, remember=False) == 0:
+            again = any(base_id(c["rule"]) == base_id(best[1].id) and float(c["kyr"]) - kyr < self.refire_kyr() - 1e-9
+                        for c in self.changes[-60:]) if best is not None else False
+            # (PW-1537 R9: a repair the line made within the re-fire wait is its persistent rule at work on new input,
+            # Chafe 1968, not a new change: recorded with cause "persistent", so a history lists the law once)
+            if best is None or self._apply_rule(best[1], kyr, origin, remember=False,
+                                                cause="persistent" if again else None) == 0:
                 break
             fired += 1
         return fired
@@ -820,7 +825,46 @@ class Lect:
             v = _PREF[key] = math.exp(HIATUS_SPREAD * z)
         return v
 
-    def _apply_rule(self, rule, kyr: float, origin: str | None = None, remember: bool = True) -> int:
+    def _series_drag(self, rule, segs0, kyr: float) -> int:
+        """PW-1537 R3: a change that took a sound's last plain partner away takes the marked members of its series along
+        (kʼ follows k > tʃ as tʃʼ, ǀʰ follows ǀ > k as kʰ, a˯ follows a > ɑ): sound changes act on natural classes, and
+        a marked series member implies its plain partner at the same place (Maddieson 1984; Lass 1984 on series
+        changes). A marked sound whose partner was not there before, or moved where the mark cannot go, stays. Returns
+        the words changed."""
+        if self.lexicon is None:
+            return 0
+        before = {replace(x, length=0) for x in segs0}
+        now = self.all_segments()
+        have = {replace(x, length=0) for x in now}
+        moves = {}
+        for s in now:
+            if s.kind not in ("C", "V") or not _marked(s):
+                continue
+            cands = _partners(s)
+            if cands & have:
+                continue
+            for c in sorted(cands & before, key=lambda x: x.voice):
+                o = RU._single(rule, c)
+                if o and len(o) == 1 and o[0] != c:
+                    t = _remark(o[0], s)
+                    if t is not None and t != s and not RU.impossible(t):
+                        moves[s] = t
+                    break
+        if not moves:
+            return 0
+
+        def fn(f, *_a):
+            return tuple(moves.get(x, x) for x in f)
+        n = LX.apply_rule_to_lexicon(self.lexicon, fn, rule.id, kyr, self.id)
+        GR = _gr_mod()
+        if GR is not None and self.grammar is not None:
+            g = GR.apply_rule_to_grammar(self.grammar, fn, rule.id, kyr)
+            n += g if isinstance(g, int) else len(g or ())
+        self.touch()
+        return n
+
+    def _apply_rule(self, rule, kyr: float, origin: str | None = None, remember: bool = True,
+                    cause: str | None = None) -> int:
         self._last_kyr = float(kyr)
         segs0 = self.all_segments()
         memo = getattr(self, "_step_pairs", None)
@@ -840,7 +884,8 @@ class Lect:
         self.touch()
         if n == 0:  # (a rule that changed nothing is not a change: no record)
             return 0
-        self.changes.append({"kyr": round(float(kyr), 3), "rule": rule.id, "cause": rule.cause, "origin_lect": origin})
+        self.changes.append({"kyr": round(float(kyr), 3), "rule": rule.id, "cause": cause or rule.cause, "origin_lect": origin})
+        self._series_drag(rule, segs0, kyr)
         for x in segs0:
             o = RU._single(rule, x)
             if o and len(o) == 1 and o[0] != x:
@@ -946,6 +991,36 @@ def _lognormal(key: str, sigma: float) -> float:
         import zlib
         v = _PREF[(key, sigma)] = math.exp(sigma * float(np.random.default_rng(zlib.crc32(key.encode("utf-8"))).normal()))
     return v
+
+
+def _marked(s) -> bool:
+    """A marked series member (PW-1537 R3): aspirated or ejective, growled or purred, prenasalised stop, or a vowel of the
+    sub-bass or ultra register. Breathy and creaky voice and implosives are left out: they stand without a plain partner
+    in real inventories often enough (Maddieson 1984). Prenasalised stops too (Fijian ᵐb ⁿd have no plain b d): only
+    a prenasalised ejective is barred, by rules.impossible."""
+    return s.larynx in (1, 2) or s.phonation in (3, 4) or bool(s.register)
+
+
+def _partners(s) -> set:
+    """The plain partners of a marked sound at its place (length aside; either voicing for a stop that lost an
+    aspirate or ejective mark, so tʰ is partnered by t or d)."""
+    p = replace(s, phonation=0 if s.phonation in (3, 4) else s.phonation, register=0, length=0,
+                larynx=0 if s.larynx in (1, 2) else s.larynx)
+    return {p, replace(p, voice=1 - p.voice)} if s.larynx in (1, 2) else {p}
+
+
+def _remark(q, s):
+    """The sound q (where s's plain partner went) with s's marks; None where the mark cannot go on q (an aspirate or
+    ejective mark on anything but a stop, affricate or click)."""
+    if q.kind != s.kind:
+        return None
+    if s.larynx in (1, 2) and (q.kind != "C" or q.manner not in (0, 1, 8)):
+        return None
+    t = replace(q, phonation=s.phonation if s.phonation in (3, 4) else q.phonation, register=s.register or q.register,
+                length=s.length)
+    if s.larynx in (1, 2):
+        t = replace(t, larynx=s.larynx, voice=0 if s.larynx == 2 else s.voice)
+    return t
 
 
 def _undoes(rule, y, x) -> bool:

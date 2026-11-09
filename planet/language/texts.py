@@ -96,6 +96,8 @@ def quote(v: SN.View, S: SN.NP, said: list, tam: str | None) -> list:
     """'S said: "..."': the quotation stands in the object's place (before 'say' in OV lects, as Japanese ... to itta;
     after it in VO lects)."""
     vw = SN.verb(v, "SAY", S.person, tam)
+    if SN.flagging(v, S, SN.NP(said, 0), tam)[0]:   # (PW-1537 R5: the sayer of a quote is an ergative subject too)
+        SN._np_gram(v, S, "ERG")
     return SN.clause(v, S, vw, SN.NP(said, 0), transitive=False, tam=tam)
 
 
@@ -216,17 +218,28 @@ def branch_of(lects: dict, l: dict, pid: str) -> str:
     return prev
 
 
-def pick_daughters(lects: dict, pid: str, n: int = 3, intel: dict | None = None) -> list[dict]:
+def pick_daughters(lects: dict, pid: str, n: int = 3, intel: dict | None = None,
+                   branches: dict | None = None) -> list[dict]:
     """Up to n living daughters that tell the whole fable, from different branches, least mutually intelligible first,
-    then the most spoken."""
-    full = [l for l in descendants(lects, pid) if complete(fable(l), len(FABLE_EN))]
+    then the most spoken. `branches` ({living id: branch}, a split state's) limits them to the lines of that split."""
+    if branches is not None:
+        cand = [lects[i] for i in branches if i in lects]
+
+        def br(l):
+            return branches[l["id"]]
+    else:
+        cand = descendants(lects, pid)
+
+        def br(l):
+            return branch_of(lects, l, pid)
+    full = [l for l in cand if complete(fable(l), len(FABLE_EN))]
     full.sort(key=lambda l: (-(l.get("population") or 0), l["id"]))
     out: list = []
     for l in full:
         if len(out) >= n:
             break
-        b = branch_of(lects, l, pid)
-        if any(branch_of(lects, x, pid) == b for x in out) and len({branch_of(lects, x, pid) for x in full}) > len(out):
+        b = br(l)
+        if any(br(x) == b for x in out) and len({br(x) for x in full}) > len(out):
             continue
         if intel and any((intel.get((l["id"], x["id"])) or 0) > 0.5 for x in out):
             continue
@@ -249,25 +262,69 @@ FABLE_DEPTH_KYR = (3.0, 6.0)
 FABLE_DAUGHTERS = (2, 4)
 
 
-def pick_family(lects: dict, intel: dict | None = None, prefer: tuple = ()) -> tuple[dict, list[dict]] | None:
-    """(ancestor, daughters): a lect last spoken FABLE_DEPTH_KYR ago (it split then) that tells the whole fable, with 2-4
-    living daughters that do too, preferring the peoples in `prefer` (the demo's languages), then 3+ daughters, then an
-    age near the middle of the window; outside the window, the nearest age. None when no family can."""
+def pick_family(lects: dict, intel: dict | None = None, prefer: tuple = (),
+                splits: list | None = None) -> tuple[dict, list[dict]] | None:
+    """(ancestor, daughters): a lect as it stood when it split FABLE_DEPTH_KYR ago that tells the whole fable, with 2-4
+    living daughters that do too (from at least two of its branches), preferring the peoples in `prefer` (the demo's
+    languages), then 3+ daughters, then an age near the middle of the window; outside the window, the nearest age. None
+    when no family can.
+
+    PW-1592: the ancestor is a split state (`splits`, the doc's `fable_splits`: a lect kept as it stood at its first bud),
+    the daughters' true common ancestor, so they cannot share a change it lacks. A doc without split states falls back to
+    dead lects (whose daughters may all descend through a later lect that innovated after it: the cold review's R2)."""
     lo, hi = FABLE_DEPTH_KYR
     mid = (lo + hi) / 2.0
     best = None
-    for p in sorted(lects.values(), key=lambda x: x["id"]):
+    if splits:
+        cands = [(p, p.get("branches") or {}) for p in sorted(splits, key=lambda x: x["id"])]
+    else:
+        cands = [(p, None) for p in sorted(lects.values(), key=lambda x: x["id"])]
+    for p, brs in cands:
         age = p.get("died_kyr")
         if age is None or not complete(fable(p), len(FABLE_EN)):
             continue
-        ds = pick_daughters(lects, p["id"], FABLE_DAUGHTERS[1], intel)
-        if len(ds) < FABLE_DAUGHTERS[0]:
+        ds = pick_daughters(lects, p["id"], FABLE_DAUGHTERS[1], intel, brs)
+        if len(ds) < FABLE_DAUGHTERS[0] or (brs is not None and len({brs[d["id"]] for d in ds}) < 2):
             continue
         off = max(0.0, lo - age, age - hi)
         key = (-round(off, 3), p["people"] in prefer, len(ds) >= 3, -round(abs(age - mid), 3), len(ds), p["id"])
         if best is None or key > best[0]:
             best = (key, p, ds)
     return None if best is None else (best[1], best[2])
+
+
+def fable_descent(anc: dict, ds: list[dict], roots: dict, lects: dict) -> list[str]:
+    """PW-1592 check over the fable's words: what contradicts the claim that the daughters `ds` descend from `anc`. A
+    daughter word whose root was coined in the ancestor's own line at or before the split must find that root in the
+    ancestor's lexicon (else the shown ancestor is not the state they came from); a root coined in that line after the
+    split must not be shared by daughters on two branches (a shared change the ancestor lacks: R2). A root coined
+    outside the line is a loan and passes. [] when the fable is a true reconstruction."""
+    t = float(anc.get("split_kyr") or anc.get("died_kyr") or 0.0)
+    line, x, seen = set(), lects.get(anc.get("split_of") or anc["id"]), set()
+    while x is not None and x["id"] not in seen:
+        seen.add(x["id"])
+        line.add(x["id"])
+        x = lects.get(x.get("parent"))
+    line.add(anc["id"])
+    have = {r for w in (anc.get("lexicon") or {}).values() for r in (w.get("roots") or ())}
+    brs = anc.get("branches") or {}
+    out, after = [], {}
+    for d in ds:
+        for c in FABLE_WORDS:
+            w = (d.get("lexicon") or {}).get(c)
+            for r in (w or {}).get("roots") or ():
+                e = roots.get(r) or {}
+                if e.get("kyr") is None or e.get("lect") is None:
+                    continue
+                if float(e["kyr"]) >= t - 1e-6:
+                    if e["lect"] in line and r not in have:
+                        out.append(f"{d['id']} {c}: root {r} is older than the split but not in the ancestor")
+                elif e["lect"] in line:
+                    after.setdefault(r, set()).add(brs.get(d["id"], d["id"]))
+    for r, bs in sorted(after.items()):
+        if len(bs) >= 2:
+            out.append(f"root {r}, coined in the ancestor's line after the split, is shared by branches {sorted(bs)}")
+    return out
 
 
 # ---- the recipe (grammar phase D: a connected text per demo language) -------------------------------------------------------

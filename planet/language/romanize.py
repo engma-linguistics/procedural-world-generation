@@ -32,8 +32,8 @@ velarization and pharyngealization are not written; a sound with no house letter
 affricates take their stop's letter (ɟʝ gy, cç ky) and ɹ is r. Diacritics are planned **once per lect** (book_folds): a
 diacritic letter whose ASCII fold merges none of the lect's phonemes is always folded (ṭ is t where there is no t); of the
 rest, the BOOK_DIACRITIC_BUDGET commonest keep their mark and the others fold everywhere (merging; Orthography.lossy lists
-them); the uvular ġ and x̣ always keep theirs. Non-human marks: one per sound (the first), written once after a run of sounds
-that carry it (no rhrh), and a growled r is rrh, not rrrh.
+them); the uvular ġ and x̣ always keep theirs. Non-human marks: one per word (the first sound's first mark), written once
+after the first run of sounds that carry it (no rhrh, no samhshunwanmh), and a growled r is rrh, not rrrh.
 """
 from __future__ import annotations
 
@@ -612,6 +612,8 @@ def _romanize_word(word: Iterable[Segment], contrasts: set[str] | None = None, i
     for n in range(len(parts)):  # a run of sounds with the same mark writes it once, after the run (no rhrh)
         m = marks[n]
         if m and not (n + 1 < len(parts) and marks[n + 1] == m):
+            marks[n + 1:] = [()] * (len(parts) - n - 1)   # (PW-1537 R7: one mark a word, after its first marked run;
+            # 'samhshunwanmhch'samhshun' could not be read; the mark tells the reader the word's voice, not each sound's)
             mk = m[0]
             if mk == NH_MARKS["growl"] and parts[n].endswith("r"):
                 mk = "h"  # (a growled r is rrh, not rrrh: Welsh rh)
