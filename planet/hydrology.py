@@ -111,6 +111,15 @@ CARVE_TRIES = 2  # times the valleys are recut as the rivers they carry move
 # the divide for tens of Myr (Red Rock Pass, Bonneville's outlet; the wind
 # gaps of the Appalachian ridges)
 VALLEY_MYR = 20.0
+# PW-831 (scout 260, exploratory): flooded ground beside the rivers evaporates
+# as open water (lake_evap - aet over wetland_share), taken from the river
+WETLAND_ET = False
+WETLAND_MODE = "plain"  # 'plain': floodplains only; 'hollow': + _bed's filled hollows
+WETLAND_FILL_M = 5.0  # m of fill over which a filled hollow's floor counts fully flooded
+WETLAND_HOLLOW = 0.5  # share of a filled hollow's floor flooded (seasonal swamp)
+# 'sheet': Manning's n of a vegetated floodplain (Chow 1959: brush / timber 0.05-0.2), the flood sheet's depth (m),
+# and the least slope taken (a filled flat)
+WETLAND_N, WETLAND_H, WETLAND_SMIN = 0.1, 1.0, 1e-5
 
 
 def discharge(grid: Grid, flow: np.ndarray) -> np.ndarray:
@@ -365,8 +374,52 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
         valley_pit = sink & ~wet & (spill <= ground + 1.0)
         sink &= ~valley_pit
         kind[valley_pit & (kind == SALT_PAN)] = NO_LAKE
-    return dict(wet=wet, kind=kind, level=level, sink=sink, src=src - loss * wet, bed=np.asarray(elev, float),
+    src_out = src - loss * wet
+    if WETLAND_ET:
+        src_out = src_out - loss * wetland_share(grid, carved, elev, land & ~wet, flow, no_lake)
+    return dict(wet=wet, kind=kind, level=level, sink=sink, src=src_out, bed=np.asarray(elev, float),
                 incised=incised, sea=~land)
+
+
+def _down_of(grid, bed, land):
+    """each cell's lowest neighbour (-1 if none lower): the reach's slope for wetland_share"""
+    nb = grid.nbr_idx
+    src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
+    z = bed[nb]
+    low = np.full(grid.n, np.inf)
+    np.minimum.at(low, src, z)
+    first = np.full(grid.n, -1)
+    hit = z == low[src]
+    first[src[hit][::-1]] = nb[hit][::-1]
+    return np.where(land & (low < bed), first, -1)
+
+
+def wetland_share(grid, ground, bed, land, flow, no_lake=None):
+    """Share of each land cell (no lake) that a river floods and that
+    evaporates as open water (PW-831): the big rivers' floodplains
+    (vegetation.floodplain, by the flow) and, with WETLAND_MODE 'hollow', the
+    floors of the hollows _bed fills (too shallow or flat to hold a lake:
+    swamps the river spreads over, the Sudd, the inner Niger delta, the
+    Okavango)."""
+    from .vegetation import floodplain
+    f = floodplain(grid, ground, flow)
+    if WETLAND_MODE == "hollow":
+        f = np.maximum(f, np.clip((bed - ground) / WETLAND_FILL_M, 0.0, 1.0) * WETLAND_HOLLOW)
+    elif WETLAND_MODE == "sheet":
+        # unconfined flat reaches: the river spreads as a sheet WETLAND_H deep whose width carries its flow
+        # at Manning's speed over the reach's slope (W = Q n / (h^5/3 S^1/2)), over the cell's flat share
+        from .ocean import cell_area_km2
+        from .vegetation import relief
+        a_km2 = cell_area_km2(getattr(grid, "base", grid))
+        d_m = np.sqrt(a_km2) * 1e3
+        down = _down_of(grid, bed, land)
+        s = np.where(down >= 0, (bed - bed[np.maximum(down, 0)]) / d_m, WETLAND_SMIN)
+        s = np.maximum(s, WETLAND_SMIN)
+        w_m = discharge(grid, flow) * WETLAND_N / (WETLAND_H ** (5 / 3) * np.sqrt(s))
+        flat = np.clip(1 - relief(grid, ground) / 400.0, 0, 1)
+        f = np.maximum(f, np.clip(w_m * d_m / (a_km2 * 1e6), 0.0, 0.75) * flat)
+    f = np.where(land, f, 0.0)
+    return f if no_lake is None else f * ~no_lake
 
 
 FLOOD_EPS = 0.01  # m: route()'s priority flood's lift per cell across a filled pit
