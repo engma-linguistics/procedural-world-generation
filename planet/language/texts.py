@@ -293,13 +293,27 @@ def pick_family(lects: dict, intel: dict | None = None, prefer: tuple = (),
     return None if best is None else (best[1], best[2])
 
 
-def fable_descent(anc: dict, ds: list[dict], roots: dict, lects: dict) -> list[str]:
+def fable_descent(anc: dict, ds: list[dict], roots: dict, lects: dict, nodes: list | None = None) -> list[str]:
     """PW-1592 check over the fable's words: what contradicts the claim that the daughters `ds` descend from `anc`. A
     daughter word whose root was coined in the ancestor's own line at or before the split must find that root in the
     ancestor's lexicon (else the shown ancestor is not the state they came from); a root coined in the family after the
     split must not be shared by daughters on two branches (a shared change the ancestor lacks: R2). A root coined
-    outside the line is a loan and passes. [] when the fable is a true reconstruction."""
+    outside the line is a loan and passes; so does a word borrowed after the split (`nodes`, the doc's etym_nodes: a
+    borrow step in its chain younger than the split), whatever its root: a loan from a cousin line carries a root the
+    two lines share by descent from before the split, which the ancestor itself may have replaced (PW-1595, a24559:
+    d754 lost d584's SIT for a coinage at 6 kyr, then borrowed its cousin d216.1's reflex of it back at 3 kyr, as English
+    took 'skirt' from Norse beside its own 'shirt'). [] when the fable is a true reconstruction."""
     t = float(anc.get("split_kyr") or anc.get("died_kyr") or 0.0)
+
+    def loan(w):   # (a borrow step after the split in the word's chain: node = [up, kyr, lect, process, ...])
+        n, seen = (w or {}).get("etym"), set()
+        while nodes is not None and isinstance(n, int) and 0 <= n < len(nodes) and n not in seen:
+            seen.add(n)
+            row = nodes[n]
+            if str(row[3]).startswith("borrow") and float(row[1]) < t - 1e-6:
+                return True
+            n = row[0]
+        return False
     line, x, seen = set(), lects.get(anc.get("split_of") or anc["id"]), set()
     while x is not None and x["id"] not in seen:
         seen.add(x["id"])
@@ -324,6 +338,8 @@ def fable_descent(anc: dict, ds: list[dict], roots: dict, lects: dict) -> list[s
     for d in ds:
         for c in FABLE_WORDS:
             w = (d.get("lexicon") or {}).get(c)
+            if loan(w):
+                continue
             for r in deep(w):
                 e = roots.get(r) or {}
                 if e.get("kyr") is None or e.get("lect") is None:

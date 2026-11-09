@@ -259,7 +259,7 @@ def fable_section(doc, k: int, au: "Audio", picks: list) -> str | None:
     if fam is None:
         return None
     proto, ds = fam
-    bad = TX.fable_descent(proto, ds, doc.d.get("roots") or {}, doc.lects)
+    bad = TX.fable_descent(proto, ds, doc.d.get("roots") or {}, doc.lects, doc.d.get("etym_nodes"))
     if bad:   # (PW-1592: the page's reconstruction must hold; say so where the page is built)
         print(f"fable: the daughters do not all descend from the shown ancestor ({len(bad)}): " + "; ".join(bad[:4]),
               file=sys.stderr)
