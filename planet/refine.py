@@ -70,7 +70,7 @@ COST_REF_CELLS = 655_362
 COST_REF_MIN = 7.0
 COST_TIME_EXP = 1.22  # 38 / 7 for 4x the cells
 COST_GB = (1.5, 14.2)  # peak GB = a + b x million fine cells
-COST_FILE_GB_PER_MCELL = 0.85  # the world's JSON plus its grid file
+COST_FILE_GB_PER_MCELL = 0.45  # the world's layer files (binary since PW-1209: fb5e11 199 MB at L8) plus its grid file
 
 
 def cells(level: int) -> int:

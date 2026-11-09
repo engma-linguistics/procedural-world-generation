@@ -6,7 +6,7 @@ You can now refine a world to L8 or L9 from the viewer, without the command line
 cost first: how long it takes, how much memory it needs, and how big the file will be. It refuses to start when the
 machine does not have the room, or when another refine is already queued or running. While the refine runs you see a
 progress bar, the stage it is on, and roughly how long is left. When it finishes, the refined world opens on the globe.
-An L9 world is saved but does not open, because the viewer cannot read a file that big yet (PW-1209).
+Since PW-1209 (lane 229, [binary-layers.md](binary-layers.md)) an L9 world opens too, slowly (about 10-20 s).
 
 The refine runs on the server's usual job queue, the same one that makes zooms, time zooms and finished worlds. There is
 no second job runner.
@@ -30,8 +30,9 @@ under it, e8b323, is the L7 refine made through this control during testing.)
 6. When it is done, an L8 world opens on its own. In the Family tree, the refined world sits under the world it came
    from, labelled "refined to level 8 from world …". In the bar at the top it is called "Refined world L8".
 
-If you reload the page while a refine runs, the job carries on on the server. To see it again, click Check the cost
-on any world. It says another refine is running and offers **Show the running refine**.
+If you reload the page while a refine runs, the job carries on on the server, and the bar picks it up again by itself
+(lane 229: `GET /api/jobs?type=refine`; the screenshot [refine-after-reload.png](refine-after-reload.png) is a fresh
+page opened 15 s into an L8 refine).
 
 ## What it costs, and when it refuses
 
@@ -89,8 +90,7 @@ job fails at once with the reason and does not run.
 
 - **Cancel waits for the end of the stage.** Wave power is one long call: about half an L8 refine, and most of an L9
   one. Until it ends, the worker keeps its memory (inbox draft: refine cancel waits a stage).
-- **After a reload the bar is gone** until you click Show the running refine (inbox draft: refine progress after reload).
 - The memory check does not count what other running jobs (zooms, makes) will still take; it reads what is free now.
-- An L9 world cannot be opened in the viewer (PW-1209). Peoples on a refined world is PW-1265.
+- An L9 world opens in about 10-20 s and takes ~4 GB of the browser's memory (PW-1209). Peoples on a refined world is PW-1265.
 - A refine queued behind other jobs waits for a free worker like any job. With the server's default of 4 jobs at once,
   zooms and finishes still run beside it.

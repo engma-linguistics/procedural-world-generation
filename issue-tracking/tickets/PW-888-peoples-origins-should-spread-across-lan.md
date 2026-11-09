@@ -2,7 +2,7 @@
 id: PW-888
 title: Peoples' origins should spread across landmasses roughly by habitable area (species-area), not crowd onto one small continent
 type: task
-status: todo
+status: done
 parent: PW-692
 milestone: v5
 subsystem: peoples
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-887, PW-885, PW-869]
 refs: [planet/lineages/history.py]
 created: 2026-10-25
-updated: 2026-11-03
+updated: 2026-11-08
 ---
 
 ## Description
@@ -23,6 +23,7 @@ Coordinator: the species-area relationship says larger, more varied landmasses h
 - [ ] origins per landmass tracked against habitable area over 8 seeds on 2a7385 and one other world; no landmass under ~15% of the land holds most peoples
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 228 (d01c4a08) measured 34 tries on 4360a3 and af2677: no landmass under 15% held most origins; bar met. The 15.5% continent on 4360a3 sits on the line through descent, parked as PW-1559 (later, coordinator A under the 10-27 ruling). Write-up docs/review/peoples/origins-spread.md.
 - 2026-11-03: Milestones 11-03: v2 -> v5: v5 must-have: Seven Meals origins spread across continents
 - 2026-10-27: Status needs-decision -> todo. Owner 2026-10-27: each root ancestor line (reptilian, mammalian, avian, ...) starts on a different landmass (always intended). Related peoples clustering near their ancestor is fine until the civ stage (boats, ~last 20 kyr).
 - 2026-10-27: Status todo -> needs-decision. Merged partial (fun lanes 30-33): area^0.3 origins, sea-crossing founders, persistence-horizon MVP (c=1), trees retimed. Open: overland jump dispersal (lean yes) and roots on separate landmasses (lean yes); asked owner 2026-10-27.

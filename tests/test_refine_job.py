@@ -62,7 +62,7 @@ def test_refused_when_memory_or_tmp_is_short(src, monkeypatch):
     monkeypatch.setattr(api, "free_ram_gb", lambda: 12.0)
     e = api.refine_estimate({"world": src, "level": 9})  # needs ~39 GB + 8 spare
     assert not e["ok"] and any("memory" in r for r in e["refuse"])
-    assert any("minutes" in w for w in e["warn"]) and any("cannot open" in w for w in e["warn"])
+    assert any("minutes" in w for w in e["warn"]) and any("opens slowly" in w for w in e["warn"]) and e["opens_in_viewer"]
     jobs = api.Jobs(lambda req, progress: pytest.fail("must not start"))
     body, code = post(jobs, {"world": src, "level": 9})
     assert code == 409 and "memory" in body["error"] and not jobs.jobs
@@ -90,8 +90,12 @@ def test_one_refine_at_a_time(src, roomy):
     assert code == 409 and a in body["error"]
     est, _ = server.refine_estimate(jobs, f"world={src}&level=6")
     assert est["busy"] == a and not est["ok"]
+    act = server.active_job(jobs, "type=refine")["active"]  # (a page opened now follows it)
+    assert act["id"] == a and act["request"]["world"] == src and act["status"] == "running"
+    assert server.active_job(jobs, "type=zoom") == {"active": None}
     gate.set()
     assert jobs.wait(a)["status"] == "done"
+    assert server.active_job(jobs, "type=refine") == {"active": None}
     assert post(jobs, {"world": src, "level": 6})[1] == 200  # free again
 
 

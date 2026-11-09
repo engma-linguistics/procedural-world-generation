@@ -2,7 +2,7 @@
 id: PW-1535
 title: "Refine from the viewer: the progress bar is gone after a page reload; show the running refine on its own"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v5
 subsystem: viewer
@@ -31,4 +31,5 @@ Fix: a `GET /api/jobs?type=refine` (or the active refine's id in `/api/planets`)
 - [ ] after a reload during a refine, the navigator shows its progress and ETA without a click
 
 ## Updates
+- 2026-11-08: Status todo -> done. Fixed in lane 229 (64035024): the navigator follows the running refine after a reload.
 - 2026-11-08: Created from inbox draft draft-refine-progress-after-reload.md (found by lane 227).

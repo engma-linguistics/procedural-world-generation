@@ -8,6 +8,7 @@ fetch + JSON parse, the JS heap), then in the page: prepareGrid, buildTopology, 
 rebuild, a layer switch end to end (paint + the next drawn frame), hovering, and frames drawn (a pixel read back after
 each, so the GPU's time counts) with the camera turning, from the default distance and close in (1.3 radii).
 --profile: the CDP sampling profiler over the load and over the probe (top self time).
+--fingerprint: hashes of the mesh in each view; --layerhash: hashes of every layer's numbers (compare two versions).
 Needs `planet serve --port PORT --no-open` already running (never the owner's port). The page's module scope is
 reached as in tools/viewer_perf.py: a hook injected into the served globe/main.js.
 """
@@ -52,6 +53,18 @@ async ([layers, equirect]) => {
   await view('globe 3D relief ' + layers[0], async () => { document.getElementById('relief3d').click(); });
   await view('globe 3D relief ' + layers[1], async () => { state.layer = layers[1]; await P.refresh(P.paint); });
   await view('map 3D relief ' + layers[1], async () => { document.querySelector('#modeSeg [data-v="map"]').click(); });
+  return out;
+}
+"""
+
+# --layerhash: a hash of every layer of the open world as the viewer holds it (as float64; a [cells, 3] layer flat),
+# to check that a change to how worlds are stored or read gives the viewer the same numbers (PW-1209)
+LAYERHASH = r"""
+async () => {
+  const L = window.__pv.V.layers, out = {};
+  const h = (a) => { const f = Float64Array.from(a.flat ? a.flat() : a), u = new Uint8Array(f.buffer); let x = 2166136261 >>> 0;
+    for (let i = 0; i < u.length; i++) { x ^= u[i]; x = Math.imul(x, 16777619) >>> 0; } return x.toString(16) + ':' + f.length; };
+  for (const k of Object.keys(L).sort()) out[k] = h(L[k]);
   return out;
 }
 """
@@ -162,6 +175,19 @@ def top_self(profile, k=22):
         print(f"  {ms:9.0f}  {key}")
 
 
+def renderer_rss(browser) -> int:
+    """The renderer processes' resident memory: unlike the JS heap, it counts typed arrays' buffers."""
+    info = browser.new_browser_cdp_session().send("SystemInfo.getProcessInfo")["processInfo"]
+    rss = 0
+    for p in info:
+        if p["type"] == "renderer":
+            try:
+                rss += int(next(x for x in open(f"/proc/{p['id']}/status") if x.startswith("VmRSS")).split()[1]) * 1024
+            except (OSError, StopIteration):
+                pass
+    return rss
+
+
 def main():
     port, world = sys.argv[1], sys.argv[2]
     layer = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--layer=")), "biome")
@@ -208,9 +234,17 @@ def main():
         load = time.time() - t0
         marks = pg.evaluate("[...(planetViewer.diag.load || []), ['seen drawn', Math.round(performance.now())]]")
         print("load stages (ms since the page opened):", ", ".join(f"{k} {v}" for k, v in marks))
-        tot = {u.rsplit("/", 1)[-1]: enc[rid] for rid, u in reqs.items() if rid in enc and ("/worlds/" in u or "/grids/" in u)}
+        tot, nl = {}, 0  # (a world's layer files, PW-1209, as one entry)
+        for rid, u in reqs.items():
+            if rid in enc and ("/worlds/" in u or "/grids/" in u):
+                k = "layer files" if "/worlds/layers/" in u else u.rsplit("/", 1)[-1]
+                nl += k == "layer files"
+                tot[k] = tot.get(k, 0) + enc[rid]
         print(f"load to first globe drawn: {load:.2f} s; data on the wire {sum(tot.values()) / 1e6:.1f} MB:",
-              ", ".join(f"{k} {v / 1e6:.1f} MB" for k, v in tot.items()))
+              ", ".join(f"{k}{f' ({nl})' if k == 'layer files' else ''} {v / 1e6:.1f} MB" for k, v in tot.items()))
+        pg.evaluate("gc()")
+        print(f"after load: JS heap {pg.evaluate('performance.memory.usedJSHeapSize') / 1e6:.0f} MB (limit {pg.evaluate('performance.memory.jsHeapSizeLimit') / 1e6:.0f}); renderer memory "
+              f"(RSS, typed arrays included) {renderer_rss(b) / 1e6:.0f} MB")
         if prof:
             print("load, top self time (ms):")
             top_self(cdp.send("Profiler.stop")["profile"])
@@ -222,7 +256,8 @@ def main():
         if prof:
             cdp.send("Profiler.start")
         layers = [layer, "elevation", "temperature"]
-        res = pg.evaluate(FINGERPRINT if "--fingerprint" in sys.argv else HEAP if "--heap" in sys.argv else PROBE, [layers, "--equirect" in sys.argv])
+        res = (pg.evaluate(LAYERHASH) if "--layerhash" in sys.argv else
+               pg.evaluate(FINGERPRINT if "--fingerprint" in sys.argv else HEAP if "--heap" in sys.argv else PROBE, [layers, "--equirect" in sys.argv]))
         snap = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--snapdir=")), None)  # (the canvases as PNGs)
         for k, v in (res.items() if isinstance(res, dict) else []):
             png = v.pop("png", None) if isinstance(v, dict) else None

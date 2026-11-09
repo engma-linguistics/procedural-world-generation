@@ -2,7 +2,7 @@
 id: PW-1209
 title: "Binary world layers: an L8 world's 448 MB JSON is 15% below Chrome's string limit, and L9 cannot be opened at all"
 type: task
-status: todo
+status: done
 parent: PW-1198
 milestone: v5
 subsystem: store
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-490, PW-1198]
 refs: [planet/world.py, planet/server.py, planet/names.py, viewer/globe/load.js, viewer/globe/select.js, docs/review/viewer-l8/diagnosis.md]
 created: 2026-10-31
-updated: 2026-11-03
+updated: 2026-11-08
 ---
 
 ## Description
@@ -41,6 +41,7 @@ world_landmasses` (scans for the summary line), the viewer's `setWorld`, and any
 - [ ] an L9-sized world (synthetic is fine) opens
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 229 merged (64035024): worlds as a JSON header + worlds/layers/<id>/<name>.bin (procgen-planet/3); all 50 stored worlds converted 11-08 (about half the bytes); converter fixed for null cells (506694).
 - 2026-11-03: Milestones 11-03: later -> v5: v5 must-have: binary world layers, so an L9 refined world opens in the viewer at all
 - 2026-11-03: Triage 11-03: v2 -> later: L8/L9 whole-world work, post-v2 (see PW-1198 space-to-ground globe)
 - 2026-10-31: Created from inbox draft draft-binary-world-layers.md (found by lane91-viewer-l8).

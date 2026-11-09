@@ -1140,7 +1140,8 @@ async function drawBrief() {
     <button id="brShow" class="primary">Show the brief</button><button id="brCopy">Copy text</button><button id="brJson">Download JSON</button>
     <span class="muted">run ${esc(result.id)}</span></div>
     <pre id="brText" style="white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace;max-width:1000px">${esc(briefUI.md || 'Press "Show the brief".')}</pre>
-    <div id="brTrade" style="margin-top:14px;max-width:1000px"></div>`;
+    <div id="brTrade" style="margin-top:14px;max-width:1000px"></div>
+    <div id="brTongues" style="margin-top:14px;max-width:1000px"></div>`;
   drawTradeGoods();
   $('brPeople').onchange = (e) => { briefUI.people = e.target.value; briefUI.culture = ''; briefUI.md = ''; drawBrief(); };
   $('brCulture').onchange = (e) => { briefUI.culture = e.target.value; loadBrief(); };
@@ -1167,7 +1168,40 @@ async function loadBrief() {
 }
 // ---- Trade: goods (GET /api/trade: planet/lineages/trade.py, the goods ledger, PW-1502) -----------------------------------------------
 const tradeUI = { key: '', doc: null, busy: false };
+// ---- Speaks also (GET /api/tongues&culture=: planet/lineages/tongues.py, PW-1526): the other tongues a culture's people speak, at the era shown
+const tongueUI = { key: '', doc: null };
+const TONGUE_KIND = { neighbour: "a neighbour's tongue", ruler: "its ruler's tongue", host: "its host town's tongue", 'lingua franca': 'trade language', pidgin: 'trade pidgin', liturgy: 'sacred liturgy' };
+const TONGUE_WHY = { neighbour: 'spoken by its people living on the border with this people', ruler: 'a ruling people: townsfolk first, more of the country the longer the rule lasts', host: "its merchants' quarter in a town of this people speaks it", 'lingua franca': 'a trade language of a long-haul network its towns sit on', pidgin: 'a mixed trade speech on a long-haul network, built mostly on this people\'s words', liturgy: "the frozen sacred register of its faith's canon, known to the clergy" };
+async function drawTongues() {
+  const el = $('brTongues');
+  if (!el || !result) return;
+  const head = '<h3 style="margin:0 0 4px">Speaks also</h3>';
+  if (!briefUI.culture) { el.innerHTML = ''; return; }
+  const key = `${result.id}/${briefUI.culture}`;
+  if (tongueUI.key !== key) {
+    tongueUI.key = key; tongueUI.doc = null;
+    el.innerHTML = `${head}<p class="muted" style="margin:0">Working out the tongues (a minute or two the first time for a run)…</p>`;
+    try {
+      const r = await fetch(`../api/tongues?run=${encodeURIComponent(result.id)}&culture=${encodeURIComponent(briefUI.culture)}`), j = await r.json();
+      if (tongueUI.key !== key) return;
+      if (!r.ok) throw new Error(j.error || r.status);
+      tongueUI.doc = j;
+      drawTongues();  // (the brief may have been drawn afresh while this waited: draw into its new box)
+      return;
+    } catch (err) { if (tongueUI.key === key && $('brTongues')) $('brTongues').innerHTML = `${head}<p class="muted" style="margin:0">No tongues ledger: ${esc(err.message)}</p>`; return; }
+  }
+  const d = tongueUI.doc;
+  if (!d) return;
+  const era = Math.max(0, +briefUI.era || 0);
+  if (!d.rows.length) { el.innerHTML = `${head}<p class="muted" style="margin:0">No other tongues listed for this people in any era of the land-use window (the last ~12,500 years).</p>`; return; }
+  const row = d.rows.reduce((a, b) => (Math.abs(b.ago_kyr - era) < Math.abs(a.ago_kyr - era) ? b : a));
+  const link = (x) => (x.lect ? ` <a href="languages.html?run=${encodeURIComponent(result.id)}#grammar/sel=${encodeURIComponent(x.lect)}" title="Open ${esc(x.lect)} in the Languages page">${esc(x.language || x.lect)}</a>` : '');
+  const bar = (v) => `<span style="display:inline-block;width:${Math.round(80 * Math.min(1, v))}px;height:8px;background:#4f7fae;border-radius:2px;vertical-align:middle"></span>`;
+  el.innerHTML = `${head}<p class="muted" style="margin:0 0 6px;font-size:12px">Other tongues some of this people speak, ${esc(ago(row.ago_kyr))}. Share: of this people's whole population.</p>
+    <table class="t" style="min-width:420px"><tr><th>Tongue</th><th>kind</th><th class="n">share</th><th></th></tr>${row.rows.map((x) => `<tr><td>${esc(x.name)}${link(x)}</td><td title="${esc(TONGUE_WHY[x.kind] || '')}${x.via ? ' (' + esc(x.via) + ')' : ''}">${esc(TONGUE_KIND[x.kind] || x.kind)}</td><td class="n">${x.share < 0.01 ? '<1' : Math.round(100 * x.share)}%</td><td>${bar(x.share)}</td></tr>`).join('')}</table>`;
+}
 async function drawTradeGoods() {
+  drawTongues();
   const el = $('brTrade');
   if (!el || !result) return;
   if (!briefUI.culture) { el.innerHTML = '<h3 style="margin:0 0 4px">Trade: goods</h3><p class="muted" style="margin:0">Pick one culture above to see what its land gives beyond its own need and what it lacks (the goods ledger, the last ~12,500 years).</p>'; return; }

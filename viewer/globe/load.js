@@ -92,26 +92,63 @@ function legendFields(leg) {
 }
 
 // does the run (any of its layers, loaded or not) or the world have this layer?
-export function hasLayer(k) { return S.V.kind === 'run' ? !!S.V.run.layers[k] : !!S.V.layers[k]; }
+export function hasLayer(k) { return S.V.kind === 'run' ? !!S.V.run.layers[k] : Object.hasOwn(S.V.layers, k); }
+
+// ------------------------------------------------------------ world layers (PW-1209)
+// A world's JSON is a small header; each layer is a file of little-endian numbers, worlds/layers/<id>/<name>.bin,
+// listed in its "layers" with dtype and shape. "kind" int or bool: the numbers as they are; "decimals": d, the
+// value is stored / 10^d (the same double the old JSON text parsed to); float32/float64: as they are. A layer of
+// shape [cells, 3] (_plate_velocity) is flat, cell i at 3i..3i+2. All files are fetched at once (the browser
+// keeps the stored, small types); a layer is decoded the first time something reads it.
+const WORLD_BASE = () => new URL('../worlds/', location.href);
+function fetchWorldLayers(w) {
+  const what = `world "${w.id || w.name}"`;
+  return Promise.all(Object.entries(w.layers).map(async ([k, s]) => {
+    let r;
+    try { r = await fetch(new URL(s.file, WORLD_BASE()), { cache: 'no-cache' }); } catch { throw new LoadError(`The viewer's server did not answer while opening ${what}. Is planet serve still running?`); }
+    if (!r.ok) throw new LoadError(`The layer "${k}" of ${what} could not be fetched (HTTP ${r.status}): the world is damaged or unfinished.`);
+    return [k, await r.arrayBuffer()];
+  }));
+}
+function decodeWorldLayer(s, buf) {
+  const a = new TYPED[s.dtype](buf);
+  if (!s.decimals) return a;
+  const out = new Float64Array(a.length), div = 10 ** s.decimals;
+  for (let i = 0; i < a.length; i++) out[i] = a[i] / div;
+  return out;
+}
+function worldLayers(specs, bufs) {
+  const L = {};
+  const put = (k, v) => Object.defineProperty(L, k, { value: v, writable: true, enumerable: true, configurable: true });
+  for (const [k, buf] of bufs)
+    Object.defineProperty(L, k, { enumerable: true, configurable: true, get() { const v = decodeWorldLayer(specs[k], buf); put(k, v); return v; }, set(v) { put(k, v); } });
+  for (const k of ['humidity', 'dewpoint', 'cloud', 'sunshine'])  // the year's: the mean of the two half-years
+    if (Object.hasOwn(L, k + '_jul') && Object.hasOwn(L, k + '_jan') && !Object.hasOwn(L, k))
+      Object.defineProperty(L, k, { enumerable: true, configurable: true, get() { const a = L[k + '_jul'], b = L[k + '_jan'], v = new Float64Array(a.length);
+        for (let i = 0; i < a.length; i++) v[i] = (a[i] + b[i]) / 2; put(k, v); return v; }, set(v) { put(k, v); } });
+  return L;
+}
 
 // A world file names its grid file ("../grids/L6.json", relative to worlds/),
 // shared with the runs at that level.
 export async function setWorld(w, tok = beginLoad()) {
   if (stale(tok)) return;
   stop(); S.picked = null; renderZoomBox();
-  const { G, pg } = typeof w.grid === 'string' ? await gridOf(new URL(w.grid, new URL('../worlds/', location.href)), `the grid of world ${w.id || w.name}`)
-    : { G: w.grid, pg: prepareGrid(w.grid) };
+  const files = fetchWorldLayers(w);  // (meanwhile the grid)
+  files.catch(() => {});  // (awaited below; a stale load drops it)
+  const { G, pg } = await gridOf(new URL(w.grid, WORLD_BASE()), `the grid of world ${w.id || w.name}`);
   if (stale(tok)) return;
   DIAG.mark('grid: parsed and prepared');
+  const layers = worldLayers(w.layers, await files);
+  if (stale(tok)) return;
+  DIAG.mark('world layers fetched');
   // (the owner's names for the landmasses, planet name: they replace the summary's, so its lines and the labels agree)
   const nm = w.id ? await fetch(`/api/names?world=${w.id}`).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;  // (the server's: the owner's names, else the generated; PW-886)
   if (stale(tok)) return;
   DIAG.mark('names');
   (w.summary?.landmasses || []).forEach((m, i) => { const o = nm?.names?.[i]?.name; if (o) m.name = o; });
   S.lmEdit = -1;
-  for (const k of ['humidity', 'dewpoint', 'cloud', 'sunshine'])  // the year's: the mean of the two half-years
-    if (w.layers[k + '_jul'] && !w.layers[k]) w.layers[k] = w.layers[k + '_jul'].map((v, i) => (v + w.layers[k + '_jan'][i]) / 2);
-  S.V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, nc: pg.nc, cStart: pg.cStart, cList: pg.cList, U: pg.U, UC: pg.UC, layers: w.layers,
+  S.V = { kind: 'world', name: w.name, id: w.id, grid: G, n: pg.n, nc: pg.nc, cStart: pg.cStart, cList: pg.cList, U: pg.U, UC: pg.UC, layers,
         meta: w.meta, summary: w.summary, pentagons: G.pentagons || w.meta.pentagons, level: w.meta.level,
         hotspots: w.meta.hotspots, volcanoes: worldVolcanoes(w.meta), volcTable: volcTable(w.meta), ...legendFields(w.legend) };
   landView(S.V.layers);
@@ -131,7 +168,7 @@ export async function setWorld(w, tok = beginLoad()) {
 // ("log2p1": 2^value - 1; "nbr_slot": the stored number is the position of the
 // target cell in the cell's neighbour list, 255 = none -> -1).
 // Only the layers the picture needs are downloaded (layersNeeded), when needed.
-const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, uint32: Uint32Array, uint64: BigUint64Array, int8: Int8Array, float32: Float32Array };
+const TYPED = { int16: Int16Array, uint8: Uint8Array, uint16: Uint16Array, uint32: Uint32Array, uint64: BigUint64Array, int8: Int8Array, int32: Int32Array, float32: Float32Array, float64: Float64Array };
 // overlay -> the run layers it draws from (a colour layer's: layerNeeds, layers.js)
 const OVERLAY_NEEDS = { rivers: ['flow', 'downstream'], winds: ['wind_e', 'wind_n', 'wind_jul_e', 'wind_jul_n', 'wind_jan_e', 'wind_jan_n'],
                         currents: ['current_e', 'current_n'],

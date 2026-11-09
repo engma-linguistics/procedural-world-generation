@@ -58,3 +58,27 @@ def test_a_fine_zoom_keeps_its_parents_deposits_inside_it():
     dep = [{"key": "coal", "form": "seam", "px": [10.0, 10.0]}, {"key": "coal", "form": "seam", "px": [1.5, 1.5]}]
     got = ZR._inherit(parent, {"deposits": dep}, fine, np.zeros((40, 40), bool))
     assert len(got) == 1 and np.allclose(got[0]["px"], [20.0, 20.0], atol=0.05)  # (the centre; the corner one is outside)
+
+
+def test_world_layers_are_binary_files_that_read_back_as_the_json_did(tiny):
+    """PW-1209: a world's layers are one binary file each, and load gives back exactly what the JSON text gave
+    (int64 for whole numbers, float64 for the rest), as do the server's few-column read and the delete."""
+    from planet.server import world_columns
+    _, run = tiny
+    w = T.world_from_frame(S.find_run(run), 20.0)
+    path = W.save(w, "tiny binary")
+    head = json.loads(path.read_text())
+    assert head["format"] == "procgen-planet/3" and path.stat().st_size < 400_000  # (a header, no layer arrays)
+    back = W.load(path)["layers"]
+    assert list(back) == list(w["layers"])
+    for k, v in w["layers"].items():
+        old = np.array(json.loads(json.dumps(np.asarray(v).tolist())))  # (what world.load gave from the JSON text)
+        assert back[k].dtype == old.dtype and back[k].shape == old.shape, k
+        assert np.array_equal(back[k], old), k
+        assert (S.worlds_dir() / head["layers"][k]["file"]).is_file()
+    cols = world_columns(path, ("temperature", "biome"))
+    assert np.array_equal(cols["biome"], np.asarray(w["layers"]["biome"], float))
+    some = S.world_layers(path.stem, ("flow", "no_such_layer"))  # (the lineages' few-layer read)
+    assert list(some) == ["flow"] and np.array_equal(some["flow"], back["flow"])
+    d = S.world_layers_dir(path.stem)
+    assert d.is_dir() and S.delete("world", path.stem) and not d.exists()

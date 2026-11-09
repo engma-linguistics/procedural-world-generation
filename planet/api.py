@@ -522,7 +522,8 @@ def enrich_job(req: dict, progress=lambda f, msg: None) -> dict:
 
 # ---- refine a finished world onto a finer grid from the viewer (PW-1438; planet/refine.py)
 REFINE_MAX_LEVEL = 9
-VIEWER_MAX_LEVEL = 8  # the viewer reads a world as one JSON text: an L9 world's is too long for the browser (PW-1209)
+VIEWER_MAX_LEVEL = 9  # (an L9 world opens since its layers are binary files, PW-1209; slowly: VIEWER_SLOW_LEVEL)
+VIEWER_SLOW_LEVEL = 9  # opening takes 10-20 s and about 4 GB of the browser's memory (docs/review/viewer/binary-layers.md)
 REFINE_RAM_SPARE_GB = 8.0  # memory left free beside the refine's expected peak
 REFINE_TMP_MIN_GB = 40.0  # free /tmp kept (on the Threadripper /tmp is RAM: below this the machine runs short)
 REFINE_LONG_MIN = 20.0  # longer than this: say "run it overnight"
@@ -606,6 +607,8 @@ def refine_estimate(req: dict, busy: str | None = None) -> dict:
     if not opens:
         warn.append(f"the viewer cannot open an L{r['level']} world yet (too big for the browser): it is saved, "
                     "for peoples runs and later use")
+    elif r["level"] >= VIEWER_SLOW_LEVEL:
+        warn.append(f"an L{r['level']} world opens slowly in the viewer: 10-20 s, and about 4 GB of the browser's memory")
     have = refined_versions(r["world"]).get(r["level"])
     if have:
         warn.append(f"this world was already refined to L{r['level']}: world {have}")
