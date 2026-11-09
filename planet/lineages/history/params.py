@@ -204,6 +204,22 @@ LAND_Q, H_MAX = 0.3, 0.01  # lane 82's judgements: war-torn country holds up to 
 WAR_Q = 1.0
 WAR_N0 = 10.0  # people per km2 (lane 82: the human farmers' number)
 WAR_EXT = 0.5  # the frontier's weight against crowding (lane 82: foragers' killing is mostly homicide, not war; Fry and Soderberg 2013)
+# The rest of PW-1172's war (lane 259; design.md (b)). h above is x meta.war x E(lev) x A: E the era pair meta.war_early / war_late
+# blended by tech level (counter._war_era), A a people's own warlikeness: its war_x x AGGRESSIVE_X for the `aggressive` trait
+AGGRESSIVE_X = 2.0  # lane 82's design (judgement): an aggressive culture's war hazard doubled
+# Times of troubles (counter._troubles): Turchin 2009 (read by lane 82, design.md (b)) finds agrarian cycles of ~200-300 years and
+# instability events 0.6 a decade in growth phases against 3.8 in decline. The century step cannot resolve the cycle, so a people whose
+# crowded core would fight at TROUBLE_H or more without a state has TROUBLE_PER_KYR one-step pulses a kyr, its hazard x TROUBLE_X then.
+# All three are lane 82's judgements: 2 a kyr is about one troubled century in five (a decline phase is part of each 200-300 yr cycle);
+# x3 sits under Turchin's 3.8 / 0.6 ~ 6x swing in events, since land lost to war already saturates (LAND_Q at H_MAX)
+TROUBLE_PER_KYR, TROUBLE_X, TROUBLE_H = 2.0, 3.0, 0.5 * H_MAX
+TROUBLE_LOG_KYR = 1.0  # (one logged 'troubles' event per people per kyr at most; every pulse still counts in troubles_n)
+# Refugees (PW-1172, design.md (b) "Displacement": "crowded losers jump (_jump) as refugees"): the share of its people war drives off
+# this step (where its war-torn land now holds fewer than live there: a flare, troubles or a people growing into crowding; not a loss
+# it has settled under) adds to its push to found far country (dispersal._jump_push), x REFUGEE_Q. One for one is a judgement: a
+# share of people war drives out pushes as hard as the same share of land filled. Jumps only: fed into the spread's crowding as well,
+# the push moved a small people's numbers by ~40% in a unit test's fake world (test_demography_defaults...). No winner's bonus (it would reward the biggest people)
+REFUGEE_Q = 0.0
 POLITIES_LIVE = False  # PW-1434 (lane 183): polities in the history, first cut (history.polity_live; round7.md). Off: the stand-ins of history.rule
 STATE_Q = 3.0  # G = 1 / (1 + STATE_Q x tech level x farm share): states pacify (Gomez et al. 2016; Turchin 2009's -alpha S); judgement
 # violent deaths a year by way of life at reference density with a full hostile frontier (lane 82: medians of OWID's compilation of

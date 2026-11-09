@@ -431,6 +431,7 @@ class Lineage:
     survival: str = "normal"  # ...normal | harsh (life_history.HARSH: few reach adulthood, more adult deaths)
     mortality: tuple | None = None  # ...annual mortality per stage (infancy, childhood, adulthood, elder), overriding the schedules
     raids: bool = False  # lane 97 (D25): a raider people (default: survival 'harsh'), whose canon losses rise on hostile borders and with in-fighting (history.counter)
+    war_x: float = 1.0  # lane 259 (PW-1172): this people's own warlikeness, x its war hazard (war-torn land, troubles); the `aggressive` trait doubles it on top
     founders: float | None = None  # arrival (PW-1150): how many people come through, in all its waves (None: today's founding patch)
     waves: int = 1  # arrival: how many waves they come in (history.params.WAVE_KYR apart, or as its plane's thinnings open)
     portal_n: int | None = None  # arrival: how many portals it comes through (None: meta.portals)
@@ -556,6 +557,9 @@ LAND_PULL = 0.5  # default: habitat x(1 - pull + pull G), G the best of a line's
 BRAKE_X = (0.0, 0.5, 1.0, 2.0, 4.0)  # the choices of meta.raiders and meta.war (lane 97, D25; history.counter): how hard the raiders are
 # braked (raid losses, culling wars) and how much land war takes: war-torn land from crowded, stateless peoples and every people's
 # in-fighting where it has filled its land and has nowhere to split off to (lane 101, D31); default 1, 0 off
+WAR_X = (0.0, 0.5, 1.0, 2.0, 4.0)  # the choices of meta.war_early / meta.war_late (lane 259, PW-1172; design.md (b)): how warlike the peoples
+# are in the early eras (tech level 0: the stone age) and the late (level 1: renaissance on), blended by tech level between, x meta.war.
+# They scale war-torn land and its times of troubles; meta.war stays the master switch (in-fighting, settlements' sacks and raids)
 SURGE_X = (0.0, 0.5, 1.0, 2.0)  # the choices of meta.surge_early / meta.surge_late (owner 10-30, lane 73): how strongly a people on the upswing
 # contests land others hold, x history.params.SURGE_Q (0: no momentum edge); early before the farming onset, late at the present, blended between. Default 1, 1
 
@@ -575,6 +579,8 @@ class Tree:
     surge_late: float = 1.0  # ... and at the present
     raiders: float = 1.0  # meta.raiders (BRAKE_X, lane 97): the raiders' brakes
     war: float = 1.0  # meta.war (BRAKE_X, lane 97): war-torn land and every people's in-fighting (lane 101)
+    war_early: float = 1.0  # meta.war_early (WAR_X, lane 259, PW-1172): war-torn land's dial at tech level 0, x meta.war
+    war_late: float = 1.0  # ... at tech level 1 (blended by tech level between, as press_early / press_late)
     era: str = ERA_DEFAULT  # meta.era: the target era of the present (placeholder for the technology tree, PW-690)
     animals: list[str] | None = None  # meta.animals: the domesticable animals (animal_defs.IDS) of the world; None: every real one; [] none
     animals_force: list[str] = field(default_factory=list)  # meta.animals_force: fantasy animals whose rare taming is certain (tests)
@@ -814,6 +820,10 @@ def _life(r: dict, base, origin: str, lid: str) -> dict:
         out["mortality"] = base.mortality if inh else None
     rd = r.get("raids")
     out["raids"] = bool(rd) if rd not in (None, "") else out["survival"] == "harsh"  # (a raider is a people living by its losses, whatever its parent)
+    wx = r.get("war_x")
+    out["war_x"] = float(wx) if wx not in (None, "") else 1.0  # (a culture's own: not inherited)
+    if out["war_x"] < 0:
+        raise ValueError(f"{lid}: war_x must be >= 0")
     fo = r.get("founders")
     out["founders"] = float(fo) if fo not in (None, "") else None
     out["waves"] = int(r.get("waves", 1) or 1)
@@ -1135,7 +1145,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         t.crops = [x for x in (CD.REAL_IDS if t.crops is None else t.crops) if not CD.BY_ID[x].fantasy]
         t.crops_force = [x for x in t.crops_force if not CD.BY_ID[x].fantasy]
     t.land_pull = float(meta.get("land_pull", LAND_PULL))
-    for k in ("surge_early", "surge_late", "raiders", "war"):
+    for k in ("surge_early", "surge_late", "raiders", "war", "war_early", "war_late"):
         setattr(t, k, float(meta.get(k, 1.0)))
         if getattr(t, k) < 0:
             raise ValueError(f"meta.{k} must be >= 0")
@@ -1254,6 +1264,8 @@ def to_raw(t: Tree) -> dict:
             r["mortality"] = list(l.mortality)
         if l.raids != (l.survival == "harsh"):
             r["raids"] = l.raids
+        if l.war_x != 1.0:
+            r["war_x"] = l.war_x
         if l.origin == "arrival":
             if l.founders is not None:
                 r["founders"] = l.founders
@@ -1266,7 +1278,7 @@ def to_raw(t: Tree) -> dict:
         out.append(r)
     return {"meta": {"name": t.name, "seed": t.seed, "mixing_start": f"{t.mixing_start_kyr:g} kyr", "land_pull": t.land_pull,
                      "surge_early": t.surge_early, "surge_late": t.surge_late, "raiders": t.raiders, "war": t.war,
-                     "era": t.era, "gods_mode": t.gods_mode, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
+                     "war_early": t.war_early, "war_late": t.war_late, "era": t.era, "gods_mode": t.gods_mode, "viable_pop": t.viable_pop, "dragon_km2": t.dragon_km2, "giant_km2": t.giant_km2, "forager_km2": t.forager_km2,
                      "press_early": t.press_early, "press_late": t.press_late, "rivals": t.rivals, "dragon_abundance": t.dragon_abundance, "game_share": t.game_share, "overkill": t.overkill, "megafauna_natural": t.megafauna_natural, "dragon_ages": t.dragon_ages, "dragon_generation": t.dragon_generation,
                      **({"tier_kyr": [f"{x:g} kyr" for x in t.tier_kyr]} if t.tier_kyr != TIER_KYR else {}), "mode": t.mode, "portal_mode": t.portal_mode,
                      "portals": t.portals, "portal_sites": t.portal_sites, "growth_rates": t.growth_rates, "draw_ranges": t.draw_ranges, "wave_kyr": t.wave_kyr,

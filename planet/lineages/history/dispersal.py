@@ -15,6 +15,7 @@ from .gridops import _csr_gather
 from . import megafauna as MG
 from .habitat import hold_mask
 from .pressure import crowding
+from . import params as PM
 from .params import ARRIVAL_ROOM, LAST_LAND_REACH, JUMP_HEMMED, JUMP_KM, JUMP_MAX, JUMP_RATE, JUMP_SHAPE, JUMP_SWIM_KM, FOUNDER_KM, CONVERGE, PERSIST_EXP, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P
 
 
@@ -222,7 +223,12 @@ class DispersalMixin:
             return 0.0
         p = self.p[k][held]
         full = float(np.clip(p / np.maximum(np.maximum(room[held], p), EST), 0.0, 1.0).mean())
-        return max(crowding(K, room, held), full)
+        return min(1.0, max(crowding(K, room, held), full) + self._refugees(k))  # (+ refugees from war-torn land, PW-1172)
+
+    def _refugees(self, k) -> float:
+        """The push of line k's refugees: the share of its land war took this step (counter._brake) x REFUGEE_Q (PW-1172)."""
+        r = getattr(self, "_refugee", None)
+        return float(PM.REFUGEE_Q * r[k]) if r is not None and PM.REFUGEE_Q > 0 else 0.0
 
     def _jump(self, l, k, K, room, step, env, tags):
         """PW-920: a crowded people hemmed in at home (JUMP_HEMMED) founds on free suitable land farther off now and then: a Poisson
@@ -282,6 +288,10 @@ class DispersalMixin:
                     break
             self.p[k][blob] = np.maximum(self.p[k][blob], np.minimum(np.maximum(room[blob], EST), np.clip(K[blob], 0.3, 1)))
             self.jumps_n[l.id] = self.jumps_n.get(l.id, 0) + 1
+            if 0 < self._refugees(k) >= 0.5 * push and not l.marine:  # (founders who are mostly refugees from war-torn land, PW-1172)
+                self.refugee_n[l.id] = self.refugee_n.get(l.id, 0) + 1
+                self._event_at(step.ago, "refugees", l, f"refugees from the {l.label()}'s war-torn country found new land "
+                                                        f"({100 * self._refugees(k):.0f}% of their land was lost to war)", c)
             if not l.marine:
                 self.cross.note(l.id, blob, step.ago, "jump", self.events, l.label())
             held = self.p[k] >= EST

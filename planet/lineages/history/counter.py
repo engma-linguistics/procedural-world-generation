@@ -61,6 +61,12 @@ class CounterMixin:
         self._cull_d = {}  # (line index -> depletion field of an explicit (slow) cull sawtooth)
         self._cull_log = {}  # (line index -> kyr ago of its last logged cull)
         self.lost = {}  # (line id -> {brake: share of K held off, people-weighted over its land}, at its last step)
+        # (each people's own warlikeness A, PW-1172: its war_x, x AGGRESSIVE_X for the `aggressive` trait)
+        self._war_a = np.array([float(getattr(l, "war_x", 1.0)) * (PM.AGGRESSIVE_X if "aggressive" in l.traits else 1.0) for l in L])
+        self._refugee = np.zeros(len(L))  # (the share of its land war took at its last step: refugees add it to its crowding)
+        self.troubles_n = {}  # (line id -> its steps in times of troubles)
+        self._trouble_log = {}  # (line index -> kyr ago of its last logged troubles)
+        self.refugee_n = {}  # (line id -> its jumps driven mostly by refugees)
         self._kept_note = {}
 
     def _brakes_on(self, step) -> bool:
@@ -81,19 +87,27 @@ class CounterMixin:
         kept = np.ones(self.grid.n)
         lost = {}
         F = None
-        wx = self.tree.war * PM.WAR_Q
-        if wx > 0:
+        self._refugee[k] = 0.0
+        if self.tree.war > 0:
+            wx = self.tree.war * PM.WAR_Q * self._war_era(step) * self._war_a[k]  # (meta.war x the era's dial x the people's own, PW-1172)
             era = self._era[k]  # (a farming or herding way before its people farms fights as foragers do; no way: its era's row)
             hw = PM.H_ERA["forager"] if era == "forager" and l.way not in ("fisher_forager", "sea_nomad") else \
                 PM.H_WAY.get(l.way, PM.H_ERA.get(era, 0.0)) if l.way else PM.H_ERA.get(era, 0.0)
-            if hw > 0:
+            if hw > 0 and wx > 0:
                 F = self.rule.frontier(k)
                 N = np.asarray(self.dens_at(k), float) * self.p[k]  # (people per km2 on each cell)
                 G = self.rule.pacification(k, step)  # (a state's pacification: the stand-in, a farming people with the tech forms states)
-                h = wx * hw * ((N / PM.WAR_N0) ** 2 * G + PM.WAR_EXT * F)
+                crowd2 = (N / PM.WAR_N0) ** 2
+                h = wx * hw * (crowd2 * G + PM.WAR_EXT * F)
+                h = h * self._troubles(l, k, wx * hw * (crowd2 + PM.WAR_EXT * F), held, N, step)
                 kw = 1.0 - PM.LAND_Q * np.minimum(1.0, h / PM.H_MAX)
                 kept *= kw
                 lost["war"] = kw
+                # (refugees, PW-1172: the share of its people war drives off this step, where its war-torn land now holds fewer than
+                # live there, adds to its crowding: a people whose war flares (troubles, or crowding as it grows) sends people out; a
+                # standing loss it has already settled under does not)
+                pk = self.p[k] * held
+                self._refugee[k] = float(np.maximum(0.0, pk - K * kw).sum() / max(float(pk.sum()), 1e-12))
             fx = self.tree.war * PM.FEUD_CUT * self.rule.circumscription(k)
             if fx > 0:  # (in-fighting, every people: lane 101, owner D31 "humans ought also be infighting")
                 kf = 1.0 - np.minimum(1.0, fx * self._fill(k, K))
@@ -115,6 +129,7 @@ class CounterMixin:
                 kept *= kc
                 lost["cull"] = kc
         if not lost:
+            self.lost.pop(l.id, None)  # (nothing held off this step: no stale shares in the output)
             return K
         kept = np.maximum(kept, PM.COUNTER_FLOOR)
         Kb = K * kept
@@ -126,6 +141,37 @@ class CounterMixin:
             self.lost[l.id] = {b: round(float(((1.0 - np.maximum(v, PM.COUNTER_FLOOR)) * w).sum() / ws), 4) for b, v in lost.items()}
             self.lost[l.id]["all"] = round(float(((K - Kb) * held).sum() / ws), 4)
         return Kb
+
+    def _war_era(self, step) -> float:
+        """E(lev): meta.war_early at tech level 0, meta.war_late at level 1, blended linearly by the era's tech level between (as
+        megafauna.press_x blends the dragon-pressure pair; design.md (b))."""
+        from . import megafauna as MG
+        lev = min(max(MG.tech_level(self.tree.era, step.ago), 0.0), 1.0)
+        a, b = self.tree.war_early, self.tree.war_late
+        return float(a + (b - a) * lev)
+
+    def _troubles(self, l, k, h_free, held, N, step) -> float:
+        """Times of troubles (PW-1172; design.md (b), "Cycles"): Turchin 2009's ~200-300 year secular cycles are at the century step's
+        Nyquist limit, so their story is kept as seeded one-step pulses. In the recent epoch a people whose crowded core would fight at
+        TROUBLE_H or more were no state to keep the peace (h_free, the hazard with G = 1: Turchin's mechanism is a state too weak to
+        hold its people down) falls into troubles with chance 1 - exp(-TROUBLE_PER_KYR dt) a step; that step its war hazard is
+        x TROUBLE_X everywhere it lives. The multiplier on h this step (1 outside troubles)."""
+        if step.epoch != "recent" or PM.TROUBLE_PER_KYR <= 0 or not held.any() or float(h_free[held].max()) < PM.TROUBLE_H:
+            return 1.0
+        rng = self.__dict__.setdefault("_trng", {}).get(l.id)
+        if rng is None:  # (a generator of its own: the other draws of the line stay as they were)
+            import zlib
+            rng = self._trng[l.id] = np.random.default_rng((self.seed, 1172, zlib.crc32(l.id.encode())))
+        if rng.random() >= 1.0 - np.exp(-PM.TROUBLE_PER_KYR * step.dt):
+            return 1.0
+        self.troubles_n[l.id] = self.troubles_n.get(l.id, 0) + 1
+        last = self._trouble_log.get(k)
+        if last is None or last - step.ago >= PM.TROUBLE_LOG_KYR:
+            c = int(np.argmax(np.where(held, N, -1.0)))
+            self._event_at(step.ago, "troubles", l, f"times of troubles among the {l.label()}: feuds, banditry and war in their "
+                                                    f"crowded country; fields go unworked and people flee to strongholds", c)
+            self._trouble_log[k] = step.ago
+        return PM.TROUBLE_X
 
     def _fill(self, k, K) -> np.ndarray:
         """Line k's own fill of the land on each cell, 0..1: its presence at the step's start over its unbraked habitat (lane 101,

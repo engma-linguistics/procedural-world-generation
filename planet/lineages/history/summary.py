@@ -60,6 +60,14 @@ def present_summary(h: History, P: np.ndarray) -> dict:
                                   rung=max(lad, key=lambda r: lad[r][0]) if lad else None,
                                   by_landmass={str(int(m)): int(by[m]) for m in top if by[m] >= 1},
                                   faded_patches=h.faded.get(l.id, 0))
+        # (PW-1243: the shares of its habitat the brakes held off at the last step, people-weighted over its land: war, feud, raid, cull
+        # and all together; PW-1172: its steps in times of troubles and its jumps driven mostly by refugees from war-torn land)
+        if getattr(h, "lost", None) and h.lost.get(l.id):
+            out["lines"][l.id]["lost_to"] = dict(h.lost[l.id])
+        if getattr(h, "troubles_n", None) and h.troubles_n.get(l.id):
+            out["lines"][l.id]["troubles"] = int(h.troubles_n[l.id])
+        if getattr(h, "refugee_n", None) and h.refugee_n.get(l.id):
+            out["lines"][l.id]["refugee_jumps"] = int(h.refugee_n[l.id])
     natives = np.array([not l.overlay and not l.marine for l in h.lines])  # (the land peoples: the sea ones do not mix or hold land)
     Pw = h.rollup(np.where(natives[:, None], P, 0))  # (peoples as wholes: a people mixing with its own groups is one people)
     mix = (Pw >= 0.25).sum(0) >= 2

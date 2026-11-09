@@ -43,6 +43,7 @@ def editor_schema() -> dict:
                      "game_share": 1.0, "game_share_x": list(SP.GAME_SHARE_X), "overkill": 0.6, "overkill_x": list(SP.OVERKILL_X),
                      "forager_km2": SP.FORAGER_KM2, "viable_pop": SP.VIABLE_POP, "land_pull": SP.LAND_PULL,
                      "surge_early": 1.0, "surge_late": 1.0, "raiders": 1.0, "war": 1.0,
+                     "war_early": 1.0, "war_late": 1.0, "war_x": list(SP.WAR_X),  # (lane 259: war-torn land's era pair, PW-1172)
                      "brake_x": list(SP.BRAKE_X)},  # (lane 97: the raiders' brakes and war-torn land, meta.raiders / meta.war)
         "surge_x": list(SP.SURGE_X),  # (the momentum edge's dial per era, lane 73)
         "breeding": list(LH.BREEDING), "survival": list(LH.SURVIVAL), "life_stages": list(LH.STAGES),  # (lane 78: life history)
