@@ -89,6 +89,14 @@ PRESSURE = 0.03        # per generation (x social recruit factor), for each cate
                        # shown value = aim in ~80% of lects for number/past/future/progressive (55-65% at 0), median 10 live
                        # functions (6 at 0)
 UNWANTED_LOSS = 0.002  # a bound gram (level >= 2) whose category the aims no longer mark erodes away, x social loss
+PRE_CASE_CLITIC = 0.05  # (PW-1605, lane 10) the word > clitic step of a case marker that stands before its noun, x this.
+                        # A case preposition mostly stays a word: WALS 51A (Dryer 2013, 1031 languages) has 17 with
+                        # prepositional case clitics against 123 with postpositional ones and 38 with case prefixes, while
+                        # the sim cliticised prepositions as fast as postpositions and PRE_FUSE then held them at the
+                        # clitic level: 13.6% of a24559's living lects had only case proclitics (WALS 1.6%), most of
+                        # WALS 49A's 'borderline' bin (20% against 9%). Harness (800 human protos, 800 generations):
+                        # proclitic-only 14.8 -> 6.4%, borderline 18 -> 10%, none 30 -> 42%, case prefixes 6.1 -> 1.5%;
+                        # 6+ unchanged (32.8%). At 0.1 proclitics stayed 8.8%, at 0.03 prefixes fell to 1.2% (WALS 3.7%)
 UNWANTED_CASE_FUSE = 0.1  # (PW-1605) clitic > affix hazard x this for a case clitic while the aims say 'case: none'.
                           # Before, such a clitic bound as fast as any and `_adopt` then turned the aim to 'few': a one-way
                           # flow (none -> few in 25% of caseless protos over 700 generations, few -> none 5%), so the
@@ -3165,6 +3173,8 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                 h = FUSE * gr.info.freq * min(1.0 + gr.age_gens / AGE_SCALE, AGE_CAP) * soc["fuse"] * FUSE_LEVEL[gr.level]
                 if gr.side == "pre" and gr.level >= CLITIC:
                     h *= PRE_FUSE   # (a proclitic binds and fuses more slowly than an enclitic: the suffixing preference)
+                elif gr.side == "pre" and gr.function in CASE_FNS:
+                    h *= PRE_CASE_CLITIC   # (PW-1605: a case preposition mostly stays a word: WALS 51A)
                 if gr.level == CLITIC and gr.function in CASE_FNS and a.get("case") == "none":
                     h *= UNWANTED_CASE_FUSE   # (PW-1605: a caseless syntax keeps its postpositions as clitics)
                 if rng.random() < _p(h, dn):

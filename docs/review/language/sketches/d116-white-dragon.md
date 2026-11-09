@@ -92,7 +92,7 @@ Unrounded vowels come before the dot, rounded after it. Length: no long vowels. 
 
 **Sounds outside the human voice** (house and VoQS symbols, `planet/language/data/symbols.tsv`):
 
-- **‼** (growled (harsh, ventricular) phonation): j‼, l‼. Symbol table: harsh/growl phonation: VoQS ventricular V‼ as a segment suffix.
+- **‼** (growled (harsh, ventricular) phonation; in a word, one ‼ after a vowel growls its whole syllable): j‼, l‼. Symbol table: harsh/growl phonation: VoQS ventricular V‼ as a segment suffix.
 - **˯** (sub-bass register): o˯, i˯. Symbol table: sub-bass register (˯ U+02EF): carried below ~20 Hz.
 
 ### Tone, syllables and stress

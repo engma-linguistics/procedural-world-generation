@@ -119,7 +119,7 @@ BACKS = ["Front", "Near-front", "Central", "Near-back", "Back"]
 TONES = {1: ("low", "˨", "grave à"), 2: ("mid", "˧", "unmarked a"), 3: ("high", "˦", "acute á"),
          4: ("rising", "˨˦", "caron ǎ"), 5: ("falling", "˦˨", "circumflex â"), 6: ("extra-high", "˥", "double acute a̋"),
          7: ("extra-low", "˩", "double grave ȁ")}
-NONHUMAN_MARKS = {"‼": "growled (harsh, ventricular) phonation", "ᴖ": "a second simultaneous voice (syrinx)",
+NONHUMAN_MARKS = {"‼": "growled (harsh, ventricular) phonation; in a word, one ‼ after a vowel growls its whole syllable", "ᴖ": "a second simultaneous voice (syrinx)",
                   "˯": "sub-bass register", "˰": "ultra (above-human) register", "ᵣ": "purred phonation",
                   "ʞ": "beak knock", "ʘ̃": "lip smack"}
 
@@ -1687,7 +1687,7 @@ def render(doc: Doc, l: dict, roots_cache: dict | None = None, extra: list[str] 
     out += sample_sentences(l)
     out += texts_section(doc, l)
     out += comparison(doc, l, roots_cache)
-    return "\n".join(out).rstrip() + "\n"
+    return P.page_growl("\n".join(out).rstrip() + "\n")   # (PW-1613: one growl mark per fully growled syllable)
 
 
 # ---- English-likeness -----------------------------------------------------------------------------------------------------
