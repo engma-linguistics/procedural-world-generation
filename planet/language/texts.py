@@ -296,7 +296,7 @@ def pick_family(lects: dict, intel: dict | None = None, prefer: tuple = (),
 def fable_descent(anc: dict, ds: list[dict], roots: dict, lects: dict) -> list[str]:
     """PW-1592 check over the fable's words: what contradicts the claim that the daughters `ds` descend from `anc`. A
     daughter word whose root was coined in the ancestor's own line at or before the split must find that root in the
-    ancestor's lexicon (else the shown ancestor is not the state they came from); a root coined in that line after the
+    ancestor's lexicon (else the shown ancestor is not the state they came from); a root coined in the family after the
     split must not be shared by daughters on two branches (a shared change the ancestor lacks: R2). A root coined
     outside the line is a loan and passes. [] when the fable is a true reconstruction."""
     t = float(anc.get("split_kyr") or anc.get("died_kyr") or 0.0)
@@ -306,24 +306,37 @@ def fable_descent(anc: dict, ds: list[dict], roots: dict, lects: dict) -> list[s
         line.add(x["id"])
         x = lects.get(x.get("parent"))
     line.add(anc["id"])
-    have = {r for w in (anc.get("lexicon") or {}).values() for r in (w.get("roots") or ())}
+    top = anc.get("split_of") or anc["id"]
+
+    def under(lid):   # (a lect of the ancestor's line or below it: a root it coined is no loan from outside)
+        x, seen = lects.get(lid), set()
+        while x is not None and x["id"] not in seen:
+            if x["id"] == top:
+                return True
+            seen.add(x["id"])
+            x = lects.get(x.get("parent"))
+        return lid in line
+    def deep(w):   # (the etymological roots: a felt root is renamed once speakers stop hearing it, SAY < SPEAK)
+        return (w or {}).get("etym_roots") or (w or {}).get("roots") or ()
+    have = {r for w in (anc.get("lexicon") or {}).values() for r in (*deep(w), *(w.get("roots") or ()))}
     brs = anc.get("branches") or {}
     out, after = [], {}
     for d in ds:
         for c in FABLE_WORDS:
             w = (d.get("lexicon") or {}).get(c)
-            for r in (w or {}).get("roots") or ():
+            for r in deep(w):
                 e = roots.get(r) or {}
                 if e.get("kyr") is None or e.get("lect") is None:
                     continue
                 if float(e["kyr"]) >= t - 1e-6:
-                    if e["lect"] in line and r not in have:
+                    seen_c = anc.get("lexicon_full", True) or e.get("concept") in (anc.get("lexicon") or {})
+                    if e["lect"] in line and r not in have and seen_c:   # (a partial lexicon shows only its words)
                         out.append(f"{d['id']} {c}: root {r} is older than the split but not in the ancestor")
-                elif e["lect"] in line:
+                elif under(e["lect"]):
                     after.setdefault(r, set()).add(brs.get(d["id"], d["id"]))
     for r, bs in sorted(after.items()):
         if len(bs) >= 2:
-            out.append(f"root {r}, coined in the ancestor's line after the split, is shared by branches {sorted(bs)}")
+            out.append(f"root {r}, coined in the family after the split, is shared by branches {sorted(bs)}")
     return out
 
 
