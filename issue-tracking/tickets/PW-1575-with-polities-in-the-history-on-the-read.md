@@ -2,7 +2,7 @@
 id: PW-1575
 title: With polities in the history on, the read-out should draw the live map, not a second set of polities
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -37,5 +37,6 @@ read-out from the live log. The live step would need to record provinces (`from_
 - [ ] round 14's measures re-run: the read-out and live columns are one column
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 238 (634864cd) merged: with the switch on, polities.derive builds from polities_live.json (live /2); map, cards, gods' rule_table all name the live polities; switch-off byte-identical. Suite 1934 passed. Switch stays off: live states small (PW-1583, lane 241).
 - 2026-11-09: Lane 238: built. With polities_live.json present, polities.derive draws it (polities._from_live): same steps, polities (ids), cells, tiers, falls, conquests; read-out adds ledger capital, ruling culture, subjects, names, colours, fell_why, and the fates of peoples on taken land on the card. Live file now procgen-polities-live/2 (seat people, provinces, record ids; record only). Proof on L6 run f4fb14: 0/83 map steps differ, /api/polities cards and gods rule_table realms all live polities; switch-off read-out hash identical to main. Round 14 measure: readout and live rows one column. Switch stays off: on, states fewer and ~5x smaller at peak (draft live-polities-stay-small). docs/review/culture/polities/round15.md
 - 2026-11-09: Created from inbox draft draft-polities-readout-reads-the-live-map.md (found by lane234).

@@ -1,4 +1,5 @@
 ---
+id: PW-1583
 title: With polities in the history on, the states stay small (largest 0.44 Mkm² against 2.28 with the switch off)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane238
 blocked_by: []
 relates: [PW-1575, PW-1456, PW-1434, PW-785, PW-1449]
 refs: ["planet/lineages/history/polity_live.py::LivePolities._step", "planet/lineages/polities.py::_confederations", "planet/lineages/polities.py::WIDE_BY", "planet/lineages/polities.py::derive", docs/review/culture/polities/round15.md, docs/review/culture/polities/round15/check.py, docs/review/culture/polities/round14/measure.py, "world 4360a3", "scratch run f4fb14 (on)", "scratch run 6418c8 (off)"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -37,3 +40,6 @@ One seed on L6 only. Lane 234's L7 queue (seeds 7 and 10, on and off) will say w
 those runs: since PW-1575 its "readout" row on a switch-on run is the live map.
 - [ ] diagnosis on the L7 pairs: which candidate explains most of the gap
 - [ ] with the switch on, the largest polity over the last 3 kyr is within the spread of the switch-off read-out on the same seeds
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-live-polities-stay-small.md (found by lane238).
