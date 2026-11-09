@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .percepts import AXES, SONORITY, Segment, distance, from_ipa, is_nonhuman, parse_segment, to_ipa
+from .percepts import AXES, SONORITY, Segment, distance, from_ipa, is_liquid, is_nonhuman, parse_segment, to_ipa
 
 DATA = Path(__file__).parent / "data"
 
@@ -877,6 +877,36 @@ def _onset_cluster(rng, inv: Inventory, size: int, cw) -> tuple:
     return (_pick_seg(rng, cons, cw),)
 
 
+# Syllable-final consonants lean toward sonorants (PW-1557, owner ruling 11-08 "sonorant"): codas favour high sonority
+# (Clements 1990, the sonority dispersion principle: a syllable rises steeply into its nucleus and falls gently out of
+# it), many languages allow only sonorants or only nasals in the coda (Mandarin n ŋ, Japanese N; Blevins 1995), and
+# where obstruents may close a syllable, nasals and liquids are still over-represented there against their onset share.
+# A multiplier on the onset weights, by manner: nasals and liquids (laterals, trills, taps, rhotic approximants) up,
+# glides and plain fricatives as in onsets (s is a common coda), stops a little down, affricates, clicks and percussives
+# well down, and ejectives and implosives (larynx 2, 3) halved: glottalic codas are rare. Coda shares among nasals,
+# liquids and obstruents in the reference word lists (tools/language/data/reference_words.tsv, English sketch list):
+# Turkish 0.35, Arabic 0.44, English 0.48, Georgian 0.57, Welsh 0.62, Finnish 0.64, Spanish 0.77, Mandarin 1.0; the
+# protos drew ~0.30 before (the onset weights), 0.55 with these (calibration.md "Lane 4").
+CODA_MANNER = {0: 0.7, 1: 0.4, 2: 1.0, 3: 2.6, 5: 2.6, 6: 2.6, 7: 2.6, 8: 0.1, 9: 0.2}
+CODA_LIQUID, CODA_GLIDE, CODA_GLOTTALIC = 2.6, 1.0, 0.5
+
+
+def _coda_factor(s: Segment) -> float:
+    if s.kind != "C":
+        return 1.0
+    if s.manner == 4:
+        f = CODA_LIQUID if is_liquid(s) else CODA_GLIDE
+    else:
+        f = CODA_MANNER.get(s.manner, 1.0)
+    return f * (CODA_GLOTTALIC if s.larynx in (2, 3) else 1.0)
+
+
+def coda_weights(inv: Inventory, segs: list) -> np.ndarray:
+    """`_weights` for a syllable-final position: the onset weights times `_coda_factor` (sonorants favoured)."""
+    w = _weights(inv, segs) * np.array([_coda_factor(s) for s in segs], float)
+    return w / w.sum()
+
+
 def _coda_cluster(rng, inv: Inventory, size: int, cw) -> tuple:
     cons = inv.consonants
     for _ in range(30):
@@ -897,6 +927,7 @@ def draw_word(rng, inv: Inventory, n_syll: int | None = None, syllables: int | N
     """A legal word of `n_syll` syllables (default 1-3, mostly 2) by the inventory's templates and segment weights."""
     n = n_syll or syllables or int(rng.choice([1, 2, 3], p=[0.3, 0.5, 0.2]))
     cw, vw = _weights(inv, inv.consonants), _weights(inv, inv.vowels)
+    kw = coda_weights(inv, inv.consonants)
     names = list(inv.shapes)
     sw = np.array([inv.shapes[k] for k in names], float)
     sw /= sw.sum()
@@ -916,7 +947,7 @@ def draw_word(rng, inv: Inventory, n_syll: int | None = None, syllables: int | N
                 out.extend(_onset_cluster(rng, inv, min(on, inv.max_onset, MAX_ONSET), cw))
             out.append(_toned(rng, inv, _pick_seg(rng, inv.vowels, vw)))
             if co and inv.max_coda:
-                out.extend(_coda_cluster(rng, inv, min(co, inv.max_coda, MAX_CODA), cw))
+                out.extend(_coda_cluster(rng, inv, min(co, inv.max_coda, MAX_CODA), kw))
         w = tuple(out)
         if legal(w, inv):
             return realize(w, inv)

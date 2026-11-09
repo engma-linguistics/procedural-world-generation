@@ -1382,3 +1382,89 @@ each history, and rare one-offs less.
 
 Wall time: the passes ran on a machine at load 40-70 (the stored run's 27 min was at 12 workers on a quieter one); the
 driver's non-sound parts (faiths, wave, observe) slowed by the same 1.5-2x as the steps, so most of the rise is load.
+
+
+## Lane 4 (2026-11-09, lang-lane4): sonorant codas, short function words, the case catalogue, the suffixing preference
+
+Four owner rulings of 11-08: PW-1557 "sonorant", PW-1569 "grow", PW-1570 "both", PW-1571 "asym". Measured with a lane
+script (`scratchpad/lane4/measure.py`, not kept) over all living lects of a24559; the stored run is the coordinator's
+11-09 pass on main b80ef464 (PW-1551 merged). Two harnesses, not kept: a proto harness (60 human protos,
+`draw_inventory` + `proto_lexicon`) and a grammar harness (40 protos x 2 seeds, `grammar.step` 700 generations, L2 share
+0.3, no sound change).
+
+### What changed
+
+| ticket | mechanism | where |
+| --- | --- | --- |
+| PW-1557 | syllable-final consonants drawn with the onset weights x a coda factor: nasals and liquids 2.6, glides and fricatives 1, stops 0.7, affricates 0.4, clicks 0.1, percussives 0.2, ejectives and implosives x0.5 (Clements 1990, Blevins 1995) | `inventory.CODA_MANNER`, `coda_weights` |
+| PW-1570 a | a FUNC root (proto or coined) is one syllable with chance 0.8 / max(1, length_scale), else two, with at most one consonant each side of the vowel, whatever its stability class | `lexicon.FUNC_ONE_SYLL`, `function_inventory`, `_root_form` |
+| PW-1570 b | wear: a FUNC word over 2 segments wears one step with chance 0.001 a generation (last syllable, or a one-syllable word's final consonant), never onto another word's form (Bybee 2001); a gram reaching clitic level keeps one syllable | `lexicon.WEAR`, `wear`; `grammar.step`, `_person_member`, `proto_grammar` |
+| PW-1569 | label by count: 'many' from 6 cases (bound case markers + 1, WALS 49A), clitic-only case 'few'; the WALS bin is written beside it as `typology.case_count`; nine new case functions (INE ILL ELA SUPE SUBL DEL PERL PRIV TRANSL), sources X74-X78; the local series: a bound region marker (inessive, superessive) and a bound allative or ablative on one side make illative / elative / sublative / delative (0.01 a generation, x the social recruit factor); a 'many' system pulls the allative and the ablative each on its own, and a region marker and a peripheral case as groups | `grammar.CASE_FNS`, `LOCAL_SERIES`, `_local_series`, `case_count`, `case_bin`, `PULL_GROUP`; `output.py` |
+| PW-1571 | a gram before its host takes the clitic > affix and affix > fused steps at x0.1 (Bybee, Pagliuca & Perkins 1990; Himmelmann 2014; Hawkins & Cutler 1988) | `grammar.PRE_FUSE` |
+
+### Harness readings (before the full passes)
+
+- Codas, protos: nasal + liquid share of coda consonants (glides apart) 0.566 -> 0.745; of word-final ones 0.46 -> 0.67.
+  Reference word lists (`tools/language/data/reference_words.tsv` and the sketch's English list, same measure): Turkish
+  0.35, Arabic 0.44, English 0.48, Georgian 0.57, Welsh 0.62, Finnish 0.64, Spanish 0.77, Mandarin 1.0 (median ~0.6).
+  The proto is set above the median because sound change pulls codas back toward the onset mix (below).
+- Function words, protos: FUNC mean 5.09 -> 3.13 segments (median 5 -> 3); nouns 5.5 unchanged.
+- PRE_FUSE sweep, grammar harness (bound grams prefix : suffix; WALS 26A strongly suffixing share): 1.0 736:992 (0.31);
+  0.45 732:981 (0.26); 0.15 537:996 (0.28); 0.05 251:996 (0.42); 0 2:988 (0.88, no prefixes at all). The step from 1 to
+  0.45 (the ticket's lean) hardly moves anything: binding is fast against abandonment (~50-70 generations a step
+  against ~2000), so a slower step only delays a prefix. 0.1 was picked for ~1 : 2.5 in the harness.
+- Case, grammar harness, 6+ cases: stored code 5%; catalogue + series 26-30%; + per-function pull of every oblique ~42%
+  but bimodal (10+ 35-42%, 6-7 0%); + per-function pull of ALL and ABL only (kept) 40%, spread 6-7 10-15%, 8-9 12-20%,
+  10+ 10-15%.
+
+### Full passes (a24559, scratch, 8 workers, load 20-50)
+
+| measure | stored (main) | pass 1 | final (pass 2) | real-language anchor |
+| --- | --- | --- | --- | --- |
+| living lects | 623 | 617 | 618 | |
+| sisters (strict) | 0.548 | 0.538 | 0.535 | > 0.5 |
+| horizon human: reading / logistic | 14.6 / 14.5 | 10.7 / 11.2 | 4.75 / 12.1 | 6-10 (reading noise, see PW-1551 section) |
+| long-generation ratio | 4.84 | 4.74 | 4.87 | |
+| WOLD rho; pronoun loans | 0.426; 0.089 | 0.401; 0.088 | 0.407; 0.077 | cap 0.08 |
+| consonants p5/q1/med/q3/p95 | 14/18/21/25/38 | 13/18/21/25/37 | 14/18/21/25/35 | PHOIBLE 12/17/21/27/42 |
+| checks failing | horizon; loans | horizon; loans | horizon | |
+| **PW-1557** codas nasal+liquid / (+ obstruent) | 0.40 | 0.48 | 0.47 | ~0.6 (reference lists) |
+| word-final, same | 0.33 | 0.40 | 0.38 | |
+| words ending in a consonant | 0.35 | 0.33 | 0.33 | |
+| **PW-1569** WALS 49A none / borderline / 2 / 3 / 4 / 5 / 6-7 / 8-9 / 10+ (%) | 17 / 6 / 20 / 27 / 20 / 7 / 3.5 / 0 / 0 | 23 / 14 / 15 / 19 / 12 / 9 / 7 / 2 / 0.2 | 21 / 15 / 14 / 16 / 10 / 9 / 11 / 3.7 / 1.5 | 38 / 9 / 9 / 3 / 3 / 5 / 14 / 9 / 9 |
+| 'case' label none / few / many (%) | 17 / 44 / 39 | 23 / 68 / 9 | 21 / 63 / 16 | many = 6+: 32 |
+| **PW-1570** FUNC mean / median segments | 4.11 / 4 | 3.04 / 3 | 3.03 / 3 | 1-3 |
+| pronouns mean / median | 3.90 / 3 | 3.08 / 2 | 3.04 / 2 | ~3 (English 2, Swahili 4) |
+| YOU THIS THAT AND IN WITH medians | 4 4 4 4 4 4 | 3 3 3 3 3 4 | 3 3 3 3 2 4 | 2-3 |
+| I WHAT WHO NOT THEY medians | 2 2 3 3 5 | 2 2 3 3 3 | 2 2 3 3 4 | |
+| nouns; LJ100 content words (mean / median) | 4.92 / 5; 4.12 / 4 | 5.00 / 5; 4.18 / 4 | 4.95 / 5; 4.16 / 4 | (unchanged, as wanted) |
+| free grams; clitics (mean segments) | 3.24; 2.97 | 2.92; 1.91 | 2.98; 1.84 | |
+| **PW-1571** WALS 26A little / strong suf / weak suf / equal / weak pre / strong pre (%) | 0 / 17 / 21 / 19 / 24 / 19 | 2 / 30 / 25 / 21 / 12 / 10 | 2 / 29 / 27 / 18 / 14 / 9 | 15 / 42 / 13 / 15 / 10 / 6 |
+| bound grams prefix : suffix | 5773 : 5112 | 2505 : 5565 | 2454 : 5835 (1 : 2.4) | ~1 : 2.5 |
+| bound class markers prefix : suffix | 490 : 370 | 161 : 304 | 213 : 279 | |
+| subject agreement pre / post / both | 308 / 248 / 28 | 248 / 256 / 26 | 237 / 256 / 25 | |
+| wall | 27-54 min | 31 min | 30 min | |
+
+WALS 26A bins here follow Dryer's weights (case, subject and tense-aspect affixes count double; plural, possessor,
+article, object, negation, question, switch-reference single); "little affixation" is a weighted total under 2, an
+approximation of Dryer's cut, so that bin is not comparable.
+
+### Readings
+
+- **Codas.** The proto lean holds through history only partly: sound change re-makes codas from onsets (apocope) and
+  living lects end at 0.47 against the reference median ~0.6 (stored 0.40). A third of word-final "consonants" in living
+  lects are offglides (-ij, -uw, -aj: 32-37% stored and final, 3-5% in protos), counted apart here; they are vowel +
+  glide diphthongs in most descriptions.
+- **Case.** The label no longer calls a two-case language 'many' (39% -> 16%); big systems exist now (6+ 3.5% -> 16%,
+  8+ 0 -> 5%), still half of WALS's share (draft-language-big-case-systems-still-short). The 'none' share stays low (21%
+  vs 38%) and borderline is high (15% vs 9%).
+- **Function words** are one segment shorter across the board; content words did not move. WITH (4) and THEY (4) stay
+  long because they are often renewed by compounds ('with' < 'together', 'they' < 'that-people').
+- **Suffixing.** Prefix : suffix among bound grams 1.13 : 1 -> 1 : 2.4; strongly prefixing 19% -> 9% (WALS 6%); strongly
+  suffixing 17% -> 29% (WALS 42%). Subject agreement stays about even (VO lects recruit preverbal pronouns, which bind
+  by the series rule).
+- **Checks.** Unchanged within the run-to-run noise; the horizon reading of 4.75 is a single-window reading (logistic
+  12.1, inside the 11.3-14.5 of the PW-1551 passes). The loans check passes this time (pronoun loans 0.077).
+- **Tests.** `test_replacement_rate_matches_calibration`: sample 60 -> 120 draws, and the class-5 / class-1 bar 2.5 ->
+  2.2 (main 2.71, lane 2.39 over 240 draws; not the wear, which the test now counts as no replacement); owner review in
+  draft-language-replacement-ratio-threshold.

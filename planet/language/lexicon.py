@@ -769,6 +769,36 @@ def _n_syll_for(rng, freq_class: int, scale: float = 1.0) -> int:
     return max(1, int(x) + int(rng.random() < x - int(x)))
 
 
+# Function words are drawn short (PW-1570, owner ruling 11-08 "both"): pronouns, deictics, conjunctions, adpositions and
+# the other FUNC concepts are overwhelmingly one syllable of simple shape across languages (English I, you, this, and,
+# in; Spanish yo, tu, este, y, en; Zipf's law of abbreviation, Piantadosi et al. 2011), whatever their stability class,
+# which is what `freq_class` holds for the core list (AND, WITH, IF sit in classes 4-5 there). A proto or coined FUNC
+# root is one syllable with chance FUNC_ONE_SYLL (divided by the lect's length_scale above 1: a small syllable space
+# still needs some two-syllable function words, Hawaiian 'oe, mākou), else two, with at most one consonant on either
+# side of each vowel (`function_inventory`). Before, YOU THIS THAT AND WITH had a median of 4 segments in a24559.
+FUNC_ONE_SYLL = 0.8
+
+
+def function_inventory(inv):
+    """`inv` with the syllable templates a function word uses: at most one onset and one coda consonant."""
+    sh = {t: w for t, w in inv.shapes.items() if len(t) - len(t.lstrip("C")) <= 1 and len(t) - len(t.rstrip("C")) <= 1}
+    if not sh or (inv.max_onset <= 1 and inv.max_coda <= 1):
+        return inv
+    return replace(inv, shapes=sh, max_onset=min(inv.max_onset, 1), max_coda=min(inv.max_coda, 1))
+
+
+def _func_syll(rng, scale: float = 1.0) -> int:
+    return 1 if rng.random() < FUNC_ONE_SYLL / max(1.0, scale) else 2
+
+
+def _root_form(rng, c, inv, scale: float) -> Form:
+    """A fresh root for concept `c` (before sound symbolism): a function word short and simple, else 1-3 syllables by
+    frequency class (`_n_syll_for`)."""
+    if c.pos == "FUNC":
+        return _inv.draw_word(rng, function_inventory(inv), n_syll=_func_syll(rng, scale))
+    return _inv.draw_word(rng, inv, n_syll=_n_syll_for(rng, c.freq_class, scale))
+
+
 # --- word length and the syllable space ---------------------------------------------------------------------------------
 
 def _inv_key(inv) -> tuple:
@@ -884,8 +914,7 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
 
     def root_word(c: Concept) -> Word:
         for _ in range(30):
-            f = _inv.draw_word(rng, inv, n_syll=_n_syll_for(rng, c.freq_class, scale))
-            f = LS.symbolic(srng, f, c.id, inv)   # (nursery words, sound symbolism: lexsys)
+            f = LS.symbolic(srng, _root_form(rng, c, inv, scale), c.id, inv)   # (nursery words, sound symbolism: lexsys)
             if f not in used and len(f) <= mseg:
                 break
         used.add(f)
@@ -1681,11 +1710,11 @@ def coin(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None =
             if w is not None:
                 break
     if w is None:
-        n = _n_syll_for(rng, c.freq_class, length_scale(inv))   # (the current inventory: mergers lengthen coinages)
+        sc = length_scale(inv)   # (the current inventory: mergers lengthen coinages)
         mseg = limits(inv)[2]
         from . import lexsys as LS
         for _ in range(10):
-            f = LS.symbolic(rng, _inv.draw_word(rng, inv, n_syll=n), c.id, inv)
+            f = LS.symbolic(rng, _root_form(rng, c, inv, sc), c.id, inv)
             if len(f) <= mseg:
                 break
         rid = (_i(f"{lect_id}:{c.id}@{float(kyr):g}"),)
@@ -2084,6 +2113,49 @@ def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, i
     return "keep", None
 
 
+# Faster wear on frequent unstressed words (PW-1570, owner ruling 11-08 "both"): high-frequency words reduce faster than
+# the regular sound changes alone would wear them (Bybee 2001, 2006; Latin ego > Spanish yo, ille > el, Old English ic >
+# I, and > an', going to > gonna), and function words are the unstressed ones. Each FUNC word longer than WEAR_FLOOR
+# segments wears one step with chance WEAR per generation: a word of two or more syllables loses its last syllable, a
+# one-syllable word its final consonant. A step that would make the word a homophone of another word of the lexicon is
+# not taken (speakers keep 'I' and 'thou' apart). Steps are recorded as the sound change 'wear'.
+WEAR = 0.001
+WEAR_FLOOR = 2
+
+
+def _worn_down(form: Form) -> Form:
+    syl = syllabify(form)
+    if len(syl) >= 2:
+        return clip(form, len(syl) - 1)
+    if form and form[-1].kind == "C":
+        return tuple(form[:-1])
+    return tuple(form)
+
+
+def wear(rng, lex: Lexicon, n_generations: float, kyr: float, lect_id: str | None = None) -> list[tuple[str, str]]:
+    """One wear step for some function words (WEAR per generation each); returns [(concept, 'wear')]."""
+    if WEAR <= 0 or n_generations <= 0:
+        return []
+    p = 1.0 - (1.0 - WEAR) ** n_generations
+    keys = [k for k, w in lex.words.items() if w.pos == "FUNC"
+            and sum(1 for s in w.form if s.kind != "T") > WEAR_FLOOR]
+    hit = [k for k, u in zip(keys, rng.random(len(keys))) if u < p]
+    if not hit:
+        return []
+    forms = {w.form for w in lex.words.values()}
+    out = []
+    lect_id = lect_id or lex.lect
+    for k in hit:
+        w = lex.words[k]
+        f = _worn_down(w.form)
+        if f == w.form or not has_nucleus(f) or f in forms:
+            continue
+        lex.words[k] = _sound_step(w, f, "wear", kyr, lect_id, "worn down: a frequent unstressed word")
+        forms.add(f)
+        out.append((k, "wear"))
+    return out
+
+
 def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, Lexicon] | None = None,
          kyr: float = 0.0, lect_id: str | None = None, niche_weights: dict[str, float] | None = None,
          profile=None, head_first: bool | None = None, contact_weights: dict[str, float] | None = None,
@@ -2179,6 +2251,8 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
             LS.after_replace(lex, k, src, new, contact_words, kyr, lect_id, grp)   # (a colour composite moves as one word)
             lex.counts[src] = lex.counts.get(src, 0) + 1
             events.append((k, src))
+    if n_generations > 0:
+        events += wear(rng, lex, n_generations, kyr, lect_id)
     if inv is not None and n_generations > 0:
         _renew_affixes(rng, lex, inv, n_generations, kyr)
         events += LS.systems_step(rng, lex, n_generations, inv, kyr, lect_id, numeral_base=numeral_base,
