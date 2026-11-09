@@ -111,15 +111,6 @@ CARVE_TRIES = 2  # times the valleys are recut as the rivers they carry move
 # the divide for tens of Myr (Red Rock Pass, Bonneville's outlet; the wind
 # gaps of the Appalachian ridges)
 VALLEY_MYR = 20.0
-# PW-831 (scout 260, exploratory): flooded ground beside the rivers evaporates
-# as open water (lake_evap - aet over wetland_share), taken from the river
-WETLAND_ET = False
-WETLAND_MODE = "plain"  # 'plain': floodplains only; 'hollow': + _bed's filled hollows
-WETLAND_FILL_M = 5.0  # m of fill over which a filled hollow's floor counts fully flooded
-WETLAND_HOLLOW = 0.5  # share of a filled hollow's floor flooded (seasonal swamp)
-# 'sheet': Manning's n of a vegetated floodplain (Chow 1959: brush / timber 0.05-0.2), the flood sheet's depth (m),
-# and the least slope taken (a filled flat)
-WETLAND_N, WETLAND_H, WETLAND_SMIN = 0.1, 1.0, 1e-5
 
 
 def discharge(grid: Grid, flow: np.ndarray) -> np.ndarray:
@@ -139,7 +130,7 @@ def _bed(grid, ground, sea, min_depth, min_slope):
     return np.where(keep, h, kernels.flood_fill(h, sea, grid.nbr_off, grid.nbr_idx, 0.01))
 
 
-def _dry_hollows(grid, ground, bed, land, src, loss, rain, pet):
+def _dry_hollows(grid, ground, bed, land, src, loss, rain, pet, chan=None):
     """Cells of the hollows (below their spill points) in dry catchments
     that no river leaves. _bed's min_depth and min_slope stand for channels
     too small to see that a through-flowing river cuts through a shallow
@@ -154,11 +145,20 @@ def _dry_hollows(grid, ground, bed, land, src, loss, rain, pet):
     lake a river crosses, as _bed has it). The candidates are the closed
     hollows of the unfiltered ground; their lakes and catchments are then
     taken on bed (_bed's) with them put back, where the shallow hollows
-    upstream are filled and pass their rivers on (a hollow gets those too)."""
+    upstream are filled and pass their rivers on (a hollow gets those too).
+    chan (optional): ground with the river channels already known cut in
+    (lakes()' outlet and valley: the finer data's river heights, the valleys
+    rivers cut before). A hollow such a channel drains is no closed hollow,
+    however its inflow and evaporation stand now: its river was cut through
+    the rim when it did spill (a wetter climate's, or the data's gorge
+    narrower than a cell: the Niger's sill at Tosaye below its inner delta),
+    and the water still runs out along it (PW-300's lasting valleys)."""
     sea, rcv, asc = kernels.lake_order(ground, ~land, grid.nbr_off, grid.nbr_idx)
     open0 = kernels.lakes_on(ground, grid.nbr_off, grid.nbr_idx, src, loss, sea, rcv, asc)[1]
     filled = kernels.priority_flood(ground, ~land, grid.nbr_off, grid.nbr_idx, 0.0)[0]
     cand = land & ~open0 & (filled > ground)
+    if chan is not None:
+        cand &= kernels.priority_flood(chan, ~land, grid.nbr_off, grid.nbr_idx, 0.0)[0] > chan
     bed1 = np.where(cand, ground, bed)
     sea, rcv, asc = kernels.lake_order(bed1, ~land, grid.nbr_off, grid.nbr_idx)
     wet, open1, _, _, _, basin = kernels.lakes_on(bed1, grid.nbr_off, grid.nbr_idx, src, loss, sea, rcv, asc)
@@ -187,7 +187,8 @@ def _upstream_label(down, order, lab):
     return out
 
 
-def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4, dry=None, keep=None, seen=None):
+def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4, dry=None, keep=None, seen=None,
+            chan=None):
     """kernels.lakes on _bed(ground), made to agree with the rivers.
     kernels.lakes gives each basin the water that runs downhill into it,
     but a lake that spills where its basin meets the sea's drainage can
@@ -202,10 +203,11 @@ def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4, dry=No
     out once on the uncarved ground: a carved valley only lowers a kept
     hollow's ground, which the lake balance here takes as it is). After
     the rivers settle, a kept hollow is _bed's again if its catchment is
-    wet after all or its lake spills (a river flows through it)."""
+    wet after all or its lake spills (a river flows through it). chan: as
+    _dry_hollows'."""
     bed0 = _bed(grid, ground, ~land, min_depth, min_slope)
     if keep is None:
-        keep = (_dry_hollows(grid, ground, bed0, land, src, loss, *dry) if DRY_HOLLOWS and dry is not None
+        keep = (_dry_hollows(grid, ground, bed0, land, src, loss, *dry, chan=chan) if DRY_HOLLOWS and dry is not None
                 and min_depth > 0 else np.zeros(grid.n, bool))
     keep = keep.copy()
     for rnd in range(3):
@@ -308,10 +310,22 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
     carved = ground
     dry = None if pet_mm is None else (np.where(land, runoff_mm + aet_mm, 0.0), np.where(land, pet_mm, 0.0))
     keep = None  # (the dry hollows: worked out on the uncarved ground, once, and kept across the carve tries)
+    # (the channels already known, for the dry hollows: the finer data's river heights, the remembered valleys)
+    chan = None
+    if dry is not None and (outlet is not None or valley is not None):
+        cut0 = np.zeros(grid.n)
+        if outlet is not None:
+            low = land & (outlet < ground)  # (NaN compares False)
+            cut0 = np.where(low, ground - np.where(low, outlet, 0.0), 0.0)
+        if valley is not None:
+            cut0 = np.maximum(cut0, np.where(land, valley, 0.0))
+        if no_lake is not None:
+            cut0 = cut0 * ~no_lake
+        chan = ground - cut0
     seen = []  # (the floods route() has run, to reuse)
     for k in range(CARVE_TRIES + 1 if channel > 0 else 1):
         (elev, wet, open_, out_z, pit, catch, _), (flow, down, order, sink), keep = _settle(
-            grid, carved, land, src, loss, min_depth, min_slope, dry=dry, keep=keep, seen=seen)
+            grid, carved, land, src, loss, min_depth, min_slope, dry=dry, keep=keep, seen=seen, chan=chan)
         if k == CARVE_TRIES or channel <= 0:
             break
         # the same with the rivers' valleys cut in (only where they reach the
@@ -374,52 +388,8 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
         valley_pit = sink & ~wet & (spill <= ground + 1.0)
         sink &= ~valley_pit
         kind[valley_pit & (kind == SALT_PAN)] = NO_LAKE
-    src_out = src - loss * wet
-    if WETLAND_ET:
-        src_out = src_out - loss * wetland_share(grid, carved, elev, land & ~wet, flow, no_lake)
-    return dict(wet=wet, kind=kind, level=level, sink=sink, src=src_out, bed=np.asarray(elev, float),
+    return dict(wet=wet, kind=kind, level=level, sink=sink, src=src - loss * wet, bed=np.asarray(elev, float),
                 incised=incised, sea=~land)
-
-
-def _down_of(grid, bed, land):
-    """each cell's lowest neighbour (-1 if none lower): the reach's slope for wetland_share"""
-    nb = grid.nbr_idx
-    src = np.repeat(np.arange(grid.n), np.diff(grid.nbr_off))
-    z = bed[nb]
-    low = np.full(grid.n, np.inf)
-    np.minimum.at(low, src, z)
-    first = np.full(grid.n, -1)
-    hit = z == low[src]
-    first[src[hit][::-1]] = nb[hit][::-1]
-    return np.where(land & (low < bed), first, -1)
-
-
-def wetland_share(grid, ground, bed, land, flow, no_lake=None):
-    """Share of each land cell (no lake) that a river floods and that
-    evaporates as open water (PW-831): the big rivers' floodplains
-    (vegetation.floodplain, by the flow) and, with WETLAND_MODE 'hollow', the
-    floors of the hollows _bed fills (too shallow or flat to hold a lake:
-    swamps the river spreads over, the Sudd, the inner Niger delta, the
-    Okavango)."""
-    from .vegetation import floodplain
-    f = floodplain(grid, ground, flow)
-    if WETLAND_MODE == "hollow":
-        f = np.maximum(f, np.clip((bed - ground) / WETLAND_FILL_M, 0.0, 1.0) * WETLAND_HOLLOW)
-    elif WETLAND_MODE == "sheet":
-        # unconfined flat reaches: the river spreads as a sheet WETLAND_H deep whose width carries its flow
-        # at Manning's speed over the reach's slope (W = Q n / (h^5/3 S^1/2)), over the cell's flat share
-        from .ocean import cell_area_km2
-        from .vegetation import relief
-        a_km2 = cell_area_km2(getattr(grid, "base", grid))
-        d_m = np.sqrt(a_km2) * 1e3
-        down = _down_of(grid, bed, land)
-        s = np.where(down >= 0, (bed - bed[np.maximum(down, 0)]) / d_m, WETLAND_SMIN)
-        s = np.maximum(s, WETLAND_SMIN)
-        w_m = discharge(grid, flow) * WETLAND_N / (WETLAND_H ** (5 / 3) * np.sqrt(s))
-        flat = np.clip(1 - relief(grid, ground) / 400.0, 0, 1)
-        f = np.maximum(f, np.clip(w_m * d_m / (a_km2 * 1e6), 0.0, 0.75) * flat)
-    f = np.where(land, f, 0.0)
-    return f if no_lake is None else f * ~no_lake
 
 
 FLOOD_EPS = 0.01  # m: route()'s priority flood's lift per cell across a filled pit
