@@ -54,6 +54,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from ..hydrology import discharge
 from . import ranges as RG
 from .gridops import nbr_reduce
 from .spread import EST
@@ -72,8 +73,8 @@ NOMAD = 0.8  # /km2 at GRAZE_REF: inside Mongolia 0.35-0.54 and Kenya's modelled
 IRR_LAG = 3.5  # kyr from cultivation to irrigation (techtree.toml: cultivation 11.5, irrigation 8)
 IRR_STEPS = (0.0, 1.0, 1.5, 2.2, 2.75, 3.85)  # kyr after irrigation, Butzer Table 4's dates (4000, 3000, 2500, 1800, 1250, 150 BC)
 IRR = (30.0, 75.0, 130.0, 140.0, 180.0, 240.0)  # people per watered km2 at those dates (Butzer 1976 Table 4, "hypothetical")
-WATER_FLOW = (5.0, 200.0)  # river flow (world layer `flow`) from which a cell has a floodplain to water, to the greatest rivers' (a
-# judgement: on the L6 worlds ~15% of land cells carry 5 or more, the top 1% ~120)
+WATER_Q = (500.0, 20000.0)  # m3/s of river from which a cell has a floodplain to water, to the greatest rivers' (a judgement; PW-820:
+# the old 5 and 200 cells of runoff at L7, 493 and 19,730 m3/s)
 WATER_MAX = 0.3  # the share of a cell water reaches on the greatest rivers (a judgement: a 10-20 km valley in a ~60 km cell)
 FARM_FULL = 0.5  # the fertile good at which all of a cell farms (a judgement: half the world's best farmland class)
 DEN_FARM_W = 0.1  # Q4 A: a den people farms at this share of what another people would (rare, not forbidden; a judgement)
@@ -216,7 +217,8 @@ class Ladder:
         if flow is None:
             self.water = np.zeros(n)
         else:
-            f = np.log10(np.maximum(np.asarray(flow, float), 1e-6) / WATER_FLOW[0]) / np.log10(WATER_FLOW[1] / WATER_FLOW[0])
+            q = discharge(h.grid, np.asarray(flow, float))
+            f = np.log10(np.maximum(q, 1e-6) / WATER_Q[0]) / np.log10(WATER_Q[1] / WATER_Q[0])
             self.water = WATER_MAX * np.clip(f, 0, 1)
 
     # -- what a people knows ----------------------------------------------------------------------

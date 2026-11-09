@@ -25,7 +25,8 @@ from ..geo import R_KM, arc_km, world_land
 from ..provenance import code_hash
 from .gridops import nbr_reduce
 
-REACH = 0.7  # an ore district's or a coast's good reaches one cell ring inland at this share (a people settles around it)
+REACH = 0.7  # an ore district's or a coast's good reaches REACH_KM inland at this share (a people settles around it)
+REACH_KM = 60.0  # km: the country around a district (JUDGEMENT; PW-820: the old one ring at L7; L6 can't do less than its 120 km ring)
 DISTRICT_MIN = 0.5  # cells at or above this make a district (resources.DISTRICT_MIN)
 # resources.STONE id -> 0..1: granite and marble best, then quartzite, gneiss, limestone, slate, sandstone, basalt, tuff
 GOOD_STONE = {1: 1.0, 2: 1.0, 9: 0.8, 8: 0.6, 3: 0.5, 5: 0.5, 4: 0.4, 6: 0.3, 7: 0.2}
@@ -101,8 +102,12 @@ _CACHE: dict = {}
 
 
 def _reach(grid, v):
-    """A district's good reaches the next cell ring at REACH of its value (the country around it)."""
-    return np.maximum(v, REACH * nbr_reduce(grid, np.maximum, v[grid.nbr_idx]))
+    """A district's good reaches REACH_KM around it (whole neighbour rings, at least one) at REACH of its value."""
+    from .seafood import rings_for
+    w = v
+    for _ in range(rings_for(grid, REACH_KM)):
+        w = np.maximum(w, nbr_reduce(grid, np.maximum, w[grid.nbr_idx]))
+    return np.maximum(v, REACH * w)
 
 
 def _rel(v, land):

@@ -91,11 +91,22 @@ PROD_COLD = (22.0, 12.0)  # C warmest-month sea surface: cool water is nutrient-
 PROD_TIDE = (1.0, 4.0)  # m tidal range: tidal mixing fronts on shelves
 SEAL_WARM = (25.0, 18.0)  # C warmest-month sea surface: seals are cool-water animals (the few warm-water
 # ones, Galapagos and Hawaii, live where the sea stays this cool or at the ramp's edge)
-ISLAND_CELLS = 3  # a landmass this small (cells) is an island free of land predators
+ISLAND_KM2 = 9400.0  # km2: a landmass this small, or of a single cell, is an island free of land predators (JUDGEMENT;
+#   PW-820: the old 3 L7 cells, 9,340 km2; the one-cell floor keeps L6's smallest islands, 12,452 km2, which it can't draw smaller)
 # hazards at sea
 SHOAL_M = (40.0, 10.0)  # m mean depth of an offshore cell: banks and shoals
 HAZ_REEF = (0.5, 8.0)  # % reef
 HAZ_ICE = (0.3, 0.9)  # share of the year under sea ice
+
+def island_mask(grid, land, label=None, size=None):
+    """Land cells on a landmass of at most ISLAND_KM2, or of one cell (PW-820)."""
+    if label is None:
+        label, k = grid.components(land)
+        size = np.bincount(label[label >= 0], minlength=k)
+    km2 = 4.0 * np.pi * R_KM ** 2 / grid.n
+    s = size[np.maximum(label, 0)]
+    return land & (label >= 0) & ((s * km2 <= ISLAND_KM2) | (s <= 1))
+
 
 ICE, FJORD, DELTA, MANGROVE, TIDAL, BARRIER, CORAL, CLIFF, ROCKY, BEACH, LOW = range(1, 12)
 CLASSES = [  # id, key, name, colour, about
@@ -188,7 +199,7 @@ def scores(grid, L: dict, meta: dict | None = None) -> dict:
     ice_l = np.where(near, grid.nbr_max_in(ice_y, sea), 0.0)
     label, k = grid.components(land)
     size = np.bincount(label[label >= 0], minlength=k)
-    island = land & (label >= 0) & (size[np.maximum(label, 0)] <= ISLAND_CELLS)
+    island = island_mask(grid, land, label, size)
     nest = np.maximum.reduce([cliff, 0.9 * island, 0.4 * rocky, 0.3 * (ice > 0)])
     beach_ish = ramp(wave, 1.0, 4.0) * (1 - rocky)
     haul = np.maximum.reduce([0.8 * rocky, 0.6 * beach_ish, island.astype(float), ramp(ice_l, 0.2, 0.7)])
