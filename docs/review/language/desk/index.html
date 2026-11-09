@@ -82,7 +82,8 @@ a { color: var(--accent); }
     <span class="label">Under way now (no action needed)</span>
     <ul>
       <li><b>Bird two-voice tones.</b> The syrinx's second voice gets its own tone instead of a fixed fifth: level, rising or falling on each side, contrary and oblique contours, how it arises and merges, how humans hear it, and real two-line audio. Measured on a24559, including whether bird words get shorter as the syllable space grows.</li>
-      <li><b>Your rulings (11-08).</b> All 21 answers read; a lane is carrying them out now (sounds A/D/E, borrowing, grammar A-F, adult learners, long-lived grammar), with the rate-spread comparison you asked for. The blocklist words are back. The sound-change draw (PW-1551) comes after, as its own lane, since it recalibrates everything.</li>
+      <li><b>Your rulings (11-08): done.</b> All in and checked (every check passes except the accepted horizon; full test suite green). Sound rules now have a long tail (15 kyr+ rules: 17 → 130). A shift carries the new speakers' accent into 60% of words, and empty places of articulation fill slowly (lipped languages with no labials: 3 → 1). Rates: I ran both versions. 0.5 alone failed two checks (a raised e in 11% of languages, too many borrowed pronouns), and 0.5 plus bursts passed, so the bursts stay. Borrowed sounds halved. Gender relabelled where nothing agrees. Comparatives now follow WALS (locational is now the most common). Adult-learner median 0.54 → 0.25. Long-lived languages with 0–1 verb endings: 93% → 1%. Three calls came out of it, below.</li>
+      <li><b>Next:</b> the sound-change draw (PW-1551), then your four tickets: cold review, polities, lipless voices, names.</li>
       <li><b>Language finder: done, in main.</b> Ask me in plain words ("fantasy Hawaiian", "Japanese-ish strict CV", "most English") or run <span class="mono">uv run python tools/language/find.py runs/a24559/languages.json --like hawaiian</span>. Its 16 likeness profiles include Sindarin, Quenya, Klingon and Black Speech.</li>
       <li>Merged to main 11-08; leftovers are tickets PW-1536 to PW-1555. Demo: <a href="https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs" target="_blank" rel="noopener">10 languages from a24559</a>; viewer <span class="mono">planet langserve a24559</span> on port 8790.</li>
     </ul>
@@ -93,152 +94,25 @@ a { color: var(--accent); }
 
 <script>
 const SECTIONS = [
-  { title: "Quick calls", tk: "", intro: "Small things from today.", items: [
-    { id: "blocklist", tag: "spelling guard", q: "Put any of the dropped words back on the blocklist?",
-      body: "The guard now blocks only slurs (14 entries plus nazi and hitler). Swearing is allowed inside words. I also dropped three words that are not swearing: rape (it also shows up inside grape and drape), whore and slut.",
-      opts: [["none", "Leave them off", true], ["rape", "Add back rape"], ["all3", "Add back all three"]] },
+  { title: "From your rulings", tk: "PW-1538 · 1539 · 1542 · 1544", intro: "Your 11-08 picks are all in (see the box above). Running them turned up three calls.", items: [
+    { id: "r.elves", tag: "PW-1538 C · 1544 · elves", q: "Elves just miss the 'long generations' cut",
+      body: "The long-generation leanings (evidentials kept, slower erosion) and the richer old grammar start at a 150-year generation. Elves sit at 144.9 years, so only dragons get them. The card you answered said 'elves, dragons'.",
+      opts: [["elves", "Lower the cut to 140 so elves are in", true], ["dragons", "Dragons only"]] },
+    { id: "r.collapse", tag: "PW-1539 E · fast lines", q: "No language wears down to a Hawaiian-sized sound set",
+      body: "Fast lines now change about twice as fast after a shift or founder split, but a pull back to each language's starting size cancels the extra changes: speed and consonant count are unrelated (r = -0.03). Only languages that start small end up small.",
+      opts: [["accept", "Accept: small sets only from small starts"], ["loosen", "Loosen that pull during a burst, so a founder line can shrink and then hold", true], ["merge", "Extra mergers for island and coast founders"]] },
+    { id: "r.l2", tag: "PW-1542 · trade languages", q: "After the new adult-learner curve, no language is a lingua franca",
+      body: "The median is 0.25 as you picked, but everything now sits between 0.13 and 0.35. Real lingua francas (Swahili, Malay) are far higher. Since this morning main also has a trade-language ledger (PW-1526) that says who speaks which trade language and ruler's tongue, and PW-1561 already asks the language pass to read it.",
+      opts: [["ledger", "Take hub status from the trade-language ledger (fold into PW-1561)", true], ["share", "Use the neighbours' share of speakers"], ["keep", "Keep as is for now"]] },
+  ]},
+  { title: "Still open", tk: "", intro: "", items: [
     { id: "elvish", tag: "PW-1557 · elves", q: "No elvish language in a24559 sounds like Tolkien's Elvish",
       body: "The finder's best elvish match to Sindarin is 4.7 and to Quenya 4.0 (under 2 is close, over 3.5 is nothing alike). The closest elvish one has four tones. Today's elves come from the same random draw as everyone else.",
       opts: [["leave", "Leave it: our elves are their own", true], ["nudge", "Light nudge on the elf proto: liquids, θ/ð, no tones or ejectives"]] },
   ]},
-  { title: "Sounds, sound change and spelling", tk: "PW-1539", intro: "Part 1 of the defaults the lanes picked overnight. C (palatalization weight) is already settled: it is at 0.3 after the last run.", items: [
-    { id: "s.A", tag: "A · live rules", q: "Live phonological rules die young",
-      body: "A live rule lives a median 6 kyr and a language keeps at most 8. Real languages keep some far longer (Celtic mutations, Sanskrit sandhi).",
-      opts: [["keep", "Keep (life-cycle reading)"], ["longtail", "Long tail: a few rules last 15+ kyr", true]] },
-    { id: "s.B", tag: "B · dragons", q: "Dragon sub-bass in about 9 of 10 dragon lines",
-      body: "Sub-bass vowels (felt more than heard, below ~20 Hz) appear in nearly every dragon language.",
-      opts: [["hallmark", "Keep as the dragon hallmark", true], ["rarer", "Make it rarer (some dragon tongues without)"]] },
-    { id: "s.D", tag: "D · language shift", q: "A people that shifts language keeps the old language's sounds",
-      body: "A fire-giant language descended from bronze-dragon speech keeps no labials and a growled a. The new speakers' accent could be run over the whole vocabulary at the shift so the language takes on their mouth.",
-      opts: [["keep", "Keep as is"], ["partial", "Nativise partially", true], ["full", "Nativise fully"]] },
-    { id: "s.E", tag: "E · rates", q: "How unevenly languages change speed",
-      body: "Rates differ by lognormal sigma 0.3 between languages. The review suggested ~0.6 plus a burst after a shift or founder split, so some lines change very fast (a Hawaiian-type collapse).",
-      opts: [["keep", "Keep 0.3"], ["s05", "Try 0.5, watch the horizon check", true], ["burst", "0.5 plus founder/shift bursts"]] },
-    { id: "s.table", tag: "the rest", q: "The other 20 sound and spelling defaults",
-      body: "Silence keeps them. Note any you want changed.",
-      table: [
-        ["Rounding harmony onto high vowels only (Turkish type)", "on"],
-        ["Backness harmony: front e going back opens to ɑ (-ler/-lar)", "on"],
-        ["Harmony never coins a vowel the language lacks", "on"],
-        ["Exits from ɖ: ɖ > ɽ between vowels, ɽ > ɾ, ɖ > r word-initially", "S215-S217"],
-        ["Labialized coronals lose labialization", "S226"],
-        ["Non-human voices feel ease drag from their own costs", "EASE_K 0.5"],
-        ["p rare in beaked and lipless mouths; humans p 0.77 vs PHOIBLE 0.85", "not forced"],
-        ["Series-first inventory draw", "SERIES_FILL 0.75"],
-        ["Up to 7 tones; a long-vowel contour counts as two levels", "lect.tonemes"],
-        ["Line drift: per-family and per-row liking, inherited", "0.7 / 1.0 / 0.2"],
-        ["Named laws (Grimm, Verner, GVS) fire once per line", "REFIRE_KYR 4"],
-        ["Chain shifts count half in the change rate", "0.5"],
-        ["New changes start phrase-level, then word, then stem", "1 / 3 kyr"],
-        ["Tonal lines with one tone-sandhi rule", "70%"],
-        ["Prenasal-stop sources S142 and S068 down to weight 1", ""],
-        ["Book letters: purr vr, growl rh, second voice wh, sub-bass mh, ultra ih", "NH_MARKS"],
-        ["Book spelling keeps 2 diacritic letters per language", "budget 2"],
-        ["Clicks written ǀ ǁ ǃ ǂ (no Bantu c q x option)", ""],
-        ["Pinyin-style b/p only where there are no voiced stops", ""],
-        ["In-word letter guard is a middle dot (irh·ll)", ""],
-      ] },
-  ]},
-  { title: "Words, contact, faiths and names", tk: "PW-1540", intro: "Part 2.", items: [
-    { id: "w.A", tag: "A · polysemy", q: "About 22% of meanings share a form with another",
-      body: "Almost all of it is attested polysemy (NOW/TODAY, POT/BOWL); accidental homophones under 1%. The cold review still felt common words sounded alike too often.",
-      opts: [["accept", "Accept", true], ["lower", "Lower it (fewer meaning shifts, or shifts vacate the old meaning)"]] },
-    { id: "w.B", tag: "B · gods", q: "Gods get a sex from kin titles ('sky-father', 'earth-mother'), drawn 50/50",
-      body: "gods.json has no sex field, so the language layer draws one.",
-      opts: [["keep", "Keep", true], ["drop", "Drop kin titles"], ["wait", "Wait for gods.json to carry it"]] },
-    { id: "w.C", tag: "C · liturgy", q: "Liturgies freeze at a faith's first temples (up to ~6.6 kyr old)",
-      body: "Latin, Sanskrit and Ge'ez are 1.5-4 kyr old. Freezing at writing would be better, but there is no usable writing step yet.",
-      opts: [["keep", "Keep until writing exists, then switch", true], ["younger", "Cap liturgy age now"]] },
-    { id: "w.D", tag: "D · after a shift", q: "Minority speech life, adult-learner levels, dialect continuity",
-      body: "Minority speech decays slowly with no tipping point; neighbouring dialects drift into separate languages fast. Dialect continua are in the contact backlog (PW-1554).",
-      opts: [["keep", "Keep for now", true], ["continua", "Prioritise dialect continua"]] },
-    { id: "w.E", tag: "E · borrowed sounds", q: "Segment borrowing is frequent",
-      body: "205 of 618 living languages borrowed sounds, 142 at the cap of 4, with little areal effect to show for it.",
-      opts: [["keep", "Keep"], ["halve", "Halve the borrowing rate", true]] },
-    { id: "w.F", tag: "F · towns", q: "About two thirds of town names are substrate (another people's names)",
-      body: "That follows the settlement history: most towns were founded by an earlier people.",
-      opts: [["fine", "Fine"], ["high", "Reads too high"]] },
-    { id: "w.table", tag: "the rest", q: "The other 21 word, faith and name defaults",
-      body: "Silence keeps them.",
-      table: [
-        ["Fresh root when nothing can renew a frequent meaning", "KEEP_COIN 1.0"],
-        ["Loan steepness against contact (WOLD curve)", "gamma 0.5"],
-        ["Pronoun/numeral/question-word merges repaired next step", "on"],
-        ["Numeral 'other' systems: 60% restricted / 40% five-based", "lexsys"],
-        ["Colour stage weights and split rate (by eye)", "COLOUR_SPLIT 0.0008"],
-        ["Kinship pulled by marriage rules", "KIN_PULL_MAX 3"],
-        ["Name taboos speed word loss", "+30% / +20%"],
-        ["Avoidance register: 20 meanings, half borrowed", "AVOID_LOAN 0.5"],
-        ["Areal feature copying x10", "AREAL_K 0.015"],
-        ["Shift substrate 10-30% of words; accent replaces 80% of missing sounds", "ACCENT_P 0.8"],
-        ["Four gods named per culture", "4"],
-        ["God-name half-life against an epithet", "12 kyr"],
-        ["Learned loans from the liturgy", "0.0025 / gen"],
-        ["Unrelated peoples sharing a faith calque its gods", "on"],
-        ["Petition gifts per god domain", "GIFT"],
-        ["A god name may sound like a grammatical marker", "not vetoed"],
-        ["Naming traditions 50/25/25; bynames 35/30/25/10; 12% drift", "personal.py"],
-        ["Old names ~4 kyr back, worn to two syllables up to 60%", "OPAQUE_CAP 0.6"],
-        ["Towns: 3 per deme; newcomers add their own generic 25%", ""],
-        ["Faith ethnonyms rare", "FAITH_W"],
-        ["Pattern codes mapped to your E/X/P taxonomy", "names.py"],
-      ] },
-  ]},
-  { title: "Grammar, species leanings and the pages", tk: "PW-1538", intro: "Part 3.", items: [
-    { id: "g.A", tag: "A · gender", q: "Half the languages shown with gender have no agreement anywhere",
-      body: "Grambank defines gender by agreement. Relabel those as noun classes?",
-      opts: [["relabel", "Call it 'noun classes (no agreement)'", true], ["none", "Show 'none'"], ["keep", "Keep 'gender'"]] },
-    { id: "g.B", tag: "B · class fallback", q: "A dog can take the 'tools' classifier",
-      body: "A noun whose group has no class falls to the first of abstract, tools, plant or animal the language has.",
-      opts: [["animate", "Animate nouns fall to person/animate first", true], ["keep", "Keep"]] },
-    { id: "g.C", tag: "C · species", q: "Species leanings in grammar (proposal, not in the code)",
-      body: "Long generations: evidentials and miratives recruited more and lost less, slower erosion. Kenku: more reduplication. Short generations: slightly faster recruitment.",
-      opts: [["none", "None"], ["first", "Only the long-generation row", true], ["all", "All rows"]] },
-    { id: "g.D", tag: "D · comparison", q: "Comparatives follow Grambank-drawn shares (locational 18% vs WALS 47%)",
-      body: "Switch the prior to WALS 121A shares (one line).",
-      opts: [["wals", "Switch to WALS", true], ["keep", "Keep"]] },
-    { id: "g.E", tag: "E · sentences", q: "One sentence set for every language",
-      body: "Good for comparing, dull to read.",
-      opts: [["keep", "Keep the set"], ["plus1", "Keep the set, add one sentence per language from its own life", true], ["own", "Per-language sets"]] },
-    { id: "g.F", tag: "F · politeness", q: "Politeness grows with population only; the page claims 'rank is marked'",
-      body: "There is no rank data until polities give it (PW-1549).",
-      opts: [["soften", "Keep, soften the page wording", true], ["wait", "Hide politeness until polities"]] },
-    { id: "g.table", tag: "the rest", q: "The other 18 grammar defaults",
-      body: "Silence keeps them.",
-      table: [
-        ["Split ergativity: person 60%, aspect 40%", "SPLIT_KIND"],
-        ["Inclusive 'we': we+you 45, I+you 15, own root 40", "INCLUSIVE_FROM"],
-        ["Reduplication: iterative 45, intensive 20, continuous 35; CV copy 65%", "REDUP"],
-        ["Numerals: 20 = 'two ten'; vigesimal 100 = 'five twenty'", "NUMERAL_WORDS"],
-        ["Person paradigms bind as a set", "PERSON_JOIN"],
-        ["Degrammaticalization ~1.6 per language per 20 kyr (likely high)", "DEGRAM"],
-        ["Ergative mostly from 'near, with'", "X22"],
-        ["Imperative sources (attention word, widened hortative)", "guess"],
-        ["Genitive pulled in case languages", "PULL_GROUP"],
-        ["Concord: dem 1.0 / adj 0.7 / verb 0.5", "CONCORD_*"],
-        ["Actor voice from 'do, make'", "guess"],
-        ["Remote past from 'long, old'; exceed from 'climb'; obviative from 'that, other'", "guesses"],
-        ["Question particles pulled x3", "PULL_BOOST"],
-        ["Differential object marking rates", ""],
-        ["T-V only where polite 'you' differs", "polite_contrast"],
-        ["Fable ancestor 3-6 kyr back, 2-4 daughters", "FABLE_DEPTH_KYR"],
-        ["Complexity tab window 0.5-3 kyr", "CX_WINDOW"],
-        ["Complexity score formula", "grammar.complexity"],
-      ] },
-  ]},
-  { title: "Bigger calls", tk: "PW-1542 · 1544 · 1551", intro: "Three tickets the lanes left as your call. Each changes many numbers, so each would be its own lane with a full pass.", items: [
-    { id: "b.l2", tag: "PW-1542 · adult learners", q: "The 'adult learners' number is high almost everywhere",
-      body: "We estimate it from how much other peoples share the land. A third of living languages sit at the 0.7 cap, so a remote valley next to one neighbour reads like a trade city.",
-      opts: [["share", "Weight by the neighbour's share of speakers"], ["concave", "Concave map, median ~0.25", true], ["leave", "Leave it"]] },
-    { id: "b.long", tag: "PW-1544 · long-lived peoples", q: "Dragon and other long-lived languages are almost all isolating (93%)",
-      body: "Grammar changes per generation, and dragons get few generations, so endings never grow. A conservative language could instead keep old inflection (Lithuanian, Icelandic).",
-      opts: [["accept", "Accept: their speech is analytic"], ["richer", "Give long-lived protos a richer starting grammar", true], ["peryear", "Count grammar change partly per year"]] },
-    { id: "b.weights", tag: "PW-1551 · change weights", q: "Rare sound changes fire almost as often as common ones",
-      body: "The draw throws away changes that alter no word and redraws, so nearly every applicable change fires. The catalogue's 'how common' weight is mostly ignored, which is why so many one-off caps exist.",
-      opts: [["A", "Draw without redraws, recalibrate (removes caps)", true], ["B", "Per-line availability draw"], ["C", "Leave it, keep adding caps"]] },
-  ]},
 ];
 
+const SHOW_PRIORITY = false;  // answered 11-08: PW-1537, 1549, 1545, 1546
 const PRIORITY = [
   ["PW-1537", "Cold-review findings: markers that never wear down, the fable's ancestor, templated recipes and myths, homophony", "high · l"],
   ["PW-1549", "Languages and polities: empires spread language and loans, states get names, rank drives polite speech", "high · l"],
@@ -267,11 +141,12 @@ function render() {
   let html = "";
   for (const s of SECTIONS) {
     if (s.hidden) continue;
+    if (!s.intro) s.intro = "";
     html += `<section><h2>${esc(s.title)}${s.tk ? ` <span class="tk">${esc(s.tk)}</span>` : ""}</h2><p class="intro">${esc(s.intro)}</p>`;
     for (const it of s.items) html += entry(it);
     html += `</section>`;
   }
-  html += `<section><h2>What should the lane do next? <span class="tk">pick up to 4</span></h2>
+  if (SHOW_PRIORITY) html += `<section><h2>What should the lane do next? <span class="tk">pick up to 4</span></h2>
     <p class="intro">After the two lanes above finish, these are the language tickets. Tick what you want first.</p>
     <div class="entry${(state.priority?.picks || []).length ? " done" : ""}" data-id="priority"><div class="picks">` +
     PRIORITY.map(([id, t, sz]) => `<label class="pick"><input type="checkbox" value="${id}" ${(state.priority?.picks || []).includes(id) ? "checked" : ""}>
