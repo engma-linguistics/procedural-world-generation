@@ -63,6 +63,20 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 .shots figure{margin:0}
 .shots img{width:100%;border-radius:6px;display:block}
 .shots figcaption{font-size:.85em;opacity:.8;margin-top:4px}
+.ask { margin-top: 10px; display: grid; gap: 8px; }
+.ask .q { font: 600 13px var(--sans); color: var(--ink2); }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { font: 500 14px var(--sans); border: 1px solid var(--rule); background: var(--bg); color: var(--ink); border-radius: 5px; padding: 6px 11px; cursor: pointer; text-align: left; max-width: 100%; }
+.opt:hover { border-color: var(--accent); }
+.opt[aria-pressed="true"] { background: var(--rec-soft); border-color: var(--rec); }
+.opt:focus-visible, .ask textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt .lean { font: 600 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 3px; padding: 0 5px; margin-left: 6px; }
+.ask textarea { width: 100%; box-sizing: border-box; min-height: 2.6em; resize: vertical; font: 14px var(--sans); background: var(--bg); color: var(--ink); border: 1px solid var(--rule); border-radius: 5px; padding: 7px 9px; }
+.saved { font: 500 12px var(--sans); color: var(--rec); }
+.reply { border-left: 3px solid var(--rec); background: var(--rec-soft); border-radius: 0 5px 5px 0; padding: 8px 12px; font-size: 15px; }
+.reply b { color: var(--rec); }
+.meter, .offline { font: 500 14px var(--sans); color: var(--muted); }
+.offline { color: var(--accent); background: var(--accent-soft); border-radius: 5px; padding: 8px 10px; }
 </style>
 
 
@@ -75,6 +89,12 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 </header>
 
 <h2 id="answers">For you</h2>
+<p class="sub">Pick an option or leave it alone: anything you don't touch keeps my lean. Notes save as you type, with or without a pick. I read them every refresh and reply on the card.</p>
+<p class="meter" id="meter">Loading your answers…</p>
+<p class="offline" id="offline" hidden>Answers can't be saved in this view (signed out or storage unavailable). You can still read everything; tell me in chat.</p>
+<div class="card" id="general"><div class="id">ANYTHING ELSE</div>
+<p>Questions, requests, "look at X", priorities: anything that isn't a card.</p>
+<div class="ask" data-id="general"></div></div>
 <div class="card" id="d68"><div class="id">D68 · PW-1524 · regional pantheons: five choices before building</div>
 <p><b>In plain words:</b> scout 220 looked into your D&amp;D-style pantheons (write-up: <code>docs/review/culture/faiths/pantheon1.md</code>, every source fetched). History mostly built pantheons by <i>matching</i> gods across peoples, not replacing them: the Romans' "Sulis Minerva" at Bath, Japan's kami treated as local forms of buddhas, Isis taken up in the ports. It happened in mixed trade cities and in empires of several peoples under tolerant polytheists. The model already has most of the pieces. On one D&amp;D test world, 47 candidate pantheons already show up around mixed towns, typically 5 peoples sharing 4 domain gods (dragonborn, leonin and humans sharing fire, sky and sea gods around one town). On the world where your missionary dwarf faith holds most cultures, only 5 small ones appear, which is how an exclusive faith behaves.</p>
 <ul>
@@ -84,7 +104,13 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>4. Faiths that refuse other gods:</b> <b>A (lean)</b> their cultures can't join, and converting means leaving. B they host lesser figures under their one god, like saints (later).</li>
 <li><b>5. War, harvest, smithing and ancestor gods</b> never rise high enough today, so shared rosters would be all nature gods. <b>A (lean)</b> let a culture's second and third gods rise with temples and kingship where war or farming dominates. B leave it.</li>
 </ul>
-<p>Worked out after the run, like the minority faiths, so worlds don't change. If you say nothing: 1A, 2B, 3A, 4A, 5A, built after lane 219's religious tolerance.</p></div>
+<p>Worked out after the run, like the minority faiths, so worlds don't change. If you say nothing: 1A, 2B, 3A, 4A, 5A, built after lane 219's religious tolerance.</p>
+<div class="ask" data-id="D68.1" data-q="1. Alike gods meet" data-opts="A:Match them, shared seat*|B:Fuse into one|C:Match, sometimes a new joint god"></div>
+<div class="ask" data-id="D68.2" data-q="2. Reach" data-opts="A:Hub and direct neighbours|B:800–1,500 km of the hub city*|C:Touching pantheons join freely"></div>
+<div class="ask" data-id="D68.3" data-q="3. How common" data-opts="A:Rare, about 2–8 per world*|B:Any mixed town"></div>
+<div class="ask" data-id="D68.4" data-q="4. Faiths that refuse other gods" data-opts="A:Can't join; converting means leaving*|B:Host lesser figures like saints (later)"></div>
+<div class="ask" data-id="D68.5" data-q="5. War, harvest, smithing gods" data-opts="A:Let them rise with temples and kingship*|B:Leave it"></div>
+</div>
 <div class="card" id="d70"><div class="id">D70 · PW-1527, PW-1531 · how much should faiths mix under tolerant rulers?</div>
 <p><b>In plain words:</b> you asked for tolerant rulers to allow more intermixing. Two lanes built it:</p>
 <ul>
@@ -102,7 +128,9 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>B.</b> More mixing: people also move between a realm's countryside regions (resettlement, as Assyria and the Inca did), not only into towns.</li>
 <li><b>C.</b> Taking up a neighbour's faith reads tolerance of outsiders instead, so religious tolerance only protects minorities.</li>
 </ul>
-<p>If you say nothing, A. To see it: Religion &rarr; Minorities has a "came through towns" column.</p></div>
+<p>If you say nothing, A. To see it: Religion &rarr; Minorities has a "came through towns" column.</p>
+<div class="ask" data-id="D70" data-opts="A:Keep both as built*|B:Also resettle between countryside regions|C:Neighbour uptake reads outsider tolerance"></div>
+</div>
 <div class="card" id="map"><div class="id">THE ROAD TO V1.0 ON 1 DECEMBER</div>
 <div class="tbl"><table>
 <tr><th>Tag</th><th>Target</th><th>What you can do</th><th>Where it is</th></tr>
@@ -148,5 +176,64 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>Your rulings today, and v0.2.0 is tagged.</b> D59 C (aggression makes conquest harsher), D56 B plus far reach for big settled empires, D58 A (no minimum invention rate) plus a look at who ends up behind, D57 A (the even missionary chance stays) plus minority faiths. All are being built or measured (lanes 204–206).</li>
 </ul>
 
-<footer>Desk v214 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v215 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
+<script>
+/* Answers live in the artifact's db, collection "answers", one doc per .ask (id = data-id): {choice, note, at, reply}.
+   Claude reads them each refresh (ArtifactData list) and writes "reply" onto the doc. */
+(() => {
+  const state = {}; let db = null;
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const asks = [...document.querySelectorAll(".ask")];
+  function draw(el) {
+    const id = el.dataset.id, st = state[id] || {};
+    const opts = (el.dataset.opts || "").split("|").filter(Boolean).map(o => {
+      const [v, ...rest] = o.split(":"); let l = rest.join(":"); const lean = l.endsWith("*"); if (lean) l = l.slice(0, -1);
+      return `<button class="opt" data-v="${esc(v)}" aria-pressed="${st.choice === v}"><b>${esc(v)}</b> ${esc(l)}${lean ? '<span class="lean">lean</span>' : ""}</button>`;
+    }).join("");
+    el.innerHTML = (el.dataset.q ? `<span class="q">${esc(el.dataset.q)}</span>` : "") +
+      (opts ? `<div class="opts">${opts}</div>` : "") +
+      `<textarea data-note="${esc(id)}" placeholder="${opts ? "Note (optional)" : "Write to me here"}">${esc(st.note || "")}</textarea>` +
+      (st.at ? `<span class="saved">saved</span>` : "") +
+      (st.reply ? `<div class="reply"><b>Claude:</b> ${esc(st.reply)}</div>` : "");
+  }
+  function meter() {
+    const withOpts = asks.filter(a => a.dataset.opts);
+    const n = withOpts.filter(a => state[a.dataset.id]?.choice).length;
+    const notes = Object.values(state).filter(v => v.note && v.note.trim()).length;
+    $("#meter").innerHTML = db ? `<b>${n}</b> of ${withOpts.length} picks made · ${notes} notes` : `${withOpts.length} picks open`;
+  }
+  function drawAll() { const a = document.activeElement; for (const el of asks) if (!el.contains(a)) draw(el); meter(); }
+  async function save(id, patch) {
+    state[id] = { ...(state[id] || {}), ...patch, at: Date.now() };
+    if (!db) return;
+    try { await db.collection("answers").doc(id).set({ ...state[id] }); }
+    catch (e) { const o = $("#offline"); o.hidden = false; o.textContent = "Couldn't save just now (" + (e?.code || "error") + "). Your pick is on screen; try again or tell me in chat."; }
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest(".ask .opt"); if (!b) return;
+    const el = b.closest(".ask"), id = el.dataset.id;
+    const v = state[id]?.choice === b.dataset.v ? null : b.dataset.v;
+    save(id, { choice: v }).then(() => { draw(el); meter(); });
+  });
+  const timers = {};
+  document.addEventListener("input", e => {
+    const id = e.target.dataset.note; if (!id) return;
+    clearTimeout(timers[id]); const val = e.target.value;
+    timers[id] = setTimeout(() => { save(id, { note: val }); meter(); }, 700);
+  });
+  drawAll();
+  (async () => {
+    try { db = await window.claude?.use?.("db"); } catch { db = null; }
+    if (!db) { $("#offline").hidden = false; meter(); return; }
+    const t = setTimeout(() => { $("#offline").hidden = false; }, 10000);
+    db.collection("answers").onSnapshot(snap => {
+      clearTimeout(t); let changed = false;
+      for (const d of snap.docs) { const v = d.data(), cur = state[d.id];
+        if (!cur || (v.at || 0) > (cur.at || 0) || v.reply !== cur.reply) { state[d.id] = { ...v }; changed = true; } }
+      changed ? drawAll() : meter();
+    }, () => { clearTimeout(t); $("#offline").hidden = false; });
+  })();
+})();
+</script>

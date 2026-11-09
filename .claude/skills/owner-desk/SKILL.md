@@ -49,3 +49,12 @@ memory lives in `docs/wiki/` (state.md, decisions.md); durable how-to in `docs/c
 Keep the existing look (the `<style>` block at the top: Source Serif 4 headings, IBM Plex body, the paper palette with
 its dark-mode tokens, `.card`, `.id`, `.tbl`, `.done`). Don't restyle the page on a refresh; add classes only when a new
 kind of content needs one.
+
+## Answers in the page (owner 11-08: the Language Desk's pick-and-note approach)
+- The desk publishes with `capabilities: {db: {}, user: {}}` (omit `capabilities` on a redeploy to keep them).
+- Every decision card ends with one `<div class="ask" data-id="D68.1" data-q="1. Short label" data-opts="A:label*|B:label"></div>` per question
+  (`*` marks my lean; `data-q` optional; no `data-opts` = a note box only). The page script draws option buttons and a note box and saves
+  each to the db collection `answers`, doc id = data-id: `{choice, note, at, reply}`. The "ANYTHING ELSE" card (`data-id="general"`) stays.
+- **Every refresh starts with** `ArtifactData list answers` on the desk URL. A pick or note is a ruling: act on it, then
+  `update` the doc's `reply` (pin `if_version`) with what I did, in plain words. Remove a card once acted on, and delete its answer docs then.
+- A reply to the general box goes on the `general` doc; clear its note only when he says so.
