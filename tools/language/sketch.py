@@ -1757,7 +1757,10 @@ def english_section(l: dict, score: float, comp: dict) -> list[str]:
 # ---- selection -------------------------------------------------------------------------------------------------------------
 
 def _nonhuman(l):
-    return sum(1 for s in inv_segments(l) if P.is_nonhuman(s))
+    """Sounds outside the human voice. Harsh (growled) voice alone is not counted: human languages use it too (!Xóõ,
+    Bai; PW-1537 R6)."""
+    from dataclasses import replace as _rep
+    return sum(1 for s in inv_segments(l) if P.is_nonhuman(_rep(s, phonation=0) if s.phonation == 3 else s))
 
 
 def _clicks(l):

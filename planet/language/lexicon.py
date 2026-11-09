@@ -149,7 +149,7 @@ CONTRAST_DAMP = 0.1
 # 2013): it is taken with chance (families / COLEX_MIN_FAMILIES) ** 2 below the proto-colexification floor, so the strong
 # edges (TREE ~ WOOD, DRINK ~ EAT) shift as before and a 7-family edge about a third as often. Attested pathways
 # (data/derivations.tsv 'shift' rows) are not damped.
-FREQ_SHIFT_CLASS = 2
+FREQ_SHIFT_CLASS = 3   # (WOMAN is class 3, MOTHER 2: the first pass at 2 left mother = woman at 6.9%)
 _PRONOUNS = ("I", "THOU", "HE OR SHE OR IT", "HE", "SHE", "IT", "WE", "WE (INCLUSIVE)", "YOU", "THEY")
 _NUMERALS = ("ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "TWENTY", "HUNDRED", "THOUSAND",
              "ELEVEN", "TWELVE", "FIFTEEN", "THIRTY", "FORTY")
@@ -2028,6 +2028,8 @@ def _renewal_boost(lex: Lexicon) -> dict[str, float]:
 def _clashes(lex: Lexicon, k: str, form: Form, any_domain: bool = True) -> bool:
     """Would `form` make `k` a homophone of another word (with `any_domain=False`: of a word in another domain, or join
     a group of 2+)?"""
+    if lex.gram_forms and k not in lex.gram_forms.get(form, (k,)):
+        return True   # (the form of a live particle or clitic of another source: PW-1537 R5)
     others = [c2 for c2, w in lex.words.items() if c2 != k and w.form == form]
     if not others:
         return False
@@ -2162,7 +2164,7 @@ def wear(rng, lex: Lexicon, n_generations: float, kyr: float, lect_id: str | Non
     hit = [k for k, u in zip(keys, rng.random(len(keys))) if u < p]
     if not hit:
         return []
-    forms = {w.form for w in lex.words.values()}
+    forms = {w.form for w in lex.words.values()} | set(lex.gram_forms)   # (nor onto a live particle, PW-1537 R5)
     out = []
     lect_id = lect_id or lex.lect
     for k in hit:
