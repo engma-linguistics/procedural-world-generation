@@ -3777,6 +3777,32 @@ def test_live_refugees_skip_land_their_people_has_already_left(faketz, monkeypat
     assert np.isfinite(moved) and np.isfinite(h.p[kb]).all() and h.p[kb][gone_cell] == 0.0
 
 
+def test_a_live_state_seat_is_hemmed_in_over_its_own_two_rings(faketz, monkeypatch):
+    """PW-1594 (lane 248, round18.md): with polities in the history, how hemmed in a state seat is reads the seat's own two rings, as
+    the read-out (polities._hemmed): free land of its own people bars nothing, land only other peoples hold bars SOCIAL_Q, a high peak
+    bars fully; not the people's whole border."""
+    from planet.lineages import polities as PO
+    from planet.lineages.history import params as HP
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    L = np.asarray(env["land"], bool)
+    ice = np.zeros(h.grid.n, bool)
+    el = np.where(L, np.asarray(env["elevation"], float), 0.0)
+    folk = h.p[fk] > 0
+    rings = PO._rings(h.grid, PO.HEMMED_RINGS)
+    c = next(int(c) for c in land[:300] if L[rings[int(c)]].all() and folk[rings[int(c)]].all() and (el[rings[int(c)]] < 3000).all())
+    ring = rings[c]
+    assert sorted(R.r2b[R.r2off[c]:R.r2off[c + 1]].tolist()) == sorted(ring.tolist() + [c])
+    R.hem[fk] = 1.0  # (the people's whole border, which the state test no longer reads)
+    assert R._hem_local(c, fk, "folk", 1.0, L, ice, el) == 0.0
+    a, b = ring[:4], ring[4]
+    h.p[fk][a] = 0.0
+    h.p[kb][a] = 0.9
+    el[b] = 3500.0
+    assert R._hem_local(c, fk, "folk", 1.0, L, ice, el) == pytest.approx((4 * HP.SOCIAL_Q + 1.0) / len(ring))
+
+
 def test_live_conquest_harshness_reads_the_winners_attitudes(faketz, monkeypatch):
     """PW-1481 / PW-1465 (lane 201, round10.md; Daniel D54): the history keeps each people's attitudes (attitudes.Attitudes, stepped
     each century), and a conquered people's fate reads the winner's: harshness 1 - tolerance x (1 - old enmity). With no old quarrel a
