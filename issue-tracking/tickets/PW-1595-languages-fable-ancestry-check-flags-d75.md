@@ -1,15 +1,19 @@
 ---
+id: PW-1595
 title: "Languages: fable ancestry check flags d754 SAY (deep root p314:NAME not in the split copy) on a24559"
 type: task
 status: todo
-parent: PW-1537
+parent: PW-767
+milestone: null
 subsystem: culture
 effort: s
 impact: low
 found_by: coordinator, demo build after lane 6 (PW-1592)
 blocked_by: []
-relates: []
-refs: [planet/language/texts.py::fable_descent, planet/language/history.py::birth, tools/language/demo_page.py::fable_section]
+relates: [PW-1592, PW-1537]
+refs: ["planet/language/texts.py::fable_descent", "planet/language/history.py::birth", "tools/language/demo_page.py::fable_section"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -28,3 +32,6 @@ shown ancestor.
 
 ## Acceptance
 - [ ] Diagnose which case it is; fix the check or the copy; demo build on a24559 prints no fable warning.
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-fable-check-say-from-name.md (found by coordinator, demo build after lane 6 (PW-1592)).
