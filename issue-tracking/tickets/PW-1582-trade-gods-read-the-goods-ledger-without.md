@@ -2,7 +2,7 @@
 id: PW-1582
 title: "Trade gods: read the goods ledger without pulling the server into the lineages code hash"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v5
 subsystem: culture
@@ -21,3 +21,4 @@ In plain words: lane 236 let a culture's goods ledger (how much it trades) raise
 
 ## Updates
 - 2026-11-09: Created.
+- 2026-11-09: Done (lane 246). brief.Ctx no longer reads the server; lineages/readout.py holds the read-out Ctx (religion(), trade_flows()) with build and all_briefs on it, used by the server and the CLI. faithmap.render moved to faithmap_png.py (cuisine and tongues import faithmap, which reached thumbs and so the server). gods.inputs reads the ledger again; test_code_hash_scopes passes. Note: trade.derive itself costs about 10 s per run, so gods.json still waits that long.
