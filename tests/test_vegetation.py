@@ -33,6 +33,22 @@ def test_months_add_up():
     assert (m["snow"][:, warm] == 0).all()
     assert np.allclose(m["water"][:, warm], m["p"][:, warm])
     assert (m["gdd5"] >= 0).all() and (m["par"] > 0).any()
+    assert ((m["df"] >= 0) & (m["df"] <= 1)).all() and ((m["mu"] >= 0.05) & (m["mu"] <= 1)).all()
+
+
+def test_diffuse_two_leaf():
+    """PW-1518: the diffuse share falls as the sky clears (Yan et al. 2017 eq. 13), and the two-leaf canopy fixes more
+    per unit of light under a more diffuse sky, with its deep leaves paid more than the big leaf pays them."""
+    df = climate.diffuse_fraction(np.array([0.25, 0.45, 0.725]))
+    assert df[0] > df[1] > df[2]
+    om, df0 = V.DIFFUSE["TrBE"]
+    ref = V._two_leaf(V.LAI_REF, df0, 0.95, om)
+    assert V._two_leaf(V.LAI_REF, 0.8, 0.95, om) > 1.3 * ref
+    # the marginal leaf at LAI ~4.3 under Df0, against the big leaf's 0.5 exp(-0.5 L), both normalised at LAI_REF
+    h, lai = 0.01, 4.3
+    two = (V._two_leaf(lai + h, df0, 0.95, om) - V._two_leaf(lai - h, df0, 0.95, om)) / (2 * h) / ref
+    big = 0.5 * np.exp(-0.5 * lai) / (1 - np.exp(-0.5 * V.LAI_REF))
+    assert two > big
 
 
 # --------------------------------------------------------------------------- idealised climates

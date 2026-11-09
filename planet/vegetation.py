@@ -152,16 +152,18 @@ T_GROWN = {"TrBE": 25.5, "TrBR": 25.5, "TeBE": 24.0, "TeBS": 22.0, "TeNE": 22.0,
 # type can't hold its own (heath: cool summers)
 _TUNE = {  # (tuned on Earth with tools/veg_check.py; overrides of the table above)
     "TeNE": dict(eps=0.95, gamma=0.005), "BoNS": dict(eps=0.95, lma=35),
-    "XerS": dict(eps=0.45, laimax=1.5, carbon=2500, gamma=0.05), "Succ": dict(eps=0.3, gamma=0.04, carbon=3000), "TrBE": dict(eps=1.43, gamma=0.005),
+    "XerS": dict(eps=0.45, laimax=1.5, carbon=2500, gamma=0.05), "Succ": dict(eps=0.3, gamma=0.04, carbon=3000), "TrBE": dict(eps=1.43, gamma=0.005, rl=11.1),
     "TrBR": dict(eps=1.0, carbon=13000, gamma=0.008, resist=0.93), "TeBE": dict(gamma=0.006), "BoNE": dict(gamma=0.005, carbon=10000),
     "TeBS": dict(eps=1.15, gamma=0.005, carbon=11000),
 }
-# TrBE's eps (scout 210, PW-1331): 1.43 x EPS_SCALE = 1.14 g C per MJ of absorbed PAR, the low end of the canopy light-use
-# efficiency measured by eddy covariance at Tapajos K67 (GPP / (PAR x FPAR): 1.1 in the dry season, up to 1.9 in the wet
-# season as the diffuse share of the light rises; Yan et al. 2017, JGR Biogeosci 122:3014, doi:10.1002/2017JG004008).
-# LPJ's 1.10 gave 0.88, below the measured dry-season floor, and tropical GPP ~2200 against ~3100 measured at the same
-# tower (Hutyra et al. 2007, as Lloyd et al. 2010 quote it: 262 mol C/m2/yr). The low end is taken because the model has
-# no diffuse-light gain (that is what lifts the wet-season value; not modelled, so not credited).
+# TrBE's eps (scout 210, PW-1331): 1.43 x EPS_SCALE = 1.14 g C per MJ of absorbed PAR, the canopy light-use efficiency
+# measured by eddy covariance at Tapajos K67 in the dry season, at a diffuse fraction of 0.55 (GPP / (PAR x FPAR): 1.1,
+# rising to 1.9 in the wet season at Df 0.9; Yan et al. 2017, JGR Biogeosci 122:3014, doi:10.1002/2017JG004008). LPJ's
+# 1.10 gave 0.88, and tropical GPP ~2200 against ~3100 measured at the same tower (Hutyra et al. 2007, as Lloyd et al.
+# 2010 quote it: 262 mol C/m2/yr). The wet season's higher value is the diffuse-light gain (DIFFUSE, PW-1518).
+# TrBE's rl (PW-1518, scout 232): x1.5 LPJ's 7.4, Chambers et al. 2004's in-situ canopy leaf rate at Manaus (0.54
+# umol/m2/s over 24 h against 0.33 at 25 C; Ecol Appl 14:S72; docs/review/climate/npp/scout3.md). Its leaves then
+# breathe ~750 g C/m2/yr on Earth's observed climate (measured 710-980; docs/review/climate/diffuse/screens.md).
 PIONEERS = ("BoBS", "BoNS")  # light-hungry trees that shade-tolerant ones crowd out (birch, aspen, larch)
 # Herbs' roots respire too (PW-1261, lane 123): the herbs carry no wood term (rw = 0), so their rl, the leaves' rate,
 # was all the maintenance a grass paid, and its NPP/GPP came out at ~0.7 (Earth's observed climate) against ~0.46 +- 0.12
@@ -213,11 +215,27 @@ EPS_SCALE = 0.8  # all efficiencies (tuned: Earth's land NPP)
 # under the light's own extinction (Lloyd: kI 0.7 for tropical forest). Herbs keep the linear form (one thin layer).
 # 0 turns it off.
 KN_RESP = 0.15
+# Diffuse light (PW-1518): a canopy fixes more carbon per unit of absorbed light under a cloudy, diffuse sky, because
+# the light then reaches the shaded inner leaves instead of saturating the sunlit ones (Mercado et al. 2009, Nature
+# 458:1014). Per PFT (clumping index, the diffuse fraction its eps is for): the PFT's GPP takes Yan et al. 2017's
+# two-leaf canopy (_two_leaf: sunlit and shaded leaves, the shaded ones' efficiency rising with the month's diffuse
+# share Df, climate.months' df) in place of the big leaf's FPAR, normalised so a canopy of LAI_REF under Df0 fixes what
+# today's eps does; a month clearer than Df0 is taken at Df0 (today's eps is the floor). The two-leaf form also pays the
+# deep, shaded leaves more than the big leaf does, so the PFT keeps more leaf layers.
+# TrBE only (PW-1518, scouts 232 and 239): its eps was measured at Tapajos K67 at the dry season's Df 0.55 (above), and
+# Yan's two-leaf parameters (eps_sun 1.11, eps_shade 4.35 g C/MJ, Df exponent 1.8) were calibrated there, clumping 0.8
+# for evergreen broadleaf forest (Yan's Table 1, after Zhou et al. 2016). The other trees' eps are fitted on Earth's
+# land NPP (EPS_SCALE) at whatever sky they have, so they keep the big leaf until that fit is redone (PW-1574;
+# docs/review/climate/diffuse/).
+DIFFUSE: dict[str, tuple[float, float]] = {"TrBE": (0.8, 0.55)}
+LAI_REF = 4.6  # the LAI the two-leaf canopy is normalised at: TrBE's on Earth's observed climate before PW-1518 (4.58)
 C4, C3 = IDX["C4G"], IDX["C3G"]
 _KP = np.stack([EPS_SCALE * _col("eps"), *(np.array([p["temp"][j] for p in PFTS], float) for j in range(4)), _col("amin"),
                 _col("top"), _col("phen"), _col("on"), _col("rl"), _col("rw"), _col("lma"), _col("tleaf"),
                 _col("kt"), _col("wet"), _col("laimax"), _col("wue"), (np.arange(NP) == C3).astype(float),
-                _col("wue"), _col("t_grown"), np.where(HERBS, 0.0, KN_RESP)], 1)  # (water-use efficiency at today's CA_REF, which potential()
+                _col("wue"), _col("t_grown"), np.where(HERBS, 0.0, KN_RESP),
+                np.array([DIFFUSE.get(c, (0.0, 1.0))[0] for c in CODES]),
+                np.array([DIFFUSE.get(c, (0.0, 1.0))[1] for c in CODES])], 1)  # (water-use efficiency at today's CA_REF, which potential()
 # leaves unscaled; the growth temperature the respiration rates are for, T_GROWN)
 # C3 against C4 grasses (PW-231): the two differ only in their photosynthetic
 # pathway, and which wins a month is set by the quantum yield (Ehleringer &
@@ -637,7 +655,19 @@ def _ft(t, t0, t1, t2, t3):
 
 
 @njit(cache=True)
-def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, tg, days, ci, out):
+def _two_leaf(lai, df, mu, om):
+    """Yan et al. 2017's two-leaf canopy (JGR Biogeosci 122:3014, eq. 5-11): GPP per unit of PAR at the top, before
+    the water and temperature factors, for leaf area lai, diffuse share df, cos noon zenith mu, clumping om."""
+    pdir, pdif = 1.0 - df, df
+    lsun = 2.0 * mu * (1.0 - np.exp(-0.5 * om * lai / mu))
+    pdu = pdif * np.exp(-0.5 * om * lai / (0.537 + 0.025 * lai))
+    c = 0.07 * om * pdir * (1.1 - 0.1 * lai) * np.exp(-mu)
+    shd = (pdif - pdu) / lai + c
+    return 1.11 * (pdir * 0.5 / mu + shd) * lsun + 4.35 * (0.25 + 0.75 * df ** 1.8) * shd * (lai - lsun)
+
+
+@njit(cache=True)
+def _year(kp, i, lai, T, W, PET, PAR, DF, MU, cap1, cap2, eff, dryf, tg, days, ci, out):
     """One PFT growing alone at LAI lai on cell i, two years of months
     (the first spins the soil bucket up from full). Writes into out:
     [0] NPP, [1] net (NPP - leaf and fine-root turnover), [2] GPP,
@@ -648,6 +678,8 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, tg, days, ci, out):
     eps, t0, t1, t2, t3, amin, top, phen, on_t = kp[0], kp[1], kp[2], kp[3], kp[4], kp[5], kp[6], kp[7], kp[8]
     rl, rw, lma, tleaf, kt, wet, wue, qy, wue0 = kp[9], kp[10], kp[11], kp[12], kp[13], kp[14], kp[16], kp[17], kp[18]
     kn = kp[20]  # canopy leaf-respiration depth constant (0: every leaf respires alike)
+    om, df0 = kp[21], kp[22]  # the two-leaf canopy (DIFFUSE; om 0: the big leaf)
+    fap_ref = 1.0 - np.exp(-0.5 * LAI_REF)
     w1, w2 = cap1, cap2
     gpp = resp = asum = 0.0
     gref = 0.0  # GPP as it would be at today's CA_REF (the respiration's carbon supply, below)
@@ -718,6 +750,9 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, tg, days, ci, out):
                 fw = (alpha - half) / (1.0 - half)
                 fw = min(max(fw, 0.0), 1.0)
                 g_m = eps * eff * fap * PAR[m, i] * _ft(t, t0, t1, t2, t3) * fw
+                if om > 0:  # sunlit and shaded leaves (DIFFUSE): in place of the big leaf's FPAR
+                    mu = MU[m, i]
+                    g_m *= fap_ref / fap * _two_leaf(lai, max(DF[m, i], df0), mu, om) / _two_leaf(LAI_REF, df0, mu, om)
                 g_r = g_m
                 if qy > 0:  # C3 plants: their quantum yield (QY_CROSS, _q3; C3_PFTS: against today's)
                     gs = 42.75 * np.exp(37830.0 * (t - 25.0) / (298.15 * 8.314 * (t + 273.15)))
@@ -757,7 +792,7 @@ def _year(kp, i, lai, T, W, PET, PAR, cap1, cap2, eff, dryf, tg, days, ci, out):
 
 
 @njit(parallel=True, cache=True)
-def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, tg, lai0, mode, days, ci, grass, res, gmon):
+def _potential(cells, kp, T, W, PET, PAR, DF, MU, cap1, cap2, viable, eff, dryf, tg, lai0, mode, days, ci, grass, res, gmon):
     """Potential NPP of every viable PFT on every cell in cells, at the LAI
     that maximises its net NPP. mode 0: golden-section search over
     (0.05, laimax) (8 evaluations); mode 1: a local step around lai0 (the
@@ -778,7 +813,7 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, tg, lai
                 bl, bv = 0.0, -1e30
                 for f in (1.0, 0.8, 1.25):
                     x = min(max(lai0[p, i] * f, 0.05), lmax)
-                    _year(kp[p], i, x, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
+                    _year(kp[p], i, x, T, W, PET, PAR, DF, MU, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
                     if out[1] > bv:
                         bv, bl = out[1], x
                         best[:] = out
@@ -786,11 +821,11 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, tg, lai
                 a, b = 0.05, lmax
                 c = b - gr * (b - a)
                 d = a + gr * (b - a)
-                _year(kp[p], i, c, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
+                _year(kp[p], i, c, T, W, PET, PAR, DF, MU, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
                 fc = out[1]
                 bv, bl = fc, c
                 best[:] = out
-                _year(kp[p], i, d, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
+                _year(kp[p], i, d, T, W, PET, PAR, DF, MU, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
                 fd = out[1]
                 if fd > bv:
                     bv, bl = fd, d
@@ -804,7 +839,7 @@ def _potential(cells, kp, T, W, PET, PAR, cap1, cap2, viable, eff, dryf, tg, lai
                         a, c, fc = c, d, fd
                         d = a + gr * (b - a)
                         x = d
-                    _year(kp[p], i, x, T, W, PET, PAR, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
+                    _year(kp[p], i, x, T, W, PET, PAR, DF, MU, cap1[i], cap2[i], eff[p, i], dryf[i], tg[i], days, ci, out)
                     if x == c:
                         fc = out[1]
                     else:
@@ -850,7 +885,7 @@ def potential(s: dict, viable: np.ndarray, eff: np.ndarray, pco2: float = CA_REF
     res = np.zeros((8, NP, n))
     gmon = np.zeros((2, 12, n))
     lai = np.zeros((NP, n)) if lai0 is None else np.asarray(lai0, float)
-    _potential(cells, kp, s["t"], s["water"], s["pet"], s["par"], s["cap1"], s["cap2"], viable,
+    _potential(cells, kp, s["t"], s["water"], s["pet"], s["par"], s["df"], s["mu"], s["cap1"], s["cap2"], viable,
                np.asarray(eff, float), s["dryair"], s["tg"], lai, 1 if cheap else 0, _DAYS, ci, np.array([C3, C4], np.int64),
                res, gmon)
     out = dict(zip(("npp", "net", "gpp", "alpha", "dry", "on_jul", "on_jan", "lai"), res))

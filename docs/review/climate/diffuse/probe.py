@@ -2,7 +2,9 @@
 climate (leaf / wood maintenance and growth respiration, against Chambers et al. 2004 at Manaus), plus the months' diffuse
 fraction and the diffuse-light gain (vegetation.DIFFUSE) as flags.
 
-PLANET_DATA=<main repo> uv run python docs/review/climate/diffuse/probe.py [--rl-x 1.0] [--gain TrBE:2.08:0.55 ...]
+PLANET_DATA=<main repo> uv run python docs/review/climate/diffuse/probe.py [--rl-x 1.0] [--gain TrBE:0.8:0.55 ...] [--no-diffuse]
+(scout 239, pass 2: DIFFUSE is now the two-leaf canopy's (clumping, Df0); pass 1's big-leaf gain is gone from planet/,
+so out/A_*.txt and out/rl1.5.txt cannot be re-run from this checkout)
 (needs a real data/earth directory in the checkout: copy it in, never symlink.)
 """
 from __future__ import annotations
@@ -25,8 +27,11 @@ ap.add_argument("--rw-x", type=float, default=1.0, help="x TrBE's wood respirati
 ap.add_argument("--eps-x", type=float, default=1.0, help="x TrBE's light-use efficiency")
 ap.add_argument("--rl-x", type=float, default=1.0, help="x TrBE's leaf respiration rate rl")
 ap.add_argument("--box", default="wet", choices=["wet", "all"])
-ap.add_argument("--gain", nargs="*", default=[], help="PFT:gain:df0 (vegetation.DIFFUSE; 'trees' = every tree)")
+ap.add_argument("--gain", nargs="*", default=[], help="PFT:clumping:df0 (vegetation.DIFFUSE's two-leaf canopy; 'trees' = every tree)")
+ap.add_argument("--no-diffuse", action="store_true", help="every PFT on the big leaf (main before PW-1518, with --rl-x 0.667)")
 a = ap.parse_args()
+if a.no_diffuse:
+    V._KP[:, 21] = 0.0
 for gspec in a.gain:
     code, kd, df0 = gspec.split(":")
     for c in ([q["code"] for q in V.PFTS if q["cls"] == V.TREE] if code == "trees" else [code]):
