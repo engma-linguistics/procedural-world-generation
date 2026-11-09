@@ -4023,7 +4023,15 @@ def test_the_live_tree_reads_the_live_seats_as_its_town_footprint(faketz, monkey
     monkeypatch.setattr(TT, "load", lambda path=None: {**T0, "defaults": {**T0["defaults"], "contact_arms": "E"}})
     h, env, step, land = _live_setup(faketz, monkeypatch)
     R = h.rule
+    for kn in R.tech.known.values():
+        kn["villages"] = [100.0, "test", None]  # (the ledger's tiers: villages first, no towns without them)
+    h._linger = np.zeros(h.p.shape, bool)  # (as History.run sets it: no contact hybrid living on)
+    h._lu_sh = np.array([[1.0, 0.0, 0.0]] * len(h.lines))  # (the land use's farmers, as the set-up's farm share: all farm)
+    first = R.town_cells(2.0)  # (PW-1608: the sites are the ledger's, founded over FOUND_STEPS and grown toward their size)
+    for ago in (1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1):
+        R.town_cells(ago)
     cells = R.town_cells(1.0)
+    assert not first and R.town_cells(1.0) is cells  # (nothing founded on the first step; a second call in one step counts nothing new)
     assert cells.get("folk", 0) > 0 and "kob" not in cells  # (folk's dense farmers hold towns; the kobolds' few heads do not)
     h.started, h.ended = {l.id: 40.0 for l in h.lines}, {}  # (as History.run keeps them)
     with warnings.catch_warnings():
