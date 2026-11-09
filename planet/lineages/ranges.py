@@ -79,7 +79,7 @@ FIXED: dict[str, str] = {
     "IRR (30 ... 240 per watered km2)": "fixed: Butzer 1976 Table 4 is one 'hypothetical' series; the other figures (delta 10-135, "
                                         "nomes median 172 up to 500, 1882 census 240-280) are other places and measures, not a range for it",
     "IRR_LAG, TERRACE_LAG": "fixed: tech-tree dates",
-    "WATER_FLOW, WATER_MAX, FARM_FULL": "fixed: judgements",
+    "WATER_Q, WATER_MAX, FARM_FULL": "fixed: judgements",
     "DEN_FARM_W, RAID_CAP, RAID_HALF, RAID_REACH": "fixed: judgements; no measured raiding share was found (ladder.md, Raiding)",
     "TRADE_CAP, TRADE_FULL": "fixed: a placeholder until trade exists",
     "BARTER_CAP (0.5), BARTER_HALF, BARTER_REACH": "fixed: the cap is the 'about 50%' of farm food in Congo forest foragers' energy "
