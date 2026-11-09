@@ -18,7 +18,8 @@ from . import lexicon as LX
 from . import rules as RU
 from .inventory import fuse_vowels, hiatus_count, hiatus_in  # noqa: F401 (hiatus helpers, shared with repair)
 
-RATE_RULE = 0.1  # sound-change events per generation at rate 1 (calibrated by the horizon check; see calibration.md)
+RATE_RULE = 0.1  # sound-change draws per generation at rate 1, x history.RATE_SCALE (calibrated by the horizon check; see
+# calibration.md); since PW-1551 a draw fires only when it lands on a row that changes something (rules.pick_rule)
 RATE_SIGMA = 0.5  # lognormal sigma of a proto lect's rate (0.3 -> 0.5, owner ruling 11-08, PW-1539 E: some lines change
 #                  fast, a Hawaiian-type collapse; the review suggested ~0.6)
 RATE_REDRAW = 0.1  # lognormal sigma of the re-draw at budding
@@ -89,27 +90,29 @@ PHONO_MIN = 0.2    # ... when at least this share of the words it rewrites would
 PHONO_STATS = {"vetoed": 0}
 LOAD_SAMPLE = 120  # forms handed to rules.pick_rule for the functional-load estimate (the most frequent words first)
 REFIRE_KYR = 4.0  # a rule that fired in a lect is not drawn (nor adopted by wave) again for this long ... (3 until the
-# sound lane, 2026-11-08: a line re-ran ~half the catalogue it fired, so "the same law again" was most of a late history)
+# sound lane, 2026-11-08: a line re-ran ~half the catalogue it fired, so "the same law again" was most of a late history).
+# Kept after the single draw (PW-1551): without it the commonest rows re-fire as soon as their input comes back (harness:
+# apocope 16.5, h-loss 14.6 firings a line in 20 kyr, applied changes 14.4 -> 23.8 per lect-kyr); a law that just ran is
+# a live rule of the lect (phonology.py), not a new change
 MAX_FIRES = 2  # ... and fires at most this many times in a lect's life, counting its ancestors' (daughters inherit the memory)
 HARMONY_MAX = 1  # harmony rules (family "harmony") at most once per lect line
 LIFETIME_CAP_FAMILIES = frozenset({"epenthesis", "harmony", "tone"})  # families under the lifetime cap (the rest only wait
-# REFIRE_KYR; tonogenesis uses up the coda/onset contrast that conditions it, so a line does not re-run it every 3 kyr)
-LIFETIME_CAP_IDS = frozenset({"S042"})  # ʔ-prothesis before initial vowels
-# One-off rows (sound lane, 2026-11-08): named laws that are the signature of one branch fire at most ONE_OFF_MAX times per
-# line (wave adoptions included): every chain shift (family "chain_shift": Grimm S177, High German S178, the Great Vowel
-# Shift S179 and its diphthongs' opening S181, Northern Cities S182, the demo raise_mid; not the dispersion pushes made on
-# the fly; history.RULE_WEIGHT also halves the family), and these named
-# changes: S097 the merger of the voiced and voiceless stops (Tocharian), S098 loss of breathy voice, S173 Verner, S093
-# Grassmann, S046 West Germanic gemination, S047 raddoppiamento, S063 First Slavic palatalization, S064 French a > ɛ, S128
-# Slavic liquid metathesis, S139 Old English breaking, S148 uvular r, S174 Romance diphthongization, S176 high-vowel
-# diphthongization, S185 click replacement. Before, Grimm's T > F fired in 83% of the lects of a24559 and D > T in 93%.
-# Sound lane pass 3 adds the two whole-class coda changes, S099 (every final consonant lost, Hawaiian-type) and S124
-# (paragoge: a vowel added after every final consonant): each re-firing undid the codas apocope had just made, so lines
-# flip-flopped to fully open syllables every few kyr (calibration.md, sound lane pass 3).
+# REFIRE_KYR; tonogenesis uses up the coda/onset contrast that conditions it, so a line does not re-run it every 3 kyr;
+# epenthesis and harmony feed themselves: PW-1551 harness without the cap, back harmony 4.2 and S123 4.5 firings a line)
+# (LIFETIME_CAP_IDS, S042 ʔ-prothesis, went with the single draw, PW-1551: at naturalness 1 x RULE_WEIGHT 0.15 it fires on
+# 0.12 of the harness lines uncapped, against 0.55 before)
+# One-off rows (sound lane pass 3, 2026-11-08): the two whole-class coda changes, S099 (every final consonant lost,
+# Hawaiian-type) and S124 (paragoge: a vowel added after every final consonant), fire at most ONE_OFF_MAX times per line
+# (wave adoptions included): each re-firing undid the codas apocope had just made, so lines flip-flopped to fully open
+# syllables every few kyr (calibration.md, sound lane pass 3). Kept after the single draw (PW-1551): without it, and even
+# with S099 at naturalness 2, the share of harness lines ending under 5% of words in a consonant rose 0.18 -> 0.22-0.26
+# (S099 then fires 2.2 times on the lines that have it). The other one-offs (every chain shift, and the named laws S097,
+# S098, S173, S093, S046, S047, S063, S064, S128, S139, S148, S174, S176, S185), added because under the old redraw
+# Grimm's law fired in 83% of lects, went with PW-1551: the naturalness weight now sets how many lines get them (Grimm
+# 0.34 of harness lines, S148 uvular r 0.06 against 0.53 before) and the ones that recur on a line (Verner, Slavic
+# palatalization, diphthongization) recur as the generic changes they are once their input comes back.
 ONE_OFF_MAX = 1
-ONE_OFF_FAMILIES = frozenset({"chain_shift"})
-ONE_OFF_IDS = frozenset({"S097", "S098", "S173", "S093", "S046", "S047", "S063", "S064", "S128", "S139", "S148", "S174",
-                         "S176", "S185", "S099", "S124"})
+ONE_OFF_IDS = frozenset({"S099", "S124"})
 # Line drift (sound lane, 2026-11-08; soundchange-gaps.md recommendation 1, Sapir's drift): each proto line draws a standing
 # preference per rule family (lognormal sigma LINE_FAMILY_SIGMA) and per row (LINE_ROW_SIGMA), keyed like hiatus_pref by
 # the line's proto (hiatus_key) so every daughter keeps it, and each budded lect a small jitter of its own (LINE_BUD_SIGMA,
@@ -119,9 +122,10 @@ ONE_OFF_IDS = frozenset({"S097", "S098", "S173", "S093", "S046", "S047", "S063",
 # sc/harness.py), before -> after (with REFIRE_KYR 3 -> 4 and the one-off cap): distinct rows fired per line 97.5 -> 87.5,
 # rows fired twice or more 49 -> 34, rows fired in >= 80% of lects 45 -> 19, fired-row overlap (Jaccard) of unrelated lects
 # 0.50 -> 0.40 with sisters 0.81 -> 0.84. Side effect: ~1/3 fewer changes fire after the split (106 -> 70 a lect), because
-# draws that land on a strongly preferred row that changes nothing are redrawn only rules.PICK_REDRAWS times; the horizon
-# (calibration.md) must be re-checked (raise history.RATE_SCALE, or PICK_REDRAWS 8 -> 16: 85 changes, distinct rows 97).
-# Saturation is mostly structural: ~200 drawn changes a line in 20 kyr against ~100-140 applicable rows.
+# draws that land on a strongly preferred row that changes nothing were redrawn only rules.PICK_REDRAWS times (gone since
+# PW-1551: one draw, no redraw). Saturation is mostly structural: ~200 drawn changes a line in 20 kyr against ~100-140
+# applicable rows, so a row whose input is there fires within a kyr or so; the naturalness weight (rules.NATURAL_BASE)
+# sets how often the rest fire.
 LINE_FAMILY_SIGMA = 0.7
 LINE_ROW_SIGMA = 1.0
 LINE_BUD_SIGMA = 0.2
@@ -514,8 +518,7 @@ class Lect:
         # every other rule just waits REFIRE_KYR, so a fast-changing line does not use up the catalogue
         if one_off(rule) and len(h) >= ONE_OFF_MAX:
             return False
-        capped = rule.family in LIFETIME_CAP_FAMILIES or base_id(rule.id) in LIFETIME_CAP_IDS
-        if capped and len(h) >= (HARMONY_MAX if rule.family == "harmony" else MAX_FIRES):
+        if rule.family in LIFETIME_CAP_FAMILIES and len(h) >= (HARMONY_MAX if rule.family == "harmony" else MAX_FIRES):
             return False
         return h[-1] - kyr >= REFIRE_KYR - 1e-9
 
@@ -817,20 +820,24 @@ class Lect:
         self._dirty = True
         return n
 
-    def rule_pool(self, rules, kyr: float, weights: dict | None = None) -> list:
+    def rule_pool(self, rules, kyr: float, weights: dict | None = None, with_mass: bool = False):
         """The rules this lect may draw now: the down-weighted catalogue (weighted_rules) with the driver's weight overrides
-        (history.RULE_WEIGHT) and the line's drift (line_pref), epenthesis re-pointed at the lect's epenthetic vowel, and the re-fire memory applied."""
+        (history.RULE_WEIGHT) and the line's drift (line_pref), epenthesis re-pointed at the lect's epenthetic vowel, and the
+        re-fire memory applied. ``with_mass``: also the total weight including the rows the re-fire memory sets aside (the
+        mass rules.pick_rule draws against, so a blocked row's share fires nothing rather than going to the others)."""
         weights = weights or {}
         out = []
+        mass = 0.0
         for r in self.weighted_rules(rules):
-            if not self.may_fire(r, kyr):
-                continue
             w = weight_override(weights, r)
             w = self.line_pref(r) * (1.0 if w is None else w)
+            mass += r.weight * w
+            if not self.may_fire(r, kyr):
+                continue
             r = replace(r, weight=r.weight * w)
             v = reduction_variant(epenthesis_variant(r, self.inventory), self.inventory)
             out.append(v)
-        return out
+        return (out, mass) if with_mass else out
 
     def step(self, rng, n_generations: float, kyr: float, ctx: dict) -> list:
         """Advance by n generations in one batch (one frame interval). ctx: contact_words {lect id: Lexicon}, niche, l2,
@@ -845,18 +852,24 @@ class Lect:
         k = int(rng.poisson(lam)) if lam > 0 else 0
         if k:
             rules = catalogue_for(self.profile, self.profile_key)
-            pool = self.rule_pool(rules, kyr, ctx.get("rule_weight"))
+            pool, mass = self.rule_pool(rules, kyr, ctx.get("rule_weight"), with_mass=True)
+            forms = segs = stress = None
+            cum = RU.cumulative_weights(pool)
             for _ in range(k):
-                r = RU.pick_rule(rng, pool, self.load_forms(), self.segments(), stress_of(self.inventory))
+                if forms is None:  # (read again only after a change: most draws now fire nothing)
+                    forms, segs, stress = self.load_forms(), self.segments(), stress_of(self.inventory)
+                r = RU.pick_rule(rng, pool, forms, segs, stress, mass=mass, cum=cum)
                 if r is None:
                     continue
                 if self.phonotactic_veto(r, rng):
                     continue
                 if not self.may_fire(r, kyr):  # (a dispersion push made on the fly that fired already)
                     continue
+                forms = None
                 if self.apply_rule(r, kyr) > 0:
                     fired.append(r)
-                    pool = [x for x in pool if base_id(x.id) != base_id(r.id)]
+                    pool = [x for x in pool if base_id(x.id) != base_id(r.id)]  # (its weight stays in mass: set aside)
+                    cum = RU.cumulative_weights(pool)
         self.gap_fill(rng, n_generations, kyr)
         self.cap_inventory(kyr)  # (also catches segments brought by wave adoptions applied before this step)
         self.sync()
@@ -883,9 +896,7 @@ class Lect:
 
 
 def one_off(rule) -> bool:
-    """A named one-off row (ONE_OFF_IDS, family "chain_shift"; not a dispersion push): at most ONE_OFF_MAX firings a line."""
-    if rule.family in ONE_OFF_FAMILIES and not rule.id.startswith("dispersion."):
-        return True
+    """A one-off row (ONE_OFF_IDS: the whole-class coda changes): at most ONE_OFF_MAX firings a line."""
     return base_id(rule.id) in ONE_OFF_IDS
 
 

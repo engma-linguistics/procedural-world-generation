@@ -38,7 +38,10 @@ from . import lexsys as LS
 from . import rules as RU
 
 START_KYR = I.START_KYR
-RATE_SCALE = float(__import__("os").environ.get("LANG_RATE_SCALE", "5.0"))  # multiplies lect.RATE_RULE (calibration lever; calibration.md)
+RATE_SCALE = float(__import__("os").environ.get("LANG_RATE_SCALE", "220.0"))  # multiplies lect.RATE_RULE (calibration lever;
+# calibration.md). 5 -> 220 with the single draw (PW-1551): most draws now land on a row that changes nothing and fire
+# nothing, so 44x the draws give about the same applied changes (isolated-lect harness 14.8 -> 17.2 per lect-kyr; full pass
+# a24559: human rules per kyr 17.9 -> 18.8, horizon reading 11.4 -> 11.4; 150 left it at 16.0)
 REPLACE_SCALE = float(__import__("os").environ.get("LANG_REPLACE_SCALE", "1.0"))  # (1.25 -> 1.0 with lexicon.FREQ_SPREAD 10 -> 4, 2026-11-04) multiplies lexicon.BASE_REPLACE through the generations handed to lexicon.step (calibration lever)
 PROTO_LINK = 0.05  # same-people contact that joins start demes into one proto-language
 CONTACT_MIN = 0.05  # contact for the wave
@@ -113,9 +116,9 @@ AREAL_WEIGHT = {"word_order": 1.0, "adposition": 1.0, "genitive": 1.5, "adjectiv
 # ʔ-prothesis is rare; tonogenesis (which needs the conditioning coda/onset contrast lost) and vowel reduction are not drawn in
 # every lect; the onset-voicing split, never vetoed (it merges nothing), was the tone source of nearly every lect at 0.3
 RULE_WEIGHT = {"S042": 0.15, "family:tone": 0.3, "tone.onset_voicing_split": 0.05, "family:reduction": 0.5,
-               "S073": 0.1,  # (u > y: with y > i after it, the u of every lect drained into i)
-               "family:chain_shift": 0.5}  # (sound lane, 2026-11-08: a whole staged chain shift, Grimm or the Great Vowel
-# Shift, is a branch's signature; at weight 2 each still fired in ~45% and ~63% of the isolated-lect harness lines)
+               "S073": 0.1}  # (u > y: with y > i after it, the u of every lect drained into i)
+# (family:chain_shift 0.5, added because a chain shift at weight 2 still fired on ~half the harness lines, went with the
+# single draw, PW-1551: at naturalness 2 Grimm S177 and the Great Vowel Shift S179 now fire on 0.34 and 0.39 of them)
 
 
 def rng_for(seed: int, *key) -> np.random.Generator:

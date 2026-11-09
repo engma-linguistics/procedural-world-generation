@@ -524,7 +524,7 @@ def test_short_history_has_no_typology_clashes():
     from test_language_history import TinyRun
     from planet.language import checks as CK, history as H
     old = (H.RATE_SCALE, H.WORKERS)
-    H.RATE_SCALE, H.WORKERS = 8.0, 1
+    H.RATE_SCALE, H.WORKERS = 240.0, 1
     try:
         res = H.generate(None, run=TinyRun(), analyse=False)
     finally:
