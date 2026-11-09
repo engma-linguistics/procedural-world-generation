@@ -63,6 +63,12 @@ OLD_NAME_KYR = 4.0  # old names were coined in the lect's line about this long a
 OPAQUE_KYR = 8.0  # an old name's chance of a hypocoristic clip reaches its cap at this age
 OPAQUE_CAP = 0.6
 N_OLD, N_NEW, N_BY = 3, 3, 2
+# Name length by tradition (PW-1546 item 14): (syllables a theme keeps, syllables a given name keeps), both times the lect's
+# length scale (names._name_caps), and themes a dithematic name joins. Chinese given names are one or two syllables, a
+# morpheme each; Germanic dithematic names two themes, about four syllables; Malagasy names long compounds of whole words
+# (Andrianampoinimerina 'the prince in the heart of Imerina'). The shares are a taste call (draft names-length).
+NAME_LENGTH_W = {"short": 0.2, "mid": 0.6, "long": 0.2}
+NAME_LENGTH = {"short": (1, 2, 2), "mid": (2, 4, 2), "long": (4, 9, 3)}
 # settlements
 SITES_PER_DEME = 3
 SUBSTRATE_TAUTOLOGY = 0.25  # chance newcomers add their own generic to a kept old name they do not understand
@@ -160,7 +166,17 @@ class Personal:
             t["byname_origin"] = lect.id
         if field in (None, "order"):
             t["order"] = "family_first" if rng.random() < FAMILY_FIRST else "given_first"
+        if field in (None, "length"):
+            t["length"] = _pick(rng, NAME_LENGTH_W)
         return t
+
+    def caps(self, lect, t) -> tuple[int, int, int]:
+        """(syllables a theme keeps, syllables a given name keeps, themes a dithematic name joins) by the tradition's
+        name length (NAME_LENGTH), the syllable caps scaled as names._name_caps scales them."""
+        from .names import _name_caps
+        part, name, n = NAME_LENGTH[t.get("length") or "mid"]
+        sc = _name_caps(lect)[1] / 4.0
+        return max(1, round(part * sc)), max(2, round(name * sc)), n
 
     def tradition(self, lect) -> dict:
         if lect.id in self._trad:
@@ -175,7 +191,7 @@ class Personal:
                 t = self._fresh(x, rng)
                 t["changed"] = None
             elif rng.random() < DRIFT:
-                field = ("given", "byname", "order")[int(rng.integers(3))]
+                field = ("given", "byname", "order", "length")[int(rng.integers(4))]
                 t = self._fresh(x, rng, field, t)
                 t["changed"] = [x.id, field, round(float(x.born_kyr), 3)]
             self._trad[x.id] = t
@@ -252,7 +268,11 @@ class Personal:
                 return None
             b = b[int(rng.integers(len(b)))]
             cs = [a, b]
-            gloss = f"{_gloss(a)}-{_gloss(b)}"
+            more = [c for c in t["themes_a"] if c not in cs]
+            for _ in range(self.caps(lect, t)[2] - 2):   # (a long tradition joins a third theme: PW-1546 item 14)
+                if more:
+                    cs.insert(-1, more.pop(int(rng.integers(len(more)))))
+            gloss = "-".join(_gloss(c) for c in cs)
         elif st == "phrase":
             ok = [p for p in PHRASES if _w(origin, p[0]) is not None and _w(origin, p[1]) is not None]
             if not ok:
@@ -265,31 +285,31 @@ class Personal:
                 return None
             cs = [ok[int(rng.integers(len(ok)))]]
             gloss = _gloss(cs[0])
+        part_cap, cap, _n = self.caps(lect, t)
+        o_part = self.caps(origin, t)[0]
         for c in cs:
             f, how = self.reflex(lect, origin, c) if old else (tuple(_w(lect, c).form) if _w(lect, c) else (), "same")
             if not f:
                 return None
             w0 = _w(origin, c)
-            from .names import _clip
-            parts.append((c, _clip(f, lect) if len(cs) > 1 else tuple(f), how,
-                          _clip(w0.form, origin) if len(cs) > 1 else tuple(w0.form), tuple(f)))
+            parts.append((c, tuple(LX.clip(tuple(f), part_cap)) if len(cs) > 1 else tuple(f), how,
+                          tuple(LX.clip(tuple(w0.form), o_part)) if len(cs) > 1 else tuple(w0.form), tuple(f)))
         from .names import _repair
         if st == "dithematic":
-            form = self._compound(lect, parts[1][1], parts[0][1])
-            if old:  # (the order the name was coined in stays: a frozen compound)
-                hf = _head_final(origin)
-                form = tuple(parts[0][1]) + tuple(parts[1][1]) if hf else tuple(parts[1][1]) + tuple(parts[0][1])
-                from .names import _repair
-                form = _repair(lect, form)
-                proto = tuple(parts[0][3]) + tuple(parts[1][3]) if hf else tuple(parts[1][3]) + tuple(parts[0][3])
+            if old or len(parts) > 2 or t.get("length") == "long":
+                # (an old name keeps the order it was coined in, a frozen compound; a long tradition joins whole themes
+                # in the lect's head order, unclipped by the compound rule)
+                hf = _head_final(origin if old else lect)
+                seq = parts if hf else [parts[-1]] + parts[:-1]
+                form = _repair(lect, tuple(s for p in seq for s in p[1]))
+                proto = tuple(s for p in seq for s in p[3]) if old else None
             else:
+                form = self._compound(lect, parts[1][1], parts[0][1])
                 proto = None
         else:
             from .names import _repair
             form = _repair(lect, tuple(s for p in parts for s in p[1]))
             proto = tuple(s for p in parts for s in p[3]) if old else None
-        from .names import _name_caps
-        cap = _name_caps(lect)[1]
         if LX.syllables(form) > cap:
             form = _repair(lect, LX.clip(tuple(form), cap))
         age = self.coined_kyr(origin) if old else 0.0
@@ -393,6 +413,7 @@ class Personal:
                     seen.add(x["roman"])
         bys = [b for b in (self._byname(lect, t, given, i) for i in range(N_BY)) if b is not None]
         trad = {k: t[k] for k in ("given", "byname", "order", "origin")}
+        trad["length"] = t.get("length") or "mid"
         if t.get("changed"):
             trad["changed"] = t["changed"]
         if t["given"] == "dithematic":

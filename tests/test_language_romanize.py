@@ -333,3 +333,45 @@ def test_book_marks_a_non_human_voice_once_a_word():
     from planet.language.percepts import from_ipa
     sp = R.romanize_word(from_ipa("sa˯ʃunwa˯nsa˯"), book=True)
     assert sp.count(R.NH_MARKS["sub"]) == 1, sp
+
+
+def _inv(*ipas):
+    out = set()
+    for x in ipas:
+        out |= set(from_ipa(x))
+    return out
+
+
+def test_spelling_traditions_book_only_and_distinct():
+    """PW-1546 item 12: a family's book spelling has its own look (Polish sz cz, Czech š č); the workbench keeps the house
+    spelling, and a style letter that would merge two of the lect's sounds is left out (the house letter kept)."""
+    inv = _inv("ʃ", "tʃ", "s", "z", "a", "aː", "j", "dʒ", "x", "t", "k", "ts", "i", "h", "kʰ", "tsʰ")
+    house = R.Orthography(inv)
+    assert house.word(from_ipa("ʃaːtʃa"), book=True) == "shaacha"
+    for st in R.LETTER_STYLES:
+        for ln in R.LENGTH_W:
+            o = R.Orthography(inv, style=(st, ln))
+            assert o.word(from_ipa("ʃaːtʃa")) == house.word(from_ipa("ʃaːtʃa"))   # (workbench: house spelling)
+            spell = {s: R.spell(s, o.cs, book=True, marks=False) for s in o.inv}
+            assert len(set(spell.values())) == len(set(R.spell(s, house.cs, book=True, marks=False) for s in o.inv))
+    pl = R.Orthography(inv, style=("polish", "macron"))
+    assert pl.word(from_ipa("ʃaːtʃa"), book=True) == "szācza"
+    assert "ts" in pl.dropped   # (c + h for tsʰ would read as ch, the Polish x)
+    assert R.Orthography(inv, style=("hacek", "acute")).word(from_ipa("ʃaːtʃa"), book=True) == "šáča"
+
+
+def test_spelling_tradition_drawn_and_inherited():
+    a = R.draw_style(5, "p3")
+    assert a == R.draw_style(5, "p3") and a[0] in R.LETTER_STYLES and a[1] in R.LENGTH_W
+    kept = sum(R.reform_style(5, f"d{i}", a) == a for i in range(400))
+    assert 0.9 < kept / 400 < 1.0   # (STYLE_REFORM 0.05: most daughters keep the line's look)
+
+
+def test_bantu_click_letters():
+    """Zulu and Xhosa write the dental, alveolar and lateral clicks c q x; a lect with ǂ or ʘ, or whose q or x is taken,
+    keeps the Khoisan letters for all its clicks."""
+    o = R.Orthography(_inv("ǀ", "ǃ", "ǁ", "ɡǃ", "a", "k"))
+    assert [o.word(from_ipa(w), book=True) for w in ("ǀaǃa", "ǁaka", "ɡǃa")] == ["caqa", "xaka", "gqa"]
+    assert o.word(from_ipa("ǀaǃa")) == "ǀaǃa"
+    assert R.Orthography(_inv("ǀ", "ǃ", "ǂ", "a")).word(from_ipa("ǀaǃa"), book=True) == "ǀaǃa"
+    assert R.Orthography(_inv("ǀ", "ǃ", "q", "a")).word(from_ipa("ǀaǃa"), book=True) == "ǀaǃa"

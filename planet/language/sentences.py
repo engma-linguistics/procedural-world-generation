@@ -1016,7 +1016,7 @@ def orthography(lj: dict):
         except Exception:  # noqa: BLE001
             continue
     segs = {x for x in (parse_segment(y) for y in inv.get("consonants", []) + inv.get("vowels", [])) if x is not None}
-    o = RO.Orthography(segs | set(counts), allo, counts)
+    o = RO.Orthography(segs | set(counts), allo, counts, tuple(lj.get("orth") or ()) or None)
     if len(_ORTH) > 64:
         _ORTH.clear()
     _ORTH[k] = (lj, o)

@@ -342,3 +342,79 @@ def test_patronymic_and_settlements(tmp_path):
     st = a["demes"]["0"]["settlements"]
     assert [s["site"] for s in st] == [7, 8] and st[0]["pattern"] == "P2" and st[0]["substrate_of"] == "d1"
     assert st[1]["pattern"] is None and st[1]["named_by"] == "d0" and all(s["roman"][0].isupper() for s in st)
+
+
+# ---------------------------------------------------------------------------------------------- PW-1546: taxonomy processes
+def test_relay_of_a_third_peoples_own_name():
+    """X4: a thin-contact row borrowed from a third people is that people's own name for the subject, heard again (a24559
+    had borrowed_from only on exotic and edge rows, so X4 never fired)."""
+    res, run = _world()
+    nb = {"valence": "neighbour", "basis": "neighbours", "since_kyr": 0.5, "strength": 0.9}
+    run.meta["present"]["reputation"]["rows"] = {
+        "elf": {"orc": dict(nb)},
+        "human": {"orc": {"valence": "exotic", "basis": "hearsay", "since_kyr": 0.5, "strength": 0.3, "borrowed_from": "elf"}}}
+    ex = {x["by_people"]: x for x in NM.build_names(res, run)["peoples"]["orc"]["exonyms"]}
+    assert ex["human"]["pattern"] == "X4" and ex["human"]["relay"] == ["d2"] and "elf name for them" in ex["human"]["gloss"]
+
+
+def test_misattributed_origin():
+    """X9: the observer takes a thinly known people to come from a people it knows well in that direction."""
+    res, run = _world()
+    run.meta["present"]["reputation"]["rows"] = {"human": {
+        "elf": {"valence": "neighbour", "basis": "neighbours", "since_kyr": 0.5, "strength": 0.9, "from_dir": "east"},
+        "orc": {"valence": "exotic", "basis": "hearsay", "since_kyr": 0.5, "strength": 0.3, "from_dir": "east"}}}
+    old = NM.X9_W
+    NM.X9_W = 1e6
+    try:
+        x = next(x for x in NM.build_names(res, run)["peoples"]["orc"]["exonyms"] if x["by_people"] == "human")
+    finally:
+        NM.X9_W = old
+    assert x["pattern"] == "X9" and "elf" in x["gloss"]
+
+
+def test_conquerors_name_and_glossonym_drift():
+    """P1: a deme of another people that shifted to the rulers' speech takes the rulers' name; the language can be named
+    from another root ('our speech')."""
+    res, run = _world()
+    shifted = res["lects"][0].copy("d1.1", 1, 1.0, "shift")
+    res["lects"][1].died_kyr = 1.0
+    res["lects"].append(shifted)
+    res["shifts"] = [{"deme": 1, "kyr": 1.0, "from_lect": "d1", "to_lect": "d1.1", "ruler_lect": "d0", "ruler_deme": 0,
+                      "speakers": "orc", "ruler_people": "human"}]
+    old = NM.P1_TAKE, NM.GLOSSONYM_W
+    NM.P1_TAKE, NM.GLOSSONYM_W = 1.0, {"ours": 1.0}
+    try:
+        names = NM.build_names(res, run)
+    finally:
+        NM.P1_TAKE, NM.GLOSSONYM_W = old
+    assert names["demes"]["1"]["name"]["pattern"] == "P1" and "human" in names["demes"]["1"]["name"]["gloss"]
+    assert any(h["process"] == "P1" for h in names["peoples"]["orc"]["history"])
+    assert all("our" in p["glossonym"]["gloss"] for p in names["peoples"].values())
+
+
+def test_landmass_named_by_its_first_settlers():
+    res, run = _world()
+    run.meta["present"]["landmasses"] = [{"called": "Testa", "settled_by": {"by": "elf", "ago_kyr": 3000.0}}]
+    res["lects"][0].population = 5000.0   # (the humans hold it today: they hear the elves' name)
+    lm = NM.build_names(res, run)["landmasses"]["Testa"]
+    assert lm["named_by"] == "d2" and lm["roman"] and lm["today"]["how"]
+
+
+def test_name_length_by_tradition():
+    """Item 14: a short tradition keeps given names short (Chinese-like), a long one joins three whole themes."""
+    from planet.language import personal as PE
+    from planet.language.lexicon import syllables
+    res, run = _world()
+    old = PE.NAME_LENGTH_W
+    out = {}
+    try:
+        for k in ("short", "long"):
+            PE.NAME_LENGTH_W = {k: 1.0}
+            out[k] = NM.build_names(res, run)["personal"]
+    finally:
+        PE.NAME_LENGTH_W = old
+    sh = [g for p in out["short"].values() for g in p["given"]]
+    lo = [g for p in out["long"].values() for g in p["given"]]
+    assert sh and lo and all(p["tradition"]["length"] == "short" for p in out["short"].values())
+    mean = lambda gs: sum(syllables(from_ipa(g["ipa"])) for g in gs) / len(gs)  # noqa: E731
+    assert mean(lo) > mean(sh)

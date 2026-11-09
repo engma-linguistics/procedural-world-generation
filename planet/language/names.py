@@ -72,7 +72,8 @@ PATTERNS = {
 VARIANT_CODE = {"people": "E1", "real": "E2", "original": "E2", "speakers": "E3", "masters": "E4", "ancestor": "E5",
                 "river_people": "E6", "river_name": "E6", "way": "E8", "body": "E9", "totem": "E9", "many": "E11",
                 "met_first": "X1", "relay": "X4", "strangers": "X2", "mutes": "X3", "enemies": "X5", "by_body": "X7",
-                "by_dwelling": "X7", "by_direction": "X8", "faith": "E10"}
+                "by_dwelling": "X7", "by_direction": "X8", "faith": "E10", "conquerors": "P1", "misattributed": "X9",
+                "adopted": "E12"}
 # a god's first domain (gods.json) -> the concept its people's faith name is built on (E10)
 DOMAIN_CONCEPT = {"sea": "SEA", "river": "RIVER", "rain": "RAIN (PRECIPITATION)", "flood": "FLOOD", "sky": "SKY", "sun": "SUN",
                   "storm": "STORM", "mountain": "MOUNTAIN", "fire": "FIRE", "forest": "FOREST", "desert": "DESERT",
@@ -94,6 +95,19 @@ PEAK_MODS = ("WHITE", "BIG", "OLD", "COLD", "STONE", "BLACK")
 TABOO_ANIMAL = (("snake", "SNAKE"), ("eel", "SNAKE"), ("bear", "BEAR"), ("wolf", "WOLF"), ("deer", "DEER"), ("cervid", "DEER"),
                 ("dog", "DOG"), ("bird", "BIRD"), ("fowl", "BIRD"), ("fish", "FISH"), ("horse", "HORSE"), ("cattle", "COW"))
 RAID_WORDS = ("incursion", "displacement", "raid", "war", "driven out", "settled among")
+# PW-1546 (names-spelling-gaps.md items 15, 16, 18-20): the taxonomy's processes over the run's history. The weights are
+# taste calls (the doc's own weighting is "my judgment, not data"); each is listed in for-daniel.md.
+GLOSSONYM_W = {"same": 0.75, "ours": 0.12, "place": 0.13}  # the language named from another root (Hittite nešili 'of Neša')
+X9_W = 0.5           # weight of a misattributed origin among a thin-contact row's options (X2 0.35, X7 X8 1.0)
+RELAY_CLIP = 0.35    # chance a relayed name of 4+ syllables keeps only its last two (Sioux < Naadowesiwag)
+P1_TAKE = 0.6        # chance a deme that shifted to a ruling people's speech takes the rulers' name (France < Franks)
+P3_ADOPT = 0.15      # chance a smaller people takes up the Common's name for itself (Hindu, Indonesia)
+P5_REJECT = 0.5      # chance a people at least as numerous as its namer rejects an insulting exonym (Inuit over Eskimo)
+P6_WORD = 0.3        # chance a long-feared or despised people's name becomes an ordinary word (vandal, slave)
+P6_KYR = 1.0         # ... after at least this much contact (kyr)
+SCHOLAR_W = {"river": 0.6, "reconstruction": 0.4}  # a dead family's scholars' name: its river, or its word for 'person' (Bantu)
+LAND_MODS = ("BIG", "LONG", "WHITE", "OLD", "GOOD", "HIGH", "RED", "BLACK", "GREEN", "COLD", "WARM")
+DISH_MAX = 3
 
 
 def _rng(seed: int, *key) -> np.random.Generator:
@@ -150,7 +164,8 @@ def _roman_form(lect, form, book: bool = True) -> str:
             from .output import orthography
             orth = orthography(lect)
         else:
-            orth = RO.Orthography(_segs(lect), getattr(getattr(lect, "inventory", None), "allophones", None) or {})
+            orth = RO.Orthography(_segs(lect), getattr(getattr(lect, "inventory", None), "allophones", None) or {},
+                                  style=getattr(lect, "orth", None))
         sp = _SPELL[key] = (lect, orth)
     try:
         return sp[1].word(tuple(form), book=book)
@@ -358,6 +373,9 @@ class _Pass:
         self._contacts: dict = {}
         self.endonyms: dict = {}
         self.patterns: dict = {}
+        self.ctx: dict = {}
+        self.exo_forms: dict = {}   # (observer, subject) -> (form, gloss, roman, pattern): for relays (X4) and X9
+        self.history: dict = {}     # people -> the doc's name_history: [{process, era_kyr, from, to, by, cause}]
 
     # -------------------------------------------------------------- helpers
     def _sites(self) -> tuple[dict, object]:
@@ -792,6 +810,7 @@ class _Pass:
         if ol is None:
             return None
         rng = _rng(self.seed, "exonym", observer, subject)
+        heard = ()
         val = row.get("valence")
         basis = row.get("basis") or ""
         e3 = self.patterns.get(observer) == "speakers"
@@ -815,7 +834,7 @@ class _Pass:
                 roman = RO.title_name(_roman_form(ol, heard))
                 g = f"their own name {src['roman']} ('{src['gloss']}'), as {observer} ears hear it" + (f" through the {bf}" if relay else "")
                 name = {"ipa": word_ipa(heard), "roman": roman, "roman_full": RO.title_name(_roman_form(ol, heard, False)), "gloss": g,
-                        "pattern": pat, "variant": var, "lect": ol.id,
+                        "pattern": pat, "variant": var, "lect": ol.id, "form": heard,
                         "parts": [], "etym": [[None, met.id, "name:endonym", src["ipa"], src["gloss"], ""]]
                         + [[None, r, "relay", word_ipa(form), src["gloss"], "X4: heard by a third people"] for r in relay]
                         + [[None, ol.id, f"name:{pat}", word_ipa(heard), "", "heard"]],
@@ -839,6 +858,9 @@ class _Pass:
                 opts["X7"] = 1.2 if row.get("category") == "giant_kin" else 1.0
             if W("STRANGER") is not None:
                 opts["X2"] = 0.35
+            mis = self.misattributed(ol, observer, subject, dirc)
+            if mis is not None:
+                opts["X9"] = X9_W
             if not opts:
                 return None
             pat = _pick(rng, opts)
@@ -848,15 +870,75 @@ class _Pass:
                 name = _people_name(ol, [W(land[0])], land[1], "by_dwelling")
             elif pat == "X7":
                 name = _people_name(ol, [W(c) for c in bf[0]], bf[1], "by_body")
+            elif pat == "X9":
+                name = self.misattributed_name(ol, observer, subject, mis)
             else:
                 name = _people_name(ol, [W("STRANGER")], "the strangers", "strangers")
         if name is None:
             return None
+        self.exo_forms[(observer, subject)] = (tuple(name["form"]) if name.get("form") else tuple(heard),
+                                               name["gloss"], name["roman"], name["pattern"])
         out = _public(name)
         out.pop("lect", None)
         out.update({"by_people": observer, "by_lect": ol.id, "subject": subject, "basis": basis, "valence": val,
                     "era_kyr": row.get("since_kyr"), "relay": relay, "strength": row.get("strength")})
         return out
+
+    def relay(self, observer: str, subject: str, row: dict) -> dict | None:
+        """X4: a name the observer took from a third people (the row's `borrowed_from`): that people's own name for the
+        subject, heard again through the observer's ears, and cut to its last two syllables now and then (Sioux <
+        Naadowesiwag, through French)."""
+        bf = row.get("borrowed_from")
+        ol = self.main.get(observer)
+        src = self.exo_forms.get((bf, subject))
+        if ol is None or src is None or bf == observer or bf not in self.main:
+            return None
+        form, sgloss, sroman, spat = src
+        heard = _hear(form, ol)
+        rng = _rng(self.seed, "relay", observer, subject)
+        clipped = False
+        if LX.syllables(heard) >= 4 and rng.random() < RELAY_CLIP:
+            from .percepts import syllabify
+            heard = _repair(ol, tuple(s for x in syllabify(heard)[-2:] for s in x.segments))
+            clipped = True
+        roman = RO.title_name(_roman_form(ol, heard))
+        g = f"the {bf} name for them, {sroman} ('{sgloss}'), as {observer} ears hear it" + (", cut short" if clipped else "")
+        out = {"ipa": word_ipa(heard), "roman": roman, "roman_full": RO.title_name(_roman_form(ol, heard, False)), "gloss": g,
+               "pattern": "X4", "variant": "relay", "parts": [],
+               "etym": [[None, self.main[bf].id, f"name:{spat}", word_ipa(form), sgloss, ""],
+                        [None, ol.id, "name:X4", word_ipa(heard), "", "heard through the " + bf]],
+               "plain": f"{roman}: what the {observer} call the {subject}: {g}"}
+        self.exo_forms[(observer, subject)] = (heard, sgloss, roman, "X4")
+        out.update({"by_people": observer, "by_lect": ol.id, "subject": subject, "basis": row.get("basis") or "",
+                    "valence": row.get("valence"), "era_kyr": row.get("since_kyr"), "relay": [self.main[bf].id],
+                    "strength": row.get("strength")})
+        return out
+
+    def misattributed(self, ol, observer: str, subject: str, dirc) -> str | None:
+        """X9: a people the observer knows well (a neighbour row) that lies the way the subject came from: the observer
+        takes the subject to come from there (Gypsy < Egyptian, Bohémien). None without one."""
+        if not dirc:
+            return None
+        rows = (((getattr(self.R, "meta", {}) or {}).get("present") or {}).get("reputation") or {}).get("rows") or {}
+        cands = sorted(t for t, r in (rows.get(observer) or {}).items()
+                       if t not in (subject, observer) and r.get("valence") == "neighbour" and t in self.main
+                       and (observer, t) in self.exo_forms
+                       and (DIRECTION.get(str(r.get("from_dir") or "").lower().replace("-", "")) or self.direction(ol, t)) == dirc)
+        if not cands:
+            return None
+        return cands[int(_rng(self.seed, "x9", observer, subject).integers(len(cands)))]
+
+    def misattributed_name(self, ol, observer: str, subject: str, third: str) -> dict | None:
+        form, tgloss, troman, _p = self.exo_forms[(observer, third)]
+        like = (getattr(getattr(ol, "lexicon", None), "affixes", {}) or {}).get("like")
+        if like and like[0]:
+            form = _repair(ol, tuple(form) + tuple(like[0]) if like[1] else tuple(like[0]) + tuple(form))
+        roman = RO.title_name(_roman_form(ol, form))
+        g = f"the {third}-ish ones: the {observer} took them to come from the {third} ({troman}), a misattributed origin"
+        return {"ipa": word_ipa(form), "roman": roman, "roman_full": RO.title_name(_roman_form(ol, form, False)), "gloss": g,
+                "pattern": "X9", "variant": "misattributed", "lect": ol.id, "parts": [], "form": tuple(form),
+                "etym": [[None, ol.id, "name:X9", word_ipa(form), g, f"from their name for the {third}"]],
+                "plain": f"{roman}: what the {observer} call the {subject}: {g}"}
 
     def direction(self, ol, subject: str) -> str | None:
         """Where the subject's main deme lies from the observer's (the larger of the north-south and east-west offsets of their
@@ -934,13 +1016,29 @@ class _Pass:
             old = max(ls, key=lambda l: (l.born_kyr, -_num(l.id), l.id))
             i = self.R.frame_of(old.born_kyr) if hasattr(self.R, "frame_of") else 0
             ls0 = self.deme_ls(old.deme, i)
+            basis_used = None
             base, gl = None, None
-            if ls0.get("river") is not None:
+            srng = _rng(self.seed, "scholars", f)
+            basis = _pick(srng, SCHOLAR_W) if ls0.get("river") is not None else \
+                ("reconstruction" if srng.random() < 0.6 else "land")   # (no river: the word for person, else the land)
+            pw = _first(old, ("PERSON", "PEOPLE", "MAN"))[1]
+            if basis == "reconstruction" and pw is not None:
+                # (named from the family's reconstructed word for 'person', as Bleek named Bantu, as the Common says it)
+                base = _hear(pw.form, common) if common is not None else tuple(pw.form)
+                stem = RO.title_name(_roman_form(common or old, base))
+                stem_full = RO.title_name(_roman_form(common or old, base, False))
+                gl = (f"after their reconstructed word for '{_gloss(pw.concept)}', *{_roman_form(old, pw.form)}, as scholars "
+                      "named Bantu")
+                basis_used = "reconstruction"
+            elif ls0.get("river") is not None:
                 b = self._base_name(old, "river", ls0["river"])
                 if b is not None:
                     base = _hear(b["form"], common) if common is not None else b["form"]
                     gl = f"after the river {RO.title_name(_roman_form(old, b['form']))} ('{b['gloss']}') where the oldest of them was spoken"
-            if base is not None:
+                basis_used = "river"
+            if basis_used == "reconstruction":
+                pass
+            elif base is not None:
                 if like and like[0]:
                     base = tuple(base) + tuple(like[0]) if like[1] else tuple(like[0]) + tuple(base)
                 stem = RO.title_name(_roman_form(common or old, base))
@@ -952,14 +1050,243 @@ class _Pass:
                 stem = lm + suf
                 stem_full = lm + (_roman_form(common, like[0], False).lower() if common is not None and like and like[0] else "ian")
                 gl = f"after {lm}, the land where the oldest of them was spoken"
+                basis_used = "land"
             n = used.get(stem, 0) + 1
             used[stem] = n
             if n > 1:  # (scholars number the families they name after the same river or land)
                 stem = f"{stem} {_ROMAN_NUM[min(n, len(_ROMAN_NUM)) - 1]}"
                 stem_full = f"{stem_full} {_ROMAN_NUM[min(n, len(_ROMAN_NUM)) - 1]}"
-            out[f] = {"name": f"the {stem} languages", "roman": stem, "roman_full": stem_full, "gloss": gl, "pattern": "scholarly", "by_lect": common.id if common else None,
+            out[f] = {"name": f"the {stem} languages", "roman": stem, "roman_full": stem_full, "gloss": gl, "pattern": "scholarly",
+                      "basis": basis_used, "by_lect": common.id if common else None,
                       "lects": sorted(x.id for x in ls), "oldest_deme": old.deme, "died_kyr": min((x.died_kyr or 0.0) for x in ls)}
         return out
+
+    # -------------------------------------------------------------- name history (PW-1546: the taxonomy's processes)
+    def note(self, p: str, process: str, **kw) -> None:
+        self.history.setdefault(p, []).append({"process": process, **kw})
+
+    def glossonym_drift(self, p: str, main, ctx: dict) -> dict | None:
+        """The language named from another root than the people (GLOSSONYM_W): 'our speech', or the place it was first
+        spoken in the lect's 'like' form (Hittite nešili 'in the manner of Neša' beside Hatti). None: the people's root."""
+        rng = _rng(self.seed, "glossonym", p)
+        kind = _pick(rng, GLOSSONYM_W)
+        if kind == "same":
+            return None
+        _c, sp = _first(main, ("LANGUAGE", "TONGUE", "SPEAK", "MOUTH"))
+        if kind == "place":
+            like = (getattr(getattr(main, "lexicon", None), "affixes", {}) or {}).get("like")
+            r = self.river_name(main, ctx["river"]) if ctx.get("river") is not None else None
+            if r is not None and like and like[0]:
+                f = _repair(main, tuple(r["form"]) + tuple(like[0]) if like[1] else tuple(like[0]) + tuple(r["form"]))
+                roman = RO.title_name(_roman_form(main, f))
+                return {"ipa": word_ipa(f), "roman": roman, "roman_full": RO.title_name(_roman_form(main, f, False)),
+                        "gloss": f"the way of the {r['roman']} ('{r['gloss']}'): the language named after its river",
+                        "pattern": "glossonym drift: a place", "lect": main.id}
+        we = _word(main, "WE")
+        if we is None or sp is None:
+            return None
+        f = _join(main, sp.form, we.form)
+        roman = RO.title_name(_roman_form(main, f))
+        return {"ipa": word_ipa(f), "roman": roman, "roman_full": RO.title_name(_roman_form(main, f, False)),
+                "gloss": f"our {_gloss(sp.concept).lower()}: the language named apart from the people",
+                "pattern": "glossonym drift: 'our speech'", "lect": main.id}
+
+    def conquerors(self, demes: dict, peoples: dict) -> None:
+        """P1: a deme of one people that shifted to a ruling people's speech, and still speaks its line, takes the rulers'
+        name with chance P1_TAKE (France after the Franks, Bulgaria after the Bulgars), said with its own words."""
+        latest: dict = {}
+        for s in self.res.get("shifts") or []:
+            if s.get("speakers") and s.get("ruler_people") and s["speakers"] != s["ruler_people"]:
+                if s["deme"] not in latest or s["kyr"] < latest[s["deme"]]["kyr"]:
+                    latest[s["deme"]] = s
+        for d, s in sorted(latest.items()):
+            l = next((x for x in self.living if x.deme == d), None)
+            rp = s["ruler_people"]
+            ruler = self.lects.get(s["ruler_lect"])
+            if l is None or ruler is None or rp not in self.patterns or not self.inherits(l, ruler):
+                continue
+            if _rng(self.seed, "p1", d).random() >= P1_TAKE:
+                continue
+            n = self.endonym_in(l, rp, self.patterns[rp], self.ctx.get(rp) or {})
+            if n is None:
+                continue
+            own = (demes.get(str(d)) or {}).get("name") or {}
+            n = dict(n, pattern="P1", variant="conquerors",
+                     gloss=f"named after their former rulers, the {rp} ({n['gloss']})",
+                     plain=n["plain"] + f"; the name of the {rp}, whose speech deme {d} took up {s['kyr']:g} kyr ago")
+            demes[str(d)]["name"] = _public(n)
+            demes[str(d)]["name"]["was"] = own.get("roman")
+            self.note(self._people(l), "P1", era_kyr=round(float(s["kyr"]), 3),
+                      by=rp, deme=d, to=n["roman"], **({"from": own.get("roman")} if own.get("roman") else {}),
+                      cause=f"deme {d} shifted to the {rp}'s speech and took their name")
+
+    def rejections_and_words(self, peoples: dict) -> None:
+        """P5: a people at least as numerous as its namer rejects an insulting exonym ('the mutes', 'the enemies') and asks
+        for its own name. P6: after P6_KYR or more of fear or contempt, the namer's name for a people becomes an ordinary
+        word of its language (vandal 'wrecker', philistine 'boor')."""
+        pop = {p: float(getattr(self.main[p], "population", 0) or 0) for p in self.main}
+        for subj in sorted(peoples):
+            for x in peoples[subj]["exonyms"]:
+                obs = x["by_people"]
+                if x.get("variant") in ("mutes", "enemies") and pop.get(subj, 0) >= pop.get(obs, 0) and \
+                        _rng(self.seed, "p5", obs, subj).random() < P5_REJECT:
+                    x["rejected"] = True
+                    self.note(subj, "P5", era_kyr=x.get("era_kyr"), by=obs, **{"from": x["roman"]},
+                              to=peoples[subj]["endonym"]["roman"],
+                              cause=f"'{x['gloss'].split(' (')[0]}' is an insult; the {subj} ask the {obs} for their own name")
+                if x.get("valence") in ("feared", "despised") and float(x.get("era_kyr") or 0) >= P6_KYR and \
+                        _rng(self.seed, "p6", obs, subj).random() < P6_WORD:
+                    raid = x.get("variant") == "enemies" or x.get("valence") == "feared"
+                    meaning = "a raider, a wrecker" if raid else "a boor, an uncouth person"
+                    word = x["roman"].lower()
+                    peoples[subj].setdefault("words", []).append(
+                        {"by_people": obs, "by_lect": x.get("by_lect"), "roman": word, "ipa": x["ipa"], "meaning": meaning,
+                         "plain": f"{obs} {word} '{meaning}', from their name for the {subj} (as vandal, philistine)"})
+                    self.note(subj, "P6", era_kyr=x.get("era_kyr"), by=obs, **{"from": x["roman"]}, to=word,
+                              cause=f"the {obs}' name for them came to mean '{meaning}'")
+
+    def split_roots(self, peoples: dict) -> None:
+        """P7: one root, split by borrowing. Related peoples whose own names share a root (cognate PEOPLE or REAL words)
+        are each named after it by different neighbours, so one root names different peoples (Deutsch, Dutch, Tedesco)."""
+        key: dict = {}
+        for p, e in self.endonyms.items():
+            m = e.get("main")
+            if m is None or p not in peoples:
+                continue
+            main = self.main[p]
+            roots = tuple(_root(w) for c in m.get("parts") or [] if (w := _word(main, c)) is not None)
+            if roots and all(roots):
+                key.setdefault((self.family(main), roots), []).append(p)
+        for (_fam, _r), ps in sorted(key.items(), key=lambda kv: kv[1]):
+            if len(ps) < 2:
+                continue
+            for p in ps:
+                for x in peoples[p]["exonyms"]:
+                    if x.get("pattern") not in ("X1", "X4"):
+                        continue
+                    others = sorted({(y["by_people"], q) for q in ps if q != p for y in peoples[q]["exonyms"]
+                                     if y.get("pattern") in ("X1", "X4") and y["by_people"] != x["by_people"]})
+                    if others:
+                        x["split"] = [f"the {o} give the same root to the {q}" for o, q in others[:3]]
+                if any(x.get("split") for x in peoples[p]["exonyms"]):
+                    self.note(p, "P7", by=", ".join(sorted({x["by_people"] for x in peoples[p]["exonyms"] if x.get("split")})),
+                              cause="their own name and a related people's share one root, and neighbours named each of them "
+                                    "after it (as Deutsch and Dutch)")
+
+    def adopted(self, peoples: dict, common, cx: dict) -> None:
+        """P3 / E12: a people smaller than the Common's takes up the Common's name for it as one of its own names (Hindu,
+        Indonesia), heard back through its own ears; its old endonym stays (P8, parallel names by audience)."""
+        cp = self._people(common)
+        cpop = float(getattr(common, "population", 0) or 0)
+        for p in sorted(peoples):
+            x = cx.get(p)
+            if x is None or p == cp or float(getattr(self.main[p], "population", 0) or 0) >= cpop:
+                continue
+            if _rng(self.seed, "p3", p).random() >= P3_ADOPT:
+                continue
+            src = self.exo_forms.get((cp, p))
+            form = _hear(src[0], self.main[p]) if src is not None else None
+            if not form:
+                continue
+            roman = RO.title_name(_roman_form(self.main[p], form))
+            peoples[p]["adopted"] = {"ipa": word_ipa(form), "roman": roman, "pattern": "E12",
+                                     "gloss": f"the Common's name for them, {x['roman']} ('{x['gloss']}'), taken up as their own",
+                                     "lect": self.main[p].id}
+            self.note(p, "P3", by=cp, **{"from": x["roman"]}, to=roman,
+                      cause="the Common's name for them, taken up beside their own (P8: parallel names by audience)")
+
+    def landmasses(self) -> dict:
+        """Landmass names from the languages (names-spelling-gaps.md item 18): coined by the first lect of the landmass's
+        first settlers ('the long land', 'the white land': LAND_MODS + LAND), and as today's main lect there says it
+        (inherited, or heard: P2). The world's own names (and Daniel's, PW-867) stay the display names; this is the
+        native one beside them."""
+        out = {}
+        lms = ((getattr(self.R, "meta", {}) or {}).get("present") or {}).get("landmasses") or []
+        for lm in lms:
+            called = lm.get("called")
+            sb = (lm.get("settled_by") or {}).get("by")
+            if not called:
+                continue
+            on = [l for l in self.lects.values() if l.deme is not None and called in
+                  ((self.R.demes[l.deme].get("place") or "") if hasattr(self.R, "demes") else "")]
+            if not on:
+                continue
+            chain = lambda l: {l.people, *(self.line(l.people).get("parents") or [])}  # noqa: E731
+            first = [l for l in on if sb and sb in chain(l)] or on
+            namer = max(first, key=lambda l: (l.born_kyr, -_num(l.id), l.id))
+            rng = _rng(self.seed, "landmass", called)
+            head = _first(namer, ("LAND", "EARTH (SOIL)", "GROUND"))[1]
+            if head is None:
+                continue
+            mods = [c for c in LAND_MODS if _word(namer, c) is not None]
+            if mods and rng.random() < 0.7:
+                m = _word(namer, mods[int(rng.integers(len(mods)))])
+                form, gloss = _join(namer, head.form, m.form), f"the {_gloss(m.concept)} {_gloss(head.concept)}"
+            else:
+                form, gloss = tuple(head.form), f"the {_gloss(head.concept)}"
+            living = [l for l in self.living if l in on]
+            now = max(living, key=lambda l: (float(getattr(l, "population", 0) or 0), l.id)) if living else None
+            rec = {"called": called, "ipa": word_ipa(form), "roman": RO.title_name(_roman_form(namer, form)),
+                   "gloss": gloss, "named_by": namer.id, "people": namer.people, "kyr": round(float(namer.born_kyr), 3),
+                   "pattern": "E6"}
+            if now is not None and now is not namer:
+                inh = self.inherits(now, namer)
+                f2 = form if inh else _hear(form, now)
+                rec["today"] = {"lect": now.id, "people": now.people, "ipa": word_ipa(f2),
+                                "roman": RO.title_name(_roman_form(now, f2)),
+                                "how": "inherited" if inh else f"heard from the {namer.people}, who named it first (P2)"}
+            out[called] = rec
+        return out
+
+    def dishes(self, l, deme: dict, personal: dict | None) -> list:
+        """Dish names (names-spelling-gaps.md item 20, PW-692): the lect's staple food named after a place (its river or
+        land in the lect's 'like' form: the Ratal-ish millet), after a person (a given name: a Pavlova), and a food that
+        reached it along a food route named after the people it came from (an exonym: turkey, French fries)."""
+        from .texts import KIND_ORDER, NOT_A_MEAL, food_kind
+        lex = getattr(l, "lexicon", None)
+        if lex is None:
+            return []
+        words = lex.words
+        crops = sorted(c for c in words if c.startswith("crop:") and len(words[c].form) and c[5:] not in NOT_A_MEAL)
+        food = next((c for k in KIND_ORDER for c in crops if food_kind(c) == k), None)
+        out = []
+        like = (getattr(lex, "affixes", {}) or {}).get("like")
+        rng = _rng(self.seed, "dish", l.id)
+
+        def rec(kind, form, gloss, plain):
+            roman = RO.title_name(_roman_form(l, form))
+            return {"kind": kind, "ipa": word_ipa(form), "roman": roman, "gloss": gloss, "plain": f"{roman}, '{gloss}': {plain}"}
+
+        if food is not None:
+            fw = words[food]
+            fen = _gloss(food.split(":", 1)[1].replace("_", " "))
+            place = next((p for p in deme.get("places") or [] if p["kind"] in ("river", "land", "lake")), None)
+            if place is not None and like and like[0]:
+                from .percepts import from_ipa
+                pf = from_ipa(place["ipa"])
+                mod = tuple(pf) + tuple(like[0]) if like[1] else tuple(like[0]) + tuple(pf)
+                out.append(rec("toponym", _join(l, fw.form, mod), f"the {place['roman']}-style {fen}",
+                               f"{fen} the way it is made on the {place['roman']} (a place name + the 'like' ending)"))
+            given = [g for g in (personal or {}).get("given") or [] if g.get("ipa")]
+            if given:
+                g = given[int(rng.integers(len(given)))]
+                from .percepts import from_ipa
+                out.append(rec("eponym", _join(l, fw.form, from_ipa(g["ipa"])), f"{g['roman']}'s {fen}",
+                               f"{fen} named after someone called {g['roman']} ('{g['gloss']}')"))
+        for r in sorted(self.res.get("food_routes") or [], key=lambda r: (r.get("concept") or "", r.get("origin_lect") or "")):
+            o = self.lects.get(r.get("origin_lect"))
+            if o is None or self._people(o) == self._people(l) or not any(h.get("lect") == l.id for h in r.get("hops") or []):
+                continue
+            c = r.get("concept")
+            w = words.get(c)
+            src = self.exo_forms.get((self._people(l), self._people(o)))
+            if w is None or not len(w.form) or src is None:
+                continue
+            fen = _gloss(c.split(":", 1)[-1].replace("_", " "))
+            out.append(rec("exonym", _join(l, w.form, src[0]), f"the {self._people(o)} {fen}",
+                           f"{fen}, which came from the {self._people(o)}, called by the name {src[2]} given them"))
+            break
+        return out[:DISH_MAX]
 
     # -------------------------------------------------------------- driver
     def build(self) -> dict:
@@ -968,6 +1295,7 @@ class _Pass:
         for p in sorted(self.main):
             pat, ctx = self.endonym_pattern(p)
             self.patterns[p] = pat
+            self.ctx[p] = ctx
             main = self.main[p]
             by_lect = {}
             for l in self.by_people[p]:
@@ -981,6 +1309,7 @@ class _Pass:
             gl = m["set"]["language"]
             glossonym = {"ipa": gl["ipa"], "roman": gl["roman"], "roman_full": gl["roman_full"], "gloss": f"the speech of {m['gloss'].split(' (')[0]}",
                          "pattern": gl["how"], "lect": main.id}
+            glossonym = self.glossonym_drift(p, main, ctx) or glossonym
             peoples[p] = {"endonym": _public(m), "glossonym": glossonym, "set": m["set"],
                           "by_lect": {k: {"ipa": v["ipa"], "roman": v["roman"], "roman_full": v["roman_full"], "pattern": v["pattern"], "variant": v["variant"]} for k, v in sorted(by_lect.items())},
                           "exonyms": [], "why": {k: (v if isinstance(v, (str, int, float)) else list(v) if isinstance(v, tuple) else v)
@@ -1000,13 +1329,25 @@ class _Pass:
                 if st:
                     demes[str(l.deme)]["settlements"] = st
         rows = ((getattr(self.R, "meta", {}) or {}).get("present") or {}).get("reputation") or {}
-        for obs, subs in sorted((rows.get("rows") or {}).items()):
-            for subj, row in sorted(subs.items()):
-                if subj not in peoples or obs == subj:
+        # (three rounds: neighbours first, whose X1 names the misattributed X9 names and relays reuse; then the rest; then
+        # the relayed rows, X4, heard from the third people's own name for the subject)
+        todo = [(o, s, r) for o, subs in sorted((rows.get("rows") or {}).items()) for s, r in sorted(subs.items())
+                if s in peoples and o != s]
+        for rnd in (0, 1, 2):
+            for obs, subj, row in todo:
+                relayed = bool(row.get("borrowed_from")) and row.get("borrowed_from") in self.main
+                if (rnd == 2) != relayed or (rnd < 2 and (rnd == 0) != (row.get("valence") == "neighbour")):
                     continue
-                x = self.exonym(obs, subj, row)
+                x = self.relay(obs, subj, row) if rnd == 2 else self.exonym(obs, subj, row)
+                if x is None and rnd == 2:
+                    x = self.exonym(obs, subj, row)
                 if x is not None:
                     peoples[subj]["exonyms"].append(x)
+        for p in peoples:
+            peoples[p]["exonyms"].sort(key=lambda x: (x["by_people"], x.get("pattern") or ""))
+        self.conquerors(demes, peoples)
+        self.rejections_and_words(peoples)
+        self.split_roots(peoples)
         common, why = self.common()
         cx = {}
         if common is not None:
@@ -1024,7 +1365,17 @@ class _Pass:
                 cx[p] = {k: row.get(k) for k in ("ipa", "roman", "roman_full", "gloss", "pattern")}
         out_common = None if common is None else {"lect": common.id, "people": self._people(common), "deme": common.deme, "why": why,
                                                   "exonyms": cx}
+        if common is not None:
+            self.adopted(peoples, common, cx)
+        for p, h in self.history.items():
+            if p in peoples:
+                peoples[p]["history"] = sorted(h, key=lambda x: (-(x.get("era_kyr") or 0.0), x["process"], x.get("by") or ""))
+        for l in self.living:
+            ds = self.dishes(l, demes.get(str(l.deme)) or {}, personal.get(l.id))
+            if ds:
+                demes[str(l.deme)]["dishes"] = ds
         return {"peoples": peoples, "demes": demes, "common": out_common, "scholars": self.scholars(common), "personal": personal,
+                "landmasses": self.landmasses(),
                 "patterns": PATTERNS, "note": "PW-972: patterns from the owner's ethnonym taxonomy; forms from each lect's words "
                                               "and grammar (names.py)"}
 
