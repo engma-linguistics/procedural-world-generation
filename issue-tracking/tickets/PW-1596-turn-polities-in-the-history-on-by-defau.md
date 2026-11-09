@@ -52,5 +52,6 @@ state cards and the Polities layer keep showing a read-out that cannot affect th
 the switch sits unused.
 
 ## Updates
+- 2026-11-09: Lane 254b: not flipped, PW-1597's check fails on 3 of 5 pairs (round19.md section 4). Switch-off calendar moved with 81fc3851: L6 seed 7 first state 3,700 -> 3,400 ya, writing 3,347 -> 3,005; L7 seed 7 4,100 -> 3,700, 4,462 -> 4,305; L7 seed 10 unchanged. Steadiness over re-rolls only started: seed 7 on, nudge A (halflings 0.8 -> 0.9): same ruler 26% 1,000 ya / 21% now; the other 11 nudge pairs were left queued in scratch (lane 254b).
 - 2026-11-09: Coordinator 11-09: option B. Fix the late live calendar first (PW-1597), then flip with a re-rolled steadiness check (C) folded into the flip lane.
 - 2026-11-09: Created from inbox draft draft-flip-polities-live-on.md (found by lane248).

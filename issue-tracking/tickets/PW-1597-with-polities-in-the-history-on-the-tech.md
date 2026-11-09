@@ -36,4 +36,5 @@ worlds made before and after would read a real change in history that is only th
 - [ ] live and read-out first-state dates and writing medians within ~100 years on L6 seeds 7, 3, 10 and L7 seeds 7, 10, same code
 
 ## Updates
+- 2026-11-09: Lane 254 (81fc3851): the after-run tree read today's ranges for every century; now reads each frame's range, and LivePolities.town_cells counts the ledger's places. Lane 254b check on 81fc3851 (round19.md section 4): on/off within ~100 years on L6 seeds 7 (first state 3,200/3,400, writing 2,899/3,005) and 3 (equal) only; L6 seed 10 (4,900/5,300; 4,079/4,625), L7 seed 7 (3,300/3,700; 4,079/4,305) and L7 seed 10 (4,600/4,500; 4,305/4,795) fail, the live calendar now early: town_cells counts more town cells than the ledger mid-history (draft draft-live-town-cells-overcount-l7.md). Not done.
 - 2026-11-09: Created from inbox draft draft-live-tech-calendar-runs-late.md (found by lane248).

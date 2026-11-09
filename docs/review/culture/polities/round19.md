@@ -22,8 +22,9 @@
 - **What it does to the default (switch off).** The calendar moves later, to the live one's: on L6 seed 7 the rebuilt off run's
   writing median goes from 3,347 to 3,005 ya (rebuilt on and off now both 3,005). This is the read-out losing an anachronism, not
   the history changing.
-- **Not done in this part (handed off):** the five-pair on/off table on the new code, PW-1596's re-rolled steadiness check, and
-  the flip decision. Runner, nudged trees and scripts are ready (section 3).
+- **Lane 254b (section 4):** on 81fc3851 the on/off calendars agree within ~100 years on L6 seeds 7 and 3 only; L6 seed 10 and
+  both L7 seeds are 226-546 years apart, now with the switch on *earlier*: the live tree's town footprint counts more town cells
+  than the ledger. The switch stays off. The default calendar moved later on L6 and L7 seed 7 (first state 300-400 years).
 
 ## 1. The diagnosis runs (L6 4360a3, seed 7, dnd, 30 kyr, languages skipped; `round19/live_run.py`, `round16/measure_v1.py`)
 
@@ -59,3 +60,35 @@ After the change, `techtree.rebuild` gives 3,005 ya on both be8750 (on) and 2021
   scratch runner `go.sh tree seed on|off tag world`).
 - PW-1596: same ruler 1,000 years ago / now, on against off, three nudges per seed (halflings among humans 0.8 -> 0.9, goblins
   among hobgoblins 0.8 -> 0.9, gnomes among dwarves 0.6 -> 0.7) on seeds 7 and 3 (`round14/measure.py --pair`).
+
+## 4. The five pairs on 81fc3851 (lane 254b; same code on and off; L6 4360a3 / L7 899985, dnd, 30 kyr, languages skipped)
+
+| world, seed | on: first state / writing median | off: first state / writing median | on - off | off before 81fc3851 (f1c313b6) | off moved |
+|---|---|---|---|---|---|
+| L6, 7 | 3,200 / 2,899 ya (9bece7) | 3,400 / 3,005 ya (420331) | first state 200 later, writing 106 later | 3,700 / 3,347 ya (20211a, section 1) | 300 / 342 years later |
+| L6, 3 | 6,600 / 5,738 (a43c96) | 6,600 / 5,738 (a90296) | equal | not rerun (run queued); lane 248's off on 9dc89be2: 6,300 / 5,738 | (300 earlier / 0, other commit) |
+| L6, 10 | 4,900 / 4,079 (f6652f) | 5,300 / 4,625 (41bccc) | 400 / 546 later | not rerun (queued); lane 248's 9dc89be2: 5,300 / 4,625 | (0 / 0, other commit) |
+| L7, 7 | 3,300 / 4,079 (4d304e) | 3,700 / 4,305 (d98885) | 400 / 226 later | 4,100 / 4,462 (877f63) | 400 / 157 later |
+| L7, 10 | 4,600 / 4,305 (00331e) | 4,500 / 4,795 (56b15d) | 100 earlier / 490 later | 4,500 / 4,795 (e64227) | 0 / 0 |
+
+Each on and off tag was run twice by accident (a duplicate queue); every pair of twins measured identically (states, largest
+polity, writing), so the runs are deterministic. Scratch runs, deleted after the lane.
+
+**PW-1597's check fails**: within ~100 years on L6 seeds 7 (writing 106) and 3 only; L6 seed 10 and both L7 seeds are 226-546
+years apart. The residual is not the after-run tree any more: `techtree.rebuild` on the switch-on history gives the switch-off
+calendar (L7 seed 7: 4,305 rebuilt against 4,079 live; L7 seed 10: 4,795 against 4,305), and replays of the after-run tree on
+4d304e with regions and goods on the range of the time, starts or tamings give 4,305-4,462 (`round19/replay.py`), never the
+live 4,079. The live-only input that differs is the town footprint: since `LivePolities.town_cells` counts the ledger's places it
+counts **more** town cells than the ledger mid-history (`round19/footprint.py`; L7 seed 7, 3 kyr ago 4,252 live against 2,811 in
+the same run's ledger; seed 10, 2 kyr ago 3,015 against 2,197; L6 seed 7, 3 kyr ago 2,770 against 2,422), so the live tree now
+runs early, most at L7. Draft `draft-live-town-cells-overcount-l7.md`.
+
+**For Daniel, the default (switch off) moved** with 81fc3851 on two of the three pairs rerun on both commits: L6 seed 7 first
+state 3,700 -> 3,400 ya and writing 3,347 -> 3,005 ya; L7 seed 7 first state 4,100 -> 3,700 ya, writing 4,462 -> 4,305 ya; L7
+seed 10 unchanged (4,500 / 4,795). The read-out losing the anachronism of today's ranges, not the history changing.
+
+**Not flipped.** (1) fails, so `POLITIES_LIVE` stays off; goldens untouched.
+
+**PW-1596 steadiness (handed off, partial).** One pair measured on 81fc3851: seed 7 on, base against nudge A (halflings among
+humans 0.8 -> 0.9; 9bece7 vs 239dbd), live map: same ruler 26% 1,000 ya, 21% now (top 10 kept 3/10, 5/10 and 3/10, 3/10). The
+rest of the 12 nudge runs were queued; the seed 3 off base must be rerun (deleted by mistake).
