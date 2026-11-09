@@ -21,6 +21,8 @@
 - **Languages merged 11-08** (lang-design folded into main, worktrees removed): `planet languages <run>` writes
   languages.json + sidecars; viewer `planet langserve`; guide docs/review/language/ (for-daniel.md, sketches, calibration).
   Leftovers are the language tickets taken in at the merge. Never delete runs a24559, b4d502, 3c1caf (a24559 is the language run).
+  11-08 later: owner rulings + syrinx two-voice tone merged (3fb356ff). Open language calls live on the separate Language Desk
+  (https://claude.ai/artifact/HYNL244a8zVvfSGFWK5Fgw, db 'answers'), not the Owner's Desk. Next language lane: PW-1551, then PW-1537/1549/1545/1546.
 - Merged 11-03/04 (details in [decisions.md](decisions.md)): board triage (v2 382 -> 12), milestones v2-v5, crops cross the sea
   only with colonists or ocean ships, years-ago dates (NumFmt), stable culture uids, cuisine sheet per culture, written faiths and a
   gods disk cache, the workbench tree, polities v0 and war v0 (Polities globe layer, `/api/polities`), summit heights (PW-846),
