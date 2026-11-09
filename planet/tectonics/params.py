@@ -69,6 +69,12 @@ class Params:
     erosion_timescale: float = 400.0  # Myr e-folding of low ground above base level (weathering)...
     erosion_height: float = 2000.0  # m: ...which gets (1 + (h/this)^2) times faster higher up
     stretching: float = 0.01  # per Myr per cm/yr of opening: continental crust thins near rifts
+    # PW-1497 option A (scout 237): share of the overriding continent's own advance toward an ocean-continent trench
+    # (cm/yr, at most the convergence) taken up by contracting its edge (crust.andean_contraction; Medvedev et al.
+    # 2006: the central Andes shorten 1-1.75 of the foreland's ~3 cm/yr). 0: off. andean_steer: the area thermostat's
+    # factor steers it, as it steers subduction erosion (both are the trench's sinks of continental area).
+    andean_shortening: float = 0.0
+    andean_steer: float = 0.0
     subduction_erosion: float = 0.05  # km/Myr per cm/yr: forearc crust ground away at ocean-continent trenches (over a crust.FOREARC_KM wide forearc)
     accretion: float = 0.5  # share of the sediment arriving at a trench scraped onto the overriding plate
     rift_margin_km: float = 18.0  # ...and the crust it loses floors the opening rift at this thickness (0: lost)
