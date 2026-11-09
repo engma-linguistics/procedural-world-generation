@@ -1,16 +1,19 @@
 ---
+id: PW-1596
 title: Turn polities-in-the-history on by default? States now match the read-out at L6 and L7; steadiness a little under
 type: task
-status: needs-decision
+status: todo
 parent: PW-661
 milestone: v4
 subsystem: peoples
 effort: s
 impact: high
 found_by: lane248
-blocked_by: []
-relates: [PW-1587, PW-1460, PW-1466]  # (and PW-1594, not yet on this branch)
-refs: ["planet/lineages/history/params.py", "planet/lineages/history/polity_live.py::LivePolities._step", "planet/lineages/history/polity_live.py::LivePolities._hem_local", docs/review/culture/polities/round18.md, docs/review/culture/polities/round18/live_run.py, docs/review/culture/polities/round16/measure_v1.py, docs/review/culture/polities/round14/measure.py, "world 4360a3", "world 899985"]
+blocked_by: [PW-1597]
+relates: [PW-1587, PW-1460, PW-1466]
+refs: [planet/lineages/history/params.py, "planet/lineages/history/polity_live.py::LivePolities._step", "planet/lineages/history/polity_live.py::LivePolities._hem_local", docs/review/culture/polities/round18.md, docs/review/culture/polities/round18/live_run.py, docs/review/culture/polities/round16/measure_v1.py, docs/review/culture/polities/round14/measure.py, "world 4360a3", "world 899985"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -47,3 +50,7 @@ reason that is not history.
 **What misleads if never decided.** The live polities (wars that move peoples, conquerors' attitudes, revolts) stay off, so the
 state cards and the Polities layer keep showing a read-out that cannot affect the peoples it rules; the round-by-round work on
 the switch sits unused.
+
+## Updates
+- 2026-11-09: Coordinator 11-09: option B. Fix the late live calendar first (PW-1597), then flip with a re-rolled steadiness check (C) folded into the flip lane.
+- 2026-11-09: Created from inbox draft draft-flip-polities-live-on.md (found by lane248).

@@ -1,4 +1,5 @@
 ---
+id: PW-1597
 title: With polities in the history on, the tech calendar runs late, so states start up to 800 years later than off
 type: task
 status: todo
@@ -9,8 +10,10 @@ effort: m
 impact: med
 found_by: lane248
 blocked_by: []
-relates: [PW-1466, PW-1472]  # (and PW-1594, not yet on this branch)
+relates: [PW-1466, PW-1472]
 refs: ["planet/lineages/history/tech_live.py::LiveTech", "planet/lineages/history/polity_live.py::LivePolities.town_cells", "planet/lineages/techspread.py::town_footprint", docs/review/culture/polities/round18.md, docs/review/culture/polities/round18/live_run.py, docs/review/culture/polities/round16/measure_v1.py, "world 4360a3", "world 899985"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -31,3 +34,6 @@ seed and see whether writing moves back), then fix by mechanism.
 first states move a few centuries later than today's read-out shows, and the date writing arrives with them; a reader comparing
 worlds made before and after would read a real change in history that is only the calendar's inputs.
 - [ ] live and read-out first-state dates and writing medians within ~100 years on L6 seeds 7, 3, 10 and L7 seeds 7, 10, same code
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-live-tech-calendar-runs-late.md (found by lane248).

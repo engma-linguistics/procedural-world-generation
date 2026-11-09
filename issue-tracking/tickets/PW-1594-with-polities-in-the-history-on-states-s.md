@@ -2,7 +2,7 @@
 id: PW-1594
 title: With polities in the history on, states still under off at L6 and over it at L7, and the map less steady when nudged
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -38,4 +38,5 @@ at L6 and a third higher at L7 than today's read-out, and make the map shift mor
 - [ ] nudge steadiness on no worse than off over at least two seeds, then a needs-decision to flip the switch
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 248 (17f929b7, 9dc89be2): the state test, not the three candidates; on/off states 80-105% of off on 5 pairs on the same code. Flip -> PW-1596, calendar -> PW-1597.
 - 2026-11-09: Created from inbox draft draft-live-polities-states-and-steadiness-after-site-factor.md (found by lane245).
