@@ -977,3 +977,26 @@ def test_stem_change_recorded_when_the_ending_is_gone():
             ex.set(("PL",), (("stem", tuple(from_ipa(word_ipa(ex.stem).replace("a", "e")))), ("PL", ())))
     G._check_lost(g, 1.0)
     assert pl.live and ["a", "e"] in g.processes["stem_change"]["PL"]
+
+
+def test_rulings_species_leanings_deep_past_and_comparison_prior():
+    """Owner rulings 11-08: the three species leanings read generation length and pitch range (PW-1538 C); long-lived
+    protos start with a deep past of bound grams (PW-1544 b); the comparison aim follows WALS 121A (PW-1538 D)."""
+    assert G.leanings(25.0, 1.0) == {}
+    assert G.leanings(G.LONG_GEN_YR, 1.0) == G.LEAN_LONG_GEN
+    assert G.leanings(G.SHORT_GEN_YR - 1, 1.0) == G.LEAN_SHORT_GEN
+    assert G.leanings(25.0, G.WIDE_PITCH) == G.LEAN_WIDE_PITCH
+    assert G.deep_past_gens(G.LONG_GEN_YR) == G.DEEP_PAST_GENS and G.deep_past_gens(25.0) == 0.0
+    bound0 = bound1 = 0
+    for s in range(6):
+        g0 = G.proto_grammar(np.random.default_rng(s), Inv(), lex())
+        g1 = G.proto_grammar(np.random.default_rng(s), Inv(), lex(), deep_gens=G.DEEP_PAST_GENS)
+        bound0 += sum(1 for x in g0.live() if x.level >= G.AFFIX)
+        bound1 += sum(1 for x in g1.live() if x.level >= G.AFFIX)
+        assert any("deep unrecorded past" in e[1] for e in g1.events)
+    assert bound0 == 0 and bound1 >= 6
+    rng = np.random.default_rng(3)
+    T = G.load_tables()
+    draws = [G._draw_feature(rng, "comparative", G.Typology(G.draw_typology(rng)), T) for _ in range(600)]
+    share = {k: draws.count(k) / len(draws) for k in G.COMPARE_PRIOR}
+    assert all(abs(share[k] - p) < 0.06 for k, p in G.COMPARE_PRIOR.items())

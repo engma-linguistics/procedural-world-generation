@@ -90,6 +90,35 @@ DEGRAM = 1 / 50        # degrammaticalization (Norde 2009): a clitic or affix cl
 DEGRAM_EDGE = 3.0
 DEGRAM_ORPHAN = 3.0
 CHUNK = 10.0           # generations per internal sub-step
+# Species leanings (owner ruling 11-08, PW-1538 C: all three rows of the grammar D lane's proposal). Each is one named
+# multiplier table on existing hazards, chosen by the people's life history (generation length) or voice profile (pitch
+# range), never by a species name; `leanings` combines them per lect and grammar.step reads the result. Flavour, not
+# measurement: long memories keep witnessed-vs-reported marking (evidentials, mirative) and wear morphology more slowly;
+# a voice with a wide pitch range copies sounds (reduplication); short generations recruit a little faster.
+LONG_GEN_YR = 150.0    # generation length (yr) from which LEAN_LONG_GEN applies (elves at ~150, giants, dragons at 430)
+LEAN_LONG_GEN = {"evid_recruit": 1.5, "evid_loss": 0.5, "fuse": 0.7, "erode": 0.7}
+SHORT_GEN_YR = 20.0    # generation length (yr) under which LEAN_SHORT_GEN applies (humans 25-28 do not; kobolds at 15 do)
+LEAN_SHORT_GEN = {"recruit": 1.2}
+WIDE_PITCH = 3         # voice profile pitch_range (rough octaves of speaking pitch; human 1) from which LEAN_WIDE_PITCH applies
+LEAN_WIDE_PITCH = {"redup": 1.5}
+EVID_FNS = ("EVID.DIR", "EVID.REP", "MIR")
+
+
+def leanings(gen_yr: float | None, pitch_range: float | None) -> dict[str, float]:
+    """The lect's species leanings: the product of the LEAN_* tables that apply to its people's generation length and
+    voice profile pitch range (an empty dict for most peoples)."""
+    out: dict[str, float] = {}
+    tabs = []
+    if gen_yr is not None and gen_yr >= LONG_GEN_YR:
+        tabs.append(LEAN_LONG_GEN)
+    if gen_yr is not None and gen_yr < SHORT_GEN_YR:
+        tabs.append(LEAN_SHORT_GEN)
+    if pitch_range is not None and pitch_range >= WIDE_PITCH:
+        tabs.append(LEAN_WIDE_PITCH)
+    for t in tabs:
+        for k, v in t.items():
+            out[k] = out.get(k, 1.0) * v
+    return out
 
 PATH_FREQ_WEIGHT = {"very common": 3.0, "common": 2.0, "attested": 1.0, "set": 0.0}
 # ('set': a path only a paradigm's set-binding uses (`_person_set`), never drawn on its own: the rest of an object or
@@ -895,10 +924,8 @@ def _draw_feature(rng: np.random.Generator, name: str, typ: Typology, T: Tables)
         if _bern(rng, p("GB147", ("GB302",))):
             return "bound"
         return "periphrastic" if _bern(rng, p("GB302", ("GB147",))) else "none"
-    if name == "comparative":
-        if _bern(rng, p("GB265", ("GB266",))):
-            return "exceed"
-        return "locational" if _bern(rng, p("GB266", ("GB265",))) else "other"
+    if name == "comparative":   # (owner ruling 11-08, PW-1538 D: WALS 121A shares, not the Grambank-drawn aim)
+        return _choice(rng, COMPARE_PRIOR)
     if name == "predicative_possession":
         if _bern(rng, p("GB250", ("GB252",))):
             return "have"
@@ -1963,11 +1990,25 @@ def _class_for(g: Grammar, concept: str) -> NounClass | None:
     c = cs.by_group(want)
     if c is not None:
         return c
-    for alt in ("abstract", "manner", "plant", "animal"):
+    for alt in fallback_groups(grp):
         c = cs.by_group(alt)
-        if c is not None and alt != "person":
+        if c is not None:
             return c
     return cs.classes[-1]
+
+
+#: the classes a noun falls back on when its own group has none, in order. Owner ruling 11-08 (PW-1538 B): an animate
+#: noun (person or animal) takes the person or animal class first, as Bantu class 1/2 takes the animals a language has no
+#: animal class for (Swahili mbwa 'dog' takes class 1/2 agreement; Katamba 2003), before the inanimate fallbacks.
+ANIMATE_FALLBACK = ("person", "animal", "people")
+CLASS_FALLBACK = ("abstract", "manner", "plant", "animal")
+
+
+def fallback_groups(grp: str) -> tuple:
+    """The fallback class groups for a noun of semantic group `grp` (ANIMATE_FALLBACK first for persons and animals)."""
+    if grp in ("person", "animal"):
+        return ANIMATE_FALLBACK + tuple(x for x in CLASS_FALLBACK if x not in ANIMATE_FALLBACK)
+    return CLASS_FALLBACK
 
 
 def add_class(g: Grammar, rng: np.random.Generator, inv, lexicon, kyr: float, group: str | None = None,
@@ -2034,10 +2075,29 @@ def _pick_exemplars(rng, lexicon, pos: str, pref: tuple[str, ...], n: int = 4) -
     return out
 
 
-def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None = None, kyr: float = 20.0) -> Grammar:
+#: a deep unrecorded past (owner ruling 11-08, PW-1544 (b)): grammaticalization runs per generation, so a people with
+#: 150+ year generations gets under ~130 generations in the 20 kyr window and its protos' 1-3 free grams never bound
+#: (93% of their living lects marked 0-1 verb categories with an affix). Their proto-languages are as old in years as
+#: anyone's, so they start with DEEP_PAST_GENS generations of the gram cycle already run (no sound change, no typology
+#: drift, mid social factors DEEP_PAST_L2): slowness then conserves the inflection they had (Lithuanian, Icelandic)
+#: rather than preventing any from forming. Applies from LONG_GEN_YR (the long-generation leaning's threshold).
+DEEP_PAST_GENS = 200.0  # (harness, 60 protos at 430-yr generations, no sound change, 22A bins 0-1/2-3/4-5/6-7/8+:
+#                         none 92/8/0/0/0, 150 2/23/63/12/0, 200 0/13/62/25/0, 300 0/12/57/32/0; 100-yr from scratch
+#                         2/18/68/12/0)
+DEEP_PAST_L2 = 0.2
+
+
+def deep_past_gens(gen_yr: float | None) -> float:
+    """Generations of unrecorded grammar a proto of a people with this generation length starts with (DEEP_PAST_GENS
+    from LONG_GEN_YR, else none)."""
+    return DEEP_PAST_GENS if gen_yr is not None and gen_yr >= LONG_GEN_YR else 0.0
+
+
+def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None = None, kyr: float = 20.0,
+                  deep_gens: float = 0.0) -> Grammar:
     """A first language starts low: 1-3 grams at level 0-1 (likeliest NEG, PL, PAST), from lexical sources when the lexicon
     has one (else of unknown origin), and class markers only if the typology drew gender/classes or classifiers, starting
-    as free classifier nouns."""
+    as free classifier nouns. With `deep_gens` (deep_past_gens) the gram cycle then runs that many generations first."""
     if typ is None:
         typ = draw_typology(rng, inv=inv)
     typ = Typology(typ)
@@ -2089,7 +2149,22 @@ def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None =
     _numerals(g, rng, lexicon, inv, kyr)
     _compare(g, rng, kyr, lexicon)
     realise(g, lexicon)
+    if deep_gens > 0:
+        _deep_past(g, rng, inv, lexicon, kyr, deep_gens)
     return g
+
+
+def _deep_past(g: Grammar, rng, inv, lexicon, kyr: float, gens: float) -> None:
+    """Run the gram cycle `gens` generations on a new proto (DEEP_PAST_GENS) and record the outcome as its starting
+    state: the grams' histories and the grammar's events say 'a deep unrecorded past', not a dated story."""
+    n_ev = len(g.events)
+    step(rng, g, gens, inv=inv, lexicon=lexicon, l2_share=DEEP_PAST_L2, isolation=0.5, kyr=kyr, drift_typology=False)
+    del g.events[n_ev:]
+    for gr in g.grams:
+        gr.history = [(kyr, "proto"), (kyr, f"already {LEVELS[gr.level]} (a deep unrecorded past)")] if gr.live else \
+            [(kyr, "proto"), (kyr, "lost before the record")]
+    bound = sum(1 for gr in g.grams if gr.live and gr.level >= AFFIX)
+    g.events.append((kyr, f"a deep unrecorded past: {len(g.live())} grams at the start, {bound} of them bound"))
 
 
 def _numerals(g: Grammar, rng, lexicon, inv, kyr: float) -> None:
@@ -2168,7 +2243,8 @@ def _sync_lexicon(g: Grammar, lexicon, kyr: float) -> None:
 _DIST_PLACE = ("THERE", "FAR")
 
 
-def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, targets: set | None = None) -> Gram | None:
+def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, targets: set | None = None,
+             evid_x: float = 1.0) -> Gram | None:
     """One recruitment draw over the attested paths. `targets`: the aims' pull (PRESSURE), restricted to these functions
     (wanted ones no live gram marks yet: a flip to 'number: sg-pl' recruiting a plural word)."""
     at = aims(g)
@@ -2219,7 +2295,7 @@ def _recruit(rng, g: Grammar, lexicon, kyr: float, T: Tables, idx, inv=None, tar
             cands.append((p.weight * w_mult, p, key, w))
     if not cands:
         return None
-    ws = np.array([c[0] for c in cands], dtype=float)
+    ws = np.array([c[0] * (evid_x if c[1].target in EVID_FNS else 1.0) for c in cands], dtype=float)
     _, p, a, w = cands[int(rng.choice(len(cands), p=ws / ws.sum()))]
     if p.target == "CLASS":
         if g.class_system is None:
@@ -2398,7 +2474,8 @@ def _processes(g: Grammar, rng, kyr: float, dn: float, soc: dict, lexicon=None, 
     _split(g, rng, kyr, lv)
     p_make = _p(PRESSURE * soc.get("recruit", 1.0), dn)
     _clusivity(g, rng, kyr, p_make, _p(CLUSIVE_LOSS * soc.get("loss", 1.0), dn), lexicon, inv, lect_id)
-    _redup(g, rng, kyr, p_make, _p(REDUP_LOSS * soc.get("loss", 1.0), dn))
+    _redup(g, rng, kyr, _p(PRESSURE * soc.get("recruit", 1.0) * soc.get("redup", 1.0), dn),
+           _p(REDUP_LOSS * soc.get("loss", 1.0), dn))
     # grammar phase C (2026-11-08)
     fuse, loss = soc.get("fuse", 1.0), soc.get("loss", 1.0)
     _concord(g, rng, kyr, _p(CONCORD_GROW * fuse, dn), _p(CONCORD_LOSS * loss, dn))
@@ -2429,6 +2506,20 @@ def _processes(g: Grammar, rng, kyr: float, dn: float, soc: dict, lexicon=None, 
 CONCORD_TARGETS = {"dem": 1.0, "adj": 0.7, "verb": 0.5}
 CONCORD_GROW = 0.02
 CONCORD_LOSS = 0.0005
+
+
+#: what the pages call a class system (owner ruling 11-08, PW-1538 A): "gender" only where something agrees with the noun
+#: (Corbett 1991: gender is reflected in agreement; Grambank codes it the same way); a class marked on the noun alone, with
+#: no concord anywhere, is GENDER_NO_AGREEMENT. Display only: the typology value (aims, Grambank comparison) is unchanged.
+GENDER_NO_AGREEMENT = "noun class marking (no agreement)"
+
+
+def gender_label(gender: str | None, concord) -> str:
+    """The page label of the typology's gender value: the value itself where concord holds (something agrees with the
+    noun), GENDER_NO_AGREEMENT where the class is marked on the noun only, 'none' for none."""
+    if not gender or gender == "none":
+        return "none"
+    return gender if concord else GENDER_NO_AGREEMENT
 
 
 def _concord(g: Grammar, rng, kyr: float, p_grow: float, p_loss: float) -> None:
@@ -2769,6 +2860,11 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
         lexicon.head_first = not a.head_final()   # lexicon compounds follow the head-direction feature
     T = load_tables()
     soc = social_factors(l2_share, population, isolation)
+    lean = kw.get("lean") or {}
+    if lean:   # (species leanings: `leanings`)
+        soc = {**soc, "recruit": soc["recruit"] * lean.get("recruit", 1.0), "fuse": soc["fuse"] * lean.get("fuse", 1.0),
+               "redup": lean.get("redup", 1.0)}
+    ev_rec, ev_loss, erode = lean.get("evid_recruit", 1.0), lean.get("evid_loss", 1.0), lean.get("erode", 1.0)
     _sync_lexicon(g, lexicon, kyr)
     if inv is not None:
         a["tone"] = "yes" if getattr(inv, "tones", None) else "no"
@@ -2787,10 +2883,10 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
         for _ in range(k):
             if idx is None:
                 idx = _lex_index(lexicon)
-            _recruit(rng, g, lexicon, kyr, T, idx, inv)
+            _recruit(rng, g, lexicon, kyr, T, idx, inv, evid_x=ev_rec)
         if PRESSURE > 0:
             for fns in _unrealised(g, a).values():
-                boost = max(PULL_BOOST.get(f, 1.0) for f in fns) if fns else 1.0
+                boost = max(PULL_BOOST.get(f, 1.0) * (ev_rec if f in EVID_FNS else 1.0) for f in fns) if fns else 1.0
                 if rng.random() < _p(PRESSURE * boost * soc["recruit"], dn):
                     if idx is None:
                         idx = _lex_index(lexicon)
@@ -2803,19 +2899,20 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                 continue
             gr.age_gens += dn
             wanted = _wanted(gr.function, a)
-            if gr.level <= CLITIC and rng.random() < _p(ABANDON * (KEEP.get(gr.function, 1.0) if wanted else 4.0), dn):
+            lx = ev_loss if gr.function in EVID_FNS else 1.0   # (species leaning: evidentials kept)
+            if gr.level <= CLITIC and rng.random() < _p(ABANDON * (KEEP.get(gr.function, 1.0) if wanted else 4.0) * lx, dn):
                 _lose(g, gr, kyr, "the periphrasis fell out of use")
                 changed = True
                 continue
-            if gr.level >= AFFIX and not wanted and rng.random() < _p(UNWANTED_LOSS * soc["loss"], dn):
+            if gr.level >= AFFIX and not wanted and rng.random() < _p(UNWANTED_LOSS * soc["loss"] * lx, dn):
                 _lose(g, gr, kyr, "fell out of use (the grammar no longer marks it)")
                 changed = True
                 continue
-            if gr.level >= AFFIX and rng.random() < _p(L2_STRIP * soc["strip"], dn):
+            if gr.level >= AFFIX and rng.random() < _p(L2_STRIP * soc["strip"] * lx, dn):
                 _lose(g, gr, kyr, "dropped by adult learners")
                 changed = True
                 continue
-            if gr.level == FUSED and rng.random() < _p(LOSS * soc["loss"], dn):
+            if gr.level == FUSED and rng.random() < _p(LOSS * soc["loss"] * lx * erode, dn):
                 _lose(g, gr, kyr, "worn away")
                 changed = True
                 continue
@@ -3380,6 +3477,9 @@ def _polite(g: Grammar, rng, kyr: float, p_make: float, p_loss: float, lexicon) 
 #: construction follows the aim whenever it drifts; an exceed aim with no 'climb'/'jump' verb falls back to locational.
 #: The exceed verb is 'climb' or 'jump' ('climb over' > 'exceed'; a guess where the lexicon has no 'surpass').
 COMPARE_OTHER = {"conjoined": 0.6, "particle": 0.4}
+#: the aim's prior (owner ruling 11-08, PW-1538 D): Stassen's WALS 121A shares; "other" is conjoined 20% + particle 13%,
+#: split by COMPARE_OTHER (0.6 / 0.4). Before, the Grambank GB265/GB266 draw gave locational 18%, exceed 34% in a24559.
+COMPARE_PRIOR = {"locational": 0.47, "exceed": 0.20, "other": 0.33}
 EXCEED_VERBS = ("CLIMB", "JUMP")
 
 

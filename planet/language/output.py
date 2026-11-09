@@ -315,6 +315,20 @@ def thin_dead(doc: dict, result: dict, every: int) -> None:
             x["snapshots"] = thin_snapshots(by[x["id"]].snapshots, every)
 
 
+def home_feature(ls: dict) -> str | None:
+    """The landscape concept a deme lives by, for the per-lect sentence (sentences.s_own): mountains where a third of its
+    cells stand above 2000 m, the sea where a third are coast, else its largest river, else its lake; None otherwise."""
+    if (ls.get("mountain_share") or 0) >= 1 / 3:
+        return "MOUNTAIN"
+    if (ls.get("coast_share") or 0) >= 1 / 3:
+        return "SEA"
+    if ls.get("river") is not None:
+        return "RIVER"
+    if ls.get("lake") is not None:
+        return "LAKE"
+    return None
+
+
 def landscape_json(R) -> dict:
     """Rivers and lakes (fixed: the world's present ones) with the demes that lived on them, oldest first, for river and place
     names (the conservative layer), and each deme's landscape at its first frame in the window."""
@@ -391,8 +405,12 @@ def document(result: dict, thin_dead: int = 1) -> dict:
     lj = [lect_json(l, full=l.id in living_ids, et=et, snap_every=1 if l.id in living_ids else thin_dead)
           for l in sorted(lects, key=_lect_order)]
     from . import sentences as SN
+    last = len(R.frames_kyr) - 1
     for x in lj:   # (round 5: grammar notes and glossed sample sentences for the living lects)
         if x["id"] in living_ids:
+            hf = home_feature(R.deme_landscape(x["deme"], last)) if x.get("deme") is not None else None
+            if hf:
+                x["home"] = hf   # (the landscape the per-lect sentence names: sentences.s_own)
             SN.enrich(x)
     intel = intelligibility_json(R, h)
     doc = {

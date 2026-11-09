@@ -39,7 +39,13 @@ SWAMP_RATIO = 2.0  # ... where that deme holds this many times more of the habit
 TRADE_SHIFT_KYR = 3.0  # continuous contact before trade raises a shift pressure
 TRADE_SHARED = 0.25  # shared-cell share (of the smaller deme) for a trade link
 L2_SHARED = 0.6  # adult-L2 proxy: weight of other peoples' presence on a deme's cells
-L2_MAX = 0.7  # ... and its ceiling (the share of heads in mixed cities is added before the clip)
+L2_MAX = 0.7  # ... and its ceiling, approached concavely: l2 = L2_MAX x (1 - exp(-L2_K x co-presence)), where the
+#              co-presence is L2_SHARED x the other peoples' presence share + the share of heads in mixed cities
+# (owner ruling 11-08, PW-1542 (b): the linear proxy clipped at L2_MAX had a median of 0.54 and a third of living lects
+# at the ceiling, so an ordinary border language read like a trade hub; most real languages have small adult-L2 shares
+# and a few lingua francas large ones, Lupyan & Dale 2010, Bentz & Winter 2013. L2_K is fitted so the median living
+# lect of a24559 sits near 0.25: calibration.md "Rulings lane")
+L2_K = 0.82
 PRESTIGE_TECHS = ("cities", "writing", "law")
 
 
@@ -445,9 +451,9 @@ class Run:
         return self._pidx[i]
 
     def l2_share(self, deme: int, i: int) -> float:
-        """Adult second-language share proxy (PW-985): clip(L2_SHARED x the other peoples' presence on the deme's cells (each
-        co-held cell weighted by the other people's presence share there) / the deme's cells + the share of the deme's heads
-        living in mixed cities it holds, 0, L2_MAX)."""
+        """Adult second-language share proxy (PW-985): L2_MAX x (1 - exp(-L2_K x c)), c = L2_SHARED x the other peoples'
+        presence on the deme's cells (each co-held cell weighted by the other people's presence share there) / the deme's
+        cells + the share of the deme's heads living in mixed cities it holds (PW-1542: concave, not clipped)."""
         cells, _ = self.deme_cells(deme, i)
         if not len(cells):
             return 0.0
@@ -460,7 +466,8 @@ class Run:
                 sh += (p[3] if deme < o else p[2]) / 100.0  # (the other deme's summed presence % on the shared cells)
         city = sum(c["pop"] for c in self._mixed_cities_cached(i) if c["holder_deme"] == deme)
         bonus = min(1.0, city / max(self.deme_population(deme, i), 1.0)) if city else 0.0
-        return float(min(max(L2_SHARED * sh / len(cells) + bonus, 0.0), L2_MAX))
+        raw = max(L2_SHARED * sh / len(cells) + bonus, 0.0)
+        return float(L2_MAX * (1.0 - math.exp(-L2_K * raw)))
 
     def _mixed_cities_cached(self, i: int) -> list[dict]:
         if not hasattr(self, "_mc"):

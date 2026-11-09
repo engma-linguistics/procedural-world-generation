@@ -41,7 +41,7 @@ PERCEPT_KEYS = PLACE_KEYS + MANNER_KEYS + (
     "round_vowel", "nasal_vowel", "front_vowel", "back_vowel", "high_vowel", "low_vowel", "tone", "long",
     "source2", "sub_register", "ultra_register")
 HEAR_KEYS = AXES + ("sub", "ultra")
-VOICE_KEYS = ("modality", "articulators", "make_cost", "hear", "register", "notes", "sources", "same_as_human")
+VOICE_KEYS = ("modality", "articulators", "make_cost", "hear", "register", "pitch_range", "notes", "sources", "same_as_human")
 MODALITIES = ("spoken", "signed")
 NONHUMAN_KEYS = ("harsh", "purr", "percussive", "source2", "sub_register", "ultra_register")
 
@@ -55,6 +55,7 @@ class VoiceProfile:
     make_cost: dict = field(default_factory=dict)
     hear: dict = field(default_factory=dict)
     register: int = 0  # habitual voice pitch vs human, in rough octaves (-2 dragons .. +1 small folk); descriptive
+    pitch_range: float = 1.0  # span of the speaking voice's pitch, rough octaves (human ~1); grammar.leanings reads it
     notes: list = field(default_factory=list)
     sources: list = field(default_factory=list)
     chain: list = field(default_factory=list)  # [(lineage id, "data_file" | "spec")] that contributed, root first
@@ -74,7 +75,7 @@ class VoiceProfile:
     def to_json(self) -> dict:
         return {"source": self.source, "modality": self.modality, "articulators": sorted(self.articulators),
                 "make_cost": {k: ("inf" if math.isinf(v) else v) for k, v in sorted(self.make_cost.items())},
-                "hear": dict(sorted(self.hear.items())), "register": self.register, "notes": list(self.notes),
+                "hear": dict(sorted(self.hear.items())), "register": self.register, "pitch_range": self.pitch_range, "notes": list(self.notes),
                 "sources": list(self.sources), "chain": [list(c) for c in self.chain]}
 
 
@@ -145,6 +146,8 @@ def validate_voice(v, lid: str = "") -> dict:
             if isinstance(x, bool) or not isinstance(x, int) or not -3 <= x <= 3:
                 raise ValueError(f"{lid}: voice.register must be an integer -3..3")
             out[k] = x
+        elif k == "pitch_range":
+            out[k] = _num(x, "pitch_range", lid, False)
         elif k in ("notes", "sources"):
             xs = [x] if isinstance(x, str) else list(x)
             if not all(isinstance(s, str) for s in xs):
@@ -336,6 +339,8 @@ def _merge(p: VoiceProfile, t: dict, lid: str, src: str) -> None:
         p.hear.update(t["hear"])
     if "register" in t:
         p.register = t["register"]
+    if "pitch_range" in t:
+        p.pitch_range = t["pitch_range"]
     p.notes.extend(f"{lid}: {n}" for n in t.get("notes", []))
     for s in t.get("sources", []):
         if s not in p.sources:

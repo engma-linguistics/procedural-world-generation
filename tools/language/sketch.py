@@ -535,6 +535,9 @@ def typology_prose(t: dict) -> list[str]:
            }.get(g("number"), "")
     gen = {"none": "no gender or noun classes", "sex": "a gender system based on sex",
            "animacy": "gender by animacy", "classes": "a system of noun classes"}.get(g("gender"), "")
+    if g("gender") not in ("none", "?") and not t.get("_concord"):   # (owner 11-08: gender only where something agrees)
+        gen = {"sex": "noun class marking by sex (no agreement)", "animacy": "noun class marking by animacy (no agreement)",
+               "classes": "noun class marking (no agreement)"}.get(g("gender"), gen)
     out.append("It has " + ", ".join(x for x in art + [case, al, num, gen] if x) + ".")
 
     tam = [k for k in ("past", "future", "perfective", "progressive", "habitual") if g(k) == "marked"]
@@ -959,7 +962,7 @@ def _typology_clashes(t: dict, grams: list[dict]) -> list[str]:
 def grammar(doc: Doc, l: dict) -> list[str]:
     t = l.get("typology") or {}
     out = ["## Grammar", ""]
-    out += typology_prose(t)
+    out += typology_prose({**t, "_concord": bool((l.get("processes") or {}).get("concord"))})
     clash = _typology_clashes(t, l.get("grams") or [])
     if clash:
         out.append("Note on the data: the typology features and the live markers disagree here (" + "; ".join(clash)

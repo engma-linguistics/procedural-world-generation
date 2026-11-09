@@ -19,8 +19,16 @@ from . import rules as RU
 from .inventory import fuse_vowels, hiatus_count, hiatus_in  # noqa: F401 (hiatus helpers, shared with repair)
 
 RATE_RULE = 0.1  # sound-change events per generation at rate 1 (calibrated by the horizon check; see calibration.md)
-RATE_SIGMA = 0.3  # lognormal sigma of a proto lect's rate
+RATE_SIGMA = 0.5  # lognormal sigma of a proto lect's rate (0.3 -> 0.5, owner ruling 11-08, PW-1539 E: some lines change
+#                  fast, a Hawaiian-type collapse; the review suggested ~0.6)
 RATE_REDRAW = 0.1  # lognormal sigma of the re-draw at budding
+# Bursts (owner ruling 11-08, PW-1539 E): after a language shift or a founder split the lect's rate is multiplied by
+# BURST_X for BURST_KYR (punctuational bursts at splits, Atkinson et al. 2008, 10-33% of lexical divergence; founder
+# effects and imperfect learning by a shifting population, Thomason & Kaufman 1988). A bud is a founder split when the
+# budding deme holds at most FOUNDER_SHARE of its parent's population (history.birth); every shift is a burst.
+BURST_X = 2.0
+BURST_KYR = 1.0
+FOUNDER_SHARE = 0.25
 # Inventory size has no hard cap: rules are steered by PHOIBLE's size distribution (inventory.size_prior), so small and big
 # inventories stay possible but grow rare in PHOIBLE's proportions (Rotokas' 6 consonants, !Xóõ's 130). A rule that would take
 # the lect's consonant (or vowel-quality) count from n to n + d is drawn (prior(n + d) / prior(n)) ** SIZE_K times as often,
@@ -129,6 +137,22 @@ HIATUS_REPAIRS = 1
 HIATUS_MIN = 8  # new hiatus junctions (over the lexicon) a change must leave before it is repaired
 HIATUS_SPREAD = 1.0
 HIATUS_SAMPLE = 80  # hiatus words a candidate repair is tried on
+# Holes in the pattern (owner ruling 11-08, PW-1539 D: sounds spread into places of articulation the old speakers lacked).
+# Martinet (1952, 1955) argued that a gap in an inventory's pattern draws sounds into it ("case vide"), and every human
+# language has labial, coronal and dorsal consonants (Maddieson 1984: the few without bilabials, Iroquoian and Tlingit,
+# lack them by history, and Tlingit has taken labials in from English loans). A lect whose speakers make a major place
+# cheaply (the place's plain stop costs them at most GAP_COST: species_cost; human p 0.16, t 0.33, k 0.10, a lipless
+# reptilian p 3.6) but which has no consonant there (a lipless dragon language taken up by giants) splits one of its
+# consonants toward it with hazard GAP_RATE per generation: the consonant nearest the place (labialized and rounded-vowel
+# neighbours first, as kʷ > p, θ > f, x > f arise) moves there next to the vowels that favour it (rounded for a labial,
+# back for a dorsal, front for a coronal) and in GAP_SPLIT of its other words (a lexical-diffusion split, Wang 1969).
+# Mild on purpose: one split per event, a few events per line where a gap is cheap to fill, none where it is dear.
+GAP_PLACES = {"labial": ((0,), 0), "coronal": ((1, 2, 3), 2), "dorsal": ((4, 5, 6), 5)}   # place group, place filled
+# (a place counts as held by a stop, affricate, fricative or nasal there; glides and liquids do not: w and j are not a
+# labial or dorsal series. Dorsal is palatal, velar or uvular, so a lect with c or q but no k has no dorsal gap)
+GAP_COST = 1.0
+GAP_RATE = 0.002
+GAP_SPLIT = 0.3
 TONE_MIN_MARKED = 0.3  # tone phonemicizes only once marks stand on this share of the core-list vowels (else they are stripped)
 GLOTTAL = None  # (ʔ, set on first use)
 
@@ -375,6 +399,7 @@ class Lect:
     live: list = field(default_factory=list)  # phonology.Live: the live phonological rules (inherited; phonology.update)
     dead_rules: list = field(default_factory=list)  # [ref, born, died, why] of the latest rules that died
     sandhi_drawn: bool = False  # the line has drawn its tone sandhi (phonology.draw_sandhi), once
+    burst_until: float | None = None  # kyr (ago) until which the rate runs at BURST_X (a shift or founder split; not inherited)
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -391,6 +416,93 @@ class Lect:
                     base_segs=self.base_segs or self.consonants(), fired={k: list(v) for k, v in self.fired.items()},
                     glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id,
                     live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn)
+
+    def gaps(self) -> list:
+        """The major places (GAP_PLACES) the lect has no consonant at though its speakers make the place cheaply
+        (the plain voiceless stop there costs them at most GAP_COST)."""
+        from . import profiles as PR
+        from .percepts import Segment
+        if self.profile is None or self.lexicon is None:
+            return []
+        have = {x.place for x in self.segments() if x.kind == "C" and not x.double and x.manner <= 3}
+        out = []
+        for name, (group, at) in GAP_PLACES.items():
+            if have & set(group):
+                continue
+            if PR.species_cost(self.profile, Segment("C", place=at, manner=0)) <= GAP_COST:
+                out.append(name)
+        return out
+
+    def gap_fill(self, rng, n_generations: float, kyr: float) -> bool:
+        """Holes in the pattern (GAP_RATE): with hazard GAP_RATE x n, split a consonant into an empty major place the
+        speakers make cheaply. True when a split happened."""
+        if GAP_RATE <= 0 or self.lexicon is None:
+            return False
+        gaps = self.gaps()
+        if not gaps or rng.random() >= 1.0 - math.exp(-GAP_RATE * n_generations):
+            return False
+        from . import profiles as PR
+        from .percepts import place_distance, to_ipa
+        name = gaps[int(rng.integers(len(gaps)))]
+        at = GAP_PLACES[name][1]
+        cnt: dict = {}
+        for w in self.lexicon.words.values():
+            for x in w.form:
+                if x.kind == "C":
+                    cnt[x] = cnt.get(x, 0) + 1
+        tot = sum(cnt.values()) or 1
+        floor = 1.5 * FOLD_RARE * tot / max(1, len(cnt))   # (the new unit must not be folded straight back: cap_inventory)
+        cands = []
+        for c in sorted(cnt, key=lambda q: (to_ipa(q), repr(q))):
+            if c.place == 8 or c.manner in (8, 9) or c.double:
+                continue
+            t = replace(c, place=at, retroflex=0, labiodental=0, sibilant=c.sibilant if name == "coronal" else 0,
+                        lateral=c.lateral if name == "coronal" else 0,
+                        secondary=0 if (name == "labial" and c.secondary == 1) else c.secondary)
+            cost = PR.species_cost(self.profile, t)
+            if t in cnt or not math.isfinite(cost) or cost > 2.0 * GAP_COST + 1.0 or cnt[c] * GAP_SPLIT < floor:
+                continue
+            w = math.exp(-place_distance(c.place, at) / 2.0 - cost) * cnt[c]
+            if name == "labial" and c.secondary == 1:
+                w *= 4.0   # (kʷ > p: the labialized consonant is the usual source)
+            cands.append((w, c, t))
+        if not cands:
+            return False
+        ws = np.array([x[0] for x in cands], dtype=float)
+        _w, src, tgt = cands[int(rng.choice(len(cands), p=ws / ws.sum()))]
+
+        def favours(v) -> bool:
+            if v is None or v.kind != "V":
+                return False
+            return bool(v.round) if name == "labial" else v.back >= 3 if name == "dorsal" else v.back <= 1
+        salt = f"gap|{self.id}|{to_ipa(src)}"
+
+        def fn(f, stem_index=0):
+            f = tuple(f)
+            if src not in f:
+                return f
+            whole = partial_pick(f, GAP_SPLIT, salt)
+            return tuple(tgt if x == src and (whole or favours(f[j - 1] if j else None)
+                                              or favours(f[j + 1] if j + 1 < len(f) else None)) else x
+                         for j, x in enumerate(f))
+        n = LX.apply_rule_to_lexicon(self.lexicon, fn, f"gap:{to_ipa(src)}>{to_ipa(tgt)}", kyr, self.id)
+        if not n:
+            return False
+        GR = _gr_mod()
+        if GR is not None and self.grammar is not None:
+            GR.apply_rule_to_grammar(self.grammar, fn, f"gap:{to_ipa(src)}>{to_ipa(tgt)}", kyr)
+        self.touch()
+        self._dirty = True
+        self.sync()
+        self.changes.append({"kyr": round(float(kyr), 3), "rule": f"gap:{to_ipa(src)}>{to_ipa(tgt)}", "cause": "gap",
+                             "origin_lect": None})
+        return True
+
+    def rate_now(self, kyr: float) -> float:
+        """The lect's rate at `kyr` (the end of a step): its own, x BURST_X while a burst holds (burst_until)."""
+        if self.burst_until is not None and kyr >= self.burst_until - 1e-9:
+            return self.rate * BURST_X
+        return self.rate
 
     def may_fire(self, rule, kyr: float) -> bool:
         """The re-fire memory: a rule fired in the last REFIRE_KYR, or already MAX_FIRES times in the lect's line (HARMONY_MAX
@@ -728,7 +840,7 @@ class Lect:
         self.generations += n_generations
         self._last_kyr = float(kyr)
         fired = []
-        lam = n_generations * RATE_RULE * ctx.get("rate_scale", 1.0) * self.rate
+        lam = n_generations * RATE_RULE * ctx.get("rate_scale", 1.0) * self.rate_now(kyr)
         k = int(rng.poisson(lam)) if lam > 0 else 0
         if k:
             rules = catalogue_for(self.profile, self.profile_key)
@@ -744,6 +856,7 @@ class Lect:
                 if self.apply_rule(r, kyr) > 0:
                     fired.append(r)
                     pool = [x for x in pool if base_id(x.id) != base_id(r.id)]
+        self.gap_fill(rng, n_generations, kyr)
         self.cap_inventory(kyr)  # (also catches segments brought by wave adoptions applied before this step)
         self.sync()
         self.touch()
@@ -788,6 +901,14 @@ def _undoes(rule, y, x) -> bool:
     """Does `rule` turn segment y (a lone segment, context aside) back into x?"""
     o = RU._single(rule, y)
     return bool(o) and len(o) == 1 and o[0] == x
+
+
+def partial_pick(form, share: float, salt: str) -> bool:
+    """Is this form among the `share` of forms a partial change takes (a stable crc32 of its IPA and `salt`, the same in
+    every process: the words a lexical-diffusion change has reached)?"""
+    import zlib
+    from .percepts import word_ipa
+    return zlib.crc32(f"{salt}|{word_ipa(form)}".encode("utf-8")) < share * 4294967296.0
 
 
 def _axes_apart(a, b) -> int:
@@ -1044,7 +1165,10 @@ def grammar_step(GR, rng, lect: Lect, n: float, gctx: dict) -> None:
     before = PH.cell_parts(lect.grammar)
     GR.step(rng, lect.grammar, n, inv=lect.inventory, lexicon=lect.lexicon, l2_share=gctx["l2"],
             population=gctx["population"], isolation=gctx["isolation"], kyr=gctx["kyr"], drift_typology=True,
-            rate=getattr(lect, "rate", 1.0), lect=getattr(lect, "id", None))
+            rate=lect.rate_now(gctx["kyr"]) if hasattr(lect, "rate_now") else getattr(lect, "rate", 1.0),
+            lect=getattr(lect, "id", None),
+            lean=GR.leanings(getattr(lect, "gen_yr", None), getattr(lect.profile, "pitch_range", None))
+            if hasattr(GR, "leanings") else None)
     PH.apply_new_cells(lect.grammar, lect.inventory, before)   # (new cells join under the live rules: phonology.py)
 
 

@@ -531,12 +531,15 @@ def test_food_hop_borrows_current_form(result):
 
 
 def test_l2_share_varies():
-    """The adult-L2 proxy: 0 with no other people on the deme's land, rising with their presence, capped at L2_MAX."""
+    """The adult-L2 proxy: 0 with no other people on the deme's land, rising concavely with their presence toward
+    L2_MAX (PW-1542)."""
+    import math
     R = TinyRun()
     assert R.l2_share(0, 3) == 0.0  # (humans among humans only)
     v1, v2 = R.l2_share(1, 3), R.l2_share(2, 3)  # (human deme 1 and orc deme 2 share cells)
-    assert 0.0 < v1 <= I.L2_MAX and v1 == pytest.approx(I.L2_SHARED * 1.2 / 4)
-    assert v2 == pytest.approx(I.L2_SHARED * 1.2 / 4)
+    want = I.L2_MAX * (1.0 - math.exp(-I.L2_K * I.L2_SHARED * 1.2 / 4))
+    assert 0.0 < v1 < I.L2_MAX and v1 == pytest.approx(want)
+    assert v2 == pytest.approx(want)
 
 
 def test_root_families_in_the_document(result):
@@ -648,3 +651,39 @@ def test_deterministic_across_hash_seeds():
         r = subprocess.run([sys.executable, "-c", _SEED_RUN], env=env, capture_output=True, text=True, check=True)
         out.append(r.stdout.strip().splitlines()[-1])
     assert out[0] == out[1]
+
+
+def test_gap_fill_splits_into_an_empty_cheap_place():
+    """Owner ruling 11-08 (PW-1539 D): a lect with no labial whose speakers make labials cheaply splits a consonant
+    toward the empty place (lect.gap_fill), next to rounded vowels and in part of its other words; a lipless voice,
+    for which labials are dear, has no such gap. partial_pick is a stable per-form draw."""
+    from planet.language import lect as LC, lexicon as LX, profiles as PR
+    from planet.language import inventory as INV
+    from planet.language.percepts import from_ipa
+    forms = ["kuta", "tuki", "saku", "nuka", "kito", "tasu", "kunu", "suti", "luka", "tolu"] * 4
+    lex = LX.Lexicon("x", {}, {}, True)
+    for k, f in enumerate(forms):
+        lex.words[f"W{k}"] = LX.Word(f"W{k}", tuple(from_ipa(f)) + tuple(from_ipa("a" * (k % 3 + 1))), "N", 3, (), 0.0)
+    segs = sorted({x for w in lex.words.values() for x in w.form}, key=repr)
+    inv = INV.Inventory(consonants=[x for x in segs if x.kind == "C"], vowels=[x for x in segs if x.kind == "V"],
+                        shapes={"CV": 1.0}, stress="initial")
+    l = LC.Lect(id="x", deme=0, people="human", parent=None, how="shift", born_kyr=1.0, lexicon=lex, inventory=inv,
+                profile=PR.HUMAN, profile_key="human")
+    assert l.gaps() == ["labial"]
+    assert LC.partial_pick(from_ipa("kuta"), 0.5, "s") == LC.partial_pick(from_ipa("kuta"), 0.5, "s")
+    old, LC.GAP_RATE = LC.GAP_RATE, 1e6
+    try:
+        assert l.gap_fill(np.random.default_rng(0), 1.0, 0.5)
+    finally:
+        LC.GAP_RATE = old
+    labials = [x for w in lex.words.values() for x in w.form if x.kind == "C" and x.place == 0]
+    assert labials and l.changes[-1]["cause"] == "gap" and l.gaps() == []
+    lipless = PR.VoiceProfile(id="lipless", source="spec", articulators=PR.HUMAN.articulators - {"lips"},
+                              make_cost={**PR.HUMAN.make_cost, "labial": 4.0})
+    l2 = LC.Lect(id="y", deme=0, people="kobold", parent=None, how="proto", born_kyr=1.0, lexicon=LX.Lexicon("y", {}, {}, True),
+                 inventory=inv, profile=lipless, profile_key="kobold")
+    l2.lexicon.words.update({k: w for k, w in list(lex.words.items())[:3]})
+    for w in list(l2.lexicon.words.values()):
+        l2.lexicon.words[w.concept] = LX.Word(w.concept, tuple(from_ipa("kuta")), "N", 3, (), 0.0)
+    l2.touch()
+    assert l2.gaps() == []

@@ -7,6 +7,8 @@
 #   make_cost = { key = x }       multiplier on the human (PHOIBLE) cost per percept-class key; "inf" = cannot make it
 #   hear = { axis = x }           resolution multiplier per percept axis (1 human, 0 ignored); sub / ultra = does a sub-bass / ultra percept reach the ear (0 no)
 #   register = n                  habitual voice pitch vs human, rough octaves (descriptive)
+#   pitch_range = x               span of the speaking voice's pitch, rough octaves (human ~1, the default); from
+#                                 grammar.WIDE_PITCH on, the voice leans to reduplication (grammar.LEAN_WIDE_PITCH, owner 11-08)
 #   notes = [...]                 plain-words lines;  sources = [...] citations ("[memory]" = not re-opened tonight)
 #   same_as_human = true          a deliberate "human profile" judgement (source data_file), as opposed to not yet profiled
 # A lineage with no table anywhere on its chain resolves to the human default, flagged "human_default".
@@ -46,7 +48,9 @@ notes = [
 
 [kenku]
 make_cost = { labial = 1.6, labiodental = 2.5, dental = 1.5, nasal = 2.0, nasal_vowel = 2.5 }
+pitch_range = 3
 notes = [
+  "Pitch range 3 octaves (human about 1): mimics who reproduce any voice they have heard, deep or shrill (judgement; parrots copy both men's and women's voices and whistles, Pepperberg 1999 [memory]).",
   "Mimics: any sound they have heard is cheaper for them to reproduce than for other birds (lower substitute costs).",
   "The canon has kenku unable to invent new words; that is a note for the story, not a mechanism here: their languages change by the ordinary rules.",
 ]

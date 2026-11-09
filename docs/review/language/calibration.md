@@ -1122,3 +1122,118 @@ already does (w costs a kobold 3.7 against ɫ's 4.9, so the ease drag favours th
 All other checks pass in the dark pass; the scholars' horizon fails as before. Left: ɫ is still 6x PHOIBLE's share
 (4.5%, under the 10% floor), now mostly human (9/100) and halfling (6/35) lects; and the same needs filter bars other
 exits for voices without lips or a velum (inbox draft-language-missing-articulator-exits).
+
+## Rulings lane (2026-11-08, lang-rulings)
+
+Daniel's 11-08 rulings on PW-1538, 1539, 1540, 1542 and 1544. Four full passes on a24559 (8 workers, each from a frozen
+copy of its commit): **base** = lang-lane before the rulings (d9b50531); **alone** = every ruling with
+`lect.RATE_SIGMA` 0.5 and no bursts; **bursts** = the same plus x2 bursts; **final** = bursts plus the two follow-up fixes
+in adc35474 (dorsal gaps, crowding text). Bursts is the kept variant.
+
+### What changed
+| Ruling | Where | Change |
+| --- | --- | --- |
+| 1539 A long-tail rule life | phonology.LIFE_SIGMA | 0.5 -> 0.8 (median `LIFE_KYR` kept) |
+| 1539 D partial nativisation | history.NATIVE_HARD 3.0, NATIVE_SHARE 0.6, `History.nativise` | at a shift, each sound costing the shifters >= 3x what it cost the people they learned from is heard through their voice (`hear_word`) in 60% of words (stable per-form draw) |
+| 1539 D holes in the pattern | lect.GAP_PLACES, GAP_COST 1.0, GAP_RATE 0.002, GAP_SPLIT 0.3, `Lect.gap_fill` | a lect with no stop/fricative (manner <= 3) at labial, coronal or dorsal place, cheap for its speakers, splits one consonant into it (Martinet's case vide) |
+| 1539 E rate spread | lect.RATE_SIGMA | 0.3 -> 0.5 |
+| 1539 E bursts | lect.BURST_X 2.0, BURST_KYR 1.0, FOUNDER_SHARE 0.25, `Lect.rate_now` | rate x2 for 1 kyr after a shift and after a founder split (bud < 25% of the parent) |
+| 1540 E | lexicon.SEG_BORROW_K | 0.15 -> 0.075 |
+| 1538 A | grammar.GENDER_NO_AGREEMENT, `gender_label` | "noun class marking (no agreement)" where nothing agrees; sketch, sentences, viewer follow |
+| 1538 B | grammar.ANIMATE_FALLBACK, CLASS_FALLBACK, `fallback_groups` | an animate noun with no class of its own goes to the person/animate class first |
+| 1538 C | grammar.LONG_GEN_YR 150, LEAN_LONG_GEN, SHORT_GEN_YR 20, LEAN_SHORT_GEN, WIDE_PITCH 3, LEAN_WIDE_PITCH, `leanings` | long generations: evid/mir recruitment x1.5, loss x0.5, fusion and erosion x0.7; short: recruitment x1.2; wide pitch (voice key `pitch_range`, kenku 3): reduplication x1.5 |
+| 1538 D | grammar.COMPARE_PRIOR | comparative draw from WALS 121A: locational 0.47, exceed 0.20, other 0.33 |
+| 1538 E | sentences.s_own, output.home_feature | one sentence per language from its faith, home landscape or food, after the core set |
+| 1538 F | sentences | politeness: "It arose as the speech community grew large" |
+| 1542 (b) | inputs.L2_K 0.82 | l2 = L2_MAX (1 - exp(-k raw)), k fitted to the median raw 0.54 -> median 0.25 |
+| 1544 (b) | grammar.DEEP_PAST_GENS 200, DEEP_PAST_L2 0.2, `deep_past_gens`, `proto_grammar(deep_gens=)` | protos of peoples with generations >= LONG_GEN_YR run 200 generations of unrecorded grammar drift before the record starts |
+
+### Sounds D: diagnosis and design (written before the passes)
+
+**What happens at a shift today.** `History.accent` maps each sound of the ruler's lect that the *old* lect lacked
+onto the nearest old sound, with chance `ACCENT_P` (0.8) per sound, over the whole new lexicon and grammar. It never
+asks the shifting people's own voice. So a sound the new speakers find dear but their old lect happened to have, or one
+with no same-kind neighbour there, stays. The fire-giant lect d196.2 (from bronze-dragon speech) kept its growled a
+because the giants' previous lect was itself dragon-derived.
+
+**Why nothing fills an empty place afterwards.** After the shift the speakers' profile does steer the catalogue (rows
+that need lips come back; the ease drag uses the giants' costs). But a labial can only come from a row whose input the
+lect has: kʷ > p and gʷ > b (S065, S066: need labialized velars, which S068 makes only next to rounded vowels), θ > f
+(S071), x > f after a rounded vowel (S025), w > b, v (S040, S069). A lipless line has few rounded vowels (round_vowel
+costs a reptilian voice x3) and often no w, so no row applies; and `NEW_SEG_WEIGHT` (0.3) damps any row that adds a
+phoneme. No mechanism pulls toward a place the inventory lacks; chain shifts exist only as authored rows.
+
+**Size of the problem in a24559** (stored output, 622 living lects): one living lect of lipped speakers has no labial
+consonant at all (d205.1, fire giants); lipped lects average 4.7 labials. So the gap is rare; the mechanism should be
+mild and should not touch ordinary human lects.
+
+**Design.**
+1. *Partial nativisation at the shift* (`History.nativise`, `NATIVE_HARD` 3, `NATIVE_SHARE` 0.6): every sound of the new
+   lect that costs the shifting people at least 3x what it cost the people they learned it from (or that they cannot
+   make) is heard through their own voice (`profiles.hear_word` onto the sounds of both lects that are cheap for them),
+   in 60% of the words, chosen by a stable per-form draw (lexical diffusion, Wang 1969); the rest keep it. Human-voiced
+   to human-voiced shifts change nothing (equal costs). Sources: substrate phonology in shift (Thomason & Kaufman 1988
+   ch. 5: shifting speakers carry their phonology into the target); imperfect learning keeps part of the target's
+   marked sounds, so partial, not total.
+2. *Holes in the pattern* (`Lect.gap_fill`, `GAP_COST` 1.0, `GAP_RATE` 0.002 per generation, `GAP_SPLIT` 0.3): a lect
+   with no consonant at a major place (labial, coronal, dorsal) whose plain stop costs its speakers at most 1.0 (human
+   p 0.16, k 0.10, t 0.33; a lipless p 3.6) splits one consonant toward the place: the source is weighted by place
+   nearness, its frequency, and labialization (kʷ > p is the usual source of new labials); it moves next to the vowels
+   that favour the place (rounded for a labial, back for a dorsal, front for a coronal) and in 30% of its other words.
+   Sources: Martinet 1952, 1955 (the "case vide": gaps in a pattern attract); Maddieson 1984 (every language has
+   coronals and dorsals; the few without bilabials, Iroquoian and Tlingit, are historical accidents, and Tlingit took
+   labials in from English loans). Rare and conditional on the speakers' own costs, so it never fires for a lipless
+   people and seldom for anyone else.
+
+### Measured (a24559, living lects)
+| | base | alone | bursts | final |
+| --- | --- | --- | --- | --- |
+| living lects | 619 | 624 | 622 | 616 |
+| checks failing | horizon | horizon, overused (i̞ 10.7%), loans (pronoun 0.088) | horizon | horizon |
+| horizon human: check reading / logistic (kyr) | 11.4 / 11.71 | 16.0 / 15.36 | 14.83 / 15.3 | 4.64 / 13.19 |
+| under 10 consonants | 1 | 1 (bronze dragon) | 0 | 1 (bronze dragon) |
+| rate log-sd | 0.26 | 0.49 | 0.49 | 0.49 |
+| live rules >= 15 kyr old | 17 | 171 | 180 | 130 |
+| nativised shifts / gap fills | - | 59 / 23 | 62 / 30 | 63 / 6 |
+| lipped lects with no labial | 3 | 2 | 1 | 1 |
+| lects with loaned segments (at the cap) | 207 (151) | 196 (129) | 197 (117) | 188 (122) |
+| l2 10/25/50/75/90% | .24/.39/.54/.69/.70 | .13/.19/.25/.30/.35 | .13/.19/.25/.30/.35 | .13/.19/.25/.30/.35 |
+| 22A bins 0-1/2-3/4-5/6-7/8+ %, all | 28/36/28/8/0 | 1/19/53/27/0 | 2/19/51/27/0 | 2/16/56/26/0 |
+| 22A, generations < 60 yr | 11/43/37/9/0 | 1/17/53/29/0 | 2/19/48/31/0 | 0/15/55/30/0 |
+| 22A, 60-150 yr | 17/46/23/14/0 | 5/30/44/21/0 | 4/26/51/19/0 | 7/21/50/21/0 |
+| 22A, >= 150 yr (dragons) | 93/6/1/0/0 | 1/12/62/25/0 | 1/13/64/22/0 | 1/14/64/20/0 |
+| complexity mean; hubs vs isolated | 11.8; 8.0 vs 11.2 | 20.5; 19.3 vs 23.4 | 20.4; 19.2 vs 23.0 | 20.6; 19.2 vs 23.7 |
+| gender (with concord) | 361 (243) | 397 (351) | 382 (334) | 390 (335) |
+| comparison loc/exceed/conj/particle | 109/193/202/115 | 285/94/168/77 | 300/76/148/98 | 289/98/142/87 |
+| evid/mir share long / short gens | 0.15 / 0.42 | 0.39 / 0.51 | 0.41 / 0.57 | 0.42 / 0.59 |
+| kenku reduplicating | 23/27 | 21/27 | 23/27 | 21/27 |
+| sisters (strict) | 0.57 | 0.55 | 0.52 | 0.52 |
+
+The 22A rise is mostly PW-1542: with the learner share at a 0.25 median instead of 0.54, contact strips far less
+inflection. WALS 22A (145 languages) is roughly 3/17/36/31/11%, so the new bins are close apart from the empty 8+ bin
+(we count at most 7 categories). The deep past moves only the dragons. The final pass's gap fills fell from 30 to 6
+because adc35474 counts c and q as dorsal; the bursts pass's extra fills were spurious.
+
+**Kept: bursts.** Both variants widen the rate spread as asked (log-sd 0.26 -> 0.49). Alone failed two checks: overused
+segments (i̞ 10.7%, PHOIBLE 0.2%) and loans/borrowability (pronoun loans 0.088). Bursts passed every check but the
+horizon. The i̞ is not new (34 living lects in the stored run, from the push chain `dispersion.push.e`); faster lines push
+more, so both variants sit near the 10% floor and alone fell over it (inbox draft-language-push-chain-raised-e). The
+bursts did nothing odd: 231 founder bursts, 148 shifts, no rate outliers beyond the log-normal.
+
+**Hawaiian-style collapses (under 10 consonants):** base 1, alone 1, bursts 0, final 1 (one bronze-dragon lect, drawn small). The rate spread cannot
+make one: across the bursts pass a lect's consonant count does not depend on its rate (correlation -0.03; median change
+against its proto 0 / -1 / -1 for rate < 0.7 / 0.7-1.4 / > 1.4), because `SIZE_ANCHOR` steers every line back to its
+proto's size and a faster line only makes more changes that cancel (inbox draft-language-no-inventory-collapse).
+
+**Horizon** (reported, not tuned): reading / logistic, human lects: base 11.4 / 11.71, alone 16.0 / 15.36, bursts 14.83 /
+15.3, final 4.64 / 13.19 (the check reading dips on one thin bin, 4-6 kyr, 9 splits with 3 recovered; the old pair
+measure reads 19.0, the same noise decision 7 of for-daniel.md describes). Faster lines lose cognates sooner, but the slow tail keeps more, and the slow tail sets the
+horizon, so a wider spread pushes it out.
+
+**Deep past (1544 b), grammar harness** (rulings/deep_h.py: dragon protos, 20 kyr, 22A bins 0-1/2-3/4-5/6-7/8+ %):
+none 92/8/0/0/0, 150 generations 2/23/63/12, 200 0/13/62/25, 300 0/12/57/32. 200 kept: the bins sit inside the
+human ones without overshooting.
+
+**L2 (1542 b):** quantiles 10/25/50/75/90% base 0.24/0.39/0.54/0.69/0.70 (151 at the cap) -> 0.13/0.19/0.25/0.30/0.35
+(none). The median is on target, but the top end is squeezed (inbox draft-language-l2-top-end-compressed). Hubs check
+(final): hub complexity 19.2 vs isolated 23.7 (passes).

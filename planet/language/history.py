@@ -50,6 +50,16 @@ SHIFT_DECAY = 0.01  # per generation, of a share with no trigger behind it
 SHIFT_AT = 0.5
 KIND_WEIGHT = {"elite": 1.0, "takeover": 0.6, "swamp": 1.0, "city": 0.5, "trade": 0.08}
 ACCENT_P = 0.8  # share of the missing sounds the shifting speakers replace (consistently); 0.5 -> 0.8, 2026-11-08
+# Nativisation at a shift (owner ruling 11-08, PW-1539 D: "nativise, partially"): the accent above maps the sounds the old
+# lect lacked onto old sounds; it never asks the new speakers' own voice, so a people that took up a language made by
+# another body kept that body's sounds (fire giants speaking a bronze-dragon lect with a growled a). Now every sound of
+# the new lect that costs the shifting people at least NATIVE_HARD x what it cost the people they learned it from (or that
+# they cannot make) is heard through their own voice (profiles.hear_word, onto the cheap sounds of both lects), in
+# NATIVE_SHARE of the words (a stable draw per form: lect.partial_pick), lexicon and grammar alike; the rest keep it, so
+# the sound lingers as a minority variant the ease drag can finish off or keep (substrate phonology, Thomason & Kaufman
+# 1988 ch. 5; imperfect learning by a shifting population keeps some of the target's marked sounds).
+NATIVE_HARD = 3.0
+NATIVE_SHARE = 0.6
 CALQUE_MAX = 2
 WORKERS = int(__import__("os").environ.get("LANG_WORKERS", "1"))  # forked processes for the steps (1 = this process)
 KOINE_HARD = 3.0  # a sound is hard for a people when its make cost is this many times the human cost (or impossible)
@@ -182,7 +192,7 @@ class History:
         gram = None
         GR = LC._gr_mod()
         if GR is not None and hasattr(GR, "proto_grammar"):
-            gram = proto_grammar(GR, rng, lex, inv, prof, kyr, pid)
+            gram = proto_grammar(GR, rng, lex, inv, prof, kyr, pid, self.R.generation_yr(people))
             hf = head_first_of(GR, gram)
             if hf is not None:
                 lex.head_first = hf
@@ -242,7 +252,13 @@ class History:
             p2 = self.R.parent_deme(parent_deme)
             pl = self.lect_of(p2) if p2 is not None else None
         if pl is not None:
-            self.daughter(pl, deme, kyr, "bud", rng_for(self.seed, "bud", deme))
+            l = self.daughter(pl, deme, kyr, "bud", rng_for(self.seed, "bud", deme))
+            src = pl.deme if pl.deme is not None else parent_deme
+            if src is not None and LC.BURST_X != 1.0 and (self.R.deme_population(deme, i)
+                                                          <= LC.FOUNDER_SHARE * self.R.deme_population(src, i)):
+                l.burst_until = kyr - LC.BURST_KYR   # (a founder split: lect.BURST_X)
+                self.say(kyr, f"{self.deme_label(deme)}: a founder split, lect {l.id} changes {LC.BURST_X:g}x faster for "
+                              f"{LC.BURST_KYR:g} kyr")
             self.first_family.setdefault(deme, LC_root(self, pl))
             self.say(kyr, f"{self.deme_label(deme)} budded off {self.deme_label(pl.deme) if pl.deme is not None else pl.id}: "
                           f"lect {self.by_deme[deme]} from {pl.id}")
@@ -727,6 +743,8 @@ class History:
         rng = rng_for(self.seed, "shift", deme, i)
         new = self.daughter(ruler, deme, t1, "shift")
         new.substrate = old.id
+        if LC.BURST_X != 1.0:
+            new.burst_until = t1 - LC.BURST_KYR   # (a shift: lect.BURST_X)
         new.shares_history = list(old.shares_history)
         new.shares = {old.id: round(1.0 - old.shares.get(ruler.id, 0.5), 3)}
         for m in self.minority.get(deme, ()):  # (older minority speech of the deme keeps its share)
@@ -737,6 +755,7 @@ class History:
         kept = LX.substrate_transfer(old.lexicon, new.lexicon, loc, kyr=t1, inv=new.inventory, profile=new.profile)
         new.touch()
         accent = self.accent(rng, old, new, t1)
+        native = self.nativise(old, new, ruler, t1)
         if old.inventory is not None and new.inventory is not None and old.inventory.stress != new.inventory.stress:
             new.inventory.stress = old.inventory.stress   # (the shifting speakers keep their stress: Irish English, Indian English)
         calques = calque(rng, old, new)
@@ -748,7 +767,8 @@ class History:
         self.shift_times.setdefault(deme, []).append(t1)
         rec = {"deme": deme, "kyr": t1, "from_lect": old.id, "to_lect": new.id, "ruler_lect": ruler.id,
                "ruler_deme": ruler.deme, "trigger": trig.to_json() if trig is not None else None,
-               "substrate_words": kept, "substrate_keep": round(p_keep, 3), "accent": accent, "calques": calques,
+               "substrate_words": kept, "substrate_keep": round(p_keep, 3), "accent": accent, "nativised": native,
+               "calques": calques,
                "speakers": R.people_of(deme), "ruler_people": ruler.people}
         self.shifts.append(rec)
         self.say(t1, f"{self.deme_label(deme)} ({R.people_of(deme)}) shifted from {old.id} to the speech of "
@@ -791,6 +811,47 @@ class History:
         LC._sync_inventory(new, kyr)
         new.changes.append({"kyr": round(kyr, 3), "rule": f"accent:{old.id}", "cause": "substrate", "origin_lect": old.id})
         return pairs
+
+    def nativise(self, old: LC.Lect, new: LC.Lect, ruler: LC.Lect, kyr: float) -> list:
+        """The shifting people's own voice on the language they took up (NATIVE_HARD, NATIVE_SHARE): [[sound, heard as]]."""
+        from . import percepts as PC, profiles as PR
+        sp, tp = new.profile or PR.HUMAN, ruler.profile or PR.HUMAN
+        if sp is tp:
+            return []
+        segs = sorted(set(new.all_segments()), key=lambda q: (PC.to_ipa(q), repr(q)))
+
+        def dear(x) -> bool:
+            c = PR.species_cost(sp, x)
+            return not math.isfinite(c) or c >= NATIVE_HARD * max(PR.species_cost(tp, x), 0.1)
+        hard = [x for x in segs if x.kind in ("C", "V") and dear(x)]
+        if not hard:
+            return []
+        cheap = sorted({x for x in set(segs) | set(old.segments()) if x.kind in ("C", "V") and not dear(x)},
+                       key=lambda q: (PC.to_ipa(q), repr(q)))
+        mapping = {}
+        for x in hard:
+            cand = [y for y in cheap if y.kind == x.kind]
+            hw = PR.hear_word([x], sp, cand) if cand else ()
+            if hw and hw[0] != x:
+                mapping[x] = hw[0]
+        if not mapping:
+            return []
+        salt = f"native|{new.id}"
+
+        def fn(f, stem_index=0):
+            f = tuple(f)
+            if not any(x in mapping for x in f) or not LC.partial_pick(f, NATIVE_SHARE, salt):
+                return f
+            return tuple(mapping.get(x, x) for x in f)
+        LX.apply_rule_to_lexicon(new.lexicon, fn, f"native:{new.people}", kyr, new.id)
+        GR = LC._gr_mod()
+        if GR is not None and new.grammar is not None:
+            GR.apply_rule_to_grammar(new.grammar, fn, f"native:{new.people}", kyr)
+        new.touch()
+        LC._sync_inventory(new, kyr)
+        new.changes.append({"kyr": round(kyr, 3), "rule": f"native:{new.people}", "cause": "substrate",
+                            "origin_lect": old.id})
+        return [[PC.to_ipa(a), PC.to_ipa(b)] for a, b in mapping.items()]
 
     # ------------------------------------------------------------------ food
     def food_step(self, i: int) -> None:
@@ -1026,7 +1087,8 @@ def snapshot_full(snaps: list, upto: int | None = None) -> list:
 
 
 def typology_summary(g) -> dict:
-    """{order, adp, case, number, gender (typology values), n_case, n_number, n_class (live grams in those slots)}."""
+    """{order, adp, case, number, gender (typology values; gender as the pages label it, grammar.gender_label), n_case,
+    n_number, n_class (live grams in those slots)}."""
     if g is None:
         return {}
     from . import grammar as GR
@@ -1042,7 +1104,8 @@ def typology_summary(g) -> dict:
         if slot in n:
             n[slot] += 1
     return {"order": t.get("word_order"), "adp": t.get("adposition"), "case": t.get("case"), "number": t.get("number"),
-            "gender": t.get("gender"), "n_case": n["case"], "n_number": n["number"], "n_class": n["class"]}
+            "gender": GR.gender_label(t.get("gender"), (getattr(g, "processes", None) or {}).get("concord")),
+            "n_case": n["case"], "n_number": n["number"], "n_class": n["class"]}
 
 
 def change_generations(years: float, gen_yr: float) -> float:
@@ -1120,8 +1183,9 @@ MOUNTAIN_M = 1500.0
 COLD_LAT = 50.0
 
 
-def proto_grammar(GR, rng, lex, inv, prof, kyr, lid):
-    return GR.proto_grammar(rng, inv, lex, kyr=kyr)
+def proto_grammar(GR, rng, lex, inv, prof, kyr, lid, gen_yr=None):
+    deep = GR.deep_past_gens(gen_yr) if hasattr(GR, "deep_past_gens") else 0.0
+    return GR.proto_grammar(rng, inv, lex, kyr=kyr, deep_gens=deep) if deep else GR.proto_grammar(rng, inv, lex, kyr=kyr)
 
 
 def head_first_of(GR, gram):

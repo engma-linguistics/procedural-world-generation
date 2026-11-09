@@ -251,7 +251,7 @@ def class_of(v: View, concept: str) -> tuple[str, str] | None:
     by = {g: (k, f) for k, g, f in cs["classes"]}
     hit = by.get(want)
     if hit is None:
-        k, f = default_class(cs)
+        k, f = default_class(cs, grp)
         hit = (k, f)
     want = next(g for g, kf in by.items() if kf == hit)
     k, f = hit
@@ -264,11 +264,13 @@ def class_of(v: View, concept: str) -> tuple[str, str] | None:
     return f, lab
 
 
-def default_class(cs: dict) -> tuple:
-    """(k, function) of the class a noun takes when its own group has no class (as grammar._class_for falls back): the
-    abstract, tools, plant or animal class, the first the lect has, else its last class."""
+def default_class(cs: dict, grp: str | None = None) -> tuple:
+    """(k, function) of the class a noun of semantic group `grp` takes when its own group has no class (as
+    grammar._class_for falls back, grammar.fallback_groups): an animate noun the person or animal class first, then the
+    abstract, tools, plant or animal class, the first the lect has, else its last class. With no group: the inanimate
+    default."""
     by = {g: (k, f) for k, g, f in cs["classes"]}
-    hit = next((by[a] for a in ("abstract", "manner", "plant", "animal") if a in by), None)
+    hit = next((by[a] for a in (GR.fallback_groups(grp) if grp else GR.CLASS_FALLBACK) if a in by), None)
     if hit is None:
         k, _g, f = cs["classes"][-1]
         hit = (k, f)
@@ -1914,10 +1916,73 @@ def s_obviative(v: View) -> dict | None:
                    f"({_how(g)}, {g['form_ipa']}, {_src(g)})"] + vw[2])
 
 
+def s_own(v: View) -> dict | None:
+    """One sentence from the language's own life (owner ruling 11-08, PW-1538 E: keep the core set, add one per lect):
+    its people's faith ('We pray to <god>.'), home landscape ('We live by the river.', from the record's `home`, set by
+    output.home_feature) or staple food ('We eat millet.'), the first of the three the lexicon can say, in an order fixed
+    by the lect's id so that neighbouring pages differ."""
+    import zlib
+    from . import texts as TX
+    we = pronoun(v, "WE")
+    if we is None:
+        return None
+    lj = v.lj
+    lid = str(lj.get("id") or "")
+    k0 = zlib.crc32(lid.encode("utf-8")) % 3
+
+    def faith():
+        Vc = v.w("PRAY")
+        gods = sorted((c for c in v.lex if c.startswith("name:god:") and v.lex[c].get("ipa")),
+                      key=lambda c: (len(c), c))
+        if not (Vc and gods):
+            return None
+        g = gods[0]
+        name = (v.lex[g].get("roman") or v.ipa(g)).capitalize()
+        x = oblique(v, NP([Word(v.ipa(g), name, g)], 0), "DAT", ("TO", "AT"))
+        if x is None:
+            return None
+        vw = verb(v, Vc, "1PL")
+        return finish(v, "own", f"We pray to {name}.", clause(v, we, vw, None, x[0], transitive=False),
+                      [f"{name} is a god of this people's faith", x[1]] + vw[2])
+
+    def home():
+        L = lj.get("home")
+        Vc = v.w("DWELL (LIVE, RESIDE)", "SIT")
+        if not (L and Vc and v.w(L)):
+            return None
+        x = oblique(v, noun_phrase(v, L, _the(v)), "LOC", ("NEAR", "AT", "IN"))
+        if x is None:
+            return None
+        vw = verb(v, Vc, "1PL")
+        prep = "in the mountains" if L == "MOUNTAIN" else f"by the {en(L)}"
+        return finish(v, "own", f"We live {prep}.", clause(v, we, vw, None, x[0], transitive=False),
+                      [f"the people's home: {prep.split(' the ')[-1]}", x[1]] + vw[2])
+
+    def food():
+        st = TX.staple(lj)
+        Vc = v.w("EAT")
+        if not (st and Vc):
+            return None
+        f, kind = st
+        fen = TX.ANIMAL_EN.get(en(f), en(f) + " meat") if kind == "animal" else en(f)
+        o = noun_phrase(v, f)
+        vw = verb(v, Vc, "1PL")
+        return finish(v, "own", f"We eat {fen}.", clause(v, we, vw, o), [f"the people's staple: {fen}"] + vw[2])
+    opts = (faith, home, food)
+    for j in range(3):
+        try:
+            r = opts[(k0 + j) % 3]()
+        except (KeyError, IndexError, ValueError, StopIteration):
+            r = None
+        if r is not None:
+            return r
+    return None
+
+
 SENTENCES = (s_transitive, s_locative, s_tense, s_polar, s_content, s_negation, s_possession, s_number, s_copula,
              s_relative, s_give, s_imperative, s_passive, s_serial, s_redup, s_split, s_clusive, s_object, s_hortative,
              s_complement, s_topic, s_focus, s_applicative, s_reciprocal, s_antipassive, s_chain, s_incorp, s_voice,
-             s_deixis, s_remote, s_aspect, s_mirative, s_polite, s_comparative, s_obviative)
+             s_deixis, s_remote, s_aspect, s_mirative, s_polite, s_comparative, s_obviative, s_own)
 
 
 def utterances(lj: dict) -> list[dict]:
@@ -2062,9 +2127,13 @@ def notes_nouns(v: View) -> list[dict]:
             if g is None:
                 continue
             how = _how(g) if bound_cls or (g.get("level") or 0) >= GR.CLITIC else "a separate word after the numeral"
-            dflt = ", and for every noun no other class takes" if default_class(cs)[1] == f and len(cs["classes"]) and \
-                any(_want(cs, c) not in {x[1] for x in cs["classes"]} for c in ("DOG", "HOUSE", "MILK", "FISH", "MAN")) \
-                else ""
+            have = {x[1] for x in cs["classes"]}
+            dflt = ", and for every thing no other class takes" if default_class(cs)[1] == f and len(cs["classes"]) and \
+                any(_want(cs, c) not in have for c in ("HOUSE", "MILK", "STONE")) else ""
+            if kind not in ("sex", "animacy"):   # (animate nouns fall to the person or animal class first: PW-1538 B)
+                dflt += "".join(f", and for {what} (no class of their own)" for a, what in (("animal", "animals"),
+                                                                                       ("person", "persons"))
+                                if a not in have and a != grp and default_class(cs, a)[1] == f)
             rows.append(f"class {v.cl_num.get(f, k)} for {GR.GROUP_GLOSS.get(grp, grp)}{dflt}, {how} ({g['form_ipa']}, "
                         f"{_src(g)})")
             n = _noun_of_group(v, kind, grp)
@@ -2075,6 +2144,10 @@ def notes_nouns(v: View) -> list[dict]:
                 }.get(kind, "Nouns fall into classes")
         if not bound_cls:
             lead = "Nouns are counted with classifiers (free words, not yet bound to the noun)"
+        elif not v.proc.get("concord"):   # (owner 11-08, PW-1538 A: gender only where something agrees with the noun)
+            lead = {"sex": "Nouns carry a class marker by sex", "animacy": "Nouns carry a class marker by animacy"}.get(
+                kind, "Nouns carry a class marker by meaning") + (" (" + GR.GENDER_NO_AGREEMENT + ": nothing else in the "
+                                                                   "sentence agrees with the noun's class)")
         if rows:
             out.append({"topic": "Gender and noun classes", "text": lead + ": " + "; ".join(rows) + ".", "ex": ex})
         else:
@@ -2357,8 +2430,8 @@ def notes_phase_d(v: View, sents: dict) -> list[dict]:
         hon = v.g("HON")
         txt = (f"Speaking to one person with respect, one says {'the plural' if pol['kind'] == 'plural' else 'a third-person'} "
                f"pronoun {v.ipa(pol['concept'])} ('{'you all' if pol['kind'] == 'plural' else 'they'}') in place of "
-               f"the plain {v.ipa('THOU') if v.w('THOU') else 'you'} (as French vous, German Sie). It grew in a large "
-               "society, where rank is marked in speech")
+               f"the plain {v.ipa('THOU') if v.w('THOU') else 'you'} (as French vous, German Sie). It arose as the "
+               "speech community grew large")
         if hon is not None:
             txt += f"; the verb adds an honorific marker, {_how(hon)} ({hon['form_ipa']}, {_src(hon)})"
         out.append({"topic": "Polite address", "text": txt + ".", "ex": _sent_ex(sents, "polite")})
