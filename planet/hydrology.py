@@ -178,7 +178,7 @@ def _upstream_label(down, order, lab):
     return out
 
 
-def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4, dry=None, keep=None):
+def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4, dry=None, keep=None, seen=None):
     """kernels.lakes on _bed(ground), made to agree with the rivers.
     kernels.lakes gives each basin the water that runs downhill into it,
     but a lake that spills where its basin meets the sea's drainage can
@@ -210,7 +210,7 @@ def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4, dry=No
             sink = land & ~open_ & (wet | pit)
             lk0 = dict(wet=wet, level=np.where(wet & open_, out_z, ground), bed=bed, sink=sink,
                        src=src - loss * wet, sea=~land)
-            flow, down, order, _ = route(grid, ground, lk0)
+            flow, down, order, _ = route(grid, ground, lk0, seen)
             more = kernels.closed_excess(sink, basin, wet, down, flow, src, loss, bed)
             if not more.any():
                 break
@@ -299,9 +299,10 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
     carved = ground
     dry = None if pet_mm is None else (np.where(land, runoff_mm + aet_mm, 0.0), np.where(land, pet_mm, 0.0))
     keep = None  # (the dry hollows: worked out on the uncarved ground, once, and kept across the carve tries)
+    seen = []  # (the floods route() has run, to reuse)
     for k in range(CARVE_TRIES + 1 if channel > 0 else 1):
         (elev, wet, open_, out_z, pit, catch, _), (flow, down, order, sink), keep = _settle(
-            grid, carved, land, src, loss, min_depth, min_slope, dry=dry, keep=keep)
+            grid, carved, land, src, loss, min_depth, min_slope, dry=dry, keep=keep, seen=seen)
         if k == CARVE_TRIES or channel <= 0:
             break
         # the same with the rivers' valleys cut in (only where they reach the
@@ -368,12 +369,47 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
                 incised=incised, sea=~land)
 
 
-def route(grid: Grid, elev: np.ndarray, lk: dict):
+FLOOD_EPS = 0.01  # m: route()'s priority flood's lift per cell across a filled pit
+
+
+def _same_flood(surf, outlet, prev):
+    """Whether priority_flood_to(surf, outlet) would give prev's result (outlet, filled, down, order of an earlier
+    flood). The flood reads a cell's height only as max(height, its discoverer's level + eps), so a cell whose
+    height changed but whose filled level does not (a pit's floor, filled to its rim before and after) leaves the
+    whole run, and so its result, as it was."""
+    o0, f0, d0, s0 = prev
+    if not np.array_equal(outlet, o0):
+        return False
+    ch = np.flatnonzero(surf != s0)
+    if ch.size == 0:
+        return True
+    dc = d0[ch]
+    if outlet[ch].any() or (dc < 0).any():
+        return False
+    z = f0[dc] + FLOOD_EPS
+    return bool((np.where(surf[ch] < z, z, surf[ch]) == f0[ch]).all())
+
+
+def route(grid: Grid, elev: np.ndarray, lk: dict, seen: list | None = None):
     """Rivers over the lake surfaces, ending at the sea (lk's: lakes()') or a
-    closed lake. Returns (flow, downstream, order, filled)."""
+    closed lake. Returns (flow, downstream, order, filled). seen (optional): a
+    list the calls of one lakes() share, to reuse a flood that the surfaces
+    since have left as it was (_same_flood: _settle's rechecks, after a
+    dropped hollow, often change nothing the rivers see)."""
     surf = np.where(lk["wet"], lk["level"], lk["bed"]).astype(float)
-    filled, down, order = kernels.priority_flood_to(surf, lk["sea"] | lk["sink"], grid.nbr_off,
-                                                    grid.nbr_idx, 0.01)
+    outlet = lk["sea"] | lk["sink"]
+    res = None
+    if seen is not None:
+        for prev in reversed(seen):
+            if _same_flood(surf, outlet, prev[:4]):
+                res = prev[4:]
+                break
+    if res is None:
+        res = kernels.priority_flood_to(surf, outlet, grid.nbr_off, grid.nbr_idx, FLOOD_EPS)
+        if seen is not None:
+            seen.append((outlet, res[0], res[1], surf, *res))
+            del seen[:-6]
+    filled, down, order = res
     flow = kernels.accumulate_lakes(down, order, lk["src"], lk["wet"])
     return flow, down, order, filled
 

@@ -33,3 +33,7 @@ reuse the first try's routing when the carve leaves the kept hollows' catchments
 
 ## Updates
 - 2026-11-09: Created from inbox draft draft-dry-hollow-recheck-cost.md (found by scout251b).
+- 2026-11-09: Lane 257 (partial): route() reuses an earlier flood of the same lakes() call when the new heights leave
+  it bit-identical (hydrology._same_flood; 5 of 24 floods per call on the profile state). lakes() on the profile
+  state 0.49 -> 0.39 s (pet off: 0.22), outputs bit-identical, goldens unchanged; 30 Myr L7: 37.5 s (935ddd0e), 42.0 s (main), 39.9 s (now). The
+  rest needs an incremental flood or a speculative recheck: inbox draft draft-dry-hollow-recheck-rest.
