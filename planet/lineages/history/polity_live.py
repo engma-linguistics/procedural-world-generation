@@ -26,7 +26,8 @@ What the history lacks, and how this cut stands in (round7.md section 2):
   history's time first, and the gates (chiefdoms, proto-writing or writing, kingship, law, the military edges, boats, a dragon's hoards)
   read what each people knew by then. output.save writes the same calendar out as meta.techtree;
 - cultures: a polity is a people's; an empire is a state whose subject peoples hold SUBJECT_SHARE of its sedentary heads.
-The after-run read-out (polities.derive) is unchanged and still reads the ledger; this module writes polities_live.json beside it.
+This module writes polities_live.json; when a run has it, the after-run read-out (polities.derive, PW-1575) draws these polities, not
+its own: the viewer's Polities layer, the state cards and the religion read-out's rulers are this map, named and coloured by derive.
 """
 
 from __future__ import annotations
@@ -42,6 +43,7 @@ from .gridops import _csr_gather
 from . import params as PM
 from .rule import StandIns
 
+FORMAT = "procgen-polities-live/2"  # (/2, PW-1575: map entries carry the seat's people and the provinces; took and the row logs carry record ids)
 INVASIONS = None  # (invasions you schedule, as invasions.clean reads them, PW-1433: they now act inside the history)
 
 # ---- pacification by tier (G = 1 / (1 + STATE_Q x tech level x PACIFY[tier]) on the cells a polity rules, 1 on unruled land)
@@ -119,6 +121,7 @@ class LivePolities(StandIns):
         self.open_: dict = {}  # key -> record index
         self.lord: dict = {}
         self.prov_state: set = set()
+        self.prov_rec: dict = {}  # (province key -> the record id of the polity it was when taken: the read-out's provinces, PW-1575)
         self.cool: dict = {}
         self.founded: dict = {}  # key -> kyr ago of its founding (its luck)
         self.recs: list = []
@@ -326,6 +329,7 @@ class LivePolities(StandIns):
         wide = ({r for pk, r in self.lord.items() if pk in self.prov_state} if "conquest" in PO.WIDE_BY else set())
         # 3. claims (polities' kernel)
         owner = np.full(g.n, -1, np.int64)
+        from_rec = np.full(g.n, -1, np.int64)  # (a province's cells: the record id of the polity it was when taken; record only, PW-1575)
         settled = sed >= SEDENTARY_MIN
         ruling, pid_of = [], {}
         for s in seats:
@@ -339,8 +343,9 @@ class LivePolities(StandIns):
                     del self.lord[s["key"]]
                 else:
                     b, lx, sx = PO._reach(self, s, ago, root in wide)
-                    PO._claim(s["cell"], b, lx, sx, PO.CLIMB_M, self.off, self.idx, self.ekm, edz, sea, ice, peopled, owner, pid_of[root],
-                              self.dist, self.touched, self.claimed)
+                    got = PO._claim(s["cell"], b, lx, sx, PO.CLIMB_M, self.off, self.idx, self.ekm, edz, sea, ice, peopled, owner, pid_of[root],
+                                    self.dist, self.touched, self.claimed)
+                    from_rec[self.claimed[:got]] = self.prov_rec.get(s["key"], -1)
                     continue
             pid = len(ruling)
             if s["tier"] == "dragon realm":
@@ -388,14 +393,18 @@ class LivePolities(StandIns):
                 self.att.won(int(ruling[w]["line"]))
             ri = ctx.get("taken_row", {}).get(l_)
             km2 = float(len(cells) * self.cell_km2)
-            if ri is not None:
-                self.inv_log[ri]["took"].append([ago, ruling[l_]["people"], ruling[w]["people"], km2])
             lrec = self.recs[self.open_.pop(lk)] if lk in self.open_ else None
             wrec = self.recs[self.open_[wk]] if wk in self.open_ else None
+            lid, wid = (lrec["id"] if lrec is not None else -1), (wrec["id"] if wrec is not None else -1)
+            if ri is not None:  # (the two sides by people, then by record id: the read-out's row log, PW-1575)
+                self.inv_log[ri]["took"].append([ago, ruling[l_]["people"], ruling[w]["people"], km2, lid, wid])
             if lrec is not None:
                 lrec["fell_kyr"], lrec["fell_how"] = ago, ("invaded by " if how == "invasion" else "conquered by ") + ruling[w]["people"]
-            if wrec is not None:
-                wrec["took"].append([round(ago, 3), ruling[l_]["people"], int(len(cells)), how, fates])
+                lrec["fell_by"] = wid
+            if wrec is not None:  # ([kyr ago, loser people, cells, how, the fates of the peoples there, loser record id])
+                wrec["took"].append([round(ago, 3), ruling[l_]["people"], int(len(cells)), how, fates, lid])
+            from_rec[(before == l_) & (from_rec < 0)] = lid
+            self.prov_rec[lk] = lid
             taken_log.append({"winner": ruling[w]["people"], "loser": ruling[l_]["people"], "cells": int(len(cells)), "how": how, "fates": fates,
                               "winner_att": [round(v, 3) for v in self.att.get(int(ruling[w]["line"]))] if ruling[w]["line"] is not None else None})
             for pk in [pk for pk, r in self.lord.items() if r == lk]:
@@ -444,7 +453,8 @@ class LivePolities(StandIns):
             a = len(cells) * self.cell_km2 / 1e6
             if a > rec["peak_mkm2"]:
                 rec["peak_mkm2"], rec["peak_kyr"] = round(a, 4), round(ago, 3)
-            step_map.append([o, PO.TIERS.index(tier), PO._pack(cells)])
+            fr = from_rec[cells]  # (as derive's maps: [record, tier, cells, the people holding its seat, its provinces by the record taken from])
+            step_map.append([o, PO.TIERS.index(tier), PO._pack(cells), s["people"], {int(r): PO._pack(cells[fr == r]) for r in np.unique(fr[fr >= 0])}])
         for key in [k for k in self.open_ if k not in cur]:
             rec = self.recs[self.open_.pop(key)]
             if rec["fell_kyr"] is None:
@@ -648,7 +658,7 @@ class LivePolities(StandIns):
     # ------------------------------------------------------------ the record
     def doc(self) -> dict:
         from .. import invasions as IV
-        return {"format": "procgen-polities-live/1", "first_cut": True, "calendar": "the tech tree inside the history (PW-1466)",
+        return {"format": FORMAT, "first_cut": True, "calendar": "the tech tree inside the history (PW-1466)",
                 "made_s": round(self.secs, 1), "tech_s": round(self.tech.secs, 1), "steps": self.steps, "polities": self.recs, "maps": self.maps,
                 "attitudes": self.att.doc() | {"keyed_by": "people (line index; the history has no cultures)"},
                 "invasions": [{"row": r, "log": {k: v for k, v in lg.items()}} for r, lg in zip(self.inv_in, self.inv_log)],

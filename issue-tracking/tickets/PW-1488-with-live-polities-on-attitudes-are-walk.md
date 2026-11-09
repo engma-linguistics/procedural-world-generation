@@ -36,6 +36,7 @@ Lean: A, when the read-out becomes the live map (round7.md section 3: derive rea
 - [ ] one source for a people's temperament over time when the switch is on
 
 ## Updates
+- 2026-11-09: Lane 238 (round15.md section 4): unblocked by PW-1575 (the read-out now draws the live map), not done: option A needs calls first (the history samples each people's axes only every 0.5 kyr; it has no town term and counts peoples not cultures for contact): keep gods.py's own contact/town terms on top of the people's value or not, and record the history's walk per century?
 - 2026-11-09: Lane 234: left as option C until the read-out draws the live map (new read-out-reads-live-map ticket); then option A.
 - 2026-11-08: Lane 234 (round14.md section 4): left as is. Option A only makes sense once the read-out draws the live map (lane 234 draft 'the read-out should draw the live map'): until then gods.py has its own rulers and wars from polities.derive, and seeding its cultures from the history's per-people walk would mix two maps. Interim is option C in effect: polities_live.json labels its walk 'keyed_by: people (line index; the history has no cultures)', gods.py's is per culture. When the read-out reads the live map, gods.py should take each culture's start and drift from its people's live record (A) and drop its own conquest/rule memories.
 - 2026-11-05: Created from inbox draft draft-two-attitude-walks-with-live-polities.md (found by lane201).

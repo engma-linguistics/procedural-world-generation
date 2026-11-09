@@ -533,6 +533,9 @@ def polities_doc(d: Path) -> dict:
     inv = _authored_key(d, "invasions")
     key = (d.name, (d / "run.json").stat().st_mtime, PO.VERSION, inv) + ((IV.VERSION,) if inv else ())  # (an edited invasion remakes
     # it, PW-1433; so does a change in what a row does, IV.VERSION, PW-1450, and only for a run with rows)
+    if (d / "polities_live.json").exists():  # (PW-1575: the read-out draws the history's polities: their format is part of the key)
+        from .lineages.history import polity_live as PLV
+        key += (PLV.FORMAT, PO._LIVE_READ)
     with _polities_lock:
         if key not in _polities_cache:
             _polities_cache.clear()

@@ -124,6 +124,8 @@ export function polityRows(i, R) {
   R('place', 'fell', rec.fell_kyr != null ? `${ago(rec.fell_kyr)}: ${rec.fell_why}` : 'still stands', { ess: true });
   const took = (rec.took || []).filter(([a]) => a >= P.ago - 1e-6);
   if (took.length) R('place', 'conquests', took.slice(-6).reverse().map(([a, r, how]) => `${D.polities[r] ? nameAt(D.polities[r], a) : r} ${ago(a)}${how === 'invasion' ? ' (an invasion)' : ''}`).join(', ') + (took.length > 6 ? `, + ${took.length - 6} earlier` : ''), { ess: true });
+  const fat = took.filter((t) => t[3]?.length).slice(-3).reverse();  // (polities in the history, PW-1575: how the peoples on the land it took fared)
+  if (fat.length) R('place', 'the conquered', fat.map(([a, r, , f]) => `${D.polities[r] ? nameAt(D.polities[r], a) : r}: ` + f.map(([p, how, lost, moved]) => `the ${p} ${how}${lost ? ` (~${n0(lost)} lost)` : ''}${moved ? ` (~${n0(moved)} fled)` : ''}`).join(', ')).join('; '), { ess: true });
   const cap = rec.capital;
   R('place', 'capital', `${rec.kind === 'dragon' ? 'the dragons\' lair' : 'a town of the ' + (held?.[2] || rec.people_name || rec.people)} in ${cap.place || 'cell ' + cap.cell} (cell ${cap.cell}, lat ${cap.lat}, lon ${cap.lon})`, { ess });
   if (rec.tiers.length > 1) R('place', 'tiers', rec.tiers.map(([a, t]) => `${t} ${ago(a)}`).join(', '), { ess: false });
