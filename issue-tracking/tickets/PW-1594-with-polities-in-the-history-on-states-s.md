@@ -1,4 +1,5 @@
 ---
+id: PW-1594
 title: With polities in the history on, states still under off at L6 and over it at L7, and the map less steady when nudged
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane245
 blocked_by: []
 relates: [PW-1587, PW-1460, PW-1466]
 refs: ["planet/lineages/history/polity_live.py::LivePolities._step", "planet/lineages/history/polity_live.py::LivePolities._places", "planet/lineages/history/rule.py::StandIns.circumscribed", "planet/lineages/polities.py::_hemmed", "planet/lineages/polities.py::derive", "planet/lineages/history/tech_live.py::LiveTech", docs/review/culture/polities/round17.md, docs/review/culture/polities/round17/decomp.py, docs/review/culture/polities/round16/measure_v1.py, "world 4360a3", "world 899985", "scratch l245 runs 489391 a8bae4 219933 b50f2c 4d3e0a 92ff72 (on), 38b40b d60e31 dc21ac 1d1592 7bf29c b08650 (off)"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -33,3 +36,6 @@ memory (removing it gives more states, not fewer). Candidates to test first, che
 at L6 and a third higher at L7 than today's read-out, and make the map shift more when a tree is nudged.
 - [ ] states with the switch on within the switch-off spread at L6 and L7 on the same seeds and code
 - [ ] nudge steadiness on no worse than off over at least two seeds, then a needs-decision to flip the switch
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-live-polities-states-and-steadiness-after-site-factor.md (found by lane245).

@@ -2,7 +2,7 @@
 id: PW-1587
 title: With polities in the history on, still about half to three quarters as many states, and the map less steady when nudged
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -39,6 +39,7 @@ ledger's sites do), rather than a threshold. Then re-measure on/off at L6 seeds 
 - [ ] nudge steadiness on no worse than off over at least two seeds (re-rolled draws), then a needs-decision to flip the switch
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 245 (3e89ffd9): live central places read settlements._site_factor; states on/off L6 58-77% of off, L7 126-141%. Humans' L7 share was PW-1558 (same on and off). Remaining gap -> PW-1594; humans -> PW-1593.
 - 2026-11-09: Lane 245 (round17.md): the L7 humans' jump (65% on vs 40% off) was a code mix-up, not the switch: lane 234's off run predates PW-1558 (12f38974), which moves the peoples from 38 kyr ago; on today's main, off gives humans 66.0% (seed 7) and 56.4% (seed 10), on 65.5% and 56.9%; shares match within 1.3 points on 5 pairs. The state gap was the ledger's site factor, not its memory (decomposition: no memory gives more states; no site factor 120->74). Built: the history's places use settlements._site_factor (behind the switch). Now, today's main: states L6 s7/3/10 116/144/123 vs off 174/187/213; L7 s7/10 243/206 vs off 193/146; largest medians close; nudge steadiness L6 s7 same ruler 22%/16% vs off 27%/27%. No flip; remaining gap in draft-live-polities-states-and-steadiness-after-site-factor.md.
 - 2026-11-09: Coordinator 11-09: lane 241's L7 pair (world 899985, dnd, seed 7, branch 24f33270, switch on, run 16b49e) vs lane 234's off 0a1c30: first state 3,300 vs 4,100 ya; states 2,000/1,000/0 ya 89/121/148 vs 50/89/122; largest last 3 kyr median 0.77 vs 0.46, peak 1.23 vs 2.33 Mkm2, >=2.3 in 0/31 vs 1/31; nudge (2b7069 vs 19e53f) same ruler 27%/19% (1,000 ya/now) vs 19%/20%. But humans' share now 65.3% on vs 39.6% off: the switch reshapes the peoples heavily at L7. One seed: L7 on now matches or beats off except the peak; L6 still short on state count.
 - 2026-11-09: Created from inbox draft draft-live-polities-fewer-states-l7-check.md (found by lane241).

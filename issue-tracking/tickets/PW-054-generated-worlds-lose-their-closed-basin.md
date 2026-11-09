@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-056]
 refs: [planet/tectonics/, planet/surface.py, docs/review/rivers_lakes_deltas.md, planet/tectonics/isostasy.py, planet/hydrology.py]
 created: 2026-10-14
-updated: 2026-10-23
+updated: 2026-11-09
 ---
 
 ## Description
@@ -23,6 +23,7 @@ and the tectonics makes no new interior basins: foreland basins, intermontane ba
 rift-flank highs. Needs tectonic sources of basins, possibly less filling.
 
 ## Updates
+- 2026-11-09: Scout 247 pass 1 (3674e408, docs/review/basins/scout247.md): the 21% on Earth was HydroSHEDS basins imposed; the model's own hydrology on Earth terrain gets 10.7% (L6) / 16.9% (L7). Main generated: L6 7.2% (4 seeds), L7 4.2-6.2%. Generated hollows ~80% of Earth's catchment, 35% shallower; deserts sit in hollows 2/3 as often. Candidate 2 (hollows no river leaves stay closed) lifts L6 to 12.6% but brings giant shallow lakes back (PW-430). Pass 2: limit to dry catchments, Earth check first.
 - 2026-10-23: Merged PW-432 (closed as duplicate; PW-597 triage). Evidence from PW-300's valley memory (isostasy.EXTRA `valley`, hydrology.lakes' `valley`: a basin that stops spilling keeps its outlet gap), health --quick, 8 L6 seeds x 500 Myr, frames after 50 Myr, health-pw358-after -> health-pw300-after: lakes median 0.43 -> 0.34% of land (frames below the 0.2% envelope 17 -> 24%), inland drainage median 3.8 -> 3.4%, p90 10.0 -> 7.9% (seed 11's >30% ice-age spike gone). So part of the run's closed-basin area was basins that had lost their outlets, not tectonic basins; Earth's ~18% needs basins that stay closed for real reasons (sinking, rain shadows, rims rising faster than rivers cut). A variant keeping the deepest valley ever cut on active rivers lowered lakes to 0.25% and inland to 2.0%: not landed.
 - 2026-10-16: After PW-299 (2026-10-16): L6 inland 4.9 -> 4.2%, L7 8.8 -> 6.0% (L7/L6 1.8 -> 1.4). Hollows mostly come from plate motion/resampling (PW-359) and refill within a few Myr.
 - 2026-10-16: Basins-lakes lane (health frames after 50 Myr, 500 Myr): inland drainage L6 8 seeds 4.9 -> 4.2% with PW-299 (floodplains no longer build hollow rims, so hollows fill), L7 seeds 3199/21/11 8.8 -> 6.0%. Without the flexural moat (diagnostic) L6 falls to ~3.7% (raw measure 6.4 -> 3.7). Hollow budget: plate resampling (resolve) makes most closed-hollow volume per step and erosion refills it (draft). Giant closed lakes count 10-25 Mkm2 catchments as inland; a fix for humid open-water evaporation (draft) would lower inland further. docs/review/audit/basins-lakes.md.

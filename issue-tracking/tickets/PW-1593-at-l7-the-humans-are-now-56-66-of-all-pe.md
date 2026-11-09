@@ -1,4 +1,5 @@
 ---
+id: PW-1593
 title: At L7 the humans are now 56-66% of all people, after the stem-refuge change (PW-1558), with polities on or off
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane245
 blocked_by: []
 relates: [PW-1558, PW-1587]
 refs: [planet/lineages/history/dispersal.py, planet/lineages/history/origins.py, "planet/lineages/history/params.py::LAST_LAND_REACH", docs/review/culture/polities/round17.md, docs/review/culture/polities/round17/shares.py, "world 899985", "time zoom fc5311", "scratch l245 data7 runs 7bf29c b08650 (off, main ad780a26)", "scratch l234 runs 0a1c30 7de58b (off, code 5723d08c)"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -26,3 +29,6 @@ of brittle outcome the peoples model should not give often (robust, not brittle)
 
 - [ ] the humans' share at L7 over 3+ seeds (and the lane 77 stress suite if cheap), before and after 12f38974
 - [ ] if the share is high on most seeds: which part of PW-1558 (founding near the last land, or holding out) feeds the humans
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-l7-humans-over-half-after-pw1558.md (found by lane245).
