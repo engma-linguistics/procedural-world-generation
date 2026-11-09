@@ -1148,6 +1148,7 @@ Open them at `http://127.0.0.1:8765/viewer/?world=bcc894.json` (or `?run=e0e21e`
 | Term | Meaning |
 |---|---|
 | Airy isostasy | Crust floats on the denser mantle; thicker crust stands higher, like a thicker block of wood in water. |
+| Andean (cordilleran) margin | A mountain range along a continent's coast where ocean floor dives under it, built mostly by squeezing the continent's edge (the Andes, the Rockies in the past). **Known difference from Earth:** the model does not shorten the overriding plate, so its margins get arc volcanoes but few big ranges, and its high ground is mostly collision plateau (about 11-18% of land above 3 km lies near ocean-continent margins on L6 seeds 1, 2, 6001; Earth about 25%). Three tries to add the shortening (PW-1497, PW-1509 option B; `docs/review/tectonics/mountains/scout6.md`, `scout7.md`, `scout8.md`) either made 1.6-8 times main's land above 3 km or did not move the high ground to the coast. |
 | Arc (volcanic arc) | A line of volcanoes above a subducting plate (Andes, Japan). |
 | Atoll / fringing / barrier reef | A reef hugging an island's shore; separated from it by a lagoon; a ring of reef left after the island has sunk away. |
 | Basement / cover | The crystalline crust; the sedimentary layers on top of it. |

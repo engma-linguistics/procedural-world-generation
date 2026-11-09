@@ -328,7 +328,6 @@ class Simulation:
         stack_add = crust.stack_collisions(self, col, stacked, edges)
         crust.accrete(self, bd, conv, col)
         crust.subduction_erosion(self, bd, conv, col, shrink)
-        stack_add = stack_add + crust.andean_contraction(self, bd, conv, col, shrink)
         arcky = crust.arc_rock(self, col, growth)
         t0 = col.t.copy()  # (volcanoes edits it in place)
         col.t = volcanism.volcanoes(self, growth, col.t, rng)

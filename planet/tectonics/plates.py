@@ -71,8 +71,6 @@ class Plates:
       omega (P, 3)      angular velocity, rad/Myr
       wander (P, 3)     the slowly wandering basal mantle drag (see motion.forces)
       rift_pool (P,)    km x cells of stretched-out crust waiting to line a rift
-      short_pool (P,)   km^2 of the plate's edge shortened at ocean-continent trenches, not yet closed up
-                        as whole cells (crust.andean_contraction)
     Crust, (P, n), in the plate's frame:
       owned             the plate has crust in this cell of its grid
       age               Myr (ocean floor: since it formed; continent: rock age)
@@ -100,7 +98,6 @@ class Plates:
     omega: np.ndarray
     wander: np.ndarray
     rift_pool: np.ndarray
-    short_pool: np.ndarray
     owned: np.ndarray
     age: np.ndarray
     thick: np.ndarray
@@ -128,7 +125,7 @@ class Plates:
         return cls(
             alive=np.zeros(P, bool), label=np.arange(P), next_label=next_label, formed=np.zeros(P),
             Q=np.tile(np.eye(3), (P, 1, 1)), omega=np.zeros((P, 3)), wander=np.zeros((P, 3)),
-            rift_pool=np.zeros(P), short_pool=np.zeros(P),
+            rift_pool=np.zeros(P),
             owned=_mapped((P, n), bool), age=_mapped((P, n), float), thick=_mapped((P, n), float),
             cont=_mapped((P, n), bool), rock=_mapped((P, n), np.uint8), cover=_mapped((P, n), float),
             extra=_mapped((P, n, n_extra), float), rec=rec, lith=_mapped((P, n, record.K), np.uint8),
@@ -205,5 +202,4 @@ class Plates:
             arr[:, new] = fill
         self.alive[new] = True
         self.owned[new] = False
-        self.short_pool[new] = 0.0
         return new

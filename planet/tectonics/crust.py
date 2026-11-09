@@ -247,87 +247,15 @@ def subduction_erosion(sim, bd, conv, col, shrink):
     gone = col.cont & (worn > 0) & (t < 15.0)
     if gone.any():
         sim.book("subd.erosion", t, 0, gone)
-        to_ocean(sim, col, gone)
-
-
-def to_ocean(sim, col, gone):
-    """Continental cells `gone` (their crust already booked away) become ocean floor at the trench. In place on col."""
-    col.cont = col.cont.copy()
-    col.cont[gone] = False
-    col.rock[gone] = OCEAN
-    col.t = col.t.copy()
-    col.t[gone] = OCEAN_KM
-    col.cover = col.cover.copy()
-    col.cover[gone] = 0.0
-    col.x[gone] = 0.0
-    col.rec[gone] = record.blank()
-    col.lith[gone] = 0
-    floor_age(sim, gone, col.cont)
-
-
-ANDES_BELT = 1.2  # level-5 cells: e-folding width of the belt contraction stacks behind the arc (andean_contraction)
-
-
-def andean_contraction(sim, bd, conv, col, shrink):
-    """The overriding plate contracts behind an ocean-continent trench (PW-1497 option A): the Andes are mostly
-    shortened and thickened South American crust, not arc melt. The slab pins the trench, so the share
-    `andean_shortening` of the overriding continent's own advance toward it (cm/yr, at most the convergence) is
-    taken up by the plate's edge closing up (Schellart 2008: a stable or advancing trench goes with overriding-plate
-    shortening; Medvedev et al. 2006: the central Andes shorten 1-1.75 cm/yr of the foreland's ~3 cm/yr westward
-    motion). The area that closes is the plate's: it is pooled per plate (plates.short_pool, km^2) and, a whole cell
-    at a time, the edge cell shortening fastest closes up: its whole column is stacked into a narrow belt behind it
-    on its own continent (ANDES_BELT wide, past the forearc gap, like the arc's) and the cell becomes ocean floor at
-    the trench, so continental volume is kept and area is lost as shortening loses it (as a collision's overlap
-    does in plate_kernels.resolve). andean_steer: the area thermostat's factor steers the rate, as it does
-    subduction erosion's. Returns km of crust added per cell (a squeezed belt, for flow_and_orogeny)."""
-    p, g, n, dt = sim.params, sim.grid, sim.grid.n, sim.dt_now
-    add = np.zeros(n)
-    if p.andean_shortening <= 0 or not (bd.a_down.any() or bd.b_down.any()):
-        return add
-    from .motion import velocity
-    from .plates import CMYR
-    up = bd.overriding
-    toward = np.concatenate([-bd.d[bd.a_down], bd.d[bd.b_down]])  # from the overriding cell toward the trench
-    adv = (velocity(sim)[up] * toward).sum(1) * CMYR
-    rate = p.andean_shortening * np.clip(adv, 0.0, bd.at_trenches(conv)) * col.cont[up]
-    if p.andean_steer > 0:
-        rate = rate * shrink
-    r = np.zeros(n)
-    np.maximum.at(r, up, rate)  # cm/yr per trench-edge cell
-    if not r.any():
-        return add
-    km = sim.edge_len * R_KM
-    cell_km2 = sim.cell_area * R_KM**2
-    own, pl = sim.owner, sim.plates
-    pl.short_pool += np.bincount(own, r * 10.0 * dt * km, P_MAX)  # km/Myr x Myr x km of trench per cell
-    close = np.zeros(n, bool)
-    for k in np.flatnonzero(pl.short_pool >= cell_km2):
-        cand = np.flatnonzero((r > 0) & (own == k) & col.cont)
-        m = min(int(pl.short_pool[k] // cell_km2), len(cand))
-        if m > 0:
-            close[cand[np.argsort(-r[cand], kind="stable")[:m]]] = True
-            pl.short_pool[k] -= m * cell_km2
-        pl.short_pool[k] = min(pl.short_pool[k], cell_km2 * max(len(cand) - m, 1))
-    if not close.any():
-        return add
-    src = np.flatnonzero(close)
-    label = np.where(col.cont, own, -1)
-    w = ANDES_BELT * sim.scale
-    dist, s = kernels.bfs_within(src, label, g.nbr_off, g.nbr_idx, int(3 * w))
-    hit = (s >= 0) & ~close
-    wt = np.exp(-((dist[hit] / w) ** 2)) * (1 - np.exp(-((dist[hit] / (FOREARC_KM / L5_KM * sim.scale)) ** 2)))
-    tot = np.bincount(s[hit], wt, n)
-    ok = close & (tot > 0)  # (a cell with no continent of its own behind it doesn't close)
-    if not ok.any():
-        return add
-    keep = ok[s[hit]]
-    cells, sw = np.flatnonzero(hit)[keep], s[hit][keep]
-    np.add.at(add, cells, col.t[sw] * wt[keep] / tot[sw])
-    sim.book("andean.closed", col.t, 0, ok)  # (the closed cells; their crust is the belt's "andean")
-    col.t = col.t + add
-    sim.book("andean", 0, add, col.cont)
-    to_ocean(sim, col, ok)
-    return add
+        col.cont = col.cont.copy()
+        col.cont[gone] = False
+        col.rock[gone] = OCEAN
+        t[gone] = OCEAN_KM
+        col.cover[gone] = 0.0
+        col.x[gone] = 0.0
+        col.rec[gone] = record.blank()
+        col.lith[gone] = 0
+        floor_age(sim, gone, col.cont)
 
 
 def floor_age(sim, cells, cont):
