@@ -3705,6 +3705,52 @@ def test_polities_in_the_history_seat_claim_and_conquer_with_the_winners_toleran
     assert doc["steps"] and doc["polities"] and "inside the history" in doc["calendar"]
 
 
+def test_live_confederation_bands_a_peoples_villages_beside_a_foreign_state(faketz, monkeypatch):
+    """PW-1583 (lane 241, round16.md): the history has the read-out's step 1b. A people with kings, law and writing but no city seats
+    a confederation (a state, with the stacked reach, WIDE_BY) at one of its places when its own people in its places within a state's
+    reach number a city's worth and a foreign state held land within that reach last step. Not without the foreign state, and not
+    with too few people."""
+    from planet.lineages import polities as PO
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R, g = h.rule, h.rule.g
+    fk, kb = h.idx["folk"], h.idx["kob"]
+    lm = np.asarray(env["land"], bool)
+    c0 = next(int(c) for c in land if lm[R.idx[R.off[c]:R.off[c + 1]]].all() and R.off[c + 1] - R.off[c] >= 5)
+    nb = R.idx[R.off[c0]:R.off[c0 + 1]]
+    monkeypatch.setattr(PO, "STATE_KM", 1.5 * float(R.ekm[R.off[c0]:R.off[c0 + 1]].max()))  # (a state's reach: c0's ring)
+    lead = np.full(g.n, -1, np.int64)
+    lead[[c0, *nb[:3].tolist()]] = fk
+    lead[nb[3:]] = kb
+    peopled = lead >= 0
+    R.owner = np.where(lead == kb, 0, -1)  # (last step: the kobolds' state held the rest of the ring)
+    R.ruling, R.tier_of = [{"key": f"c{int(nb[3])}", "cell": int(nb[3]), "people": "kob", "line": kb, "tier": "state"}], ["state"]
+    city_min = 10000.0
+    z = np.zeros(len(R.idx))
+    args = (1.0, R.k, peopled, z, ~lm, np.zeros(g.n, bool), city_min)
+    place = np.where(lead == fk, 0.3 * city_min, 0.0)  # (four villages of 3,000: no city, 12,000 in all)
+    got = R._confederations([], place, lead, *args)
+    assert len(got) == 1 and got[0]["people"] == "folk" and got[0]["tier"] == "state" and got[0]["confed"] and got[0]["heads"] == 12000
+    assert got[0]["key"] in {f"c{c}" for c in np.flatnonzero(lead == fk)}
+    R.tier_of = ["chiefdom"]  # (no foreign state beside them: nothing to band together against)
+    assert R._confederations([], place, lead, *args) == []
+    R.tier_of = ["state"]
+    assert R._confederations([], place * 0.8, lead, *args) == []  # (9,600: short of a city's worth)
+
+
+def test_live_refugees_skip_land_their_people_has_already_left(faketz, monkeypatch):
+    """PW-1583 (lane 241): a people cut twice in one step (two conquests) has heads left on the books of a cell its presence has
+    left (under EST after the first cut). The refugees of the second expulsion go only to cells it still holds, so the heads moved
+    stay finite (they were NaN: 0/0 on the emptied cell)."""
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    kb = h.idx["kob"]
+    taken, gone_cell, home = land[300:305], int(land[305]), land[306:330]
+    hk = R._heads()[2][kb].copy()
+    h.p[kb][gone_cell] = 0.0  # (the first conquest this step emptied it; hk still counts it)
+    moved = R._refuge(kb, hk, taken, np.zeros(R.g.n, bool), 100.0)
+    assert np.isfinite(moved) and np.isfinite(h.p[kb]).all() and h.p[kb][gone_cell] == 0.0
+
+
 def test_live_conquest_harshness_reads_the_winners_attitudes(faketz, monkeypatch):
     """PW-1481 / PW-1465 (lane 201, round10.md; Daniel D54): the history keeps each people's attitudes (attitudes.Attitudes, stepped
     each century), and a conquered people's fate reads the winner's: harshness 1 - tolerance x (1 - old enmity). With no old quarrel a
