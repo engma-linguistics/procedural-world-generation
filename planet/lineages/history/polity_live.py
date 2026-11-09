@@ -22,7 +22,9 @@ What the history lacks, and how this cut stands in (round7.md section 2):
 - towns: the settlement ledger is made after the run, so a seat is the history's own central place: the sedentary heads of a cell's
   hinterland (farmers: heads x the people's farm share) x the ledger's SHARE x the ledger's site factor (a harbour on a coast that is
   still a coast, a navigable river, fresh water, fertile ground, a pass: settlements._site_factor, PW-1587), at a cell that is the
-  best of its ring by the same score, as settlements.py sizes its towns and cities;
+  best of its ring by the same score, as settlements.py sizes its towns and cities. A seat is a state where its place, of either tier,
+  reaches a city's size less HEMMED_X x how hemmed in the seat is over its own two rings (polities._hemmed's reading), as derive tests
+  a site's people; the ledger caps a town under a city's size, so a town passes only where it is hemmed in (PW-1594);
 - the tech calendar: the tech tree runs inside the history (history.tech_live, PW-1466, round8.md): each step it runs down to the
   history's time first, and the gates (chiefdoms, proto-writing or writing, kingship, law, the military edges, boats, a dragon's hoards)
   read what each people knew by then. output.save writes the same calendar out as meta.techtree;
@@ -98,6 +100,7 @@ class LivePolities(StandIns):
         pairs = np.unique(np.concatenate([np.stack([np.arange(g.n), np.arange(g.n)], 1), np.stack([self.src, self.idx], 1),
                                           np.stack([self.src[e], far], 1)]), axis=0)
         self.r2a, self.r2b = pairs[:, 0], pairs[:, 1]
+        self.r2off = np.searchsorted(self.r2a, np.arange(g.n + 1))  # (pairs are sorted by cell: each cell's two rings, r2b[r2off[c]:r2off[c+1]])
         L = h.lines
         self.ppl = np.array([i for i, l in enumerate(L) if not (l.overlay or l.megafauna or l.marine)], np.int64)  # (peoples that may hold towns)
         self.dragons = [i for i, l in enumerate(L) if l.megafauna and "dragon" in l.id and l.trait("flies", 0.0)]
@@ -246,6 +249,25 @@ class LivePolities(StandIns):
         own = own * CONST["MINORITY_MAX"] / (own + CONST["MINORITY_MAX"]) * q
         return own, np.where(ok, second, -1)
 
+    def _hem_local(self, c, k, people, ago, land, ice, el) -> float:
+        """How hemmed in the seat at cell c is, 0..1, as the read-out reads it (polities._hemmed): over the cells within two rings of it,
+        sea (for a people without boats), ice and peaks of 3,000 m or more bar fully; land other peoples hold and its own does not bars
+        SOCIAL_Q; the rest bars nothing."""
+        ring = self.r2b[self.r2off[c]:self.r2off[c + 1]]
+        ring = ring[ring != c]
+        if not len(ring):
+            return 1.0
+        boats = any(self.knows(people, t, ago) for t in PO.BOATS)
+        h = self.h
+        others = np.zeros(len(ring), bool)
+        for j in self.ppl:
+            if j != k and h.active.get(h.lines[j].id):
+                others |= h.p[j][ring] >= EST
+        own = h.p[k][ring] >= EST
+        bar = np.where(~land[ring], 0.0 if boats else 1.0,
+                       np.where(ice[ring] | (el[ring] >= 3000), 1.0, np.where(others & ~own, PM.SOCIAL_Q, 0.0)))
+        return float(bar.mean())
+
     def _stage(self, people: str, ago: float) -> int:
         """A town-knowing people's settlement stage (settlements' TOWN_MIN index): 4 with cities and roads, 3 with cities, else 2."""
         return 4 if self.knows(people, "roads", ago) and self.knows(people, "cities", ago) else 3 if self.knows(people, "cities", ago) else 2
@@ -314,6 +336,9 @@ class LivePolities(StandIns):
         thr = np.full(g.n, float(min(CONST["TOWN_MIN"])))
         thr[inc_cells] *= PO.HOLD
         cand = np.flatnonzero(peopled & land & (size >= thr))
+        # (PW-1594: a state seat is tested on its place whichever its tier, as derive tests a site's people; the ledger caps a town
+        # under a city's size, so a town (the best of its ring) passes only where the seat is hemmed in, a city (the best of two) anywhere)
+        place_st = np.maximum(np.minimum(size, city_min - 1e-6), city)
         wcell = np.zeros(g.n, bool)  # (cells where a people that knows proto-writing or writing lives, and their neighbours: D49's lenience)
         for k in heads:
             if any(self.knows(L[k].id, t, ago) for t in PO.WRITING_TECHS):
@@ -332,8 +357,9 @@ class LivePolities(StandIns):
             tier = "chiefdom"
             if (self.knows(ppl, "kingship", ago) or self.knows(ppl, "law", ago)) and self.knows(ppl, PO.STATE_WRITING, ago) \
                     and self.cool.get(key, -1) < k_ and self.knows(ppl, "cities", ago):  # (D49: a state needs its own people's writing)
-                need = city_min * (1 - PO.HEMMED_X * float(self.hem[k])) * (PO.HOLD if self.prev_cap.get(key) in ("state", "empire") else 1.0)
-                if city[c] >= need:
+                hem = self._hem_local(c, k, ppl, ago, land, ice, el)  # (PW-1594: the seat's own two rings, as derive)
+                need = city_min * (1 - PO.HEMMED_X * hem) * (PO.HOLD if self.prev_cap.get(key) in ("state", "empire") else 1.0)
+                if place_st[c] >= need:
                     tier = "state"
             strong = tier == "state" and self.knows(ppl, PO.STRONG_TECH, ago)
             self.founded.setdefault(key, ago)
