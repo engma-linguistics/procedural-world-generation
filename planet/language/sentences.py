@@ -63,9 +63,12 @@ EXTRA_ABBR = {"PST.RCT": "recent past", "DIR": "direct (witnessed) evidential", 
 PRON = {"I": "1SG", "THOU": "2SG", "HE OR SHE OR IT": "3SG", "WE": "1PL", "YOU": "2PL", "THEY": "3PL",
         "WE (INCLUSIVE)": "1PL"}
 CASE_NAME = {"GEN": "genitive", "LOC": "locative", "ABL": "ablative", "ALL": "allative", "DAT": "dative",
-             "ACC": "accusative", "ERG": "ergative", "INS": "instrumental", "COM": "comitative"}
+             "ACC": "accusative", "ERG": "ergative", "INS": "instrumental", "COM": "comitative",
+             **{f: GR.FUNCS[f].gloss.split(" (")[0] for f in GR.LOCAL_CASE + GR.PERIPHERAL_CASE}}
 CASE_EN = {"GEN": "of the {n}", "LOC": "in the {n}", "ABL": "from the {n}", "ALL": "to the {n}", "DAT": "to/for the {n}",
-           "ACC": "the {n} (as object)", "ERG": "the {n} (as doer)", "INS": "with (using) the {n}", "COM": "with the {n}"}
+           "ACC": "the {n} (as object)", "ERG": "the {n} (as doer)", "INS": "with (using) the {n}", "COM": "with the {n}",
+           "INE": "in the {n}", "ILL": "into the {n}", "ELA": "out of the {n}", "SUPE": "on the {n}", "SUBL": "onto the {n}",
+           "DEL": "off the {n}", "PERL": "through the {n}", "PRIV": "without the {n}", "TRANSL": "into (becoming) the {n}"}
 TAM_ORDER = ("PAST", "RECPST", "PERF", "FUT", "PROG", "IPFV", "HAB", "REMPST", "COMPL", "INCH", "RPT")
 #: English verb forms: base, 3sg, past, participle, -ing
 EN_VERB = {

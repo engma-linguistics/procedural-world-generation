@@ -83,7 +83,7 @@ def test_replacement_rate_matches_calibration(concepts):
     n_gen = 1000 / GEN
     kept = total = 0
     by_class = collections.defaultdict(lambda: [0, 0])
-    for seed in range(60):
+    for seed in range(120):   # (120 draws: at 60 the class-1 vs class-5 ratio swung with the random stream)
         rng, inv, lex = _proto(100 + seed, concepts, f"L{seed}")
         other = L.proto_lexicon(np.random.default_rng(900 + seed), inv, concepts, 20.0, "M")
         orig = dict(lex.words)
@@ -91,7 +91,8 @@ def test_replacement_rate_matches_calibration(concepts):
         for t in (20.0, 19.5):
             L.step(rng, lex, n_gen / 2, inv, contact_words={"M": other}, kyr=t)
         for c in L.CORE100:
-            same = lex.words[c].etym is orig[c].etym   # (roots may be re-read, `refresh_roots`)
+            e, e0 = lex.words[c].etym, orig[c].etym   # (roots may be re-read, `refresh_roots`; a function word's wear,
+            same = e[:len(e0)] == e0 and all(s.process.startswith("sound_change:") for s in e[len(e0):])  # not a loss)
             kept += same
             total += 1
             by_class[orig[c].freq_class][0] += same

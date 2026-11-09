@@ -96,7 +96,9 @@ SAMPLE = ["I", "THOU", "WE", "THIS", "THAT", "WHO", "WHAT", "NOT", "ALL", "MANY"
 
 GLOSS = {"PL": "plural", "DU": "dual", "DEF": "definite", "INDEF": "indefinite", "GEN": "genitive", "LOC": "locative",
          "ABL": "ablative", "DAT": "dative", "ACC": "accusative", "ERG": "ergative", "INS": "instrumental",
-         "COM": "comitative", "PAST": "past", "RECPST": "recent past", "PERF": "perfect", "FUT": "future",
+         "COM": "comitative", "INE": "inessive", "ILL": "illative", "ELA": "elative", "SUPE": "superessive",
+         "SUBL": "sublative", "DEL": "delative", "PERL": "perlative", "PRIV": "privative", "TRANSL": "translative",
+         "PAST": "past", "RECPST": "recent past", "PERF": "perfect", "FUT": "future",
          "PROG": "progressive", "IPFV": "imperfective", "HAB": "habitual", "NEG": "negation", "CAUS": "causative",
          "REFL": "reflexive", "DIM": "diminutive", "PLACE": "place noun", "AGENT": "agent noun",
          "EVID.REP": "reportative evidential", "EVID.DIR": "direct evidential", "1SG": "1st person singular",
@@ -528,6 +530,9 @@ def typology_prose(t: dict) -> list[str]:
         art.append(f"a definite article {'before' if da == 'pre' else 'after'} the noun")
     art.append("an indefinite article" if ia == "present" else "no indefinite article")
     case = {"none": "no case marking on nouns", "few": "a few cases", "many": "a rich case system"}.get(g("case"), "")
+    cc = g("case_count")   # (the WALS 49A bin: PW-1569)
+    if cc not in ("?", "none", None) and case:
+        case += " (case clitics only)" if cc == "borderline" else f" ({cc} cases)"
     al = {"neutral": "no alignment marking (subject and object are not told apart by form)",
           "nom-acc": "nominative-accusative alignment", "erg-abs": "ergative-absolutive alignment",
           "split": "split alignment (ergative in some contexts, accusative in others)"}.get(g("alignment"), "")
@@ -934,7 +939,8 @@ def orthography(l: dict) -> list[str]:
     return out
 
 
-CASE_FNS = {"ACC", "ERG", "DAT", "GEN", "LOC", "ABL", "ALL", "INS", "COM"}
+CASE_FNS = {"ACC", "ERG", "DAT", "GEN", "LOC", "ABL", "ALL", "INS", "COM", "INE", "ILL", "ELA", "SUPE", "SUBL", "DEL",
+            "PERL", "PRIV", "TRANSL"}
 
 
 def _typology_clashes(t: dict, grams: list[dict]) -> list[str]:
@@ -1385,7 +1391,9 @@ def systems_section(l: dict) -> list[str]:
 LEIPZIG = {"1": "first person", "2": "second person", "3": "third person", "SG": "singular", "PL": "plural", "DU": "dual",
            "DEF": "definite", "INDF": "indefinite", "GEN": "genitive", "LOC": "locative", "ABL": "ablative",
            "ALL": "allative", "DAT": "dative", "ACC": "accusative", "ERG": "ergative", "INS": "instrumental",
-           "COM": "comitative", "PST": "past", "FUT": "future", "PRF": "perfect", "PROG": "progressive",
+           "COM": "comitative", "INE": "inessive", "ILL": "illative", "ELA": "elative", "SUPE": "superessive",
+           "SUBL": "sublative", "DEL": "delative", "PERL": "perlative", "PRIV": "privative", "TRANSL": "translative",
+           "PST": "past", "FUT": "future", "PRF": "perfect", "PROG": "progressive",
            "IPFV": "imperfective", "HAB": "habitual", "NEG": "negation", "Q": "question particle", "REL": "relativizer",
            "COP": "copula", "CAUS": "causative", "PASS": "passive", "REFL": "reflexive", "DIM": "diminutive",
            "M": "masculine", "F": "feminine", "N": "neuter", **SN.EXTRA_ABBR}

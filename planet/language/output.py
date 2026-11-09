@@ -203,7 +203,8 @@ def grammar_json(lect, sp: Speller) -> dict:
         p["roman"] = sp.ipa(p["ipa"])
     cs = g.class_system
     classes = {"kind": cs.kind, "classes": [[c.k, c.group, f"CLASS:{c.k}"] for c in cs.classes]} if cs and cs.classes else None
-    return {"typology": dict(g.typology), "grams": grams, "paradigms": pt, "complexity": GR.complexity(g), "classes": classes,
+    typ = {**g.typology, "case_count": GR.case_bin(g)}   # (the WALS 49A bin beside the none/few/many label: PW-1569)
+    return {"typology": typ, "grams": grams, "paradigms": pt, "complexity": GR.complexity(g), "classes": classes,
             "processes": dict(getattr(g, "processes", None) or {})}
 
 

@@ -56,6 +56,13 @@ FUSE = 0.02            # one step down the ladder per generation for an average 
                        # against WALS 22A's ~3%, because grams were recruited but stayed free or were stripped in the
                        # median lect (adult-L2 proxy 0.54, 31% at the 0.7 ceiling). calibration.md "Synthesis lane"
 FUSE_LEVEL = (1.0, 0.7, 0.06)   # multiplier for 0->1, 1->2, 2->3 (binding is fast; true fusion with the stem is slow)
+PRE_FUSE = 0.1         # (PW-1571, owner ruling 11-08 "asym") the clitic > affix and affix > fused steps of a gram that
+                       # stands before its host, x this. Preposed grammatical material is less often affixed than
+                       # postposed material of the same function (Bybee, Pagliuca & Perkins 1990; Himmelmann 2014:
+                       # word-initial material is more prominent and resists reduction; Hawkins & Cutler 1988 give the
+                       # processing account: stems are recognised from their onsets). This is the source of the
+                       # world's suffixing preference (WALS 26A, Dryer 2013: suffixing about 2.5 : 1 over prefixing);
+                       # before it bound class markers in a24559 were prefixes 417 to suffixes 329 (calibration.md "Lane 4")
 AGE_SCALE = 200.0      # generations; fusion hazard x (1 + age/AGE_SCALE), capped at AGE_CAP
 AGE_CAP = 2.0
 #: grammar phase D (task 4): the polar-question particle. Intonation-only questions were 51% of the full pass against
@@ -153,6 +160,20 @@ FUNCS: dict[str, FuncInfo] = {
     "ERG": FuncInfo("NP", "adp", 1.2, "case", "ergative"),
     "INS": FuncInfo("NP", "adp", 0.8, "case", "instrumental"),
     "COM": FuncInfo("NP", "adp", 0.7, "case", "comitative"),
+    # PW-1569 (owner ruling 11-08 "grow"): the local-case series and three more peripheral cases, so Finnish-, Hungarian-
+    # and Daghestanian-size systems can form. An 'inside' and an 'on top' region marker (from 'in, belly' and 'top,
+    # head': Heine & Kuteva 2002 BELLY > IN, HEAD > ON) are the static cases; each joins the allative and ablative into
+    # 'into, out of' and 'onto, off from' (`_local_series`: Finnish -ssa / -sta < *-s-na / *-s-ta, Hungarian -ban / -ból /
+    # -ba, the Tsez and Lezgian series-plus-orientation suffixes; Comrie & Polinsky 1998, Creissels 2009).
+    "INE": FuncInfo("NP", "adp", 0.8, "case", "inessive ('in, inside')"),
+    "ILL": FuncInfo("NP", "adp", 0.6, "case", "illative ('into')"),
+    "ELA": FuncInfo("NP", "adp", 0.6, "case", "elative ('out of')"),
+    "SUPE": FuncInfo("NP", "adp", 0.6, "case", "superessive ('on, on top of')"),
+    "SUBL": FuncInfo("NP", "adp", 0.5, "case", "sublative ('onto')"),
+    "DEL": FuncInfo("NP", "adp", 0.5, "case", "delative ('off, down from')"),
+    "PERL": FuncInfo("NP", "adp", 0.5, "case", "perlative ('through, along')"),
+    "PRIV": FuncInfo("NP", "adp", 0.5, "case", "privative ('without')"),
+    "TRANSL": FuncInfo("NP", "adp", 0.5, "case", "translative ('into, becoming')"),
     "DIM": FuncInfo("N", "head", 0.8, "deriv", "diminutive"),
     "AGENT": FuncInfo("N", "head", 0.7, "deriv", "one who / person of"),
     "PLACE": FuncInfo("N", "head", 0.7, "deriv", "place of"),
@@ -558,6 +579,15 @@ _BUILTIN_PATHS = (
     ("X71", ("KING", "MASTER"), "HON", "attested", "'lord, master' > honorific verb marker (a guess)"),
     ("X72", ("THAT", "OTHER"), "OBV", "attested", "'that, other' > obviative (a guess: Algonquian's source is unknown)"),
     ("X73", ("WHAT",), "Q", "attested", "'what' > polar question particle (Polish czy; Kuteva et al. 2019)"),
+    # 2026-11-09, PW-1569: sources of the local and peripheral cases. Region nouns and adpositions > region markers
+    # (Heine & Kuteva 2002 BELLY > IN, HEAD > ON; Svorou 1994); 'through, road' > perlative (Svorou 1994; Kuteva et al.
+    # 2019 PATH > PERLATIVE); 'without' > privative/abessive (Finnish -tta, Hungarian -talan, the privatives of
+    # Australian languages; Dixon 2002); 'become' > translative (a guess: the Finnish -ksi's source is unknown).
+    ("X74", ("IN", "BELLY"), "INE", "common", "'in, belly' > inessive (Heine & Kuteva 2002 BELLY > IN)"),
+    ("X75", ("TOP", "HEAD"), "SUPE", "common", "'top, head' > superessive (Heine & Kuteva 2002 HEAD > ON)"),
+    ("X76", ("THROUGH", "ROAD", "PATH"), "PERL", "attested", "'through, road' > perlative (Svorou 1994)"),
+    ("X77", ("WITHOUT",), "PRIV", "common", "'without' > privative (Finnish -tta, Australian privatives; Dixon 2002)"),
+    ("X78", ("BECOME",), "TRANSL", "attested", "'become' > translative (a guess; Finnish -ksi's source is unknown)"),
 )
 #: gram-to-gram paths whose source keeps its own function (polysemy: the copula stays a copula when a focus particle
 #: splits off it, the reflexive stays reflexive beside a reciprocal); the new gram starts with the source's form. Every
@@ -1284,7 +1314,8 @@ def _wanted(function: str, typ: Typology) -> bool:
         "PL": t("number") != "none", "DU": t("number") == "sg-du-pl", "DEF": t("definite_article") != "none",
         "INDEF": t("indefinite_article") == "present", "GEN": t("case") != "none", "LOC": t("case") != "none",
         "DAT": t("case") != "none", "ABL": t("case") == "many", "ALL": t("case") == "many", "INS": t("case") == "many",
-        "COM": t("case") == "many", "ACC": t("case") != "none" and t("alignment") in ("nom-acc", "split"),
+        "COM": t("case") == "many", **{x: t("case") == "many" for x in LOCAL_CASE + PERIPHERAL_CASE},
+        "ACC": t("case") != "none" and t("alignment") in ("nom-acc", "split"),
         "ERG": t("case") != "none" and t("alignment") in ("erg-abs", "split"),
         "PAST": t("past") == "marked", "RECPST": t("past") == "marked", "FUT": t("future") == "marked", "PERF": t("perfective") == "marked",
         "IPFV": t("perfective") == "marked", "PROG": t("progressive") == "marked", "HAB": t("habitual") == "marked",
@@ -1341,8 +1372,15 @@ REALISED = ("definite_article", "indefinite_article", "case", "alignment", "numb
             "verb_reduplication", "polar_question", "copula")
 #: order features the free grams constrain (a free locative postposition means the language has postpositions)
 CONSTRAINED = ("adposition",)
-CASE_FNS = ("GEN", "LOC", "ABL", "ALL", "DAT", "ACC", "ERG", "INS", "COM")
-RICH_CASE = ("ABL", "ALL", "INS", "COM")   # the oblique cases `_wanted` asks of a 'many' case system
+LOCAL_CASE = ("INE", "ILL", "ELA", "SUPE", "SUBL", "DEL")   # (PW-1569: the local series, `_local_series`)
+PERIPHERAL_CASE = ("PERL", "PRIV", "TRANSL")
+CASE_FNS = ("GEN", "LOC", "ABL", "ALL", "DAT", "ACC", "ERG", "INS", "COM") + LOCAL_CASE + PERIPHERAL_CASE
+RICH_CASE = ("ABL", "ALL", "INS", "COM")   # the oblique cases `_wanted` asks of a 'many' case system (with the local and
+#                                            peripheral ones, which pull as groups of their own: `PULL_GROUP`)
+#: the region markers of the local series and the members each makes with a directional case (`_local_series`)
+LOCAL_SERIES = {"INE": {"ALL": "ILL", "ABL": "ELA"}, "SUPE": {"ALL": "SUBL", "ABL": "DEL"}}
+LOCAL_FORM = 0.01     # per generation: a missing member forms while its region marker and directional case are bound
+CASE_MANY = 6         # cases (bound case markers + 1, WALS 49A) from which the 'case' label reads 'many'
 PERSON_FNS = ("1SG", "2SG", "3SG", "1PL", "2PL", "3PL")
 INCL_FN = "1PL.INCL"
 OBJ_FNS = tuple(f"{p}.O" for p in PERSON_FNS)
@@ -1437,6 +1475,22 @@ def _clusive(lexicon) -> str | None:
     return "yes" if a is not None and b is not None and _form(a) != _form(b) else "no"
 
 
+def case_count(g: Grammar, lv: dict | None = None) -> int:
+    """Cases as WALS 49A counts them: the bound (affix or fused) case markers + 1 for the unmarked case; 0 with none."""
+    lv = _live_fns(g) if lv is None else lv
+    n = sum(1 for x in CASE_FNS if any(m.level >= AFFIX for m in lv.get(x, ())))
+    return n + 1 if n else 0
+
+
+def case_bin(g: Grammar, lv: dict | None = None) -> str:
+    """The WALS 49A bin of `case_count`: none | borderline (case clitics only) | 2 | 3 | 4 | 5 | 6-7 | 8-9 | 10+."""
+    lv = _live_fns(g) if lv is None else lv
+    n = case_count(g, lv)
+    if not n:
+        return "borderline" if any(m.level == CLITIC for x in CASE_FNS for m in lv.get(x, ())) else "none"
+    return str(n) if n <= 5 else "6-7" if n <= 7 else "8-9" if n <= 9 else "10+"
+
+
 def realised_value(feature: str, g: Grammar, lexicon=None, lv: dict | None = None) -> str:
     """The value the live grams (or the lexicon, for clusivity) give a realised feature, nearest to the aim where the
     grams leave a choice (negation: which side-compatible value; alignment and negation with no marker: the aim)."""
@@ -1453,11 +1507,13 @@ def realised_value(feature: str, g: Grammar, lexicon=None, lv: dict | None = Non
     if f == "indefinite_article":
         return "present" if has("INDEF") else "none"
     if f == "case":
-        # (WALS 49 counts inflectional case: a free case-function gram is an adposition, case only from clitic level on)
+        # (WALS 49 counts inflectional case: a free case-function gram is an adposition, case only from clitic level on;
+        # PW-1569: 'many' by count, CASE_MANY cases or more, as WALS 49A's 6-7 / 8-9 / 10+ bins; clitic-only case,
+        # WALS's 'borderline', reads 'few')
         cs = [x for x in CASE_FNS if any(m.level >= CLITIC for m in lv.get(x, ()))]
         if not cs:
             return "none"
-        return "many" if len(cs) >= 4 or any(x in RICH_CASE for x in cs) else "few"
+        return "many" if case_count(g, lv) >= CASE_MANY else "few"
     if f == "alignment":
         # (of flagging, as WALS 98A: no accusative or ergative marker is neutral alignment, whatever the aims lean to;
         # before 2026-11-07 the aim showed through, so 16% of lects were 'ergative' with no ergative anywhere)
@@ -1593,6 +1649,7 @@ _PULL_FNS = tuple(FUNCS) + ("CLASS",)
 #: case gram blocked the pull toward ACC/ERG, a plural blocked DU and a reportative blocked the direct evidential.
 PULL_GROUP = {"ACC": "alignment:ACC", "ERG": "alignment:ERG", "DU": "number:DU", "EVID.DIR": "evidentiality:DIR",
               **{f: "case:rich" for f in RICH_CASE},
+              **{f: "case:local" for f in LOCAL_CASE}, **{f: "case:periph" for f in PERIPHERAL_CASE},
               "GEN": "case:GEN"}   # (grammar B: a language with case marks the possessor too, nearly always: WALS 51A)
 
 
@@ -2131,6 +2188,8 @@ def proto_grammar(rng: np.random.Generator, inv, lexicon, typ: Typology | None =
                 src = ("?", "X01", "coin")
         form, hist = _recruited_form(form, kyr)
         lvl = int(rng.choice([FREE, CLITIC], p=[0.6, 0.4]))
+        if lvl == CLITIC:
+            form = clip_syllables(form, 1) or form   # (a clitic keeps one syllable: `step`)
         info = func_info(f)
         g.grams.append(Gram(f, form, info.host, _side(f, typ), lvl, src, kyr, [(kyr, "proto"), *hist], id=g.new_id(f)))
     gk = typ.get("gender", "none")
@@ -2790,8 +2849,8 @@ def _person_member(g: Grammar, fn: str, level: int, side: str, lexicon, idx, kyr
         if w is None:
             return None
         form, hist = _recruited_form(_form(w), kyr)
-        if level >= AFFIX:
-            e = first_syllable(form)
+        if level >= CLITIC:
+            e = first_syllable(form) if level >= AFFIX else clip_syllables(form, 1)
             if e != form:
                 hist.append((kyr, f"eroded {ipa(form)} > {ipa(e)}"))
             form = e
@@ -2816,6 +2875,35 @@ def _person_set(g: Grammar, gr: Gram, rng, lexicon, kyr: float, T: Tables) -> No
         if fn != gr.function and rng.random() < _join_p(fn):
             _person_member(g, fn, min(gr.level, AFFIX), gr.side, lexicon, idx, kyr, T,
                            f"with {gr.function}: the pronoun series binds as a set")
+
+
+def _local_series(g: Grammar, rng, kyr: float, p: float) -> bool:
+    """The local-case series (PW-1569): a bound region marker (inessive, superessive) and a bound directional case
+    (allative, ablative) on the same side of the noun make a compound case marker, 'in-to' > illative, 'on-from' >
+    delative (`LOCAL_SERIES`), with chance `p` for each missing member: the region marker stays next to the stem, the
+    directional one outside it, at the looser of the two levels. True when a member formed."""
+    lv = _live_fns(g)
+    made = False
+    for reg, members in LOCAL_SERIES.items():
+        r = next((x for x in lv.get(reg, ()) if x.level >= CLITIC and x.form), None)
+        if r is None:
+            continue
+        for dfn, mfn in members.items():
+            if mfn in lv or rng.random() >= p:
+                continue
+            d = next((x for x in lv.get(dfn, ()) if x.level >= CLITIC and x.side == r.side and x.form), None)
+            if d is None:
+                continue
+            form = tuple(r.form) + tuple(d.form) if r.side == "post" else tuple(d.form) + tuple(r.form)
+            lvl = min(r.level, d.level, AFFIX)
+            gr = Gram(mfn, form, "NP", r.side, lvl, (f"{reg}+{dfn}", "series", "gram"), kyr,
+                      [(kyr, f"formed from the {r.info.gloss.split(' (')[0]} and {d.info.gloss} markers")],
+                      id=g.new_id(mfn))
+            g.grams.append(gr)
+            g.events.append((kyr, f"{mfn} {ipa(form)} formed from {reg} + {dfn} (the local-case series)"))
+            lv.setdefault(mfn, []).append(gr)
+            made = True
+    return made
 
 
 def _person_fill(g: Grammar, rng, lexicon, kyr: float, T: Tables, p: float) -> None:
@@ -2926,9 +3014,18 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                     continue
             if gr.level < FUSED:
                 h = FUSE * gr.info.freq * min(1.0 + gr.age_gens / AGE_SCALE, AGE_CAP) * soc["fuse"] * FUSE_LEVEL[gr.level]
+                if gr.side == "pre" and gr.level >= CLITIC:
+                    h *= PRE_FUSE   # (a proclitic binds and fuses more slowly than an enclitic: the suffixing preference)
                 if rng.random() < _p(h, dn):
                     gr.level += 1
                     gr.history.append((kyr, f"now {LEVELS[gr.level]}"))
+                    if gr.level == CLITIC:
+                        # (a clitic has no stress of its own: it keeps one syllable of its word, PW-1570; Spanish
+                        # nosotros > nos, Latin illum > lo, English them > 'em)
+                        eroded = clip_syllables(gr.form, 1)
+                        if eroded and eroded != tuple(gr.form):
+                            gr.history.append((kyr, f"eroded {ipa(gr.form)} > {ipa(eroded)}"))
+                            gr.form = eroded
                     if gr.level == CLITIC and gr.function in SERIES_OF:
                         _person_set(g, gr, rng, lexicon, kyr, T)
                     if gr.level == AFFIX:
@@ -2948,6 +3045,8 @@ def step(rng: np.random.Generator, g: Grammar, n_generations: float, inv=None, l
                     changed = True
         if PERSON_FILL > 0:
             _person_fill(g, rng, lexicon, kyr, T, _p(PERSON_FILL * soc["recruit"], dn))
+        if LOCAL_FORM > 0 and _local_series(g, rng, kyr, _p(LOCAL_FORM * soc["recruit"], dn)):
+            changed = True
         if grew_class and g.class_system is not None and rng.random() < CLASS_GROW:
             add_class(g, rng, inv, lexicon, kyr)
         if changed:
