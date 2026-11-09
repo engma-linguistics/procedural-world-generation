@@ -1,4 +1,5 @@
 ---
+id: PW-1612
 title: The settlement ledger reads density from the next stored frame, so its first towns (and the after-run calendar) come 0.2-0.5 kyr early
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane258
 blocked_by: []
 relates: [PW-1597, PW-1596, PW-1608]
 refs: ["planet/lineages/settlements.py::derive", "planet/lineages/history/polity_live.py::LivePolities.town_cells", "planet/lineages/history/polity_live.py::LivePolities.begin_step", "planet/lineages/techspread.py::town_footprint", "planet/lineages/techtree.py::Calendar.settled", docs/review/culture/polities/round20.md, docs/review/culture/polities/round20/rebuild_live_foot.py, docs/review/culture/polities/round19/footprint.py, docs/review/culture/polities/round19/live_run.py, "world 4360a3", "world 899985"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -33,3 +36,7 @@ A changes the default (switch off) calendar and every settlement's founding date
 states and writing that follow from them, a few centuries earlier than the history had the people for them; and PW-1597's check
 cannot pass, so the switch cannot be flipped (PW-1596): the two calendars stay one or two tree steps apart for a reason that is
 the read-out's, not the history's.
+
+## Updates
+- 2026-11-09: Coordinator 11-09: option A (no look-ahead in the ledger): same principle as PW-1597, a read-out must not see the future; default calendar and founding dates move later.
+- 2026-11-09: Created from inbox draft draft-ledger-reads-next-frame.md (found by lane258).

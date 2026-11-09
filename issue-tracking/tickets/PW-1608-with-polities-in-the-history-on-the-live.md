@@ -2,7 +2,7 @@
 id: PW-1608
 title: With polities in the history on, the live tech tree counts a third more town cells than the ledger at L7, so writing comes early
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -43,5 +43,6 @@ than the same history gives with the switch off, for a counting reason, not a hi
 - [ ] live and after-run town cells within ~10% at L6 and L7 on the same run; then PW-1597's five pairs within ~100 years
 
 ## Updates
+- 2026-11-09: Status todo -> done. Merged lane 258 (3a52d1bc): live town cells within ~3% of the ledger (9% at one step).
 - 2026-11-09: Lane 258 (3a52d1bc, round20.md): LivePolities.town_cells now keeps the ledger's sites in the history (chief and second people's places founded, grown, handed on and left by settlements.derive's rule) on the ledger's own inputs taken as a frame takes them (landuse.frame_inputs, compose via frame._composition); no new numbers. Live / same run's ledger town cells: L6 4360a3 seed 7 3 kyr 2,409/2,414, 1 kyr 3,735/3,784; L7 899985 seed 7 3 kyr 2,806/2,853, 1 kyr 5,846/5,796; L7 seed 10 within 9%. First half of the check met. The five pairs still fail (PW-1597): each people's first towns come 0.2-0.5 kyr later live than in the ledger, which reads density from the next stored frame (draft draft-ledger-reads-next-frame.md). Suggest closing this ticket and carrying the calendar on PW-1597 and the draft.
 - 2026-11-09: Created from inbox draft draft-live-town-cells-overcount-l7.md (found by lane254b).
