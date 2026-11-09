@@ -1,0 +1,299 @@
+diff --git a/planet/hydrology.py b/planet/hydrology.py
+index c90035f1..860c9c82 100644
+--- a/planet/hydrology.py
++++ b/planet/hydrology.py
+@@ -72,7 +72,7 @@ def erode(grid: Grid, elev: np.ndarray, c: dict, iterations: int = 12, strength:
+         land = is_land(h, ice, grid)
+         hr = h + top  # what the water runs over: the ice surface, the ground off it
+         if lake_every and it % lake_every == 0:
+-            lk = lakes(grid, hr, c["runoff"], c["aet"], c["lake_evap"], iced, land=land)
++            lk = lakes(grid, hr, c["runoff"], c["aet"], c["lake_evap"], iced, land=land, pet_mm=c.get("pet"))
+         if lk is None:
+             _, down, order = priority_flood(grid, hr, sea=~land)
+             flow = accumulate(down, order, np.where(land, c["runoff"], 0.0) / 1000.0)
+@@ -96,6 +96,11 @@ MIN_DEPTH = 20.0  # m: shallower hollows in the cell-mean terrain are drained by
+ # m per km: a wide hollow must also fall at least this steeply from its rim
+ # to its middle (depth / sqrt(area / pi)), or it is a plain that rivers cross
+ MIN_SLOPE = 0.1
++# A hollow in a dry catchment that no river leaves stays closed however
++# shallow or flat (_dry_hollows; PW-054): its catchment's rain is below
++# DRYLAND_AI x its potential evaporation (the climate's, Oudin's, over land)
++DRY_HOLLOWS = True
++DRYLAND_AI = 0.65
+ # depth of the valley a river runs in below its cells' mean height, m:
+ # CHANNEL_K x (discharge in m^3/s) ** CHANNEL_B
+ CHANNEL_K, CHANNEL_B = 0.1, 0.7
+@@ -125,7 +130,55 @@ def _bed(grid, ground, sea, min_depth, min_slope):
+     return np.where(keep, h, kernels.flood_fill(h, sea, grid.nbr_off, grid.nbr_idx, 0.01))
+ 
+ 
+-def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
++def _dry_hollows(grid, ground, bed, land, src, loss, rain, pet):
++    """Cells of the hollows (below their spill points) in dry catchments
++    that no river leaves. _bed's min_depth and min_slope stand for channels
++    too small to see that a through-flowing river cuts through a shallow
++    rim, or a plain it crosses. A hollow whose own inflow evaporates before
++    its lake reaches the rim has no outflowing river to cut that channel,
++    so it stays a playa or a terminal lake however shallow (the
++    Altiplano-Puna, Tarim, Eyre). Only where its whole catchment is
++    dryland, rain under DRYLAND_AI x the potential evaporation (the aridity
++    index's bound): a flat hollow in wet country is closed by the lake
++    balance only because a lake spread over all of it would evaporate its
++    inflow, but there its rivers build the floor up and spill (a swamp or a
++    lake a river crosses, as _bed has it). The candidates are the closed
++    hollows of the unfiltered ground; their lakes and catchments are then
++    taken on bed (_bed's) with them put back, where the shallow hollows
++    upstream are filled and pass their rivers on (a hollow gets those too)."""
++    sea, rcv, asc = kernels.lake_order(ground, ~land, grid.nbr_off, grid.nbr_idx)
++    open0 = kernels.lakes_on(ground, grid.nbr_off, grid.nbr_idx, src, loss, sea, rcv, asc)[1]
++    filled = kernels.priority_flood(ground, ~land, grid.nbr_off, grid.nbr_idx, 0.0)[0]
++    cand = land & ~open0 & (filled > ground)
++    bed1 = np.where(cand, ground, bed)
++    sea, rcv, asc = kernels.lake_order(bed1, ~land, grid.nbr_off, grid.nbr_idx)
++    wet, open1, _, _, _, basin = kernels.lakes_on(bed1, grid.nbr_off, grid.nbr_idx, src, loss, sea, rcv, asc)
++    _, down, order = kernels.priority_flood(bed1, ~land, grid.nbr_off, grid.nbr_idx, 0.0)
++    shut = cand & ~open1
++    # each closed hollow's catchment: the hollow and the land that drains into it
++    catch = _upstream_label(down, order, np.where(shut, basin, -1))
++    m = catch >= 0
++    dry = (np.bincount(catch[m], rain[m], minlength=grid.n)
++           < DRYLAND_AI * np.bincount(catch[m], pet[m], minlength=grid.n))
++    # ...and its lake stops short of the rim: some of its floor stays dry (a hollow its lake fills, a cell-mean
++    # dip on a big river's course most often, is as likely to spill as not within a cell)
++    dry &= np.bincount(basin[shut & ~wet], minlength=grid.n) > 0
++    return shut & dry[basin]
++
++
++@njit(cache=True)
++def _upstream_label(down, order, lab):
++    """lab carried up the rivers: an unlabelled cell gets its downstream
++    cell's label (order: outlets first)."""
++    out = lab.copy()
++    for t in range(order.shape[0]):
++        i = order[t]
++        if out[i] < 0 and down[i] >= 0:
++            out[i] = out[down[i]]
++    return out
++
++
++def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4, dry=None):
+     """kernels.lakes on _bed(ground), made to agree with the rivers.
+     kernels.lakes gives each basin the water that runs downhill into it,
+     but a lake that spills where its basin meets the sea's drainage can
+@@ -133,22 +186,39 @@ def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
+     (route() follows the river there): that basin then gets the river too
+     and fills further, and may spill in turn (the Nile into the Nubian
+     hollow, PW-122). Returns ((bed, wet, open, out_z, pit, catch, basin),
+-    (flow, down, order, sink)) of the last try."""
+-    extra = np.zeros(grid.n)
+-    bed = _bed(grid, ground, ~land, min_depth, min_slope)
+-    order0 = kernels.lake_order(bed, ~land, grid.nbr_off, grid.nbr_idx)  # (the same bed each try)
+-    for _ in range(tries):
+-        wet, open_, out_z, pit, catch, basin = kernels.lakes_on(bed, grid.nbr_off, grid.nbr_idx, src + extra, loss,
+-                                                                *order0)
+-        r = (bed, wet, open_, out_z, pit, catch, basin)
+-        sink = land & ~open_ & (wet | pit)
+-        lk0 = dict(wet=wet, level=np.where(wet & open_, out_z, ground), bed=bed, sink=sink, src=src - loss * wet,
+-                   sea=~land)
+-        flow, down, order, _ = route(grid, ground, lk0)
+-        more = kernels.closed_excess(sink, basin, wet, down, flow, src, loss, bed)
+-        if not more.any():
++    (flow, down, order, sink)) of the last try. dry (optional): (rain,
++    potential evaporation) per cell, mm/yr: the dry catchments' closed
++    hollows keep their own ground whatever their depth (_dry_hollows)."""
++    bed0 = _bed(grid, ground, ~land, min_depth, min_slope)
++    keep = (_dry_hollows(grid, ground, bed0, land, src, loss, *dry) if DRY_HOLLOWS and dry is not None
++            and min_depth > 0 else np.zeros(grid.n, bool))
++    for rnd in range(3):
++        extra = np.zeros(grid.n)
++        bed = np.where(keep, ground, bed0)
++        order0 = kernels.lake_order(bed, ~land, grid.nbr_off, grid.nbr_idx)  # (the same bed each try)
++        for _ in range(tries):
++            wet, open_, out_z, pit, catch, basin = kernels.lakes_on(bed, grid.nbr_off, grid.nbr_idx, src + extra,
++                                                                    loss, *order0)
++            r = (bed, wet, open_, out_z, pit, catch, basin)
++            sink = land & ~open_ & (wet | pit)
++            lk0 = dict(wet=wet, level=np.where(wet & open_, out_z, ground), bed=bed, sink=sink,
++                       src=src - loss * wet, sea=~land)
++            flow, down, order, _ = route(grid, ground, lk0)
++            more = kernels.closed_excess(sink, basin, wet, down, flow, src, loss, bed)
++            if not more.any():
++                break
++            extra += more
++        if not keep.any() or rnd == 2:
++            break
++        # a kept hollow whose catchment the rivers made wet after all (a spilling lake's river sent on into it:
++        # the Nile into its desert hollows, PW-122) is no dry hollow: _bed's again
++        lab, k = grid.components(keep)
++        up = _upstream_label(down, order, lab)
++        m = up >= 0
++        ok = (np.bincount(up[m], dry[0][m], minlength=k) < DRYLAND_AI * np.bincount(up[m], dry[1][m], minlength=k))
++        if ok.all():
+             break
+-        extra += more
++        keep &= ok[np.maximum(lab, 0)]
+     return r, (flow, down, order, sink)
+ 
+ 
+@@ -156,12 +226,14 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
+           lake_evap_mm: np.ndarray, no_lake: np.ndarray | None = None, min_depth: float = MIN_DEPTH,
+           min_slope: float = MIN_SLOPE, channel: float | None = None,
+           outlet: np.ndarray | None = None, valley: np.ndarray | None = None,
+-          land: np.ndarray | None = None) -> dict:
++          land: np.ndarray | None = None, pet_mm: np.ndarray | None = None) -> dict:
+     """Where water stands. elev m; land: what isn't sea (default
+     geo.is_land of elev: ground below 0 cut off from the sea is land, a
+     hollow these lakes fill or leave dry); runoff, actual land
+     evaporation and open-water evaporation in mm/yr; no_lake: cells that
+-    can't hold a lake (ice sheets). A cell's elevation is its mean over
++    can't hold a lake (ice sheets); pet_mm (optional): the climate's
++    potential evaporation over land, mm/yr: with it a closed hollow in a dry
++    catchment is kept however shallow or flat (_dry_hollows). A cell's elevation is its mean over
+     ~100 km, so a hollow less than min_depth below its spill point is taken
+     to be drained by a river channel too small to resolve (water flows on
+     through it, no lake). That holds inside basins too: a dip in a basin's
+@@ -213,8 +285,9 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
+     loss = np.where(land, np.maximum(lake_evap_mm - aet_mm, 0.0), 0.0) / 1000.0
+     carved = ground
+     for k in range(CARVE_TRIES + 1 if channel > 0 else 1):
+-        (elev, wet, open_, out_z, pit, catch, _), (flow, down, order, sink) = _settle(grid, carved, land, src, loss,
+-                                                                                  min_depth, min_slope)
++        (elev, wet, open_, out_z, pit, catch, _), (flow, down, order, sink) = _settle(
++            grid, carved, land, src, loss, min_depth, min_slope,
++            dry=None if pet_mm is None else (np.where(land, runoff_mm + aet_mm, 0.0), np.where(land, pet_mm, 0.0)))
+         if k == CARVE_TRIES or channel <= 0:
+             break
+         # the same with the rivers' valleys cut in (only where they reach the
+@@ -402,7 +475,7 @@ def rivers_and_lakes(grid: Grid, elev: np.ndarray, c: dict, ice: np.ndarray | No
+         sel = (basin[a] >= 0) & (basin[a] != basin[b])
+         np.minimum.at(rim, lab[a][sel], np.maximum(surf[a], surf[b])[sel])
+     lk = lakes(grid, surf, c["runoff"], c["aet"], c["lake_evap"], iced, channel=channel, outlet=outlet,
+-               valley=valley, land=land)
++               valley=valley, land=land, pet_mm=c.get("pet"))
+     if closed is not None and k:
+         # a lake fills its basin no higher than the rim: what more its
+         # rivers bring (a wetter climate than the data's) spills over the
+diff --git a/planet/surface.py b/planet/surface.py
+index f715b0f0..fc21509c 100644
+--- a/planet/surface.py
++++ b/planet/surface.py
+@@ -362,7 +362,7 @@ def surface_rock(rock, cover, top, top_km):
+ 
+ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_evap, dt, hillslope, tau, h0,
+           incision, scale, iso, k_mult=1.0, alluvial=3000.0, fan_km=1000.0, iso_dep=None, valley=None,
+-          base_rise=0.0, rise=False, slope_k=0.0):
++          base_rise=0.0, rise=False, slope_k=0.0, pet=None):
+     """One step of erosion + sediment transport on the world view. Eroded
+     cover takes its ingredients (mix: km of each of MIX_ROCKS per cell) with
+     it pro rata; what's deposited is plain clastic sediment (the caller
+@@ -373,6 +373,7 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
+     gentle river course over which ~63% of the load settles on land; fan_km:
+     km of deep sea floor over which ~63% of what passes the shelf settles.
+     valley: m the cells' valleys are already cut (hydrology.lakes').
++    pet: mm/yr, potential evaporation over land (hydrology.lakes' pet_mm).
+     base_rise: m the continents' base level stands above the sea (the run's
+     ice: how far it has lowered the sea).
+     slope_k: km2/Myr, the sea floor's sediment creep at the shore (_creep;
+@@ -382,7 +383,7 @@ def erode(grid, elev, thick, cover, mix, rock, cont, precip, runoff, aet, lake_e
+     (what it gained is in deposited_km); lakes is hydrology.lakes' dict (on the terrain before this
+     step's erosion) plus 'depth', m of water (level - elev; 0 off lakes)."""
+     land = is_land(elev, grid=grid)  # (ground below the sea cut off from it is land: a hollow to fill, PW-1229)
+-    lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap, valley=valley, land=land)
++    lk = hydrology.lakes(grid, elev, runoff, aet, lake_evap, valley=valley, land=land, pet_mm=pet)
+     flow, down, order, filled = hydrology.route(grid, elev, lk)
+ 
+     c = np.maximum(cover, 1e-9)
+diff --git a/planet/tectonics/earth.py b/planet/tectonics/earth.py
+index 0250587f..cd89db56 100644
+--- a/planet/tectonics/earth.py
++++ b/planet/tectonics/earth.py
+@@ -707,7 +707,7 @@ def update_climate(sim, e):
+     sim.temp, sim.t_warm, sim.t_cold = c["temp"], c["t_warm"], c["t_cold"]
+     sim.sst = c["sst"]  # (the sea's own surface temperature: the reefs', PW-876)
+     sim.precip, sim.p_jul, sim.p_jan = c["precip"], c["p_jul"], c["p_jan"]
+-    sim.runoff, sim.aet, sim.lake_evap = c["runoff"], c["aet"], c["lake_evap"]
++    sim.runoff, sim.aet, sim.lake_evap, sim.pet = c["runoff"], c["aet"], c["lake_evap"], c["pet"]
+     sim.wind_jul, sim.wind_jan, sim.current = c["wind_jul"], c["wind_jan"], c["current"]
+     sim.wind = 0.5 * (sim.wind_jul + sim.wind_jan)
+     marine, info = marine_view(bed, c), {}
+@@ -1235,7 +1235,7 @@ def erode(sim, col):
+         g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
+         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
+         p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep, valley=x[:, VALLEY],
+-        base_rise=max(-float(sim.sea_ice), 0.0), rise=p.rise > 0, slope_k=p.slope_k)
++        base_rise=max(-float(sim.sea_ice), 0.0), rise=p.rise > 0, slope_k=p.slope_k, pet=sim.pet)
+     sim.book("erosion", t0, col.t, cont)
+     # the valleys rivers to the sea run in now (graded to the river they
+     # carry: a shrunken river silts up a valley too big for it), and where
+diff --git a/planet/tectonics/output.py b/planet/tectonics/output.py
+index 8b43fa0c..2a342b06 100644
+--- a/planet/tectonics/output.py
++++ b/planet/tectonics/output.py
+@@ -121,7 +121,7 @@ def water_now(sim) -> dict:
+         return dict(flow=np.zeros(n), downstream=np.full(n, -1, np.int64), lake_kind=np.zeros(n, np.int8),
+                     lake_depth=np.zeros(n))
+     bed = sim.bed()
+-    c = {"runoff": sim.runoff, "aet": sim.aet, "lake_evap": sim.lake_evap}
++    c = {"runoff": sim.runoff, "aet": sim.aet, "lake_evap": sim.lake_evap, "pet": sim.pet}
+     # (the grounded ice, as a world's: under it the bed may lie below the sea and is land, PW-307; dropping it
+     # there would leave an ice-free hollow inside the sheet, land since PW-1229, for a lake)
+     flow, down, lk = hydrology.rivers_and_lakes(sim.grid, bed, c, grounded(bed, sim.ice), valley=sim.valley())
+diff --git a/planet/tectonics/simulation.py b/planet/tectonics/simulation.py
+index bdea224a..afad0cf6 100644
+--- a/planet/tectonics/simulation.py
++++ b/planet/tectonics/simulation.py
+@@ -95,7 +95,7 @@ class Simulation:
+         "temp", "t_warm", "t_cold",  # C: annual mean, warmest and coldest month
+         "sst",  # C: the sea surface's annual mean (the reefs', PW-876)
+         "precip", "p_jul", "p_jan",  # mm/yr: annual, July, January
+-        "runoff", "aet", "lake_evap",  # mm/yr
++        "runoff", "aet", "lake_evap", "pet",  # mm/yr (pet: potential evaporation over land, Oudin's)
+         "koppen",  # climate.KOPPEN id
+         "wind", "current",  # (n, 3) annual-mean surface wind and ocean current
+         "wind_jul", "wind_jan",  # (n, 3) the half-years' surface winds (Apr-Sep, Oct-Mar)
+@@ -178,7 +178,7 @@ class Simulation:
+         self.temp = self.t_warm = self.t_cold = None
+         self.sst = None  # C, the climate's sea-surface temperature (earth.update_climate)
+         self.precip = self.p_jul = self.p_jan = None
+-        self.runoff = self.aet = self.lake_evap = None
++        self.runoff = self.aet = self.lake_evap = self.pet = None
+         self.koppen = self.wind = self.current = None
+         self.wind_jul = self.wind_jan = None
+         self.flow = np.zeros(n)
+diff --git a/tests/test_water.py b/tests/test_water.py
+index f0259bbd..09491f37 100644
+--- a/tests/test_water.py
++++ b/tests/test_water.py
+@@ -301,3 +301,32 @@ def test_lake_order_reused_across_tries_matches_fresh_lakes():
+             want = kernels.lakes(e, e <= 0, g.nbr_off, g.nbr_idx, src, loss)
+             for a, b in zip(got, want):
+                 assert np.array_equal(a, b)
++
++
++def test_dry_catchment_keeps_its_flat_hollow_closed():
++    """A wide hollow 40 m deep and flatter than MIN_SLOPE, on a plain falling
++    to the sea (PW-054): a plain rivers cross where its catchment is wet,
++    a closed basin however flat where the catchment is dryland (rain under
++    DRYLAND_AI x potential evaporation) and its inflow evaporates before
++    its lake reaches the rim. Without pet the rule is off."""
++    g = build_grid(5)
++    mid = np.array([0.0, np.cos(0.35), np.sin(0.35)])  # 20 N, 90 E
++    d = np.arccos(np.clip(g.centers @ mid, -1, 1)) * 6371
++    e = 500.0 + 0.01 * (g.lat + 60)
++    e[g.lat < -60] = -100.0
++    e = np.where(d < 900, 460 + 40 * d / 900, e)  # ~0.044 m/km
++    land = e > 0
++    hollow = d < 600
++    runoff = np.where(land, 20.0, 0.0)
++    lake_evap = np.full(g.n, 2000.0)
++
++    def inland(aet, pet):
++        lk = hydrology.lakes(g, e, runoff, np.full(g.n, aet), lake_evap, channel=0.0,
++                             pet_mm=None if pet is None else np.full(g.n, pet))
++        flow, down, order, _ = hydrology.route(g, e, lk)
++        return hydrology.endorheic(down, order, lk["sink"]) & land
++
++    assert not inland(250.0, None)[hollow].any()  # main: a plain
++    assert not inland(900.0, 1000.0)[hollow].any()  # wet catchment (P/PET 0.92): still a plain
++    dry = inland(250.0, 1500.0)  # dryland (P/PET 0.18)
++    assert dry[hollow].all() and not dry[g.lat < 0].any()
