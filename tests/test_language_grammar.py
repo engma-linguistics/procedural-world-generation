@@ -628,7 +628,8 @@ def test_pull_is_per_function_not_per_first_feature():
     u = G._unrealised(g, G.aims(g))
     assert u["alignment:ACC"] == {"ACC"} and u["alignment:ERG"] == {"ERG"}
     assert u["number:DU"] == {"DU"} and u["evidentiality:DIR"] == {"EVID.DIR"}
-    assert u["case:rich"] == {"ABL", "ALL", "INS", "COM"}
+    assert u["case:rich"] == {"INS", "COM"} and u["case:ALL"] == {"ALL"} and u["case:ABL"] == {"ABL"}   # (PW-1569)
+    assert u["case:local"] == set(G.LOCAL_CASE) and u["case:periph"] == {"PERL", "PRIV", "TRANSL"}
     assert "case" not in u and "number" not in u   # (the locative and the plural answer those)
     g.grams += [_gram("ACC"), _gram("DU"), _gram("INS")]
     u = G._unrealised(g, G.aims(g))
@@ -1001,3 +1002,34 @@ def test_rulings_species_leanings_deep_past_and_comparison_prior():
     draws = [G._draw_feature(rng, "comparative", G.Typology(G.draw_typology(rng)), T) for _ in range(600)]
     share = {k: draws.count(k) / len(draws) for k in G.COMPARE_PRIOR}
     assert all(abs(share[k] - p) < 0.06 for k, p in G.COMPARE_PRIOR.items())
+
+
+# --- lane 4 (PW-1569, PW-1571) ------------------------------------------------------------------------------------------
+
+def test_local_case_series_and_wals_bins():
+    """A bound inessive beside a bound allative and ablative on the same side makes the illative and elative (region
+    marker inside, direction outside); the 'case' label reads 'many' from 6 cases (WALS 49A), with the bin beside it."""
+    rng, g = _grammar(21, case="many")
+    g.grams = [_gram("INE", "sa", G.AFFIX), _gram("ALL", "ne", G.AFFIX), _gram("ABL", "ta", G.AFFIX),
+               _gram("GEN", "n", G.AFFIX)]
+    assert G.case_count(g) == 5 and G.case_bin(g) == "5" and G.realised_value("case", g) == "few"
+    assert G._local_series(g, rng, 10.0, 1.0)
+    ill, ela = g.gram("ILL"), g.gram("ELA")
+    assert word_ipa(ill.form) == "sane" and word_ipa(ela.form) == "sata" and ill.level == G.AFFIX and ill.side == "post"
+    assert G.case_count(g) == 7 and G.case_bin(g) == "6-7" and G.realised_value("case", g) == "many"
+    g.grams = [_gram("LOC", "ka", G.CLITIC)]
+    assert G.case_bin(g) == "borderline" and G.realised_value("case", g) == "few"
+
+
+def test_proclitics_bind_more_slowly(monkeypatch):
+    """PRE_FUSE: a clitic before its host takes the clitic > affix step at a fraction of the rate of one after it."""
+    hits = {"pre": 0, "post": 0}
+    monkeypatch.setattr(G, "RECRUIT", 0.0)
+    monkeypatch.setattr(G, "PRESSURE", 0.0)
+    for seed in range(40):
+        for side in ("pre", "post"):
+            rng, g = _grammar(seed, case="few")
+            g.grams = [_gram("LOC", "ka", G.CLITIC, side=side)]
+            G.step(rng, g, 20, lexicon=lex(), kyr=10.0)
+            hits[side] += any(x.function == "LOC" and x.level >= G.AFFIX for x in g.grams)
+    assert hits["pre"] < 0.5 * hits["post"], hits

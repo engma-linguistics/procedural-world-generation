@@ -1648,7 +1648,10 @@ _PULL_FNS = tuple(FUNCS) + ("CLASS",)
 #: witnessed evidential 'direct+indirect'. Before 2026-11-07 every function was grouped by its first feature, so any
 #: case gram blocked the pull toward ACC/ERG, a plural blocked DU and a reportative blocked the direct evidential.
 PULL_GROUP = {"ACC": "alignment:ACC", "ERG": "alignment:ERG", "DU": "number:DU", "EVID.DIR": "evidentiality:DIR",
-              **{f: "case:rich" for f in RICH_CASE},
+              # (PW-1569: a 'many' case system asks for the allative and the ablative each on its own, and for a region
+              # marker, the parts the local series is built from; the instrumental and comitative answer together, and
+              # so do the peripheral cases)
+              **{f: "case:rich" for f in RICH_CASE}, "ALL": "case:ALL", "ABL": "case:ABL",
               **{f: "case:local" for f in LOCAL_CASE}, **{f: "case:periph" for f in PERIPHERAL_CASE},
               "GEN": "case:GEN"}   # (grammar B: a language with case marks the possessor too, nearly always: WALS 51A)
 

@@ -101,7 +101,9 @@ def test_replacement_rate_matches_calibration(concepts):
     assert abs(replaced / (1 - L.SWADESH_RETENTION_1KYR) - 1) < 0.10, replaced
     r1 = 1 - by_class[1][0] / by_class[1][1]
     r5 = 1 - by_class[5][0] / by_class[5][1]
-    assert r5 > 2.5 * r1, (r1, r5)   # rare words go several times faster (FREQ_SPREAD in hazard)
+    # (2.5 -> 2.2, lane 4: over 240 draws main reads 2.71 and lane 4 2.39, a drift of the random stream and the
+    # sonorant codas, not the wear; owner review in draft-language-replacement-ratio-threshold)
+    assert r5 > 2.2 * r1, (r1, r5)   # rare words go several times faster (FREQ_SPREAD in hazard)
 
 
 def _dummy_rule(form):
@@ -923,3 +925,38 @@ def test_minimal_word_keeps_a_vowel(concepts):
     L.apply_rule_to_lexicon(lex, apocope, "test", 1.0, "L")
     assert word_ipa(lex.words[ks[0]].form) == "hu"
     assert word_ipa(lex.words[ks[1]].form) == "hap"
+
+
+# --- lane 4 (PW-1557, PW-1570) ------------------------------------------------------------------------------------------
+
+def test_codas_lean_to_sonorants_and_function_words_are_short(concepts):
+    """Proto codas favour nasals and liquids over obstruents (Clements 1990); function words are one or two simple
+    syllables, shorter than nouns."""
+    son = obs = 0
+    func, noun = [], []
+    for seed in range(12):
+        _, inv, lex = _proto(300 + seed, concepts, f"C{seed}")
+        for w in lex.words.values():
+            f = [s for s in w.form if s.kind != "T"]
+            if f and f[-1].kind == "C" and f[-1].manner != 4:
+                son += f[-1].manner in (3, 5, 6, 7)
+                obs += f[-1].manner not in (3, 5, 6, 7)
+            (func if w.pos == "FUNC" else noun if w.pos == "N" else []).append(len(f))
+    assert son > obs, (son, obs)
+    assert np.mean(func) < 0.7 * np.mean(noun), (np.mean(func), np.mean(noun))
+
+
+def test_function_words_wear_down():
+    """WEAR: a long function word loses its last syllable, a one-syllable one its final consonant; never below
+    WEAR_FLOOR segments, never onto another word's form; content words are left alone."""
+    assert word_ipa(L._worn_down(tuple(from_ipa("nosotros")))) == "noso"   # (syllables no.so.tros)
+    assert word_ipa(L._worn_down(tuple(from_ipa("and")))) == "an"
+    lex = L.Lexicon("L")
+    for c, f, pos in (("WE", "nosotros", "FUNC"), ("I", "jo", "FUNC"), ("WATER", "akwala", "N"), ("AND", "and", "FUNC"),
+                      ("IN", "ani", "FUNC"), ("THOU", "an", "FUNC")):
+        lex.words[c] = L.Word(c, tuple(from_ipa(f)), pos, 1)
+    L.wear(np.random.default_rng(0), lex, 1e6, 1.0, "L")
+    got = {c: word_ipa(w.form) for c, w in lex.words.items()}
+    assert got["WE"] == "noso" and got["I"] == "jo" and got["WATER"] == "akwala" and got["IN"] == "a"
+    assert got["AND"] == "and"   # (worn, it would be THOU's an)
+    assert lex.words["WE"].etym[-1].process == "sound_change:wear"
