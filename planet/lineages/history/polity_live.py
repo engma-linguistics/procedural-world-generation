@@ -213,6 +213,31 @@ class LivePolities(StandIns):
         city = np.where(H2 >= mx2, CONST["SHARE"][3] * H2, 0.0)
         return np.maximum(town, city), city
 
+    def _second_places(self, heads, lead):
+        """(each cell's second people's own place, as the settlement ledger sizes it: MINORITY_SHARE of its settled heads, saturating
+        toward MINORITY_MAX, where it is SECOND_MIN of the cell's heads or more and not the lead people's own kin; that people, -1 none).
+        No site factor, harbour or holds, as _places."""
+        from ..settlements import CONST
+        n = self.g.n
+        L = self.h.lines
+        tot = np.zeros(n)
+        for hk in heads.values():
+            tot += hk
+        best, second = np.zeros(n), np.full(n, -1, np.int64)
+        for k, hk in heads.items():
+            kin = np.array([j >= 0 and (L[j].id in self.anc.get(L[k].id, {L[k].id}) or L[k].id in self.anc.get(L[j].id, ())) for j in range(-1, len(L))])
+            m = (hk > best) & ~kin[lead + 1]
+            best[m], second[m] = hk[m], k
+        ok = (second >= 0) & (best >= CONST["SECOND_MIN"] * np.maximum(tot, 1e-12))
+        farm = np.array([0.0 if self.h._era[k] == "forager" else float(self.h._farm_share[k]) for k in range(len(L))] + [0.0])
+        own = np.where(ok, CONST["MINORITY_SHARE"] * best * farm[second], 0.0)
+        own = own * CONST["MINORITY_MAX"] / (own + CONST["MINORITY_MAX"])
+        return own, np.where(ok, second, -1)
+
+    def _stage(self, people: str, ago: float) -> int:
+        """A town-knowing people's settlement stage (settlements' TOWN_MIN index): 4 with cities and roads, 3 with cities, else 2."""
+        return 4 if self.knows(people, "roads", ago) and self.knows(people, "cities", ago) else 3 if self.knows(people, "cities", ago) else 2
+
     def town_cells(self, ago: float) -> dict:
         """Each people's town cells now (PW-1472: the town footprint D52's arms B and E read, techtree.Calendar.towns): the cells whose
         central place (_places) is of town size for the stage its lead people knows (settlements' TOWN_MIN by stage, as the ledger
@@ -228,8 +253,7 @@ class LivePolities(StandIns):
             lid = L[k].id
             if not self.knows(lid, "towns", ago):
                 continue
-            stage = 4 if self.knows(lid, "roads", ago) and self.knows(lid, "cities", ago) else 3 if self.knows(lid, "cities", ago) else 2
-            out[lid] = int(((lead == k) & land & (size >= tm[stage])).sum())
+            out[lid] = int(((lead == k) & land & (size >= tm[self._stage(lid, ago)])).sum())
         return out
 
     def _step(self, step):
@@ -269,9 +293,12 @@ class LivePolities(StandIns):
         # 1. town seats: the history's central places (settlements' SHARE on the hinterland's sedentary heads, the best of its ring)
         from ..settlements import CONST
         size, city = self._places(sed)
-        town_min, city_min = float(CONST["TOWN_MIN"][-1]), float(CONST["CITY_MIN"])
+        own, second = self._second_places(heads, lead)  # (PW-1583: a second people's own place, as the ledger's minority places)
+        m = own > size  # (one seat per cell, as derive: the bigger place; its people holds the seat, and a second people's is a town at most)
+        size, hold, city = np.where(m, own, size), np.where(m, second, lead), np.where(m, 0.0, city)
+        city_min = float(CONST["CITY_MIN"])
         inc_cells = np.array([int(k[1:]) for k in self.prev_cap if k.startswith("c")], np.int64)
-        thr = np.full(g.n, town_min)
+        thr = np.full(g.n, float(min(CONST["TOWN_MIN"])))
         thr[inc_cells] *= PO.HOLD
         cand = np.flatnonzero(peopled & land & (size >= thr))
         wcell = np.zeros(g.n, bool)  # (cells where a people that knows proto-writing or writing lives, and their neighbours: D49's lenience)
@@ -281,12 +308,13 @@ class LivePolities(StandIns):
         wcell = wcell | (nbr_reduce(g, np.maximum, wcell[self.idx].astype(np.int8)) > 0)
         seats = []
         for c in cand.tolist():
-            k = int(lead[c])
+            k = int(hold[c])
             ppl = L[k].id
             key = f"c{c}"
             if not wcell[c] or not self.knows(ppl, "chiefdoms", ago):
                 continue
-            if size[c] < town_min * (PO.HOLD if key in self.prev_cap else 1.0) or not self.knows(ppl, "towns", ago):
+            tmin = float(CONST["TOWN_MIN"][self._stage(ppl, ago)])  # (PW-1583: a town by its people's stage, as the ledger and town_cells)
+            if size[c] < tmin * (PO.HOLD if key in self.prev_cap else 1.0) or not self.knows(ppl, "towns", ago):
                 continue
             tier = "chiefdom"
             if (self.knows(ppl, "kingship", ago) or self.knows(ppl, "law", ago)) and self.knows(ppl, PO.STATE_WRITING, ago) \
@@ -298,6 +326,10 @@ class LivePolities(StandIns):
             self.founded.setdefault(key, ago)
             seats.append({"key": key, "cell": c, "people": ppl, "line": k, "uid": None, "pop": float(size[c]), "tier": tier,
                           "cls": 0 if strong else (2 if tier == "state" else 3), "rank": float(size[c]) * (PO.INCUMBENT if key in self.prev_cap else 1.0)})
+        # 1b. confederations (polities' step 1b, Turchin 2009's mirror empires, PW-1583): the read-out's rule on the history's own places
+        if PO.CONFED and self.owner is not None:
+            place = np.where(peopled & land, np.maximum(CONST["SHARE"][1] * sed, size), 0.0)
+            seats = self._confederations(seats, place, hold, ago, k_, peopled, edz, sea, ice, city_min)
         # 2. dragon realms: one per dragon people's range (each connected piece), at its core
         for k in self.dragons:
             l = L[k]
@@ -326,7 +358,8 @@ class LivePolities(StandIns):
             r = by_key.get(self.lord.get(s["key"]))
             return (r["cls"], -r["rank"], r["key"], 1, -s["rank"]) if r else (s["cls"], -s["rank"], s["key"], 0, 0.0)
         seats.sort(key=order)
-        wide = ({r for pk, r in self.lord.items() if pk in self.prov_state} if "conquest" in PO.WIDE_BY else set())
+        wide = ({r for pk, r in self.lord.items() if pk in self.prov_state} if "conquest" in PO.WIDE_BY else set()) | \
+            ({s["key"] for s in seats if s.get("confed")} if "confederation" in PO.WIDE_BY else set())  # (who rules past STATE_MAX_KM, PW-1449)
         # 3. claims (polities' kernel)
         owner = np.full(g.n, -1, np.int64)
         from_rec = np.full(g.n, -1, np.int64)  # (a province's cells: the record id of the polity it was when taken; record only, PW-1575)
@@ -450,6 +483,8 @@ class LivePolities(StandIns):
                 self.inv_log[s["war_band"]]["war_band"].append([ago, o])
             if not rec["tiers"] or rec["tiers"][-1][1] != tier:
                 rec["tiers"].append([round(ago, 3), tier])
+            if s.get("confed") and tier in ("state", "empire"):  # (1b, as derive: [kyr ago, its people's heads in its places within reach])
+                rec.setdefault("confed", []).append([round(ago, 3), s["heads"]])
             a = len(cells) * self.cell_km2 / 1e6
             if a > rec["peak_mkm2"]:
                 rec["peak_mkm2"], rec["peak_kyr"] = round(a, 4), round(ago, 3)
@@ -471,6 +506,61 @@ class LivePolities(StandIns):
         self.tier_of = tiers
         self.prev_cap = cur
         self._Fc = None  # (the frontier reads the new owners)
+
+    def _confederations(self, seats, place, lead, ago, k_, peopled, edz, sea, ice, city_min) -> list:
+        """Step 1b (polities._confederations' rule, PW-1583): a people with a state's institutions (chiefdoms, kingship or law, and its
+        own real writing, D49) but no city big enough seats a state at one of its places when its own people in its places within a
+        state's reach of it number a city's worth (city_min x CONFED_HEADS_X) and a foreign state, empire or dragon realm
+        (CONFED_AGAINST) held land within that reach last step; its own city-state within reach rules there instead. The places are
+        the history's: each cell's central place (a village: SHARE[1] of its own sedentary heads; a town or city where _places
+        seats one), held by the cell's lead people. Returns the seats with each confederation in place of any seat on its cell."""
+        g, L = self.g, self.h.lines
+        by_pid = np.full(len(self.ruling) + 1, -1, np.int64)  # (cells a state, empire or dragon realm held last step: its seat's people, as a line index)
+        for p, s in enumerate(self.ruling):
+            if s is not None and p < len(self.tier_of) and self.tier_of[p] in PO.CONFED_AGAINST:
+                by_pid[p] = self.lidx.get(s["people"], -2)
+        foreign = by_pid[self.owner]  # (owner -1: the last entry, -1)
+        if not (foreign >= 0).any():
+            return seats
+        state_at = {s["cell"]: s for s in seats if s["tier"] == "state"}
+        scratch = np.full(g.n, -1, np.int64)
+        out = list(seats)
+        has = (lead >= 0) & (place > 0)
+        for k in sorted(set(lead[has].tolist()), key=lambda k: L[k].id):
+            ppl = L[k].id
+            if not (self.knows(ppl, "chiefdoms", ago) and (self.knows(ppl, "kingship", ago) or self.knows(ppl, "law", ago))
+                    and self.knows(ppl, PO.STATE_WRITING, ago)):
+                continue
+            mine = sorted(np.flatnonzero(has & (lead == k)).tolist(), key=lambda c: (f"c{c}" not in self.prev_cap, -place[c], c))
+            covered: set = set()
+            tries = 0
+            for c in mine:
+                key = f"c{c}"
+                if tries >= PO.CONFED_TRY:
+                    break
+                if c in covered or c in state_at or self.cool.get(key, -1) >= k_:
+                    continue
+                tries += 1
+                b, lx, sx = PO._reach(self, {"people": ppl, "tier": "state"}, ago, "confederation" in PO.WIDE_BY)
+                got = PO._claim(c, b, lx, sx, PO.CLIMB_M, self.off, self.idx, self.ekm, edz, sea, ice, peopled, scratch, 0, self.dist,
+                                self.touched, self.claimed)
+                cells = self.claimed[:got].copy()
+                scratch[cells] = -1
+                covered.update(cells.tolist())
+                if any(int(x) in state_at and state_at[int(x)]["people"] == ppl for x in cells):
+                    continue
+                heads = float(place[cells][lead[cells] == k].sum())
+                if heads < city_min * PO.CONFED_HEADS_X * (PO.HOLD if self.prev_cap.get(key) in ("state", "empire") else 1.0):
+                    continue
+                fr = foreign[cells]
+                if not np.any((fr >= 0) & (fr != k)):
+                    continue
+                self.founded.setdefault(key, ago)
+                out = [s for s in out if s["cell"] != c]
+                out.append({"key": key, "cell": c, "people": ppl, "line": k, "uid": None, "pop": float(place[c]), "tier": "state",
+                            "cls": 0 if self.knows(ppl, PO.STRONG_TECH, ago) else 2,
+                            "rank": float(place[c]) * (PO.INCUMBENT if key in self.prev_cap else 1.0), "confed": True, "heads": round(heads)})
+        return out
 
     def _close(self, key, ago, how):
         o = self.open_.pop(key, None)
@@ -534,7 +624,7 @@ class LivePolities(StandIns):
                     h.p[k][cells] *= (1.0 - cut)
                     h.p[k][cells[h.p[k][cells] < EST]] = 0.0
                     hk = heads[k] = hk.copy()
-                    hk[cells] *= 1.0 - cut
+                    hk[cells] = np.where(h.p[k][cells] > 0, hk[cells] * (1.0 - cut), 0.0)  # (no heads left where its presence fell under EST: a later fate this step must not move refugees onto a cell it has left, PW-1583)
                     if fate == "expelled":  # (the heads that left the taken cells, those whose presence fell under EST too)
                         gone = float((on * (1.0 - np.divide(h.p[k][cells], pb, out=np.ones_like(pb), where=pb > 0))).sum())
                         moved = self._refuge(k, hk, cells, ruled, gone)
@@ -567,7 +657,7 @@ class LivePolities(StandIns):
         from the taken cells, spread there by its existing density (its presence there scaled up alike, never past full presence, 1).
         Updates h.p[k] and hk in place; returns the heads moved (0 if it has no such land: they are lost)."""
         h = self.h
-        cand = (hk > 0) & ~ruled
+        cand = (hk > 0) & (h.p[k] > 0) & ~ruled
         cand[cells] = False
         if not cand.any():
             return 0.0

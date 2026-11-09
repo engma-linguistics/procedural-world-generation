@@ -78,7 +78,7 @@ from numba import njit
 
 FORMAT = "procgen-polities/1"
 VERSION = 7  # (bump when the rules change: the server's cached docs are remade)
-_LIVE_READ = 1  # (not a rule, so not in constants(); bump when _from_live's read-out of polities_live.json changes: only those runs' cached docs are remade, PW-1575)
+_LIVE_READ = 2  # (not a rule, so not in constants(); bump when _from_live's read-out of polities_live.json changes: only those runs' cached docs are remade, PW-1575)
 
 # ---- reach (foot-km)
 CHIEF_KM = 27.5  # sourced: a chiefdom reaches ~half a day's travel, "some 25-30 km by foot" (Spencer 2010, via proposal.md 2.1.2)
@@ -842,6 +842,8 @@ def _from_live(R: _Run, L: dict, t0: float, invasions=None) -> dict:
                        for t in r.get("took") or [] if int(t[5]) >= 0]  # ([kyr ago, loser, how, [[people, fate, heads lost, heads moved]]])
         if r.get("war_band"):
             rec["war_band"] = list(r["war_band"])
+        if r.get("confed"):  # (1b in the history, PW-1583: [kyr ago, its people's heads within reach] at each confederate step)
+            rec["confed"] = [[float(a), int(n)] for a, n in r["confed"]]
         polities.append(rec)
     steps, maps = [], []
     prev: set = set()
