@@ -2,7 +2,7 @@
 id: PW-1586
 title: "Languages: big case systems still half as common as WALS 49A after the case catalogue grew (6+ cases 16% vs 32%)"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -33,5 +33,6 @@ peoples and inherited small systems. Levers, in order of how much they move the 
 `LOCAL_FORM` 0.01 -> 0.02; (3) thin the 2-4 band (GEN/LOC/DAT bind early in 'few' systems). One small screen pass each.
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 8 (8fd43582): a 'case: many' proto is born with its case endings bound (count from WALS 49A's 6+ bins, Blake's hierarchy order; grammar._case_at_birth). Full pass a24559: 6+ 21.3 -> 29.0% (WALS 32), 8+ 6.7 -> 13.7% (18), 2-5 41.9 -> 33.0% (20). Remaining middle band and no-case share filed as a lane 8 draft.
 - 2026-11-09: Lane 7 (b50a316c): oblique case now drawn conditioned on core case (Grambank pairing). 6+ cases 19.2→21.3% in the full pass (WALS 32%). Remaining cause: protos start with no case and grow it over hundreds of generations. Next: seed each proto's case endings to its aim at birth, as _deep_past does.
 - 2026-11-09: Created from inbox draft draft-language-big-case-systems-still-short.md (found by language lane 4 (PW-1569)).

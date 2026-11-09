@@ -1670,3 +1670,73 @@ load 20-30).
 - **Names.** X4 fires 65 times now that the relay has its own round (a24559 has `borrowed_from` only on exotic, edge
   and feared rows); X9 58. P1 renames 28 shifted demes; the rejected names (P5) stay listed, marked. A few landmass
   names are short or start with a glottal ('De): the first settlers' LAND word as it is.
+
+## Lane 8 (2026-11-09, lang-lane8): case at birth (PW-1586), joint alignment and number draws (PW-1600), fable loans (PW-1595)
+
+Measured with a lane script over all living lects (`scratchpad/lane8/measure.py`, not kept; consonants are
+`len(inventory.consonants)`, which reads the stored run's p95 as 37 where lane 7's script read 40). Harness:
+`caseharness.py` (400 protos on a real human lexicon, gram cycle only, L2 0.3, no sound change; not kept). One full
+pass on this lane's code after merging main a3e7c624 (8 workers, ~33 min under load 20-30).
+
+### What changed
+
+| ticket | mechanism | where |
+| --- | --- | --- |
+| PW-1586 | a proto whose aim is 'case: many' is born with its case endings bound: case count from WALS 49A's 6+ bins (6-7: 37, 8-9: 23, 10+ (10-12): 24 of 261), markers taken in Blake's (2001) case-hierarchy order (ACC/ERG as the alignment aim wants, GEN, DAT/LOC, ABL/ALL/INS/COM, INE/SUPE, peripheral; shuffled within a tier), each from its attested source word (word paths only, no reanalysis), clipped to its first syllable as binding does; 'few' and 'none' protos start as before | `grammar._case_at_birth`, `CASE_BIRTH_BINS`, `CASE_BIRTH_ORDER` |
+| PW-1600 | GB409 (ergative) drawn given the drawn GB408; GB318 (free plural word) given GB044 = 0; GB043 (dual) given the GB044 draw. The sibling's lift always counts (`_p1(given=...)`) and takes one of the k places | `grammar._draw_feature`, `_p1` |
+| PW-1600 | sibling pairs GB070/072, GB408/409, GB044/043, GB044/318 kept in the correlation table whatever their Cramer's V (GB408/409 V 0.047, GB044/043 0.216, GB044/318 0.317 were below 0.40) | `build_reference_tables.GB_SIBLINGS`, `data/grambank_correlations.tsv` |
+| PW-1600 | GB318 marginal 0.181 added to the built-in marginals (it was read as 0.5 by `_p1`; the old number draw used it directly) | `grammar._FB_GB` |
+| PW-1595 | `fable_descent` passes a daughter word borrowed after the split (a `borrow` step younger than the split in its etym chain) | `texts.fable_descent(nodes=)`, `demo_page.fable_section` |
+
+Grambank v1.0.3 raw joints (languages coded for both): GB408/GB409 n=1719: neither 44%, acc only 35%, erg only 13%, both
+8%: nearly independent (P(erg | acc) 0.18, P(erg | no acc) 0.22), so the conditional draw moves 'split' little (aims 11.4
+-> 10.2%). GB044/GB043 n=2266: P(dual | bound plural) 0.13, P(dual | none) 0.013; the old draw already approximated this.
+GB044/GB318: P(free plural | no bound plural) 0.32 against the marginal 0.18: the old draw gave 'number: none' aims 36%
+against Grambank's 30%; now 30%.
+
+### Harness (400 protos, L2 0.3, 6+ / 2-5 / none+borderline)
+
+| generations | main | lane 8 |
+| --- | --- | --- |
+| 0 | 0 / 0 / 100 | 40 / 0 / 60 |
+| 100 | 0 / 34 / 66 | 36 / 8 / 55 |
+| 200 | 13 / 36 / 51 | 37 / 13 / 50 |
+| 400 | 33 / 26 / 41 | 38 / 18 / 44 |
+| 700 | 36 / 27 / 37 | 38 / 25 / 38 |
+
+The share of big systems no longer depends on a lect's age; at 700 generations the two converge, as they should.
+
+### Full pass (a24559, scratch)
+
+| measure | stored (main, lane 7) | lane 8 | anchor |
+| --- | --- | --- | --- |
+| living lects | 616 | 621 | |
+| checks failing | horizon | horizon | |
+| sisters (strict) | 0.535 | 0.547 | > 0.5 |
+| WOLD rho; pronoun loans | 0.396; 0.075 | 0.386; 0.071 | rho >= 0.3; cap 0.08 |
+| consonants p5/q1/med/q3/p95 (this script) | 13/18/21/25/37 | 13/18/21/26/36 | PHOIBLE 12/17/21/27/42 |
+| WALS 49A none/bord/2/3/4/5/6-7/8-9/10+ | 25/12/13/11/10/8/15/5/2 | 24/14/9/6/9/9/15/8/6 | WALS 38/9/9/3/3/5/14/9/9 |
+| 6+ / 8+ | 21.3 / 6.7% | 29.0 / 13.7% | 32 / 18% |
+| 2-5; none + borderline | 41.9; 36.9% | 33.0; 38.0% | 20; 47% |
+| 6+ by age: < 200 / 200-600 / > 600 generations | 18 / 20 / 27% | 30 / 28 / 29% | |
+| case label few / many / none | 330 / 131 / 155 | 289 / 180 / 152 | |
+| alignment (realised) erg / neutral / acc / split | 7.8 / 50.3 / 31.3 / 10.6% | 5.6 / 47.0 / 37.8 / 9.5% | |
+| number (realised) none / sg-du-pl / sg-pl | 31.3 / 11.4 / 57.3% | 25.1 / 11.6 / 63.3% | |
+| demo fable warning (stored run; this pass) | 1 (d754 SIT) | none; none | |
+
+### Readings
+
+- **Case (PW-1586).** 6+ rose 21 -> 29% (WALS 32%) and 8+ 7 -> 14% (18%); the 2-5 middle fell 42 -> 33% (20%). What
+  is left is the middle and the no-case side (38% against 47%): lects with a 'few' aim, lects whose 'none' aim drifted
+  to 'few', and big systems worn down by adult learners. Filed as a draft (case middle band); PW-1586's own gap is
+  within 3 points.
+- **Alignment.** Realised split fell slightly and nom-acc rose (37.8%); more big case systems carry an accusative.
+  Realised ergative 5.6% plus split 9.5%, against WALS 98A (full NPs, 190 languages) ergative 17%, nom-acc 31%,
+  neutral 52%: ergative on the low side because an ergative marker forms slowly and the aims draw it 11%. Not chased
+  here (Grambank's joint says the two are nearly independent, so the draw was not the cause).
+- **Number.** 'none' 31 -> 25% realised. WALS 33A's 'no plural' is 9% of 1066 languages, Grambank's no-bound-and-no-free
+  plural 30%: the aims follow Grambank now; the realised share sits between.
+- **Fable (PW-1595).** d754's SIT was a loan: d754 coined a new SIT at 6 kyr (the word the split copy holds), then at
+  3 kyr borrowed back its cousin d216.1's reflex of d584's old SIT (`borrow:d216.1`, contact). The deep root belongs to
+  the line, but it came by contact, not descent; the check read the root's coining lect, not the path. The check now
+  passes a word with a `borrow` step after the split. The copy was right.
