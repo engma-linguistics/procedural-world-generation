@@ -208,7 +208,7 @@ def test_rhotics_and_book_affricates():
 
 
 def _ipa_block(s: str) -> list[str]:
-    return [ch for ch in s if "ɐ" <= ch <= "ʯ" or "ᴀ" <= ch <= "ᶿ"]
+    return [ch for ch in s if ("ɐ" <= ch <= "ʯ" or "ᴀ" <= ch <= "ᶿ") and ch != "ʘ"]  # (ʘ: the click letter, like ǀ ǃ ǁ ǂ)
 
 
 def _vowel_space():
