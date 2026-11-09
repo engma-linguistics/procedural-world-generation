@@ -1754,6 +1754,14 @@ def _ncv(l):
     return len(inv.get("consonants", [])), len(inv.get("vowels", []))
 
 
+def _tone2(l) -> int:
+    """How many second-voice tone categories a lect contrasts (parallel motion counted; 0 without a second voice)."""
+    from planet.language.percepts import from_ipa
+    vs = [from_ipa(v) for v in (l.get("inventory") or {}).get("vowels", [])]
+    cats = {v[0].tone2 for v in vs if v and v[0].source2}
+    return len(cats) if len(cats) >= 2 else 0
+
+
 CRITERIA = [
     # key, heading, eligibility, score (higher wins), why-text; picked in this order
     ("clicks", "the largest click (or ejective) inventory",
@@ -1762,8 +1770,9 @@ CRITERIA = [
      lambda l: f"{_ncv(l)[0]} consonants, {_clicks(l)} of them clicks and {_ejectives(l)} ejectives; {_ncv(l)[1]} vowels"),
     ("tonal_bird", "a tonal kenku or aarakocra language",
      lambda l: l["people"] in ("kenku", "aarakocra") and len((l.get("inventory") or {}).get("tones", [])) >= 3,
-     lambda l: (len(l["inventory"]["tones"]), _nonhuman(l), sum(_ncv(l))),
-     lambda l: f"{len(l['inventory']['tones'])} tones, {_nonhuman(l)} sounds outside the human voice, "
+     lambda l: (_tone2(l), len(l["inventory"]["tones"]), _nonhuman(l), sum(_ncv(l))),
+     lambda l: f"{len(l['inventory']['tones'])} tones" + (f" on the first voice and {_tone2(l)} on the second (its own "
+               f"pitch line)" if _tone2(l) >= 2 else "") + f", {_nonhuman(l)} sounds outside the human voice, "
                f"{_ncv(l)[0]} consonants and {_ncv(l)[1]} vowels"),
     ("dragon", "a dragon language with the most non-human sounds",
      lambda l: l["people"].endswith("dragon") and _nonhuman(l) > 0,

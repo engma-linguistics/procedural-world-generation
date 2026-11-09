@@ -54,8 +54,9 @@ low; rising; falling). Relations between the two (parallel, contrary, oblique mo
 - **A small set.** A language draws a 2-4 member second-voice tone set (`inventory.TONE2_SETS`): {high, low} (the commonest,
   like simple tone systems), {level, rising, falling} (contour-based: what birds do best, sweeps), or {high, low, rising,
   falling}. Not every combination of first and second tone is a word of the language, as not every C x V is.
-- **Not every second-voice lect has it.** A lect with second-voice vowels has a second-voice tone contrast with probability
-  `inventory.TONE2_SHARE` (0.5) x hear/make terms, else its second voice moves in parallel, as before.
+- **Not every second-voice lect has it.** A proto with second-voice vowels gets a second-voice tone set with probability
+  `inventory.TONE2_SHARE` (0.5) x hear.tone2 / make_cost.tone2 (1 for the avian stem), else its second voice moves in
+  parallel, as before; later lects can gain one by sound change.
 - **A segmental tier.** Where the first voice's tone is a tier over every syllable (`inv.tones`), the second voice's tone
   rides only on second-voice vowels, so it is stored on the vowel (`Segment.tone2`), as nasality or the second voice
   itself are. The inventory lists iᴖ˦ and iᴖ˨ as two vowels. That makes the syllable space (Nettle's S, `lexicon._space`,
@@ -72,19 +73,23 @@ low; rising; falling). Relations between the two (parallel, contrary, oblique mo
 1. **A lost coda consonant leaves its pitch on the second voice**: Vᴖ + ʔ# > Vᴖ˨˦ (rising) and Vᴖ + h# > Vᴖ˦˨ (falling), the
    Vietnamese pathway (Haudricourt 1954) with the second voice, not the first, taking up the perturbation. Why the second
    voice: in a lect where the first voice already carries tone, the free tier is the second one.
-2. **Onset voicing splits the second voice**: Vᴖ after a voiced obstruent > Vᴖ˨, after a voiceless one > Vᴖ˦, then the
-   voicing contrast is lost (the Middle Chinese yin/yang split on the second tier).
-3. Both only touch a second-voice vowel with no second-voice tone yet (`tone2=0`), and they phonemicize only through the
-   same hygiene as first-voice tone (`lect.voice2_hygiene`: under 2 distinct second-voice tones, or under
-   `TONE_MIN_MARKED` of the core list's second-voice vowels marked, the marks are stripped; otherwise every second-voice
-   vowel takes the commonest second-voice tone).
+2. **A phrase-final rise frozen onto the second voice** (`tone2.final_rise`, weight 1): the last syllable's second voice
+   rises, as boundary prosody became lexical pitch accent in Swedish; later apocope makes it unpredictable. (An onset-voicing
+   split onto the second voice was considered and left out: it needs the voicing contrast lost lect-wide, a large change
+   to pin on the rarer tier.)
+3. All of these touch only a second-voice vowel with no tone of its own yet (`tone2=0`), and they phonemicize only through
+   `lect.voice2_hygiene`: parallel motion counts as a category, so the contrast stands with two or more categories over the
+   lexicon's second-voice vowels and marks on at least `TONE2_MIN_MARKED` (10%) of them; otherwise the marks are stripped.
 
 ### How it is lost
-- **Contour levelling** (as S227/S228): a rising or falling second voice levels to high (`tone2.contour_level`).
+- **Contour levelling** (as S227/S228): a rising or falling second voice levels to high (`tone2.contour_level`, weight 1,
+  below S227's 3: the duration argument for levelling short contours, Zhang 2002, is weak for a voice that sweeps in tens
+  of milliseconds).
 - **Merger onto parallel motion**: the second voice stops moving on its own (`tone2.parallel`: Vᴖ˦ > Vᴖ; the commonest way
   out, a whole category merging).
-- **Merger onto one voice**: the second voice is lost (`voice2.loss`: Vᴖ > V). Before this lane no change removed a second
-  voice at all; only the inventory cap could.
+- **Merger onto one voice**: the second voice is lost in unstressed syllables, word by word (`voice2.loss`, diffusing).
+  Before this lane no change removed a second voice at all; only the inventory cap could. (Written for every second-voice
+  vowel at once, it fired in 23 lines of pass A and left 1 living lect of 52 with a second voice.)
 - **Contact**: humans and other one-voiced listeners hear the second voice faintly (0.3), so loans into their languages
   lose it entirely (nearest inventory vowel); a bird lect without the second-voice tone contrast hears a toned second voice
   as its plain second-voice vowel.
@@ -118,13 +123,118 @@ semitone) so the ear separates it as its own stream (common onset, separate pitc
 - `profiles.py`: key `tone2` (cost, hearing), `_nonhuman_core`.
 - `inventory.py`: `TONE2_SHARE`, `TONE2_SETS`, the draw; `epenthetic_vowel` no longer picks a marked (second-voice,
   register, growl, purr) vowel when a plain one exists (Iulahad's recurring u˨ᴖ epenthesis was this).
-- `lect.py`: `voice2_hygiene` beside `tone_hygiene`.
-- `rules.py`: ᴖ and second-voice tone letters in rule notation; demo rules for genesis and loss.
-- `romanize.py`, `speak.py`, `data/voice_profiles.toml`, `checks.py` (diagnostic: share of syrinx lects with a second-voice
-  tone contrast).
+- `lect.py`: `voice2_hygiene` beside `tone_hygiene` (counts the whole lexicon: second-voice vowels are rare); the inventory
+  cap's units set the second voice's tone aside as they set the first's (pass C: 30 new second-voice tones folded back as
+  "rare new units" right after a coda rule made them, a gate the first voice's tone never met).
+- `rules.py`: ᴖ and second-voice tone letters in rule notation (Vᴖ˨˦; `[V source2=1 tone2=0]`); seven demo rules
+  `tone2.*` / `voice2.loss` (demo rules rather than tsv rows, as the first voice's coda tonogenesis is: they need a focus
+  plus a lost coda, which the tsv's single-change rows do not write; the knowledge-table generator is untouched).
+- `romanize.py`, `speak.py` (`second_voice`), `data/voice_profiles.toml`, `checks.py` (`second_voice`: no one-voiced lect
+  has a second voice; shares of syrinx lects with a second voice and with its own tone, shown), `tools/language/sketch.py`
+  (the demo's tonal-bird pick prefers a lect with second-voice tones), `demo_page.py` legend.
 
 ## 4. Measurements
-(filled after pass A; see below)
+
+Run a24559, `planet languages --workers 8` to scratch (never into runs/). Baseline = runs/a24559/languages.json (main
+before this lane), read-only. Four passes: A (first design), B (voice2.loss weak syllables only), C (contour levelling
+weight 1), D (cap units set tone2 aside) = the committed code. Numbers below are pass D unless named.
+
+### Checks
+All pass except "scholars' horizon (human lects)", which fails on the baseline too (human 10.67 kyr in both). The new check
+"second voice only where there is a syrinx" passes: 0 one-voiced lects with ᴖ. Pass A once tipped "loans follow
+borrowability" (pronoun loans 0.088 vs cap 0.08; baseline 0.076, B 0.077, C 0.070, D 0.076): run-to-run noise in human lects.
+
+### Shares (living lects; 25 aarakocra + 27 kenku = 52)
+
+| | baseline | pass A | pass B | pass C | pass D |
+|---|---|---|---|---|---|
+| with a second voice | 22 | 1 | 17 | 18 | 16 |
+| with second-voice tone contrast | (none possible) | 0 | 4 | 2 | **8** (6 aarakocra, 2 kenku) |
+| categories (parallel counted) | - | - | 2,2,2,2 | 2,2 | 3,3,3,2,2,2,2,2 |
+
+Pass D: 15% of syrinx lects (24% of aarakocra, 7% of kenku), half of the lects that kept a second voice. The kenku share
+is lower because fewer kenku lects keep a second voice at all (5 of 27; baseline 10).
+
+### Tone-bearing units (vowel phonemes x first-voice tones), living syrinx lects, pass D
+
+| group | lects | vowel phonemes | tone-bearing units (mean / median) |
+|---|---|---|---|
+| second-voice tone | 8 | 12.8 | 35.0 / 34.5 |
+| second voice, parallel only | 8 | 10.2 | 25.2 / 22 |
+| no second voice | 36 | 8.4 | 17.1 / 15 |
+| baseline, second voice (all parallel) | 22 | 11.4 | 25.6 / 21 |
+| baseline, no second voice | 30 | 7.6 | 14.2 / 13 |
+
+### Word length ("that complexity might also create shorter words, no?")
+
+Yes, mechanically, and it is automatic: `lexicon._space` counts vowels x tones, and iᴖ˨˦, iᴖ˦ are vowels of their own,
+so the syllable space grows with no change to the word-length code. But the effect is small, because only one to three
+vowel qualities of a proto carry a second voice:
+
+- Controlled (same 130 aarakocra protos, drawn with second-voice tone vs the same inventories flattened to parallel):
+  syllable space median 3,120 -> 4,000 (+28%), vowel phonemes 10 -> 13, `length_scale` 0.970 -> 0.949: roots
+  **about 2% shorter**. If every vowel could carry a second voice with three tones, the space would be about four times
+  larger and roots about 10% shorter (estimate from LENGTH_EXP = 0.7 at ln sigma ~ 8).
+- In the run the differences are larger but confounded (8 lects, different histories, and the run's chaos moves the bird
+  means by 0.1-0.4 syllables between passes):
+
+| group | mean syllables/word | mean segments/word |
+|---|---|---|
+| pass D, second-voice tone (8) | 1.95 | 4.15 |
+| pass D, second voice, parallel (8) | 1.76 | 4.11 |
+| pass D, no second voice (36) | 2.13 | 4.38 |
+| pass D, all aarakocra / kenku | 2.07 / 2.02 | 4.40 / 4.20 |
+| baseline, all aarakocra / kenku | 2.03 / 2.38 | 4.28 / 4.61 |
+| baseline, second voice (22) / none (30) | 2.18 / 2.23 | 4.36 / 4.52 |
+| pass D, all other lects (564) | 2.12 | 4.36 |
+
+So: lects with a second voice have somewhat shorter words than one-voiced bird lects in pass D (about 0.2-0.4 syllables),
+in the predicted direction, but the controlled number says most of that gap is not the syllable space; second-voice tone
+adds about 2%.
+
+### Example words (pass D, aarakocra 34, the north of Sothasor, lect d726; first-voice tones low, high, rising)
+
+| gloss | IPA | house spelling | the two voices |
+|---|---|---|---|
+| egg | i˦ᴖ˨˦ | íw̌h | first high and level, second rising (oblique) |
+| stone, rock | o˨˦ᴖ˦˨ | ǒŵh | first rising, second falling (contrary: the lines cross) |
+| new | nu˨˦ᴖ˨˦ | nǔw̌h | both rising (parallel contours on two staffs) |
+| mud | e˨ᴖ˨˦ | èw̌h | first low, second rising |
+| be alive | se˦ᴖ | séwh | first high, second in parallel (no tone of its own) |
+| forehead | k͡pi˨jndi˦ᴖ˦˨ru˨˦ | kpìyndíŵhrrǔ | a second voice falling in the middle syllable |
+
+(egg i˦ᴖ˨˦ and call i˨˦ᴖ are a near pair: the same vowel, the rise on the other voice.) Iulahad (d292, the lect Daniel
+named) now has three second-voice categories too: parallel, high, rising (iᴖ˦, iᴖ˨˦, oᴖ˦ ...). Its recurring epenthetic
+u˨ᴖ came from `epenthetic_vowel` taking the rarest high vowel, which was a second-voice one; fixed.
+
+### Audio demo
+`tools/language/demo_page.py` on pass D (all languages; it has no people filter; its tonal-bird pick now prefers a lect
+with second-voice tones): /tmp/claude-1000/-data-personal-repos-procedural-world-generation/78e89d74-f837-4b74-a7da-25a178d37d96/scratchpad/syrinx/syrinx-demo.html
+(scratch, tmpfs: 10 languages, 488 Piper clips). Its tonal bird language is Iulahad (d292: 3 first-voice tones and a
+second voice in parallel, high or rising); a kenku language (d135) is also on it.
+
 
 ## 5. Decisions for Daniel
-(see below)
+
+Each is implemented as the recommended default; say if you want another.
+
+1. **How often a second voice gets its own tone.** At the proto draw, half of the second-voice protos (`TONE2_SHARE`
+   0.5); after 20 kyr, 8 of 52 living bird lects (15%; half of those that kept a second voice). Recommended: keep. Raise it
+   if you want second-voice tone to be a hallmark of bird speech rather than one feature among many.
+2. **The second voice's staff.** Its tone letters are read on its own staff, a fifth above the first voice's: a˦ᴖ˦ is two
+   high notes a fifth apart, not a unison. Recommended: keep (each side of a syrinx has its own range, and it keeps
+   "high/low/rising" meaning the same for both voices). The alternative, one shared pitch scale, would make a˦ᴖ˦ a unison,
+   which a listener cannot hear as two voices.
+3. **Parallel motion is a category.** A second voice with no tone of its own (aᴖ) counts as one of the second-voice
+   tones (the unmarked one), so a single coda change can start a contrast (aᴖ vs aᴖ˨˦), and a language need not mark every
+   second-voice vowel. Recommended: keep. The stricter reading (every second-voice vowel must carry a tone once there is a
+   contrast, as every syllable does for the first voice) would make second-voice tone rarer and harder to start.
+4. **Spelling.** The second voice's tone is the first voice's tone mark on the w of wh: áw̌h, ǒŵh; book mode drops both,
+   as it drops first-voice tone (awh). Recommended: keep. Alternative: digits or a second letter (awh2, awhr), uglier.
+5. **Fantasy sound changes.** The coda pathways onto the second voice, the frozen final rise and the ways out are
+   analogues, not attested changes (no human language has a second voice). Their weights (3, 3, 1; losses 1, 2, 1, 1) are
+   judgement. Recommended: keep and judge by ear and by the shares above.
+6. **The second voice is stored on the vowel, not as a tier.** iᴖ˦ and iᴖ˨ are listed as two vowels (as a nasal vowel is),
+   so bird inventories with second-voice tone list 12-13 vowels. The first voice's tones stay a tier (listed apart). This is
+   what made the word-length effect automatic. Recommended: keep; the inventory display could list them as "iᴖ with ˦ ˨˦"
+   later if the long lists bother you.
