@@ -229,7 +229,7 @@ def test_on_the_tiny_driver_run():
     from test_language_history import TinyRun
     from planet.language import history as H
     old = (H.RATE_SCALE, H.SHIFT_K, H.WORKERS)
-    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 8.0, 1.0, 1
+    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 240.0, 1.0, 1
     try:
         res = H.generate(None, run=TinyRun(), analyse=False)
     finally:

@@ -75,7 +75,7 @@ class TinyRun(I.Run):
 @pytest.fixture(scope="module")
 def result():
     old = (H.RATE_SCALE, H.SHIFT_K, H.WORKERS)
-    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 8.0, 1.0, 1
+    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 240.0, 1.0, 1
     try:
         res = H.generate(None, run=TinyRun())
         doc = OU.document(res)
@@ -189,7 +189,7 @@ def test_intelligibility_drifts_over_seeds():
     """A bud and its parent start close and drift apart at 8x the rate: in aggregate over several seeds (one seed is a coin
     flip at this size: 4 of 8 pass alone)."""
     old = (H.RATE_SCALE, H.SHIFT_K, H.WORKERS)
-    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 8.0, 1.0, 1
+    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 240.0, 1.0, 1
     first, last = [], []
     try:
         for sd in INTEL_SEEDS:
@@ -278,11 +278,11 @@ def test_hiatus_is_repaired_after_a_change():
     assert ratio == pytest.approx(LC._lognormal(f"y|bud|{r.id}", LC.LINE_BUD_SIGMA))
     assert len({round(LC.Lect(id=f"q{k}", deme=None, people="human", parent=None, how="first", born_kyr=1.0, rate=1.0,
                               inventory=None, lexicon=None).line_pref(r), 6) for k in range(5)}) == 5
-    # a one-off row (a chain shift) fires once a line; an ordinary row again after REFIRE_KYR
-    grimm = cat["S177"]
-    assert LC.one_off(grimm) and not LC.one_off(r)
-    d.fired = {grimm.id: [9.0], r.id: [9.0]}
-    assert not d.may_fire(grimm, 0.0) and d.may_fire(r, 9.0 - LC.REFIRE_KYR)
+    # a one-off row (a whole-class coda change) fires once a line; an ordinary row (a chain shift too) again after REFIRE_KYR
+    coda = cat["S099"]
+    assert LC.one_off(coda) and not LC.one_off(r) and not LC.one_off(cat["S177"])
+    d.fired = {coda.id: [9.0], r.id: [9.0]}
+    assert not d.may_fire(coda, 0.0) and d.may_fire(r, 9.0 - LC.REFIRE_KYR)
 
 
 def test_normalize_simplifies_initial_geminates():
@@ -398,6 +398,24 @@ def test_epenthesis_uses_own_vowel():
     e = LC.epenthesis_variant(r, inv)
     assert e.change.items[0][1] == v and LC.base_id(e.id) == "S123" and v.height >= 5  # (a high vowel, not ə)
     assert LC.epenthesis_variant(next(x for x in RU.catalogue(PR.HUMAN) if x.id == "S042"), inv).id == "S042"
+
+
+def test_burst_loosens_and_reanchors_the_size_steer():
+    """PW-1565 b: during a burst the inventory-size anchor is BURST_ANCHOR_X looser; after it the line holds its new size."""
+    from planet.language import inventory as INV, lect as LC, profiles as PR
+    inv = INV.draw_inventory(np.random.default_rng(3), PR.HUMAN)
+    l = LC.Lect(id="x", deme=0, people="human", parent=None, how="bud", born_kyr=10.0, inventory=inv, lexicon=None,
+                profile=PR.HUMAN)
+    l.base_segs = frozenset(LC._unit(x) for x in list(inv.consonants)[:3] + list(inv.vowels)[:2])
+    l.burst_until = 9.0
+    l._last_kyr = 9.5
+    base, sigma = l.size_anchor()
+    assert base == {"C": 3, "V": 2} and sigma == pytest.approx(LC.SIZE_ANCHOR * LC.BURST_ANCHOR_X)
+    assert LC.size_steer("consonants", 20, -1, 20, sigma) > LC.size_steer("consonants", 20, -1, 20)
+    assert not l.end_burst(9.5) and l.end_burst(8.5)
+    base, sigma = l.size_anchor()
+    assert base["C"] == len(inv.consonants) and sigma == LC.SIZE_ANCHOR and l.burst_until is None
+    assert l.copy("y", 1, 8.0, "bud").size_base == l.size_base
 
 
 def test_tone_inventory_matches_marks(result):
@@ -631,7 +649,7 @@ import hashlib, json, sys
 sys.path.insert(0, "tests")
 import test_language_history as T
 from planet.language import history as H, output as OU
-H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 8.0, 1.0, 1
+H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 240.0, 1.0, 1
 doc = OU.document(H.generate(None, run=T.TinyRun()))
 doc.pop("timing", None)
 print(hashlib.sha256(json.dumps(doc, sort_keys=True).encode()).hexdigest())

@@ -978,3 +978,60 @@ lang-lane before the rulings with the kept code. Full tables are in calibration.
 **Left for you (three drafts):** whether founder lines may shrink their inventories (b in the draft is one line); the
 push chain makes a rare "raised e" in about one language in ten (fix proposed, no decision needed); and whether real
 trade hubs should rise above the learner-share curve.
+
+## Sound-change weights lane (lang-weights, PW-1551, 2026-11-08/09)
+
+Your ruling A on PW-1551 is in, with your two later rulings (elves' long-generation leanings, founder size drift)
+measured in the same final pass. Numbers compare the same world (a24559): the stored run (main, 11-08 evening) against
+the final pass of this lane. Full tables are in calibration.md, "PW-1551 lane".
+
+**In plain words**
+- **The "how common is this change" column now decides how often a change happens.** A change marked 1 (rare) now fires
+  on a quarter of human family lines, about a third of a time per line; one marked 5 (extremely common) fires on four
+  lines in five, 2.6 times per line. Before it was 0.7 against 2.0 times. Rare, dramatic changes (uvular r, the
+  Tocharian stop merger, Grimm's law) are now rare.
+- **Removing the redraw alone did almost nothing**, which surprised me. The deeper cause: at today's pace of change (about
+  18 changes per thousand years on a human line) a change whose sounds are present fires within a thousand years or so,
+  whatever its weight, and then waits for its sounds to come back. So rare changes only become rare if their weight is
+  much lower than a common one's. That is decision 1 below.
+- **Most of the special limits are gone.** The "at most once per family line" rule for every chain shift and 14 named
+  laws, the halving of chain shifts, and the special limit on glottal-stop prothesis are removed. The weights now do
+  that job. Three limits stay, each measured: the 4,000-year wait before a change can run again on a line (without it,
+  final-vowel loss ran 16 times per line), the lifetime limit on vowel harmony, epenthesis and tone (they feed
+  themselves), and "once per line" for the two changes that strip every final consonant (otherwise lines flip back and
+  forth to Hawaiian-type open syllables, even with a rare weight).
+- **Checks:** everything that passed still passes. The scholars' horizon read 11.4 thousand years in one full pass and
+  14.6 in the final one, on the same code for human languages; the steadier logistic fit is 14.5 (13.7 before). The
+  pronoun-loan check sits at 0.074-0.089 against its 0.08 limit across passes, as before (PW-1568).
+- **Sounds:** the commoner changes now carry more of each history. Biggest moves across living languages: ɛ 29% -> 58%,
+  e 58% -> 74%, ʃ 38% -> 53%, h 71% -> 84%; long iː 44% -> 30%, glottal stop 75% -> 66%. No sound is overused.
+- **Two side effects fixed on the way.** (a) The vowel push chain made a "raised e" (i̞) in 10% of languages; a pushed vowel
+  now moves to the next full vowel height (e to i, not to half-way), so i̞ is gone (PW-1566). (b) A labial-velar nasal ŋ͡m
+  sat in 13% of languages with no way out; a new change ŋ͡m > m brings it to 2.6% (real languages 3.3%).
+- **Dragons and elves.** The new draw let long-lived peoples change about twice as fast per generation as before. The
+  wait before a change can run again now counts generations, not years, for peoples with generations over 28 years, as
+  your per-generation ruling says. Humans now change 4.8 times faster per year than the long-lived (4.4 before).
+- **Elves get the long-generation leanings and the deep past** (`grammar.LONG_GEN_YR` 140). Elf languages with 0-1 bound
+  verb categories: 33% -> 4%; with 4-5: 0% -> 41%. Their share with evidential or mirative marking: 0.38 -> 0.42 (24
+  languages, within noise).
+- **Founder size drift (PW-1565 b) is in but changes nothing visible.** During a burst the pull back to the line's
+  starting inventory size is three times looser, and afterwards the line holds whatever size it reached. Languages under
+  10 consonants: still 1 (the same bronze-dragon language). Rate and consonant count are still unrelated (correlation
+  -0.007). Why: a burst is short, and the catalogue offers a small inventory more splits than mergers, so nothing pulls a
+  founder line down. I kept it a mechanism, as asked, rather than pushing lines smaller.
+
+**Decisions (defaults taken)**
+1. **The 1-5 column is read as a log scale**, each step 3x the one below (1 = 0.11, 3 = 1, 5 = 9; `rules.NATURAL_BASE`).
+   Read as 1 to 5 (only 5x), the weights were drowned by each family line's own random taste for changes (about 3x
+   either way) and rare changes still fired on most lines. Base 2 gave half the effect.
+2. **The pace setting is 220** (`history.RATE_SCALE`, was 5): most draws now find nothing to change, so it takes many
+   more draws for the same pace. 150 left the horizon at 16 thousand years.
+3. **The re-fire wait counts generations for long-lived peoples** (`lect.REFIRE_GEN_YR` 28), so dragons wait as many
+   generations as humans before a change runs again.
+4. **Earlier weight cuts are left as they are.** Several changes had their weight cut while weights did nothing (dark l
+   5 -> 2, palatalization of all consonants before i 3 -> 0.3, and others). Those cuts now bite fully. A draft lists them
+   for review one by one.
+5. **Founder drift strength:** the anchor loosens 3x (`lect.BURST_ANCHOR_X`), as in the ticket.
+
+**Left for you (two drafts):** the earlier weight cuts (above); and whether to make long-lived peoples' change exactly
+per generation (they are still about twice as changeable per generation as humans, relative to before; the check passes).

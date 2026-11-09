@@ -1237,3 +1237,148 @@ human ones without overshooting.
 **L2 (1542 b):** quantiles 10/25/50/75/90% base 0.24/0.39/0.54/0.69/0.70 (151 at the cap) -> 0.13/0.19/0.25/0.30/0.35
 (none). The median is on target, but the top end is squeezed (inbox draft-language-l2-top-end-compressed). Hubs check
 (final): hub complexity 19.2 vs isolated 23.7 (passes).
+
+## PW-1551 lane (2026-11-08, lang-weights): the draw without redraws
+
+Owner ruling (Language Desk 11-08): option A. `rules.pick_rule` stops redrawing a change that alters no word; the rate is
+recalibrated so applied changes hold; the catalogue's naturalness sets how often each change fires; caps that existed
+only because of saturation go, each measured first.
+
+### Diagnosis (written before the full passes)
+
+**Caps, one-offs and refire workarounds tied to saturation** (what each guards, and what the single draw should do to it):
+
+| where | what | added because | expected after the change |
+| --- | --- | --- | --- |
+| `rules.PICK_REDRAWS` 16 | a no-op draw is set aside and redrawn | strongly preferred no-op rows exhausted 8 redraws | removed: one draw, no-op draws fire nothing |
+| `lect.REFIRE_KYR` 4 (was 3) | a row waits 4 kyr after firing | a line re-ran half the catalogue it fired | still binding for the commonest rows (their input keeps coming back); keep unless the harness says otherwise |
+| `lect.ONE_OFF_FAMILIES` {chain_shift} | every chain shift at most once a line | Grimm fired in 83% of lects, D > T in 93% | the weight should now set how many lines get one; remove if repeats are rare |
+| `lect.ONE_OFF_IDS` (16 named laws) | S097 S098 S173 S093 S046 S047 S063 S064 S128 S139 S148 S174 S176 S185 at most once a line | as above | as above |
+| `lect.ONE_OFF_IDS` S099, S124 | whole-class coda loss and paragoge once a line (pass 3) | lines flip-flopped to open syllables | unclear: they are flip-flops of supply, not only of weight; measure |
+| `history.RULE_WEIGHT` family:chain_shift 0.5 | halves every chain shift | at weight 2 still on ~half the harness lines | remove: the catalogue's 2 should speak |
+| `lect.LIFETIME_CAP_IDS` {S042} | ʔ-prothesis at most twice a lect's life | a sink | S042 is already naturalness 1 (`rules.ROW_OVERRIDES`) x RULE_WEIGHT 0.15; remove if inert |
+| `lect.LIFETIME_CAP_FAMILIES` epenthesis, harmony, tone; `MAX_FIRES` 2, `HARMONY_MAX` 1 | rows that feed themselves | pile-ups, not saturation | keep unless the harness says they are inert |
+| catalogue weight cuts made under saturation (S097 2 -> 1, S124 4 -> 1, S142 3 -> 1, S068 2 -> 1, S221 3 -> 0.3, S152 5 -> 2, S086 4 -> 2) | weights lowered to fight overused segments | the cuts "hardly moved" the shares | they now bite; left as they are (a draft lists them for review) |
+
+**Harness.** `scratchpad/weights/harness.py` (not kept in the repo): 48 human protos of a24559 (`History.make_proto`),
+stepped 20 kyr in 0.5 kyr frames, each budding in two at 10 kyr (96 lines), no wave, grammar or contact; per line the
+catalogue firings (`Lect.fired`), applied changes per lect-kyr, words ending in a consonant, inventory. Two tests of
+whether weight sets frequency: the by-naturalness table (mean firings of a row per line, and the share of lines that
+ever fire it, by the row's naturalness; 1-5 rows from the deduplicated human catalogue: 17/41/90/68/31 rows) and an
+elasticity test (every row's weight x3 or /3 by a hash of its id; elasticity = log(ratio of the two halves' firing
+changes) / log 9: 1 means firing in proportion to weight, 0 means weight ignored).
+
+**What the harness showed.**
+1. The redraw was not the main cause. With one draw and the rate raised to hold the applied changes (the draw made
+   against the full weight, rows waiting out their re-fire memory included, so a blocked row's share fires nothing),
+   paragoge (S124, coda one-off off) still fired 1.17 / 1.78 times a line at weight 0.3 / 4, the same as with the
+   redraw (1.22 / 1.77). The by-naturalness table barely moved (naturalness 1 vs 5: 0.55 vs 1.59 firings a line with the
+   redraw, 0.49 vs 1.56 without). Elasticity rose 0.74 -> 1.01, but only on the down side: rows weighted up fired
+   no more (x1.10 / x0.96), rows weighted down fired less (x0.22 / x0.10).
+2. The cause is structural. At ~15 applied changes per lect-kyr (300 a line in 20 kyr against ~240 rows) a row whose
+   input is present fires within about a kyr whatever its weight, and then waits for its input to come back (the
+   supply) or for REFIRE_KYR. A common row is supply-bound, so raising its weight cannot make it fire more; only rare
+   rows respond. At rate 40 (applied 9.7) paragoge 0.3 vs 4 gives 0.64 vs 1.60 a line: weights only bite when the
+   applied rate falls.
+3. Line drift swamps a linear 1-5 scale. `line_pref` multiplies each row by lognormals of sigma 1.0 (row) and 0.7
+   (family), combined sigma 1.22: one standard deviation is x3.4, so naturalness 1 -> 5 (x5) spans about 1.3 sd of the
+   drift. In one proto paragoge (naturalness 1) drew at 9.5 after drift, in another whole-class coda loss (4) at 38.
+4. So the naturalness column is read as a log scale: weight `NATURAL_BASE ** (n - 3)`, base 3 (1 -> 0.11, 2 -> 0.33, 3 ->
+   1, 4 -> 3, 5 -> 9). The column is an ordinal judgement ("1 rare, needs special conditions .. 5 extremely common,
+   recurs independently everywhere"); real changes of those two kinds differ by far more than 5x in how often they
+   happen, and a log reading puts the column on the same footing as the drift. Base 2 gave a 4.8x gradient, base 3 10x.
+
+| harness (96 lines, 20 kyr) | applied / lect-kyr | firings a line by naturalness 1/2/3/4/5 | share of lines ever firing, 1/2/3/4/5 | elasticity | lines under 5% final C | median final-C share |
+| --- | --- | --- | --- | --- | --- | --- |
+| main (redraws 16, RATE_SCALE 5) | 14.8 | 0.55/0.68/1.00/1.13/1.59 | 0.39/0.34/0.48/0.56/0.65 | 0.74 | 0.18 | 0.58 |
+| one draw, linear weights, RATE_SCALE 120 | 14.3 | 0.49/0.62/0.94/1.14/1.56 | 0.35/0.33/0.48/0.57/0.66 | 1.01 | 0.12 | 0.56 |
+| one draw, log weights (base 3), RATE_SCALE 150 | 14.4 | 0.20/0.38/0.83/1.28/2.08 | 0.18/0.20/0.44/0.60/0.74 | 0.99 | 0.15 | 0.56 |
+| + caps removed as below (RATE_SCALE 150, before the push and rate fixes) | 15.1 | 0.21/0.44/0.87/1.38/2.13 | 0.16/0.23/0.44/0.60/0.76 | | 0.18 | 0.58 |
+
+**Each cap, measured** (one draw, log weights, RATE_SCALE 150; firings a line / share of lines):
+
+| cap | without it | verdict |
+| --- | --- | --- |
+| REFIRE_KYR 4 | 0: applied 14.4 -> 23.8 per lect-kyr; apocope S103 16.5, h-loss 14.6, spirantization 11.3 firings a line. 2: applied 18.0, h-loss 7.8 | **kept**: the commonest rows re-fire as soon as their input returns; a law that just ran is a live rule (phonology.py), not a new change |
+| lifetime caps on epenthesis, harmony, tone (MAX_FIRES 2, HARMONY_MAX 1) | back harmony 4.2 and S123 4.5 firings a line | **kept**: they feed themselves (not a saturation cap) |
+| LIFETIME_CAP_IDS {S042} | S042 0.04 -> 0.08 of lines | **removed**: inert at naturalness 1 x 0.15 (0.55 of lines before) |
+| chain-shift one-offs + RULE_WEIGHT family 0.5 | Grimm S177 0.28 -> 0.34 of lines (0.48 before, 0.83 in a24559 before the one-off), 1.4 firings on a line that has it; GVS S179 0.27 -> 0.39; S178 0.26, S181 0.23, S182 0.04 | **removed**: weight now sets the share; repeats are rare |
+| named one-offs S093 S046 S047 S098 S128 S139 S148 S185 | firings ~ lines (0.02-0.52 of lines, at most 1.2 firings a line that has it); S148 uvular r 0.06 of lines against 0.53 before | **removed**: inert |
+| named one-offs S097 S173 S063 S064 S174 S176 | recur 2-3.7 times on the lines that have them (S176 high-vowel diphthongization 3.5, S063 velar palatalization 2.5, S173 Verner 1.6-2.5); line shares unchanged (0.45-0.95, set by weight) | **removed**: these are generic changes under a named example (Slavic had three palatalizations; English diphthongized its high vowels as new ones arose); they recur when their input returns, at the REFIRE_KYR pace |
+| coda one-offs S099, S124 | S099 2.1-2.2 firings a line; lines under 5% final C 0.15 -> 0.35; with S099 at naturalness 2 instead, 0.26 (and 0.22 with S124 also at 2) | **kept**: the flip-flop is supply-driven (apocope remakes codas, S099 strips them all again), so weight alone does not stop it |
+
+Rate: RATE_SCALE 5 -> 220 (RATE_RULE x RATE_SCALE are now draws per generation; ~97% of draws land on a row that changes
+nothing). At 150 the first full pass (A) read the horizon at 16.0 kyr; 220 brought it back (pass B). A no-op draw costs one
+bisection on the pool's cumulative weights (`rules.cumulative_weights`), and `Lect.step` reads the load sample and segments
+again only after a change.
+
+### Follow-ups the full passes forced
+
+- **Push chain (PW-1566).** Pass A failed the overused check on i̞ (10.3%) and ŋ͡m (13.4%). More vowel mergers are drawn
+  and vetoed now, so more pushes; a one-step push puts e on i̞ and ɛ on e̞. `rules.dispersion_rule`: a front or back vowel
+  pushed onto an in-between height (1, 3, 5) goes on to the next full one, and if that one is taken there is no push. i̞
+  7.6% -> 0, e̞ 5.3% -> 0.6%, o̞ 7.8% -> 1.0% of living lects; ɛ rose 29% -> 58% (PHOIBLE about 37%, not flagged). PW-1566
+  can close on this pass and one more seed.
+- **ŋ͡m.** No row touched the labial-velars; nasal place assimilation (naturalness 5, now weight 9) made ŋ͡m before k͡p
+  wherever it could, and most lines with ŋ͡m had lost their k͡p since. New exit S241 ŋ͡m > m (naturalness 3): 13.4% ->
+  2.6% (stored run 6.5%, PHOIBLE 3.3%).
+- **Long generations.** The first final pass failed "long generations change less" (18.5 / 6.4, ratio 2.88). With the
+  single draw a human line is bound by its inputs and the 4 kyr re-fire wait, a dragon line by its draws, so a wait in
+  years let long-lived lines re-fire common rows ~15x as often per generation (own changes per kyr against the stored run:
+  dragons 1.7 -> 3.4, elves 3.8 -> 6.3, humans 14.5 -> 15.2). `lect.REFIRE_GEN_YR` 28: the wait is REFIRE_KYR x
+  generation / 28 from 28-yr generations up (rates are per generation there). Final pass: dragons 2.0, elves 4.2, humans
+  15.3; ratio 4.84 (stored 4.36). The rest of the gap is a draft (draft-language-change-rate-not-linear-in-generations).
+
+### Owner rulings folded into the same final pass
+
+- **PW-1538 C / PW-1544: `grammar.LONG_GEN_YR` 150 -> 140**, so elves (144.9 yr) get the long-generation leanings and the
+  deep past. Bound verb categories (this lane's count: tense, aspect, mood/evidential, negation, voice, subject and
+  object person, affix or fused, verb host), bins 0-1 / 2-3 / 4-5 / 6-7 / 8+ %:
+
+  | living lects | stored run | pass B (no ruling) | final |
+  | --- | --- | --- | --- |
+  | generations < 60 yr | 3/28/57/12/0 (376) | 1/29/56/15/0 | 1/23/63/13/0 (382) |
+  | 60-140 yr | 2/29/65/4/0 (96) | 1/44/49/6/0 | 1/32/59/7/0 (96) |
+  | 140-150 yr (elves, drow, sea elves) | 33/67/0/0/0 (27) | 44/56/0/0/0 | 4/56/41/0/0 (27) |
+  | >= 150 yr (dragons) | 2/36/61/2/0 (118) | 1/43/55/1/0 | 2/38/58/3/0 (118) |
+  | lects with an evidential or mirative gram: elves (24) | 0.375 | 0.417 | 0.417 |
+  | ... dragons (118) / generations < 20 yr (123) / all | 0.415 / 0.504 / 0.473 | 0.390 / 0.545 / 0.472 | 0.390 / 0.585 / 0.477 |
+
+  The deep past lifts the elves out of the near-isolating bins; their evidential share hardly moves (24 lects; the
+  x1.5 recruitment has had 20 kyr of 145-yr generations, ~140 of them).
+- **PW-1565 b: founder size drift.** `lect.BURST_ANCHOR_X` 3: while a burst holds the size anchor's sigma is 3x wider;
+  at the first step after it `Lect.size_base` takes the inventory size then (inherited) and the steer holds it. Living
+  lects under 10 consonants: stored 1, pass B 1, final 1 (the same bronze-dragon lect, 9 consonants); under 12: 9 / 6 / 4.
+  Correlation of log rate with consonant count: -0.054 / -0.075 / -0.007; with the change against the proto: -0.020 /
+  -0.051 / -0.052; change against the proto p5 / median / p95: -14 / -1 / 4, -12 / -1 / 4, -12 / 0 / 5. Inventory-size
+  check passes (consonants p5-p95 14 / 18 / 21 / 25 / 38). So the mechanism is in and does nothing visible on this world:
+  a burst is 1 kyr at x2, a few dozen changes, and a loosened anchor only lets splits and mergers go either way; the
+  catalogue offers a small inventory more splits than mergers, so a founder line does not drift down on its own.
+
+### Full passes (a24559, scratch, 8 workers, machine load 40-70)
+
+| pass | code | human rules / kyr | horizon human: reading / logistic | long gen. ratio | checks failing | firings a human line, naturalness 1 / 2 / 3 / 4 / 5 (share of lines) | wall |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| stored | main 286f0870 | 17.9 | 11.4 / 13.7 | 4.36 | horizon; loans (pronoun 0.083) | 0.72 / 0.82 / 1.19 / 1.50 / 2.03 (0.42 / 0.42 / 0.55 / 0.61 / 0.71) | 27 min (12 workers) |
+| A | single draw, log weights, caps removed, RATE_SCALE 150 | 17.1 | 16.0 / 14.6 | 3.14 | horizon; overused (ŋ͡m 13.4%, i̞ 10.3%) | 0.27 / 0.52 / 1.03 / 1.60 / 2.52 | 27 min |
+| B | A + push fix, S241, RATE_SCALE 220 | 18.8 | 11.4 / 11.3 | 3.03 | horizon | 0.33 / 0.62 / 1.18 / 1.72 / 2.71 (0.23 / 0.31 / 0.53 / 0.64 / 0.80) | 51 min |
+| final1 | B + LONG_GEN_YR 140 + founder size drift | 18.5 | 11.4 / 14.1 | 2.88 | horizon; long generations; loans (pronoun 0.086) | 0.36 / 0.65 / 1.15 / 1.66 / 2.67 | 41 min |
+| final | final1 + REFIRE_GEN_YR | 18.4 | 14.6 / 14.5 | 4.84 | horizon; loans (pronoun 0.089) | 0.36 / 0.65 / 1.16 / 1.65 / 2.62 (0.25 / 0.31 / 0.52 / 0.63 / 0.79) | 54 min |
+
+Other final-pass readings (stored run in brackets): living 623 (617); sisters 0.548 (0.544); overused segments none
+(worst ratios ɟ 2.8, c 2.5, tʼ 2.0); living segment top-20 overlap 16 (18); inventory sizes, consonants p5 / q1 / median
+/ q3 / p95 14 / 18 / 21 / 25 / 38 (14 / 18 / 21 / 26 / 39), vowels 4 / 7 / 8 / 11 / 15 (5 / 7 / 9 / 11 / 15); WOLD
+rho 0.426 (0.411). The horizon reading moved 11.4 -> 14.6 between final1 and final, whose human lines run the same code
+(the re-fire change only touches generations over 28 yr): it is the seed-and-bin noise of earlier lanes, and the
+logistic fit (13.7 stored, 11.3-14.5 here) is the steadier number. Pronoun loans 0.074-0.089 across these passes
+against the 0.08 cap: PW-1568's noise, not moved by this lane. The long-lived horizon reading (22.0 censored -> 5.74) is
+a thin early bin; its logistic fit is 28-54 kyr.
+
+Segment shares, all living lects, stored -> final, largest moves: down iː 0.44 -> 0.30, uː 0.34 -> 0.23, ʔ 0.75 -> 0.66,
+i̞ 0.08 -> 0, æ 0.07 -> 0, o̞ 0.08 -> 0.01, u̞ 0.06 -> 0, nʲ 0.06 -> 0, dz 0.11 -> 0.05, m 0.58 -> 0.52; up ɛ 0.29 -> 0.58,
+e 0.58 -> 0.74, ʃ 0.38 -> 0.53, h 0.71 -> 0.84, tʃ 0.18 -> 0.30, u 0.77 -> 0.89, ɔ 0.31 -> 0.42, dʒ 0.26 -> 0.36, z 0.22
+-> 0.31, β 0.09 -> 0.17. Commoner changes (palatalization, lenition, monophthongization of long vowels) now carry more of
+each history, and rare one-offs less.
+
+Wall time: the passes ran on a machine at load 40-70 (the stored run's 27 min was at 12 workers on a quieter one); the
+driver's non-sound parts (faiths, wave, observe) slowed by the same 1.5-2x as the steps, so most of the rise is load.
