@@ -121,7 +121,8 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <tr><th>Lane</th><th>What</th></tr>
 <tr><td>248 · states: switch-on still makes a different number of states</td><td>With states inside the history switched on, test worlds get 58–77% as many states as with it off on L6 and 26–41% more on L7, and the map is less steady when nudged. Three suspects to test one at a time; if on and off then match, I'll bring you a card to switch it on.</td></tr>
 <tr><td>249 · peoples: humans hold two-thirds of one test world</td><td>Since the stranded-peoples fix, humans are 56–66% of all people on two L7 test runs, against 40% and 61% before. Checking over more seeds whether that is typical or chance, and fixing it if typical.</td></tr>
-<tr><td>250 · physics: closed basins, pass 2 of 3</td><td>Pass 1 found the shortfall is in the terrain: our hollows are shallower and fewer than Earth's, and deserts sit in them less often. Its fix (a hollow no river leaves stays closed) worked but brought back giant shallow lakes in wet places. Pass 2 limits it to dry hollows.</td></tr>
+<tr><td>251 · physics: closed basins, pass 3 of 3</td><td>Pass 2's rule (a hollow stays closed when its whole catchment is desert and no river leaves it) brings inland drainage to about what our own water model gives on Earth's real terrain: L6 from 7% to 12%, one L7 world from 6% to 19%. Giant lakes doubled on single runs, but nearly all sit in hollows today's code keeps too, so they may be chance. This last pass repeats runs from the same start to settle it, and cuts the 14% extra run time.</td></tr>
+<tr><td>252 · physics: the bigger check on cloudy-sky light</td><td>The 36-history check the plant-light change still owes. If it falls below the bar, it comes back out.</td></tr>
 </table></div>
 <p><b>Next for physics</b> (scouts run side by side, 1–3 passes each): a guard test so L7 and L6 can't drift apart again; plants using cloud-softened light (the rainforest's last gap); plates that can shrink (Andes-type ranges, a bigger job). Rain inland waits at the back of the line (three strikes); ice ages stay after v1.</p>
 
@@ -148,7 +149,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>Refine from the viewer</b> (PW-1438, lane 227, merged). Open a world, then Family ▾, then "Refine the whole world to L8/L9", then "Check the cost…". It shows the time, peak memory and size against what's free (L8 about 7 minutes and 11 GB, L9 about 38 minutes and 39 GB) and refuses if there isn't room. Start refine gives a progress bar with minutes left. An L8 world opens itself when done; an L9 one is saved, and opening it waits on lane 229. One refine runs at a time. The refined world sits under its source in the Family tree.</li></ul>
 </ul>
 
-<footer>Desk v226 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v227 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
 <script>
 /* Answers live in the artifact's db, collection "answers", one doc per .ask (id = data-id): {choice, note, at, reply}.
