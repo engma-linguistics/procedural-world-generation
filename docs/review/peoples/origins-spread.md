@@ -74,6 +74,43 @@ share floor in every run. The teleport is wrong (a stem jumps continents) but lo
 A fix that keeps the refuge near the last land and picks it by free room is drafted
 (`issue-tracking/inbox/draft-stem-refuge-teleport-carries-peoples.md`).
 
+## Lane 233: the refuge by the last land, in a free country big enough for founders (PW-1558)
+
+Why lane 228's near refuge failed (af2677, dnd seed 7): the mammal radiation's stems live on an islet near (-2, 180). Held out by
+their last land (lane 228's rule, and a first lane 233 try that picked the nearest free 3-ring pocket), the feline, goblinoid and
+archaic-human stems stayed on islets, so each daughter was founded on 0.1 Mkm2 (main: 0.5-0.6, a full founders' country) and, with no
+boats before the humans, never left (leonin 0 jumps, 0 crossings; range 0.06 Mkm2). Main's jump put each stem on the world's best cell
+9,800-13,300 km away.
+
+Mechanism (`dispersal._refuge_cell`): a line with no land left holds out within LAST_LAND_REACH x FOUNDER_KM (8,000 km, the reach
+`_origin_fallback` already used) of its last land, in a **free country** (connected cells whose habitat less what the living peoples
+take, `_rivals_here`, is of the first ARRIVAL_ROOM tier that has one) **at least one founders' country in size** (the cells within
+FOUNDER_KM, what a split's founding take removes), the nearest first (exp(-d / FOUNDER_KM)). So the next daughter's take cannot empty the
+stem again, and the stem lands on the nearest land where its splits to come have room. The last land is the stem's land at the start of
+the step, else `_last_held` (set by `_take`). No constant was added beyond naming the existing 20 x FOUNDER_KM reach.
+
+Suite (tools/peoples_robust.py, arm now, af2677 dnd: base seeds 7/10/13 and jitters 1-4; main = 1cffe90c, same seeds):
+
+| measure | main | lane 233 |
+|---|---|---|
+| empty-stem refuges, distance from last land (median, max) | base 9,795 / 13,426 km (9 of 10 over 8,000); jitter 9,901 / 13,532 | base 3,280 / 5,592 (0 over 8,000); jitter 1,876 / 2,779 |
+| brittle peoples (swing > 10x or dead), base / jitter | 3 / 9 | 4 / 4 |
+| swing base: leonin, goblin, hobgoblin, halfling, human | 9.8, 5.1, 7.8, 2.8, 1.4 | 13.8, 1.4, 1.3, 1.7, 2.1 |
+| swing jitter: leonin, goblin, hobgoblin, halfling, human | 998, 2.0, 3,140, 547, 14.1 | 84, 1.9, 1,900, 524, 7.2 |
+| range median, base (Mkm2): leonin, goblin, hobgoblin, halfling | 27.8, 10.4, 11.2, 32.9 | 5.5, 4.7, 47.5, 7.6 |
+| range median, jitter: leonin, goblin, hobgoblin, halfling | 13.5, 8.4, 24.1, 0.70 | 2.6, 3.8, 44.2, 2.9 |
+| humans' share of all people, base / jitter | 0.16-0.21 / 0.01-0.19 | 0.06-0.13 / 0.05-0.37 |
+| founding fallbacks (all lines): parent gone / no room, base; jitter | 2 / 12; 0 / 7 | 2 / 12; 0 / 7 |
+| top people's share (any run) | at most 0.31 | at most 0.37 (hobgoblins lead 5 of 7) |
+
+Reading: the jump is gone (every refuge within 5,600 km, the bar's 8,000), the jitter brittle count falls 9 -> 4 and the four peoples'
+founding no longer depends on where a teleport lands, but their ranges are smaller than main's (main's came from the jump to an empty
+continent), so the ticket's "not below main's median" range bar is not met for leonin, goblin and halfling (decision draft
+`draft-stem-refuge-range-bar.md`). Still brittle: leonin (two jitters at 0.11 Mkm2, and its share swings 13.8x on the base seeds with a
+steady 4.9-5.8 Mkm2 range), halfling (one jitter at 0.05), hobgoblin and bugbear in one jitter each. PW-1184's remaining bar (swing of leonin, goblin, halfling on the
+dnd jitters narrowing) narrows for leonin (998 -> 84) and goblin (2.0 -> 1.9) but not for halfling (547 -> 524): not met.
+4360a3 was not re-run (load 55-100 from other sessions all night; lane 228 saw 1 of 12 runs change there).
+
 ## Brittle peoples' swing on main (share max / min across runs, floor 1e-4)
 
 | world, family, tree | leonin | goblin | halfling | brittle peoples (swing > 10x or dead) |

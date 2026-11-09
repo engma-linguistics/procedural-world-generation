@@ -247,13 +247,24 @@ def era_rows(inp: dict, last_nets: list, ruled_eras: dict, L: LangIndex) -> tupl
     # trade languages on the long-haul networks
     langs, nets_out = [], []
     folk = inp.get("route_folk") or {}
-    for k, net in enumerate(networks(inp)):
+    # (each network's forerunner: the era before's network it shares most trading towns with. A network that split hands its id on to
+    # one successor only, the one sharing most towns (the first on a tie): the other halves get new ids, so an id is unique in an era,
+    # but they still take up the forerunner's tongue, PW-1564)
+    nets = list(networks(inp))
+    fore, heir = [], {}
+    for k, net in enumerate(nets):
         sites = {h.get("site") for h in net["towns"]}
         prev = max(last_nets, key=lambda p: len(sites & p["sites"]), default=None)
         if prev is not None and not sites & prev["sites"]:
             prev = None
+        fore.append((sites, prev))
+        if prev is not None and (prev["id"] not in heir or len(sites & prev["sites"]) > heir[prev["id"]][1]):
+            heir[prev["id"]] = (k, len(sites & prev["sites"]))
+    for k, net in enumerate(nets):
+        sites, prev = fore[k]
         rec = pick(net, inp.get("rules") or {}, prev["rec"] if prev else None, inp.get("states"))
-        lid = prev["id"] if prev is not None and prev["rec"]["kind"] == rec["kind"] and prev["rec"]["tongue"] == rec["tongue"] else f"{rec['kind'].split()[0]}-{era:g}-{k}"
+        lid = prev["id"] if prev is not None and heir[prev["id"]][0] == k and prev["rec"]["kind"] == rec["kind"] \
+            and prev["rec"]["tongue"] == rec["tongue"] else f"{rec['kind'].split()[0]}-{era:g}-{k}"
         since = prev["since"] if prev is not None and lid == prev["id"] else era
         t = rec["tongue"]
         tl = tongue.get(t) or L.at(t, era)
