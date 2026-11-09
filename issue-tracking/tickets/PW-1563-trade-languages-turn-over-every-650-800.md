@@ -2,7 +2,7 @@
 id: PW-1563
 title: "Trade languages turn over every 650-800 years and are mostly a ruling state's tongue: should lingua francas be stickier?"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v4
 subsystem: peoples
@@ -39,4 +39,5 @@ Lean: B (one constant, cheap to check on the six runs: `tongues.ledger` takes 0.
 Coordinator 11-08: B and C together (sourced: lingua francas outlive the states behind them, T§2/T§4; merchant peoples' tongues should show). HELD grows with the eras a tongue has served; a state's tongue needs its own people to carry a large share. One small pass, checked on the six stored runs.
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 231 (84a3ce0f): B (HELD 0.25 + 0.05/era, cap 0.45) and C (RULE_OWN 0.2). Six stored runs: rule-sourced network-eras 75-94% -> 31-56%; mean lifetime 1.3-1.6 -> 1.6-2.0 eras. Still short of centuries-long lingua francas: ids end when a network re-forms without a shared town (draft taken in).
 - 2026-11-08: Created from inbox draft draft-trade-language-persistence.md (found by lane-230).

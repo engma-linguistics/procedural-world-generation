@@ -1,4 +1,5 @@
 ---
+id: PW-1564
 title: "Tongues ledger: two networks can inherit the same trade-language id in one era (a split network shows the same id twice)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane-231
 blocked_by: []
 relates: [PW-1526]
 refs: ["planet/lineages/tongues.py::era_rows", docs/review/peoples/trade-languages.md]
+created: 2026-11-08
+updated: 2026-11-08
 ---
 
 ## Description
@@ -24,3 +27,6 @@ What to do:
   `since` starts now) but may still inherit the tongue record from the same predecessor;
 - [ ] a test with a network that splits in two;
 - [ ] re-measure the six stored runs (lifetime numbers will move slightly) and note the change in docs/review/peoples/trade-languages.md.
+
+## Updates
+- 2026-11-08: Created from inbox draft draft-tongues-network-ids-duplicate.md (found by lane-231).

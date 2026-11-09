@@ -2,7 +2,7 @@
 id: PW-1562
 title: "Viewer: show a people's other tongues and the era's trade languages (the tongues ledger has no viewer surface)"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v4
 subsystem: viewer
@@ -32,4 +32,5 @@ What to add:
 Columns of a row are in the doc's `columns`; the first call on an L7 run computes the exchange doc (a minute or two) if it is not cached.
 
 ## Updates
+- 2026-11-08: Status todo -> done. Lane 231 (84a3ce0f): Speaks also table on the Lineages culture card (drawTongues); era's trade languages in the Trade routes legend (tongueLegend), top 8. Networks not colour-coded.
 - 2026-11-08: Created from inbox draft draft-tongues-viewer-panel.md (found by lane-230).
