@@ -922,3 +922,59 @@ already drawn with.
 **Left for you (one draft).** The same filter bars other "way out" changes for peoples without lips or a soft palate
 (losing nasal vowels, labialized consonants, w, final m). Nothing fails today, but the rule should probably be that a
 change needs only what its result needs.
+
+## Rulings lane (lang-rulings, 2026-11-08)
+
+All of your 11-08 rulings on PW-1538, 1539, 1540, 1542 and 1544 are in. Numbers compare the same world (a24559) on
+lang-lane before the rulings with the kept code. Full tables are in calibration.md, "Rulings lane".
+
+**What you will notice**
+- **Change rates spread wider, with bursts.** Some lines now change much faster than others (spread doubled). A line
+  also changes twice as fast for 1,000 years after its people switch language, or after a small group splits off. I ran
+  both versions (wider spread alone, and with the bursts). The bursts version passes every check except the horizon.
+  The spread-alone version failed two checks, so I kept the bursts.
+- **No Hawaiian-style collapse.** Languages under 10 consonants: 1 before, and 0 or 1 now depending on the pass (a
+  bronze-dragon language that started small). A fast line makes more sound changes,
+  but the inventory-size steer pulls each line back to its starting size, so speed never shrinks it. A draft asks
+  whether founder lines should be allowed to drift smaller.
+- **Scholars' horizon** (reported, not tuned): it was 11.4 thousand years (logistic fit 11.7). Now the logistic fit
+  reads 13.2. The check's single reading jumps around between versions: 14.8 for bursts, and 4.6 on the final pass because of one
+  thin age bin. That is the same seed noise as decision 7 above. A wider spread pushes the horizon out, because the
+  slowest lines set it.
+- **Shifting peoples reshape hard sounds.** When a people switches language, sounds that are much harder for their
+  mouths are heard through their own voice in about 60% of words, and the rest keep the original. That happened in 63 of
+  145 shifts.
+- **Holes get filled, rarely.** A language with no consonant at all at the lips, tongue tip or back of the tongue, where that
+  place is easy for its speakers, slowly gains one (Martinet's "empty slot"). This happened 6 times
+  in the whole run.
+- **Grammar:**
+  - Where nothing agrees with the noun class, it is labelled "noun class marking (no agreement)".
+  - Animals and persons with no class of their own go to the animate class.
+  - Comparison follows the world's spread: "bigger than X" said as "big from X" is now the most common kind.
+  - Each language gets one sentence of its own, about its faith, home landscape or food.
+  - Politeness is described as arising "as the speech community grew large".
+- **Long-lived peoples are no longer isolating.** Dragon protos start with 200 generations of unrecorded grammar
+  history. 0-1 bound verb categories: 93% of long-lived languages before, 1% now.
+- **Languages carry more verb endings overall.** 0-1 bound verb categories fell from 28% to 2% of living languages,
+  and 4-7 rose from 36% to 82%. This is mostly the lower learner share, and it is now close to the real-world spread
+  (WALS 22A).
+- **Second-language learner share** has a median of 0.25, as ruled. A draft notes the side effect: no language now
+  reads as a lingua franca (none above 0.35).
+- **Fewer sound loans.** The rate is halved. Languages carrying loaned sounds went from 207 to 188.
+
+**Decisions (defaults taken)**
+1. **Elves miss the long-generation leanings.** They sit at 144.9 years against your 150 cut, so only dragons (430
+   years) get them and the deep past. I kept 150 as ruled. Change `grammar.LONG_GEN_YR` (e.g. to 140) to include elves.
+2. **"Short generations" means under 20 years:** kobolds 11.7, goblins 13.1, orcs 18, aarakocra 18.6, kenku 19.3.
+   Set in `grammar.SHORT_GEN_YR`.
+3. **"Wide pitch" is a new voice setting, `pitch_range`.** Kenku have 3; everyone else has 1. It lives in
+   voice_profiles.toml.
+4. **Kenku reduplication was already maxed out.** 23 of 27 kenku languages reduplicated before, and 21 to 23 do now
+   (noise), so the x1.5 leaning changes nothing visible.
+5. **Deep past length** is 200 generations (`grammar.DEEP_PAST_GENS`). 150 left too many dragon languages near
+   isolating, and 300 overshot.
+6. **Learner-share curve steepness** `inputs.L2_K` is 0.82, fitted so the median is 0.25.
+
+**Left for you (three drafts):** whether founder lines may shrink their inventories (b in the draft is one line); the
+push chain makes a rare "raised e" in about one language in ten (fix proposed, no decision needed); and whether real
+trade hubs should rise above the learner-share curve.
