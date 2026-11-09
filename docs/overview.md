@@ -852,6 +852,25 @@ Viewer, under Overlays > Settlements:
 - An 'only the mines' box: the diamonds larger, at every scale.
 - `?settle=mines` ticks 'only the mines'. With `&lat=..&lon=..&dist=2.3`, a link opens on a mining district and picks its cell, e.g. `/viewer/?run=488d7e&settle=mines&layer=peoples&lat=39.77&lon=75.096&dist=2.3`. Screenshots 21-25 in docs/review/settlements/.
 
+**Sacked, razed, walled and raided (PW-1108, lane 253).** War is a read-out of what the run stored, not a second war model (`settlements._War`):
+- *Taken by force.* A chief place whose cell passes to another people while the old people keeps under `DISPLACED` (0.25, contacts' `PRESENT_OVERLAP`) of the cell's heads was taken by force: the cell-scale form of meta.contacts' `displacement`. A change of hands where the old people stays on (mixing, drift) is peaceful. The incursions contacts keeps are too few for a trigger (3 displacements a run in the ledger's 12.5 kyr on a24559 and 0141d1), so they only name a taking that lies inside one ("from" bearing, a 4th item in the record).
+- *The fate.* Sacked at `SACK` (0.25) x the winner's aggression / 0.5 (attitudes.temperament, the history's martial mark `AGG_MID`) x meta.war; `RAZE` (0.25) of the sacks leave a ruin, "razed by the halflings" (fewer below the martial mark); else occupied ("taken"). A sack takes `SACK_LOSS` (0.3) of the people; the place regrows toward its target. A razed cell can be settled again on the ruins.
+- *Walls.* A town or city whose holder knows 'fortifications' (meta.techtree) faces `WALLS` (0.5) x every chance, the ticket's rule (a judgement). Villages are unwalled.
+- *Raids.* Dragons and giants are sapient peoples. A town or city in a dragon or giant kind's country (its presence in the cell, the presence table) is raided at `RAID` (0.1 per century) x presence x its aggression / 0.5 x its rivalry (the tree's: metallic dragons 0.5) x meta.war, losing `RAID_LOSS` (0.1); never a place of its own kin (kobolds, dragonborn of the draconic stem). Tribute is the polities read-out's dragon realm.
+
+Sources (read 11-09) and judgements:
+- Daly, "The Sack of Cities: Laws of War and Evolving Attitudes in Historical Perspective", Lieber Institute West Point, 22 May 2026: a town that refused to surrender once its walls were breached could be sacked by custom; from the early eighteenth century Western sieges "increasingly ended on honourable and humane terms, with capitulation at the point of a practicable breach"; the Peninsular War had "about 30 regular sieges", and three towns were stormed and sacked (Ciudad Rodrigo, Badajoz, San Sebastián). So ~10% sacked is a floor for a restrained age; SACK 0.25 for a martial winner is a judgement above it.
+- Pausanias 10.3.1-3 (Jones's translation, theoi.com): after the Sacred War "all the cities enumerated were razed to the ground and their people scattered in villages", Abae alone spared, and "subsequently, however, the Phocian cities were rebuilt": razing happens, but a razed place is often resettled.
+- Millek, *Destruction and the Fall of the Bronze Age Levant* (2023; the paper-length version read): of the destructions claimed for ca. 1200 BCE, 94 (61%) in one survey and 31 of 60 (52%) in another are false. Lasting destruction is rarer than the literature claims. RAZE 0.25 of sacks is a judgement inside these bounds.
+- No Earth rate exists for raids by sapient megafauna: RAID, RAID_LOSS and SACK_LOSS are judgements.
+
+Three stored L7 dnd runs (a24559, 0141d1, 3e0eb4; seed 7002, worlds dba204/899985/dba204). The baseline is the same runs' ledger before this change:
+- taken by force: 3,903 / 2,444 / 1,875; of them sacked 577 / 335 / 302 and razed 95 / 68 / 50;
+- raided: 1,148 / 3,305 / 2,954, hill giants the most (639 / 1,299 / 1,378);
+- ruins 8,821 -> 8,875, 4,540 -> 4,802, 4,319 -> 4,290;
+- humans and halflings, the expanding farmers, take and sack the most.
+The hover card shows a "war" row; run.txt has a war line; the brief's ruins count "razed".
+
 ### 2.25b Emergent cultures (`lineages/cultures.py`, PW-670; round 2)
 
 Output only, read after the demes (2 s a run). A people's first demes are its founding culture. A deme that split off by

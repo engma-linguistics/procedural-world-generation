@@ -37,7 +37,10 @@ The model (every judgement constant is in the block below; `derive(..., **overri
 - Rivers moving: the history keeps the world's present rivers through time, so there is no drainage per frame to read. A
   stand-in: a site on a navigable river in the lowlands (under RIVER_LOW_M) is left at a seeded chance of RIVER_SHIFT per
   kyr ("the river moved away"), as floodplain rivers shift their beds; the cell may be settled again on the new course.
-Not modelled in v0: war and raids (a change of hands is recorded, not a battle), placing sites on a regional zoom's terrain."""
+- War and raids (PW-1108), read from what the run stored (class _War): a chief place taken by force (its cell changed hands in
+  a displacement, the cell-scale record of meta.contacts) is sacked (it shrinks by SACK_LOSS), razed (a ruin, "razed by the orcs") or
+  occupied; walls (the holder's fortifications, towns and cities) halve it; dragon and giant kinds raid the towns in their country.
+Not modelled in v0: placing sites on a regional zoom's terrain."""
 
 from __future__ import annotations
 
@@ -52,6 +55,7 @@ from .. import store as S
 from .. import timeline as T
 from ..geo import R_KM, is_land
 from ..grid import shared_grid
+from . import attitudes as AT
 from . import landuse as LU
 from .years import years_ago
 from .demes import _place, landmass_rank
@@ -123,6 +127,24 @@ CONST = {
     "PIT_ABANDON": 10,      # ... and is given up under this
     "PIT_RINGS": 1,         # 0: a pit in every eligible cell (2500 a run, ~17x the districts: too many); 1: only the best of a cell and its ring of 1 (~7x the districts)
     "COLONY_ORE": 0.75,     # ... an ore district this rich (the raw best ore good; PW-1146: districts are now >= mining.ORE_MIN = 0.75, so this is no stricter)
+    # PW-1108: war and raids, read from what the run stored (no second war model; see _War). Sources and judgements: docs/overview.md
+    # 2.25 and the ticket. A place taken by force (its cell changed hands and its old people lost its stake there, DISPLACED) is sacked at SACK x the winner's aggression / AGG_MID x meta.war, else occupied ('taken'); RAZE
+    # of a martial winner's sacks (aggression >= AGG_MID, the history's martial mark) leave a ruin, proportionally fewer below it.
+    "SACK": 0.25,           # judgement, bounded by sources: a place taken by force is sacked this often (martial winner). Lower bound: in the
+                            # Peninsular War ~30 regular sieges, 3 towns stormed and sacked (Daly 2026, Lieber Institute), under the
+                            # eighteenth-century custom of capitulation at a practicable breach; before it, a town that held out past a breach
+                            # was sacked by right, so the share was higher (same source)
+    "RAZE": 0.25,           # judgement: share of a martial winner's sacks that leave a ruin. Bounds: Phokis 346 BC, 20 of 21 cities 'razed to the
+                            # ground and their people scattered in villages', yet rebuilt within ~8 years (Pausanias 10.3.1-3); of the
+                            # destructions claimed for ca. 1200 BCE, 52-61% are false (Millek 2023): lasting destruction is the rare outcome
+    "SACK_LOSS": 0.3,       # judgement: share of a sacked place's people lost (killed, enslaved, fled); it regrows toward its target (TAU_KYR)
+    "WALLS": 0.5,           # a town or city whose holder knows 'fortifications': x the chance of a sack, razing or raid (the ticket's 'walls halve
+                            # it': a judgement; villages are unwalled)
+    "DISPLACED": 0.25,      # a changed-hands place was taken by force where its old people keeps under this share of the cell's heads (lead
+                            # or second): contacts.PRESENT_OVERLAP, the share at which the contact record says a people holds a cell
+    "RAID": 0.10,           # judgement: per century, the chance a town or city in a dragon or giant kind's country (its presence in the cell)
+                            # is raided, x its presence share x its aggression / AGG_MID x meta.war; no Earth rate exists (sapient megafauna)
+    "RAID_LOSS": 0.1,       # judgement: share of a raided town's people lost (herds and stores taken, some killed)
 }
 TIERS = ("none", "village", "town", "city")
 STAGES = ("nothing", "villages", "towns", "cities", "cities and roads")  # (PW-1114: what the holding people knows sets the size classes)
@@ -334,6 +356,146 @@ def _ring_index(g, r: int) -> np.ndarray:
     return out
 
 
+AGG_MID = AT.AGG_BASE + AT.AGG_CONTEST * 0.5  # the martial mark (0.5: a martial or an aggressive people), polity_live's AGG_MID: the chances
+# of a sack and of a razing scale with aggression / AGG_MID (a razing's capped at 1: a martial winner razes RAZE of its sacks)
+WAR_EVENTS = ("taken", "sacked", "razed", "raided")
+
+
+class _War:
+    """PW-1108: war and raids as a read-out of what the run stored, not a second war model.
+    - Takings by force: a chief place whose cell passes to another people while its old people loses its stake there (under DISPLACED
+      of the cell's heads: neither lead nor a real second people) was taken by force: the cell-scale record of meta.contacts'
+      'displacement' (contacts.Contacts._note: the lead changed and the old people lost the cell). A change of hands where the old
+      people stays on (mixing, drift, a ruling minority) is peaceful. Where the taking lies inside one of the run's incursions (the
+      large episodes contacts keeps, same peoples, within the episode +- one frame and the disc of its area + 2 cells) the ledger
+      names it, with its direction ("in the goblins' incursion from the north").
+    - The winner's temperament (attitudes.temperament: aggression from its traits and way of life, the same the history's conquests read).
+    - Walls: the holder's 'fortifications' (meta.techtree), for towns and cities.
+    - Raids: the dragon and giant kinds (megafauna, sapient peoples) in the presence table: a town or city in a kind's country (its
+      presence in the cell) is raided at RAID x presence share x its aggression / AGG_MID x its rivalry (the tree's: metallic dragons
+      0.5, 'they coexist more readily'); never a town of its own kin (kobolds, dragonborn: peoples of the same stem).
+    - meta.war ('how warlike the peoples are', x0..x4) scales every chance; x0: no war at all."""
+
+    def __init__(self, run_dir: Path, m: dict, lines: list, people_of: dict, g, c: dict, frame_ids: list):
+        self.c, self.g = c, g
+        tree = m.get("tree") or {}
+        self.war = float((tree.get("meta") or {}).get("war", 1.0) if isinstance(tree, dict) else 1.0)
+        by_id = {l["id"]: l for l in lines}
+        self.idx = {l["id"]: l["index"] for l in lines}
+        self.agg = {}  # people -> aggression (its own tree entry: traits, demography, way)
+        for l in lines:
+            self.agg[l["id"]] = AT.temperament(l)[1]
+        fort = _known_dates(m, len(lines), "fortifications")
+        self.fort = {l["id"]: float(fort[l["index"]]) for l in lines}
+        la, lo = np.radians(g.lat), np.radians(g.lon)
+        self.xyz = np.stack([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)], 1)
+        self.incs = []
+        for r in (m.get("contacts") or {}).get("incursions") or []:
+            if r.get("kind") != "displacement":
+                continue
+            a, b = np.radians(r["lat"]), np.radians(r["lon"])
+            reach = np.sqrt(r["mkm2"] * 1e6 / np.pi) / R_KM + 2 * g.spacing
+            self.incs.append({**r, "by_p": people_of.get(self.idx.get(r["by"], -1), r["by"]), "over_p": people_of.get(self.idx.get(r["over"], -1), r["over"]),
+                              "xyz": np.array([np.cos(a) * np.cos(b), np.cos(a) * np.sin(b), np.sin(a)]), "cos": float(np.cos(min(reach, np.pi)))})
+        self.dt_frame = 0.5
+        # the raiders: tree entries flagged megafauna, and groups of them
+        ent = {e["id"]: e for e in (tree.get("lineage") or [])} if isinstance(tree, dict) else {}
+        mega = {k for k, e in ent.items() if e.get("megafauna")}
+        mega |= {l["id"] for l in lines if l.get("group_of") in mega}
+        self.raiders = [l for l in lines if l["id"] in mega]
+        self.dragon = {l["id"]: "flies" in (l.get("traits") or []) for l in self.raiders}
+
+        def rivalry(x, seen=()):  # (spec: given, else inherited from the first parent; a group's from its people)
+            e = ent.get(x) or {}
+            if "rivalry" in e:
+                return float(e["rivalry"])
+            ps = list(e.get("parents") or []) or ([by_id[x]["group_of"]] if by_id.get(x, {}).get("group_of") else [])
+            return rivalry(ps[0], seen + (x,)) if ps and ps[0] not in seen else 1.0
+        self.rivalry = {l["id"]: rivalry(l["id"]) for l in self.raiders}
+
+        def anc(x):  # (a line and all its ancestors)
+            seen, st = set(), [x]
+            while st:
+                y = st.pop()
+                if y in seen or y not in by_id:
+                    continue
+                seen.add(y)
+                st += list(by_id[y].get("parents") or []) + ([by_id[y]["group_of"]] if by_id[y].get("group_of") else [])
+            return seen
+        self.anc = {l["id"]: anc(l["id"]) for l in lines}
+        # a raider's stem: its topmost megafauna ancestor (the draconic stem for every dragon); its kin descend from the stem
+        self.stem = {}
+        for l in self.raiders:
+            top = [a for a in self.anc[l["id"]] if a in mega or (a in ent and ent[a].get("megafauna"))]
+            self.stem[l["id"]] = set(top)
+        self.pt = None
+        if self.raiders and self.war > 0 and c["RAID"] > 0:
+            from .output import read_presence
+            self.pt = read_presence(run_dir, m)
+        self.frame_ids = frame_ids
+        self._pres: dict = {}
+
+    def walled(self, people: str, tier: int, ago: float) -> bool:
+        return tier >= 2 and self.fort.get(people, -1.0) >= ago - 1e-9
+
+    def incursion(self, cell: int, old: str, new: str, ago: float) -> dict | None:
+        """The run's incursion (if any) in which `new` took `cell` from `old` around `ago`."""
+        best = None
+        for r in self.incs:
+            if r["by_p"] != new or r["over_p"] != old:
+                continue
+            if abs(r["ago_kyr"] - ago) > r["span_kyr"] / 2 + self.dt_frame + 1e-9:
+                continue
+            if float(self.xyz[cell] @ r["xyz"]) < r["cos"]:
+                continue
+            if best is None or abs(r["ago_kyr"] - ago) < abs(best["ago_kyr"] - ago):
+                best = r
+        return best
+
+    def fate(self, u: float, winner: str, walls: bool) -> str:
+        """'razed', 'sacked' or 'taken' for one draw u (a place the winner took by force): sacked at SACK x aggression / AGG_MID (x WALLS
+        behind walls) x meta.war; RAZE of those sacks leave a ruin at a martial winner's aggression, proportionally fewer below it."""
+        agg = self.agg.get(winner, AT.AGG_BASE)
+        p = min(1.0, self.c["SACK"] * agg / AGG_MID * self.war * (self.c["WALLS"] if walls else 1.0))
+        if u < p * self.c["RAZE"] * min(1.0, agg / AGG_MID):
+            return "razed"
+        return "sacked" if u < p else "taken"
+
+    def presence(self, jf: int) -> dict:
+        """{raider id: (cells,) presence share 0..1} at stored frame jf (cached: one frame)."""
+        if jf not in self._pres:
+            out = {}
+            if self.pt is not None:
+                off = self.pt["offsets"][jf]
+                for l in self.raiders:
+                    k = l["index"]
+                    a, b = int(off[k]), int(off[k + 1])
+                    if b > a:
+                        v = np.zeros(self.g.n, np.float32)
+                        v[self.pt["cells"][a:b].astype(np.int64)] = self.pt["share"][a:b] / 100.0
+                        out[l["id"]] = v
+            self._pres = {jf: out}
+        return self._pres[jf]
+
+    def kin(self, raider: str, people: str) -> bool:
+        return bool(self.stem.get(raider, set()) & self.anc.get(people, {people}))
+
+    def raid(self, u: float, cell: int, holder: str, walls: bool, jf: int) -> str | None:
+        """The kind that raids the place at `cell` this step (one draw u), or None."""
+        if self.pt is None:
+            return None
+        acc = 0.0
+        for rid, v in self.presence(jf).items():
+            sh = float(v[cell])
+            if sh <= 0 or self.kin(rid, holder):
+                continue
+            acc += min(1.0, self.c["RAID"] * self.c["STEP_KYR"] / 0.1 * sh * self.agg.get(rid, AT.AGG_BASE) / AGG_MID * self.rivalry[rid] * self.war
+                       * (self.c["WALLS"] if walls else 1.0))
+            if u < acc:
+                return rid
+        return None
+
+
 def derive(run_dir: Path, **over) -> dict:
     """{"doc": settlements.json, "summary": meta.settlements} of a stored peoples run. `over`: CONST overrides for this call."""
     t0 = time.time()
@@ -372,6 +534,7 @@ def derive(run_dir: Path, **over) -> dict:
     ids = [l["id"] for l in lines]
     people_of = {l["index"]: (l.get("group_of") or l["id"]) for l in lines}
     plural = {l["id"]: re.sub(r" \(.*\)$", "", l.get("name") or l["id"].replace("_", " ")) for l in lines}  # ('the humans', 'the elves')
+    war = _War(run_dir, m, lines, people_of, g, c, fidx)  # (PW-1108: takings by force, sacks, razings, raids)
 
     steps = np.round(np.arange(fago[0], -1e-9, -c["STEP_KYR"]), 3)
     if steps[-1] != 0:
@@ -524,7 +687,8 @@ def derive(run_dir: Path, **over) -> dict:
         dens = (1 - w) * dens_f[j] + w * dens_f[k2]
         farm = (1 - w) * farm_f[j] + w * farm_f[k2]
         rain = (1 - w) * rain_f[j] + w * rain_f[k2]
-        e = frame_env(j if w < 0.5 else k2)
+        jn = j if w < 0.5 else k2
+        e = frame_env(jn)
         lead = e["mix_lead"].astype(np.int64)
         second = e["mix_second"].astype(np.int64)
         has = lead != NONE
@@ -640,7 +804,7 @@ def derive(run_dir: Path, **over) -> dict:
                      "holder": h, "holders": [[float(ago), h]], "abandoned_kyr": None, "why": None,
                      "ruin_of": int(last_site[k, cell]) if last_site[k, cell] >= 0 else None, "resettled_as": None,
                      "pop": pop, "peak_pop": pop, "peak_kyr": float(ago), "series": [[float(ago), round(pop)]],
-                     "rain0": float(rain[cell]), "_peak_who": None}
+                     "rain0": float(rain[cell]), "_peak_who": None, "war": [], "walled_kyr": None}
                 tm = float(TOWN_MIN[int(stages[k][cell])]) if k < 2 else 0.0
                 s["bands"] = [[float(ago), tm, float(c["CITY_MIN"])]]  # (the size classes in force, PW-1114: [kyr ago, town min, city min])
                 s["tier"] = s["tier_pk"] = max(tier_of(pop, c, int(stages[k][cell])), 1) if k < 2 else 1
@@ -667,6 +831,7 @@ def derive(run_dir: Path, **over) -> dict:
                     s["colony"] = bool(take_col[cell])
                     if ore_m[cell] and s["district"] == "rock salt":  # (a salt mine whose people came to smelt: now worked for its ore too)
                         s["district"] = district_name(D, cell) + " and rock salt"
+                old_h, razed = s["holder"], None
                 if hl[cell] != NONE and k != 1:  # (a minority's place stays its own people's)
                     h = people_of[int(hl[cell])]
                     if h != s["holder"]:
@@ -683,12 +848,40 @@ def derive(run_dir: Path, **over) -> dict:
                         s["tier_pk"] = s["tier"]
                 if s["pop"] > s["peak_pop"]:
                     s["peak_pop"], s["peak_kyr"] = s["pop"], float(ago)
+                # PW-1108: war and raids (chief places and a second people's own places; not mines or pits)
+                if k < 2:
+                    walls = war.walled(s["holder"], s["tier"], ago)
+                    if walls and s["walled_kyr"] is None:
+                        s["walled_kyr"] = float(ago)
+                    yr = int(round(ago * 1000))
+                    ev = None
+                    if k == 0 and s["holder"] != old_h:
+                        stake = sum(float(e[sk][cell]) for lk, sk in (("mix_lead", "mix_lead_share"), ("mix_second", "mix_second_share"))
+                                    if e[lk][cell] != NONE and people_of[int(e[lk][cell])] == old_h) / 100
+                        if stake < c["DISPLACED"]:  # (taken by force: its old people lost its stake in the cell)
+                            f = war.fate(u("war", k, cell, yr), s["holder"], war.walled(old_h, s["tier"], ago))
+                            inc = war.incursion(cell, old_h, s["holder"], ago)
+                            ev = (f, s["holder"]) if inc is None else (f, s["holder"], inc.get("from_deg"))
+                    if ev is None and s["tier"] >= 2:
+                        r = war.raid(u("raid", k, cell, yr), cell, s["holder"], walls, fidx[jn])
+                        if r is not None:
+                            ev = ("raided", r)
+                    if ev is not None:
+                        s["war"].append([float(ago), *ev])
+                        if ev[0] == "razed":
+                            razed = f"razed by the {plural.get(ev[1], ev[1])}"
+                        elif ev[0] in ("sacked", "raided"):
+                            s["pop"] *= 1 - c["SACK_LOSS" if ev[0] == "sacked" else "RAID_LOSS"]
+                            s["series"][-1][1] = round(s["pop"])
+                            s["tier"] = tier_of(s["pop"], c, int(stages[k][cell]))
                 low[k, cell] = low[k, cell] + 1 if tgt[cell] < aban else 0
                 why = None
                 if e["sea"][cell]:
                     why = "the sea rose over it"
                 elif e["ice"][cell]:
                     why = "the ice came"
+                elif razed:
+                    why = razed
                 elif k == 1 and same_people[min(int(lead[cell]), nl), min(int(line_of[1, cell]), nl)] and lead_since[cell] - ago >= c["HAND_KYR"] - 1e-9:
                     why = MERGED
                 elif k < 2 and W["river_nav"][cell] > 0 and e["elev"][cell] < c["RIVER_LOW_M"] and u("river", k, cell, int(round(ago * 1000))) < c["RIVER_SHIFT"] * dt:
@@ -744,6 +937,9 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
                "bands": [[round(a, 3), t, cm] for a, t, cm in s["bands"]] if not mine else []}
         if mine:  # (D12: what the district is worked for, and whether by a colony of incomers)
             rec["district"], rec["colony"] = s.get("district"), bool(s.get("colony"))
+        else:  # (PW-1108: [kyr ago, taken | sacked | razed | raided, by whom], and since when its holders had walls)
+            rec["war"] = [[round(w_[0], 3), *w_[1:]] for w_ in s.get("war") or []]  # (a 4th item: in one of the run's incursions, from that bearing or None)
+            rec["walled_kyr"] = None if s.get("walled_kyr") is None else round(s["walled_kyr"], 3)
         out.append(rec)
         for p, key in ((s["founded_by"], "founded"), (s["holder"] if alive else None, "alive")):
             if p is None:
@@ -771,9 +967,19 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
     whys: dict[str, int] = {}
     for r in out:
         if r["why"]:
-            k = "driven out" if r["why"].startswith("driven out") else r["why"]
+            k = "driven out" if r["why"].startswith("driven out") else "razed" if r["why"].startswith("razed by") else r["why"]
             whys[k] = whys.get(k, 0) + 1
     alive = [r for r in out if r["abandoned_kyr"] is None]
+    war = {ev: 0 for ev in WAR_EVENTS}
+    war_by: dict[str, dict] = {}
+    for r in out:
+        for _, ev, by, *_i in r.get("war") or []:
+            war[ev] += 1
+            b = war_by.setdefault(by, {e: 0 for e in WAR_EVENTS})
+            b[ev] += 1
+    war["places_hit"] = sum(bool(r.get("war")) for r in out)
+    war["walled_now"] = sum(r.get("walled_kyr") is not None for r in alive)
+    war["by"] = dict(sorted(war_by.items(), key=lambda kv: -sum(kv[1].values())))
     doc = {"format": "procgen-settlements/1", "from_kyr": float(steps[0]), "step_kyr": c["STEP_KYR"], "constants": c,
            "tiers": {"village_min": c["ABANDON"], "town_min_by_stage": list(c["TOWN_MIN"]), "city_min": c["CITY_MIN"],
                      "city_cap_by_stage": list(c["CITY_CAP"]), "stages": STAGES},
@@ -783,7 +989,7 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
                "now": {t: sum(r["tier_now"] == t for r in alive) for t in (*TIERS[1:], "mine", "pit")},
                "minority_now": sum(r["kind"] == "minority" for r in alive),
                "colonies_now": sum(bool(r.get("colony")) for r in alive),
-               "why": whys, "people_in_places_now": int(sum(r["pop_now"] for r in alive)),
+               "why": whys, "war": war, "people_in_places_now": int(sum(r["pop_now"] for r in alive)),
                "by_people": dict(sorted(by_people.items(), key=lambda kv: -kv[1]["founded"])),
                "from_kyr": float(steps[0]), "cell_km2": round(area), "generated_in_s": round(secs, 1)}
     return {"doc": doc, "summary": summary}
@@ -822,6 +1028,11 @@ def lines_for_report(sm: dict, doc: dict) -> list[str]:
              f"({sm['now']['village']} villages, {sm['now']['town']} towns, {sm['now']['city']} cities, {sm['now']['mine']} mining districts, {sm['now']['pit']} local pits, {sm.get('colonies_now', 0)} of them colonies; {sm['minority_now']} of the places a second people's own), {sm['ruins']} ruins, "
              f"{sm['resettled']} on older ruins; {sm['people_in_places_now']:,} people in them now ({sm['generated_in_s']} s)",
          "  why abandoned: " + (", ".join(f"{k} {v}" for k, v in sorted(sm["why"].items(), key=lambda kv: -kv[1])) or "none")]
+    w = sm.get("war")
+    if w:
+        L.append(f"  war and raids (PW-1108): {w['taken']} taken by force and occupied, {w['sacked']} sacked, {w['razed']} razed, {w['raided']} raided "
+                 f"by dragons or giants ({w['places_hit']} places); {w['walled_now']} walled now; by: "
+                 + (", ".join(f"{p} " + "/".join(str(v[e]) for e in WAR_EVENTS) for p, v in list(w["by"].items())[:8]) or "none") + " (taken/sacked/razed/raided)")
     for p, b in sm["by_people"].items():
         L.append(f"  {p:<16} founded {b['founded']:>4}, alive {b['alive']:>4} ({b['towns_now']} towns, {b['cities_now']} cities; "
                  f"largest {b['largest_now']:,}; {b['own_places_now']} own places among others, {b['mines_now']} mining districts, {b.get('pits_now', 0)} pits, {b.get('colonies_now', 0)} colonies), ruins {b['ruins']:>4}, cities ever {b['cities_ever']}")
