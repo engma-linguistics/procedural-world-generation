@@ -36,8 +36,16 @@ What to try (one of):
 - B. Build the ancestor line from M's final json with its core-100 words and gram forms swapped for the snapshot at t
   (cheap, no pass; mixes a 6 kyr lexicon with today's paradigms, so the grammar line can still contradict).
 Lean: A.
-- [ ] fable daughters descend from the shown ancestor: a `demo_page.py` check that each daughter's fable word shares
+- [x] fable daughters descend from the shown ancestor: a `demo_page.py` check that each daughter's fable word shares
   a root (`etym_roots`) with the ancestor's or is marked replaced or borrowed
 
 ## Updates
+- 2026-11-09: Done (lang-lane6), option A. `History.splits` keeps a lect as it stood at its first bud 2-9 kyr ago
+  (`history.SPLIT_KYR`); `output.splits_json` writes those with living lines on 2+ branches as the doc's `fable_splits`
+  (core lexicon, as a dead lect keeps; 56 on a24559); `texts.pick_family` picks among them with daughters on 2+
+  branches; `texts.fable_descent` (run by `demo_page.py`, a stderr warning) checks the fable words by etymological root:
+  a pre-split root of the line must be in the ancestor, a post-split root of the family must not be shared across
+  branches. a24559 pass: d767 as it stood at 4.5 kyr, daughters d767, d820, d819, d818, 0 problems (stored run: p320
+  at 6.0, all daughters through d767). The check sees lexical innovations only; the split state makes the shared sound
+  changes right by construction.
 - 2026-11-09: Created from inbox draft draft-language-fable-ancestor-at-split.md (found by lang-lane5).
