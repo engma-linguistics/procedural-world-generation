@@ -44,3 +44,4 @@ My lean: B as a light nudge on the proto preset only, if Daniel wants elves to r
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-elvish-lects-not-tolkien-elvish.md (found by lang-find).
+- 2026-11-08: RULING (owner, Language Desk): leave the elves as their own (no nudge), but check that a Tolkien-like language could arise from the generator at all. Measurement running (elf proto draws scored with the finder's Sindarin/Quenya profiles).

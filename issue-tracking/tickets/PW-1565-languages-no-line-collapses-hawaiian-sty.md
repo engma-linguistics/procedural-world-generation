@@ -2,7 +2,7 @@
 id: PW-1565
 title: "Languages: no line collapses Hawaiian-style; the inventory-size anchor holds every line at its proto size whatever its rate"
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -42,3 +42,4 @@ or coast founder). Lean: (b), one line, and it is what a founder effect is.
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-no-inventory-collapse.md (found by lang-rulings (2026-11-08)).
+- 2026-11-08: RULING (owner, Language Desk): option (b), loosen the anchor during a burst. Folded into the PW-1551 lane so one recalibration pass covers both.
