@@ -1,0 +1,203 @@
+--- a/planet/hydrology.py	2026-11-09 16:47:14.929151316 -0500
++++ b/planet/hydrology.py	2026-11-09 16:47:14.738118804 -0500
+@@ -72,7 +72,8 @@
+         land = is_land(h, ice, grid)
+         hr = h + top  # what the water runs over: the ice surface, the ground off it
+         if lake_every and it % lake_every == 0:
+-            lk = lakes(grid, hr, c["runoff"], c["aet"], c["lake_evap"], iced, land=land, pet_mm=c.get("pet"))
++            lk = lakes(grid, hr, c["runoff"], c["aet"], c["lake_evap"], iced, land=land, pet_mm=c.get("pet"),
++                       months=c if "p_jul" in c else None)
+         if lk is None:
+             _, down, order = priority_flood(grid, hr, sea=~land)
+             flow = accumulate(down, order, np.where(land, c["runoff"], 0.0) / 1000.0)
+@@ -111,6 +112,17 @@
+ # the divide for tens of Myr (Red Rock Pass, Bonneville's outlet; the wind
+ # gaps of the Appalachian ridges)
+ VALLEY_MYR = 20.0
++# Overbank flooding (PW-831): a river whose flood outgrows its channel on a
++# low gradient spills onto its plain, where the flood evaporates as open water
++# (_overbank). The channel's section is the downstream hydraulic geometry's
++# at the flood flow, w = 13.4 Q^0.46 m, d = 0.18 Q^0.47 m (Miller et al.
++# 2014, HESS 18: 4883, Mississippi basin gauges at the mean annual flow; the
++# exponents b ~ 0.5, f ~ 0.4 of Leopold & Maddock 1953 and of world rivers),
++# with Manning's n of a clean straight main channel (Chow 1959: 0.025 / 0.030 /
++# 0.033, the gauges' single-thread reaches). Off (False) for comparisons only.
++OVERBANK = True
++OVERBANK_SLOPE = "carved"
++OVERBANK_W, OVERBANK_D, OVERBANK_N = (13.4, 0.46), (0.18, 0.47), 0.030
+ 
+ 
+ def discharge(grid: Grid, flow: np.ndarray) -> np.ndarray:
+@@ -250,14 +262,17 @@
+           lake_evap_mm: np.ndarray, no_lake: np.ndarray | None = None, min_depth: float = MIN_DEPTH,
+           min_slope: float = MIN_SLOPE, channel: float | None = None,
+           outlet: np.ndarray | None = None, valley: np.ndarray | None = None,
+-          land: np.ndarray | None = None, pet_mm: np.ndarray | None = None) -> dict:
++          land: np.ndarray | None = None, pet_mm: np.ndarray | None = None, months: dict | None = None) -> dict:
+     """Where water stands. elev m; land: what isn't sea (default
+     geo.is_land of elev: ground below 0 cut off from the sea is land, a
+     hollow these lakes fill or leave dry); runoff, actual land
+     evaporation and open-water evaporation in mm/yr; no_lake: cells that
+     can't hold a lake (ice sheets); pet_mm (optional): the climate's
+     potential evaporation over land, mm/yr: with it a closed hollow in a dry
+-    catchment is kept however shallow or flat (_dry_hollows). A cell's elevation is its mean over
++    catchment is kept however shallow or flat (_dry_hollows); months
++    (optional): the climate's temp, t_warm, t_cold, p_jul, p_jan: with them
++    the rivers' floods spill onto their plains and evaporate there where
++    their channels can't carry them (_overbank). A cell's elevation is its mean over
+     ~100 km, so a hollow less than min_depth below its spill point is taken
+     to be drained by a river channel too small to resolve (water flows on
+     through it, no lake). That holds inside basins too: a dip in a basin's
+@@ -388,10 +403,116 @@
+         valley_pit = sink & ~wet & (spill <= ground + 1.0)
+         sink &= ~valley_pit
+         kind[valley_pit & (kind == SALT_PAN)] = NO_LAKE
+-    return dict(wet=wet, kind=kind, level=level, sink=sink, src=src - loss * wet, bed=np.asarray(elev, float),
++    src_out = src - loss * wet
++    if OVERBANK and months is not None:
++        lk = dict(wet=wet, level=level, sink=sink, src=src_out, bed=np.asarray(elev, float), sea=~land)
++        src_out = src_out - _overbank(grid, ground, lk, land, np.where(land, runoff_mm, 0.0), loss, months, no_lake,
++                                      carved=carved)
++    return dict(wet=wet, kind=kind, level=level, sink=sink, src=src_out, bed=np.asarray(elev, float),
+                 incised=incised, sea=~land)
+ 
+ 
++def _overbank(grid, ground, lk, land, runoff_mm, loss, months, no_lake=None, carved=None):
++    """Water each land cell (no lake) loses off its flooded plain, flow
++    units (PW-831). A river's channel is cut to carry its flood month at
++    bankfull where its bed falls at the slope its section needs (Manning,
++    with the hydraulic geometry's width and depth for that flow: OVERBANK_*);
++    on a lower gradient the same section carries only sqrt(S / S_eq) of it,
++    and the months' flow above that spills onto the plain beside it (the Sudd,
++    the inner Niger delta, the Okavango: the Bahr el Jebel's channel carries
++    far less than its inflow). The spill stands on the cell's flat ground
++    (vegetation.floodplain's flatness) and evaporates as open water
++    (lake_evap - aet) until it is gone or the flat ground is all water; the
++    rest drains back to the river. Taken cell by cell down the rivers, so a
++    flat reach shrinks its river toward what its channel carries. months:
++    climate fields temp, t_warm, t_cold, p_jul, p_jan (seasonal_flow's
++    profile of the year: the flood a river's runoff makes)."""
++    from .ocean import cell_area_km2
++    from .vegetation import relief
++    wet, src = lk["wet"], lk["src"]
++    surf = np.where(wet, lk["level"], lk["bed"]).astype(float)
++    _, down, order, _ = route(grid, ground, lk)
++    shape = _month_shape(grid, down, order, runoff_mm, wet, months)
++    a_m2 = cell_area_km2(getattr(grid, "base", grid)) * 1e6
++    d_m = np.sqrt(a_m2)
++    slope = _reach_slope(down, surf if OVERBANK_SLOPE == "bed" else np.where(wet, surf, carved), FLOOD_EPS) / d_m
++    flat = np.clip(1 - relief(grid, ground) / 400.0, 0, 1)
++    ok = land & ~wet & (down >= 0)
++    if no_lake is not None:
++        ok &= ~no_lake
++    cap = np.where(ok, loss * flat, 0.0)  # flow units: open water over all of the cell's flat ground
++    q_unit = float(discharge(grid, np.ones(1))[0])  # m3/s per flow unit
++    (aw, bw), (ad, bd) = OVERBANK_W, OVERBANK_D
++    # S_eq(Q) = (n v / d^(2/3))^2, v = Q / (w d): a power of Q
++    k_eq = (OVERBANK_N / (aw * ad ** (5 / 3))) ** 2
++    e_eq = 2 * (1 - bw - 5 / 3 * bd)
++    return _overbank_k(down, order, src, wet, ok, shape, slope, cap, q_unit, k_eq, e_eq)
++
++
++@njit(cache=True)
++def _overbank_k(down, order, src, wet, ok, shape, slope, cap, q_unit, k_eq, e_eq):
++    n = src.shape[0]
++    flow = src.copy()
++    out = np.zeros(n)
++    for t in range(order.shape[0] - 1, -1, -1):
++        i = order[t]
++        if not wet[i] and flow[i] < 0:
++            flow[i] = 0.0
++        if ok[i] and flow[i] > 0 and cap[i] > 0:
++            peak = 0.0
++            for m in range(12):
++                peak = max(peak, shape[m, i])
++            qf = flow[i] * peak * q_unit  # the flood month, m3/s
++            s_eq = k_eq * qf ** e_eq
++            c = flow[i] * peak * min(np.sqrt(slope[i] / s_eq), 1.0)
++            spill = 0.0
++            wet_m = 0
++            for m in range(12):
++                x = flow[i] * shape[m, i] - c
++                if x > 0:
++                    spill += x
++                    wet_m += 1
++            spill /= 12.0
++            # the plain is under water (and evaporates as open water) only in the months the river spills
++            lost = min(spill, cap[i] * wet_m / 12.0)
++            flow[i] -= lost
++            out[i] = lost
++        d = down[i]
++        if d >= 0:
++            flow[d] += flow[i]
++    return out
++
++
++@njit(cache=True)
++def _reach_slope(down, surf, eps):
++    """m per cell the river falls from each cell down to the end of the flat
++    it is on: a flat (a filled hollow, a lake's surface, the cells route()'s
++    flood lifted, all eps per cell) falls at the slope of the reach it leads
++    to, not at its eps steps; the first step down more than those (2 eps)
++    ends it."""
++    n = down.shape[0]
++    out = np.zeros(n)
++    for i in range(n):
++        j, k = i, 0
++        while down[j] >= 0 and k < n:
++            d = down[j]
++            k += 1
++            step = surf[j] - surf[d]
++            j = d
++            if step > 2.0 * eps:
++                break
++        if k > 0:
++            out[i] = max(surf[i] - surf[j], 0.0) / k
++    return out
++
++
++def _month_shape(grid, down, order, runoff_mm, wet, months):
++    """seasonal_flow's months: each cell's flow by month over its mean, (12, n)."""
++    q = _month_flow(grid, down, order, runoff_mm, wet, months)[0]
++    mean = q.mean(0)
++    return np.where(mean > 1e-12, q / np.maximum(mean, 1e-12), 1.0)
++
++
+ FLOOD_EPS = 0.01  # m: route()'s priority flood's lift per cell across a filled pit
+ 
+ 
+@@ -460,6 +581,14 @@
+                    river's June flood)
+       flood_month  the peak month, 1-12
+       frozen       months a year the river is frozen (its cell below FROZEN_C)"""
++    q, nf = _month_flow(grid, down, order, runoff_mm, wet, c)
++    mean = q.mean(0)
++    ratio = np.where(mean > 1e-12, q.max(0) / np.maximum(mean, 1e-12), 1.0)
++    return dict(flood_ratio=ratio, flood_month=q.argmax(0) + 1, frozen=nf)
++
++
++def _month_flow(grid, down, order, runoff_mm, wet, c):
++    """seasonal_flow's monthly flow, (12, n) in flow units, and the frozen months per cell."""
+     from . import climate
+     mo = climate.months(grid.lat, c["temp"], c["t_warm"], c["t_cold"], c["p_jul"], c["p_jan"])
+     w = mo["water"]
+@@ -478,9 +607,7 @@
+         out = wet & (down >= 0) & ~wet[np.maximum(down, 0)]
+         damp[out] = np.clip(3.0 * size[lab[out]] / np.maximum(upstream[out], 1), 0, 0.9)
+     q = kernels.accumulate_months(down, order, src, damp)
+-    mean = q.mean(0)
+-    ratio = np.where(mean > 1e-12, q.max(0) / np.maximum(mean, 1e-12), 1.0)
+-    return dict(flood_ratio=ratio, flood_month=q.argmax(0) + 1, frozen=nf)
++    return q, nf
+ 
+ 
+ def endorheic(down: np.ndarray, order: np.ndarray, sink: np.ndarray) -> np.ndarray:
+@@ -548,7 +675,7 @@
+         sel = (basin[a] >= 0) & (basin[a] != basin[b])
+         np.minimum.at(rim, lab[a][sel], np.maximum(surf[a], surf[b])[sel])
+     lk = lakes(grid, surf, c["runoff"], c["aet"], c["lake_evap"], iced, channel=channel, outlet=outlet,
+-               valley=valley, land=land, pet_mm=c.get("pet"))
++               valley=valley, land=land, pet_mm=c.get("pet"), months=c if "p_jul" in c else None)
+     if closed is not None and k:
+         # a lake fills its basin no higher than the rim: what more its
+         # rivers bring (a wetter climate than the data's) spills over the
