@@ -2,7 +2,7 @@
 id: PW-1583
 title: With polities in the history on, the states stay small (largest 0.44 Mkm² against 2.28 with the switch off)
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -42,4 +42,5 @@ those runs: since PW-1575 its "readout" row on a switch-on run is the live map.
 - [ ] with the switch on, the largest polity over the last 3 kyr is within the spread of the switch-off read-out on the same seeds
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 241 (24f33270): cause = history lacked confederations and second-people town seats (states capped at one city-state's reach); both added behind the switch, plus stage-aware town threshold and a refugee NaN fix. L6 seeds 7/3/10 largest polity peak now 3.11/2.05/3.27 Mkm2 (off 2.28/1.56/3.35). Switch stays off: fewer states (50-75% of off) and less steady under the nudge; follow-up ticket taken in.
 - 2026-11-09: Created from inbox draft draft-live-polities-stay-small.md (found by lane238).

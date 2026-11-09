@@ -1,4 +1,5 @@
 ---
+id: PW-1587
 title: With polities in the history on, still about half to three quarters as many states, and the map less steady when nudged
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane241
 blocked_by: []
 relates: [PW-1456, PW-1460, PW-785]
 refs: ["planet/lineages/history/polity_live.py::LivePolities._step", "planet/lineages/history/polity_live.py::LivePolities._places", "planet/lineages/history/polity_live.py::LivePolities._confederations", "planet/lineages/history/polity_live.py::LivePolities._second_places", "planet/lineages/settlements.py::derive", "planet/lineages/polities.py::_site_tables", docs/review/culture/polities/round16.md, docs/review/culture/polities/round16/diag.py, docs/review/culture/polities/round16/measure_v1.py, docs/review/culture/polities/round14/measure.py, "world 4360a3", "world 899985", "scratch l241 runs 02a90b dbd75c 0119b9 1dbb64 (on), 6418c8 14ae84 4c6c89 863ee2 (off)"]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -34,3 +37,7 @@ ledger's sites do), rather than a threshold. Then re-measure on/off at L6 seeds 
 - [ ] L7 seed 7 on/off with lane 241's code: largest median and peak, states, nudge steadiness
 - [ ] states with the switch on within the switch-off spread on the same seeds
 - [ ] nudge steadiness on no worse than off over at least two seeds (re-rolled draws), then a needs-decision to flip the switch
+
+## Updates
+- 2026-11-09: Coordinator 11-09: lane 241's L7 pair (world 899985, dnd, seed 7, branch 24f33270, switch on, run 16b49e) vs lane 234's off 0a1c30: first state 3,300 vs 4,100 ya; states 2,000/1,000/0 ya 89/121/148 vs 50/89/122; largest last 3 kyr median 0.77 vs 0.46, peak 1.23 vs 2.33 Mkm2, >=2.3 in 0/31 vs 1/31; nudge (2b7069 vs 19e53f) same ruler 27%/19% (1,000 ya/now) vs 19%/20%. But humans' share now 65.3% on vs 39.6% off: the switch reshapes the peoples heavily at L7. One seed: L7 on now matches or beats off except the peak; L6 still short on state count.
+- 2026-11-09: Created from inbox draft draft-live-polities-fewer-states-l7-check.md (found by lane241).
