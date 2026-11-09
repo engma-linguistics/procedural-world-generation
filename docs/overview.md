@@ -949,6 +949,12 @@ frequencies, women and birth, sacred places, sacred times, hunting and harvest, 
 way of life, techs and gods. Shown in the workbench's Religion tab (`viewer/religiontab.js`: god trees, a faith map with a time slider
 from `GET /api/faithmap`, a faith timeline, taboos). Stats over several trees: `tools/religion_stats.py`, docs/review/religion/.
 The culinary brief (a people's range for a cook, or one culture's food sheet; `GET /api/brief`) has two doors: the workbench's **Culinary brief** tab (pick a people, a culture, an era), and the globe viewer's Peoples box, **Culinary brief…** button (PW-1476). "The workbench tree" is the **Peoples tree & timeline** tab, the first tab of the Peoples workbench.
+Herd animals (`animal_defs.py`): horse, dog, sheep and goats, cattle and fowl, plus (PW-835) pig, reindeer, camel, llama and alpaca,
+water buffalo and yak, each with a sourced first-taming anchor (chicken 3.5 ka, horse 4.2 ka) and a wild range read from the land, and the
+two rare fantasy mounts; stored as uint16 bit layers. Food fit (`food_fit.py`, PW-905): each people's body read against fourteen food
+classes (fresh milk, soured dairy, raw and long-hung meat, grain, browse, tannin, sweet, chili, alcohol, caffeine, cacao, alliums...) as
+thrives / tolerates / poorly suited / harmful, from real biology of the nearest real body (a JUDGEMENT for fantasy bodies); the cuisine
+sheet's "Body and food" line and the brief's peoples show it. Sources: docs/review/food/lane256.md.
 
 Faiths you write (PW-1430): the tab's "Your faiths" view saves faiths Daniel writes (name, founding culture, people or place, year,
 named gods with domains, spreads or closed) and the run's gods mode (PW-1309) as the run's `authored.json` (`POST /api/authored`, the
