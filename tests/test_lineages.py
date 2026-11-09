@@ -4083,7 +4083,7 @@ def test_war_dials_aggression_troubles_and_refugees(faketz, monkeypatch):
     h.p[fk][land[180:400]] = 0.8
     _sync_pm(h)
     h.rule.hem[:] = 0.0
-    monkeypatch.setattr(HP, "TROUBLE_PER_KYR", 0.0)
+    monkeypatch.setattr(HP, "TROUBLE_SHARE", 0.0)
     monkeypatch.setattr(HP, "WAR_N0", 1e9)  # (the frontier term alone: the war hazard is linear in the dials below saturation)
     h._brake(L[kb], kb, K, step, env, None)
     base = h.lost["kob"]["war"]
@@ -4100,14 +4100,14 @@ def test_war_dials_aggression_troubles_and_refugees(faketz, monkeypatch):
     assert h.lost.get("kob", {}).get("war", 0.0) == 0.0
     h.tree.war_early = h.tree.war_late = 1.0
     # times of troubles: certain this step, the hazard x TROUBLE_X, an event, and the people driven off push refugees
-    monkeypatch.setattr(HP, "TROUBLE_PER_KYR", 1e6)
+    monkeypatch.setattr(HP, "TROUBLE_SHARE", 1e6)
     monkeypatch.setattr(HP, "TROUBLE_H", 0.0)
     n0 = len(h.events)
     Kt = h._brake(L[kb], kb, K, step, env, None)
     assert h.lost["kob"]["war"] > 2 * base
     assert h.troubles_n["kob"] == 1 and any(e["kind"] == "troubles" for e in h.events[n0:])
     assert h._refugee[kb] > 0 and h._refugees(kb) == pytest.approx(HP.REFUGEE_Q * h._refugee[kb])
-    monkeypatch.setattr(HP, "TROUBLE_PER_KYR", 0.0)
+    monkeypatch.setattr(HP, "TROUBLE_SHARE", 0.0)
     h.p[kb] = np.minimum(h.p[kb], Kt)
     _sync_pm(h)
     h._brake(L[kb], kb, K, step, env, None)

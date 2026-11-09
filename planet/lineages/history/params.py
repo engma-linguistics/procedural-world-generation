@@ -207,19 +207,24 @@ WAR_EXT = 0.5  # the frontier's weight against crowding (lane 82: foragers' kill
 # The rest of PW-1172's war (lane 259; design.md (b)). h above is x meta.war x E(lev) x A: E the era pair meta.war_early / war_late
 # blended by tech level (counter._war_era), A a people's own warlikeness: its war_x x AGGRESSIVE_X for the `aggressive` trait
 AGGRESSIVE_X = 2.0  # lane 82's design (judgement): an aggressive culture's war hazard doubled
-# Times of troubles (counter._troubles): Turchin 2009 (read by lane 82, design.md (b)) finds agrarian cycles of ~200-300 years and
-# instability events 0.6 a decade in growth phases against 3.8 in decline. The century step cannot resolve the cycle, so a people whose
-# crowded core would fight at TROUBLE_H or more without a state has TROUBLE_PER_KYR one-step pulses a kyr, its hazard x TROUBLE_X then.
-# All three are lane 82's judgements: 2 a kyr is about one troubled century in five (a decline phase is part of each 200-300 yr cycle);
-# x3 sits under Turchin's 3.8 / 0.6 ~ 6x swing in events, since land lost to war already saturates (LAND_Q at H_MAX)
-TROUBLE_PER_KYR, TROUBLE_X, TROUBLE_H = 2.0, 3.0, 0.5 * H_MAX
+# Times of troubles (counter._troubles): Turchin 2009 (Ann. N.Y. Acad. Sci. 1162:1, fetched by lane 259) finds agrarian "slow
+# oscillations in population numbers, with periods of roughly two to three centuries" (abstract), and his Table 1 (p. 13, after Turchin
+# and Nefedov 2008) lists seven secular cycles' growth and decline phases with instability events 0.6 (+-0.06) a decade in growth
+# against 3.8 (+-0.5) in decline. From that table's years: the decline phases average 107 yr (TROUBLE_KYR) and take 41% of their cycle
+# (TROUBLE_SHARE; per cycle 0.31-0.58), the cycles 257 yr. The century step cannot resolve the cycle, so a people whose crowded core
+# would fight at TROUBLE_H or more without a state is troubled for a step with chance TROUBLE_SHARE x dt / TROUBLE_KYR (0.38 a century
+# step): about the decline phases' share of the time. Its war hazard is x TROUBLE_X that step. TROUBLE_X 3 (lane 82's judgement) sits
+# under Table 1's 3.8 / 0.6 ~ 6x in events, events not being deaths and war-torn land saturating at H_MAX anyway. TROUBLE_H (half of
+# H_MAX: a horticulturalist's base rate) is lane 82's judgement
+TROUBLE_SHARE, TROUBLE_KYR = 0.41, 0.107
+TROUBLE_X, TROUBLE_H = 3.0, 0.5 * H_MAX
 TROUBLE_LOG_KYR = 1.0  # (one logged 'troubles' event per people per kyr at most; every pulse still counts in troubles_n)
 # Refugees (PW-1172, design.md (b) "Displacement": "crowded losers jump (_jump) as refugees"): the share of its people war drives off
 # this step (where its war-torn land now holds fewer than live there: a flare, troubles or a people growing into crowding; not a loss
 # it has settled under) adds to its push to found far country (dispersal._jump_push), x REFUGEE_Q. One for one is a judgement: a
 # share of people war drives out pushes as hard as the same share of land filled. Jumps only: fed into the spread's crowding as well,
 # the push moved a small people's numbers by ~40% in a unit test's fake world (test_demography_defaults...). No winner's bonus (it would reward the biggest people)
-REFUGEE_Q = 0.0
+REFUGEE_Q = 1.0
 POLITIES_LIVE = False  # PW-1434 (lane 183): polities in the history, first cut (history.polity_live; round7.md). Off: the stand-ins of history.rule
 STATE_Q = 3.0  # G = 1 / (1 + STATE_Q x tech level x farm share): states pacify (Gomez et al. 2016; Turchin 2009's -alpha S); judgement
 # violent deaths a year by way of life at reference density with a full hostile frontier (lane 82: medians of OWID's compilation of

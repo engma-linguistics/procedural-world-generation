@@ -154,15 +154,16 @@ class CounterMixin:
         """Times of troubles (PW-1172; design.md (b), "Cycles"): Turchin 2009's ~200-300 year secular cycles are at the century step's
         Nyquist limit, so their story is kept as seeded one-step pulses. In the recent epoch a people whose crowded core would fight at
         TROUBLE_H or more were no state to keep the peace (h_free, the hazard with G = 1: Turchin's mechanism is a state too weak to
-        hold its people down) falls into troubles with chance 1 - exp(-TROUBLE_PER_KYR dt) a step; that step its war hazard is
+        hold its people down) falls into troubles with chance TROUBLE_SHARE x dt / TROUBLE_KYR a step (about the share of the time
+        Turchin's decline phases take, params); that step its war hazard is
         x TROUBLE_X everywhere it lives. The multiplier on h this step (1 outside troubles)."""
-        if step.epoch != "recent" or PM.TROUBLE_PER_KYR <= 0 or not held.any() or float(h_free[held].max()) < PM.TROUBLE_H:
+        if step.epoch != "recent" or PM.TROUBLE_SHARE <= 0 or not held.any() or float(h_free[held].max()) < PM.TROUBLE_H:
             return 1.0
         rng = self.__dict__.setdefault("_trng", {}).get(l.id)
         if rng is None:  # (a generator of its own: the other draws of the line stay as they were)
             import zlib
             rng = self._trng[l.id] = np.random.default_rng((self.seed, 1172, zlib.crc32(l.id.encode())))
-        if rng.random() >= 1.0 - np.exp(-PM.TROUBLE_PER_KYR * step.dt):
+        if rng.random() >= min(1.0, PM.TROUBLE_SHARE * step.dt / PM.TROUBLE_KYR):
             return 1.0
         self.troubles_n[l.id] = self.troubles_n.get(l.id, 0) + 1
         last = self._trouble_log.get(k)
