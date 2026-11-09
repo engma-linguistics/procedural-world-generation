@@ -2,7 +2,7 @@
 id: PW-1571
 title: "Languages: no suffixing preference; noun class and gender markers are prefixes more often than suffixes, subject agreement too"
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -28,3 +28,4 @@ Options: (a) asymmetric fusion rate (pre-side binding x0.4-0.5); (b) leave. Lean
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-prefix-heavy.md (found by language lane (owner question, 2026-11-08)).
+- 2026-11-08: RULING (owner, Language Desk q.prefix): (a) markers before the host fuse more slowly; re-measure WALS 26A. Queued after PW-1551.

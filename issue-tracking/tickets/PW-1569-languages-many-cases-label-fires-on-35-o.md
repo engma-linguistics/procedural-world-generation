@@ -2,7 +2,7 @@
 id: PW-1569
 title: "Languages: 'many cases' label fires on 35% of living lects while real case counts run light (no 8+ systems; catalogue has 9 case functions)"
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -31,3 +31,4 @@ Options: (1, slam dunk) label by count in WALS 49A bins, affixes only (clitic ca
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-case-label-and-ceiling.md (found by language lane (owner question, 2026-11-08)).
+- 2026-11-08: RULING (owner, Language Desk q.case): fix the label by count and grow the case catalogue (local-case series etc.) so big systems can form. Queued after PW-1551.

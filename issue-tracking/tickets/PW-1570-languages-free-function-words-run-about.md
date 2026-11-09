@@ -2,7 +2,7 @@
 id: PW-1570
 title: "Languages: free function words run about one segment longer than real ones (you, this/that, and, in: median 4 segments)"
 type: task
-status: needs-decision
+status: todo
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -32,3 +32,4 @@ Options: (a) draw proto function words (FUNC, pronouns, deictics) at 1 syllable 
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-function-words-long.md (found by language lane (owner question, 2026-11-08)).
+- 2026-11-08: RULING (owner, Language Desk q.func): (c) both: draw function words short and let frequent unstressed words wear down faster. Also check pronouns and the most basic words (the core list), not only FUNC. Queued after PW-1551.
