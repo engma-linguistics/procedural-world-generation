@@ -2,7 +2,7 @@
 id: PW-1172
 title: "War as a counter-pressure: deaths and lost land where peoples are crowded, stateless or ringed by enemies, with a per-era dial"
 type: task
-status: todo
+status: done
 parent: PW-917
 milestone: v4
 subsystem: peoples
@@ -50,6 +50,7 @@ Settlements (PW-1108) read the war intensity for sacking and walls. PW-661 build
 - [ ] lane 77 arms off / default / x2: slow breeders not lower than off; commonest people's share falls; no new brittle peoples
 
 ## Updates
+- 2026-11-09: Status todo -> done. Merged lane 259 (d6d0124e..73798d7f): level with main at default; two design bars not met (slow breeders, commonest) -> PW-1617.
 - 2026-11-09: Lane 259b stress suite (4360a3, seeds 7/10/13, base+subset, 12 runs an arm, off/default/x2 and main 0289ade6): slow breeders NOT met (dnd 20.2% off, 19.1% default, 15.6% x2; seven_meals 10.8, 8.3, 7.1; default level with main_def 19.2 / 9.2, so the fall is mostly lane 97/101); commonest share does NOT fall (dnd median 28/28/30%) but D31 limits hold in all arms (max 43%, 5+ peoples all <=70%); no new brittle peoples vs main_def (goliath borderline on a 0.02% share, also brittle with war off); troubles 38-105 a run at default, 0 refugee events in all 36 war runs (draft-refugees-never-fire). Table in design.md as-built note. Recommend merge.
 - 2026-11-09: Lane 259 (commits d6d0124e, 1e88e213): built meta.war_early/war_late (x meta.war, war-torn land), per-line war_x, aggressive x2, times of troubles sized from Turchin 2009 Table 1 (TROUBLE_SHARE 0.41, TROUBLE_KYR 0.107, x3), refugees on jumps (REFUGEE_Q 1), viewer controls. War deaths not built (D31). Stress suite (base+subset, 4360a3, war 0/1/2 and main) was running at hand-off: scratchpad l259/{br_def,main_def,br_off,br_x2}.
 - 2026-11-03: Milestones 11-03: later -> v4: v4 must-have: war's land effect inside the history (polities v1)

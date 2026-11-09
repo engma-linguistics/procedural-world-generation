@@ -1,4 +1,5 @@
 ---
+id: PW-1618
 title: "Forked screens have no null for a code change: seed 77's inland share jumps ~3-4 points under any hydrology change"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: scout261
 blocked_by: []
 relates: [PW-054, PW-831]
 refs: [docs/review/wetlands/scout261.md, docs/review/wetlands/scout261/same_state.py, docs/review/basins/scout251/fork_run.py, docs/review/wetlands/scout260.md]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -29,3 +32,6 @@ What to try: a null that perturbs the code path, not just the climate: e.g. main
 erosion step (a 1e-9 relative nudge to elevation at the fork) or offsets large enough to diverge within 50 Myr;
 check whether main's spread on seed 77 then covers 12-16%.
 - [ ] main's draws on seed 77 differ by as much as an unrelated code change moves them, or the screen states it can't judge seed 77
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-fork-screen-code-perturbation-null.md (found by scout261).

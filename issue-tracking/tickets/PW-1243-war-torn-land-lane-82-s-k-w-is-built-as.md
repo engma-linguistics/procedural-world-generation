@@ -2,7 +2,7 @@
 id: PW-1243
 title: War-torn land (lane 82's K(W)) is built as a brake with one dial (meta.war); PW-1172's war deaths, era dials, troubles and refugees are still open
 type: task
-status: todo
+status: done
 parent: PW-917
 milestone: v4
 subsystem: peoples
@@ -34,6 +34,7 @@ the run file and workbench (only the stress suite records it, as `brakes`).
 - [ ] the run output and the workbench show each people's lost-to shares (war, raid, feud, cull)
 
 ## Updates
+- 2026-11-09: Status todo -> done. Merged lane 259 (lost-to output, viewer column).
 - 2026-11-09: Lane 259: run output per line lost_to {war, feud, raid, cull, all} + troubles + refugee_jumps (history.summary); workbench 'land lost' column in Peoples today; stale lost shares cleared when no brake acts. State term keeps the farm share in the stand-ins (town share exists only with live polities, which read the ruling tier).
 - 2026-11-03: Milestones 11-03: later -> v4: v4 must-have: folded into PW-1172's war in the history
 - 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
