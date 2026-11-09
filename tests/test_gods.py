@@ -22,8 +22,22 @@ def run(P, frames):
         P.frame(ago, {c: {"sal": s, "know": k} for c, (s, k) in cs.items()})
 
 
-def test_domains_are_twenty_in_five_groups():
-    assert len(G.DOMAINS) == 20 and len(set(G.DOMAINS)) == 20 and len(G.GROUPS) == 5
+def test_domains_are_thirty_in_six_groups():
+    assert len(G.DOMAINS) == 30 and len(set(G.DOMAINS)) == 30 and len(G.GROUPS) == 6
+    assert set(G.FEATURE) == set(G.DOMAINS)  # (every domain names its bound spirit's feature)
+
+
+def test_the_further_domains_follow_their_drivers():  # (PW-1523: each new domain arises where what drives it is)
+    base = G.salience({}, KNOW)
+    assert G.salience({"cold": 0.4}, KNOW)[D["winter"]] > base[D["winter"]] + 0.5
+    assert G.salience({"quake": 0.25}, KNOW)[D["earthquake"]] > base[D["earthquake"]] + 0.5
+    assert G.salience({}, KNOW | {"wine", "feasting"})[D["feast"]] > base[D["feast"]] + 0.3
+    assert G.salience({}, KNOW | {"herbal_medicine"})[D["healing"]] > base[D["healing"]]
+    assert G.salience({}, KNOW | {"writing", "libraries"})[D["wisdom"]] >= 0.45 > base[D["wisdom"]]
+    assert G.salience({}, KNOW | {"law", "writing", "bureaucracy"})[D["law"]] > base[D["law"]] + 0.5
+    assert G.salience({"ledger": 1.0, "urban": 0.3}, KNOW | {"trade", "markets"})[D["trade"]] > base[D["trade"]] + 0.6
+    assert G.salience({"urban": 0.3}, KNOW | {"kingship"})[D["kingship"]] > base[D["kingship"]] + 0.3
+    assert G.salience({"coast": 0.3}, KNOW | {"calendar"})[D["moon"]] > base[D["moon"]] > 0  # (the moon for all, more with calendars and tides)
 
 
 def test_salience_follows_the_land():

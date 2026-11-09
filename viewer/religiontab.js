@@ -47,7 +47,7 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmt = NumFmt.kyr;
   const ago = (k) => NumFmt.ago(k);  // a date: '12,400 years ago', or 'year 1400' once the run's present is set (numfmt.js, PW-1429)
-  const VIEWS = [['trees', 'God trees'], ['map', 'Map'], ['timeline', 'Timeline'], ['minorities', 'Minorities'], ['taboos', 'Taboos'], ['yours', 'Your faiths']];
+  const VIEWS = [['trees', 'God trees'], ['map', 'Map'], ['timeline', 'Timeline'], ['minorities', 'Minorities'], ['pantheons', 'Pantheons'], ['taboos', 'Taboos'], ['yours', 'Your faiths']];
   const MODES = [['faith_made', 'faith-made (gods exist while worshipped)'], ['belief_only', 'belief only (no gods are real)'], ['absolute', 'absolute (gods outlive their worshippers)']];
   const yours = (f) => (f && f.authored != null ? '<span class="rl-yours" title="a faith you wrote">✎ yours</span>' : '');
   const fname = (f) => esc(f?.name) + yours(f);
@@ -69,6 +69,10 @@
     minorities: `Each culture holds a share of each faith (PW-1489). Its faith, the one named in the other views, is the one held by more than half;
       a culture converts when a newcomer passes half, and the old faith stays on as a minority that fades over a millennium or two (slower in a tolerant culture).
       States and peoples add up their cultures by land. Hover a row for the rule.`,
+    pantheons: `Regional pantheons (PW-1523): around a town on a border of several peoples, or the ruler of several peoples, open cultures (tolerant,
+      of a faith that does not refuse other gods) come to see one another's alike gods as one: each keeps its own name and people, and both sit in a shared seat
+      ("the sea god of the Luki pantheon"). Each people keeps its own god, its patron, which is never matched. A table is one pantheon: the seats down the side
+      (the head first), the peoples across; under it, each people's own god. The outline on the Map is each pantheon's reach. Hover a heading for the rule.`,
     taboos: `Each living culture's taboos by kind. Food taboos come from its herds, crops, neighbours and gods; the other kinds from its way of life, its techs
       and its gods' domains (the tags shown). Every rule names its source; the catalogue below lists the sources and how far each was read.`,
   };
@@ -194,7 +198,7 @@
       const [x0, y0] = P(tr[0][3], tr[0][4]);
       o += `<path d="M${x0 - 5},${y0}h10M${x0},${y0 - 5}v10" stroke="#fff" stroke-width="3.5"/><path d="M${x0 - 5},${y0}h10M${x0},${y0 - 5}v10" stroke="${f.color}" stroke-width="2"/>`;
     }
-    $('rl-ov').innerHTML = o;
+    $('rl-ov').innerHTML = o + panOutline(at);
     const rows = live.map((f) => [f, sample(f)]).filter(([, s]) => s).sort((a, b) => b[1][2] - a[1][2]);
     $('rl-side').innerHTML = `<h3>${rows.length} faiths ${at > 0 ? ago(at) : 'now'}</h3>${st.follow != null ? '<p><a href="#" id="rl-all">show all faiths</a></p>' : ''}
       <table class="t"><tr><th>faith</th><th>cultures</th><th>cells</th><th>lead god</th></tr>${rows.map(([f, s]) => `<tr data-f="${f.id}" class="${st.follow === f.id ? 'sel' : ''}" title="founded ${esc(ago(f.founded_kyr))} in ${esc(D.cname(f.origin_culture))}; core ${esc(s[6])}"><td>${sw(f.color)}${fname(f)}</td><td class="n">${s[1]}</td><td class="n">${s[2]}</td><td class="n" style="color:${indCol(s[5])}">${s[5].toFixed(2)}</td></tr>`).join('')}</table>`;
@@ -256,6 +260,62 @@
       <table class="t"><tr><th>culture</th><th>people</th><th ${tolTip}>religious tolerance</th><th>faiths</th><th ${townTip}>came through towns</th></tr>${cu.slice(0, 150).map(([id, c]) => `<tr><td>${esc(c.name)}</td><td class="muted">${esc(L[c.people] || c.people)}</td><td class="n">${rtol(id)}</td><td>${sharesHtml(c.shares)}</td><td>${sharesHtml(c.towns)}</td></tr>`).join('')}</table>`;
     h += `<h3 style="margin-top:16px" ${rule}>Peoples</h3><table class="t"><tr><th>people</th><th>faiths</th></tr>${Object.entries(SH.peoples).map(([p, r]) => `<tr><td>${esc(L[p] || p)}</td><td>${sharesHtml(r)}</td></tr>`).join('')}</table>`;
     main.innerHTML = h + `<p class="muted" style="max-width:900px">The rule (a judgement call, readout only): ${esc(SH.rule)}</p>`;
+  }
+
+  // ---- 3c. regional pantheons (PW-1523) ----
+  function panMount(bar) {
+    const PN = D.gods.pantheons, S = PN?.summary;
+    bar.innerHTML = PN ? `<label class="muted"><input type="checkbox" id="rl-pgone" ${st.pgone ? 'checked' : ''}> with the pantheons gone</label>
+      <span class="muted">${S.living} living pantheons over ${Math.round(100 * S.land_share)}% of the land with gods, ${S.ever} ever · ${S.seats_living} shared seats now · ${S.adopted_gods} gods taken in, ${S.joint_gods} joint gods made</span>` : '';
+    if ($('rl-pgone')) $('rl-pgone').onchange = (e) => { st.pgone = e.target.checked; update(); };
+  }
+  function panDraw(main) {
+    const PN = D.gods.pantheons;
+    if (!PN) { main.innerHTML = '<p class="muted">This run\'s gods were worked out before the regional pantheons.</p>'; return; }
+    const L = Object.fromEntries((D.result.lineages || []).map((l) => [l.id, l.name.split(' (')[0]]));
+    const pl = (p) => esc(L[p] || p), rule = `title="${esc(PN.rule)}"`;
+    const list = PN.list.filter((p) => st.pgone || p.ended_kyr == null).sort((a, b) => (a.ended_kyr ?? -1) - (b.ended_kyr ?? -1) || b.cells - a.cells);
+    if (!list.length) { main.innerHTML = `<p class="muted" ${rule}>No regional pantheons${st.pgone ? '' : ' now'}: no open hub (a mixed town or a ruler of several peoples, tolerant, of a faith that admits other gods) has held long enough.</p>`; return; }
+    const god = (m) => { const b = D.B[m.being]; return `<span style="color:${indCol(b.individuation)}" title="${esc(b.label)} of ${esc(D.cname(m.culture))}, ${b.individuation.toFixed(2)}">${esc(b.label)}</span>${m.how === 'adopted' ? ' <span class="muted" title="taken in from the pantheon">(adopted)</span>' : ''}`; };
+    let h = '<div class="rl-cards one">';
+    for (const p of list) {
+      const seats = p.seats.filter((s) => p.ended_kyr == null ? s.ended_kyr == null : s.ended_kyr === p.ended_kyr);
+      seats.sort((a, b) => (b.id === p.head) - (a.id === p.head) || b.members.length - a.members.length);
+      const ps = p.peoples;
+      h += `<div class="rl-card"><h3 ${rule}>${esc(p.name)} <span class="muted" style="font-weight:normal">· ${p.kind === 'empire' ? 'around the ruler of several peoples' : 'around a mixed town'} ${esc(D.cname(p.hub))} · since ${esc(ago(p.founded_kyr))}${p.ended_kyr != null ? `, ended ${esc(ago(p.ended_kyr))}: ${esc(p.end)}` : ''} · ${p.reach.length} cultures, ${p.cells} cells${p.under.length ? ` · ${p.under.length} lesser hubs under it` : ''}</span></h3>`;
+      h += `<table class="t"><tr><th>seat</th>${ps.map((x) => `<th>${pl(x)}</th>`).join('')}</tr>`;
+      for (const s of seats) {
+        const by = {}; for (const m of s.members) (by[m.people] = by[m.people] || []).push(m);
+        const joint = s.joint != null ? `<br><span class="muted" title="a brand-new god made for the seat's peoples, as Serapis was">joint god: ${esc(D.B[s.joint].label)}</span>` : '';
+        h += `<tr><td style="white-space:nowrap">${s.id === p.head ? '★ ' : ''}${esc(s.domain)}${joint}</td>${ps.map((x) => `<td>${(by[x] || []).map(god).join('<br>')}</td>`).join('')}</tr>`;
+      }
+      h += `<tr><td class="muted" title="each people's own god here: the lineage that leads the most of its land in the reach; never matched with another's">its own god</td>${ps.map((x) => { const b = p.patrons[x] != null ? D.B[p.patrons[x]] : null; return `<td class="muted">${b ? esc(b.label) : ''}</td>`; }).join('')}</tr></table>`;
+      if (!seats.length) h += '<p class="muted">No shared seats yet.</p>';
+      h += '</div>';
+    }
+    h += '</div>';
+    const ev = PN.events.slice(-40).reverse();
+    h += `<h3 style="margin-top:16px">Latest events</h3><table class="t">${ev.map((e) => `<tr><td class="muted" style="white-space:nowrap">${esc(ago(e.kyr))}</td><td>${esc(e.text.replace(/culture (\d+)/g, (_, c) => D.cname(+c)))}</td></tr>`).join('')}</table>`;
+    main.innerHTML = h + `<p class="muted" style="max-width:900px">The rule (a judgement call, readout only): ${esc(PN.rule)}</p>`;
+  }
+  function panOutline(at) {  // (PW-1523: each living pantheon's reach on the faith map, a circle of PANTHEON_KM about its hub then)
+    const PN = D.gods.pantheons; if (!PN) return '';
+    const R = (PN.constants?.PANTHEON_KM || 1200) / 6371, rad = Math.PI / 180;
+    let o = '';
+    for (const p of PN.list) {
+      if (p.founded_kyr < at - 1e-9 || (p.ended_kyr != null && p.ended_kyr >= at - 1e-9)) continue;
+      let t = null; for (const x of p.track) if (x[0] >= at - 1e-9) t = x; else break;
+      if (!t || t[1] == null) continue;
+      const la = t[1] * rad, lo = t[2] * rad; let d = '', prev = null;
+      for (let k = 0; k <= 48; k++) {
+        const b = 2 * Math.PI * k / 48, la2 = Math.asin(Math.sin(la) * Math.cos(R) + Math.cos(la) * Math.sin(R) * Math.cos(b));
+        const lo2 = lo + Math.atan2(Math.sin(b) * Math.sin(R) * Math.cos(la), Math.cos(R) - Math.sin(la) * Math.sin(la2));
+        const [px, py] = P(la2 / rad, ((lo2 / rad + 540) % 360) - 180);
+        d += (prev != null && Math.abs(px - prev) < 512 ? 'L' : 'M') + px.toFixed(1) + ',' + py.toFixed(1); prev = px;
+      }
+      o += `<path d="${d}" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="4 3" opacity=".85"><title>${esc(p.name)}</title></path>`;
+    }
+    return o;
   }
 
   // ---- 4. taboos ----
@@ -404,8 +464,8 @@
   }
   function setMode(m) { post({ gods_mode: m }).then(() => reload()).catch((e) => { st.err = `gods mode not saved: ${e.message}`; update(); }); }
 
-  const MOUNT = { trees: treesMount, map: mapMount, timeline: tlMount, minorities: minMount, taboos: tabMount, yours: yoursMount };
-  const DRAW = { trees: treesDraw, map: mapDraw, timeline: tlDraw, minorities: minDraw, taboos: tabDraw, yours: yoursDraw };
+  const MOUNT = { trees: treesMount, map: mapMount, timeline: tlMount, minorities: minMount, pantheons: panMount, taboos: tabMount, yours: yoursMount };
+  const DRAW = { trees: treesDraw, map: mapDraw, timeline: tlDraw, minorities: minDraw, pantheons: panDraw, taboos: tabDraw, yours: yoursDraw };
   function update() { if ($('rl-main')) DRAW[st.view]($('rl-main')); }
   function setView(v) { if (st.playing) { clearInterval(st.playing); st.playing = null; } st.view = v; mounted = ''; history.replaceState(null, '', `${location.search}#religion/${v}`); window.ReligionTab.draw(D.root, D.result); }
   window.ReligionTab = {

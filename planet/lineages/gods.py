@@ -5,7 +5,7 @@ Reads a finished peoples run (cultures.json, demes.json, layers/demes_all.bin or
 the readout words and the spell flag (no miracle feedback in v2).
 
 The model (the religion doc's round 1; every number marked JUDGEMENT is a first guess, not a source):
-- A being has a weight vector over DOMAINS (20 of them, in five groups: water, sky, land, life, human), a devotion (how well it still
+- A being has a weight vector over DOMAINS (30 of them, in six groups: water, sky, land, life, human, order; PW-1523), a devotion (how well it still
   fits its people's life: 0..1) and an individuation (0 = a spirit bound to one feature of the land, 1 = a named person-god).
 - A culture (cultures.py: a deme or a run of demes) has 3-15 beings once its people knows spirit_ritual (BEING_MIN..BEING_MAX; no
   ritual, no gods: faith-made, so no pre-sapient gods). Each frame the culture's land and way of life give a salience per domain
@@ -61,21 +61,29 @@ import numpy as np
 
 from .techtree import GODS_MODES  # noqa: E402
 MODE_DEFAULT = "faith_made"
-GODS_FORMAT = "procgen-gods/4"  # (/4: faiths that came through towns, each culture's "towns", PW-1528; /2: each culture's faith shares and the states' and peoples' roll-ups, PW-1489; /3: the religious tolerance, towns and a faith's appeal, PW-1520)
-GROUPS = {
+GODS_FORMAT = "procgen-gods/5"  # (/5: thirty domains in six groups, the regional pantheons, each being's seat, the peoples' patrons, PW-1523; /4: faiths that came through towns, each culture's "towns", PW-1528; /2: each culture's faith shares and the states' and peoples' roll-ups, PW-1489; /3: the religious tolerance, towns and a faith's appeal, PW-1520)
+GROUPS = {  # (PW-1523 with D68's "more domains": moon, winter, earthquake, feast, healing, craft and the order group; sources in
+    # docs/review/culture/faiths/domains1.md. Each new domain is tied to something the model knows: the land (winter, earthquake), the
+    # sky over every world (the moon), the techs (feast from brewing and wine, healing, craft, law, wisdom), the towns, the rulers
+    # (kingship: polities) and the goods ledger (trade))
     "water": ("sea", "river", "rain", "flood"),
-    "sky": ("sky", "sun", "storm"),
-    "land": ("mountain", "fire", "forest", "desert"),
-    "life": ("herd", "hunt", "harvest", "fertility"),
-    "human": ("hearth", "smithing", "death", "war", "ancestors"),
+    "sky": ("sky", "sun", "moon", "storm", "winter"),
+    "land": ("mountain", "fire", "earthquake", "forest", "desert"),
+    "life": ("herd", "hunt", "harvest", "fertility", "feast", "healing"),
+    "human": ("hearth", "smithing", "craft", "death", "war", "ancestors"),
+    "order": ("kingship", "law", "wisdom", "trade"),
 }
 DOMAINS = tuple(d for g in GROUPS.values() for d in g)
 GROUP_OF = {d: g for g, ds in GROUPS.items() for d in ds}
 GROUP_IDX = {g: [DOMAINS.index(d) for d in ds] for g, ds in GROUPS.items()}
+KING_I = DOMAINS.index("kingship")
 FEATURE = {"sea": "the sea", "river": "the great river", "rain": "the rains", "flood": "the flood plain", "sky": "the open sky",
            "sun": "the sun", "storm": "the storm", "mountain": "the mountains", "fire": "the fire mountain", "forest": "the forest",
            "desert": "the desert", "herd": "the herds", "hunt": "the hunt", "harvest": "the fields", "fertility": "the springs of life",
-           "hearth": "the hearth", "smithing": "the forge", "death": "the dead lands", "war": "the war-road", "ancestors": "the graves"}
+           "hearth": "the hearth", "smithing": "the forge", "death": "the dead lands", "war": "the war-road", "ancestors": "the graves",
+           "moon": "the moon", "winter": "the long winter", "earthquake": "the shaking ground", "feast": "the brew-house",
+           "healing": "the healing spring", "craft": "the potter's kiln", "kingship": "the high seat", "law": "the oath-stone",
+           "wisdom": "the marks", "trade": "the market"}
 TAU_DRIFT = 6.0  # kyr, JUDGEMENT: weights move toward the land's salience this slowly (cultures.TAU_GAIN_KYR is 3: ritual is conservative)
 TAU_DEV = 10.0  # kyr, JUDGEMENT: a being's devotion follows its fit this slowly
 TAU_IND = 3.0  # kyr, JUDGEMENT: individuation follows the faith techs
@@ -90,6 +98,13 @@ SPELL_IND = 0.5  # JUDGEMENT: only beings this individuated grant spells (the do
 # individuation ceilings by faith tech, JUDGEMENT (the doc: it rises with the faith nodes the people holds)
 TIERS = (("moralizing_high_god", 0.9), ("kingship", 0.6), ("temples", 0.45), ("burial", 0.2), ("spirit_ritual", 0.1))
 COAST_FULL, RIVER_FULL, MOUNT_FULL, FOREST_FULL, OPEN_FULL, DESERT_FULL, WET_FULL, VOLC_FULL = 0.25, 0.15, 0.2, 0.5, 0.5, 0.3, 0.5, 0.05
+COLD_FULL, QUAKE_FULL = 0.4, 0.25  # JUDGEMENT: a culture with this share of its land subarctic or polar, or by a plate boundary, holds winter or the earthquake fully
+BREWS = ("beer", "wine", "mead", "chicha", "palm_wine", "rice_wine", "hopped_ale")  # (the brewing and wine techs, each gated by its crop in the tree)
+KING_RULER = 0.3  # JUDGEMENT: a culture that rules other cultures (a state, empire or dragon realm: rule_table) holds kingship this much more
+TRADE_FULL = 6  # JUDGEMENT: a culture whose ledger names this many goods it has beyond the average or lacks (trade.py "has" + "lacks", 3 each) is a full trader
+RISE_SAL = 0.6  # JUDGEMENT (D68 5A): a culture's second and third gods reach the faith techs' ceiling where their own domain is this salient (war, the fields)
+RISE_N = 2  # (D68 5A: the second and third gods by devotion)
+COLD_CLASSES = (18, 19, 22, 23, 26, 27, 28, 29)  # (the subarctic and polar Koppen classes: spec.GROUPS["subarctic"] + ["polar"])
 RIVER_Q = 0.92  # the top 8 % of land by flow is a river (as crossing.corridor)
 WAY_WORDS = (("farm", "harvest"), ("herd", "herd"), ("nomad", "herd"), ("seafar", "sea"), ("hunt", "hunt"), ("arctic", "hunt"))
 NONE = 65535
@@ -154,6 +169,7 @@ def protection(tol: float) -> float:
 TOWN_FLOOR = 1e-4  # (a town community under a hundredth of a percent of the culture is no community: nothing settles or spreads from it)
 TOWNS_ON = True  # (switch, for the lane's before/after measures and the tests)
 TOWN_SPREAD = True  # (switch: the town community's spread to the land about it)
+REGIONAL_ON = True  # (switch, PW-1523: the regional pantheons read-out, pantheons.py)
 RULE_TIERS = ("state", "empire", "dragon realm")  # JUDGEMENT: a chiefdom (a town and its cell) pushes no faith; dragons are sapient and rule as any
 PLACE_KM = 400.0  # JUDGEMENT: a faith written at a place is founded by the culture nearest it, if one is this close
 R_KM = 6371.0  # (the place distance on the grid's unit sphere; the planets are Earth-sized, PW-443 for others)
@@ -203,6 +219,20 @@ def salience(f: dict, know: set, ways: dict | None = None, traits: tuple = ()) -
         "death": _c((0.3 if "burial" in know else 0.1) + (0.2 if "war_chariot" in know or "bronze" in know else 0.0)),
         "war": _c(0.15 + (0.45 if "aggressive" in traits else 0.0) + (0.3 if "kingship" in know else 0.0)),
         "ancestors": 0.35 if "burial" in know else 0.1,
+    }
+    k = lambda *ts: 1.0 if any(t in know for t in ts) else 0.0  # noqa: E731
+    town, ledger = g("urban"), g("ledger")  # (the share of its people in towns, PW-1520; its goods ledger's trade, 0..1, trade.py)
+    s |= {  # (PW-1523: the further domains, each from what the model knows; all scales JUDGEMENT, the drivers sourced in domains1.md)
+        "moon": _c(0.25 + 0.2 * k("calendar", "solar_calendar", "astronomy", "tide_lore") + 0.2 * _c(g("coast") / COAST_FULL) + 0.15 * way["hunt"]),
+        "winter": _c(g("cold") / COLD_FULL),
+        "earthquake": _c(g("quake") / QUAKE_FULL),
+        "feast": _c(0.1 + 0.15 * k("feasting") + 0.3 * k(*BREWS) + 0.1 * k("fermentation")),
+        "healing": _c(0.15 + 0.25 * k("herbal_medicine") + 0.15 * k("surgery", "trepanation") + 0.3 * town),
+        "craft": _c(0.15 * k("pottery") + 0.15 * k("weaving", "warp_weighted_loom") + 0.15 * k("potters_wheel") + 0.15 * k("guilds") + 0.2 * town),
+        "kingship": _c(0.1 * k("chiefdoms") + 0.35 * k("kingship") + 0.2 * town),  # (+ KING_RULER while it rules others: Pantheons.frame)
+        "law": _c(0.3 * k("law", "tide_councils") + 0.15 * k("writing", "shell_script") + 0.15 * k("bureaucracy")),
+        "wisdom": _c(0.3 * k("writing", "proto_writing", "shell_script", "runes") + 0.2 * k("libraries", "schools") + 0.1 * k("calendar", "astronomy")),
+        "trade": _c(0.15 * k("trade") + 0.15 * k("markets", "coinage", "commodity_money") + 0.4 * ledger + 0.2 * town),
     }
     return np.array([s[d] for d in DOMAINS], float)
 
@@ -325,6 +355,7 @@ class Pantheons:
         self.via: dict = {}  # culture -> {faith: the share it ever gained through towns} (towns_doc)
         self.live: dict = {}  # culture -> {faith: town share} of this stretch (_towns; such a faith is not folded away, _set_share)
         self.spread: dict = {}  # (culture, faith) -> the town community's pull on the land about it, per kyr, this stretch (PW-1528)
+        self.regional = None  # (PW-1523: a pantheons.Regional read-out fed after each frame, or None)
 
     # ---- minority faiths (PW-1489)
     def _comp_major(self, c: int, f: int | None, old: int | None, how: str):
@@ -881,8 +912,12 @@ class Pantheons:
                     self.att.won(r)
                 for x, _ in subs:
                     self.att.subject(x)
+        rulers = {r for _, rule in rule_steps for r, subs, *_ in rule if subs}
         for c, u in cultures.items():
             sal, bs = u["sal"], self.by.setdefault(c, [])
+            if c in rulers:  # (PW-1523: kingship is salient where a culture rules others, the polities' states, empires and dragon realms)
+                sal = sal.copy()
+                sal[KING_I] = min(1.0, sal[KING_I] + KING_RULER)
             self.sal[c] = sal
             if not bs:  # (founded: the BEING_MIN most salient domains; a culture with no faith yet founds one)
                 if c not in self.faith_of:
@@ -917,14 +952,18 @@ class Pantheons:
                     self._ev(ago, "fade", f"{label(b.w, b.ind)} faded (culture {c})", being=b.id)
             bs = self.by[c]
             if dt > 0 and bs:  # individuation: the most devoted being goes furthest
-                lead = min(bs, key=lambda b: (-b.dev, b.id))
+                rank = sorted(bs, key=lambda b: (-b.dev, b.id))
+                lead = rank[0]
                 top = tier(u["know"], True)
                 rest = tier(u["know"], False)
                 k = 1.0 - math.exp(-dt / TAU_IND)
+                second = {b.id for b in rank[1:1 + RISE_N]}
                 for b in bs:
                     b.high = b is lead
-                    goal = (top if b.high else rest) * (0.5 + 0.5 * b.dev / max(lead.dev, 1e-9))
-                    b.ind += (goal - b.ind) * k
+                    f = 0.5 + 0.5 * b.dev / max(lead.dev, 1e-9)
+                    if b.id in second:  # (D68 5A: the second and third gods rise to the ceiling where their own domain fills life: war, the fields)
+                        f = max(f, min(1.0, float(sal[int(np.argmax(b.w))]) / RISE_SAL))
+                    b.ind += ((top if b.high else rest) * f - b.ind) * k
             for b in bs:
                 if not b.hist or abs(b.hist[-1][0] - ago) >= 0.5:
                     b.hist.append([round(float(ago), 3), round(float(b.ind), 3), DOMAINS[int(np.argmax(b.w))]])
@@ -942,6 +981,8 @@ class Pantheons:
             self._decide_missions()
             self._conversions(ago, dt, contacts, rule_steps, step_kyr)
         self.faith_track(ago, where)
+        if self.regional is not None:  # (PW-1523: the regional pantheons read the frame's gods; they never write back)
+            self.regional.step(self, ago, dt, cultures, contacts, where, rule_steps, urban)
 
     def _dedupe(self, c: int, ago: float):
         """Beings of one culture that have come to be the same fuse (the older keeps its id)."""
@@ -1087,6 +1128,18 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
     ei = 0
     frames = []
     urban = urban_reader(run_dir, m, g.n)
+    quake = np.zeros(g.n, bool)  # (PW-1523: the earthquake's land, a plate boundary's cells and their neighbours; the world's present plates)
+    if m.get("world"):
+        try:
+            pb = np.asarray(S.world_layers(m["world"], ("plate_boundary",))["plate_boundary"]) != 0
+            quake = pb.copy()
+            quake[src[pb[dst]]] = True
+        except (SystemExit, KeyError):
+            pass
+    ledger = {}  # (PW-1523: the goods ledger, trade.py, inside the land-use window: run frame -> {culture: row}, for the trade domain)
+    if m.get("eraq"):
+        from . import trade as TRL
+        ledger = {f["frame"]: f["cultures"] for f in TRL.derive(run_dir)["frames"]}
     for j in use:
         ago = agos[j]
         elev, ice = T.frame(run, arr, "elevation", j).astype(float), T.frame(run, arr, "ice", j).astype(float)
@@ -1124,8 +1177,11 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
             "forest": tags["forest"] | tags["jungle"], "wet": tags["jungle"] | tags["wetland"],
             "open": tags["open"] | tags["steppe"], "tundra": tags["tundra"], "volcanic": tags["volcanic"], "island": tags["island"],
             "lowland": tags["lowland"],
+            "cold": tags["land"] & np.isin(np.asarray(env["climate"]).astype(int), COLD_CLASSES), "quake": quake,
         }
         share = {k: np.bincount(cul, weights=v[cell].astype(float), minlength=nC) / np.maximum(n, 1) for k, v in feats.items()}
+        urb = urban(j, ago, cell, cul, nC) if urban is not None else {}
+        led = ledger.get(j) or {}
         ends = []
         while ei < len(endev) and endev[ei][3] >= ago - 1e-9:  # (the frame's culture ends and merges, before its beings are tended)
             ends.append(endev[ei])
@@ -1140,7 +1196,10 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
                 continue
             ln = lines.get(u["people"]) or {}
             tr = tuple(ln.get("traits") or ())
-            sal = salience({k: float(v[c]) for k, v in share.items()}, kn, (u.get("traits") or {}).get("ways_now"), tr)
+            lr = led.get(str(c)) or {}
+            fx = {k: float(v[c]) for k, v in share.items()} | {"urban": urb.get(c, 0.0),
+                                                                "ledger": min(1.0, (len(lr.get("has") or ()) + len(lr.get("lacks") or ())) / TRADE_FULL)}
+            sal = salience(fx, kn, (u.get("traits") or {}).get("ways_now"), tr)
             if c not in seen:
                 seen.add(c)
                 par = u.get("parent")
@@ -1151,7 +1210,7 @@ def inputs(run_dir: Path, techtree: dict | None = None) -> dict:
         frames.append({"j": j, "ago": ago, "ends": ends, "first": first, "cur": cur, "contacts": touch(g.n, cell, cul, src, dst, nC),
                        "where": {c: (int(n[c]), uv[c]) for c in cur} if cur else None, "present": {c: int(n[c]) for c in present},
                        "cell": cell.astype(np.int32), "cul": cul.astype(np.int32),
-                       "urban": urban(j, ago, cell, cul, nC) if urban is not None else {}})
+                       "urban": urb})
     return {"C": C, "res": res, "known": known, "win": win, "seed": int(m.get("seed") or 0), "frames": frames, "after": endev[ei:],
             "U": U, "lines": {k: v.get("name", k) for k, v in lines.items()},
             "temperament": {k: {"traits": v.get("traits") or [], "demography": v.get("demography") or {}, "way": v.get("way")} for k, v in lines.items()},
@@ -1234,6 +1293,9 @@ def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None, ru
     C, res, known, win = inp["C"], inp["res"], inp["known"], inp["win"]
     place = {c["id"]: c.get("place") for c in C}
     P = Pantheons(mode, inp["seed"], inp.get("temperament"))
+    if REGIONAL_ON:
+        from .pantheons import Regional
+        P.regional = Regional(inp["seed"])
     rsteps = (rule or {}).get("steps") or []
     step_kyr = float((rule or {}).get("step_kyr") or 0.1)
     ri = 0
@@ -1280,10 +1342,15 @@ def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None, ru
             s["took"] = False
             s["why"] = "never took hold: " + (s["why"] or "its founder was never on the map with gods")
     docs = [being_doc(P, b, place) for b in P.beings]
+    pan = None
+    if P.regional is not None:
+        from . import pantheons as PN
+        pan = P.regional.finish(P, C, docs)  # (appends the adopted and joint gods after the cultures' own, and sets each being's seat)
+        pan["patrons"] = {pp: v | {"label": docs[v["lineage"]]["label"]} for pp, v in PN.patrons(P, {c["id"]: c["people"] for c in C}).items()}
     faiths = faith_docs(P, C)
-    cl = {}
+    cl, ad = {}, {}
     for b in docs:
-        cl.setdefault(b["culture"], []).append(b["id"])
+        (ad if b["how"] in ("adopted", "joint") else cl).setdefault(b["culture"], []).append(b["id"])
     out = {"format": GODS_FORMAT, "gods_mode": mode, "from_kyr": win, "domains": list(DOMAINS), "groups": {k: list(v) for k, v in GROUPS.items()},
            "constants": {k: v for k, v in globals().items() if k.isupper() and isinstance(v, (int, float))} | {"tiers": dict(TIERS)},
            "beings": docs, "events": P.events, "faiths": {"rule": FAITH_RULE, "list": faiths},
@@ -1291,11 +1358,11 @@ def replay(inp: dict, mode: str = MODE_DEFAULT, authored: list | None = None, ru
            "cultures": {str(c): {"name": C[c]["name"], "people": C[c]["people"], "beings": ids,
                                  "living": [i for i in ids if docs[i]["status"] == "living"],
                                  "faiths": P.fhist.get(c, []), "faith_now": P.faith_of.get(c), "shares": P.shares_doc(c), "towns": P.towns_doc(c),
-                                 "ritual_since_kyr": (known.get(C[c]["people"]) or {}).get("spirit_ritual", [None])[0]} for c, ids in cl.items()},
-           "shares": share_rollup(P, C, (rule or {}).get("now") or []),
+                                 "adopted": ad.get(c, []), "ritual_since_kyr": (known.get(C[c]["people"]) or {}).get("spirit_ritual", [None])[0]} for c, ids in cl.items()},
+           "shares": share_rollup(P, C, (rule or {}).get("now") or []), "pantheons": pan,
            "authored": {"rule": AUTHORED_RULE, "faiths": [authored_readout(s, faiths, C) for s in todo], "problems": notes},
            "attitudes": P.att.doc() | {"rulers_known": bool(rsteps)},
-           "summary": summary(docs, mode, round(inp.get("secs", 0.0) + time.time() - t0, 1)) | {"faiths": {**P.counts, "ever": len(faiths),
+           "summary": summary(docs[:len(P.beings)], mode, round(inp.get("secs", 0.0) + time.time() - t0, 1)) | {"faiths": {**P.counts, "ever": len(faiths),
                                                                                                      "living": sum(f["ended_kyr"] is None for f in faiths)}}}
     return out
 
