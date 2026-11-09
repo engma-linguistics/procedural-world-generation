@@ -313,6 +313,32 @@ people pulled back to strongholds (Turchin 2009 p. 10: "In a stateless society p
 - **Constants (params.py):** H_WAY (table above), WAR_N0 10, STATE_Q 3, MALE_W 0.25, WAR_STAGE_W (0.1, 0.3, 1, 0.3), LAND_Q 0.3,
   H_MAX 0.01, TROUBLE_PER_KYR 2, COUNTER_FLOOR 0.05.
 
+**As built (lanes 97, 101, 259; history.counter, params.py).** War-torn land (lane 97) and in-fighting (lane 101) as above, under the
+master dial `meta.war`. Lane 259 (PW-1172, PW-1243) added: `war_early` / `war_late` (x meta.war, on war-torn land only), per-line
+`war_x` and the `aggressive` x2; times of troubles sized from Turchin 2009 Table 1 instead of TROUBLE_PER_KYR (chance TROUBLE_SHARE
+0.41 x dt / TROUBLE_KYR 0.107 kyr a step, x3); refugees on jumps only (the share of a people war drives off in a step adds to its
+`_jump_push`); each people's `lost_to` shares, troubles and refugee jumps in the run output and the workbench. Not built, by D31: war
+deaths through the life tables (lane 101 measured 0-0.2% of any people). `war_external` stays the constant WAR_EXT. The state term
+still reads the farm share in the stand-ins: a town share exists inside the history only with live polities, whose pacification
+already reads the ruling state's tier.
+
+**Lane 259b stress suite (PW-1172 bar; world 4360a3, seeds 7/10/13, base + subset families, 12 runs an arm; off = `meta.war` 0, default = 1, x2 = 2; main_def = main at 0289ade6, default).** Slow breeders = elf, dwarf, gnome, drow, sea_elf, firbolg, dragonborn, goliath (mean total share over the 3 seeds of each tree):
+
+| arm | dnd slow breeders | dnd elf | dnd commonest (seeds 7/10/13) | seven_meals slow breeders | seven_meals elf | seven_meals commonest | troubles per run (dnd / seven_meals) | refugee events | brittle peoples (dnd; seven_meals) |
+|---|---|---|---|---|---|---|---|---|---|
+| off | 20.2% | 8.0% | 28 / 26 / 32% | 10.8% | 1.9% | 31% mean | 0 | 0 | kenku, gnome, halfling, bugbear, drow; orc, bugbear, halfling, goliath |
+| default | 19.1% | 7.9% | 28 / 21 / 42% | 8.3% | 1.0% | 34% mean | 44-50 / 83-105 | 0 | kenku, dwarf, bugbear, drow; orc, halfling, bugbear, goliath |
+| x2 | 15.6% | 5.8% | 30 / 22 / 38% | 7.1% | 0.45% | 33% mean | 59-81 / 82-104 | 0 | leonin, halfling, bugbear; kobold, orc, bugbear, halfling |
+| main_def | 19.2% | 8.3% | 31 / 23 / 43% | 9.2% | 1.1% | 34% mean | 0 | 0 | kenku, dwarf, bugbear, drow; kobold, orc, halfling, bugbear, leonin |
+
+(Small trees dnd3 and dnd5 ran too: 4-6 and 21-29 troubles, no refugees, same pass state as main_def.) Verdicts, each against its baseline:
+- **Slow breeders not lower than off: not met.** Default is 1.1 points below off in dnd (within seed noise: elf 7.9 vs 8.0, dwarf up, gnome down) and 2.5 below in seven_meals; x2 is clearly lower (15.6 vs 20.2, 7.1 vs 10.8). Default is level with main_def (19.1 vs 19.2; 8.3 vs 9.2), so the fall from off is mostly the lane 97 / 101 war-torn land and in-fighting that main already has, not this lane's additions.
+- **Commonest people's share falls with war: not met.** Median 28% off, 28% default, 30% x2 (dnd); the commonest rises a little when the slow breeders shrink. D31's limits hold in every arm: 75% of runs under 50% in all four arms (the two misses are the small dnd3 trees), 100% of runs with 5+ peoples at or under 70%, worst single run 43%.
+- **No new brittle peoples against main_def: met.** Default's dnd set is identical to main_def's; in seven_meals it loses kobold and leonin and gains goliath (swing 10.5x on a 0.02% share, against 6.6x on main_def; goliath is brittle with war off too, so it is seed noise at that size, not this lane's mechanism). No people went extinct that was not already authored-extinct, and no run crashed.
+- **Troubles and refugees.** Troubles fire at default (dnd 38-50 a run, seven_meals 83-105) and about 1.4x as often at x2; zero with war off and on main. Refugees fire in none of the 36 war runs: the war-torn loss in a step never reaches half of a founding jump's push. Draft `draft-refugees-never-fire` carries it.
+
+Recommendation: merge. At default the branch is level with main on every measure and adds the dials, the troubles and the lost-to output; the two un-met bars are the design's hope for war, not a regression, and cannot be met by nudging a constant here (lane 101 saw the same on deaths).
+
 ## (c) Epidemics
 
 ### What the literature says

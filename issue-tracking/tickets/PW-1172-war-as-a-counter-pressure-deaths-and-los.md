@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-917, PW-1108, PW-661, PW-1068]
 refs: [docs/review/peoples-counterpressures/design.md, planet/lineages/history/competition.py, planet/lineages/compose.py]
 created: 2026-10-30
-updated: 2026-11-03
+updated: 2026-11-09
 ---
 
 ## Description
@@ -50,6 +50,8 @@ Settlements (PW-1108) read the war intensity for sacking and walls. PW-661 build
 - [ ] lane 77 arms off / default / x2: slow breeders not lower than off; commonest people's share falls; no new brittle peoples
 
 ## Updates
+- 2026-11-09: Lane 259b stress suite (4360a3, seeds 7/10/13, base+subset, 12 runs an arm, off/default/x2 and main 0289ade6): slow breeders NOT met (dnd 20.2% off, 19.1% default, 15.6% x2; seven_meals 10.8, 8.3, 7.1; default level with main_def 19.2 / 9.2, so the fall is mostly lane 97/101); commonest share does NOT fall (dnd median 28/28/30%) but D31 limits hold in all arms (max 43%, 5+ peoples all <=70%); no new brittle peoples vs main_def (goliath borderline on a 0.02% share, also brittle with war off); troubles 38-105 a run at default, 0 refugee events in all 36 war runs (draft-refugees-never-fire). Table in design.md as-built note. Recommend merge.
+- 2026-11-09: Lane 259 (commits d6d0124e, 1e88e213): built meta.war_early/war_late (x meta.war, war-torn land), per-line war_x, aggressive x2, times of troubles sized from Turchin 2009 Table 1 (TROUBLE_SHARE 0.41, TROUBLE_KYR 0.107, x3), refugees on jumps (REFUGEE_Q 1), viewer controls. War deaths not built (D31). Stress suite (base+subset, 4360a3, war 0/1/2 and main) was running at hand-off: scratchpad l259/{br_def,main_def,br_off,br_x2}.
 - 2026-11-03: Milestones 11-03: later -> v4: v4 must-have: war's land effect inside the history (polities v1)
 - 2026-11-03: Triage 11-03: v2 -> later: war, plague, events and life-history belong with the v3 civilization epic (PW-661); not needed for a first culinary brief
 - 2026-10-31: Lane 101 built the war deaths through the life tables (excess violent deaths over the life table, lane 82 stage weights) and measured them on the stress suite: 0-0.2% of any people, no change to the commonest share. Dropped on Daniel's D31 ruling; parked with the commonest-share question for the war and polities work (inbox draft draft-in-fighting-judgements-for-polities.md).

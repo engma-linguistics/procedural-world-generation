@@ -4062,3 +4062,61 @@ def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, m
     R.owner[:] = -1
     R._Fc = None
     assert np.allclose(R.frontier(fk), F0)
+
+
+def test_war_dials_aggression_troubles_and_refugees(faketz, monkeypatch):
+    """Lane 259 (PW-1172): war-torn land scales with meta.war_early / war_late blended by tech level, a people's war_x and the
+    `aggressive` trait's x2; seeded times of troubles multiply the hazard for a step and log an event; the people war drives off that
+    step push refugees (counter._refugee, dispersal._refugees), a loss it has settled under does not; war_x round-trips the spec."""
+    from planet.lineages.history import params as HP
+    from planet.lineages.history import megafauna as MG
+    raw = _raider_raw()
+    raw["lineage"][1]["war_x"] = 0.5
+    t = SP.parse(raw)
+    assert t.lines["kob"].war_x == 0.5 and t.lines["folk"].war_x == 1.0 and SP.parse(SP.to_raw(t)).lines["kob"].war_x == 0.5
+    with pytest.raises(ValueError):
+        SP.parse({**raw, "lineage": [{**r, "war_x": -1} if r["id"] == "folk" else r for r in raw["lineage"]]})
+    ag = SP.parse({**_raider_raw(), "lineage": [{**r, "traits": ["aggressive"]} if r["id"] == "folk" else r for r in _raider_raw()["lineage"]]})
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    ha = H.History(ag, ps, 1)
+    ha._counter_setup()
+    assert ha._war_a[ha.idx["folk"]] == HP.AGGRESSIVE_X and ha._war_a[ha.idx["kob"]] == 1.0
+    h, env, step = _brake_setup(faketz)
+    L = h.lines
+    kb, fk = h.idx["kob"], h.idx["folk"]
+    land = np.flatnonzero(env["land"])
+    K = np.where(env["land"], 0.8, 0.0)
+    h.tree.raiders = 0.0
+    h.p[kb][land[:200]] = 0.8
+    h.p[fk][land[180:400]] = 0.8
+    _sync_pm(h)
+    h.rule.hem[:] = 0.0
+    monkeypatch.setattr(HP, "TROUBLE_SHARE", 0.0)
+    monkeypatch.setattr(HP, "WAR_N0", 1e9)  # (the frontier term alone: the war hazard is linear in the dials below saturation)
+    h._brake(L[kb], kb, K, step, env, None)
+    base = h.lost["kob"]["war"]
+    assert 0 < base < 0.5 * HP.LAND_Q
+    h._war_a[kb] *= 2.0  # (as the aggressive trait does)
+    h._brake(L[kb], kb, K, step, env, None)
+    assert h.lost["kob"]["war"] == pytest.approx(2 * base, rel=0.05)
+    h._war_a[kb] /= 2.0
+    lev = MG.tech_level(h.tree.era, step.ago)
+    h.tree.war_early, h.tree.war_late = 0.0, 2.0
+    assert h._war_era(step) == pytest.approx(2.0 * lev)
+    h.tree.war_early = h.tree.war_late = 0.0
+    h._brake(L[kb], kb, K, step, env, None)
+    assert h.lost.get("kob", {}).get("war", 0.0) == 0.0
+    h.tree.war_early = h.tree.war_late = 1.0
+    # times of troubles: certain this step, the hazard x TROUBLE_X, an event, and the people driven off push refugees
+    monkeypatch.setattr(HP, "TROUBLE_SHARE", 1e6)
+    monkeypatch.setattr(HP, "TROUBLE_H", 0.0)
+    n0 = len(h.events)
+    Kt = h._brake(L[kb], kb, K, step, env, None)
+    assert h.lost["kob"]["war"] > 2 * base
+    assert h.troubles_n["kob"] == 1 and any(e["kind"] == "troubles" for e in h.events[n0:])
+    assert h._refugee[kb] > 0 and h._refugees(kb) == pytest.approx(HP.REFUGEE_Q * h._refugee[kb])
+    monkeypatch.setattr(HP, "TROUBLE_SHARE", 0.0)
+    h.p[kb] = np.minimum(h.p[kb], Kt)
+    _sync_pm(h)
+    h._brake(L[kb], kb, K, step, env, None)
+    assert h._refugee[kb] == 0.0  # (a loss it has settled under drives no one off)
