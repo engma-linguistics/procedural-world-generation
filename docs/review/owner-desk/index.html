@@ -119,7 +119,8 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <h2 id="coming">Running now</h2>
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
-<tr><td>254 · states: the calendar, then switching it on</td><td>With states inside the history on, the first states and writing still come a few centuries late. This fixes that, makes the towns' war history read the history's own conquests, and then switches it on, but only if the map is as steady under a nudge as with it off, over several repeat runs.</td></tr>
+<tr><td>254 · states: the calendar, then switching it on</td><td>Found why states and writing came late with the switch on: it was the switch-<i>off</i> read-out that was early. It judged every century by where each people lives <i>today</i>. Fixed, so both now agree (writing about 3,000 years ago on one test world, where today's code says about 3,350). Note: this moves the dates you see today a few centuries later, by removing that anachronism; the history itself is unchanged. Next: check on five worlds, then switch it on if the map is as steady when nudged.</td></tr>
+<tr><td>255 · culture: calendars and one name field (v4)</td><td>Cultures can start their own year count from a founding, an invasion or a flood ("year 212 of the Forge"); it spreads with the state or faith and can fade, and you can pick a culture's calendar in the viewer. Also one name field for every culture, faith, state and place, for the language work to fill.</td></tr>
 <tr><td>251 · physics: closed basins, pass 3 of 3</td><td>Pass 2's rule (a hollow stays closed when its whole catchment is desert and no river leaves it) brings inland drainage to about what our own water model gives on Earth's real terrain: L6 from 7% to 12%, one L7 world from 6% to 19%. Giant lakes doubled on single runs, but nearly all sit in hollows today's code keeps too, so they may be chance. This last pass repeats runs from the same start to settle it, and cuts the 14% extra run time.</td></tr>
 <tr><td>252 · physics: the bigger check on cloudy-sky light</td><td>The 36-history check the plant-light change still owes. If it falls below the bar, it comes back out.</td></tr>
 </table></div>
@@ -148,7 +149,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>L7 worlds drier than L6: already fixed, closed</b> (PW-290, scout 221). The gap (10 points more desert at L7) was real when filed on 15 October. The rain rewrite fixed it the next day, but the ticket was never updated. On the same ground today, L7 has under 1 point more desert than L6, with as much rain. That small remainder is real: L7 sees mountains and valleys that L6 averages away. The scout's fresh 1 Gyr runs of the ticket's own seeds now come out slightly <i>less</i> arid at L7. A guard test is filed so it can't creep back.</li>
 </ul>
 
-<footer>Desk v229 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v230 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
 <script>
 /* Answers live in the artifact's db, collection "answers", one doc per .ask (id = data-id): {choice, note, at, reply}.
