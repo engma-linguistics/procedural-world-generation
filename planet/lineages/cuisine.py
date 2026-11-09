@@ -262,7 +262,7 @@ def _main_way(p: dict) -> str:
     return {"farm": "farmers", "herd": "herders", "forage": "foragers"}[best]
 
 
-def fuel(ctx, brief: dict, p: dict) -> dict:
+def fuel(ctx, brief: dict, p: dict, bi: dict | None = None) -> dict:
     f = brief.get("fuels") or {}
     lead = f.get("lead") or {}
     top = next(iter(lead), None)
@@ -272,10 +272,14 @@ def fuel(ctx, brief: dict, p: dict) -> dict:
     t = f"{top}" + (f" (then {', '.join(rest)})" if rest else "") + f": {FUEL_COOK.get(top, 'the commonest fuel')}"
     if not p["body"].get("fire", True):
         t += "; this people does not keep fire itself, so its cooked food comes from others' hearths or not at all"
+    from .bought_in import fuel_note
+    nb = fuel_note(bi)
+    if nb:
+        t += f"; {nb}"
     return {"text": t, "lead": lead, "basis": f.get("basis")}
 
 
-def staple(ctx, brief: dict, p: dict) -> dict:
+def staple(ctx, brief: dict, p: dict, bi: dict | None = None) -> dict:
     """The staple: what the culture farms (staple crops known on its land, if it farms), herds (if it herds), fishes or gathers,
     in the order of its ways of life; an obligate carnivore's staple is meat whatever the land grows."""
     w = p["ways"] or {}
@@ -303,6 +307,10 @@ def staple(ctx, brief: dict, p: dict) -> dict:
         parts.append(("note", "they eat no grain or roots themselves (an obligate carnivore's body): crops on their land feed their herds or their trade"))
     if not parts:
         parts.append(("wild", "game and gathered plants"))
+    from .bought_in import staple_note
+    nb = staple_note(bi)
+    if nb:
+        parts.append(("bought", nb))
     text = "; ".join(t for _, t in parts)
     never = [t["label"] for t in p["food_taboos"] if t.get("scope") == "everyone" and t.get("kind", "food") == "food"]
     if never:
@@ -310,7 +318,7 @@ def staple(ctx, brief: dict, p: dict) -> dict:
     return {"text": text, "parts": [{"kind": k, "text": t} for k, t in parts]}
 
 
-def drink(ctx, brief: dict, p: dict) -> dict:
+def drink(ctx, brief: dict, p: dict, bi: dict | None = None) -> dict:
     """What the culture drinks, by rule: water; milk (fresh or soured by the lactase share) only where it dairies; beer or wine from the
     grain and fruit it grows, once it knows fermentation (or the run's tree has no such tech); spirits once it distils; infusions."""
     out = ["water"]
@@ -334,6 +342,8 @@ def drink(ctx, brief: dict, p: dict) -> dict:
     if "distilling" in p["know"] and ferm:
         out.append("spirits distilled from " + ("the beer and wine" if len(out) > 1 else "what ferments"))
     out += [INFUSIONS[c] for c in INFUSIONS if c in grown]
+    from .bought_in import drink_note
+    out += drink_note(bi, grown)
     if not ferm:
         out.append("no beer or wine yet (the people does not know fermentation)")
     return {"text": "; ".join(dict.fromkeys(out)), "list": list(dict.fromkeys(out))}
@@ -491,11 +501,21 @@ def sheet(ctx, brief: dict, c: int, i: int, era: float) -> dict:
     mask = mask_of(ctx, i, era, c)
     p = profile(ctx, i, era, c, mask)
     others = [profile(ctx, i, era, k) for k in neighbours(ctx, i, era, c, mask)]
+    tr = brief.get("trade_reach")
+    bi = tr if tr and "foods" in tr else None
     return {"culture": {k: p[k] for k in ("id", "name", "people", "people_name", "ways", "dairy", "faith", "cells")},
-            "fuel": fuel(ctx, brief, p), "staple": staple(ctx, brief, p), "drink": drink(ctx, brief, p),
+            "fuel": fuel(ctx, brief, p, bi), "staple": staple(ctx, brief, p, bi), "drink": drink(ctx, brief, p, bi),
             "who_eats_together": who_eats_together(ctx, brief, p, mask, era), "outsiders_get_wrong": outsiders(ctx, i, era, p, others),
-            "wont_eat": wont_eat(p), "goods": goods(ctx, c, i),
+            "wont_eat": wont_eat(p), "goods": goods(ctx, c, i), "bought_in": bought_in(bi),
             "basis": "rule-based from this run at this era (cuisine.py); every line is for the culinary side to overrule"}
+
+
+def bought_in(bi: dict | None) -> dict | None:
+    """The "Bought in" line (PW-1505, bought_in.py): the foods the culture buys in, from whom, how far, by what road; None outside the
+    exchange's window (the last ~12.5 kyr) or on a run without one."""
+    if bi is None:
+        return None
+    return {"text": bi["text"], "foods": bi["foods"], "flown_in": bi["flown_in"], "ago_kyr": bi["ago_kyr"], "basis": bi["basis"]}
 
 
 def goods(ctx, c: int, i: int) -> dict | None:
@@ -518,6 +538,8 @@ def markdown(s: dict, era: float) -> list[str]:
          f"- What outsiders get wrong: {s['outsiders_get_wrong']['text']}"]
     if s.get("goods"):
         t.append(f"- Has / lacks: {s['goods']['text']}")
+    if s.get("bought_in"):
+        t.append(f"- Bought in: {s['bought_in']['text']}")
     we = s["wont_eat"]
     if we["faith"] or we["own"]:
         t.append("- Won't eat:")
