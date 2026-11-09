@@ -52,6 +52,12 @@ The one rule of a step (step()):
 Names (PW-1451): a polity is named for the people holding its capital (`names`, one per span of `peoples`); when another people
 takes the town the name and card follow them from then on, and `founded_by` keeps the first.
 
+With polities in the history (history.polity_live, params.POLITIES_LIVE; PW-1575): when a run has polities_live.json, derive draws
+those polities, the ones that fought inside the history and decided which peoples were kept, thinned or expelled, instead of running
+the steps above: their maps, tiers, falls and conquests as the history made them, and only the read-out's own part from here (the
+capital's town in the ledger, the ruling culture per step, the subject cultures, the settled people, names, colours and why each
+fell; _from_live). One map, not two. A run without the file (the switch off) reads exactly as before.
+
 Reach is a budget of foot-km (km on foot over flat ground): a chiefdom CHIEF_KM (its own cell at L7), a state STATE_KM, more with
 law and government at a distance; riding and roads make a km cheaper, climbing dearer; the sea needs boats. A city-state's techs move
 its reach inside Spencer's band and never past STATE_MAX_KM (PW-1449); only a polity that holds a conquered state, or a
@@ -72,6 +78,7 @@ from numba import njit
 
 FORMAT = "procgen-polities/1"
 VERSION = 7  # (bump when the rules change: the server's cached docs are remade)
+_LIVE_READ = 1  # (not a rule, so not in constants(); bump when _from_live's read-out of polities_live.json changes: only those runs' cached docs are remade, PW-1575)
 
 # ---- reach (foot-km)
 CHIEF_KM = 27.5  # sourced: a chiefdom reaches ~half a day's travel, "some 25-30 km by foot" (Spencer 2010, via proposal.md 2.1.2)
@@ -121,7 +128,7 @@ R_EARTH_KM = 6371.0  # (the grid's sphere, as cultures.py and demes.py measure a
 
 def constants() -> dict:
     """The rules' numbers, for the doc (each one's source is beside it above)."""
-    return {k: v for k, v in globals().items() if k.isupper() and isinstance(v, (int, float, tuple, str, dict)) and k not in ("FORMAT",)}
+    return {k: v for k, v in globals().items() if k.isupper() and not k.startswith("_") and isinstance(v, (int, float, tuple, str, dict)) and k not in ("FORMAT",)}
 
 
 # ------------------------------------------------------------------ the claim kernel
@@ -459,6 +466,9 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
     from .history import params as PM
     t0 = time.time()
     R = _Run(run_dir)
+    lp = R.dir / "polities_live.json"
+    if lp.exists():  # (PW-1575: polities in the history were on: the read-out draws them, not a second set)
+        return _from_live(R, json.loads(lp.read_text()), t0, invasions)
     war = war or WAR
     g = R.g
     step_kyr = float(R.S.get("step_kyr") or 0.1)
@@ -743,6 +753,18 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
         prev_owner = owner
         prev_cap = {key: v[2] for key, v in cur.items()}
         prev_info = {v[0]: (v[2], v[1]["people"]) for v in cur.values()}
+    cult = _finish(R, polities)
+    return {"format": FORMAT, "version": VERSION, "run": R.dir.name, "step_kyr": step_kyr, "from_kyr": agos[0],
+            "cell_km2": round(R.cell_km2, 1), "made_s": round(time.time() - t0, 1), "constants": constants(), "tiers": list(TIERS),
+            "steps": steps, "polities": polities, "cultures": cult, "maps": maps,
+            "invasions": {"rule": IV.RULE, "rows": IV.readout(inv_in, inv_log, polities, agos, R, anc), "problems": inv_notes}
+            | ({"reach": IV.REACH_RULE} if inv_in else {})}  # (the reach's rule only beside rows: a doc with none stays as it was)
+
+
+def _finish(R: _Run, polities: list) -> dict:
+    """The records' names, peoples, subjects and colours, and the cultures the doc names (by uid); derive's last part, shared by the
+    read-out's own steps and the live map (_from_live)."""
+    C = R.C["cultures"]
     # the cultures the doc names, keyed by uid (cultures.json's stable uid, PW-1283)
     used, names, spans = set(), {}, []
     for rec in polities:
@@ -771,11 +793,137 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
     cult = {u: {"id": by_uid[u], "name": C[by_uid[u]]["name"], "people": C[by_uid[u]]["people"], "color": C[by_uid[u]].get("color")} for u in sorted(used)}
     for rec in polities:
         rec["color"] = _colour(cult.get(_at(rec["rulers"], rec["peak_kyr"])[1], {}).get("color") if rec["rulers"] else None, rec["id"])  # (its rulers' at its peak)
+    return cult
+
+
+def _from_live(R: _Run, L: dict, t0: float, invasions=None) -> dict:
+    """The polities doc (FORMAT) drawn from the polities in the history (polities_live.json, PW-1575): the history's steps, maps,
+    tiers, falls and conquests (with the fates of the peoples on the land each took) as they were; from here only the read-out's own
+    part: the capital's town in the ledger (the biggest settled place on its cell while it ruled, or none), the ruling culture per
+    step (_ruler_culture: its seat people's culture on the capital's cell), the subject cultures and settled people (the ledger's
+    places and the presence table, as derive's step 5; the tier stays the history's), names, colours and why each fell. Steps of the
+    ledger before the history's first polity are empty. The invasions read out are the rows the history ran with."""
+    from . import invasions as IV
+    from .history import polity_live as PLV
+    if L.get("format") != PLV.FORMAT:
+        raise SystemExit(f"polities_live.json is {L.get('format')}, not {PLV.FORMAT}: run the peoples again")
+    g = R.g
+    C = R.C["cultures"]
+    step_kyr = float(R.S.get("step_kyr") or 0.1)
+    lsteps, lmaps, lrecs = L["steps"], L["maps"], L["polities"]
+    n_ledger = int(round(float(R.S["from_kyr"]) / step_kyr)) + 1
+    pad = [round(float(R.S["from_kyr"]) - k * step_kyr, 4) for k in range(n_ledger)]
+    if lsteps:
+        pad = [a for a in pad if a > float(lsteps[0]["ago"]) + step_kyr / 2]
+    agos = pad + [float(st["ago"]) + 0.0 for st in lsteps]  # (+ 0.0: the present as 0, never -0)
+    maps_in = [[] for _ in pad] + lmaps
+    steps_in = [None for _ in pad] + lsteps
+    sites = R.S["sites"]
+    pop, holder, _ = _site_tables(R, agos)
+    seatable = np.array([s["kind"] in SETTLED_KINDS for s in sites], bool)
+    site_cell = np.array([s["cell"] for s in sites], np.int64)
+    on_cell: dict = {}
+    for i in np.flatnonzero(seatable).tolist():
+        on_cell.setdefault(int(site_cell[i]), []).append(i)
+    ruled_at: dict = {}  # record id -> the step indices it ruled
+    for k, mp in enumerate(maps_in):
+        for e in mp:
+            ruled_at.setdefault(int(e[0]), []).append(k)
+    polities = []
+    for r in lrecs:  # (one record per live polity, same ids: the history's polity r is the read-out's polity r)
+        town = r["key"].startswith("c")
+        cand = on_cell.get(int(r["cell"]), []) if town else []
+        ks = ruled_at.get(int(r["id"]), [])
+        site = max(cand, key=lambda i: (float(pop[i, ks].max()) if ks else 0.0, -i)) if cand else None
+        rec = _new_record(R, {"key": r["key"], "site": site, "cell": int(r["cell"]), "people": r["people"],
+                              "tier": "chiefdom" if town else "dragon realm"}, None, float(r["founded_kyr"]), int(r["id"]))
+        rec["tiers"] = [[float(a), t] for a, t in r["tiers"]]
+        rec["took"] = [[float(t[0]), int(t[5]), t[3], [[_short(R, p), *f] for p, f in sorted((t[4] or {}).items())]]
+                       for t in r.get("took") or [] if int(t[5]) >= 0]  # ([kyr ago, loser, how, [[people, fate, heads lost, heads moved]]])
+        if r.get("war_band"):
+            rec["war_band"] = list(r["war_band"])
+        polities.append(rec)
+    steps, maps = [], []
+    prev: set = set()
+    for k, ago in enumerate(agos):
+        j = R.frame_of(ago)
+        F = R.frame(j)
+        owner = np.full(g.n, -1, np.int64)
+        from_rec = np.full(g.n, -1, np.int64)
+        for e in maps_in[k]:
+            owner[_unpack(e[2])] = int(e[0])
+            for r_, cs in e[4].items():
+                from_rec[_unpack(cs)] = int(r_)
+        live_i = np.flatnonzero(pop[:, k] > 0)
+        cl = F.setdefault("cl", {(c, l): u for c, l, u in zip(F["cells"].tolist(), F["line"].tolist(), F["cul"].tolist())})
+        site_cul = np.array([cl.get((int(site_cell[i]), R.lidx.get(holder(sites[i], ago), -1)), -1) for i in live_i], np.int64)
+        ent_owner = owner[F["cells"]]
+        step_map, cnt, now = [], {t: 0 for t in TIERS}, set()
+        for e in maps_in[k]:
+            pid, ti, ppl = int(e[0]), int(e[1]), e[3]
+            rec, tier = polities[pid], TIERS[ti]
+            cells = np.flatnonzero(owner == pid)
+            m = ent_owner == pid
+            cul_here, lines_here = F["cul"][m], F["line"][m]
+            ruler = _ruler_culture(R, F, {"cell": rec["capital"]["cell"], "people": ppl}, cul_here, lines_here)
+            mine = owner[site_cell[live_i]] == pid
+            sp, sc = pop[live_i[mine], k], site_cul[mine]
+            people_n = float(sp.sum())
+            subj = {}
+            for cu in np.unique(cul_here):
+                cu = int(cu)
+                if cu == ruler or (tier != "dragon realm" and C[cu]["people"] in R.dragons):
+                    continue  # (dragons living over a state's land are not its subjects: O4)
+                n_settled = float(sp[sc == cu].sum())
+                if n_settled > 0 or len(np.unique(F["cells"][m][cul_here == cu])) >= SUBJECT_CELLS:
+                    subj[R.uids[cu]] = int(round(n_settled))
+            cnt[tier] += 1
+            now.add(pid)
+            if ruler is not None and (not rec["rulers"] or rec["rulers"][-1][1] != R.uids[ruler]):
+                rec["rulers"].append([ago, R.uids[ruler]])
+            if not rec["peoples"] or rec["peoples"][-1][1] != ppl:
+                rec["peoples"].append([ago, ppl])
+            rec["_subjects"].update(subj)
+            area = len(cells) * R.cell_km2 / 1e6
+            if area > rec["peak_mkm2"]:
+                rec["peak_mkm2"], rec["peak_kyr"], rec["peak_cells"] = round(area, 4), ago, int(len(cells))
+            rec["peak_pop"] = max(rec["peak_pop"], int(round(people_n)))
+            fr = from_rec[cells]
+            step_map.append([pid, ti, _pack(cells), subj, int(round(people_n)), {int(r_): _pack(cells[fr == r_]) for r_ in np.unique(fr[fr >= 0])}])
+        for pid in sorted(prev - now):  # (the ones that stopped ruling this step: how the history says, why in the read-out's words)
+            rec, lr = polities[pid], lrecs[pid]
+            how = lr.get("fell_how") or "faded"
+            rec["fell_kyr"] = ago
+            if how.startswith(("conquered", "invaded")) and (lr.get("fell_by") if lr.get("fell_by") is not None else -1) >= 0:
+                rec["fell_how"], rec["fell_by"] = how.split(" ")[0], int(lr["fell_by"])
+            elif how == "collapsed":
+                rec["fell_how"] = "collapsed"
+                rec["fell_why"] = "its ruler died and the realm broke up" if rec["kind"] == "dragon" else "collapsed"
+            else:
+                rec["fell_how"] = "faded"
+                c = rec["capital"]["cell"]
+                absorbed = {rec["key"]: int(owner[c])} if owner[c] >= 0 else {}
+                rec["fell_why"] = _why_fell(R, rec, rec["key"], sites, pop, k, ago, absorbed, None)
+        prev = now
+        st = steps_in[k] or {}
+        steps.append({"ago": ago, "frame": j, "counts": cnt, "ruled_cells": int((owner >= 0).sum()), "taken": len(st.get("taken") or []),
+                      "collapsed": int(st.get("collapsed") or 0), "largest": max(step_map, key=lambda e: len(_unpack(e[2])))[0] if step_map else None})
+        maps.append(step_map)
+    cult = _finish(R, polities)
+    rows = [x["row"] for x in L.get("invasions") or []]
+    logs = [{**x["log"], "took": [[t[0], t[4], t[5], t[3]] for t in x["log"].get("took") or [] if t[4] >= 0 and t[5] >= 0]}
+            for x in L.get("invasions") or []]
+    problems = list(L.get("invasion_problems") or [])
+    if invasions and IV.clean(invasions, strict=False)[0] != rows:
+        problems.append("the invasions written in now differ from those the history ran with; the polities are the history's, so a "
+                        "changed row acts only when the peoples are run again")
+    anc = IV.ancestors(R.lines)
     return {"format": FORMAT, "version": VERSION, "run": R.dir.name, "step_kyr": step_kyr, "from_kyr": agos[0],
-            "cell_km2": round(R.cell_km2, 1), "made_s": round(time.time() - t0, 1), "constants": constants(), "tiers": list(TIERS),
-            "steps": steps, "polities": polities, "cultures": cult, "maps": maps,
-            "invasions": {"rule": IV.RULE, "rows": IV.readout(inv_in, inv_log, polities, agos, R, anc), "problems": inv_notes}
-            | ({"reach": IV.REACH_RULE} if inv_in else {})}  # (the reach's rule only beside rows: a doc with none stays as it was)
+            "cell_km2": round(R.cell_km2, 1), "made_s": round(time.time() - t0, 1), "constants": constants() | {"live": L.get("constants")},
+            "tiers": list(TIERS), "steps": steps, "polities": polities, "cultures": cult, "maps": maps,
+            "live": {"file": "polities_live.json", "format": L["format"], "made_s": L.get("made_s"), "revolt": L.get("revolt")},
+            "invasions": {"rule": IV.RULE, "rows": IV.readout(rows, logs, polities, agos, R, anc), "problems": problems}
+            | ({"reach": IV.REACH_RULE} if rows else {})}
 
 
 # ------------------------------------------------------------------ helpers

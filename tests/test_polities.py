@@ -219,3 +219,73 @@ def test_a_polity_is_named_for_the_people_holding_its_capital_then():
     assert PO.name_at(rec, 9.0) == PO.name_at(rec, 7.0) == "South-east of Razukum (cervid-kin)"
     assert PO.name_at(rec, 6.2) == PO.name_at(rec, 0.0) == "South-east of Razukum (humans)"
     assert PO._at([[8.2, "a"], [6.2, "b"]], 6.25)[1] == "a"
+
+
+def _live_fixture():
+    """A stand-in run (two peoples, each with a culture and a town) and its polities_live.json (format /2): folk's state conquers the
+    kobolds' state at 0.1 kyr ago, expels some of them, and holds their land as a province."""
+    import types
+    from planet.lineages.history import polity_live as PLV
+    g = shared_grid(4)
+    off, idx = np.asarray(g.nbr_off), np.asarray(g.nbr_idx)
+    A = np.unique(np.concatenate([[10], idx[off[10]:off[11]]]))
+    B = np.unique(np.concatenate([[200], idx[off[200]:off[201]]]))
+    lines = [{"id": "folk", "name": "folk (humans)", "group_of": None, "parents": []},
+             {"id": "kob", "name": "kob (kobolds)", "group_of": None, "parents": []}]
+    C = [{"id": 0, "uid": "u0", "name": "Folkish", "people": "folk", "color": "#aa3333", "end": None, "into": None, "ended_kyr": None},
+         {"id": 1, "uid": "u1", "name": "Kobbish", "people": "kob", "color": "#33aa33", "end": None, "into": None, "ended_kyr": None}]
+
+    def site(i, c, h, place):
+        return {"id": i, "cell": int(c), "kind": "chief", "holder": h, "place": place, "lat": 0.0, "lon": 0.0,
+                "series": [[0.3, 5000.0], [0.0, 9000.0]], "founded_kyr": 0.3, "abandoned_kyr": None}
+    S = {"step_kyr": 0.1, "from_kyr": 0.3, "tiers": {"town_min_by_stage": [500.0], "city_min": 5000.0},
+         "sites": [site(0, 10, "folk", "the Vale"), site(1, 200, "kob", "Kobhold")]}
+    F = {"cells": np.concatenate([A, B]), "line": np.r_[np.zeros(len(A), int), np.ones(len(B), int)],
+         "cul": np.r_[np.zeros(len(A), int), np.ones(len(B), int)]}
+    R = types.SimpleNamespace(g=g, lines=lines, C={"cultures": C}, S=S, uids=["u0", "u1"], lidx={"folk": 0, "kob": 1},
+                              lname={l["id"]: l["name"] for l in lines}, dragons=set(), cell_km2=4 * np.pi * PO.R_EARTH_KM ** 2 / g.n,
+                              dir=Path("live-test"), frame_of=lambda ago: 0, frame=lambda j: F)
+    pk = PO._pack
+    L = {"format": PLV.FORMAT, "made_s": 0.1,
+         "steps": [{"ago": 0.2, "taken": [], "collapsed": 0}, {"ago": 0.1, "taken": [{"winner": "folk", "loser": "kob"}], "collapsed": 0}],
+         "maps": [[[0, 1, pk(A), "folk", {}], [1, 1, pk(B), "kob", {}]],
+                  [[0, 1, pk(np.r_[A, B]), "folk", {"1": pk(B)}]]],  # (JSON's keys: strings)
+         "polities": [{"id": 0, "key": "c10", "people": "folk", "cell": 10, "founded_kyr": 0.2, "tiers": [[0.2, "state"]], "fell_kyr": None,
+                       "fell_how": None, "peak_mkm2": 1.0, "peak_kyr": 0.1,
+                       "took": [[0.1, "kob", len(B), "war", {"kob": ["expelled", 100, 20]}, 1]]},
+                      {"id": 1, "key": "c200", "people": "kob", "cell": 200, "founded_kyr": 0.2, "tiers": [[0.2, "state"]], "fell_kyr": 0.1,
+                       "fell_how": "conquered by folk", "fell_by": 0, "peak_mkm2": 0.5, "peak_kyr": 0.2, "took": []}],
+         "invasions": [], "invasion_problems": [], "constants": {}}
+    return R, L, C, A, B
+
+
+def test_with_polities_in_the_history_the_read_out_draws_the_live_map():
+    """PW-1575: with the switch on, derive draws the history's polities (polities_live.json): the same polities and land per step, the
+    history's conquests and falls, with the read-out's names, ruling cultures, subjects and provinces; the religion read-out's rulers
+    (gods.rule_table) are those polities."""
+    from planet.lineages import gods as GD
+    R, L, C, A, B = _live_fixture()
+    doc = PO._from_live(R, L, 0.0)
+    assert [s["ago"] for s in doc["steps"]] == [0.3, 0.2, 0.1] and doc["maps"][0] == []  # (the ledger's steps before the first polity)
+    for st, lm in zip(doc["maps"][1:], L["maps"]):  # (the read-out's map is the live map, polity for polity and cell for cell)
+        assert [(e[0], e[1], e[2]) for e in st] == [(e[0], e[1], e[2]) for e in lm]
+    P = doc["polities"]
+    assert [p["key"] for p in P] == ["c10", "c200"] and P[0]["name"] == "Vale (folk)" and P[1]["name"] == "Kobhold (kob)"
+    assert P[0]["capital"]["site"] == 0 and P[0]["rulers"] == [[0.2, "u0"]] and P[1]["rulers"] == [[0.2, "u1"]]
+    assert P[1]["fell_kyr"] == 0.1 and P[1]["fell_how"] == "conquered" and P[1]["fell_why"] == "conquered by Vale (folk)"
+    assert P[0]["took"] == [[0.1, 1, "war", [["kob", "expelled", 100, 20]]]]  # (whom it expelled, for the card)
+    e = doc["maps"][2][0]
+    assert e[3] == {"u1": 7667} and PO._unpack(e[5][1]).tolist() == B.tolist()  # (its subjects, with the ledger's people then, and the province it took)
+    v = PO.step_view(doc, 0.1)
+    assert v["polities"][0]["cells"] == sorted(np.r_[A, B].tolist()) and v["polities"][0]["provinces"] == {"1": B.tolist()}
+    rt = GD.rule_table(doc, C)
+    assert [s[0] for s in rt["steps"]] == [0.3, 0.2, 0.1] and rt["steps"][1][1] == []  # (no subjects before the conquest)
+    assert rt["steps"][2][1] == [[0, [[1, 1.0]], True, 1.0]]  # (gods' rulers: folk's culture over the kobolds', after the war it fought)
+
+
+def test_the_read_out_refuses_an_older_live_file():
+    import pytest
+    R, L, *_ = _live_fixture()
+    L["format"] = "procgen-polities-live/1"
+    with pytest.raises(SystemExit):
+        PO._from_live(R, L, 0.0)
