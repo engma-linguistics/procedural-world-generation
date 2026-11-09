@@ -359,10 +359,17 @@ def _ring_index(g, r: int) -> np.ndarray:
 AGG_MID = AT.AGG_BASE + AT.AGG_CONTEST * 0.5  # the martial mark (0.5: a martial or an aggressive people), polity_live's AGG_MID: the chances
 # of a sack and of a razing scale with aggression / AGG_MID (a razing's capped at 1: a martial winner razes RAZE of its sacks)
 WAR_EVENTS = ("taken", "sacked", "razed", "raided")
+LIVE_HARSH = ("kept", "submitted", "thinned", "expelled", "razed")  # (polity_live._fates' fates, mildest first: a people of two lines takes its harshest)
+LIVE_FATE = {"kept": "taken", "submitted": "taken", "thinned": "sacked", "expelled": "sacked", "razed": "razed"}  # (PW-1599: the ledger's reading)
 
 
 class _War:
     """PW-1108: war and raids as a read-out of what the run stored, not a second war model.
+    - With polities in the history (the run has polities_live.json; PW-1599): the takings are the live conquests themselves. A chief
+      place or a second people's own place on a cell a polity took is razed where the winner razed its people, sacked where it thinned
+      or expelled them, occupied where it kept them or they submitted (conquest; the fates are the history's, so walls and the dial
+      below do not re-draw them); a place of the winner's own people or kin is left be. The displacement stand-in below is for runs
+      without them.
     - Takings by force: a chief place whose cell passes to another people while its old people loses its stake there (under DISPLACED
       of the cell's heads: neither lead nor a real second people) was taken by force: the cell-scale record of meta.contacts'
       'displacement' (contacts.Contacts._note: the lead changed and the old people lost the cell). A change of hands where the old
@@ -434,6 +441,35 @@ class _War:
             self.pt = read_presence(run_dir, m)
         self.frame_ids = frame_ids
         self._pres: dict = {}
+        # PW-1599: a run with polities in the history (polities_live.json) has the conquests themselves, and what the winner did to
+        # each people on the land it took: {cell: [(kyr ago, winner people, {people: fate})]}, the latest last. None without it.
+        self.live = None
+        lp = Path(run_dir) / "polities_live.json"
+        if lp.exists():
+            pid = {l["id"]: people_of.get(l["index"], l["id"]) for l in lines}
+            self.live = {}
+            for r in json.loads(lp.read_text()).get("polities") or []:
+                for t in r.get("took") or []:
+                    if len(t) < 7:
+                        continue
+                    fates: dict = {}
+                    for p, f in (t[4] or {}).items():
+                        q = pid.get(p, p)
+                        if q not in fates or LIVE_HARSH.index(f[0]) > LIVE_HARSH.index(fates[q]):
+                            fates[q] = f[0]
+                    for cell in t[6]:
+                        self.live.setdefault(int(cell), []).append((float(t[0]), pid.get(r["people"], r["people"]), fates))
+            for v in self.live.values():
+                v.sort(key=lambda x: -x[0])
+
+    def conquest(self, cell: int, holder: str, ago: float, since: float) -> tuple | None:
+        """PW-1599: the live conquest of `cell` after `since` and at or before `ago` (kyr ago) that found `holder`'s people there, as
+        (the ledger's fate, winner): razed -> razed; thinned or expelled -> sacked; kept or submitted -> occupied ('taken'). None
+        when no conquest took the cell then, or the holder is the winner's own people or kin (the history leaves those be)."""
+        for a, win, fates in reversed(self.live.get(cell, ())):
+            if since - 1e-9 > a >= ago - 1e-9 and holder in fates:
+                return LIVE_FATE[fates[holder]], win
+        return None
 
     def walled(self, people: str, tier: int, ago: float) -> bool:
         return tier >= 2 and self.fort.get(people, -1.0) >= ago - 1e-9
@@ -539,6 +575,7 @@ def derive(run_dir: Path, **over) -> dict:
     steps = np.round(np.arange(fago[0], -1e-9, -c["STEP_KYR"]), 3)
     if steps[-1] != 0:
         steps = np.append(steps, 0.0)
+    since_of = {float(b): float(a) for a, b in zip(steps[:-1], steps[1:])}  # (each step's previous step: the span its war reads, PW-1599)
     cache: dict[int, dict] = {}
 
     def frame_env(j):  # land, ice and who lives there at window frame j (cached: the steps between two frames share them)
@@ -855,7 +892,9 @@ def derive(run_dir: Path, **over) -> dict:
                         s["walled_kyr"] = float(ago)
                     yr = int(round(ago * 1000))
                     ev = None
-                    if k == 0 and s["holder"] != old_h:
+                    if war.live is not None:  # (PW-1599: the history's own conquests and what the winner did to the people there)
+                        ev = war.conquest(cell, old_h, float(ago), since_of.get(float(ago), float(ago) + dt))
+                    elif k == 0 and s["holder"] != old_h:
                         stake = sum(float(e[sk][cell]) for lk, sk in (("mix_lead", "mix_lead_share"), ("mix_second", "mix_second_share"))
                                     if e[lk][cell] != NONE and people_of[int(e[lk][cell])] == old_h) / 100
                         if stake < c["DISPLACED"]:  # (taken by force: its old people lost its stake in the cell)

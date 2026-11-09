@@ -473,8 +473,9 @@ class LivePolities(StandIns):
             if lrec is not None:
                 lrec["fell_kyr"], lrec["fell_how"] = ago, ("invaded by " if how == "invasion" else "conquered by ") + ruling[w]["people"]
                 lrec["fell_by"] = wid
-            if wrec is not None:  # ([kyr ago, loser people, cells, how, the fates of the peoples there, loser record id])
-                wrec["took"].append([round(ago, 3), ruling[l_]["people"], int(len(cells)), how, fates, lid])
+            if wrec is not None:  # ([kyr ago, loser people, cells, how, the fates of the peoples there, loser record id, the cells
+                # taken: the settlement ledger's war reads each place's fate from them, PW-1599])
+                wrec["took"].append([round(ago, 3), ruling[l_]["people"], int(len(cells)), how, fates, lid, cells.tolist()])
             from_rec[(before == l_) & (from_rec < 0)] = lid
             self.prov_rec[lk] = lid
             taken_log.append({"winner": ruling[w]["people"], "loser": ruling[l_]["people"], "cells": int(len(cells)), "how": how, "fates": fates,

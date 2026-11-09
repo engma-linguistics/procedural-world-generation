@@ -98,3 +98,32 @@ def test_dragons_raid_towns_in_their_country_but_not_their_kin(tmp_path, monkeyp
     assert raided and all(w[2] == "red_dragon" for s in raided for w in s["war"])
     assert all(s["holder"] == "a" for s in raided)  # (the kobolds, of the dragons' own stem, are never raided)
     assert all(s["tier_peak"] in ("town", "city") for s in raided)  # (towns and cities, not villages)
+
+
+def _live(out, cells, fates, ago=7.95, winner="c"):
+    """A polities_live.json whose `winner` polity took `cells` at `ago`, the peoples there meeting `fates` (polity_live's took row)."""
+    took = [[ago, "a", len(cells), "conquest", {p: [f, 0, 0] for p, f in fates.items()}, 1, [int(c) for c in cells]]]
+    (out / "polities_live.json").write_text(json.dumps({"format": "procgen-polities-live/2", "polities": [
+        {"id": 0, "people": winner, "took": took}, {"id": 1, "people": "a", "took": []}]}))
+
+
+def test_live_conquests_set_the_fates_not_the_displacement_stand_in(tmp_path):
+    """PW-1599: with polities in the history the war is the live conquests': razed -> razed, thinned or expelled -> sacked, kept or
+    submitted -> occupied; a displacement with no conquest is not a taking, and a people the fates do not name (the winner's own or
+    kin) is left be."""
+    g = shared_grid(LEVEL)
+    for fate, want in (("razed", "razed"), ("expelled", "sacked"), ("thinned", "sacked"), ("kept", "taken"), ("submitted", "taken")):
+        out, _ = _taken(tmp_path / fate, keep_share=40.0)  # (a holds the cells until 6 kyr ago and stays on after: no displacement)
+        cells = [s["cell"] for s in _first(ST.derive(out, RIVER_SHIFT=0.0)["doc"]["sites"], g)][:3]
+        assert cells
+        _live(out, cells, {"a": fate})
+        sites = {s["cell"]: s for s in _first(ST.derive(out, RIVER_SHIFT=0.0, SACK=1.0, RAZE=1.0)["doc"]["sites"], g)}
+        assert all(sites[c]["war"] and sites[c]["war"][0][1:3] == [want, "c"] and 7.85 < sites[c]["war"][0][0] <= 7.95 for c in cells), fate
+        assert not any(s["war"] for c, s in sites.items() if c not in cells)
+    out, _ = _taken(tmp_path / "disp")  # (a displaced six kyr ago, but the history's polities never took the land)
+    _live(out, [], {"a": "razed"})
+    assert not any(s["war"] for s in _first(ST.derive(out, RIVER_SHIFT=0.0, SACK=1.0, RAZE=1.0)["doc"]["sites"], g))
+    out, _ = _taken(tmp_path / "own", keep_share=40.0)
+    cells = [s["cell"] for s in _first(ST.derive(out, RIVER_SHIFT=0.0)["doc"]["sites"], g)][:3]
+    _live(out, cells, {}, winner="a")  # (a took its own people's land: the fates name no one)
+    assert not any(s["war"] for s in _first(ST.derive(out, RIVER_SHIFT=0.0, SACK=1.0, RAZE=1.0)["doc"]["sites"], g))
