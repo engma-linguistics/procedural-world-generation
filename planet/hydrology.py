@@ -72,7 +72,7 @@ def erode(grid: Grid, elev: np.ndarray, c: dict, iterations: int = 12, strength:
         land = is_land(h, ice, grid)
         hr = h + top  # what the water runs over: the ice surface, the ground off it
         if lake_every and it % lake_every == 0:
-            lk = lakes(grid, hr, c["runoff"], c["aet"], c["lake_evap"], iced, land=land)
+            lk = lakes(grid, hr, c["runoff"], c["aet"], c["lake_evap"], iced, land=land, pet_mm=c.get("pet"))
         if lk is None:
             _, down, order = priority_flood(grid, hr, sea=~land)
             flow = accumulate(down, order, np.where(land, c["runoff"], 0.0) / 1000.0)
@@ -96,6 +96,11 @@ MIN_DEPTH = 20.0  # m: shallower hollows in the cell-mean terrain are drained by
 # m per km: a wide hollow must also fall at least this steeply from its rim
 # to its middle (depth / sqrt(area / pi)), or it is a plain that rivers cross
 MIN_SLOPE = 0.1
+# A hollow in a dry catchment that no river leaves stays closed however
+# shallow or flat (_dry_hollows; PW-054): its catchment's rain is below
+# DRYLAND_AI x its potential evaporation (the climate's, Oudin's, over land)
+DRY_HOLLOWS = True
+DRYLAND_AI = 0.65
 # depth of the valley a river runs in below its cells' mean height, m:
 # CHANNEL_K x (discharge in m^3/s) ** CHANNEL_B
 CHANNEL_K, CHANNEL_B = 0.1, 0.7
@@ -125,7 +130,55 @@ def _bed(grid, ground, sea, min_depth, min_slope):
     return np.where(keep, h, kernels.flood_fill(h, sea, grid.nbr_off, grid.nbr_idx, 0.01))
 
 
-def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
+def _dry_hollows(grid, ground, bed, land, src, loss, rain, pet):
+    """Cells of the hollows (below their spill points) in dry catchments
+    that no river leaves. _bed's min_depth and min_slope stand for channels
+    too small to see that a through-flowing river cuts through a shallow
+    rim, or a plain it crosses. A hollow whose own inflow evaporates before
+    its lake reaches the rim has no outflowing river to cut that channel,
+    so it stays a playa or a terminal lake however shallow (the
+    Altiplano-Puna, Tarim, Eyre). Only where its whole catchment is
+    dryland, rain under DRYLAND_AI x the potential evaporation (the aridity
+    index's bound): a flat hollow in wet country is closed by the lake
+    balance only because a lake spread over all of it would evaporate its
+    inflow, but there its rivers build the floor up and spill (a swamp or a
+    lake a river crosses, as _bed has it). The candidates are the closed
+    hollows of the unfiltered ground; their lakes and catchments are then
+    taken on bed (_bed's) with them put back, where the shallow hollows
+    upstream are filled and pass their rivers on (a hollow gets those too)."""
+    sea, rcv, asc = kernels.lake_order(ground, ~land, grid.nbr_off, grid.nbr_idx)
+    open0 = kernels.lakes_on(ground, grid.nbr_off, grid.nbr_idx, src, loss, sea, rcv, asc)[1]
+    filled = kernels.priority_flood(ground, ~land, grid.nbr_off, grid.nbr_idx, 0.0)[0]
+    cand = land & ~open0 & (filled > ground)
+    bed1 = np.where(cand, ground, bed)
+    sea, rcv, asc = kernels.lake_order(bed1, ~land, grid.nbr_off, grid.nbr_idx)
+    wet, open1, _, _, _, basin = kernels.lakes_on(bed1, grid.nbr_off, grid.nbr_idx, src, loss, sea, rcv, asc)
+    _, down, order = kernels.priority_flood(bed1, ~land, grid.nbr_off, grid.nbr_idx, 0.0)
+    shut = cand & ~open1
+    # each closed hollow's catchment: the hollow and the land that drains into it
+    catch = _upstream_label(down, order, np.where(shut, basin, -1))
+    m = catch >= 0
+    dry = (np.bincount(catch[m], rain[m], minlength=grid.n)
+           < DRYLAND_AI * np.bincount(catch[m], pet[m], minlength=grid.n))
+    # ...and its lake stops short of the rim: some of its floor stays dry (a hollow its lake fills, a cell-mean
+    # dip on a big river's course most often, is as likely to spill as not within a cell)
+    dry &= np.bincount(basin[shut & ~wet], minlength=grid.n) > 0
+    return shut & dry[basin]
+
+
+@njit(cache=True)
+def _upstream_label(down, order, lab):
+    """lab carried up the rivers: an unlabelled cell gets its downstream
+    cell's label (order: outlets first)."""
+    out = lab.copy()
+    for t in range(order.shape[0]):
+        i = order[t]
+        if out[i] < 0 and down[i] >= 0:
+            out[i] = out[down[i]]
+    return out
+
+
+def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4, dry=None, keep=None):
     """kernels.lakes on _bed(ground), made to agree with the rivers.
     kernels.lakes gives each basin the water that runs downhill into it,
     but a lake that spills where its basin meets the sea's drainage can
@@ -133,35 +186,67 @@ def _settle(grid, ground, land, src, loss, min_depth, min_slope, tries=4):
     (route() follows the river there): that basin then gets the river too
     and fills further, and may spill in turn (the Nile into the Nubian
     hollow, PW-122). Returns ((bed, wet, open, out_z, pit, catch, basin),
-    (flow, down, order, sink)) of the last try."""
-    extra = np.zeros(grid.n)
-    bed = _bed(grid, ground, ~land, min_depth, min_slope)
-    order0 = kernels.lake_order(bed, ~land, grid.nbr_off, grid.nbr_idx)  # (the same bed each try)
-    for _ in range(tries):
-        wet, open_, out_z, pit, catch, basin = kernels.lakes_on(bed, grid.nbr_off, grid.nbr_idx, src + extra, loss,
-                                                                *order0)
-        r = (bed, wet, open_, out_z, pit, catch, basin)
-        sink = land & ~open_ & (wet | pit)
-        lk0 = dict(wet=wet, level=np.where(wet & open_, out_z, ground), bed=bed, sink=sink, src=src - loss * wet,
-                   sea=~land)
-        flow, down, order, _ = route(grid, ground, lk0)
-        more = kernels.closed_excess(sink, basin, wet, down, flow, src, loss, bed)
-        if not more.any():
+    (flow, down, order, sink)) of the last try, and the dry hollows kept.
+    dry (optional): (rain, potential evaporation) per cell, mm/yr: the dry
+    catchments' closed hollows keep their own ground whatever their depth
+    (_dry_hollows; keep: those lakes()' earlier carve tries kept, worked
+    out once on the uncarved ground: a carved valley only lowers a kept
+    hollow's ground, which the lake balance here takes as it is). After
+    the rivers settle, a kept hollow is _bed's again if its catchment is
+    wet after all or its lake spills (a river flows through it)."""
+    bed0 = _bed(grid, ground, ~land, min_depth, min_slope)
+    if keep is None:
+        keep = (_dry_hollows(grid, ground, bed0, land, src, loss, *dry) if DRY_HOLLOWS and dry is not None
+                and min_depth > 0 else np.zeros(grid.n, bool))
+    keep = keep.copy()
+    for rnd in range(3):
+        extra = np.zeros(grid.n)
+        bed = np.where(keep, ground, bed0)
+        order0 = kernels.lake_order(bed, ~land, grid.nbr_off, grid.nbr_idx)  # (the same bed each try)
+        for _ in range(tries):
+            wet, open_, out_z, pit, catch, basin = kernels.lakes_on(bed, grid.nbr_off, grid.nbr_idx, src + extra,
+                                                                    loss, *order0)
+            r = (bed, wet, open_, out_z, pit, catch, basin)
+            sink = land & ~open_ & (wet | pit)
+            lk0 = dict(wet=wet, level=np.where(wet & open_, out_z, ground), bed=bed, sink=sink,
+                       src=src - loss * wet, sea=~land)
+            flow, down, order, _ = route(grid, ground, lk0)
+            more = kernels.closed_excess(sink, basin, wet, down, flow, src, loss, bed)
+            if not more.any():
+                break
+            extra += more
+        if not keep.any() or rnd == 2:
             break
-        extra += more
-    return r, (flow, down, order, sink)
+        # a kept hollow whose catchment the rivers made wet after all (a spilling lake's river sent on into it:
+        # the Nile into its desert hollows, PW-122) is no dry hollow: _bed's again; nor is the basin of a kept
+        # lake that spills (filled to its rim by a wet corner of a mixed catchment, or by the carve tries' new
+        # courses): its river flows on through it, a lake on a plain or in a shallow dip, as _bed has it
+        lab, k = grid.components(keep)
+        up = _upstream_label(down, order, lab)
+        m = up >= 0
+        ok = (np.bincount(up[m], dry[0][m], minlength=k) < DRYLAND_AI * np.bincount(up[m], dry[1][m], minlength=k))
+        drop = keep & ~ok[np.maximum(lab, 0)]
+        spill = keep & wet & open_
+        if spill.any():
+            drop |= keep & np.isin(basin, np.unique(basin[spill]))
+        if not drop.any():
+            break
+        keep &= ~drop
+    return r, (flow, down, order, sink), keep
 
 
 def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarray,
           lake_evap_mm: np.ndarray, no_lake: np.ndarray | None = None, min_depth: float = MIN_DEPTH,
           min_slope: float = MIN_SLOPE, channel: float | None = None,
           outlet: np.ndarray | None = None, valley: np.ndarray | None = None,
-          land: np.ndarray | None = None) -> dict:
+          land: np.ndarray | None = None, pet_mm: np.ndarray | None = None) -> dict:
     """Where water stands. elev m; land: what isn't sea (default
     geo.is_land of elev: ground below 0 cut off from the sea is land, a
     hollow these lakes fill or leave dry); runoff, actual land
     evaporation and open-water evaporation in mm/yr; no_lake: cells that
-    can't hold a lake (ice sheets). A cell's elevation is its mean over
+    can't hold a lake (ice sheets); pet_mm (optional): the climate's
+    potential evaporation over land, mm/yr: with it a closed hollow in a dry
+    catchment is kept however shallow or flat (_dry_hollows). A cell's elevation is its mean over
     ~100 km, so a hollow less than min_depth below its spill point is taken
     to be drained by a river channel too small to resolve (water flows on
     through it, no lake). That holds inside basins too: a dip in a basin's
@@ -212,9 +297,11 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
     src = np.where(land, runoff_mm, 0.0) / 1000.0
     loss = np.where(land, np.maximum(lake_evap_mm - aet_mm, 0.0), 0.0) / 1000.0
     carved = ground
+    dry = None if pet_mm is None else (np.where(land, runoff_mm + aet_mm, 0.0), np.where(land, pet_mm, 0.0))
+    keep = None  # (the dry hollows: worked out on the uncarved ground, once, and kept across the carve tries)
     for k in range(CARVE_TRIES + 1 if channel > 0 else 1):
-        (elev, wet, open_, out_z, pit, catch, _), (flow, down, order, sink) = _settle(grid, carved, land, src, loss,
-                                                                                  min_depth, min_slope)
+        (elev, wet, open_, out_z, pit, catch, _), (flow, down, order, sink), keep = _settle(
+            grid, carved, land, src, loss, min_depth, min_slope, dry=dry, keep=keep)
         if k == CARVE_TRIES or channel <= 0:
             break
         # the same with the rivers' valleys cut in (only where they reach the
@@ -402,7 +489,7 @@ def rivers_and_lakes(grid: Grid, elev: np.ndarray, c: dict, ice: np.ndarray | No
         sel = (basin[a] >= 0) & (basin[a] != basin[b])
         np.minimum.at(rim, lab[a][sel], np.maximum(surf[a], surf[b])[sel])
     lk = lakes(grid, surf, c["runoff"], c["aet"], c["lake_evap"], iced, channel=channel, outlet=outlet,
-               valley=valley, land=land)
+               valley=valley, land=land, pet_mm=c.get("pet"))
     if closed is not None and k:
         # a lake fills its basin no higher than the rim: what more its
         # rivers bring (a wetter climate than the data's) spills over the

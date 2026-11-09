@@ -301,3 +301,32 @@ def test_lake_order_reused_across_tries_matches_fresh_lakes():
             want = kernels.lakes(e, e <= 0, g.nbr_off, g.nbr_idx, src, loss)
             for a, b in zip(got, want):
                 assert np.array_equal(a, b)
+
+
+def test_dry_catchment_keeps_its_flat_hollow_closed():
+    """A wide hollow 40 m deep and flatter than MIN_SLOPE, on a plain falling
+    to the sea (PW-054): a plain rivers cross where its catchment is wet,
+    a closed basin however flat where the catchment is dryland (rain under
+    DRYLAND_AI x potential evaporation) and its inflow evaporates before
+    its lake reaches the rim. Without pet the rule is off."""
+    g = build_grid(5)
+    mid = np.array([0.0, np.cos(0.35), np.sin(0.35)])  # 20 N, 90 E
+    d = np.arccos(np.clip(g.centers @ mid, -1, 1)) * 6371
+    e = 500.0 + 0.01 * (g.lat + 60)
+    e[g.lat < -60] = -100.0
+    e = np.where(d < 900, 460 + 40 * d / 900, e)  # ~0.044 m/km
+    land = e > 0
+    hollow = d < 600
+    runoff = np.where(land, 20.0, 0.0)
+    lake_evap = np.full(g.n, 2000.0)
+
+    def inland(aet, pet):
+        lk = hydrology.lakes(g, e, runoff, np.full(g.n, aet), lake_evap, channel=0.0,
+                             pet_mm=None if pet is None else np.full(g.n, pet))
+        flow, down, order, _ = hydrology.route(g, e, lk)
+        return hydrology.endorheic(down, order, lk["sink"]) & land
+
+    assert not inland(250.0, None)[hollow].any()  # main: a plain
+    assert not inland(900.0, 1000.0)[hollow].any()  # wet catchment (P/PET 0.92): still a plain
+    dry = inland(250.0, 1500.0)  # dryland (P/PET 0.18)
+    assert dry[hollow].all() and not dry[g.lat < 0].any()

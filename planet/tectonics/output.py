@@ -121,7 +121,7 @@ def water_now(sim) -> dict:
         return dict(flow=np.zeros(n), downstream=np.full(n, -1, np.int64), lake_kind=np.zeros(n, np.int8),
                     lake_depth=np.zeros(n))
     bed = sim.bed()
-    c = {"runoff": sim.runoff, "aet": sim.aet, "lake_evap": sim.lake_evap}
+    c = {"runoff": sim.runoff, "aet": sim.aet, "lake_evap": sim.lake_evap, "pet": sim.pet}
     # (the grounded ice, as a world's: under it the bed may lie below the sea and is land, PW-307; dropping it
     # there would leave an ice-free hollow inside the sheet, land since PW-1229, for a lake)
     flow, down, lk = hydrology.rivers_and_lakes(sim.grid, bed, c, grounded(bed, sim.ice), valley=sim.valley())

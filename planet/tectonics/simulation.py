@@ -95,7 +95,7 @@ class Simulation:
         "temp", "t_warm", "t_cold",  # C: annual mean, warmest and coldest month
         "sst",  # C: the sea surface's annual mean (the reefs', PW-876)
         "precip", "p_jul", "p_jan",  # mm/yr: annual, July, January
-        "runoff", "aet", "lake_evap",  # mm/yr
+        "runoff", "aet", "lake_evap", "pet",  # mm/yr (pet: potential evaporation over land, Oudin's)
         "koppen",  # climate.KOPPEN id
         "wind", "current",  # (n, 3) annual-mean surface wind and ocean current
         "wind_jul", "wind_jan",  # (n, 3) the half-years' surface winds (Apr-Sep, Oct-Mar)
@@ -178,7 +178,7 @@ class Simulation:
         self.temp = self.t_warm = self.t_cold = None
         self.sst = None  # C, the climate's sea-surface temperature (earth.update_climate)
         self.precip = self.p_jul = self.p_jan = None
-        self.runoff = self.aet = self.lake_evap = None
+        self.runoff = self.aet = self.lake_evap = self.pet = None
         self.koppen = self.wind = self.current = None
         self.wind_jul = self.wind_jan = None
         self.flow = np.zeros(n)
