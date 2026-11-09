@@ -60,6 +60,21 @@ Reading it:
 - Df0 0.52 (anchoring at the model's own dry month instead of the tower's measured 0.55) overshoots GPP and is a fit to
   the model, not a measurement. Not taken.
 
+## Status: the code is a patch, not yet in planet/
+
+The pass-1 code is `pass1.patch` in this folder (`git apply docs/review/climate/diffuse/pass1.patch`):
+`climate.diffuse_fraction` (Yan's eq. 13) and `months()["df"]`; `vegetation.DIFFUSE = {"TrBE": (2.08, 0.55)}` read by
+`_year` through two new `_KP` columns (21, 22); TrBE `rl=11.1` (x1.5). `probe.py` needs the patch applied (it reads
+`s["df"]` and those columns). The screens above were run with it applied (the "A: TrBE" column is exactly the patch's
+defaults). It is not committed under planet/ because the not-slow suite, the golden check, a probe re-run on the
+committed defaults, `npp_check.py` against main and the scorecard could not run: the machine's load stayed at 50-93
+from another session's ~32-core job from 23:44 to past 00:30, over the brief's limit of 30 for starting batches.
+
+Next lane, in order: apply the patch; `NUMBA_NUM_THREADS=4 uv run pytest -q -n 2 -m "not slow"` (goldens will move
+if any golden world has TrBE: `tests/test_golden.py --update-golden` on purpose); `probe.py` with no flags (should
+match the "A: TrBE" column); `npp_check.py` on main and patched; `tools/scorecard.py`; then the 8-draw L6 screen and
+the judge.
+
 ## Not done in this pass
 
 - The 8-draw L6 coupled screen and the 36-draw judge (the ticket's last two steps). The change touches only TrBE's
