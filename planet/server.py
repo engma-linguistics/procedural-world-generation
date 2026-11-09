@@ -29,6 +29,7 @@
   GET    /api/polities?run=<id>[&ago=<kyr>]   who rules where (lineages/polities.py, PW-1431): the polities and per-step counts; with ago, the nearest century step's map
   GET    /api/techspread?run=<id>[&tech=writing]   how fast one tech spread (lineages/techspread.py): who knew it when and how, the share of settled people over time
   GET    /api/trade?run=<id>[&culture=<id>]   the goods ledger (lineages/trade.py, PW-1502): per way of life, or one culture's surplus and lacks per era; &flows=1: where its goods come from and go (trade_flow.py, PW-1503); &routes=1&ago=<kyr>: that era's trade routes and trading towns (trade_routes.py, PW-1504)
+  GET    /api/tongues?run=<id>[&culture=<id>|&ago=<kyr>]   the tongues ledger (lineages/tongues.py, PW-1526): per culture and era the tongues its people speak besides its own; trade languages and pidgins per era
   POST   /api/names {world, letter, name}   rename a landmass (names.set_name; empty name clears)
   GET    /api/favourites[?kind=run|world|zoom]   the starred items [{kind, id, starred}] (favourites.py)
   POST   /api/favourites {kind, id, starred}   star or unstar one; answers the new list
@@ -599,6 +600,72 @@ def trade_flow_doc(d: Path) -> dict:
         return _trade_flow_cache[key]
 
 
+_tongues_cache: dict = {}  # (run id, run.json mtime, versions, authored keys, languages.json mtime) -> tongues ledger
+_tongues_lock = threading.Lock()
+
+
+def tongues_doc(d: Path) -> dict:
+    """A run's tongues ledger (lineages/tongues.py, PW-1526): per culture and era the tongues its people speak besides its own (a
+    neighbour's, a ruler's, a host's, a trade language or pidgin, a liturgy), read after the run from the exchange doc (trade_flow_doc),
+    the polities, the gods doc and languages.json; kept in memory and on disk under <data root>/.godscache, never in the run folder."""
+    from .lineages import trade as TR
+    from .lineages import trade_flow as TF
+    from .lineages import tongues as TG
+    lf = d / "languages.json"
+    key = (d.name, (d / "run.json").stat().st_mtime, TG.VERSION, TF.VERSION, TR.VERSION, _authored_key(d, "invasions"), _authored_key(d),
+           lf.stat().st_mtime if lf.exists() else None)
+    with _tongues_lock:
+        if key not in _tongues_cache:
+            def make():
+                try:
+                    pol = polities_doc(d)
+                except Exception:  # (a run without settlements has no polities: nobody rules anybody)
+                    pol = None
+                try:
+                    gods = gods_doc(d)
+                except Exception:
+                    gods = None
+                return TG.derive(d, trade_flow_doc(d), pol=pol, gods=gods)
+            _tongues_cache.clear()
+            _tongues_cache[key] = disk_cached("tongues", d, key, make)
+        return _tongues_cache[key]
+
+
+def tongues(query: str) -> tuple[dict, int]:
+    """GET /api/tongues?run=<id>[&culture=<id>|&ago=<kyr>]: a peoples run's tongues ledger (lineages/tongues.py, PW-1526). Without
+    culture or ago: per era the counts and the trade languages (tongues.summary); with culture: that culture's other tongues per era;
+    with ago: the era nearest it whole (every culture's rows and the trade languages)."""
+    q = dict(parse_qsl(query))
+    try:
+        from .lineages import tongues as TG
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        meta = json.loads((d / "run.json").read_text()).get("meta", {})
+        if meta.get("kind") != "peoples" or not meta.get("eraq") or not meta.get("world"):
+            raise ValueError("the tongues ledger is read from a peoples run with a land-use window and a world")
+        doc = tongues_doc(d)
+        if q.get("culture") not in (None, ""):
+            c = int(q["culture"])
+            if not 0 <= c < len(doc["cultures"]):
+                raise ValueError(f"no culture {c} in this run")
+            return {"culture": c, "columns": doc["columns"], "rows": TG.culture_view(doc, c)}, 200
+        if q.get("ago") not in (None, ""):
+            fs = doc["frames"]
+            if not fs:
+                return {"ago_kyr": None, "cultures": {}, "trade_languages": []}, 200
+            a = float(q["ago"])
+            f = min(fs, key=lambda f: abs(f["ago_kyr"] - a))
+            return {"columns": doc["columns"], "names": [x["name"] for x in doc["cultures"]], **f}, 200
+        return TG.summary(doc), 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}"}, 500
+
+
 def trade(query: str) -> tuple[dict, int]:
     """GET /api/trade?run=<id>[&culture=<id>[&flows=1]]: a peoples run's goods ledger (lineages/trade.py, PW-1502). Without culture: per way
     of life, the goods most often in surplus and lacking, and the frames; with culture: that culture's surplus and lacks at each frame of the
@@ -990,6 +1057,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*techspread(url.query))
         if url.path == "/api/trade":
             return self.send_json(*trade(url.query))
+        if url.path == "/api/tongues":
+            return self.send_json(*tongues(url.query))
         if url.path == "/api/faithmap":
             body, code = faithmap(url.query)
             if isinstance(body, dict):
