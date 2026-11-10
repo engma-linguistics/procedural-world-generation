@@ -2,7 +2,7 @@
 id: PW-1640
 title: "The settlement ledger's harbour bonus never fires: the harbour layer is on sea cells, the ledger reads it on the land coast"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v5
 subsystem: peoples
@@ -36,8 +36,9 @@ update and a before/after on Earth-like A; it is not a grid question, which is w
 
 If never done: every world's coastal towns lack the harbour and fisher terms the rules describe, so ports are rarer and smaller
 than the model claims and the coast-vs-river balance of towns (a number lanes compare) is biased toward rivers.
-- [ ] harbour read from the sea neighbours of a coastal land cell (ledger and live polities)
-- [ ] before/after coast share and harbour towns on Earth-like A L7
+- [x] harbour read from the sea neighbours of a coastal land cell (ledger and live polities)
+- [x] before/after coast share and harbour towns on Earth-like A L7
 
 ## Updates
+- 2026-11-10: Lane 272 (commit 2a2876cd): `settlements.coast_harbour` gives each coastal land cell the best harbour of its neighbours that are sea at that frame; the ledger's site factor and fishers, and polity_live's `_site` and central places, read it. Goldens do not cover the ledger (unchanged). Before/after on Earth-like A L7 (run 732ed6, dnd, one try; it reproduces lane 270's 2e0a95 exactly; the "before" is the same run's ledger redone with main f16cf7a7's code, the control redo with the fix reproduces the run's own ledger byte for byte), read on 899985's own coast (12.3% of the land; 5.75% of the land is coast beside a harbour): villages/towns/cities 22,399/6,170/283 -> 22,493/6,209/286; towns+cities on the coast 14.8% -> 15.2%; beside a harbour 7.0% -> 7.45%; small islands (< 0.3 Mkm2) with a town 20 -> 21; on rivers 46.4% -> 46.1%; people unchanged (1,042 M; the history does not read the ledger, live polities are off). Read on the L8 refine 9cf1c3: coast 7.3% -> 7.6%, ~60 km band 14.8% -> 15.2%, islands 21 -> 22. A small, real effect: the bonus is +0.15..0.4 on a cell that must still be the best of its 60 km ring, and harbour coast is rare.
 - 2026-11-10: Created from inbox draft draft-ledger-harbour-on-sea-cells.md (found by lane270-pw1627).
