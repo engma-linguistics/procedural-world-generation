@@ -57,7 +57,7 @@ DOMESTIC_STRADDLE = {"dog": ["a land beast that eats flesh and lives in the hous
 DIVINE = {"herd": ("herd",), "harvest": ("crop",), "sea": ("sea_beasts", "shellfish"), "river": ("eels",), "storm": ("waterfowl",), "sky": ("waterfowl",),
           "death": ("carrion_birds",), "hunt": ("swine",)}
 HERD = ("cattle", "caprine", "horse", "great_elk", "buffalo", "yak", "camel", "reindeer", "llama", "pig")  # (in order of preference: the first kept is "the herd"; PW-835 rows after the old ones)
-BAD = ("feared", "despised")
+BAD = ("feared", "despised", "resented")
 
 
 def _label(t: str) -> str:
