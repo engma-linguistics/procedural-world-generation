@@ -238,7 +238,11 @@ def test_on_the_tiny_driver_run():
     b = NM.build_names(res, TinyRun())
     assert json.dumps(a, sort_keys=True, default=str) == json.dumps(b, sort_keys=True, default=str)
     living = [l for l in res["lects"] if l.alive and l.deme is not None]
-    assert {str(l.deme) for l in living} == set(a["demes"]) and all(a["demes"][str(l.deme)]["name"] for l in living)
+    live = {k for k, v in a["demes"].items() if not v.get("gone")}   # (a gone deme keeps an entry for its ruins: PW-1604)
+    assert {str(l.deme) for l in living} == live and all(a["demes"][str(l.deme)]["name"] for l in living)
+    for v in a["demes"].values():
+        assert all(x["roman"] and (x.get("kind") != "ruin" or x.get("abandoned_kyr") is not None)
+                   for x in v.get("settlements") or [])
     assert set(a["peoples"]) == {res["run"].people_of(l.deme) for l in living}
     assert a["common"]["lect"] in {l.id for l in living}
     from planet.language import romanize as RO

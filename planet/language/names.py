@@ -1328,6 +1328,17 @@ class _Pass:
                 st = PN.settlements(l, by_cell, rids)
                 if st:
                     demes[str(l.deme)]["settlements"] = st
+            # (PW-1604: the ruins too, under the deme whose lect named them; a deme gone since keeps an entry of its own
+            # with `gone`, only its people, lect and ruins: the names slot reads every `settlements`, the pages list the
+            # living demes)
+            sites = [s for v in by_cell.values() for s in v]
+            sites.sort(key=lambda s: s["id"])
+            for d, ru in sorted(PN.ruins(sites, rids).items()):
+                e = demes.get(str(d))
+                if e is None:
+                    lid = ru[0]["lect"]
+                    e = demes[str(d)] = {"gone": True, "people": self._people(self.lects[lid]), "lect": lid, "places": []}
+                e["settlements"] = (e.get("settlements") or []) + ru
         rows = ((getattr(self.R, "meta", {}) or {}).get("present") or {}).get("reputation") or {}
         # (three rounds: neighbours first, whose X1 names the misattributed X9 names and relays reuse; then the rest; then
         # the relayed rows, X4, heard from the third people's own name for the subject)
