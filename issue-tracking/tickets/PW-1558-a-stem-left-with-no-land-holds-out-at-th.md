@@ -2,7 +2,7 @@
 id: PW-1558
 title: A stem left with no land holds out at the world's best cell; that hidden jump is what gives leonins, goblins, hobgoblins and halflings their room on af2677
 type: task
-status: needs-decision
+status: in-progress
 parent: null
 milestone: v5
 subsystem: peoples
@@ -39,6 +39,7 @@ live in; or let the founding take leave the stem the cells outside the founders'
   never under 1 Mkm2 in any run of the suite (owner D71, 11-10: a floor, not main's median)
 
 ## Updates
+- 2026-11-10: Status needs-decision -> in-progress. Owner D72 = C (11-10): bar is no dnd land people under 0.5 Mkm2 in any robustness-suite run; drow/troglodytes known problems; demography test rewritten to a density comparison. Lane 269f merging lane269b.
 - 2026-11-10: Status todo -> needs-decision. D72 on the desk (11-10): lanes 269-269e evidence (vs main fdb11199): founding-patch fix cuts dnd under-1 runs 29 → 9, all dnd land peoples ≥ 0.50; floor-at-birth arm 8, changes all Seven Meals runs. Options A birth rule / B keep 1 with exceptions / C bar at 0.5 (lean). Branch lane269b f8157b07 (card text in its inbox draft).
 - 2026-11-10: Owner D71 (11-10): bar is now a 1 Mkm2 floor in every suite run (not main's median). Lane 233 left a couple of nudged runs at ~0.1 Mkm2 (leonin, halfling): those are what's left. Queued after lane 266 (which touches demes MIN_CELLS).
 - 2026-11-09: Lane 233 (12f38974) merged: refuge within LAST_LAND_REACH x FOUNDER_KM (8,000 km) of the last land, in a free country at least one founders' country in size; refuge distance median 9,795 -> 1,876-3,280 km; jitter brittle 9 -> 4; leonin swing 998 -> 84. Range bar (measured against the teleport) not met; asked on the desk (D71).
