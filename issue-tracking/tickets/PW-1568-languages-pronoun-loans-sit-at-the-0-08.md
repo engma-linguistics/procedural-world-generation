@@ -4,7 +4,7 @@ title: "Languages: pronoun loans sit at the 0.08 cap (0.070-0.088 across passes)
 type: task
 status: todo
 parent: PW-767
-milestone: later
+milestone: v4
 subsystem: culture
 effort: s
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1539, PW-1551]
 refs: ["planet/language/checks.py::CLOSED_LOAN_MAX", "run a24559"]
 created: 2026-11-08
-updated: 2026-11-09
+updated: 2026-11-10
 ---
 
 ## Description
@@ -30,6 +30,7 @@ route should spare closed-class words.
 - [ ] spare pronouns on that route (or confirm it's a real shift-language pattern and say so); share back under ~0.06
 
 ## Updates
+- 2026-11-10: 11-10: pronoun loans flip around the 0.08 cap from rebuild to rebuild (0.065-0.089; 0.081 after lane 13). Pulled back to v4: find why pronouns borrow near the cap and fix the mechanism, rather than calling it noise each time.
 - 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-11-09: 11-09 lane 4 pass: pronoun loans 0.077, under the 0.08 cap (WOLD check passes), likely from shorter pronouns; earlier passes ranged 0.074-0.089, so keep open until a second seed confirms.
 - 2026-11-08: Created from inbox draft draft-language-pronoun-loans-borderline.md (found by language lane (2026-11-08)).
