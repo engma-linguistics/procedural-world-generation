@@ -590,6 +590,7 @@ function drawSide() {
         const sc = (result?.present?.wishes || []).find((x) => x.a === w.a && x.want === w.want && (x.b || null) === (w.b || null));
         return `<div>${esc(w.a)} <b>${esc(w.want)}</b> ${esc(w.b || '')} <span class="muted">w ${w.weight ?? 1}${sc ? ` · score ${sc.score}` : ''}</span></div>`;
       }).join('') || '<div class="muted">none</div>'}
+      ${eventsOf(r.id).length ? `<h3>Its dated history <span class="muted" style="font-weight:normal">([[event]] rows: kept as they are when the tree is saved)</span></h3>${eventsOf(r.id).map(([e, i]) => `<div>${esc(eventText(e))} <a href="#" data-edel="${i}" title="Remove this event row">remove</a></div>`).join('')}` : ''}
       ${res ? `<h3>Last run</h3><div>${res.origin_place ? `from ${res.origin_place.lat}, ${res.origin_place.lon}, ${ago(res.origin_place.ago_kyr)}: ${esc(res.origin_place.why)}` : 'never appeared'}<br>
         ${p ? `now ${num(p.population ?? 0)} people on ${p.area_mkm2} Mkm² in ${p.patches} patch(es); neighbours ${Object.keys(p.neighbours).join(', ')}` : res.ended_kyr != null ? `ended ${ago(res.ended_kyr)}` : 'absent at the present'}</div>
         ${res.story ? `<div class="muted" style="margin-top:4px">${esc(res.story)}</div>` : ''}` : ''}`;
@@ -665,6 +666,7 @@ function editLine(r, el) {
     for (const x of T.lineage) if (x.group_of === old) x.group_of = r.id;
     for (const w of T.wish || []) { if (w.a === old) w.a = r.id; if (w.b === old) w.b = r.id; }
     for (const u of T.use || []) if (u.by === old) u.by = r.id;
+    renameInEvents(old, r.id);
     if (sel === old) sel = r.id;
   } else r[k] = el.value;
   if (k === 'origin') {
@@ -672,6 +674,19 @@ function editLine(r, el) {
     if (r.origin === 'group' && !r.group_of) { r.group_of = parentsOf(r)[0] || T.lineage.find((x) => x !== r)?.id; delete r.parents; }
     if (r.origin !== 'group' && r.group_of) { if (!['root', 'arrival'].includes(r.origin)) r.parents = [r.group_of]; delete r.group_of; }
   }
+}
+// [[event]] rows (reputation.parse_events, PW-756): the editor shows them per people and keeps them through a save; a rename
+// rewires them, deleting a people drops it from them (and drops a row left with no conqueror or no one overrun)
+const eventsOf = (id) => (T.event || []).map((e, i) => [e, i]).filter(([e]) => e.by === id || [].concat(e.over || []).includes(id));
+const eventText = (e) => (e.kind === 'polity' ? `${e.by} ruled ${[].concat(e.over).join(', ')} from ${e.at} ago${e.until ? ` until ${e.until} ago` : ' to this day'}`
+  : `${e.by} overran ${[].concat(e.over).join(', ')} ${e.at} ago`) + (e.strength != null ? ` (strength ${e.strength})` : '') + (e.note ? `: ${e.note}` : '');
+function renameInEvents(old, id) {
+  for (const e of T.event || []) { if (e.by === old) e.by = id; if (e.over != null) e.over = Array.isArray(e.over) ? e.over.map((x) => (x === old ? id : x)) : (e.over === old ? id : e.over); }
+}
+function dropFromEvents(id) {
+  if (!T.event) return;
+  for (const e of T.event) if (e.over != null) e.over = [].concat(e.over).filter((x) => x !== id);
+  T.event = T.event.filter((e) => e.by !== id && e.over.length);
 }
 function onChange(e) {
   const el = e.target;
@@ -724,11 +739,14 @@ document.querySelector('main').addEventListener('click', (e) => {
   else if (id === 'del' && sel) {
     const r = byId()[sel];
     if (T.lineage.some((x) => parentsOf(x).includes(sel)) && !confirm(`${sel} has descendants; delete anyway? (switching it off keeps them)`)) return;
-    T.lineage = T.lineage.filter((x) => x !== r); sel = null;
+    T.lineage = T.lineage.filter((x) => x !== r); dropFromEvents(sel);
+    T.wish = (T.wish || []).filter((w) => w.a !== sel && w.b !== sel); T.use = (T.use || []).filter((u) => u.by !== sel);  // (rows naming it would fail the save)
+    sel = null;
   } else if (id === 'addWish') (T.wish = T.wish || []).push({ a: wishFor || T.lineage[0].id, want: 'near', b: T.lineage[1]?.id, weight: 1 });
   else if (d.wdel != null) T.wish.splice(+d.wdel, 1);
   else if (id === 'addUse') (T.use = T.use || []).push({ by: 'agricultural', good: 'fertile', weight: 1 });
   else if (d.udel != null) T.use.splice(+d.udel, 1);
+  else if (d.edel != null) { e.preventDefault(); T.event.splice(+d.edel, 1); }
   else if (d.pick != null) { sel = d.pick; showTab('tree'); return; }
   else if (d.wishfor != null) { wishFor = d.wishfor; showTab('wishes'); return; }
   else if (d.sort != null) { peopleSort = peopleSort === d.sort ? `-${d.sort}` : d.sort; }

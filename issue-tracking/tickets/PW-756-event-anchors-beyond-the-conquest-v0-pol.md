@@ -2,7 +2,7 @@
 id: PW-756
 title: "[[event]] anchors beyond the conquest v0: polities (ruled-by valence), derived incursions, direction, and the culinary-repo events"
 type: task
-status: in-progress
+status: done
 parent: PW-692
 milestone: v3
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-730, PW-731, PW-734, PW-661]
 refs: [planet/lineages/reputation.py, planet/lineages/spec.py, planet/lineages/samples/seven_meals.toml, docs/proposals/culinary-dnd-intake.md]
 created: 2026-10-24
-updated: 2026-11-03
+updated: 2026-11-10
 ---
 
 ## Description
@@ -27,11 +27,12 @@ called them devils or demons. What is left:
 - **direction** ("the devils who came down from the steppe to the west"): the row's text names no direction yet; centroids or highlights.
 - **derived incursions**: a people's presence rising sharply in another's cells within a few centuries (PW-661's thin slice).
 - an event is not yet placed on the map or shown in the brief's `events` (those are the run's own); the cells the conquerors held are not nudged.
-- [ ] `resented` valence and a `polity` kind
-- [ ] direction in the reputation text
-- [ ] the viewer's tree editor keeps `[[event]]` rows when it saves a tree (it only knows lineages, wishes and uses today)
+- [x] `resented` valence and a `polity` kind
+- [x] direction in the reputation text
+- [x] the viewer's tree editor keeps `[[event]]` rows when it saves a tree (it only knows lineages, wishes and uses today)
 
 ## Updates
+- 2026-11-10: Status in-progress -> done. lane276: the three boxes built. (1) [[event]] kind = "polity" (by ruled over from at until until; until left out = the rule stands) read by reputation as a new 'resented' valence, fading from the rule's end with the row's or the era's e-folding; text 'resented, until N years ago' or 'to this day'; dnd.toml gains resented on its devil/demon rows and an 'overlords' fallback (seven_meals frozen: untouched, its fallback name is the bare valence); taboos count resented as a bad neighbour; the brief dates it. (2) Direction: derived incursions already named it (fun14); now a feared or resented row without one (substrate conquests, authored rows) takes the compass bearing from the observer's present range to the subject's, from a centroid and mean resultant length contacts.py now stores per line in the substrate (lat, lon, compact), only where both ranges are compact (>= 0.85) and over 300 km apart. (3) The editor already passed event rows through a save; it lost them on a rename (stale ids failed the save). Now a rename rewires by/over, a delete drops the people from them (and wishes/uses naming it, which failed the save the same way), and the people panel lists its dated history with a remove link. Checked in the real page on a local server (8799, scratch data root) in headless Chrome: plain save, rename, delete and remove all saved as expected, no page errors. Tests: test_an_authored_polity_is_resented_by_the_ruled_and_compact_ranges_give_a_direction. Not built: resented from the run's own polities (draft-resented-from-the-runs-own-polities, v4); placing an event on the map or in the brief's events (in the description, never a box).
 - 2026-11-03: Milestones 11-03: v2 -> v3: v3 must-have: scheduled invasions build on it, with war and polities
 - 2026-10-24: Status todo -> in-progress. Merged 76b0bc6: derived incursions (displacement), authored events as fallback, herder press, v0 aggressive trait; seven_meals authored conquests removed. Co-residence in PW-769 (owner: yes, light).
 - 2026-10-24: Created from inbox draft draft-event-anchors-parsed-and-stored.md (found by fun13).

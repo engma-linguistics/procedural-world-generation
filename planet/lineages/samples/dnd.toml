@@ -1278,20 +1278,21 @@ pull = 0.7
 
 # Folk categories (PW-731, reputation.py): what a people calls a neighbour, by what the neighbour looks like (body, ancestry,
 # way, arrival) and how the two remember each other (valence: feared = overrun by them, despised = held them down,
-# edge = barely met, exotic = some contact; a people in rich peaceful contact uses the neighbour's own name).
+# resented = ruled by them ([[event]] kind = "polity"), edge = barely met, exotic = some contact; a people in rich peaceful
+# contact uses the neighbour's own name).
 # The row with the most conditions met wins; rows with only a valence are the fallbacks. A generic table: the owner's own
 # story (which peoples are called devils) is a matter of their rows and bodies, not of this file (PW-734).
 [[exonym]]
 id = "devil"
 label = "devils"
 body = { display = "horns" }
-valence = ["feared", "despised"]
+valence = ["feared", "despised", "resented"]
 
 [[exonym]]
 id = "demon"
 label = "demons"
 body = { display = "antlers" }
-valence = ["feared", "despised"]
+valence = ["feared", "despised", "resented"]
 
 [[exonym]]
 id = "giant_kin"
@@ -1325,6 +1326,11 @@ valence = ["feared"]
 id = "lesser_folk"
 label = "lesser folk"
 valence = ["despised"]
+
+[[exonym]]
+id = "overlords"
+label = "the overlords"
+valence = ["resented"]
 
 [[exonym]]
 id = "strangers"

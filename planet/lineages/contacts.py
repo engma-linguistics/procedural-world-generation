@@ -221,7 +221,12 @@ class Contacts:
                 rows.append({"id": ids[int(j)], "cells": int(sel.sum()), "share": round(float(sel.sum() / n), 3),
                              "held_until_kyr": round(float(np.median(until[sel])), 2)})
             rows.sort(key=lambda q: -q["cells"])
-            sub[l.id] = {"cells": n, "first_here_share": round(1 - sum(q["cells"] for q in rows) / n, 3), "held_before": rows[:6]}
+            c = self.xyz[mine].sum(0)
+            r = float(np.linalg.norm(c))
+            lat, lon = (float(np.degrees(np.arcsin(np.clip(c[2] / r, -1, 1)))), float(np.degrees(np.arctan2(c[1], c[0])))) if r > 0 else (0.0, 0.0)
+            # (lat, lon: the centroid of its present cells; compact: the mean resultant length, 1 = one spot, ~0 = spread round the globe)
+            sub[l.id] = {"cells": n, "first_here_share": round(1 - sum(q["cells"] for q in rows) / n, 3), "held_before": rows[:6],
+                         "lat": round(lat, 2), "lon": round(lon, 2), "compact": round(r / n, 3)}
         return {"pairs": pairs, "substrate": sub, "incursions": self.incursions(), "tier_kyr": list(T.tier_kyr)}
 
 

@@ -1488,7 +1488,7 @@ def markdown(b: dict) -> str:
             t += [f"- {o}:"] + [f"  - {r['id']} ({r['actually']['name']}, {r['actually']['way'] or 'no set way'}"
                                 + (f", {r['actually']['display']}" if r['actually']['display'] not in (None, 'none') else "")
                                 + f") is called \"{r['called']}\": {r['valence']}, {r['basis']}"
-                                + (f", {SP.years_ago(r['since_kyr'])}" if r["valence"] in ("feared", "despised") else "") + f", strength {r['strength']}"
+                                + (f", {SP.years_ago(r['since_kyr'])}" if r["valence"] in ("feared", "despised", "resented") else "") + f", strength {r['strength']}"
                                 + (f"; lumped with {', '.join(r['lumped_with'])}" if r["lumped_with"] else "") for r in rs]
     t += ["", "## Events", ""]
     t += [f"- {SP.years_ago(e['kyr_ago'])} ({e['kind']}, {e['km']} km): {e['text']}" for e in b["events"]] or ["- none"]
