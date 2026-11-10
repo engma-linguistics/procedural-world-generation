@@ -1,4 +1,5 @@
 ---
+id: PW-1643
 title: "Language contact: the run's trade triggers make nearly all contact between peoples count as trade"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lang-lane13
 blocked_by: []
 relates: [PW-1636, PW-1561]
 refs: ["planet/language/inputs.py::Run._trade_triggers", "planet/language/history.py::History.loan_kinds", "planet/language/contact.py::RAW", "planet/language/contact.py::TRADE_NUMERALS", "run a24559", "run de1cc6"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -32,3 +35,6 @@ hand-overs between the two peoples, `History.partners`), or (b) the pairs with a
 cells; keep the long shared-land pairs as plain neighbours. Measure the trade/neighbour split on a24559 and de1cc6.
 - [ ] trade loans fewer than neighbour loans on both test worlds
 - [ ] the trade numerals hook, switched on in a scratch pass, lifts HUNDRED/THOUSAND loans mostly where routes run
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-trade-contact-too-broad.md (found by lang-lane13).

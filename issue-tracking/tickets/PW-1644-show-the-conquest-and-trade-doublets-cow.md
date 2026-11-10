@@ -1,5 +1,6 @@
 ---
-title: "Show the conquest and trade doublets (cow ~ beef) in the languages viewer and on the cuisine pages"
+id: PW-1644
+title: Show the conquest and trade doublets (cow ~ beef) in the languages viewer and on the cuisine pages
 type: task
 status: todo
 parent: PW-767
@@ -11,6 +12,8 @@ found_by: lang-lane13
 blocked_by: []
 relates: [PW-1636, PW-692]
 refs: ["tools/language/sketch.py::doublet_rows", "tools/language/sketch.py::doublet_line", "tools/language/demo_page.py::lang_section", "planet/language/contact.py::finish_registers", "planet/language/texts.py::recipe", viewer/langview.js, viewer/langmore.js, "run a24559"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -33,3 +36,6 @@ line per meat or bread word on the cuisine page when its word is a doublet. Opti
 "layers" table (rows = donor languages; channel, period, words, top fields).
 - [ ] the viewer's language panel lists a language's food doublets with donor and conquest
 - [ ] a cuisine page names the source of a borrowed meat or bread word
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-doublets-in-viewer-and-cuisine.md (found by lang-lane13).
