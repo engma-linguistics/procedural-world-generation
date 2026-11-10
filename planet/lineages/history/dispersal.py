@@ -17,7 +17,7 @@ from . import megafauna as MG
 from .habitat import hold_mask
 from .pressure import crowding
 from . import params as PM
-from .params import ARRIVAL_ROOM, LAST_LAND_REACH, JUMP_HEMMED, JUMP_KM, JUMP_MAX, JUMP_RATE, JUMP_SHAPE, JUMP_SWIM_KM, FOUNDER_KM, CONVERGE, PERSIST_EXP, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P, REFUGE_MKM2
+from .params import ARRIVAL_ROOM, LAST_LAND_REACH, JUMP_HEMMED, JUMP_KM, JUMP_MAX, JUMP_RATE, JUMP_SHAPE, JUMP_SWIM_KM, FOUNDER_KM, CONVERGE, PERSIST_EXP, CROWD_ENTER, CROWD_HOP, EXPLORE_MARGIN, FARM_KYR, HOP_EVERY_KYR, MVP_TAU_KYR, PIONEER_P
 
 
 class DispersalMixin:
@@ -241,16 +241,6 @@ class DispersalMixin:
         r = getattr(self, "_refugee", None)
         return float(PM.REFUGEE_Q * r[k]) if r is not None and PM.REFUGEE_Q > 0 else 0.0
 
-    def _pinned(self, held) -> bool:
-        """PW-1182: whether a line is held at the refuge floor: its range under 2 x REFUGE_MKM2, where competition's displacement is
-        slowed (competition._compete: r x clip(held / REFUGE_MKM2 - 1, 0, 1)) and the lapse stops. There a losing people stays wherever
-        the floor caught it, every good cell next to it held by a stronger one. Its jumps (_jump) then look for country where it has
-        room of its own (its habitat less its rivals' load, the room the spread already fills next door), whether another people holds
-        it or not: a niche the winners leave it (other country, poorer land they do not use), not only land no one holds, of which a
-        crowded continent has none (lane 269c: goliath, firbolg, goblin, bugbear on af2677 had 0-26 such free cells on their landmass but
-        23-1,103 held by others where their room is over 0.3)."""
-        return PM.PINNED_JUMP and float(held.sum()) * self.cell_mkm2 < 2 * REFUGE_MKM2
-
     def _jump(self, l, k, K, room, step, env, tags):
         """PW-920: a crowded people hemmed in at home (JUMP_HEMMED) founds on free suitable land farther off now and then: a Poisson
         chance JUMP_RATE x dt x its push (_jump_push: crowded, or its land filled), the place drawn by a fat-tailed kernel
@@ -289,9 +279,8 @@ class DispersalMixin:
             if rng.random() >= push:
                 continue
             D = jump_reach(held, cost, JUMP_MAX, g.nbr_off, g.nbr_idx)
-            # (free land: no other people holds it, as the pioneers settle only empty country; a jump founds new country, not a mixed one.
-            # But a line held at the refuge floor (_pinned) founds where it has room of its own, held by others or not: PW-1182)
-            taken = (self._taken_cnt(l) - self._pm[k]) > 0 if not l.marine and not self._pinned(held) else np.zeros(g.n, bool)
+            # (free land: no other people holds it, as the pioneers settle only empty country; a jump founds new country, not a mixed one)
+            taken = (self._taken_cnt(l) - self._pm[k]) > 0 if not l.marine else np.zeros(g.n, bool)
             cand = good & realm & ~taken & ~self._dilate(held, 1) & (D > 0)
             if not cand.any():
                 return

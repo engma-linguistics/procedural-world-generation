@@ -253,3 +253,38 @@ Mkm2 (main: 36, of which 17 tabaxi), and goliaths now do so in every dnd run (5 
   39.4 Mkm2): giantkin's later daughters are born into that crowd; on main they started on the far continent (28 N, 43 W) and grew.
 - So D71's 1 Mkm2 sits above the history's own loser floor (~0.5 Mkm2, PW-1182). The founding change cannot carry it; the floor
   needs PW-1182's mechanism (a losing people finds a niche of its own, or is pushed to ~1 Mkm2 rather than ~0.5) or a ruling.
+
+## Lane 269c: the goliath regression and PW-1182 (losers at the refuge floor)
+
+### Diagnosis (written before the sweep; probes of the lane 269b branch c6907d5b+main 31c3b00d, af2677, arm now)
+Two lane probes (scratch, not committed): `probe_pin.py` records, for each land people at the last step (ago <= 1 kyr), the cells
+where it has room of its own (room = K less its rivals' load, as `_compete` computes it, >= 0.3 with K >= 0.3) split by on its
+landmass / within its jump reach / anywhere, and held by another people or free; `probe_patch.py` records, at each land split, the
+connected patch of the daughter's habitat (K > 2 EST) at the founding cell, against a founders' country (37 cells at L6).
+
+- **Goliath and firbolg** (dnd-s7: goliath 0.93, firbolg 1.44 Mkm2; main 12.4 and 11.1): on main the giantkin stem was founded "no
+  room for it by the parent: nearest habitat", on the cold northern continent (goliath origin 28 N, 43 W). On the branch the hominid
+  stem moves off the islet at once (lane 269's rule) onto the tropical continent, and the giantkin (cold, mountain) arises at the edge
+  of its range on a highland patch of its habitat of **18 cells** (s7; 52 in dnd-j4), under one founders' country. Goliath is then
+  founded on a 46-48 cell patch (an "isolated part of the parent's range" at 9-29 S) and fills it: 0.5-0.9 Mkm2. A sky-island endemic.
+  Firbolg's patch is large (891-986 cells) but only 344-378 of them are free of rivals; it ends at 1.4-1.5.
+- **The same patch shape** explains the other small founders: halfling dnd-j4 (26-cell patch, 0 free: 0.54 Mkm2), dwarf dnd-s7 (2
+  cells: 1.98), leonin (1 cell, but a nomad: it thrives at 21-25). The lane 269 check reads the whole landmass's habitat, so a
+  daughter whose own patch by its parent is a sliver of a big landmass passes it.
+- **Losers pinned at the floor have no own room on their landmass** (dnd-s7, at the present): goliath 23 cells with room >= 0.3 on
+  its landmass (all held by others), firbolg 2, goblin 10, bugbear 26, dwarf 5, each 0 free; but within their jump reach (mostly
+  over the sea) 345-1,103 such cells held by others and 0-24 free. Their ring (the cells next to their range) has 0 good cells, so
+  they are hemmed in, but a jump founds only on land no people holds (`_jump`: "a jump founds new country, not a mixed one"), and
+  a crowded continent has none. So specialisation into habitat the winners do not use (option 1) has almost nothing to work with on
+  their own landmass; the room is over the sea, among other peoples.
+
+Candidates:
+- **G (founding, PW-1558):** lane 269's founders' room check on the daughter's own habitat patch at the founding cell, not the
+  whole landmass: a split whose patch by its parent cannot hold one founders' country arises at the nearest free country that can
+  (`_refuge_cell`, as now). No new constant: the same founders' country. Variant **GF**: the patch counted on its free part (habitat
+  less the rivals' load, `_rivals_here`), the same free country `_refuge_cell` asks for.
+- **A (PW-1182 option A):** a line held at the refuge floor (range under 2 x REFUGE_MKM2, where `_compete`'s displacement is slowed
+  by the floor) jumps to where it has room of its own, held by others or not (`_jump` drops the "free land only" filter for it).
+  No new constant; the jump rate and kernel are unchanged.
+- Rejected: raising REFUGE_MKM2 or FOUNDER_KM to 1 Mkm2 (a clamp that meets the bar by fiat, and does nothing for a people that never
+  grew past its founding patch, which is the goliath case); a per-people habitat or rate.

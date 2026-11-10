@@ -237,5 +237,3 @@ H_ERA = {"forager": 0.0007, "horticulturalist": 0.005, "agrarian": 0.0012}
 # Enemies hunting each other on their borders (lane 97, owner D26 B: history.hunts). Story on the map, not a brake: a pair the tree
 # names as enemies ('apart' wish of weight w) with a shared border logs a 'hunt' event with chance HUNT_PER_KYR x w a kyr (judgement)
 HUNT_PER_KYR = 0.5
-FOUNDERS_PATCH = False  # lane 269c trial switch (PW-1558): a split's founders' country checked on its habitat patch at the cell
-PINNED_JUMP = False  # lane 269c trial switch (PW-1182): a line held at the refuge floor jumps to where it has room, held by others or not
