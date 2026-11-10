@@ -35,7 +35,7 @@ def frame_and_grid(ctx):
     ctx.world, ctx.sunk = RG.land_world(ctx.world)
     ctx.g, ctx.L = ctx.world["grid"], ctx.world["layers"]
     ctx.sp = ctx.g.spacing * R_KM  # coarse cell spacing, km
-    ctx.cell_area = cell_area_km2(ctx.g.n)
+    ctx.cell_area = cell_area_km2(ctx.g.n)  # the mean cell's: flow is in mean-cell x m/yr units (Grid.area_weight)
     ctx.n_in = max(16, int(round(ctx.size_km / ctx.res_km)))
     ctx.res = ctx.size_km / ctx.n_in
     # The terrain is built with a halo round the region, cropped off before
@@ -327,7 +327,7 @@ def mean_correction(ctx):
     lut = np.full(ctx.g.n, -1)
     lut[ctx.sel] = np.arange(len(ctx.sel))
     ctx.own_s = lut[ctx.own]
-    ctx.full_px = ctx.cell_area / ctx.res**2
+    ctx.full_px = ctx.g.cell_area_km2[ctx.sel] / ctx.res**2  # pixels in each whole cell (its own area, PW-1628)
 
     def cell_means(hh):
         cnt = np.bincount(ctx.own_s, minlength=len(ctx.sel))

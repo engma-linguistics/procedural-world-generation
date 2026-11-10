@@ -41,7 +41,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..geo import R_KM, arc, cell_area_km2, latlon
+from ..geo import R_KM, arc, latlon
 from . import mantle
 from .isostasy import ISO_LAND, ISO_VOLCANO, LAVA, LAVA_MAX_KM, LIFT, OCEAN_KM, elevation, iso_rate, ocean_depth, sediment_km
 from ..surface import HOTSPOT
@@ -102,7 +102,7 @@ def hotspots(sim, rng, bd):
     n = g.n
     head, apron, vents, dome = np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n)
     r = PLUME_KM / R_KM  # radians
-    area = cell_area_km2(n)  # km2 per cell
+    area = g.cell_area_km2  # km2 of each cell (a volume spread over a cell: its own area, PW-1628)
     by_id = {}
     for v in sim.volcanoes:
         if v["kind"] == VENT:
@@ -166,9 +166,9 @@ def hotspots(sim, rng, bd):
             if add > 0:
                 _grow(v, add)
                 cells, w = stencil(g, v["pos"], v["r"])
-                np.add.at(vents, cells, add * w / (area * dt))
+                np.add.at(vents, cells, add * w / (area[cells] * dt))
         if excess > 0:
-            apron[near] += excess / dt * wn / wn.sum() / area
+            apron[near] += excess / dt * wn / wn.sum() / area[near]
     return head, apron, vents, dome
 
 
@@ -473,7 +473,7 @@ def volcanoes(sim, growth, t, rng):
     out (params.volcano_spacing) so that only a representative few show,
     not every vent. In place on t (km of crust); returns t."""
     p, g, dt = sim.params, sim.grid, sim.dt_now
-    area = cell_area_km2(g.n)
+    area = g.cell_area_km2  # (each cell's own, PW-1628)
     # only on established arcs: continental margins (Andes, Cascades) or
     # island arcs that have built up near the surface (Japan, Aleutians)
     near_top = elevation(t, sim.w_age, sim.w_cont, sim.w_rock, sim.datum(),
@@ -501,5 +501,5 @@ def volcanoes(sim, growth, t, rng):
                  life=rng.uniform(0.5, 1.5) * p.volcano_life)
         pts.append(c)
         made += 1
-        t[i] += vol / area
+        t[i] += vol / area[i]
     return t
