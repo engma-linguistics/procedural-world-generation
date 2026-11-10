@@ -97,16 +97,32 @@ def load_tree(ref: str, mode: str | None = None) -> SP.Tree:
 
 
 def run(ref: str, tree: SP.Tree, tries: int = 4, now: float | None = None, recent_kyr: float = 30.0,
-        name: str | None = None, progress=lambda f, msg: None, climate_every: float = 2.0) -> Path:
+        name: str | None = None, progress=lambda f, msg: None, climate_every: float = 2.0, split: bool = True) -> Path:
     tz, now0, world = R.resolve(ref)
-    ps = R.Pass(tz, now0 if now is None else now, R.RecentParams(kyr=recent_kyr, climate_every=climate_every), world_ref=world)
-    goods = None
-    if world and tree.uses:
-        progress(0.0, "the land's goods (game attributes, resources, coasts)")
-        goods = LD.goods(world)
-        if tree.mode == "real" and goods:  # (no fantasy goods in the real world)
-            goods = {k: v for k, v in goods.items() if k not in SP.FANTASY_GOODS}
-    h, res, pres = simulate(tree, ps, tries, progress, goods=goods)
+    now1 = now0 if now is None else now
+
+    def setup(w):
+        ps = R.Pass(tz, now1, R.RecentParams(kyr=recent_kyr, climate_every=climate_every), world_ref=w)
+        goods = None
+        if w and tree.uses:
+            progress(0.0, f"the land's goods (game attributes, resources, coasts) of world {w}")
+            goods = LD.goods(w)
+            if tree.mode == "real" and goods:  # (no fantasy goods in the real world)
+                goods = {k: v for k, v in goods.items() if k not in SP.FANTASY_GOODS}
+        return ps, goods
+
+    # (PW-1265, the split history: a world refined finer than its time zoom (planet refine) has its history on the world it was
+    # refined from up to the settled window, then on its own grid: history.handover. split=False runs it all on the refined grid)
+    src = (S.read_header(S.find_world(world))["meta"].get("refined_from") or {}) if world else {}
+    fine = None
+    if split and src.get("world") and S.exists("world", src["world"]):
+        fine = setup(world)
+        ps, goods = setup(src["world"])
+        if ps.grid.n == fine[0].grid.n:
+            ps, goods, fine = fine[0], fine[1], None
+    else:
+        ps, goods = setup(world)
+    h, res, pres = simulate(tree, ps, tries, progress, goods=goods, fine=fine)
     return save(h, res, pres, world=world, name=name)
 
 

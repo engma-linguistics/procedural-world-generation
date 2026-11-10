@@ -42,8 +42,13 @@ from .tags import _tags, needs_chains
 class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, OriginsMixin, PortalsMixin, GroupsMixin, CompetitionMixin, DispersalMixin,
               ContactMixin, PeoplesMixin, FrameMixin, GrowthMixin):
     def __init__(self, tree: SP.Tree, ps: R.Pass, seed: int, deep_every: int = 1, glacial_every: float = 4.0,
-                 goods: dict | None = None):
+                 goods: dict | None = None, fine: tuple | None = None):
         self.tree, self.ps, self.grid = tree, ps, ps.grid
+        # (PW-1265: a world refined finer than its time zoom, as (its Pass, its goods): the history runs on ps's grid up to the cut,
+        # the earliest first cultivation, and on the fine world's grid after it; history.handover. None: one grid throughout)
+        self._fine = fine
+        self._glacial_every = glacial_every
+        self.handover = None
         self.goods = goods  # the world's goods (land.goods), or None: the [[use]] table then has no effect
         self._land_m: dict[str, tuple] = {}
         self._pres = None  # (the present epoch's env and tags, for the land-use normaliser)
@@ -206,7 +211,19 @@ class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, O
         frames = []
         nsteps = len(self.steps)
         t0 = time.time()
+        cut = None
+        if self._fine is not None:
+            from . import handover as HO
+            c = HO.cut_kyr(self)
+            cut = self.steps[-1].ago if c is None else max(c, self.steps[-1].ago)
         for si, step in enumerate(self.steps):
+            if cut is not None and step.ago <= cut + 1e-9:  # (the settled window: on to the fine world's grid, PW-1265)
+                coarse = self.grid
+                HO.hand_over(self, *self._fine, si)
+                frames = HO.regrid_frames(frames, coarse, self.grid)
+                self.handover.update(cut_kyr=round(float(cut), 3), at_step=si, step_ago=step.ago)
+                step, cut = self.steps[si], None
+                g = self.grid
             env = step.get()
             deep = step.epoch == "deep"
             tags = _tags(g, env, self._chains, self._volcanic(deep))  # (the plates have moved since: no present rivers or shelves then)

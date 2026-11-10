@@ -97,7 +97,7 @@ class Pass:
     """The recent pass in memory: fields at any time of the window (kyr rel. to present)."""
 
     def __init__(self, tz_ref: str, now_kyr: float | None = None, params: RecentParams | None = None,
-                 world_ref: str | None = None):
+                 world_ref: str | None = None, level: int | None = None):
         p = self.params = params or RecentParams()
         self.tz_dir = S.find_run(tz_ref)
         self.run, self.arr = T.load_frames(self.tz_dir, TZ_LAYERS)
@@ -106,10 +106,10 @@ class Pass:
         m = self.run["meta"]
         self.grid = build_grid(m["level"])
         self.coarse = None  # (PW-1265: the time zoom's own grid, when the world is refined finer than it; frames prolonged by finer())
-        if world_ref:
-            wl = int(S.read_header(S.find_world(world_ref))["meta"].get("level", m["level"]))
-            if wl > m["level"]:
-                self.coarse, self.grid = self.grid, build_grid(wl)
+        wl = level if level is not None else int(S.read_header(S.find_world(world_ref))["meta"].get("level", m["level"])) \
+            if world_ref else m["level"]  # (level: a finer grid without a world, for tests)
+        if wl > m["level"]:
+            self.coarse, self.grid = self.grid, build_grid(wl)
         self.ts = np.array([f["t"] for f in self.run["frames"]], float)
         self.now = float(self.ts[-1] if now_kyr is None else now_kyr)
         if not self.ts[0] <= self.now <= self.ts[-1]:
@@ -174,15 +174,15 @@ class Pass:
             run, arr = T.load_frames(src, ("precipitation", "temperature"))
             ts = np.array([f["t"] for f in run["frames"]])
             k = int(np.argmin(np.abs(ts - m["at_myr"])))
-            self.rain0 = T.frame(run, arr, "precipitation", k).astype(float)
-            self.temp0 = T.frame(run, arr, "temperature", k).astype(float)
+            self.rain0 = self.fine(T.frame(run, arr, "precipitation", k).astype(float))
+            self.temp0 = self.fine(T.frame(run, arr, "temperature", k).astype(float))
             self.rain_src = f"run {m['source_run']} @ {ts[k]:g} Myr"
             return
         # (Earth's time zoom without a world: a rough rain from the climate classes)
         cl = T.frame(self.run, self.arr, "climate", 0).astype(int)
         guess = np.full(cl.shape, 600.0)
         guess[cl <= 1] = 2200; guess[cl == 2] = 1200; guess[(cl == 3) | (cl == 4)] = 120; guess[(cl == 5) | (cl == 6)] = 350
-        self.rain0, self.temp0 = guess, T.frame(self.run, self.arr, "temperature", 0).astype(float)
+        self.rain0, self.temp0 = self.fine(guess), self.fine(T.frame(self.run, self.arr, "temperature", 0).astype(float))
         self.rain_src = "climate classes (rough)"
 
     def _climate(self):
