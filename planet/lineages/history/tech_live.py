@@ -39,6 +39,7 @@ class LiveTech:
         self._seen = None  # (the frames stored when the slow inputs were last read)
         self._G = None  # (the goods as cells over threshold: (names, deposit flags, goods x cells float32))
         self._stored = None  # (the presence as the last stored frame holds it, at_frame; read once at the next feed)
+        self._lm = None  # (the landmass map of the region learners, landmass())
         T = TT.load()
         self.T = T
         self.arms = TT.arms_of(T)
@@ -156,6 +157,18 @@ class LiveTech:
             out[l["id"]] = {g for g, x in zip(names, ok) if x}
         return out
 
+    def landmass(self) -> np.ndarray:
+        """Each cell's present-day landmass for the region learners, as the after-run tree maps it (techtree.landmass_of,
+        demes.landmass_rank): Crossings' ranks, today's sea taking the nearest landmass's. PW-1597 (lane 265, round22.md):
+        Crossings' own label leaves today's sea out (-1), so a people that once lived on land now drowned or on another coast
+        (the tortles at L6 4360a3 seed 7, 3.3 Myr ago: 18% of their range) lost that part of its range from its regions here
+        and kept it in the after-run tree: the two trees split its pool differently from the deep past on."""
+        if self._lm is None:
+            from ..spread import nearest_label
+            g = self.h.grid
+            self._lm = nearest_label(np.asarray(self.h.cross.label), np.ones(g.n, np.bool_), g.nbr_off, g.nbr_idx)
+        return self._lm
+
     def at_frame(self):
         """At the end of a step that stores a frame (LivePolities.end_step): keeps the presence as that frame stores it, for the
         regions the tree reads from the next step (the peoples may start or arrive before then: the frame is what it reads)."""
@@ -188,12 +201,12 @@ class LiveTech:
             if seen != self._seen:  # (a frame was stored: the tracks, contacts and ranges moved)
                 self._seen = seen
                 # (its regions now, PW-1471: the range at the last stored frame, read as the frame stores it and the after-run tree
-                # reads it back, regions_through: the peoples as wholes on established cells. PW-1597 (lane 265, round22.md): the raw
-                # presence, every line's own and down to 0.05, gave a people a region learner on thin, unsettled fringes the frame
-                # does not hold, so the two trees split a people's pool differently from the deep past on)
+                # reads it back, regions_through: the peoples as wholes on established cells, on the after-run tree's landmass map,
+                # landmass(). PW-1597 (lane 265, round22.md): before, the raw presence of each line down to 0.05, on Crossings' own
+                # label, so the two trees split a people's pool differently from the deep past on)
                 P = self._stored if self._stored is not None else h.presence_stored()
                 self._stored = None
-                cal.feed(lines or self.lines(), links=self._links(), have=self._have(), regions=cal.region_shares(P, h.cross.label))
+                cal.feed(lines or self.lines(), links=self._links(), have=self._have(), regions=cal.region_shares(P, self.landmass()))
                 self._retime(float(step.ago))
             for l in cal.people:  # (starts and ends move on any step; a line not yet started waits)
                 lid = l["id"]
@@ -212,10 +225,10 @@ class LiveTech:
         if cal is None:
             tr = self.h.tree
             return TT.build(lines, contacts, pres, present, goods, tr.mode, tr.era, self.h.seed, T=self.T, gods_mode=tr.gods_mode,
-                            towns=self.towns, arms=self.arms, landmass=self.h.cross.label)
+                            towns=self.towns, arms=self.arms, landmass=self.landmass())
         have = {l["id"]: TT.goods_held(cal.T, present, goods, cal.idx[l["id"]]) for l in cal.people}
         cal.feed(lines, TT.links_of(contacts, cal.kind), TT.forced_of(pres, cal.techs, cal.L), have, (pres or {}).get("lines") or {},
-                 cal.region_shares(present, self.h.cross.label))
+                 cal.region_shares(present, self.landmass()))
         cal.advance()
         out = cal.result()
         out["inside_history"] = {"made_s": round(self.secs, 1), "arms": self.arms}
