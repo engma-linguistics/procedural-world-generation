@@ -1,4 +1,5 @@
 ---
+id: PW-1671
 title: With polities in the history, confederations still read the history's own places, not the ledger's
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane281
 blocked_by: [PW-1596]
 relates: [PW-1583, PW-1597]
 refs: [docs/review/culture/polities/round24.md, docs/review/culture/polities/round24/live_seats.patch, "planet/lineages/history/polity_live.py::LivePolities._confederations", "planet/lineages/history/polity_live.py::LivePolities._seat_places", "planet/lineages/polities.py::_confederations"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -23,3 +26,6 @@ places as the seats, and check the confederation counts on/off on one pair.
 
 **What misleads if never done.** A mining people (gnomes, dwarves) could form a confederation off but not on, or the other way,
 so the on/off state maps differ for an accounting reason.
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-live-confederations-read-history-places.md (found by lane281).
