@@ -10,8 +10,8 @@ effort: m
 impact: high
 found_by: lane228
 blocked_by: []
-relates: [PW-1184, PW-1152, PW-1181]
-refs: ["planet/lineages/history/dispersal.py::_hold_out", "planet/lineages/history/origins.py::_origin_split", "planet/lineages/history/origins.py::_take", "planet/lineages/history/model.py::_advance", tools/peoples_robust.py, docs/review/peoples/origins-spread.md, "lane 228 numbers: exports/lane228/ in the lane worktree (after/, base2/)", "world af2677 (time zoom f2201f)"]
+relates: [PW-1184, PW-1152, PW-1181, PW-1182]
+refs: ["planet/lineages/history/dispersal.py::_hold_out", "planet/lineages/history/origins.py::_origin_split", "planet/lineages/history/origins.py::_take", "planet/lineages/history/model.py::_advance", tools/peoples_robust.py, docs/review/peoples/origins-spread.md, "planet/lineages/history/origins.py::_founders_room", "planet/lineages/history/dispersal.py::_refuge_cell", "branch lane269b (lane 269 suite and probes; scratch outputs deleted)", "lane 228 numbers: exports/lane228/ in the lane worktree (after/, base2/)", "world af2677 (time zoom f2201f)"]
 created: 2026-11-08
 updated: 2026-11-10
 ---
@@ -39,6 +39,7 @@ live in; or let the founding take leave the stem the cells outside the founders'
   never under 1 Mkm2 in any run of the suite (owner D71, 11-10: a floor, not main's median)
 
 ## Updates
+- 2026-11-10: Lane 269/269b (branch lane269b, not merged): a land split whose landmass lacks a founders' country of its habitat is founded at the nearest free country (`_founders_room`, `_refuge_cell`, reach now checked in km). Full suite vs main 673436c0 (af2677, arm now, 22 runs): the islet stranding is gone (tabaxi median 0.12 -> 8.1 Mkm2, hobgoblin min 0.14 -> 24.6, leonin min 0.11 -> 0.51, halfling min 0.05 -> 0.46); dnd brittle 7 -> 5, worst swing 2,210x -> 110x; Seven Meals identical; picks <= 7,911 km. **Floor not met**: leonin (dnd-j2 0.51) and halflings (4 runs, 0.46-0.54) still under 1 Mkm2, and goliaths now under 1 in 17 of 22 runs (main 5), firbolgs in 3 (main 0). Diagnosis (docs/review/peoples/origins-spread.md, "Why the rest fall short"): those are founded on a crowded 20 Mkm2 continent, not islets, and sit at the history's own loser floor of ~0.5 Mkm2 (PW-1182); no landmass room count at founding separates them from splits that thrive. D71's 1 Mkm2 needs PW-1182's mechanism (or a ruling on that floor); the goliath regression must be fixed before this branch merges.
 - 2026-11-10: Owner D71 (11-10): bar is now a 1 Mkm2 floor in every suite run (not main's median). Lane 233 left a couple of nudged runs at ~0.1 Mkm2 (leonin, halfling): those are what's left. Queued after lane 266 (which touches demes MIN_CELLS).
 - 2026-11-09: Lane 233 (12f38974) merged: refuge within LAST_LAND_REACH x FOUNDER_KM (8,000 km) of the last land, in a free country at least one founders' country in size; refuge distance median 9,795 -> 1,876-3,280 km; jitter brittle 9 -> 4; leonin swing 998 -> 84. Range bar (measured against the teleport) not met; asked on the desk (D71).
 - 2026-11-08: Created from inbox draft draft-stem-refuge-teleport-carries-peoples.md (found by lane228).

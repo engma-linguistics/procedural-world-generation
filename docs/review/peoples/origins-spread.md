@@ -183,7 +183,7 @@ good cells next to it and how many another people holds, every ~5 kyr) shows one
   country. Lane 233 already required a held-out stem's refuge to be a free country at least one founders' country in size;
   a split born beside a stranded stem had no such check.
 
-### Mechanism (lane 269, in progress)
+### Mechanism (lane 269)
 `origins._origin_split`: before a land split is founded, `_founders_room` asks whether the landmass under the chosen cell
 holds at least one founders' country (`_founders_cells`: the cells within FOUNDER_KM, the size lane 233's refuge already
 requires) of country the daughter can live in (K > 2 EST), anywhere on it. If not (an islet, or an island with little of its
@@ -198,3 +198,58 @@ base s7/s10/s13 and jitters 1-3 all changed (the mammal islet sits in every dnd 
 founded 1,570-1,700 km off it); Seven Meals runs identical to main. Leonin 4.9-5.8 -> 19-29 Mkm2 on the base seeds and
 jitters 1 and 3, but jitter 2's leonin fell 5.2 -> 0.51 (founded on an island of more than a founders' country of land
 but only ~0.5 Mkm2 of its grassland, no boats). Hence the habitat count. The full suite on the final rule is still to run.
+
+### Full suite (lane 269b; branch = c6907d5b merged with main 31c3b00d; baseline = main 673436c0)
+Main 31c3b00d has no change under planet/, tools/ or tests/ since 673436c0, so the 673436c0 suite is the baseline (af2677, arm
+now, 22 runs: dnd base 3 + jitter 4 + knob 6 + sites 4, Seven Meals base 3 + jitter 2; 2 jobs x 4 threads).
+
+| people | main min (run) | main median | main runs < 1 | branch min (run) | branch median | branch runs < 1 |
+|---|---|---|---|---|---|---|
+| leonin | 0.11 (dnd-j3) | 4.93 | 2 | 0.51 (dnd-j2) | 21.6 | 1 |
+| goblin | 2.13 (dnd-j2) | 4.13 | 0 | 1.91 (dnd-j3) | 2.43 | 0 |
+| hobgoblin | 0.14 (dnd-j2) | 46.8 | 1 | 24.6 (dnd-dwarfx2-s7) | 44.2 | 0 |
+| halfling | 0.05 (dnd-j4) | 7.66 | 1 | 0.46 (dnd-bugbearx0.5-s7) | 5.06 | 4 |
+| tabaxi | 0.10 (dnd-bugbearx0.5-s7) | 0.12 | 17 | 7.24 (sm-s10) | 8.10 | 0 |
+| goliath | 0.10 (sm-j1) | 8.09 | 5 | 0.10 (sm-j1) | 0.70 | 17 |
+| firbolg | 1.17 (dnd-j3) | 10.8 | 0 | 0.86 (dnd-j2) | 1.47 | 3 |
+| bugbear | 0.03 (dnd-j2) | 8.25 | 4 | 0.40 (dnd-s10) | 4.35 | 3 |
+| gnome | 0.51 (dnd-sites1-s10) | 12.4 | 1 | 1.32 (sm-j1) | 14.6 | 0 |
+| kobold | 0.51 (sm-s7) | 19.7 | 1 | 0.50 (dnd-j1) | 16.5 | 2 |
+| human | 20.8 (dnd-j4) | 23.7 | 0 | 21.0 (sm-s13) | 39.4 | 0 |
+| aarakocra | 1.08 (dnd-j3) | 3.99 | 0 | 1.22 (dnd-j1) | 15.3 | 0 |
+| tortle | 1.99 (dnd-j2) | 4.21 | 0 | 1.56 (dnd-bugbearx2-s7) | 2.23 | 0 |
+| lizardfolk | 14.2 (dnd-sites3-s7) | 24.7 | 0 | 5.80 (dnd-j3) | 22.0 | 0 |
+| drow | 0.04 (dnd-sites1-s7) | 0.75 | 17 | 0.04 (dnd-sites1-s7) | 0.75 | 17 |
+| troglodyte | 0 (extinct, all 17 dnd) | 0 | 17 | 0 (extinct, all 17 dnd) | 0 | 17 |
+
+(Mkm2 at the present. Unchanged or above 1 everywhere on both: dwarf (one run at 0.40, sm-s13, both), elf (2 runs, 0.24, sm-s13, both),
+half_orc (never founded in sm-j1, both), dragonborn, kenku, orc, the Seven Meals-only peoples. Sea peoples (sea_elf, triton) are not
+land peoples.)
+
+- **Seven Meals: identical** to main in all 5 runs (every people's area and share).
+- **Brittle (dnd, base + jitter): 7 -> 5**; worst swing 2,210x (hobgoblin) -> 110x (bugbear); worst within one family 2,170x ->
+  50x (drow). Seven Meals 6 -> 6, unchanged.
+- **Refuge and founder picks:** 53 picks, median 1,629 km, farthest 7,911 km (fire_giant, dnd-j3); the split founders' picks
+  (feline, hominid, goblinoid, once kobold) 1,415-2,020 km. The run's own refuge log (distance from the stem's last land) puts that
+  fire-giant refuge at 8,041 km: it measures from a different mask than the pick (the last land on record, not the range passed
+  in), 41 km over.
+
+**The floor is not met.** The islet stranding is gone (tabaxi, hobgoblin, leonin jitter 3/4, halfling jitter 4 founded off the islet;
+the stems are founded 1,400-2,000 km away), but 34 people-runs of land peoples other than drow and troglodytes still end under 1
+Mkm2 (main: 36, of which 17 tabaxi), and goliaths now do so in every dnd run (5 -> 17 of 22).
+
+### Why the rest fall short (written before any further change; probes of dnd-s7, dnd-j2, dnd-j4, sm-s7 on the branch)
+- The remaining small peoples are not on islets. Goliath (s7, 0.93), leonin (j2, 0.51), halfling (j4, 0.54), firbolg (j1/j2,
+  0.86) are each founded on the 20 Mkm2 continent that the moved hominid, feline and goblinoid stems now share, 175-540 kyr ago, on
+  8-43 cells, and every good cell next to them is held by another people for the rest of the run (good cells next door 12-129, all
+  taken; habitat on the landmass that no other people holds: 0-4 cells). They sit at 0.5-0.9 Mkm2: the refuge floor the history
+  stops pushing a losing people back at (PW-1182, ~0.5 Mkm2), not the founding rule.
+- No landmass count at the founding step separates them from splits that thrive: at each land split of dnd-j4 and sm-s7 the
+  landmass's habitat, its free room by the rivals' load (at 50%, 20% or any of the best K), the parent's own patch, or the cells
+  no other people holds, are as low for hobgoblins (44 Mkm2 at the end), dwarves or orcs as for goliaths or halflings (e.g.
+  hobgoblin: parent's patch 0, unheld 0; goliath: 22 and 0). A stricter founding check would move thriving peoples too (and Seven
+  Meals, which is now untouched).
+- Goliaths and firbolgs got worse because the hominid stem now starts beside the continent where humans grow (human median 23.7 ->
+  39.4 Mkm2): giantkin's later daughters are born into that crowd; on main they started on the far continent (28 N, 43 W) and grew.
+- So D71's 1 Mkm2 sits above the history's own loser floor (~0.5 Mkm2, PW-1182). The founding change cannot carry it; the floor
+  needs PW-1182's mechanism (a losing people finds a niche of its own, or is pushed to ~1 Mkm2 rather than ~0.5) or a ruling.
