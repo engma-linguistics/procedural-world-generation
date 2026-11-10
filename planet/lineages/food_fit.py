@@ -16,6 +16,10 @@ Each row's `basis` is "sourced" (a real-biology finding for the nearest real bod
 birds, deer for the rest; `src` names the entry in SOURCES, all fetched in lane 256, docs/review/food/lane256.md) or "judgement"
 (a reading where no source was found, and every row for a fantasy body: lizardfolk, dragons, the saurian and bird stems are given the
 nearest animal's biology, which is a call, not a measurement). The culinary side overrules any row.
+
+PW-1607 (lane 264): a preset may author a people's fit directly. `body.fit` is a table food id -> level (or {level, why}); its rows
+have `basis` "authored" and win over the worked-out rows. `body.alcohol_flush` is the share with the ALDH2*2 flush (sourced, "aldh2").
+`toxic = ["grapes"]` is the canid marker (Merck). Both inherit down the tree like the other body keys (`fit` merged key by key).
 """
 
 from __future__ import annotations
@@ -38,6 +42,7 @@ FOODS = (  # (id, label, crop ids on the land that are this food)
     ("caffeine", "tea- and coffee-like infusions", ("tea",)),
     ("cacao", "cacao (chocolate)", ("cacao",)),
     ("alliums", "onion and garlic", ("alliums",)),
+    ("grapes", "grapes and raisins", ("vine",)),
 )
 LABEL = {k: lab for k, lab, _ in FOODS}
 
@@ -51,12 +56,15 @@ SOURCES = {  # fetched in lane 256 (docs/review/food/lane256.md has the quotes)
               "exclusive meat eaters (sea lion, spotted hyena, otter)",
     "trpv1": "Jordt & Julius 2002 Cell 108:421 (Duke abstract): capsaicin deters mammals; bird TRPV1 does not respond to it (Wikipedia, Capsaicin)",
     "adh4": "Carrigan et al. 2015 PNAS 112:458 (phys.org summary): an ADH4 change ~10 Myr ago let hominid ancestors oxidise ethanol well",
-    "aldh2": "Wikipedia, ALDH2: about half of East Asians carry ALDH2*2 (acetaldehyde build-up, the flush)",
+    "aldh2": "Wikipedia, ALDH2 (fetched 2026-11-09): 'about 50% of East Asians are heterozygous' for ALDH2*2 (the lead gives ~36% with no working "
+             "mitochondrial isozyme); acetaldehyde build-up causes the flush; 'very few White people' carry it",
     "ethanol_pets": "Merck Veterinary Manual, Alcohols (search summary): dogs and cats sicken on ethanol (vomiting, ataxia, CNS depression)",
     "methylxanthine": "Merck Veterinary Manual, Chocolate toxicosis: theobromine and caffeine half-lives in dogs 17.5 h and 4.5 h; signs from 20 mg/kg",
     "allium": "Merck Veterinary Manual, Allium toxicosis: cats most susceptible, then dogs; Heinz body haemolytic anaemia",
     "tannin": "PMC7548203 (2020): browsing cervids such as mule deer have proline-rich (tannin-binding) saliva; the same study finds no "
               "browser/grazer difference across 28 African species (disputed)",
+    "grapes": "Merck Veterinary Manual, Raisins and grapes (fetched via search 2026-11-09): grapes and raisins cause acute kidney failure in dogs, "
+              "possibly from tartaric acid (dogs lack certain organic acid transporters); more than one per 4.5 kg of body weight may be a risk",
     "deer_meat": "Field & Stream (magazine, weak): deer take birds now and then, maybe for missing nutrients",
 }
 
@@ -113,8 +121,11 @@ def fit(body: dict) -> dict:
                     _row("tolerates", f"{round(100 * _share(cap))}% feel the burn", "trpv1") if cap is not True else
                     _row("tolerates", "feels the burn: a liking is learned, or not", "trpv1"))
     methyl = "theobromine" in toxic
-    pet = methyl or "alliums" in toxic  # (the cat-, dog- and bird-like bodies: the toxicity marker the presets already carry)
+    pet = methyl or "alliums" in toxic or "grapes" in toxic  # (the cat-, dog- and bird-like bodies: the toxicity markers the presets carry)
+    flush = _share(body.get("alcohol_flush"))
     out["alcohol"] = (_row("poor", "a cat-, dog- or bird-like liver: ethanol sickens it at small doses", "ethanol_pets") if pet else
+                      _row("poor" if flush >= 0.5 else "tolerates", f"{round(100 * flush)}% carry the ALDH2*2 flush (acetaldehyde builds up: flushing, nausea); "
+                           "a share of half or more reads as poorly suited", "aldh2") if flush > 0 else
                       _row("tolerates", "a hominid-like liver oxidises ethanol well (some peoples carry the flush)", "adh4"))
     out["caffeine"] = (_row("poor", "clears caffeine slowly (as dogs); a strong cup is a dose", "methylxanthine") if methyl else
                        _row("tolerates", "a stimulant in ordinary amounts", None))
@@ -122,6 +133,12 @@ def fit(body: dict) -> dict:
                     _row("tolerates", "bitter, rich and mildly stimulating", None))
     out["alliums"] = (_row("harmful", "onion and garlic poison its blood (as cats, then dogs)", "allium") if "alliums" in toxic else
                       _row("tolerates", "onion and garlic are seasoning", None))
+    out["grapes"] = (_row("harmful", "grapes and raisins damage the kidneys (as in dogs)", "grapes") if "grapes" in toxic else
+                      _row("tolerates", "a fruit, fresh or dried", None))
+    for food, x in (body.get("fit") or {}).items():  # authored by the preset (PW-1607): wins over everything worked out above
+        lv, why = (x, None) if isinstance(x, str) else (x["level"], x.get("why"))
+        if food in out:
+            out[food] = {"level": lv, "why": why or "set by the preset", "basis": "authored", "src": None}
     return out
 
 

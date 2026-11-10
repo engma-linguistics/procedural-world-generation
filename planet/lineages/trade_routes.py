@@ -325,6 +325,7 @@ class Loads:
         if not len(self.tcells):
             return [], []
         from . import trade as TR
+        from .trade_flow import has_pack
         X = TR.cells_at(ctx, i)
         clim = np.asarray(ctx.f("climate", i)).astype(int) if "climate" in ctx.arr else np.full(self.n, -1)
         arid = np.isin(clim, ARID) & X["land"]
@@ -351,7 +352,7 @@ class Loads:
             t = int(self.tix[c])
             s, pop = self.towns[c]
             host = int(fr.own[c])
-            pack = host >= 0 and "pack_animals" in fr.info.get(host, {}).get("know", ())
+            pack = host >= 0 and has_pack(fr.info.get(host, {}).get("know", ()))
             # PW-1530 (coordinator's ruling A): a trading town needs a long-haul route through it, and merchant quarters follow it; a
             # town only the local web passes stays a market town (drawn smaller)
             trading = bool(on_long[c])

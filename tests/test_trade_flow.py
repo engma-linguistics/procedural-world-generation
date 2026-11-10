@@ -162,3 +162,19 @@ def test_constants_are_the_sourced_ratios():
     assert TF.SEA * 28 == pytest.approx(1.0) and TF.RIVER_DOWN * 28 == pytest.approx(3.4) and TF.RIVER_UP * 28 == pytest.approx(6.8)
     assert TF.CART * 28 == pytest.approx(35) and TF.HILL == pytest.approx(2.12, abs=0.01)
     assert 250 < TF.FALL_KM["bulk"] < 330 and 400 < TF.FALL_KM["middling"] < 470
+
+
+def test_camel_llama_yak_and_reindeer_herds_carry_packs(tmp_path):
+    """PW-1609: a people that keeps camels, llamas, yaks or reindeer walks at a pack animal's cost without the pack_animals tech."""
+    assert not TF.has_pack(["herding", "animal_cattle"]) and TF.has_pack(["pack_animals"])
+    for beast in ("animal_camel", "animal_llama", "animal_yak", "animal_reindeer"):
+        assert TF.has_pack(["herding", beast])
+    a = None
+    costs = {}
+    for name, kn in (("none", ["herding"]), ("camel", ["herding", "animal_camel"]), ("tech", ["herding", "pack_animals"])):
+        know = {"herder": kn, "farmer": ["cultivation", "crop_wheat"], "forager": []}
+        ctx = _line_ctx(tmp_path, know=know)
+        c = TF._Frame(ctx, 0, None, None).cost("bulk")[0]
+        a = np.repeat(np.arange(N), np.diff(ctx.g.nbr_off))
+        costs[name] = c[(a == 0) & (ctx.g.nbr_idx == 1)][0]
+    assert costs["camel"] < costs["none"] and costs["camel"] == costs["tech"]  # (the same PACK cost; no new number)

@@ -2,7 +2,7 @@
 id: PW-1607
 title: "Food fit: let a preset author a people's fit (a body `fit` table and an alcohol flush share), so owner canon and drink-flush peoples can be said"
 type: task
-status: todo
+status: done
 parent: PW-856
 milestone: v5
 subsystem: food
@@ -30,4 +30,5 @@ What breaks if never done: every people's fit is the derived default. The culina
 - [ ] an `alcohol_flush` share (0..1) read as "tolerates, x% flush"
 
 ## Updates
+- 2026-11-09: Status todo -> done. Done in lane 264 (docs/review/food/lane264.md): body keys fit (food -> level, merged down the tree), alcohol_flush (share, ALDH2*2) and toxic grapes (canid marker); dnd.toml feline stem authors the cat peoples' poor alcohol fit from owner canon; Seven Meals untouched. The inhaled scent intoxicant has no food class and is left to the culinary side.
 - 2026-11-09: Created from inbox draft draft-food-fit-authored-overrides.md (found by lane256).

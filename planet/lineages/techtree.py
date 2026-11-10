@@ -49,7 +49,7 @@ stream in loop order reshuffled every later people's dates.
 - The crops and herd animals of the history count: a people that first cultivated a crop (crops.py) knows cultivation
   from then, one that tamed or took up an animal (animals.py) knows herding. Each stock is also a tech of its own (stock
   "crops:wheat", PW-1122: crop_wheat, animal_cattle...), known only that way (rate 0, spread 0): wine waits for the vine, the
-  ox-drawn plough for cattle. `needs_any` asks for one of a list (riding: a horse, a great elk or a riding lizard).
+  ox-drawn plough for cattle. `needs_any` asks for one of a list (riding: a horse, camel, yak, reindeer, great elk or riding lizard; ox traction: cattle, water buffalo or yak).
 - The tree holds the tech catalogue (PW-1122, docs/references/tech-catalogue/): ~550 techs; `earth_origins` is how many
   independent origins Earth had, for checking the finds per world.
 - Language never passes between stems before their minds (below), but once a people is genetically modern (below a stem with a
@@ -274,12 +274,12 @@ def pool_of(t: dict) -> str:
 
 
 def _earth_ready(T: dict, tid: str) -> float | None:
-    """When Earth had all of a tech's prerequisites, kyr (the latest of their dates; of a needs_any list, its earliest); None: it
-    needs nothing."""
+    """When Earth had all of a tech's prerequisites, kyr (the latest of their dates; of a needs_any list, its earliest, or of the
+    `earth_needs_any` list where the tech names the ones Earth's calibration rests on: riding's is the horse, PW-1609); None: it needs nothing."""
     t = T["techs"][tid]
     e = t.get("earliest_kyr", 0.0)
     ds = [T["techs"][n].get("earliest_kyr", e) for n in t.get("needs", [])]
-    real = [n for n in t.get("needs_any", []) if T["techs"][n].get("mode") != "fantasy"] or t.get("needs_any", [])
+    real = [n for n in t.get("earth_needs_any") or t.get("needs_any", []) if T["techs"][n].get("mode") != "fantasy"] or t.get("needs_any", [])
     if real:  # (Earth's: the fantasy mounts and milk beasts left out)
         ds.append(max(T["techs"][n].get("earliest_kyr", e) for n in real))
     return min(ds, default=None)
