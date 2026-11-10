@@ -1,8 +1,10 @@
 ---
+id: PW-1620
 title: "Languages: big case systems (6+) wear away in the full history, not in the gram cycle: 26% of living lects against WALS 32%"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: m
 impact: low
@@ -10,6 +12,8 @@ found_by: language lane 10 (PW-1605)
 blocked_by: []
 relates: [PW-1605, PW-1586]
 refs: ["planet/language/grammar.py::step", "planet/language/grammar.py::_check_lost", "planet/language/history.py::areal_step", "planet/language/history.py::AREAL_WEIGHT", "planet/language/lect.py::Lect.step", "planet/language/grammar.py::social_factors", "run a24559", "run de1cc6", docs/review/language/calibration.md]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -35,3 +39,6 @@ worn-down big systems pass through it.
 small ones a third too common; a reader takes the world's grammar as poorer in case than real languages.
 - [ ] the history step that drains 6+ named, with a harness measurement
 - [ ] 6+ within ~4 points of 32% and 2-5 within ~5 of 20% in a full a24559 pass, none + borderline kept near 47%
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-case-big-systems-history.md (found by language lane 10 (PW-1605)).

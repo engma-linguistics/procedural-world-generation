@@ -1,15 +1,19 @@
 ---
+id: PW-1619
 title: "Languages: proto inventories draw the rare prenasals (ⁿt, ᵑk, ᵐp, ⁿz, ᶮɟ) at about twice PHOIBLE's rate"
 type: task
 status: todo
 parent: PW-767
+milestone: null
 subsystem: culture
 effort: m
 impact: low
 found_by: language lane 10 (PW-1615)
 blocked_by: []
 relates: [PW-1615]
-refs: ["planet/language/inventory.py::_pick_consonants", "planet/language/inventory.py::_series_factor", "planet/language/inventory.py::SERIES_FILL", "planet/language/data/phoible_series.tsv", "run de1cc6", "run a24559", docs/review/language/calibration.md]
+refs: ["planet/language/inventory.py::_pick_consonants", "planet/language/inventory.py::_series_factor", "planet/language/inventory.py::SERIES_FILL", planet/language/data/phoible_series.tsv, "run de1cc6", "run a24559", docs/review/language/calibration.md]
+created: 2026-11-09
+updated: 2026-11-09
 ---
 
 ## Description
@@ -32,3 +36,6 @@ aspirated and ejective series, already under their PHOIBLE sizes: 3.8 vs 4.6 and
 **What misleads if never done:** a world where one prenasal family spreads fails the overused-sounds check (de1cc6),
 and a reader of any world sees voiceless prenasals about twice as often as real languages have them.
 - [ ] P(ⁿt | prenasal series) within ~1.3x of PHOIBLE's 0.13 in a 3000-draw harness, other series' sizes not worse
+
+## Updates
+- 2026-11-09: Created from inbox draft draft-language-prenasal-tail.md (found by language lane 10 (PW-1615)).
