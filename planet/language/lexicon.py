@@ -26,7 +26,8 @@ import csv
 import functools
 import math
 import sys
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
+from .percepts import replace  # (PW-1555: the interned Segment's fast path; dataclasses.replace otherwise)
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -2527,6 +2528,11 @@ def _merge_ids(ids: str, rule_id: str) -> str:
 def has_nucleus(form: Form) -> bool:
     """Does the form have a syllable nucleus (a vowel; the percept space has no syllabic consonants)?"""
     return any(s.kind == "V" for s in form)
+
+
+def moras(form: Form) -> int:
+    """Segments, a long one counting twice: a rough mora count for the minimal name (faiths.finish_names)."""
+    return sum(2 if getattr(x, "length", 0) else 1 for x in form)
 
 
 def minimal_form(old: Form) -> Form:

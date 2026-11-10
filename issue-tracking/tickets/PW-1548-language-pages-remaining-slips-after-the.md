@@ -2,7 +2,7 @@
 id: PW-1548
 title: "Language pages: remaining slips after the polish lane (loan family shown as native, 'then' forms unmarked, gods without names, one-vowel god names, odd recipes)"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-986]
 refs: [docs/review/language/for-daniel.md, docs/review/language/demo-read-4.md, tools/language/demo_page.py, tools/language/sketch.py, planet/language/sentences.py, "planet/language/faiths.py::Plan", "planet/language/faiths.py::coin_name", planet/language/texts.py, planet/language/inventory.py, "run a24559"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-10
 ---
 
 ## Description
@@ -44,4 +44,5 @@ bugs (a god with no name, a word family labelled native that is a loan). Numbers
 - [ ] Hawaiian-type kin: cousins called by the BROTHER word only (no sex split of cousins)
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 11 (lang-lane11), each slip checked on a fresh a24559 pass, demo and sketches. Fixed: 8 holders without god names -> 0 and 78 one-sound god names -> 0 (faiths.finish_names, after the history so the history and checks are unchanged: late holders take the name from a donor or coin one; a name under 2 moras is renewed as an epithet; 158 renewed, 7 one-long-vowel names kept); loan root shown as a loan on the demo's word-family card and in the sketch; history lines mark a quoted gram form 'then (/x/ now)'. Already fixed before: polite note (no rank), recipes (follow the food). Gone: no lect has a vowel in its words missing from its chart (5 lects have a stray consonant: inbox draft). Left and explained (for-daniel.md Lane 11): complexity dating from today's values (the page says so), desert/sun gods borrowing a domain word, sister lects' 'the lord', Hawaiian-type cousins by sibling words, Moow = marker homophony, INS vs COM 'with' (already glossed apart).
 - 2026-11-08: Created from inbox draft draft-language-page-slips.md (found by lang-design (polish lane, faiths pass 3, grammar D, finish lane, 2026-11-08)).

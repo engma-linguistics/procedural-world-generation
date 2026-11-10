@@ -10,7 +10,8 @@ The other modules are reached through the small adapters at the top so a signatu
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
+from .percepts import replace  # (PW-1555: the interned Segment's fast path; dataclasses.replace otherwise)
 
 import numpy as np
 
@@ -729,7 +730,7 @@ class Lect:
         self._segs = None
         self._sylprof = None
 
-    def phonotactic_veto(self, rule, rng) -> bool:
+    def phonotactic_veto(self, rule, rng, memo: dict | None = None) -> bool:
         """Phonotactic resistance (Kisseberth's conspiracies; the stability of syllable structure within families): a change
         that would give PHONO_MIN or more of the words it rewrites a syllable shape the lect's words do not have (a longer
         onset or final coda, or a medial coda; inventory.syllable_profile) is turned down with probability PHONO_VETO.
@@ -741,9 +742,15 @@ class Lect:
         prof = getattr(self, "_sylprof", None)
         if prof is None:
             prof = self._sylprof = inv_mod.syllable_profile(self.all_forms())
-        forms = self.load_forms()
-        outs = RU.apply_all(rule, forms, stress_of(self.inventory))
-        if inv_mod.new_violations(forms, outs, prof) < PHONO_MIN:
+        key = ("phono", id(rule))   # (memo: step's, while the forms stand; PW-1555)
+        got = memo.get(key) if memo is not None else None
+        if got is None or got[0] is not rule:
+            forms = self.load_forms()
+            outs = RU.apply_all(rule, forms, stress_of(self.inventory))
+            got = (rule, inv_mod.new_violations(forms, outs, prof))
+            if memo is not None:
+                memo[key] = got
+        if got[1] < PHONO_MIN:
             return False
         if rng.random() < PHONO_VETO:
             PHONO_STATS["vetoed"] += 1
@@ -969,10 +976,11 @@ class Lect:
             for _ in range(k):
                 if forms is None:  # (read again only after a change: most draws now fire nothing)
                     forms, segs, stress = self.load_forms(), self.segments(), stress_of(self.inventory)
-                r = RU.pick_rule(rng, pool, forms, segs, stress, mass=mass, cum=cum)
+                    memo = {}   # (PW-1555: a rule drawn again over the same forms is not run over them again)
+                r = RU.pick_rule(rng, pool, forms, segs, stress, mass=mass, cum=cum, memo=memo)
                 if r is None:
                     continue
-                if self.phonotactic_veto(r, rng):
+                if self.phonotactic_veto(r, rng, memo):
                     continue
                 if not self.may_fire(r, kyr):  # (a dispersion push made on the fly that fired already)
                     continue

@@ -19,7 +19,8 @@ from __future__ import annotations
 
 import math
 import tomllib
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
+from .percepts import replace  # (PW-1555: the interned Segment's fast path; dataclasses.replace otherwise)
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Iterable
