@@ -597,7 +597,8 @@ def cmd_make(args):
     req = {"seed": args.seed, "preset": args.preset, "level": args.level, "myr": args.myr, "kyr": args.kyr, "now": args.now,
            "set": _parse_set(args.set), "timezoom": args.timezoom, "finish": args.finish,
            "highlights": args.highlights, "zooms": args.zooms, "name": args.name,
-           "require_ice": args.require_ice, "tries": args.tries, "peoples": args.peoples}
+           "require_ice": args.require_ice, "tries": args.tries, "peoples": args.peoples,
+           "languages": args.languages, "language_workers": args.language_workers}
     req = {k: v for k, v in req.items() if v is not None}
     try:
         spec = M.parse_make_request(req)
@@ -631,6 +632,11 @@ def cmd_make(args):
         print(f"view: http://127.0.0.1:8765/viewer/?run={out['timezoom']}")
     if out.get("peoples"):
         print(f"peoples: http://127.0.0.1:8765/viewer/?run={out['peoples']}")
+    if (out.get("languages") or {}).get("error"):
+        print(f"languages: not made ({out['languages']['error']})")
+    elif out.get("languages"):
+        print(f"languages: {out['languages']['living']} living lects, {out['languages']['languages']} languages, "
+              f"in {out['languages']['secs']} s (http://127.0.0.1:8765/viewer/languages.html?run={out['peoples']})")
 
 
 def cmd_serve(args):
@@ -934,6 +940,9 @@ def main():
     mk.add_argument("--zooms", type=int, metavar="N", help=f"regional zooms of the top N highlights (default {MD['zooms']})")
     mk.add_argument("--peoples", nargs="?", const="dnd", metavar="TREE", help="after the world, also build a peoples run of this tree "
                     "(a preset such as dnd or seven_meals, or a saved tree; bare --peoples means dnd). Needs the time zoom and the world")
+    mk.add_argument("--languages", action=argparse.BooleanOptionalAction, help="with --peoples, also run the language pass "
+                    "(PW-1634; default on; --no-languages skips it, `planet languages RUN` adds it later)")
+    mk.add_argument("--language-workers", type=int, metavar="N", help=f"processes for the language pass (default {MD['language_workers']})")
     mk.add_argument("--name", "-n")
     mk.add_argument("--require-ice", action=argparse.BooleanOptionalAction, help="refuse a finished world with no permanent "
                     "ice (default off): the latest finish candidate of the last 10 Myr that has it, else a re-roll of the seed")

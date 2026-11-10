@@ -343,7 +343,7 @@ def test_compounds_are_plausible(concepts):
     assert len(made) >= 200
     for k, head, mod, w in made:
         rows = {(r.head, k if r.modifier == L.SELF else r.modifier) for r in L.compound_templates(k)}
-        assert (head, mod) in rows or head == k and mod in dict(L.reinforcers()[k]), (k, head, mod)
+        assert (head, mod) in rows or (head, mod) in {L.reinforce_parts(k, m) for m in dict(L.reinforcers().get(k, ()))}, (k, head, mod)
         _, msc, mseg = L.limits(inv)   # (the caps follow the syllable space)
         assert L.syllables(w.form) <= msc + 1 and len(w.form) <= mseg
         if mod == k:   # a generic + specific renewal is the old word renewed: its chain and main root
@@ -390,7 +390,7 @@ def test_compounds_only_from_templates(long_runs):
                 if ": counting " in st.note:   # (a composite numeral: its recipe is the numeral system's, lexsys)
                     rows |= {(h, m) for sy in ("decimal", "hybrid", "vigesimal", "quinary", "restricted")
                              for c, (h, m, _) in LS._recipes(sy, True).items() if c == k}
-                assert (head, mod) in rows or head == k and mod in dict(L.repair_rows().get(k, ())), (k, head, mod)
+                assert (head, mod) in rows or (head, mod) in {L.reinforce_parts(k, m) for m in dict(L.repair_rows().get(k, ()))}, (k, head, mod)
                 n += 1
             procs = [st.process for st in w.etym if st.process.startswith("compound:")]
             assert len(procs) == len(set(procs)), (w.concept, procs)   # (no 'deer-animal-animal', 'they-that-that')
@@ -872,6 +872,35 @@ def test_core_repair_reinforces_plural_pronoun(concepts):
     L.core_repair(rng, lex, inv, 1.0, "L")
     last = lex.words["WE"].etym[-1]
     assert last.process in ("compound:WE+OTHER", "compound:WE+ALL"), last
+
+
+def test_who_is_renewed_as_what_person(concepts):
+    """PW-1635: 'who' renewed by the PERSON row is built WHAT + PERSON ('what person', Latin quis homo), not old-who +
+    person; a reinforcement that is not a question word keeps the word itself as head (THIS + HERE)."""
+    assert L.reinforce_parts("WHO", "PERSON") == ("PERSON", "WHAT")
+    assert L.reinforce_parts("THIS", "HERE") == ("THIS", "HERE") and L.reinforce_parts("WE", "OTHER") == ("WE", "OTHER")
+    for seed in range(76, 86):
+        rng, inv, lex = _proto(seed, concepts)
+        if "PERSON" not in lex.words:
+            pytest.skip("PERSON not on the list")
+        _merge(lex, "WHAT", "WHO")
+        L.core_repair(rng, lex, inv, 1.0, "L")
+        last = lex.words["WHO"].etym[-1]
+        assert last.process != "compound:WHO+PERSON", last
+        if last.process.startswith("compound:"):
+            assert last.process == "compound:PERSON+WHAT" and set(lex.words["WHO"].roots) >= {"L:PERSON", "L:WHAT"}
+            return
+    pytest.fail("no seed renewed 'who' by the PERSON row")
+
+
+def test_when_has_its_own_time_formative(concepts):
+    """PW-1635: WHEN is derived from WHAT with a 'time' affix of its own ('at what time'), no longer with the 'place' affix
+    WHERE uses (the two were homophones at birth); every proto draws the affix."""
+    assert "time" in L.AFFIX_MEANINGS
+    rows = [(r.relation, r.base) for r in L.derivation_sources("WHEN")]
+    assert ("time", "WHAT") in rows and ("place", "WHAT") not in rows
+    _, _, lex = _proto(87, concepts)
+    assert lex.affixes["time"][0] and lex.affixes["time"][0] != lex.affixes["place"][0]
 
 
 def test_step_leaves_no_core_mergers(concepts):

@@ -3783,6 +3783,7 @@ def test_a_live_state_seat_is_hemmed_in_over_its_own_two_rings(faketz, monkeypat
     bars fully; not the people's whole border."""
     from planet.lineages import polities as PO
     from planet.lineages.history import params as HP
+    from planet.lineages.seafood import rings_for
     h, env, step, land = _live_setup(faketz, monkeypatch)
     R = h.rule
     fk, kb = h.idx["folk"], h.idx["kob"]
@@ -3790,7 +3791,7 @@ def test_a_live_state_seat_is_hemmed_in_over_its_own_two_rings(faketz, monkeypat
     ice = np.zeros(h.grid.n, bool)
     el = np.where(L, np.asarray(env["elevation"], float), 0.0)
     folk = h.p[fk] > 0
-    rings = PO._rings(h.grid, PO.HEMMED_RINGS)
+    rings = PO._rings(h.grid, rings_for(h.grid, PO.HEMMED_KM))
     c = next(int(c) for c in land[:300] if L[rings[int(c)]].all() and folk[rings[int(c)]].all() and (el[rings[int(c)]] < 3000).all())
     ring = rings[c]
     assert sorted(R.r2b[R.r2off[c]:R.r2off[c + 1]].tolist()) == sorted(ring.tolist() + [c])

@@ -96,6 +96,16 @@ NEW_SEG_WEIGHT = 0.3  # a rule that would add a segment the lect lacks is drawn 
 PHONO_VETO = 0.8   # probability a change that breaks the lect's syllable phonotactics is turned down (Lect.phonotactic_veto)
 PHONO_MIN = 0.2    # ... when at least this share of the words it rewrites would get a shape the lect lacks
 PHONO_STATS = {"vetoed": 0}
+# PW-1622: the veto is the line's, not the draw's. Until then a change turned down stayed in the pool and was drawn again
+# (about 440 draws a 0.5 kyr step), so PHONO_VETO 0.8 per draw let nearly every shape-breaking change through within an
+# interval or two: CV protos (Hawaiian, Swahili) reached ~25% closed syllables in 2.5 kyr. Now a change the lect's
+# phonotactics turn down is set aside for the rest of the interval (its weight kept in the draw's mass, as for a rule waiting
+# out its re-fire memory), so 0.8 means 0.8 per interval; and one that would bring in a syllable TYPE the lect has none of
+# (a coda in an open-syllable lect, an onset cluster or a medial coda where there are none: inventory.new_violations
+# types_only) is refused for the re-fire wait (Lect.refused, inherited by daughters: a line's conspiracy; Polynesian and
+# Bantu kept open syllables for millennia), while a larger cluster of a type the lect has is decided again each interval.
+# A hiatus repair that would break the syllables (glide formation -ai > -aj in a CV lect) is weighted down by the same
+# factor among the repairs.
 LOAD_SAMPLE = 120  # forms handed to rules.pick_rule for the functional-load estimate (the most frequent words first)
 REFIRE_KYR = 4.0  # a rule that fired in a lect is not drawn (nor adopted by wave) again for this long ... (3 until the
 # sound lane, 2026-11-08: a line re-ran ~half the catalogue it fired, so "the same law again" was most of a late history).
@@ -421,6 +431,8 @@ class Lect:
     orth: tuple = ("house", "double")  # the book-spelling tradition (romanize.LETTER_STYLES, LENGTH_W; inherited, PW-1546)
     insdel: dict = field(default_factory=dict)  # segment (tone aside) -> (kyr, "ins" | "del"): the line's last insertion or
     #                                             loss of it (inherited; `alternates`, PW-1537 R9)
+    refused: dict = field(default_factory=dict)  # catalogue rule id -> kyr the lect's phonotactics turned it down (inherited;
+    #                                              refused for the re-fire wait: may_fire, PW-1622)
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -438,7 +450,7 @@ class Lect:
                     glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id,
                     live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn,
                     size_base=dict(self.size_base) if self.size_base else None, orth=tuple(self.orth),
-                    insdel=dict(self.insdel))
+                    insdel=dict(self.insdel), refused=dict(self.refused))
 
     def gaps(self) -> list:
         """The major places (GAP_PLACES) the lect has no consonant at though its speakers make the place cheaply
@@ -552,8 +564,13 @@ class Lect:
 
     def may_fire(self, rule, kyr: float) -> bool:
         """The re-fire memory: a rule fired in the last REFIRE_KYR, or already MAX_FIRES times in the lect's line (HARMONY_MAX
-        for harmony, ONE_OFF_MAX for a one-off row: one_off), is not drawn or adopted again."""
-        h = self.fired.get(base_id(rule.id))
+        for harmony, ONE_OFF_MAX for a one-off row: one_off), is not drawn or adopted again;
+        nor is one the lect's phonotactics turned down within the wait (`refused`, PW-1622)."""
+        b = base_id(rule.id)
+        rf = self.refused.get(b)
+        if rf is not None and rf - kyr < self.refire_kyr() - 1e-9:
+            return False
+        h = self.fired.get(b)
         if not h:
             return True
         # the lifetime cap holds only for the rules that pile up (prothesis, epenthesis, harmony: each firing feeds the next);
@@ -735,7 +752,8 @@ class Lect:
         that would give PHONO_MIN or more of the words it rewrites a syllable shape the lect's words do not have (a longer
         onset or final coda, or a medial coda; inventory.syllable_profile) is turned down with probability PHONO_VETO.
         Changes that simplify syllables pass, and a change that gets through re-templates the lect (inventory.retemplate),
-        so a coda once established is no longer resisted."""
+        so a coda once established is no longer resisted. Returns False, or why it was turned down: "type" (a syllable type
+        the lect has none of: `refused` for the re-fire wait) or "size" (a larger cluster: set aside for the interval; step)."""
         if PHONO_VETO <= 0 or self.lexicon is None or rule.family in ("tone", "hiatus"):
             return False
         inv_mod = _inv_mod()
@@ -747,14 +765,14 @@ class Lect:
         if got is None or got[0] is not rule:
             forms = self.load_forms()
             outs = RU.apply_all(rule, forms, stress_of(self.inventory))
-            got = (rule, inv_mod.new_violations(forms, outs, prof))
+            got = (rule, inv_mod.new_violations(forms, outs, prof), inv_mod.new_violations(forms, outs, prof, types_only=True))
             if memo is not None:
                 memo[key] = got
         if got[1] < PHONO_MIN:
             return False
         if rng.random() < PHONO_VETO:
             PHONO_STATS["vetoed"] += 1
-            return True
+            return "type" if got[2] >= PHONO_MIN else "size"
         return False
 
     def all_forms(self) -> list:
@@ -799,6 +817,7 @@ class Lect:
             segs = self.all_segments()
             stress = stress_of(self.inventory)
             best = None
+            prof = _inv_mod().syllable_profile(now.values()) if PHONO_VETO > 0 else None
             for r in self.hiatus_pool():
                 if self.alternates(r, segs, kyr):
                     continue   # (no glide back in where the line just lost it: PW-1537 R9)
@@ -811,6 +830,8 @@ class Lect:
                 if back and 2 * sum(1 for p, f in back if fn(f) == p) > len(back):
                     continue
                 sc = r.weight * self.hiatus_pref(r)
+                if prof is not None and _inv_mod().new_violations(sample, [fn(f) for f in sample], prof) >= PHONO_MIN:
+                    sc *= 1.0 - PHONO_VETO   # (a repair the syllables resist: glide formation -ai > -aj in a CV lect, PW-1622)
                 if best is None or sc > best[0]:
                     best = (sc, r)
             again = any(base_id(c["rule"]) == base_id(best[1].id) and float(c["kyr"]) - kyr < self.refire_kyr() - 1e-9
@@ -980,7 +1001,12 @@ class Lect:
                 r = RU.pick_rule(rng, pool, forms, segs, stress, mass=mass, cum=cum, memo=memo)
                 if r is None:
                     continue
-                if self.phonotactic_veto(r, rng, memo):
+                why = self.phonotactic_veto(r, rng, memo)
+                if why:   # (not drawn again this interval; a new syllable type is refused for the wait: PW-1622)
+                    if why == "type":
+                        self.refused[base_id(r.id)] = round(float(kyr), 3)
+                    pool = [x for x in pool if base_id(x.id) != base_id(r.id)]  # (its weight stays in mass: set aside)
+                    cum = RU.cumulative_weights(pool)
                     continue
                 if not self.may_fire(r, kyr):  # (a dispersion push made on the fly that fired already)
                     continue

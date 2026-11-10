@@ -206,7 +206,7 @@ def seafood(g, L: dict, land: np.ndarray, coast: np.ndarray, f) -> dict:
     for name in ("tidal", "barrier", "mangrove", "low", "delta"):
         flats[ct == CF.KEYS[name]] = 0.7
     rocky = np.isin(ct, (CF.KEYS["rocky"], CF.KEYS["cliff"], CF.KEYS["fjord"])).astype(float)
-    nb = lambda v: _sea_to_coast(g, v, sea, coast, 1)  # noqa: E731
+    nb = lambda v: _sea_to_coast(g, v, sea, coast, 1)  # noqa: E731 (the shore's own water, its sea neighbours: adjacency on any grid, PW-1627)
     cold = nb(np.where(sea, np.maximum(ramp(up, *CF.PROD_UPWELL), ramp(s_warm, *CF.PROD_COLD)), 0.0))
     shell = np.maximum.reduce([0.9 * ramp(f("salt_marsh"), 1.0, 15.0), 0.8 * nb(ramp(grass, 0, 15)), 0.9 * nb(ramp(reef, 0, 15)),
                                flats * (0.4 + 0.6 * ramp(tide, 0.3, 2.0)), 0.5 * rocky * cold, 0.7 * ramp(f("mangrove"), 1.0, 20.0)])

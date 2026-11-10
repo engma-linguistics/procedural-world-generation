@@ -135,7 +135,31 @@ class Pass:
     def _lerp(self, name: str, t: float) -> np.ndarray:
         i, j, w = self._bracket(t)
         a, b = (T.frame(self.run, self.arr, name, k).astype(float) for k in (i, j))
-        return self.fine(a * (1 - w) + b * w)
+        f = self.fine(a * (1 - w) + b * w)
+        d = self.detail(name)
+        return f if d is None else f + d
+
+    DETAIL = ("elevation", "temperature")  # (the refine's own detail carried through the window: its coasts, islands and hills)
+
+    def detail(self, name: str) -> np.ndarray | None:
+        """PW-1627: on a world refined finer than its time zoom, the refine's detail of a field: the refined world's layer less its
+        source world's prolonged (refine.py's terrain and downscaled climate on the finer grid). Added to every prolonged frame, so
+        the window's present is the refined world's own land and coast, not the coarse coast's smooth prolongation (which left
+        1.3% of the L8 cells on the wrong side of the shore and 179 of its 331 small islands under the sea; lane 270). The past
+        keeps the zoom's own changes (sea level, ice) on top. None at the zoom's own grid, or for other fields."""
+        if self.coarse is None or not self.world_ref or name not in self.DETAIL:
+            return None
+        if not hasattr(self, "_detail"):
+            from .. import world as W
+            self._detail = {}
+            hf = S.read_header(S.find_world(self.world_ref))
+            src = (hf["meta"].get("refined_from") or {}).get("world")
+            if src and S.exists("world", src):
+                wf, wc = W.load(S.find_world(self.world_ref)), W.load(S.find_world(src))
+                for k in self.DETAIL:
+                    if k in wf["layers"] and k in wc["layers"] and len(wc["layers"][k]) == self.coarse.n:
+                        self._detail[k] = wf["layers"][k].astype(float) - finer(wc["layers"][k].astype(float), self.grid)
+        return self._detail.get(name)
 
     def fine(self, f: np.ndarray, categorical: bool = False) -> np.ndarray:
         """f on the history's grid (the refined world's, when finer than the time zoom: PW-1265)."""

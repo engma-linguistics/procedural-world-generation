@@ -12,14 +12,13 @@
 - **v0.2.0** waits on Daniel's look. v2 open: PW-728, 856, 1308 (epics/briefs nearly done), PW-1312, PW-1444 (showcase re-runs).
 - Physics is a side track: 1-3 passes per scout lane, regional metrics (not global dT), tickets in `later` ranked "physics side track".
 
-## Lanes running (11-10 ~05:40)
-Main 1090b13f (+ desk/wiki commit). Full suite 2009 passed after merging lanes 266/267/267b (L7→L8 split history, PW-1265).
-- lane 268b: PW-1628 (tectonics/volcanism true areas, 857324b2) scorecard then merge; PW-1629 tide-delta mouths.
-- lane 269c (worktree lane269b): PW-1558 floor; fix goliath regression; PW-1182 loser-niche mechanism. Attempt 3 on the floor.
-- lane 270: PW-1627 + PW-1630 L8 settlement rings in km (coast/islands/cities); optional PW-1631.
-- language lane (worktree lang-lane, separate coordinator; Language Desk https://claude.ai/artifact/HYNL244a8zVvfSGFWK5Fgw): lane 11 merged 11-10 (pass 32→11 min, identical output; ruins named, PW-1604 language side). a24559 language files and gods.json rebuilt. Next: `planet make` runs languages by default, then conquest/trade borrowing + food doublets + PW-1622. PW-1549 waits for polities.
+## Lanes running (11-10 ~08:15)
+Main be89b700+ (desk v242). Full suite 2009 passed after merging lanes 268/268b.
+- lane 271: PW-1637 carbon/ice budgets true areas, then PW-1158 late low carbon source.
+- lane 269d (worktree lane269b): judge main/G/A on the full robustness suite; write the D71-at-founding decision card (A floor at founding / B exceptions / C 0.5 Mkm2).
+- lane 270b (worktree agent-a8887bf24135fe82a, 5bd8e407): finish the L8 vs L7 settled comparison (rings in km + Pass.detail coast fix).
 Parked: states switch PW-1596/1597 (three strikes, `later`).
-Waiting on Daniel: nothing.
+Waiting on Daniel: nothing yet (D71 founding card coming from 269d).
 
 ## Milestones (2026-11-09)
 | milestone | open | done |

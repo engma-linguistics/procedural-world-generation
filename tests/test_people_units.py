@@ -5,15 +5,23 @@ from types import SimpleNamespace
 import pytest
 
 from planet.grid import build_grid
-from planet.lineages import animals as AN, compose as CO, demes as DM, ladder as LA, polities as PO, trade_flow as TF
+import numpy as np
+
+from planet.lineages import animals as AN, compose as CO, demes as DM, ladder as LA, polities as PO, settlements as ST, trade_flow as TF
+from planet.lineages.history import polity_live as PL, tags as TG
 from planet.lineages.history import params as PM
 from planet.lineages.seafood import cells_for, rings_for, SEA_REACH_KM
 from planet.lineages.land import REACH_KM as LAND_REACH_KM
 
 # (constant, ring/cell helper, the old L7 count, the L8 count)
 RINGS = [(LA.RAID_REACH_KM, 2, 4), (LA.BARTER_REACH_KM, 1, 2), (CO.REACH_KM, 10, 20), (PM.CHAIN_KM, 4, 8),
-         (PM.ARRIVAL_POCKET_KM, 3, 6), (SEA_REACH_KM, 2, 4), (LAND_REACH_KM, 1, 2)]
-CELLS = [(DM.MIN_KM2, 40, 161), (DM.ADAPT_MIN_KM2, 20, 80), (AN.OVERLAP_MIN_KM2, 3, 12), (PO.SUBJECT_KM2, 3, 12)]
+         (PM.ARRIVAL_POCKET_KM, 3, 6), (SEA_REACH_KM, 2, 4), (LAND_REACH_KM, 1, 2),
+         # PW-1627: the settled history's own reaches (a town's and a city's hinterland, pit spacing, a coastal boat's reach,
+         # the hemmed-in seat's ring)
+         (ST.CONST["TOWN_KM"], 1, 2), (ST.CONST["CITY_KM"], 2, 4), (ST.CONST["PIT_KM"], 1, 2), (TF.COAST_BOAT_KM, 2, 4),
+         (PO.HEMMED_KM, 2, 4)]
+CELLS = [(DM.MIN_KM2, 40, 161), (DM.ADAPT_MIN_KM2, 20, 80), (AN.OVERLAP_MIN_KM2, 3, 12), (PO.SUBJECT_KM2, 3, 12),
+         (TG.ISLAND_FLOOR_KM2, 3, 12)]
 
 
 @pytest.fixture(scope="module")
@@ -42,3 +50,29 @@ def test_rings_and_cells_keep_the_physical_scale_at_l8(g7):
     for km2, _, l8 in CELLS:
         assert cells_for(g8, km2) == l8, km2
     assert TF.pool_hops(g8) == 3.0
+
+
+def _old_two_ring_pairs(g):
+    """polity_live's two-ring table as it was built before PW-1627 (the L7 reference)."""
+    off, idx, src = np.asarray(g.nbr_off, np.int64), np.asarray(g.nbr_idx, np.int64), np.asarray(g.nbr_src, np.int64)
+    deg = np.diff(off)
+    e = np.repeat(np.arange(len(idx)), deg[idx])
+    dn = deg[idx]
+    far = idx[off[idx[e]] + np.arange(len(e)) - np.repeat(np.cumsum(dn) - dn, dn)]
+    pairs = np.unique(np.concatenate([np.stack([np.arange(g.n), np.arange(g.n)], 1), np.stack([src, idx], 1),
+                                      np.stack([src[e], far], 1)]), axis=0)
+    return pairs[:, 0], pairs[:, 1]
+
+
+def test_ring_pairs_is_the_old_two_ring_table_and_any_ring_count(g7):
+    """PW-1627: the live history's ring table in km keeps the old two-ring table at L7 exactly (same pairs, same order) and reads
+    the same cells as the ledger's rings for any count (an L8 refine's four)."""
+    a, b = PL.ring_pairs(g7.nbr_off, g7.nbr_idx, 2)
+    a0, b0 = _old_two_ring_pairs(g7)
+    assert np.array_equal(a, a0) and np.array_equal(b, b0)
+    g = build_grid(3)
+    for r in (1, 3, 4):
+        a, b = PL.ring_pairs(g.nbr_off, g.nbr_idx, r)
+        off = np.searchsorted(a, np.arange(g.n + 1))
+        for c in range(0, g.n, 37):
+            assert sorted(b[off[c]:off[c + 1]].tolist()) == sorted(ST._rings(g, c, r).tolist())

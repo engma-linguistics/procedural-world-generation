@@ -154,7 +154,7 @@ def forces(sim, bd: Boundaries, rng) -> CellForces:
     torque = np.zeros((P_MAX, 3))
     cell_torque = np.cross(P, F)
     _add_at(torque, sim.owner, cell_torque)
-    w = sim.cell_area * (1 + p.continental_keel * sim.w_cont)
+    w = sim.cell_sr * (1 + p.continental_keel * sim.w_cont)  # (each cell's own area: PW-1628)
     outer = (np.eye(3)[None] - P[:, :, None] * P[:, None, :]) * w[:, None, None]
     drag = np.zeros((P_MAX, 3, 3))
     _add_at(drag.reshape(P_MAX, 9), sim.owner, outer.reshape(len(outer), 9))
