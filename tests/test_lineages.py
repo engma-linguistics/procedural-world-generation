@@ -4181,6 +4181,17 @@ def test_the_live_tree_maps_regions_as_the_after_run_tree(faketz, monkeypatch):
     assert P[fk][land[300]] == 0 and P[fk][land[0]] == 0.9
 
 
+def test_live_polities_know_the_dragons_as_the_read_out_does():
+    """Lane 281b (PW-1596): the history's dragon realms are seated for the same peoples as the read-out's (_Run.dragons: 'dragon' in
+    the id and the trait 'flies'). Before, the live test read the trait as a knob (l.trait("flies", 0.0): always 0), so the history
+    seated no dragon realm at all."""
+    from planet.lineages.history import polity_live as PL
+    t = LR.load_tree("dnd")
+    live = {l.id for l in t.lines.values() if PL.is_dragon(l)}
+    readout = {l.id for l in t.lines.values() if "dragon" in l.id and "flies" in (l.traits or [])}
+    assert live == readout and {"red_dragon", "gold_dragon"} <= live and "dragonborn" not in live
+
+
 def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
     """Lane 183: under one ruler, the hostile peoples living inside its land are co-subjects (no frontier); on unruled land the
     stand-in's frontier holds."""

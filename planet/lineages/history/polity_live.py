@@ -79,6 +79,12 @@ def harshness(hostility: float, tol: float, agg: float) -> float:
     return hostility + TOL_X * (0.5 - tol) + TOL_X * (agg - AGG_HARSH) * (1.0 - tol)
 
 
+def is_dragon(l) -> bool:
+    """A dragon people, as the read-out's _Run.dragons: 'dragon' in its id and the trait 'flies' (lane 281b: was l.trait("flies", 0.0),
+    a knob lookup no trait has, so the history seated no dragon realm at all)."""
+    return "dragon" in l.id and "flies" in (l.traits or [])
+
+
 def ring_pairs(off, idx, r: int):
     """(a, b): every (cell, other) pair with `other` within r neighbour rings of `cell`, the cell itself included, once each, sorted
     by cell then other (PW-1627: any number of rings; the frontier alone is expanded, so an L8 refine's four rings stay cheap)."""
@@ -122,7 +128,7 @@ class LivePolities(StandIns):
         self._pairs: dict[int, tuple] = {}
         L = h.lines
         self.ppl = np.array([i for i, l in enumerate(L) if not (l.overlay or l.megafauna or l.marine)], np.int64)  # (peoples that may hold towns)
-        self.dragons = [i for i, l in enumerate(L) if l.megafauna and "dragon" in l.id and l.trait("flies", 0.0)]
+        self.dragons = [i for i, l in enumerate(L) if is_dragon(l)]
         meta = [{"id": l.id, "group_of": l.group_of, "parents": list(l.parents or [])} for l in L]
         self.anc = IV.ancestors(meta)
         rows, self.inv_notes = IV.clean(INVASIONS, strict=False) if INVASIONS else ([], [])
