@@ -35,6 +35,7 @@ floor ages. If the ridges die off, the source falls. PW-969's giant welded plate
       (a diag field per part), and whether the decline tracks the rift count or the largest plate
 
 ## Updates
+- 2026-11-10: Moved to later with PW-1645 (lane 273: cause is lower absolute source from slower plates plus drift; no hard failure).
 - 2026-11-10: Lane 273: the per-part split is measured (ridge_src/arc_src/plume_src diag fields, lanes 271 and 273): arcs 90.5-92.8%, ridges 5.9-7.3% in every bin. On main 8640df78, 819014's late source (700-1000 Myr) is 0.71-0.76 of its reference before drift against seed 1's 0.86-0.91, and its mean plate speed 2.76-3.22 against 3.31-3.69 cm/yr. The reference does not set the late climate (PW-1645, docs/review/v1-cut/source-reference-option-d.md): read the diag's 'drive' field, not src.
 - 2026-11-03: Triage 11-03: v2 -> later: second-order tectonics refinement; the planet is stable without it
 - 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
