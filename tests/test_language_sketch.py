@@ -183,3 +183,27 @@ def test_word_families_both_views():
     page = sketch.render(doc, doc.lects["d1"])
     hist = page[page.index("### Families a historian reconstructs"):]
     assert "predates them" not in page and "4 words have it as their main root" in hist
+
+
+def test_doublets_section():
+    """PW-1636: a meat word borrowed beside the native animal word, and a formal synonym, listed with their source."""
+    d = _fixture()
+    nodes = d["etym_nodes"]
+    l = d["lects"][1]
+    nodes.append([-1, 20.0, "p0", "proto", "kau", "cattle"])
+    l["lexicon"]["animal:cattle"] = {"ipa": "kau", "roman": "kau", "pos": "N", "freq": 3, "etym": len(nodes) - 1}
+    nodes.append([-1, 20.0, "d2", "proto", "bœf", "cattle"])
+    nodes.append([len(nodes) - 1, 3.0, "d1", "borrow:d2", "biːf", "cattle meat",
+                  "contact, elite; doublet; the donor's word for 'cattle', kept for 'cattle meat'"])
+    l["lexicon"]["meat:cattle"] = {"ipa": "biːf", "roman": "beef", "pos": "N", "freq": 4, "etym": len(nodes) - 1}
+    l["systems"] = {"registers": {"high": {"DOG": ["kanis", "synonym", "d2", 2.5]}},
+                    "contact_layers": {"d2": {"elite": [4.0, 1.0, "settlements: 3 site(s) of the human taken by the drow "
+                                                         "about 4.0 kyr ago (settlements.json holders)"]}}}
+    doc = sketch.Doc(d)
+    rows = sketch.doublet_rows(doc, doc.lects["d1"])
+    assert [r["kind"] for r in rows] == ["meat", "register"]
+    page = "\n".join(sketch.doublets_section(doc, doc.lects["d1"]))
+    assert "### Doublets" in page
+    assert "cattle (animal) ~ cattle (meat): native *" in page and "the meat word *" in page, page
+    assert "after 3 site(s) of the human taken by the drow about 4.0 kyr ago" in page
+    assert "dog: everyday" in page

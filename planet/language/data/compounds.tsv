@@ -297,3 +297,16 @@ PARALLEL COUSIN	CHILD (DESCENDANT)	FATHER'S BROTHER	2	'father's brother's child'
 CROSS COUSIN	CHILD (DESCENDANT)	MOTHER'S BROTHER	2	'mother's brother's child': Arabic ibn khal
 PRIEST	PERSON	GOD	2	'god person' (faiths pass 3, 2026-11-08); Old Irish drui < 'oak-knower', Gothic gudja < 'god'
 TEMPLE	HOUSE	GOD	3	'god house': German Gotteshaus, Akkadian bit ili, Sumerian e2-dingir
+meat:cattle	MEAT	animal:cattle	3	'cow meat': German Rindfleisch, Korean sogogi, Mandarin niurou (the global default; a specialised meat noun like beef is the special case)
+meat:pig	MEAT	animal:pig	3	'pig meat': German Schweinefleisch, Mandarin zhurou, Korean dwaejigogi
+meat:caprine	MEAT	animal:caprine	3	'sheep meat': German Schaffleisch, Mandarin yangrou
+meat:fowl	MEAT	animal:fowl	3	'chicken meat': Mandarin jirou, Korean dakgogi
+meat:deer	MEAT	DEER	3	'deer meat': German Hirschfleisch, Mandarin lurou
+meat:great_elk	MEAT	animal:great_elk	3	'elk meat' (as deer meat)
+meat:reindeer	MEAT	animal:reindeer	3	'reindeer meat' (as deer meat)
+meat:buffalo	MEAT	animal:buffalo	3	'buffalo meat' (as cow meat)
+meat:yak	MEAT	animal:yak	3	'yak meat' (as cow meat)
+meat:camel	MEAT	animal:camel	3	'camel meat' (as sheep meat)
+meat:llama	MEAT	animal:llama	3	'llama meat' (as sheep meat)
+meat:horse	MEAT	animal:horse	3	'horse meat': German Pferdefleisch, Kazakh jylqy eti
+meat:riding_lizard	MEAT	animal:riding_lizard	3	'lizard meat' (as cow meat)

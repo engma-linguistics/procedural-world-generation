@@ -434,6 +434,90 @@ def borrowability(result: dict) -> dict:
                 "for the meaning is a loan (latest word-making step)")
 
 
+ELITE_PRESTIGE_X = 1.5   # elite loans' prestige-field share over the neighbour loans' (PW-1636)
+ELITE_RULE_KYR = 2.0   # lects under elite rule this long ...
+ELITE_SPLIT_MIN = 0.2   # ... at least this share of them with a meat or product split
+
+
+def _last_loan(w):
+    last = next((s for s in reversed(w.etym) if not s.process.startswith(("sound_change:", "accent:", "koine:"))), None)
+    return last if last is not None and last.process.startswith("borrow:") else None
+
+
+def contact_profiles(result: dict) -> dict:
+    """Loans follow the contact kind (PW-1636, contact.py): over the living lects' loans, the share in the prestige fields
+    (law, social and political, religion, war) of the loans from ruling peoples, against the share of the loans from
+    neighbours; the elite profile must lift it ELITE_PRESTIGE_X or more."""
+    from . import contact as CT
+    living = [l for l in result["lects"] if l.alive and l.deme is not None and not getattr(l, "minority", False)]
+    n: dict = {}
+    pr: dict = {}
+    for l in living:
+        for k, w in l.lexicon.words.items():
+            st = _last_loan(w)
+            if st is None:
+                continue
+            kd = CT.kind_of_note(st.note)
+            if kd is None:
+                continue
+            n[kd] = n.get(kd, 0) + 1
+            pr[kd] = pr.get(kd, 0) + (CT.field_group(k) in CT.PRESTIGE)
+    share = {k: pr.get(k, 0) / n[k] for k in n if n[k]}
+    x = share.get("elite", 0.0) / share["flat"] if share.get("flat") else float("nan")
+    return _row("loans follow the contact kind", {"loans": n, "prestige_share": {k: round(v, 3) for k, v in share.items()},
+                                                  "elite_over_neighbour": round(x, 2)},
+                f"elite prestige share >= {ELITE_PRESTIGE_X} x the neighbours'", x == x and x >= ELITE_PRESTIGE_X,
+                "prestige = law, social and political, religion, war (contact.field_group); a loan's kind is its "
+                "etymology note (contact.channel)")
+
+
+def _union_kyr(spans: list) -> float:
+    """Total kyr covered by [from, to] spans (kyr ago, from >= to), overlaps counted once."""
+    tot, hi = 0.0, None
+    for lo, up in sorted((min(a, b), max(a, b)) for a, b in spans):
+        if hi is None or lo > hi:
+            tot += up - lo
+            hi = up
+        elif up > hi:
+            tot += up - hi
+            hi = up
+    return tot
+
+
+def doublets(result: dict) -> dict:
+    """Doublets (PW-1636, contact.doublet): living lects that were under elite rule for ELITE_RULE_KYR or more (their own
+    or inherited, systems.contact_layers) show some meat or product splits; counts of splits by kind and of high-register
+    doublets over all living lects."""
+    from . import contact as CT
+    living = [l for l in result["lects"] if l.alive and l.deme is not None and not getattr(l, "minority", False)]
+    kinds = {"meat": 0, "product": 0, "register": 0}
+    ruled = with_split = 0
+    lects_with = 0
+    for l in living:
+        sp = 0
+        for k, w in l.lexicon.words.items():
+            st = _last_loan(w)
+            if st is None or "doublet" not in st.note:
+                continue
+            kd = "meat" if k.startswith("meat:") else "product"
+            kinds[kd] += 1
+            sp += 1
+        kinds["register"] += len(((l.lexicon.systems.get("registers") or {}).get("high")) or {})
+        lects_with += sp > 0
+        layers = l.lexicon.systems.get("contact_layers") or {}
+        if _union_kyr([(e[0], e[1]) for v in layers.values() for kd, e in v.items() if kd == "elite"]) >= ELITE_RULE_KYR:
+            ruled += 1
+            with_split += sp > 0
+    share = with_split / ruled if ruled else float("nan")
+    return _row("doublets under elite rule", {"splits": kinds, "lects_with_splits": lects_with,
+                                              f"ruled_{ELITE_RULE_KYR:g}kyr": ruled, "ruled_with_split": with_split,
+                                              "share": round(share, 3) if share == share else None},
+                f"share of lects under elite rule >= {ELITE_RULE_KYR:g} kyr with a meat or product split >= "
+                f"{ELITE_SPLIT_MIN}", share == share and share >= ELITE_SPLIT_MIN,
+                "a split is a word for a meat or a product borrowed beside the native word for the animal or ingredient "
+                f"(data/splits.tsv); register = high-register doublets (systems.registers.high); {CT.__name__}")
+
+
 AREAL_NEAR_KM, AREAL_FAR_KM = 1000.0, 4000.0
 AREAL_MIN = 0.01   # near minus far agreement, cross-family pairs (typology share of features with the same value)
 
@@ -539,7 +623,7 @@ def run_all(result: dict) -> list[dict]:
     for fn, arg in ((proto_inventories, result["lects"]), (sister_distant, result), (horizon, result), (shifts, result),
                     (long_generations, result), (complexity, result), (living_sizes, result), (living_segments, result),
                     (living_overuse, result), (typology_consistency, result), (borrowability, result), (areal, result),
-                    (possible_segments, result), (second_voice, result)):
+                    (possible_segments, result), (second_voice, result), (contact_profiles, result), (doublets, result)):
         t = time.perf_counter()
         try:
             out.append(fn(arg))
