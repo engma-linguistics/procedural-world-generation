@@ -317,9 +317,9 @@ def _gloss_dom(dom: str) -> str:
     return LX.concept_info(_domain_word(dom)).gloss.lower().split(" (")[0]
 
 
-def coin_name(rng, lex, key: int, god: dict, inv, kyr: float, lect_id: str, renew: bool = False):
+def coin_name(rng, lex, key: int, god: dict, inv, kyr: float, lect_id: str, renew: bool = False, min_moras: int = 0):
     """A Word naming the god in this lexicon (not stored), or None. `renew`: an epithet in place of an old name (the
-    avoidance titles 'the lord', 'the holy one' join the patterns)."""
+    avoidance titles 'the lord', 'the holy one' join the patterns). `min_moras`: no name shorter (lexicon.moras)."""
     con = god_concept(key)
     dom = god.get("domain") or "ancestors"
     dw = _domain_word(dom)
@@ -370,7 +370,7 @@ def coin_name(rng, lex, key: int, god: dict, inv, kyr: float, lect_id: str, rene
             word = LX.compound(rng, lex, con, inv, kyr, lect_id, head=arg[0], modifier=arg[1], process="name:god",
                                note=f"{arg[0]} + {arg[1]}")
             gloss = arg[2]
-        if word is None or not len(word.form) or word.form in taken:
+        if word is None or not len(word.form) or word.form in taken or LX.moras(word.form) < min_moras:
             continue
         how = {"bare": "the word as a name", "kin": "a kin title", "rank": "a title", "title": "a title in place of the name",
                "agent": "an agent noun", "avoid": "an avoidance epithet", "kenning": "a kenning"}[kind]
@@ -512,6 +512,67 @@ def step(h, i: int) -> None:
             l.lexicon.set(w)
             l.touch()
     learned_step(h, P, i)
+
+
+#: the shortest god name the pages keep (lexicon.moras): a name worn to one short vowel ('I', 'U') is renewed at the end
+MIN_NAME_MORAS = 2
+
+
+def finish_names(h, last: int) -> dict:
+    """PW-1548, after the history (so it is untouched): every living holder of a faith names every god of its pantheon,
+    and no god name is worn to one short sound. A lect born after its faith's events (a deme alive at the start that the
+    history gives a lect a frame or two later) missed them: it takes the name from a lect that has it (`_donor`), else
+    coins one, today. A name worn below MIN_NAME_MORAS is renewed as the renaming in `step` renews names (an epithet or
+    title; the old name noted). Returns {"named": n, "renewed": n}."""
+    P = h.__dict__.get("faith_plan")
+    out = {"named": 0, "renewed": 0}
+    if not P:
+        return out
+    R = h.R
+    kyr = R.kyr(last)
+    for fid in sorted(P.faiths):
+        F = P.faiths[fid]
+        for d in F["holders"]:
+            l = h.lect_of(d)
+            if l is None or not l.alive or l.lexicon is None:
+                continue
+            for key in F.get("pantheon") or ():
+                con = god_concept(key)
+                if con in l.lexicon or key not in P.gods:
+                    continue
+                src = _donor(h, l, con, last)
+                if src is not None:
+                    LX.borrow(src.lexicon[con], src.id, l.lexicon, l.profile, l.inventory, kyr,
+                              note=f"a god of {F.get('name') or 'a faith'}, named late")
+                else:
+                    w = coin_name(_rng(h, "late", key, l.id), l.lexicon, key, P.gods[key], l.inventory, kyr, l.id,
+                                  min_moras=MIN_NAME_MORAS)
+                    if w is None:
+                        continue
+                    l.lexicon.set(w)
+                l.touch()
+                out["named"] += 1
+    for lid in sorted(h.lects):
+        l = h.lects[lid]
+        if not l.alive or l.deme is None or l.lexicon is None:
+            continue
+        for k in sorted(x for x in l.lexicon.words if is_god(x)):
+            old = l.lexicon[k]
+            key = int(k.rsplit(":", 1)[1])
+            if LX.moras(old.form) >= MIN_NAME_MORAS or key not in P.gods:
+                continue
+            w = coin_name(_rng(h, "worn", key, l.id), l.lexicon, key, P.gods[key], l.inventory, kyr, l.id, renew=True,
+                          min_moras=MIN_NAME_MORAS)
+            if w is None or w.form == old.form:
+                continue
+            st = w.etym[-1]
+            w = LX.Word(w.concept, w.form, w.pos, w.freq_class, w.etym[:-1] + (LX.EtymStep(
+                st.kyr, st.lect, st.process, st.form, st.gloss, f"{st.note}; it replaced the old name {old.ipa} "
+                f"'{name_gloss(old)}', worn to one sound"),), w.born_kyr, w.roots, w.etym_roots)
+            l.lexicon.set(w)
+            l.touch()
+            out["renewed"] += 1
+    return out
 
 
 def learned_step(h, P: Plan, i: int) -> None:

@@ -1,0 +1,48 @@
+{
+ "L7": {
+  "run": "ebd83a",
+  "level": 7,
+  "cells": 163842,
+  "generated_in_s": 1238.4,
+  "handover": null,
+  "tiers_now": {
+   "village": 21440,
+   "town": 6494,
+   "city": 331
+  },
+  "peopled_land_share": 0.923,
+  "towns_cities": 6825,
+  "on_fine_coast_pct": 7.0,
+  "on_fine_river_pct": 30.4,
+  "in_fine_water_pct": 0.95,
+  "islands_with_a_town": 19,
+  "lead_peoples": 33
+ },
+ "split": {
+  "run": "025b98",
+  "level": 8,
+  "cells": 655362,
+  "generated_in_s": 3315.9,
+  "handover": {
+   "coarse": 7,
+   "fine": 8,
+   "people_before": 15167457.52149814,
+   "people_after": 15167457.521498142,
+   "cut_kyr": 12.0,
+   "at_step": 350,
+   "step_ago": 12.0
+  },
+  "tiers_now": {
+   "village": 58091,
+   "town": 6984,
+   "city": 119
+  },
+  "peopled_land_share": 0.916,
+  "towns_cities": 7103,
+  "on_fine_coast_pct": 1.9,
+  "on_fine_river_pct": 36.0,
+  "in_fine_water_pct": 0.0,
+  "islands_with_a_town": 6,
+  "lead_peoples": 33
+ }
+}

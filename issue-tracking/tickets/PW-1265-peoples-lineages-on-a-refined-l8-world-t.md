@@ -2,7 +2,7 @@
 id: PW-1265
 title: "Peoples (lineages) on a refined L8 world: the cheap L8 finishing state PW-1143 asks for"
 type: task
-status: todo
+status: done
 parent: PW-1198
 milestone: v5
 subsystem: infra
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1143, PW-490]
 refs: [planet/refine.py, "world fb5e11", docs/review/refine-l8/design.md]
 created: 2026-11-01
-updated: 2026-11-03
+updated: 2026-11-10
 ---
 
 ## Description
@@ -28,6 +28,7 @@ mapped onto the refined grid, or the time zoom's frames are refined too.
 - [ ] if it runs: cost against the L7 try (~66 min, 11 GB) and a side-by-side of the peoples map
 
 ## Updates
+- 2026-11-10: Status todo -> done. Merged 4bb45871 (lanes 266/267/267b): the split history runs L7 to the first farming (cut 12.0 kyr on seed 7 dnd, sugar cane), hands heads to the refined L8 world exactly (15,167,457.52 before and after), and finishes there. Cost vs L7 run ebd83a on the same code: history 2.7x time, peak memory 3x (35.5 GB). Towns on rivers 30.4% -> 36.0%, none in water; coast 7.0% -> 1.9%, cities 331 -> 119 (PW-1630, folded toward PW-1627); people -8% on one draw (PW-1631). Evidence: docs/review/refine-l8/.
 - 2026-11-03: Milestones 11-03: later -> v5: v5 must-have: peoples on the refined world
 - 2026-11-03: Triage 11-03: v2 -> later: L8/L9 whole-world work, post-v2 (see PW-1198 space-to-ground globe)
 - 2026-11-01: Created from inbox draft draft-refine-peoples-on-a-refined-world.md (found by lane104-refine-l8).

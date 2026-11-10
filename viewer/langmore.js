@@ -115,9 +115,11 @@
       for (const [rid, r] of Object.entries(rivers)) for (const [d] of r.demes || []) (riverDemes[d] = riverDemes[d] || []).push(rid);
       const drow = (d) => {
         const n = nd[d] || nd[String(d)], ls = land[String(d)] || {};
-        const places = ((n && n.places) || []).concat((n && n.settlements) || []).concat(((n && n.dishes) || []).map((x) => ({ ...x, kind: 'dish' })));
+        const sts = (n && n.settlements) || [], ruins = sts.filter((x) => x.kind === 'ruin').length;  // (PW-1604: ruins are named for the states' capitals; counted here, not listed)
+        const places = ((n && n.places) || []).concat(sts.filter((x) => x.kind !== 'ruin')).concat(((n && n.dishes) || []).map((x) => ({ ...x, kind: 'dish' })));
         return `<tr><td>${esc(demeName(S, d))}</td><td>${n && n.name ? `${rom(n.name)} <span class="ipa">${esc(n.name.ipa || '')}</span>${say(n.name.ipa, p)}${n.name.gloss ? ` <span class="muted">‘${esc(n.name.gloss)}’</span>` : ''}` : '<span class="muted">–</span>'}</td>
           <td>${places.length ? places.map((x) => `<div>${esc(x.kind || '')}: ${rom(x)} <span class="ipa">${esc(x.ipa || '')}</span>${say(x.ipa, p)} <span class="muted">${x.gloss ? '‘' + esc(x.gloss) + '’ ' : ''}${x.lect ? 'from ' + esc(x.lect) : ''}${x.kyr != null ? ', ' + esc(ago(x.kyr)) : ''}${x.substrate_of ? ', kept from ' + esc(x.substrate_of) : ''}${x.tautology ? ', a tautology' : ''}${x.tier ? `, a ${esc(x.tier)} of ${esc(x.pop)}` : ''}</span></div>`).join('')
+            + (ruins ? `<div class="muted">and ${ruins} named ruin${ruins === 1 ? '' : 's'}</div>` : '')
             : `<span class="muted">${esc(ls.part || '')}${ls.river != null ? ` · river ${esc(ls.river)} (${Math.round(ls.river_flow || 0).toLocaleString()} m³/s)` : ''}${ls.lake != null ? ` · lake ${esc(ls.lake)}` : ''}${ls.mountain_m ? ` · hills to ${Math.round(ls.mountain_m)} m` : ''}${ls.coast_share ? ` · ${Math.round(ls.coast_share * 100)}% coast` : ''}</span>`}</td></tr>`;
       };
       // personal names (names.personal, per living lect: tradition, given names old and new, bynames)

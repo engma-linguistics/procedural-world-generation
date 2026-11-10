@@ -42,4 +42,5 @@ If never done: on the December L8 refine, towns and cities read half the country
 and coastal boats reach half as far as on the same planet at L7, so the settled map changes with the grid, not the world.
 
 ## Updates
+- 2026-11-10: Evidence from the first split run is PW-1630 (coast 7.0% -> 1.9%, cities to a third, islands lose towns on L8); take both together.
 - 2026-11-10: Created from inbox draft draft-settled-window-grid-rings.md (found by lane266-pw1584).

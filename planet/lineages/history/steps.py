@@ -45,9 +45,9 @@ class StepsMixin:
                            key=lambda x: -x[0]) if len(keep) else []
             for ago_k, k in sched:
                 def get(k=k, run=run, arr=arr):
-                    f = {n: T.frame(run, arr, n, k).astype(float) for n in ("elevation", "ice", "temperature",
-                                                                               "precipitation", "climate")}
-                    f["tree_cover"] = T.frame(run, arr, "tree_cover", k).astype(float) if "tree_cover" in arr else np.zeros(len(f["ice"]))
+                    f = {n: ps.fine(T.frame(run, arr, n, k).astype(float), n == "climate") for n in ("elevation", "ice", "temperature",
+                                                                                                    "precipitation", "climate")}
+                    f["tree_cover"] = ps.fine(T.frame(run, arr, "tree_cover", k).astype(float)) if "tree_cover" in arr else np.zeros(len(f["ice"]))
                     f["land"] = is_land(f["elevation"], f["ice"])
                     f["elevation"] = np.where(f["ice"] > 0, np.maximum(f["elevation"], 0) + f["ice"], f["elevation"])
                     return f

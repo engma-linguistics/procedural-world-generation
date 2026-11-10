@@ -333,7 +333,8 @@ def cmd_lineages(args):
     if args.portals:
         tree.portals = args.portals
     out = LR.run(args.ref, tree, args.tries, args.now, args.recent_kyr, args.name,
-                 progress=lambda f, msg: print(f"  {100 * f:3.0f}% {msg}", flush=True), climate_every=args.climate_every)
+                 progress=lambda f, msg: print(f"  {100 * f:3.0f}% {msg}", flush=True), climate_every=args.climate_every,
+                 split=not args.no_split)
     print((out / "run.txt").read_text()[:6000])
     print(f"{S.rel(out)}  view: http://127.0.0.1:8765/viewer/?run={out.name}&layer=peoples")
 
@@ -816,6 +817,8 @@ def main():
     lg.add_argument("--climate-every", type=float, default=2.0, help="the recent pass takes a full climate every this many kyr "
                     "(PW-599; 0: the keyframe's rain scaled with the warming, as before)")
     lg.add_argument("--name", "-n")
+    lg.add_argument("--no-split", action="store_true", help="on a refined world (planet refine), the whole history on its grid "
+                    "(default: on the world it was refined from up to the first farming, then on its own grid; PW-1265)")
     lg.set_defaults(func=cmd_lineages)
 
     tt = sub.add_parser("techtree", help="the technology tree of peoples runs (PW-675 v0): which people knew what, and when; "

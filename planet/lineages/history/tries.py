@@ -12,7 +12,7 @@ from .summary import present_summary
 
 
 def simulate(tree: SP.Tree, ps: R.Pass, tries: int = 4, progress=lambda f, msg: None,
-             goods: dict | None = None) -> tuple[History, dict, dict]:
+             goods: dict | None = None, fine: tuple | None = None) -> tuple[History, dict, dict]:
     """Best of `tries` seeds by the wishes' score, less LOST_PENALTY per living line lost (e.g. a contact
     hybrid whose parents no longer meet); one try without wishes."""
     best = None
@@ -20,7 +20,7 @@ def simulate(tree: SP.Tree, ps: R.Pass, tries: int = 4, progress=lambda f, msg: 
     scores, tstats = [], []
     for k in range(n):
         progress(k / n, f"try {k + 1}/{n}: recent pass: full climates (kept on disk after the first run)")  # (History.__init__ makes them; PW-743)
-        h = History(tree, ps, tree.seed * 1000 + k, goods=goods)
+        h = History(tree, ps, tree.seed * 1000 + k, goods=goods, fine=fine)
         res = h.run(lambda f, msg, k=k: progress((k + f) / n, f"try {k + 1}/{n}: {msg}"))
         pres = present_summary(h, res["present"])
         sc = pres["wish_score"] if pres["wish_score"] is not None else 0.0

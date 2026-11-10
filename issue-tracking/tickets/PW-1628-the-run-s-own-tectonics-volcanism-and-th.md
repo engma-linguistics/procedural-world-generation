@@ -2,7 +2,7 @@
 id: PW-1628
 title: The run's own tectonics, volcanism and the lineages still count every cell as the mean cell's area
 type: task
-status: todo
+status: in-progress
 parent: null
 milestone: later
 subsystem: tectonics
@@ -34,4 +34,5 @@ every run's history: goldens and a fork screen (`tools/fork_screen.py`).
 - [ ] no area or volume total in planet/ multiplies a cell count by the mean cell's area
 
 ## Updates
+- 2026-11-10: Status todo -> in-progress. Lane 268 (857324b2, not merged): plate drag, mantle traction, volcanism volumes, diag area shares, highlights reef/mangrove km2, zoom full_px and deposit rates use true cell areas. Mean area kept on purpose in mantle slab smoothing (equal-weight basis), discharge (flow already in mean-cell units), and per-cell scales. Left: planet/lineages/ sites (brief.py:300-301, settlements.py:553, ladder.py:384, animals.py:154,350-352, trade.py:212, fuels.py:170, landuse.py:171, history/model.py:66) and diag climate means (judge/hard_bar read them; separate commit). Fork screen L6 seeds 1/2/77/3199 vs main 673436c0 with fp-null: no consistent effect (mild lower inland median on 77 and 3199). Scorecard still to run.
 - 2026-11-10: Created from inbox draft draft-tectonics-volcanism-true-cell-areas.md (found by lane263).
