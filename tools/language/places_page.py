@@ -1,5 +1,3 @@
-"""Place names by family (lane 15): each family's biggest settlements with local name, English Common, meaning and history.
-Usage: uv run python tools/language/places_page.py runs/<run>/languages.json <out.html> [n_families]"""
 """Side-by-side place names of 3-4 families (lane 15, PW-1658/1654): local name, English Common, meaning, history.
 usage: uv run python places_page.py <languages.json> <out.html> [n_families]"""
 import html
