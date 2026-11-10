@@ -2,10 +2,11 @@
 
     uv run python -I tools/language/sisters_page.py AFTER/languages.json [--before BEFORE/languages.json] --out page.html
 
-Picks, in the AFTER pass, two or three living human lects of one family (each a different language) whose common
-ancestor split closest to 2-4 kyr ago (the actual split age is shown), the most different by find.py's sound distance
-among those; a pair from two branches of one family that took different signature changes (the centum/satem kind);
-and a pair from different families for contrast. Shows 36 core words in aligned columns with the shared ancestor's form at the split (its snapshot), each
+Picks, in the AFTER pass, a fan of three to six living human lects of one family (each a different language, one per
+daughter branch of their common ancestor: Romance- or Bantu-like) that split 2-4 kyr ago, the window widened step by step
+until a fan of three or more turns up, the biggest such fan taken (the actual split ages are shown); a pair from two branches of one family that took different signature changes (the centum/satem kind);
+and a pair from different families for contrast. Shows 36 core words in aligned columns with the shared ancestor's form at the split (its snapshot, else traced
+through a sister's etymology for words outside the 100-word snapshot list), their place names (PW-1658), each
 lect's signature changes (lect.Lect.signatures) and strongest family tendencies, and two sample sentences. With
 --before, the same demes' lects in the BEFORE pass are shown under them (same world, older code).
 """
@@ -25,10 +26,13 @@ import real_inventory as RI  # noqa: E402
 from planet.language import output as OU  # noqa: E402
 
 E = html.escape
-WORDS = ["I", "THOU", "WE", "WHO", "WHAT", "NOT", "ONE", "TWO", "THREE", "MAN", "WOMAN", "MOTHER", "FATHER", "CHILD",
+WORDS = ["I", "THOU", "WE", "WHO", "WHAT", "NOT", "ONE", "TWO", "THREE", "MAN", "WOMAN", "MOTHER", "FATHER",
+         "CHILD (YOUNG HUMAN)",
          "DOG", "FISH", "BIRD", "TREE", "WATER", "FIRE", "STONE", "SUN", "MOON", "STAR", "NIGHT", "HAND", "EYE", "HEAD",
          "NAME", "EAT", "DRINK", "SEE", "SLEEP", "BIG", "GOOD", "NEW"]
 SPLIT = (2.0, 4.0)
+WIDEN = (1.0, 2.0)   # kyr the window's (lower, upper) edges move out per step until a fan of FAN[0]+ turns up
+FAN = (3, 6)         # sisters shown: at least, at most
 
 
 def _chain(by_id, lid):
@@ -65,6 +69,38 @@ def _core_at(doc, lect, kyr):
     return best or {}
 
 
+def _traced(doc, by_id, lects, anc, t):
+    """{concept: ancestor form} traced through the sisters' etymologies, for words outside the snapshot list: the form of
+    the last step at or before the split (kyr >= t) taken in the ancestor or a lect above it. The first sister whose
+    word goes back that far gives it."""
+    if not anc:
+        return {}
+    line = set(_chain(by_id, anc))
+    out = {}
+    for c in WORDS:
+        for l in lects:
+            w = (l.get("lexicon") or {}).get(c) or {}
+            node = w.get("etym")
+            if node is None or "etym_nodes" not in doc:
+                continue
+            try:
+                steps = OU.etym_steps(doc, node)
+            except Exception:  # noqa: BLE001
+                continue
+            old = [st for st in steps if st[0] is not None and st[0] >= t - 1e-9 and st[1] in line]
+            if old:
+                out[c] = old[-1][3]
+                break
+    return out
+
+
+def _places(doc, l, n=2):
+    """A lect's first `n` settlement names (names.demes[deme].settlements) as (roman, gloss, English Common name)."""
+    d = ((doc.get("names") or {}).get("demes") or {}).get(str(l.get("deme"))) or {}
+    sts = [x for x in d.get("settlements") or [] if x.get("kind") != "ruin" and x.get("lect") == l["id"]]
+    return [(x.get("roman") or "", x.get("gloss") or "", x.get("english") or "") for x in sts[:n]]
+
+
 def _sentences(l):
     try:
         from planet.language import sentences as SN
@@ -78,36 +114,62 @@ def _gap_to_window(t):
     return max(0.0, SPLIT[0] - t, t - SPLIT[1])
 
 
-def pick(doc, sizes=(3, 2)):
-    """The sisters to show (lane 14b): for each family, the sets of 2-3 living human lects (each a different language) whose
-    common ancestor split closest to SPLIT (every pair's split age counted; 0 inside the window), the most different by
-    sound among the closest; three sisters preferred over two when they come as close. Returns
-    (score, ids, (ancestor, split kyr), off) or None, plus the contrast pair, by_id and the features."""
+def _fans(by_id, ids):
+    """{ancestor: {daughter on the line: [living ids under it]}} for every lect above two or more of `ids`' branches."""
+    out: dict = {}
+    for x in ids:
+        ch = _chain(by_id, x)
+        for i in range(len(ch) - 1):
+            out.setdefault(ch[i], {}).setdefault(ch[i + 1], []).append(x)
+    return {a: br for a, br in out.items() if len(br) >= 2}
+
+
+def pick(doc, sizes=FAN):
+    """The sisters to show (lane 15, PW-1653): the biggest fan of one family: the daughters of one ancestor, one living
+    human lect per branch (each a different language: the most populous), whose pairwise splits all fall in the window
+    (SPLIT); the window widens by WIDEN until a fan of sizes[0] or more turns up. A fan of more than sizes[1] keeps the
+    most different by sound (find.py). Returns (key, ids, (ancestor, oldest split kyr), off) or None, plus the contrast
+    pair, by_id and the features."""
     by_id = {l["id"]: l for l in doc["lects"]}
     liv = [l for l in F.living(doc) if l.get("people") == "human"]
     feats = {f["id"]: f for f in (F.lect_features(l, doc.get("names") or {}) for l in liv)}
     fams = {}
     for l in liv:
         fams.setdefault(l.get("family_true"), []).append(l["id"])
+    cands = []
+    for fam, ids in fams.items():
+        for anc, br in _fans(by_id, sorted(ids)).items():
+            reps, langs = [], set()
+            for _d, mem in sorted(br.items()):
+                mem = sorted(mem, key=lambda x: (-(by_id[x].get("population") or 0), x))
+                r = next((x for x in mem if by_id[x].get("language") not in langs), None)
+                if r is not None:
+                    reps.append(r)
+                    langs.add(by_id[r].get("language"))
+            if len(reps) < 2:
+                continue
+            if len(reps) > sizes[1]:   # (the most different by sound: greedy farthest-first from the first)
+                keep = [reps[0]]
+                while len(keep) < sizes[1]:
+                    keep.append(max((x for x in reps if x not in keep),
+                                    key=lambda x: (min(RI.lect_gap(feats[x], feats[k]) for k in keep), x)))
+                reps = sorted(keep)
+            ages = [_split(by_id, x, y)[1] for x, y in itertools.combinations(reps, 2)]
+            if any(t is None for t in ages):
+                continue
+            cands.append((min(ages), max(ages), len(reps), anc, tuple(reps)))
     best = None
-    for n in sizes:
-        for fam, ids in fams.items():
-            ids = sorted(ids)[:60]
-            for tri in itertools.combinations(ids, n):
-                if len({by_id[x].get("language") for x in tri}) < n:
-                    continue
-                sp = [_split(by_id, a, b) for a, b in itertools.combinations(tri, 2)]
-                if any(t is None for _, t in sp):
-                    continue
-                off = round(max(_gap_to_window(t) for _, t in sp), 3)
-                if best is not None and off > best[0][0]:
-                    continue
-                score = min(RI.lect_gap(feats[a], feats[b]) for a, b in itertools.combinations(tri, 2))
-                key = (off, -score)
-                if best is None or key < best[0]:
-                    best = (key, tri, max(sp, key=lambda x: x[1]), off)
-        if best is not None and best[3] <= 0:
-            break   # (three sisters inside the window: done; else two whose split is nearest it)
+    lo, hi = SPLIT
+    for step in range(12):
+        ok = [c for c in cands if c[0] >= lo - 1e-9 and c[1] <= hi + 1e-9]
+        big = [c for c in ok if c[2] >= sizes[0]]
+        if big or (step == 11 and ok):
+            c = max(big or ok, key=lambda c: (c[2], -c[1], c[3]))
+            off = round(max(0.0, SPLIT[0] - c[0], c[1] - SPLIT[1]), 3)
+            score = min(RI.lect_gap(feats[a], feats[b]) for a, b in itertools.combinations(c[4], 2))
+            best = ((off, -score), c[4], (c[3], c[1]), off)
+            break
+        lo, hi = max(0.0, lo - WIDEN[0]), hi + WIDEN[1]
     fam_big = sorted(fams, key=lambda f: -len(fams[f]))[:2]
     contrast = [fams[f][0] for f in fam_big] if len(fam_big) == 2 else []
     return best, contrast, by_id, feats
@@ -162,15 +224,21 @@ def block(doc, by_id, ids, anc, t, title, feats):
     head = "".join(f"<th>{E(l.get('deme_name') or l['id'])}<br><span class=m>{E(l['id'])}, {E(str(l.get('language')))}"
                    f"</span></th>" for l in lects)
     anc_core = _core_at(doc, by_id[anc], t) if anc else {}
+    traced = _traced(doc, by_id, lects, anc, t)
     rows = []
     for c in WORDS:
         cells = []
         for l in lects:
             w = (l.get("lexicon") or {}).get(c) or {}
             cells.append(f"<td>{E(w.get('roman') or '')}<br><span class=ipa>/{E(w.get('ipa') or '')}/</span></td>")
-        a = anc_core.get(c) or "?"
-        rows.append(f"<tr><th>{E(c.lower())}</th>" + (f"<td class=anc><span class=ipa>*{E(a)}</span></td>" if anc else "")
-                    + "".join(cells) + "</tr>")
+        a = anc_core.get(c) or traced.get(c) or "?"
+        rows.append(f"<tr><th>{E(c.split(' (')[0].lower())}</th>"
+                    + (f"<td class=anc><span class=ipa>*{E(a)}</span></td>" if anc else "") + "".join(cells) + "</tr>")
+    pl = [_places(doc, l) for l in lects]
+    if any(pl):
+        rows.append("<tr><th>place names</th>" + ("<td class=anc></td>" if anc else "") + "".join(
+            "<td>" + "<br>".join(f"<b>{E(r)}</b> <span class=m>&lsquo;{E(g)}&rsquo;" + (f", Common: {E(en)}" if en else "")
+                                 + "</span>" for r, g, en in x) + "</td>" for x in pl) + "</tr>")
     notes = []
     for l in lects:
         sig = l.get("signatures") or []
@@ -206,9 +274,11 @@ def main(argv=None) -> int:
     else:
         (off, _neg), tri, (anc, t), _off = best
         ages = sorted({_split(by_id, x, y)[1] for x, y in itertools.combinations(tri, 2)}, reverse=True)
-        where = ("split " + " and ".join(f"{a:g}" for a in ages) + " kyr ago" + ("" if off <= 0 else
-                 f" (the split nearest the {SPLIT[0]:g}-{SPLIT[1]:g} kyr window: none in this pass falls inside it)"))
-        parts.append(block(doc, by_id, tri, anc, t, f"Sisters, after (lane 14): {len(tri)} languages of one family, "
+        span = " and ".join(f"{a:g}" for a in ages) if len(ages) <= 2 else f"between {ages[0]:g} and {ages[-1]:g}"
+        where = (f"daughters of {anc}, split {span} kyr ago" + ("" if off <= 0 else
+                 f" (the biggest fan nearest the {SPLIT[0]:g}-{SPLIT[1]:g} kyr window: it was widened to find "
+                 f"{FAN[0]} or more)"))
+        parts.append(block(doc, by_id, tri, anc, t, f"Sisters, after (lane 15): {len(tri)} languages of one family, "
                                                    f"{where}", feats))
         if a.before:
             bd = OU.load(a.before)
@@ -220,7 +290,7 @@ def main(argv=None) -> int:
             if len(old) >= 2:
                 anc_b, t_b = _split(bby, old[0], old[1])
                 parts.append(block(bd, bby, old, anc_b, t_b or t, "The same places, before (main): the lects spoken "
-                                   "there on the code before lane 14" + (f", split {t_b:g} kyr ago" if t_b else
+                                   "there on the code before lane 15" + (f", split {t_b:g} kyr ago" if t_b else
                                                                          " (not sisters there)"), {}))
     sp = signature_pair(doc, by_id)
     if sp is not None:
@@ -243,7 +313,8 @@ def main(argv=None) -> int:
     doc_html = (f"<!doctype html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width,"
                 f"initial-scale=1'><title>Sister languages</title><style>{css}</style></head><body><main>"
                 f"<h1>Sister languages side by side</h1><p>Run {E(str(doc.get('run')))}. Words in the book spelling, IPA "
-                f"under; the ancestor's form (*) is its core word at the split.</p>{''.join(parts)}</main></body></html>")
+                f"under; the ancestor's form (*) is its core word at the split (its snapshot, else traced back through a sister's "
+                f"etymology; ? where no sister's word goes back that far).</p>{''.join(parts)}</main></body></html>")
     Path(a.out).write_text(doc_html, encoding="utf-8")
     print(f"wrote {a.out}")
     return 0

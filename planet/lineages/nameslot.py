@@ -6,7 +6,8 @@ Read-out only, like readout.py: nothing in the history or the stored docs is cha
    - a culture: the endonym its largest living deme says (`names.demes[d].name`; every living lect of a people says its own form of
      the people's name, so sister cultures that speak apart are told apart). Two living cultures that would share a form take their
      deme's river or lake name ("Gnili of Gyerrihigyu"); a culture with no living deme keeps its gloss.
-   - a place (a settlement of the ledger): its own name (`names.demes[d].settlements`, by site).
+   - a place (a settlement of the ledger): its own name (`names.demes[d].settlements`, by site), with `english`, the Common's
+     English rendering of its meaning (PW-1654, on by default in the viewer: PW-1655) and `local`, what the locals call it.
    - a state: its capital's name, composed as polities._name composes it ("Iligya (humans)"; a chiefdom "Chiefdom in Iligya (humans)";
      a dragon realm keeps "Realm of the ..."), numbered only where two states share a capital name.
    - a faith: composed as gods.faith_docs composes it ("the sky faith of <culture>"), with the culture's slot name; a faith you wrote
@@ -89,6 +90,17 @@ def place_names(lang: dict | None) -> dict[int, str]:
         for s in d.get("settlements") or []:
             if s.get("site") is not None and s.get("roman"):
                 out[int(s["site"])] = s["roman"]
+    return out
+
+
+def place_english(lang: dict | None) -> dict[int, str]:
+    """site id -> the Common's English name for it (PW-1654: `english`, a calque of the name's meaning), where the languages
+    give one."""
+    out = {}
+    for d in (_lang_names(lang).get("demes") or {}).values():
+        for s in d.get("settlements") or []:
+            if s.get("site") is not None and s.get("english"):
+                out[int(s["site"])] = s["english"]
     return out
 
 
@@ -260,9 +272,10 @@ def slot(cdoc: dict | None, gods_doc: dict | None = None, pdoc: dict | None = No
     out = {"cultures": {str(c["id"]): pick(c) for c in (cdoc or {}).get("cultures") or []},
            "faiths": {str(f["id"]): pick(f) for f in ((gods_doc or {}).get("faiths") or {}).get("list") or []},
            "states": {str(r["id"]): pick(r) for r in (pdoc or {}).get("polities") or []}, "places": {}}
-    pn = place_names(lang)
+    pn, en = place_names(lang), place_english(lang)
     for s in settlements or []:
         if s.get("tier_peak") in ("town", "city") or s["id"] in pn:
             n = pn.get(s["id"])
-            out["places"][str(s["id"])] = {"name": n or s.get("place"), "gloss_name": s.get("place"), "name_from": "language" if n else "gloss"}
+            out["places"][str(s["id"])] = {"name": n or s.get("place"), "gloss_name": s.get("place"),
+                                           "name_from": "language" if n else "gloss", "local": n, "english": en.get(s["id"])}
     return out

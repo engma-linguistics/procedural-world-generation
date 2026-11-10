@@ -21,12 +21,13 @@ replaced keeps the old form as the lect hears it (a fossil: the name is now opaq
 name is clipped toward two syllables with a chance growing with its age (Wilhelm > Bill). This approximates sound change on
 names (the names are not run through the lect's rule history; architecture section 12).
 
-**Settlements.** A living deme's largest standing sites (settlements.json, sites in the deme's cells now): a generic from
-the lect's own words chosen by the site (FORD or BRIDGE on a river, COAST by the sea, HILL in the mountains, else TOWN,
-VILLAGE, HOUSE, FENCE 'enclosure', FIELD) and a specific (a founder's personal name in the genitive, Kraków-style; the
-river's name; a plain adjective). An old generic erodes to one syllable, a suffix (-ton, -by). A site founded by another
-people keeps their name as heard (substrate, P2); sometimes the newcomers add their own generic to it, a tautology
-(River Avon, Pendle Hill), more often when its meaning is lost.
+**Settlements.** A living deme's largest standing sites (settlements.json, sites in the deme's cells now), named after the
+founders' family naming habit (placenames.py, PW-1658: generic and specific from the lect's own words, put together as
+the habit says: a worn generic ending, a generic prefix, a construct with a frozen article, a founder's possessive, a
+locative class prefix). Each also carries its meaning, its Common English rendering (`english`, PW-1654) and the chain of
+names it went through (`history`). A site founded by another people keeps their name as heard (substrate, P2), heard anew
+by each later holder of another speech; sometimes the newcomers add their own generic to it, a tautology (River Avon,
+Pendle Hill), more often when its meaning is lost.
 
 Deterministic: every draw is names._rng(seed, ...). Taste calls are module constants (for the owner)."""
 from __future__ import annotations
@@ -72,10 +73,6 @@ NAME_LENGTH = {"short": (1, 2, 2), "mid": (2, 4, 2), "long": (4, 9, 3)}
 # settlements
 SITES_PER_DEME = 3
 SUBSTRATE_TAUTOLOGY = 0.25  # chance newcomers add their own generic to a kept old name they do not understand
-SUFFIX_KYR = 3.0  # a generic older than this erodes to one syllable (a suffix)
-GENERIC_BY_TIER = {"city": ("TOWN", "WALL (OF HOUSE)"), "town": ("TOWN", "MARKET", "FENCE"), "village": ("VILLAGE", "HOUSE",
-                   "FIELD", "FENCE")}
-SPECIFIC_ADJ = ("NEW", "OLD", "BIG", "SMALL", "WHITE", "RED", "BLACK", "HIGH", "LOW", "GOOD", "LONG")
 
 
 # ------------------------------------------------------------------------------------------------------------- helpers
@@ -438,7 +435,8 @@ class Personal:
         Each ruin is named as it was said by the last people to hold it, in the lect of their deme on its cell when it was
         abandoned (the founders' name, kept as heard when the holders were newcomers: `settlement`), its generic chosen by
         its peak tier. Returns {deme id of that lect: [entry]}; an entry is the settlement record, kind "ruin", with
-        `abandoned_kyr` and without the long `plain` line (thousands of ruins: the main file stays small)."""
+        `abandoned_kyr` and without the long `plain` line, meaning and history (thousands of ruins: the main file stays
+        small); it keeps `gloss` and `english_how`, so its English name still traces to what it means."""
         R = self.P.R
         by_deme: dict = {}
         for l in self.P.lects.values():
@@ -467,19 +465,29 @@ class Personal:
                 lect = self._founder_lect(s, None)
             if lect is None:
                 continue
-            x = self.settlement(lect, dict(s, tier_now=s.get("tier_peak") or "village"), river_ids, None)
+            x = self.settlement(lect, dict(s, tier_now=s.get("tier_peak") or "village", _ruin=True), river_ids, None)
             if x is None:
                 continue
-            x = {kk: v for kk, v in x.items() if kk not in ("plain", "pop", "pattern", "tautology")}
+            x = {kk: v for kk, v in x.items() if kk not in ("plain", "pop", "pattern", "tautology", "meaning", "history",
+                                                            "frame")}
             x.update(kind="ruin", abandoned_kyr=round(k, 3))
             out.setdefault(lect.deme, []).append(x)
         return out
 
     def _founder_lect(self, site, lect=None):
-        """The lect that named a site: the lect's own ancestor (or itself) alive at the founding when the founders were of its
+        """The lect that named a site. Without `lect` (the one founding, `founding`): the founders' deme's lect on the cell
+        at the founding, else their most numerous lect then. With `lect`: the lect's own ancestor (or itself) alive at the founding when the founders were of its
         people, else the deme's lect then, else the founders' most numerous lect then."""
         p, k = site.get("founded_by"), float(site.get("founded_kyr") or 0.0)
         alive = lambda l: l.born_kyr + 1e-9 >= k and (l.died_kyr is None or l.died_kyr <= k + 1e-9)  # noqa: E731
+        if lect is None and site.get("cell") is not None and p:   # the founders' own deme on the cell at the founding
+            R = self.P.R
+            try:
+                x = self.P.lect_at(R.deme_at_cell(p, int(site["cell"]), R.frame_of(k)), k)
+            except Exception:  # noqa: BLE001 - a people the run cannot place there
+                x = None
+            if x is not None and alive(x) and x.people == p and getattr(x, "lexicon", None) is not None:
+                return x
         if lect is not None:
             for x in self.chain(lect)[::-1]:
                 if alive(x) and x.people == p and getattr(x, "lexicon", None) is not None:
@@ -493,80 +501,131 @@ class Personal:
             return None
         return max(cands, key=lambda l: (float(getattr(l, "population", 0) or 0), l.id))
 
+    # ---------------------------------------------------------------- naming habits (PW-1658)
+    @property
+    def H(self):
+        if getattr(self, "_habits", None) is None:
+            from .placenames import Habits
+            self._habits = Habits(self.P, self)
+        return self._habits
+
+    def _ctx(self, lect, site, river_ids) -> dict:
+        """The site's setting as the habits read it: on a river (its id), in hills (the deme's highest cell >= half
+        names.PEAK_M), on the coast (the deme's coast share >= names.COAST_SHARE)."""
+        from .names import COAST_SHARE, PEAK_M
+        rid = int(river_ids[int(site["cell"])]) if river_ids is not None else 0
+        ls = self.P.deme_ls(lect.deme) if lect.deme is not None else {}
+        return {"river": rid if rid > 0 else None, "hill": float(ls.get("mountain_m") or 0) >= PEAK_M / 2,
+                "coast": float(ls.get("coast_share") or 0) >= COAST_SHARE}
+
+    def _river(self, namer, rid, deme):
+        k = ("river", namer.id, rid)
+        if k not in self._trad:
+            try:
+                r = self.P.water_name(namer, "river", rid, deme)
+            except Exception:  # noqa: BLE001 - a river the landscape does not list
+                r = None
+            if r is not None:
+                from .placenames import _en_word
+                mod = next((c for c in (r.get("meaning") or {}).get("parts") or [] if c not in ("RIVER", "WATER")), None)
+                stem = _en_word(mod) if mod else \
+                    (r.get("english") or "").split(" ")[0]
+                r = {"form": tuple(r["form"]), "roman": r["roman"], "stem": stem}
+            self._trad[k] = r
+        return self._trad[k]
+
+    def _people_root(self, lect):
+        e = self.P.endonyms.get(lect.people) or {}
+        n = (e.get("by_lect") or {}).get(lect.id) or e.get("main")
+        if not n or n.get("root") is None:
+            return None
+        return tuple(n["root"]), n["roman"]
+
     def _generic(self, lect, site, river_ids, rng) -> str | None:
-        on_river = river_ids is not None and int(river_ids[int(site["cell"])]) > 0 if river_ids is not None else False
-        opts = []
-        if on_river:
-            opts += ["FORD", "BRIDGE"]
-        opts += list(GENERIC_BY_TIER.get(site.get("tier_now"), ("VILLAGE",)))
-        opts = [c for c in opts if _w(lect, c) is not None]
-        return opts[int(rng.integers(len(opts)))] if opts else None
+        return self.H.generic(lect, site, self._ctx(lect, site, river_ids), rng)
+
+    def _holders_chain(self, site, namer, lect, form) -> tuple[tuple, list]:
+        """The name handed down the site's holders (settlements.json `holders`, oldest first): each people that took the
+        place and does not speak a daughter of the last namer's speech hears it anew. Returns (form as the last of them
+        says it, [[kyr, lect, people, roman, how]] after the founders')."""
+        from .names import _hear, _roman_form
+        R = self.P.R
+        hist, cur = [], namer
+        for k, who in (site.get("holders") or [])[1:]:
+            k = float(k)
+            try:
+                d = R.deme_at_cell(who, int(site["cell"]), R.frame_of(k))
+            except Exception:  # noqa: BLE001
+                d = None
+            x = self.P.lect_at(d, k) if d is not None else None
+            if x is None or getattr(x, "lexicon", None) is None or self.P.inherits(x, cur) or x is lect:
+                continue
+            form = _hear(form, x)
+            hist.append([round(k, 3), x.id, who, RO.title_name(_roman_form(x, form)), f"heard by the {who} who took it"])
+            cur = x
+            if len(hist) >= 5:
+                break
+        return form, hist, cur
+
+    def founding(self, site, river_ids, fallback=None):
+        """One founding per site (lane 15b): the founders' lect at the founding coins the name once, from its own deme's
+        setting and its own habit, whichever deme later lists the site. Returns (namer, coined name) or None; cached."""
+        k = ("found", int(site["id"]))
+        if k not in self._trad:
+            namer = self._founder_lect(site, None) or fallback
+            nm = None
+            if namer is not None:
+                ctx = self._ctx(namer, site, river_ids)
+                river = self._river(namer, ctx["river"], namer.deme) if ctx["river"] else None
+                nm = self.H.coin(namer, site, ctx, self.rng("site", site["id"]), river, self._people_root(namer))
+            self._trad[k] = (namer, nm) if nm is not None else None
+        return self._trad[k]
 
     def settlement(self, lect, site, river_ids, given) -> dict | None:
-        from .names import _hear, _roman_form, _repair
-        rng = self.rng("site", site["id"])
+        from .names import _hear, _join, _repair, _roman_form
+        from .placenames import english
         age = float(site.get("founded_kyr") or 0.0)
-        founder = self._founder_lect(site, lect)
-        sub = founder is not None and not self.P.inherits(lect, founder)
-        namer = founder if founder is not None else lect
-        gen_c = self._generic(namer, site, river_ids, rng)
-        if gen_c is None:
+        f = self.founding(site, river_ids, lect)
+        if f is None:
             return None
-        generic = tuple(_w(namer, gen_c).form)
-        eroded = age >= SUFFIX_KYR
-        if eroded:
-            generic = LX.clip(generic, 1)
-        # the specific: a founder's name in the genitive, an adjective, or the people's own root
-        r = rng.random()
-        spec_gloss, spec = None, None
-        if r < 0.4 and namer is not None:
-            pn = self.for_lect_cached(namer)
-            gv = [x for x in (pn or {}).get("given", []) if x.get("ipa")]
-            if gv:
-                x = gv[int(rng.integers(len(gv)))]
-                from .percepts import from_ipa
-                spec = tuple(from_ipa(x["ipa"].replace(" ", "")))
-                g = getattr(namer, "grammar", None)
-                gen = g.gram("GEN", bound=True) if g is not None else None
-                if gen is not None and gen.form:
-                    spec = tuple(GR._attach(spec, tuple(gen.form), gen.side))
-                spec_gloss = f"{x['roman']}'s"
-        if spec is None:
-            ok = [c for c in SPECIFIC_ADJ if _w(namer, c) is not None]
-            if ok:
-                c = ok[int(rng.integers(len(ok)))]
-                spec, spec_gloss = tuple(_w(namer, c).form), _gloss(c)
-        if spec is None:
-            form = generic
-            gloss = f"the {_gloss(gen_c)}"
-        else:
-            from .names import _join
-            form = _join(namer, generic, spec)
-            gloss = f"{spec_gloss} {_gloss(gen_c)}" if spec_gloss.endswith("'s") else f"the {spec_gloss} {_gloss(gen_c)}"
-        etym = f"{_gloss(gen_c)}" + (" (worn to a suffix)" if eroded else "")
+        namer, nm = f
+        rng = self.rng("site", site["id"], lect.id)   # this deme's hearing (tautology), apart from the founding's draws
+        sub = not self.P.inherits(lect, namer)
+        form, gloss, gen_c = nm["form"], nm["gloss"], nm["meaning"]["generic"]
+        first = RO.title_name(_roman_form(namer, form))
+        history = [[round(age, 3), namer.id, site.get("founded_by"), first, f"named by its founders ({nm['how']}-like habit, "
+                                                                            f"{nm['frame']})"]]
+        etym = (f"{_gloss(gen_c)}" + (" (worn to an ending)" if nm["eroded"] else "")) if gen_c else nm["frame"]
         pattern = None
         taut = None
         if sub:
-            heard = _hear(form, lect)
+            form, hops, last = self._holders_chain(site, namer, lect, form) if not site.get("_ruin") else (form, [], namer)
+            history += hops
+            heard = _hear(form, lect) if not self.P.inherits(lect, last) else form
             pattern = "P2"
-            p_t = SUBSTRATE_TAUTOLOGY if _w(lect, gen_c) is None or _root_id(_w(lect, gen_c)) != _root_id(_w(namer, gen_c)) else 0.0
+            p_t = SUBSTRATE_TAUTOLOGY if gen_c is None or _w(lect, gen_c) is None or \
+                _root_id(_w(lect, gen_c)) != _root_id(_w(namer, gen_c)) else 0.0
             own = self._generic(lect, site, river_ids, rng)
             if own is not None and rng.random() < p_t:
-                from .names import _join
                 heard = _join(lect, tuple(_w(lect, own).form), heard)
                 taut = f"{_gloss(own)} + the old name: '{_gloss(own)} {gloss.removeprefix('the ')}' (a tautology, like River Avon)"
             form = heard
         form = _repair(lect, form)
         roman = RO.title_name(_roman_form(lect, form))
+        if sub:
+            history.append([0.0, lect.id, self.P._people(lect), roman, "said now" + (", with its own generic added" if taut
+                                                                                     else ", kept as heard")])
         plain = f"{roman}, '{gloss}'" + (f"; {taut}" if taut else "")
         if sub:
             plain += f"; named by the {site.get('founded_by')} ({namer.id}) who founded it {_ago(age)}, kept as heard"
         else:
             plain += f"; from {etym}, founded {_ago(age)}"
+        en, en_how = english(nm["meaning"], site["id"])
         return {"kind": "settlement", "site": int(site["id"]), "tier": site.get("tier_now"), "pop": site.get("pop_now"),
                 "ipa": word_ipa(form), "roman": roman, "gloss": gloss, "lect": lect.id, "named_by": namer.id,
                 "kyr": round(age, 3), "substrate_of": namer.id if sub else None, "pattern": pattern,
-                "tautology": bool(taut), "plain": plain}
+                "tautology": bool(taut), "plain": plain, "habit": nm["meaning"]["template"], "frame": nm["frame"],
+                "meaning": nm["meaning"], "english": en, "english_how": en_how, "history": history}
 
     def for_lect_cached(self, lect):
         k = ("pn", lect.id)

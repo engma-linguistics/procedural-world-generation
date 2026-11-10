@@ -2389,6 +2389,7 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
                         events.append((w.concept, f"elaborate:{niche}"))
     if inv is not None and n_generations > 0:
         events += core_repair(rng, lex, inv, kyr, lect_id, contact_words, contact_weights, profile)
+        events += cross_repair(rng, lex, inv, kyr, lect_id, n_generations, contact_words, contact_weights, profile)
     if n_generations > 0:
         refresh_roots(lex, kyr)   # (derivations and compounds turn opaque, bases are replaced: the families a speaker feels)
     return events
@@ -2450,8 +2451,6 @@ def core_repair(rng, lex: "Lexicon", inv, kyr: float, lect_id: str, contact_word
                 profile=None) -> list[tuple[str, str]]:
     """Renew one member of every merged core pair (`core_mergers`), so the paradigm keeps its cells apart. Returns
     [(concept, "repair:<how>")]."""
-    from . import lexsys as LS
-
     out = []
     for _ in range(8):   # (a renewal can only clash with a word outside the set, so this settles in a round or two)
         pairs = core_mergers(lex)
@@ -2459,60 +2458,151 @@ def core_repair(rng, lex: "Lexicon", inv, kyr: float, lect_id: str, contact_word
             break
         a, b = pairs[0]
         k0 = _marked(lex, a, b)
-
-        def made_now(x):   # (a word given a new form at this very date: a second step at one date would blur its root
-            return any(abs(st.kyr - float(kyr)) < 1e-9 and not st.process.startswith("sound_change")   # id (root_step);
-                       for st in lex.words[x].etym)                                                   # the next step then)
-        k = next((x for x in (k0, b if k0 == a else a) if not made_now(x)), None)
+        k = next((x for x in (k0, b if k0 == a else a) if not _made_now(lex, x, kyr)), None)
         if k is None:
             break
         mates = [x for x in _core_set_of(k) if x != k and x in lex.words]
-        taken = {lex.words[x].form for x in mates}
-        new, how = None, ""
-
-        def ok(w):
-            return w is not None and w.form not in taken and not _clashes(lex, k, w.form, any_domain=False)
-
-        rec = LS.numeral_recipe(lex, k)
-        if rec is not None and rec[2] != "same":
-            w = LS._num_word(rng, lex, k, rec, lex.systems["numeral"]["system"], inv, kyr, lect_id)
-            if ok(w):
-                new, how = w, "recipe"
-        if new is None:
-            for m, _w in repair_rows().get(k, ()):
-                if m not in lex.words or lex.words[m].form == lex.words[k].form or not _reinforce_ok(lex, k, m):
-                    continue   # (a reinforcer used once is not used again: no 'we-others-others')
-                hd, md = reinforce_parts(k, m)   # (WHO: 'what person', PW-1635)
-                w = compound(rng, lex, k, inv, kyr, lect_id, head=hd, modifier=md,
-                             process=f"compound:{hd}+{md}", note=f"{hd.lower()} + {md.lower()}: renewed, the old form had "
-                                                                 f"fallen together with {('/'.join(sorted({a, b} - {k}))).lower()}")
-                if ok(w):
-                    new, how = w, "reinforce"
-                    break
-        if new is None and contact_words:
-            have = sorted(d for d in contact_words if k in contact_words[d]
-                          and (contact_weights is None or contact_weights.get(d, 0.0) > 0))
-            if have:
-                wd = np.array([max((contact_weights or {}).get(d, CONTACT_DEFAULT), 1e-9) for d in have])
-                d = have[int(rng.choice(len(have), p=wd / wd.sum()))]
-                w = borrow(contact_words[d][k], d, lex, profile, inv, kyr, "contact (paradigm repair)", store=False)
-                if ok(w):
-                    new, how = w, "borrow"
-        if new is None:
-            w = _derive_tries(rng, lex, k, concept_info(k), inv, kyr, lect_id)
-            if ok(w):
-                new, how = w, "derive"
-        if new is None:
-            for _t in range(20):
-                w = coin(rng, lex, k, inv, kyr, lect_id, how="root", store=False)
-                if ok(w):
-                    new, how = w, "coin"
-                    break
+        new, how = _renew_cell(rng, lex, k, {a, b} - {k}, {lex.words[x].form for x in mates}, inv, kyr, lect_id,
+                               contact_words, contact_weights, profile)
         if new is None:
             break   # (nothing could be made: leave it; the next step tries again)
         lex.set(new)
         lex.counts["repair"] = lex.counts.get("repair", 0) + 1
         out.append((k, f"repair:{how}"))
+    return out
+
+
+def _made_now(lex: "Lexicon", x: str, kyr: float) -> bool:
+    """Was the word given a new form at this very date? (A second step at one date would blur its root id (root_step);
+    the next step renews it then.)"""
+    return any(abs(st.kyr - float(kyr)) < 1e-9 and not st.process.startswith("sound_change") for st in lex.words[x].etym)
+
+
+def _renew_cell(rng, lex: "Lexicon", k: str, partners: set, taken: set, inv, kyr: float, lect_id: str,
+                contact_words=None, contact_weights=None, profile=None) -> tuple["Word | None", str]:
+    """A new word for `k`, which has fallen together with `partners`, avoiding the forms in `taken` (its paradigm mates'),
+    by, in order: its counting recipe (a composite numeral), a reinforcement row of data/derivations.tsv ('we others',
+    'not one'), a loan from a contact lect, a derivation, a compound recipe (an open-class word), and only last a fresh root.
+    Returns (word, how) or (None, "")."""
+    from . import lexsys as LS
+
+    def ok(w):
+        return w is not None and w.form not in taken and w.form != lex.words[k].form \
+            and not _clashes(lex, k, w.form, any_domain=False)
+
+    rec = LS.numeral_recipe(lex, k)
+    if rec is not None and rec[2] != "same":
+        w = LS._num_word(rng, lex, k, rec, lex.systems["numeral"]["system"], inv, kyr, lect_id)
+        if ok(w):
+            return w, "recipe"
+    fallen = "/".join(sorted(partners)).lower()
+    for m, _w in repair_rows().get(k, ()):
+        if m not in lex.words or lex.words[m].form == lex.words[k].form or not _reinforce_ok(lex, k, m):
+            continue   # (a reinforcer used once is not used again: no 'we-others-others')
+        hd, md = reinforce_parts(k, m)   # (WHO: 'what person', PW-1635)
+        w = compound(rng, lex, k, inv, kyr, lect_id, head=hd, modifier=md,
+                     process=f"compound:{hd}+{md}", note=f"{hd.lower()} + {md.lower()}: renewed, the old form had "
+                                                         f"fallen together with {fallen}")
+        if ok(w):
+            return w, "reinforce"
+    if contact_words:
+        have = sorted(d for d in contact_words if k in contact_words[d]
+                      and (contact_weights is None or contact_weights.get(d, 0.0) > 0))
+        if have:
+            wd = np.array([max((contact_weights or {}).get(d, CONTACT_DEFAULT), 1e-9) for d in have])
+            d = have[int(rng.choice(len(have), p=wd / wd.sum()))]
+            w = borrow(contact_words[d][k], d, lex, profile, inv, kyr, "contact (paradigm repair)", store=False)
+            if ok(w):
+                return w, "borrow"
+    w = _derive_tries(rng, lex, k, concept_info(k), inv, kyr, lect_id)
+    if ok(w):
+        return w, "derive"
+    if not closed_class(k) and compound_templates(k):
+        w = compound(rng, lex, k, inv, kyr, lect_id)
+        if ok(w):
+            return w, "compound"
+    for _t in range(20):
+        w = coin(rng, lex, k, inv, kyr, lect_id, how="root", store=False)
+        if ok(w):
+            return w, "coin"
+    return None, ""
+
+
+# --- repair of basic words fallen together across paradigms (PW-1653, language lane 15) --------------------------------
+# core_repair keeps the cells of one paradigm apart; sound change also merges basic words of different paradigms and
+# meanings ('what' and 'one' both worn to zi: WHAT = ONE in 45 of a24559's 622 living lects, I = ONE 15, NOT = ONE 13). Real
+# languages repair such clashes between frequent words within a few centuries (Gillieron's Gascon: 'cat' and 'rooster'
+# both became gat, and the rooster was renamed 'pheasant' or 'vicar'; English 'quean' and 'queen' fell together and the
+# first went out of use). So at every lexicon step a merged pair of basic words (both of frequency class <= CROSS_FREQ, and
+# on a core list or closed-class) is repaired with a chance that halves the pair's life every CROSS_HALF_GEN
+# generations, by renewing its rarer member (the content word before a function word; `_renew_cell`). Pairs CLICS3
+# attests in CROSS_CLICS_MIN or more families (EAT = DRINK, TREE = WOOD, MAN = PERSON) are real colexifications and are
+# left alone, as are deliberate shifts (BELLY > IN), a counting or colour system's own colexifications and the paradigm
+# pairs core_repair handles.
+CROSS_FREQ = 2
+CROSS_CLICS_MIN = 5
+CROSS_HALF_GEN = 8.0   # ~200 years at 25-year generations
+_CORE_LISTS = frozenset({"LJ100", "SW100", "SW200"})
+
+
+@functools.cache
+def _cross_core(cid: str) -> bool:
+    try:
+        c = concept_info(cid)
+    except Exception:   # noqa: BLE001 - a concept not on the list (a name)
+        return False
+    return c.pos != "NAME" and c.freq_class <= CROSS_FREQ and (bool(c.lists & _CORE_LISTS) or closed_class(cid) or cid == "NOT")
+
+
+def cross_mergers(lex: "Lexicon") -> list[tuple[str, str]]:
+    """Pairs of basic words of different paradigms that share a form and should not (see CROSS_FREQ): sorted, each pair
+    (kept, renewed) with the member to renew second."""
+    from . import lexsys as LS
+
+    by: dict = {}
+    for k, w in lex.words.items():
+        if len(w.form) and _cross_core(k):
+            by.setdefault(w.form, []).append(k)
+    out = []
+    for _f, cs in by.items():
+        if len(cs) < 2:
+            continue
+        cs = sorted(cs)
+        for i, a in enumerate(cs):
+            for b in cs[i + 1:]:
+                if (contrast_pair(a, b) or _clics_fam(a, b) >= CROSS_CLICS_MIN or LS.system_colex(lex, (a, b))
+                        or _deliberate(lex.words[a]) or _deliberate(lex.words[b])):
+                    continue
+                keep, renew = sorted((a, b), key=lambda k: (concept_info(k).freq_class, not closed_class(k),
+                                                            k not in _PRONOUNS, k))   # (a pronoun keeps its form)
+                out.append((keep, renew))
+    return sorted(out)
+
+
+def cross_repair(rng, lex: "Lexicon", inv, kyr: float, lect_id: str, n_generations: float, contact_words=None,
+                 contact_weights=None, profile=None) -> list[tuple[str, str]]:
+    """Renew, each with chance 1 - 0.5 ** (n_generations / CROSS_HALF_GEN), the rarer member of every pair of basic words
+    fallen together across paradigms (`cross_mergers`); a pronoun is renewed last and never by a loan. Returns
+    [(concept, "repair:<how>")]."""
+    pairs = cross_mergers(lex)
+    if not pairs or n_generations <= 0:
+        return []
+    p = 1.0 - 0.5 ** (float(n_generations) / CROSS_HALF_GEN)
+    out, done = [], set()
+    for keep, k in pairs:
+        if k in done or keep in done or rng.random() >= p or lex.words[k].form != lex.words[keep].form \
+                or _made_now(lex, k, kyr):
+            continue
+        mates = [x for x in next((s for s in CORE_SETS if k in s), ()) if x != k and x in lex.words]
+        new, how = _renew_cell(rng, lex, k, {keep}, {lex.words[x].form for x in mates} | {lex.words[keep].form}, inv,
+                               kyr, lect_id, None if k in _PRONOUNS else contact_words, contact_weights, profile)
+        # (a pronoun is not renewed by a loan here: pronoun loans are rare, WOLD; the paradigm repair keeps its own)
+        if new is None:
+            continue
+        lex.set(new)
+        lex.counts["repair"] = lex.counts.get("repair", 0) + 1
+        out.append((k, f"repair:{how}"))
+        done.add(k)
     return out
 
 
