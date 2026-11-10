@@ -109,6 +109,7 @@ MAX_STEP = 20.0  # a fine zoom is at most this many times finer than its parent 
 MIN_STEP = 2.0  # ... and at least this many (else it adds nothing)
 PARENT_RES = (0.1, 4.0)  # km/px: the parents the conditioning is designed for
 MAX_PX = 1200  # pixels across
+WIDE_PX, WIDE_PX_BIG_STEP = 1000, 1200  # px across of the menu's wide sizes (4x steps, 10-20x steps: PW-1675)
 EDGE_PX = 3  # parent px: the built area (region + halo) stays this far inside the parent
 HALO_PARENT_PX = 1.0  # parent px of terrain built round the region (drainage), cropped off
 RIVER_AREA_PX = 25.0  # parent rivers imposed: draining at least this many parent pixels ...
@@ -173,6 +174,12 @@ def size_options(parent_res: float) -> dict:
             if not 32 <= round(s / r) <= MAX_PX:
                 continue
             opts.append({"size_km": round(s, 4), "res_km": r, "default": abs(r - dr) < 1e-9})
+            # the wide size of that step: the rungs of the level-of-detail chain (PW-1675, lane 284): 500 km at 0.5 km
+            # from a 2 km section (1000 px), 30 km at 25 m from a 0.5 km rung (1200 px); a build is under a minute
+            # and 12 GB at 1200 px, so these are as cheap as the 500 px sizes
+            wide = (WIDE_PX_BIG_STEP if step >= 10 else WIDE_PX) * r
+            if parent_res >= 0.4 - 1e-9 and round(wide, 4) > round(s, 4) and round(wide / r) <= MAX_PX:
+                opts.append({"size_km": round(wide, 4), "res_km": r, "default": False})
     return {"default": {"size_km": ds, "res_km": dr}, "options": opts}
 
 

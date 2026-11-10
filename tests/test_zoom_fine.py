@@ -533,6 +533,9 @@ def test_size_menu_matches_check():
         for o in out["options"]:
             ZF.check(pm, 0.0, 0.0, o["size_km"], o["res_km"])
     assert not ZF.size_options(0.05)["options"] and not ZF.size_options(8.0)["options"]
+    # the level-of-detail rungs are on the menu (PW-1675): 500 km at 0.5 km from a 2 km section, 30 km at 25 m from 0.5 km
+    assert {"size_km": 500.0, "res_km": 0.5, "default": False} in ZF.size_options(2.0)["options"]
+    assert {"size_km": 30.0, "res_km": 0.025, "default": False} in ZF.size_options(0.5)["options"]
     assert ZF.rules()["max_step"] == ZF.MAX_STEP and ZF.rules()["parent_res"] == list(ZF.PARENT_RES)
 
 
