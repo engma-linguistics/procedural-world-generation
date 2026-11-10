@@ -1,4 +1,5 @@
 ---
+id: PW-1637
 title: The carbon cycle's source and sink and the ice sheets' budgets still add up cells as if all were the mean cell
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane268
 blocked_by: []
 relates: [PW-1043, PW-995]
 refs: ["planet/tectonics/earth.py::global_temperature", "planet/tectonics/earth.py::weathering", "planet/tectonics/earth.py::ablation_zone", "planet/grid.py::Grid.cell_area_km2", "planet/grid.py::Grid.area_weight", tools/fork_screen.py]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -33,3 +36,6 @@ Fix: weight each sum by `grid.area_weight` (mean 1, so the references keep their
 history: goldens, scorecard, and a fork screen against main's spread and the fp-null (docs/coordination.md
 "Forked screens"). The ice-sheet part touches PW-470's parked ice-age physics: check with that epic first.
 - [ ] no carbon-cycle or ice-budget total in earth.py adds per-cell depths or rates without each cell's area
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-carbon-and-ice-budgets-true-cell-areas.md (found by lane268).
