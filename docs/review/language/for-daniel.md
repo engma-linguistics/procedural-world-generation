@@ -1776,8 +1776,18 @@ viewer toggle and map labels are PW-1655).
 - **The Common in English (PW-1654).** Every settlement, ruin, river, lake, sea, peak and land carries `english` and
   `english_how` ("Grim's + -by 'house'"). Names are unique within a region (Great, Upper, Kirk... where two would
   clash), a river or a site keeps one English name in every deme on it, and no name trips the spelling guard (0 flagged
-  of 1,430 settlements and 1,237 features on a24559). The names slot (`nameslot.slot`) gives each place `local` and
-  `english` for the viewer lane.
+  of 1,430 settlements, 13,978 ruins and 1,237 features on a24559). The names slot (`nameslot.slot`) gives each place
+  `local` and `english` for the viewer lane.
+- **One founding per place (lane 15b).** A town that several demes list (264 on a24559) used to be founded once per
+  deme: each deme looked for its own ancestor among the founders, so one town could be 'the snow fence' in one deme
+  and 'the snow forest' in the next, and the shared English name then contradicted one of them (137 towns, 156
+  records). Now the founders' own lect on that ground at the founding coins the name once, with one meaning and one
+  habit, and every deme that holds or lists the town hears that name in its own form, with its own later steps in the
+  history (250 of the 264 differ after the shared founding). The English name translates that founding meaning, not
+  the present holder's form: later holders only re-hear the sounds, which mean nothing in their speech, so the
+  meaning is the founders'. (Where a holder adds its own generic, 'river Avon' style, the record says so.) The
+  English is then the same in every deme and always matches the meaning beside it (0 mismatches), and it is chosen
+  free in every region the town sits in. Ruins now keep `english_how` too, so a ruin's English traces to its gloss.
 - **Sisters page.** 'child' now shows (it was looked up under the wrong key); the ancestor's form of a word outside the
   100-word snapshot list (mother, father, child, three) is traced through a sister's etymology instead of '?'; the page
   takes the biggest fan of three to six daughters of one ancestor (widening the 2-4 kyr window until three or more turn

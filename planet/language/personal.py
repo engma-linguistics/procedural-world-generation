@@ -435,7 +435,8 @@ class Personal:
         Each ruin is named as it was said by the last people to hold it, in the lect of their deme on its cell when it was
         abandoned (the founders' name, kept as heard when the holders were newcomers: `settlement`), its generic chosen by
         its peak tier. Returns {deme id of that lect: [entry]}; an entry is the settlement record, kind "ruin", with
-        `abandoned_kyr` and without the long `plain` line (thousands of ruins: the main file stays small)."""
+        `abandoned_kyr` and without the long `plain` line, meaning and history (thousands of ruins: the main file stays
+        small); it keeps `gloss` and `english_how`, so its English name still traces to what it means."""
         R = self.P.R
         by_deme: dict = {}
         for l in self.P.lects.values():
@@ -468,16 +469,25 @@ class Personal:
             if x is None:
                 continue
             x = {kk: v for kk, v in x.items() if kk not in ("plain", "pop", "pattern", "tautology", "meaning", "history",
-                                                            "frame", "english_how")}
+                                                            "frame")}
             x.update(kind="ruin", abandoned_kyr=round(k, 3))
             out.setdefault(lect.deme, []).append(x)
         return out
 
     def _founder_lect(self, site, lect=None):
-        """The lect that named a site: the lect's own ancestor (or itself) alive at the founding when the founders were of its
+        """The lect that named a site. Without `lect` (the one founding, `founding`): the founders' deme's lect on the cell
+        at the founding, else their most numerous lect then. With `lect`: the lect's own ancestor (or itself) alive at the founding when the founders were of its
         people, else the deme's lect then, else the founders' most numerous lect then."""
         p, k = site.get("founded_by"), float(site.get("founded_kyr") or 0.0)
         alive = lambda l: l.born_kyr + 1e-9 >= k and (l.died_kyr is None or l.died_kyr <= k + 1e-9)  # noqa: E731
+        if lect is None and site.get("cell") is not None and p:   # the founders' own deme on the cell at the founding
+            R = self.P.R
+            try:
+                x = self.P.lect_at(R.deme_at_cell(p, int(site["cell"]), R.frame_of(k)), k)
+            except Exception:  # noqa: BLE001 - a people the run cannot place there
+                x = None
+            if x is not None and alive(x) and x.people == p and getattr(x, "lexicon", None) is not None:
+                return x
         if lect is not None:
             for x in self.chain(lect)[::-1]:
                 if alive(x) and x.people == p and getattr(x, "lexicon", None) is not None:
@@ -557,19 +567,30 @@ class Personal:
                 break
         return form, hist, cur
 
+    def founding(self, site, river_ids, fallback=None):
+        """One founding per site (lane 15b): the founders' lect at the founding coins the name once, from its own deme's
+        setting and its own habit, whichever deme later lists the site. Returns (namer, coined name) or None; cached."""
+        k = ("found", int(site["id"]))
+        if k not in self._trad:
+            namer = self._founder_lect(site, None) or fallback
+            nm = None
+            if namer is not None:
+                ctx = self._ctx(namer, site, river_ids)
+                river = self._river(namer, ctx["river"], namer.deme) if ctx["river"] else None
+                nm = self.H.coin(namer, site, ctx, self.rng("site", site["id"]), river, self._people_root(namer))
+            self._trad[k] = (namer, nm) if nm is not None else None
+        return self._trad[k]
+
     def settlement(self, lect, site, river_ids, given) -> dict | None:
         from .names import _hear, _join, _repair, _roman_form
         from .placenames import english
-        rng = self.rng("site", site["id"])
         age = float(site.get("founded_kyr") or 0.0)
-        founder = self._founder_lect(site, lect)
-        sub = founder is not None and not self.P.inherits(lect, founder)
-        namer = founder if founder is not None else lect
-        ctx = self._ctx(lect, site, river_ids)
-        river = self._river(namer, ctx["river"], lect.deme) if ctx["river"] else None
-        nm = self.H.coin(namer, site, ctx, rng, river, self._people_root(namer))
-        if nm is None:
+        f = self.founding(site, river_ids, lect)
+        if f is None:
             return None
+        namer, nm = f
+        rng = self.rng("site", site["id"], lect.id)   # this deme's hearing (tautology), apart from the founding's draws
+        sub = not self.P.inherits(lect, namer)
         form, gloss, gen_c = nm["form"], nm["gloss"], nm["meaning"]["generic"]
         first = RO.title_name(_roman_form(namer, form))
         history = [[round(age, 3), namer.id, site.get("founded_by"), first, f"named by its founders ({nm['how']}-like habit, "

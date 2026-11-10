@@ -223,23 +223,30 @@ def english(meaning: dict, key) -> tuple[str, str]:
 def unique_english(recs: list, region_of) -> None:
     """Make every record's `english` unique within its region (`region_of(rec)`), in place: a later duplicate takes a
     qualifier (Great, Little, Upper, Nether...: Great Newton) and a spelling the guard flags takes another ending or a
-    qualifier. Records come in priority order (the first keeps the plain name)."""
+    qualifier. Records come in priority order (the first keeps the plain name). One river, lake or site keeps one name
+    in every deme on it, chosen free in every region those demes are in."""
+    def fid_of(r):
+        return (r.get("kind"), r.get("id")) if r.get("id") is not None and r.get("kind") in ("river", "lake") else \
+            ("site", r.get("site")) if r.get("site") is not None else None   # (a site two demes hold: one Common name)
+    regions: dict = {}   # fid -> every region a record of it is in
+    for r in recs:
+        if r.get("english") and fid_of(r) is not None:
+            regions.setdefault(fid_of(r), set()).add(region_of(r))
     seen: dict = {}
-    same: dict = {}   # (kind, id) -> the English name it took: one river, lake or site, one name, in every deme on it
+    same: dict = {}   # fid -> the English name it took (and how)
     for r in recs:
         en = r.get("english")
         if not en:
             continue
-        fid = (r.get("kind"), r.get("id")) if r.get("id") is not None and r.get("kind") in ("river", "lake") else \
-            ("site", r.get("site")) if r.get("site") is not None else None   # (a site two demes hold: one Common name)
+        fid = fid_of(r)
         if fid is not None and fid in same:
             r["english"], r["english_how"] = same[fid]
             continue
-        reg = region_of(r)
-        taken = seen.setdefault(reg, set())
+        regs = regions.get(fid) or {region_of(r)}
+        takens = [seen.setdefault(g, set()) for g in sorted(regs, key=str)]
         cand = en
         i = 0
-        while cand.lower() in taken or RO.offensive(cand.replace(" ", "")) is not None:
+        while any(cand.lower() in t for t in takens) or RO.offensive(cand.replace(" ", "")) is not None:
             if i < len(EN_QUALIFIERS):
                 q = EN_QUALIFIERS[(_h("q", r.get("site"), r.get("id"), en) + i) % len(EN_QUALIFIERS)]
                 i += 1
@@ -252,9 +259,11 @@ def unique_english(recs: list, region_of) -> None:
                 cand = f"{en} {i - len(EN_QUALIFIERS) + 2}"
                 i += 1
         if cand != en:
-            r["english_how"] = (r.get("english_how") or "") + f"; '{cand.split(' ')[0]}' added to tell it from another {en}"
+            note = f"'{cand.split(' ')[0]}' added to tell it from another {en}"
+            r["english_how"] = f"{r['english_how']}; {note}" if r.get("english_how") else note
         r["english"] = cand
-        taken.add(cand.lower())
+        for t in takens:
+            t.add(cand.lower())
         if fid is not None:
             same[fid] = (cand, r.get("english_how"))
 
