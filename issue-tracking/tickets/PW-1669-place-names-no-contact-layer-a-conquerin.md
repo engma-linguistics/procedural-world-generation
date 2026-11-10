@@ -1,16 +1,19 @@
 ---
+id: PW-1669
 title: "Place names: no contact layer (a conquering or trading people's generics never enter the local habit: no Danelaw -by)"
 type: task
 status: todo
 parent: PW-767
-milestone: v4
+milestone: v5
 subsystem: culture
 effort: m
 impact: med
 found_by: lang-lane15
 blocked_by: []
 relates: [PW-1658, PW-1636]
-refs: [planet/language/placenames.py::Habits._drift, planet/language/history.py::loan_kinds, planet/language/contact.py, "scratch pass a24559 (lane 15)"]
+refs: ["planet/language/placenames.py::Habits._drift", "planet/language/history.py::loan_kinds", planet/language/contact.py, "scratch pass a24559 (lane 15)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Try: in `Habits.habit`, when a lect has an elite or trade donor (history.loan_ki
 above a threshold, adopt one of the donor's generics into the habit (weight by pull), borrowed as the donor says it
 (names._hear), noted in the habit's `changes` ('took up -by from the d123 rulers').
 - [ ] a24559: at least a few lects under elite rule carry a donor generic in their settlement names
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-place-name-contact-layer.md (found by lang-lane15).

@@ -1,4 +1,5 @@
 ---
+id: PW-1668
 title: "Languages: 'not' is renewed as 'not one' in ~40% of living lects (only one reinforcer for the Jespersen cycle)"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lang-lane15
 blocked_by: []
 relates: [PW-1653]
-refs: [planet/language/data/derivations.tsv, planet/language/lexicon.py::_compound_parts, planet/language/lexicon.py::reinforcers, "runs/a24559/languages.json (main)", "scratch pass a24559 (lane 15)"]
+refs: [planet/language/data/derivations.tsv, "planet/language/lexicon.py::_compound_parts", "planet/language/lexicon.py::reinforcers", "runs/a24559/languages.json (main)", "scratch pass a24559 (lane 15)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -25,3 +28,6 @@ renewal the sound change keeps re-creating).
 
 Try: add reinforce rows for NOT (THING, STEP, SMALL/LITTLE piece, NOTHING-like, EVER where the concepts exist) with
 weights, and a 'second negator' path (NOT + NOT) for some; check the share of lects whose NOT holds ONE drops under ~15%.
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-not-renewed-by-one-everywhere.md (found by lang-lane15).
