@@ -76,6 +76,8 @@ from pathlib import Path
 import numpy as np
 from numba import njit
 
+from .seafood import cells_for
+
 FORMAT = "procgen-polities/1"
 VERSION = 7  # (bump when the rules change: the server's cached docs are remade)
 _LIVE_READ = 2  # (not a rule, so not in constants(); bump when _from_live's read-out of polities_live.json changes: only those runs' cached docs are remade, PW-1575)
@@ -96,7 +98,8 @@ SAILS = ("sails",)
 DRAGON_KM = 250.0  # judgement (O4: the range a dragon can fly and defend against rival dragons): flight ignores sea and slope
 # ---- seats
 HEMMED_X = 0.5  # judgement (Carneiro 2012, circumscription speeds states up): a fully hemmed-in town is a state seat at half a city's size
-HEMMED_RINGS = 2  # judgement: hemmed-in is read over the cells within two rings of the seat (~120 km at L7)
+HEMMED_RINGS = 2  # judgement: hemmed-in is read over the cells within two rings of the seat (~120 km at L7; kept in rings with the live
+# history's own two-ring table, polity_live.r2a/r2b: both to km together, see the lane 266 draft)
 HOLD = 0.8  # judgement: a seat keeps its tier until it shrinks under 0.8 of the size that made it
 INCUMBENT = 1.5  # judgement: last step's capital ranks as if 1.5x its size (the ruler in place keeps the advantage)
 GAP_STEPS = 2  # judgement: a seat that rules again within 2 steps (200 years) is the same polity, not a new one
@@ -118,7 +121,8 @@ MIL_TECHS = ("bronze", "iron", "riding", "standing_army")  # (any of these is on
 INVADE_X = {"light": 2.0, "strong": 4.0}  # judgement: an authored invasion row (PW-1433) multiplies WAR_P; a strong one waives WAR_ODDS
 # ---- empires
 SUBJECT_SHARE = 0.2  # judgement: an empire is a state where another culture (not dragons living over it) holds 20% or more of its settled people
-SUBJECT_CELLS = 3  # judgement: the card lists a subject culture with settlements in the polity, or living on 3 or more of its cells
+SUBJECT_KM2 = 9300.0  # judgement: the card lists a subject culture with settlements in the polity, or living on this much of its land
+# (seafood.cells_for; PW-1584: the old 3 cells at L7)
 WRITING_TECHS = ("proto_writing", "writing")  # owner D49 "B plus C" (PW-1448): a chiefdom needs writing or its forerunner, its own or a neighbour's (round 2's lenience)
 STATE_WRITING = "writing"  # owner D49: "real states gotta have writing": a state, empire or confederation needs its own people to know real writing
 TIERS = ("chiefdom", "state", "empire", "dragon realm")
@@ -702,7 +706,7 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
                     continue  # (dragons living over a state's land are not its subjects: O4)
                 n_settled = float(sp[sc == cu].sum())
                 ncell = len(np.unique(F["cells"][m][cul_here == cu]))
-                if n_settled > 0 or ncell >= SUBJECT_CELLS:
+                if n_settled > 0 or ncell >= cells_for(g, SUBJECT_KM2):
                     subj[R.uids[cu]] = int(round(n_settled))
                     big |= n_settled >= SUBJECT_SHARE * people_n
             tier = s["tier"]
@@ -877,7 +881,7 @@ def _from_live(R: _Run, L: dict, t0: float, invasions=None) -> dict:
                 if cu == ruler or (tier != "dragon realm" and C[cu]["people"] in R.dragons):
                     continue  # (dragons living over a state's land are not its subjects: O4)
                 n_settled = float(sp[sc == cu].sum())
-                if n_settled > 0 or len(np.unique(F["cells"][m][cul_here == cu])) >= SUBJECT_CELLS:
+                if n_settled > 0 or len(np.unique(F["cells"][m][cul_here == cu])) >= cells_for(g, SUBJECT_KM2):
                     subj[R.uids[cu]] = int(round(n_settled))
             cnt[tier] += 1
             now.add(pid)

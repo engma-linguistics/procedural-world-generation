@@ -80,6 +80,11 @@ def rings_for(g, km: float) -> int:
     return max(1, int(round(km / (g.spacing * R_KM))))
 
 
+def cells_for(g, km2: float) -> int:
+    """Cells that cover `km2` on grid g, at least one (PW-1584: people rules sized in km2, not cells, as rings_for for distances)."""
+    return max(1, int(round(km2 / cell_km2(g))))
+
+
 def _kind(L: dict, k: str) -> np.ndarray:
     return np.asarray(L[k]).astype(int)
 

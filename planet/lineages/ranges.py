@@ -80,9 +80,9 @@ FIXED: dict[str, str] = {
                                         "nomes median 172 up to 500, 1882 census 240-280) are other places and measures, not a range for it",
     "IRR_LAG, TERRACE_LAG": "fixed: tech-tree dates",
     "WATER_Q, WATER_MAX, FARM_FULL": "fixed: judgements",
-    "DEN_FARM_W, RAID_CAP, RAID_HALF, RAID_REACH": "fixed: judgements; no measured raiding share was found (ladder.md, Raiding)",
+    "DEN_FARM_W, RAID_CAP, RAID_HALF, RAID_REACH_KM": "fixed: judgements; no measured raiding share was found (ladder.md, Raiding)",
     "TRADE_CAP, TRADE_FULL": "fixed: a placeholder until trade exists",
-    "BARTER_CAP (0.5), BARTER_HALF, BARTER_REACH": "fixed: the cap is the 'about 50%' of farm food in Congo forest foragers' energy "
+    "BARTER_CAP (0.5), BARTER_HALF, BARTER_REACH_KM": "fixed: the cap is the 'about 50%' of farm food in Congo forest foragers' energy "
                                                    "(Kitanishi 1995 p. 106); the 11-63% across camps (Table 11) is the spread of observed "
                                                    "shares at given places, not a range for the cap; the half point and reach are judgements "
                                                    "(forager-trade/round1.md)",

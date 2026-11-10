@@ -174,9 +174,17 @@ SEEK_CAP = 400  # every good's takers look on, from source to next best source, 
 # the pool the spare goods meet the wants first (a market, no road drawn), and only what is left over travels, from the town, or is
 # fetched, to the town. A marginal cell turning from giver to taker then moves a pool's total a little instead of a source in or out
 POOL = True
-POOL_HOPS = 1.5  # a cell joins its nearest town's pool when the way there is at most this many cell spacings. JUDGEMENT: the town's
+POOL_KM = 90.0  # a cell joins its nearest town's pool when the way there is at most this far, in half cell spacings and never under
+# 1.5 (pool_hops; PW-1584: the old 1.5 spacings at L6 and L7, 3 at L8). JUDGEMENT: the town's
 # cell and its neighbours (60-80 km at L7), the grid's smallest reach beyond a cell; a market's own reach is smaller (a day's walk,
 # ~30 km for Kanesh's cities, review1.md section 4; Skinner's standard areas ~4-5 km), and it is the town spacing that sets the pool
+
+
+def pool_hops(g) -> float:
+    """POOL_KM in cell spacings on grid g: whole half-spacings, at least 1.5 (the town's cell and its neighbours; PW-1584)."""
+    return max(1.5, round(2 * POOL_KM / (g.spacing * R_KM)) / 2)
+
+
 # --- worn ways (PW-1515, step3c.md): a road gets cheaper once traffic uses it, for every good, so goods share trunks
 TRUNK = False  # off: on the judge runs worn ways drew as many stretches (531 / 331 / 533 an era against 536 / 327 / 530 without) and
 # made them less steady under the land nudge (0.65 / 0.51 / 0.48 against 0.64 / 0.60 / 0.50), at twice the time (step3c.md)
@@ -690,7 +698,7 @@ class _Frame:
 
     def pools(self) -> dict | None:
         """The market pools (PW-1514, D64: towns as hubs): every cell joins the settlement-ledger town nearest it by carrying cost (bulk
-        goods' costs, tolls included) if that town lies within POOL_HOPS cell spacings along the way. Christaller and Skinner (review1.md
+        goods' costs, tolls included) if that town lies within POOL_KM (pool_hops cell spacings) along the way. Christaller and Skinner (review1.md
         section 5): market areas tile the settled land and their size follows settled density, not a fixed walk, so the nearest town
         takes the cell; the cap only keeps a lone town from drawing in empty country. {"org": town cell per cell (-1: none), "km", "mkm",
         "nb": the way to it, "heads": the pool's people per town cell}, or None without towns."""
@@ -702,7 +710,7 @@ class _Frame:
         c, mode, km = self.cost("bulk")
         d, org, kmv, mkm, nb, pe = _walk(tc, np.zeros(len(tc)), self.nbr_off, self.nbr_idx, c, km, mode, self.e["bord"].astype(np.int32),
                                          np.inf)
-        org = np.where((org >= 0) & (kmv <= POOL_HOPS * self.e["hop"] + 1e-6), org, -1)
+        org = np.where((org >= 0) & (kmv <= pool_hops(self.ctx.g) * self.e["hop"] + 1e-6), org, -1)
         heads = TR.cells_at(self.ctx, self.i)["heads"]
         return {"org": org, "km": kmv, "mkm": mkm, "nb": nb,
                 "heads": np.bincount(org[org >= 0], weights=heads[org >= 0], minlength=len(org))}
@@ -1149,7 +1157,7 @@ def derive(run_dir, ctx=None, pol: dict | None = None, att: dict | None = None, 
                                            "canoe_coast": round(CANOE_COAST, 3), "air": AIR},
                           "fall_km": FALL_KM, "toll": TOLL, "tol_mid": TOL_MID, "toll_max": TOLL_MAX, "floor": FLOOR, "flow_min": FLOW_MIN,
                           "town_min": TOWN_MIN, "tribute_goods": list(TRIBUTE_GOODS), "quarters": bool(quarters and routes), "fetch": bool(fetch),
-                          "pool": POOL, "pool_hops": POOL_HOPS, "trunk": TRUNK, "trail": TRAIL, "wear_half": WEAR_HALF, "wear_keep": WEAR_KEEP,
+                          "pool": POOL, "pool_km": POOL_KM, "trunk": TRUNK, "trail": TRAIL, "wear_half": WEAR_HALF, "wear_keep": WEAR_KEEP,
                           "trunk_iters": TRUNK_ITERS, "seek_cap": SEEK_CAP,
                           "handle": HANDLE, "load_days": LOAD_DAYS, "unload_days": UNLOAD_DAYS, "day_km": DAY_KM, "harbour_due": HARBOUR_DUE,
                           "hands": HANDS, "hand_km": HAND_KM, "river_course": RIVER_COURSE, "river_hands": RIVER_HANDS,

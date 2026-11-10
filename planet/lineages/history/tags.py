@@ -6,7 +6,7 @@ import numpy as np
 
 from ...geo import R_KM
 from .. import land as LD, spec as SP
-from .params import BREAKS_RAIN, BREAKS_RISE, CHAIN_CELLS
+from .params import BREAKS_RAIN, BREAKS_RISE, CHAIN_KM
 from ..gridops import nbr_reduce
 from .gridops import _isin
 
@@ -31,14 +31,15 @@ def _tags(grid, env: dict, chains: bool = True, volcanic: np.ndarray | None = No
     rain = env["precipitation"]
     mountain = land & ((elev > 1500) | (dh > 700))
     cl = env["climate"].astype(int)
-    # island chains: islands with another island (or any other landmass) within CHAIN_CELLS cells over the sea
+    # island chains: islands with another island (or any other landmass) within CHAIN_KM over the sea (whole rings)
     chain = np.zeros(grid.n, bool)
     if chains and island.any():
         big = np.iinfo(np.int64).max
         lo_ = np.where(env["land"], lab, big)
         hi_ = np.where(env["land"], lab, -1)
         through = ~env["land"] | island
-        for _ in range(CHAIN_CELLS):
+        from ..seafood import rings_for
+        for _ in range(rings_for(grid, CHAIN_KM)):
             l2 = np.minimum(lo_, nbr_reduce(grid, np.minimum, np.where(through[ni], lo_[ni], big)))
             h2 = np.maximum(hi_, nbr_reduce(grid, np.maximum, np.where(through[ni], hi_[ni], -1)))
             lo_, hi_ = np.where(through, l2, lo_), np.where(through, h2, hi_)

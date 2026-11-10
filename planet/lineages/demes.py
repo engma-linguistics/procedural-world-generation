@@ -23,9 +23,9 @@ How a frame is cut (per people):
   wide is bridged the same way (a minority's corridor through a range does not cut it).
 - Founder chains: the cells of each deme in the frame before keep its label; newly settled cells take the label of the
   cheapest-to-reach labelled cell (a front carries its parent's name); land reached by no path (a long crossing) starts
-  a new deme whose parent is the nearest deme of that people (straight line), if it is at least MIN_CELLS.
+  a new deme whose parent is the nearest deme of that people (straight line), if it is at least MIN_KM2.
 - Splits: a deme whose land falls apart (rising sea, a front dying back, a neighbour moving in) and stays apart PERSIST
-  frames splits along the gap, dated when it opened: the largest piece keeps its id, each other piece of MIN_CELLS or
+  frames splits along the gap, dated when it opened: the largest piece keeps its id, each other piece of MIN_KM2 or
   more is a new deme ("split by a gap"). Pieces that rejoin sooner are flicker and leave no trace. A deme whose travel-cost diameter passes
   SPLIT_KM splits in two (isolation by distance): the half holding its oldest cells keeps the id, the other half buds off.
 - Fusions: two touching demes of a people fuse when their diameters together are under FUSE_KM (a range that shrank back
@@ -80,7 +80,8 @@ FUSE_KM = 4000.0  # two touching demes of a people whose diameters sum to less f
 # are its roads. Sea peoples (marine realm) keep their own sea at 1, as before.
 NECK_KM = 120.0  # a strip of other peoples' land this wide does not cut a people (its two sides stay one population), as SEA_KM of sea
 PERSIST = 4  # frames a gap split or a fusion must hold before it counts (dated when it began); see docs/review/lineages/demes.md
-MIN_CELLS = 40  # a piece cut off becomes its own deme only from this many cells (~125,000 km² at L7); smaller ones stay with theirs
+MIN_KM2 = 125000.0  # a piece cut off becomes its own deme only from this area (seafood.cells_for; PW-1584: the old 40 cells at L7, 161 at
+# L8); smaller ones stay with theirs
 SPLIT_ITER = 8  # (distance splits per deme per frame at most)
 SERIES_KEEP = 24  # points of a deme's or a pair's series kept (the rest thinned evenly)
 PAIRS_KEEP = 3000  # deme pairs kept in demes.json (the most contact first)
@@ -91,7 +92,8 @@ NONE = 65535
 ADAPT_L = 50  # % learned acceptance at which a cell counts as learned country (the history's LEARNED_MIN)
 ADAPT_DIV = 0.4  # divergence: the piece's mean learned acceptance less the rest of the deme's; at this the two live differently enough
 # to be two populations (0.4: most of the piece is at home where most of the rest is not)
-ADAPT_MIN_CELLS = 20  # the piece: at least this many connected cells of learned country of one biome class (~0.25 Mkm2 at L6)...
+ADAPT_MIN_KM2 = 62500.0  # the piece: at least this much connected learned country of one biome class (PW-1584: the old 20 cells at L7,
+# 80 at L8)...
 ADAPT_MIN_POP = 20000.0  # ...holding at least this many people at its people's density (cells x km2 x density, an upper bound)
 ADAPT_LABEL = 0.5  # a deme is labelled "adapted: <class>" when this share of its cells are learned country of that class
 
@@ -301,6 +303,8 @@ class Demes:
         self.whole = None  # (this frame's peoples_whole: peoples_learned is the leading people's, so it is read only where k leads)
         self.dens = {i: float((l.get("demography") or {}).get("density") or 1.0) for i, l in enumerate(lines)}
         self.cell_km2 = 4 * np.pi * 6371.0 ** 2 / grid.n
+        from .seafood import cells_for
+        self.min_cells, self.adapt_min_cells = cells_for(grid, MIN_KM2), cells_for(grid, ADAPT_MIN_KM2)  # (PW-1584)
         self.adapt_pend: dict[tuple, list] = {}  # (deme, class) -> [kyr ago the piece first diverged, frames since] (PERSIST)
         self.full = False  # (occupied cells from the run's presence table: contacts by co-presence; lane 109)
         self.labels: dict[int, np.ndarray] = {}  # (this frame: line index -> its deme on each of its occupied cells, ascending)
@@ -492,7 +496,7 @@ class Demes:
                 c, sz = int(ids[x]), int(cnt[x])
                 mem = members(c)
                 cells = mem[Om[mem]]
-                if sz >= MIN_CELLS or (not had and r == 0):
+                if sz >= self.min_cells or (not had and r == 0):
                     if had:
                         d = self._new(k, self._nearest(idx, Lc, lab, cells), ago, "crossing", idx[cells])
                     else:
@@ -508,7 +512,7 @@ class Demes:
         key = lab[Om] * (nc + 1) + comp[Om]
         u, cnt = np.unique(key, return_counts=True)
         dl, dc = u // (nc + 1), u % (nc + 1)
-        big = cnt >= MIN_CELLS
+        big = cnt >= self.min_cells
         multi = {int(d) for d, c in zip(*np.unique(dl[big], return_counts=True)) if c >= 2}
         for d in [d for d in self.apart if self.demes[d].line == k and d not in multi]:
             del self.apart[d]  # (joined again before it counted)
@@ -523,7 +527,7 @@ class Demes:
             m_ = dl == d
             pcs = sorted(zip(cnt[m_].tolist(), dc[m_].tolist()), reverse=True)
             for sz, c in pcs[1:]:
-                if sz < MIN_CELLS:
+                if sz < self.min_cells:
                     continue
                 mem = members(c)
                 mem = mem[lab[mem] == d]
@@ -556,7 +560,7 @@ class Demes:
 
     def _adapt(self, k, lab, Om, idx, ago, since, loff, lidx):
         """Niche learning (PW-1155): label each deme of people k with the learned country it lives on (ADAPT_LABEL), and split off a
-        connected piece of learned country of one biome class (ADAPT_MIN_CELLS, ADAPT_MIN_POP) whose mean learned acceptance exceeds
+        connected piece of learned country of one biome class (ADAPT_MIN_KM2, ADAPT_MIN_POP) whose mean learned acceptance exceeds
         the rest of its deme's by ADAPT_DIV, once it has for PERSIST frames: it lives differently enough to be its own population."""
         from .history.habitat import BIOMES
         Lg = self.learned[idx].astype(float) / 100.0
@@ -579,7 +583,7 @@ class Demes:
                     label = BIOMES[c]
             if label is not None or dm.how != "split_adapted":
                 dm.adapted = label
-            if n < ADAPT_MIN_CELLS + MIN_CELLS:
+            if n < self.adapt_min_cells + self.min_cells:
                 continue
             for c in np.unique(bg[ad]).tolist():
                 if dm.adapted == BIOMES[c]:
@@ -591,7 +595,7 @@ class Demes:
                 q = int(sizes.argmax())
                 piece = comp == q
                 sz = int(sizes[q])
-                if sz < ADAPT_MIN_CELLS or n - sz < MIN_CELLS or sz * self.cell_km2 * self.dens.get(k, 1.0) < ADAPT_MIN_POP:
+                if sz < self.adapt_min_cells or n - sz < self.min_cells or sz * self.cell_km2 * self.dens.get(k, 1.0) < ADAPT_MIN_POP:
                     continue
                 rest = mine & ~piece
                 div = float(Lg[piece].mean() - Lg[rest].mean())
@@ -746,7 +750,7 @@ class Demes:
         for d in big:
             h0, h1 = sel & (l2 == d), sel & (l2 == tmp[d])
             n0, n1 = int((h0 & Om).sum()), int((h1 & Om).sum())
-            if n0 < MIN_CELLS or n1 < MIN_CELLS:
+            if n0 < self.min_cells or n1 < self.min_cells:
                 continue
             age0 = float(np.nanmean(since[h0 & Om]))
             age1 = float(np.nanmean(since[h1 & Om]))
@@ -969,7 +973,7 @@ def _document(dm: Demes, m: dict, g, start, secs) -> dict:
     summary = {"file": "demes.json", "layer": "demes", "count": len(demes), "alive": len(alive), "events": len(events), "pairs": len(pairs),
                "by_people": by_people, "from_kyr": round(start, 3), "generated_in_s": round(secs, 1),
                "constants": {"window_kyr": WINDOW_KYR, "second_min_pct": SECOND_MIN, "sea_km": SEA_KM, "sea_cost": SEA_COST,
-                             "split_km": SPLIT_KM, "fuse_km": FUSE_KM, "min_cells": MIN_CELLS, "corr_easy": CORR_EASY}}
+                             "split_km": SPLIT_KM, "fuse_km": FUSE_KM, "min_cells": dm.min_cells, "corr_easy": CORR_EASY}}
     return {"doc": doc, "summary": summary}
 
 

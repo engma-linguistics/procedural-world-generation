@@ -38,7 +38,7 @@ GROW_WIDEN = 0.6  # a crop is grown past its wild range: its climate windows wid
 HOME_PENALTY = 1.0  # x per other first domestication on the landmass (crops: several homelands per world)
 WILD_MIN = 0.35  # a cell is in the wild range from this suitability
 WILD_PATCH_MKM2 = 0.25  # a landmass needs this much range to count
-OVERLAP_MIN = 3  # cells where tamers sit on the wild range
+OVERLAP_MIN_KM2 = 9300.0  # area where tamers sit on the wild range (seafood.cells_for; PW-1584: the old 3 cells at L7, 12 at L8)
 TOOK_UP = 0.2  # a people has taken up an animal when it is known over this share of its land
 # PW-1373 (owner 11-02): meat-eating kinds lean to herds, not crops, through their propensity (not a ban): per body diet, x on a crop's
 # propensity and + on a herd animal's (one with a herd capacity). The cat-folk (obligate carnivores) take crops at half their leaning
@@ -152,7 +152,8 @@ class Stock:
         by_land = np.bincount(lab[cand], weights=score[cand], minlength=int(lab.max()) + 1)
         n_over = np.bincount(lab[cand], minlength=len(by_land))
         wild_area = np.bincount(lab[wild & (lab >= 0)], minlength=len(by_land)) * h.cell_mkm2
-        ok = (n_over >= OVERLAP_MIN) & (wild_area >= WILD_PATCH_MKM2)
+        from .seafood import cells_for
+        ok = (n_over >= cells_for(h.grid, OVERLAP_MIN_KM2)) & (wild_area >= WILD_PATCH_MKM2)
         pen = getattr(self.owner, "penalty", HOME_PENALTY)
         if pen != 1.0 and first:  # (several homelands: a landmass that already has a first domestication is less likely again)
             by_land = by_land * pen ** np.array([self.owner.homes.get(i, 0) for i in range(len(by_land))])
