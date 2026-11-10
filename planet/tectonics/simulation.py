@@ -341,7 +341,7 @@ class Simulation:
         # weather, ice, rivers, erosion, sediment
         # (the climate's random drift has its own stream: changes to how many
         # numbers the tectonics draws shouldn't reshuffle the climate history)
-        earth.global_temperature(self, outgas, int(newc.sum()), np.random.default_rng([self.seed, self.step_no, 1]),
+        earth.global_temperature(self, outgas, newc, np.random.default_rng([self.seed, self.step_no, 1]),
                                  plume=head + apron + vents)  # (the plumes' melt degasses: PW-875)
         if self.precip is None:  # the first step: erosion needs a climate (later ones: step's end)
             self._climate(elevation(col.t, self.w_age, col.cont, col.rock, self.datum(),
