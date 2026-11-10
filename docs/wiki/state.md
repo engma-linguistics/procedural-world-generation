@@ -12,14 +12,13 @@
 - **v0.2.0** waits on Daniel's look. v2 open: PW-728, 856, 1308 (epics/briefs nearly done), PW-1312, PW-1444 (showcase re-runs).
 - Physics is a side track: 1-3 passes per scout lane, regional metrics (not global dT), tickets in `later` ranked "physics side track".
 
-## Lanes running (11-10 ~09:30)
-Main be89b700+ (desk v242). Full suite 2009 passed after merging lanes 268/268b.
-- lane 271: PW-1637 carbon/ice budgets true areas, then PW-1158 late low carbon source.
-- lane 269d (worktree lane269b): judge main/G/A on the full robustness suite; write the D71-at-founding decision card (A floor at founding / B exceptions / C 0.5 Mkm2).
-- lane 272: PW-1640 harbour bonus never fires, then PW-1630 coast/island remainder on L8, PW-1631 split people deficit (-13%).
-- lane 271 (interim): PW-1637 screens + scorecard queued; PW-1158 needs-decision draft (late arc-dominated carbon source).
+## Lanes running (11-10 ~11:00)
+Main f2c2dabf (+ wiki). Suite 2023 passed after lane 271; suite running after PW-1640.
+- lane 273: PW-1645 option D (learn the CO2 source reference later/longer) for PW-1158's late cold tail.
+- lane 272b (worktree agent-aac82aebefa88a4af): PW-1630 L8 coast/island gap, PW-1631 L8 people deficit.
+- lane 269e (worktree lane269b): wait for arm A suite, write the D71-at-founding decision card.
 Parked: states switch PW-1596/1597 (three strikes, `later`).
-Waiting on Daniel: nothing yet (D71 founding card coming from 269d).
+Waiting on Daniel: nothing yet (D71 founding card coming).
 
 ## Milestones (2026-11-09)
 | milestone | open | done |
