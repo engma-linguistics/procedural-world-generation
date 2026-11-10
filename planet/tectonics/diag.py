@@ -67,6 +67,8 @@ class Recorder:
             "ch4_ppb": round(ghg_conc(p, sim.t, float(sim.dT), free)[0], 1),
             "ice_share": round(float(sim.ice_share if sim.ice_share is not None else 0.0), 3), "source_raw": float(source), "sink_raw": float(sink),
             "plume_src": round(float(getattr(sim, "plume_src", 0.0)), 6),
+            "ridge_src": round(float(getattr(sim, "ridge_src", 0.0)), 6),  # (the source's parts before the drift)
+            "arc_src": round(float(getattr(sim, "arc_src", 0.0)), 6),
             "src": round(float(rel[0]), 4), "sink": round(float(rel[1]), 4), "ice_frac": round(float(ice_frac), 4),
             **self._sink_parts(sim)}
 
@@ -96,7 +98,8 @@ class Recorder:
         if s > 0 and sim.temp is not None:
             out["w_T"] = round(float((supply * sim.temp).sum()) / s, 2)
             out["w_q"] = round(float((supply * sim.runoff).sum()) / s, 1) if sim.runoff is not None else None
-        out["w_rate"] = round(s / max(int(free.sum()), 1) / sim.dt, 5)  # (the supply is per step of dt)
+        # (the supply is per step of dt, each cell's times its area over the mean's: earth.weathering)
+        out["w_rate"] = round(s / max(float(sim.grid.area_weight[free].sum()), 1.0) / sim.dt, 5)
         return out
 
     def step(self, sim) -> None:
