@@ -4,7 +4,7 @@ title: Turn polities-in-the-history on by default? States now match the read-out
 type: task
 status: todo
 parent: PW-661
-milestone: later
+milestone: v4
 subsystem: peoples
 effort: s
 impact: high
@@ -52,6 +52,7 @@ state cards and the Polities layer keep showing a read-out that cannot affect th
 the switch sits unused.
 
 ## Updates
+- 2026-11-10: Owner 11-10: wants states in the history ('I'd really like em'): back from later to v4 ahead of three strikes, lane 278.
 - 2026-11-10: Parked with PW-1597 (three strikes, 11-10): POLITIES_LIVE stays off for v0.3.0. v4 -> later.
 - 2026-11-09: Lane 262: not flipped; PW-1597's check (new bar) fails on 3 of 5 pairs on 061c6eca, with a consistent sign (round21.md section 3). No steadiness runs made. Goldens untouched.
 - 2026-11-09: Lane 258: not flipped; PW-1597's check fails on all five pairs on 3a52d1bc (round20.md section 3). No steadiness runs made. Goldens untouched.

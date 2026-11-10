@@ -4,7 +4,7 @@ title: With polities in the history on, the tech calendar runs late, so states s
 type: task
 status: todo
 parent: PW-661
-milestone: later
+milestone: v4
 subsystem: peoples
 effort: m
 impact: med
@@ -36,6 +36,7 @@ worlds made before and after would read a real change in history that is only th
 - [ ] live and read-out first-state dates and writing medians within ~100 years on L6 seeds 7, 3, 10 and L7 seeds 7, 10, same code
 
 ## Updates
+- 2026-11-10: Owner 11-10: wants states in the history ('I'd really like em'): back from later to v4 ahead of three strikes, lane 278.
 - 2026-11-10: Parked 11-10 (three strikes: lanes 258, 262, 265). Lane 265 (round22.md): on/off now equal on 2 of 5 pairs, but L7 seed 10 is 2 steps apart and writing with the switch on is later-or-equal on all 5. Left: contact fronts read from the whole run's median border (PW-1625), and on/off histories differ on L7 s10 (53 vs 80 states). v4 -> later; back of the line.
 - 2026-11-10: Lane 265 (round22.md; third attempt): R found: the live tree mapped a people's regions on Crossings' label (today's sea left out) and its raw presence, the after-run tree on landmass_rank (sea filled) and the stored presence table; first divergence 2.6 Myr ago (tortles, L6 4360a3 seed 7). Fixed (live reads as the after-run tree), PW-1612 B done, and the after-run tree no longer draws tracks toward the next frame. Check on 3e0e8b80 (same code on/off), first state / writing: L6 seed 7 3,400/2,848 against 3,400/3,005; seed 3 6,600/6,746 against 6,600/6,868; seed 10 equal 4,900/4,153; L7 899985 seed 7 equal 3,500/4,305; seed 10 4,600/4,384 against 4,200/4,710. Fails: L7 seed 10 two tree steps, L6 seed 7 1.5, writing on later or equal on all five. Not done; left: contacts read differently (draft draft-after-run-tree-reads-whole-run-borders.md).
 - 2026-11-09: Lane 262 check on 061c6eca after PW-1612 A (round21.md section 3; same code on and off): on / off first state and writing median, L6 4360a3 seed 7 3,300/2,698 against 3,400/3,005; seed 3 6,300/5,536 against 6,300/5,536 (equal); seed 10 4,900/4,153 against 5,300/4,462; L7 899985 seed 7 3,400/4,153 against 3,500/4,305; seed 10 4,600/4,462 against 4,400/4,795. Writing within one tree step on L6 seed 3 and L7 seed 7 only; 307, 309 and 333 years (2-3 steps) later on on the other three, and on is later or equal on all five: fails the new bar on both counts. Left: the history takes a frame's inputs one century before the frame it stands for (PW-1612 B), and the live tree's own one-step residual (round20.md section 4). Not done.
