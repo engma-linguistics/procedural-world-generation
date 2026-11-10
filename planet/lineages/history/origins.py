@@ -372,6 +372,12 @@ class OriginsMixin:
         is founded by its parent as before."""
         if not land[cell]:
             return True  # (not a land founding this rule speaks to: as before)
+        if PM.FOUNDERS_PATCH:  # (lane 269c trial: the connected patch of its habitat at the cell, not the landmass)
+            hab = land & (K > 2 * EST)
+            if not hab[cell]:
+                return False
+            lab, _ = self.grid.components(hab)
+            return int((lab == lab[cell]).sum()) >= self._founders_cells(K)
         lab, _ = self.grid.components(land)
         return int(((lab == lab[cell]) & (K > 2 * EST)).sum()) >= self._founders_cells(K)
 
