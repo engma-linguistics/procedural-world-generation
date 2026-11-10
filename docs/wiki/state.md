@@ -14,9 +14,7 @@
 
 ## Lanes running (11-10 ~11:50)
 - lane 275: PW-1497 Andes-type ranges, fourth try (owner priority): post-orogenic decay + option A.
-- lane 274: L8 refine soils thinner/peatier.
 - lane 272c: finish PW-1631/1630 L8 people/coast comparison (3d21c18b).
-- lane 269f: merge lane269b (D72 C, test rewrite).
 - lane 277: "everyone" preset extinction experiment (not for merge).
 - lane 278: states in the history (PW-1597/1625/1596), owner wants them on.
 - lane 276: v0.3.0 close-out (PW-756 boxes, PW-785 re-check); coordinator tags v0.3.0 after.
