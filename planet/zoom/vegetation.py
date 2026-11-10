@@ -69,7 +69,7 @@ from .. import vegetation as V
 from . import kernels as ZK
 from . import terrain as ZT
 from ..climate import LAPSE
-from ..geo import R_KM, arc_km, cell_area_km2, latlon
+from ..geo import R_KM, arc_km, latlon
 
 SLOPE_DT = (4.0, 2.0)  # C per unit of radiation index, summer and winter half-year
 SLOPE_DT_MAX = 2.5  # C
@@ -361,7 +361,7 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     cell = g.locate(P[idx])
     own = lut[cell]
     cnt = np.bincount(own, minlength=len(sel)).astype(float)
-    full_px = cell_area_km2(g.n) / res ** 2
+    full_px = g.cell_area_km2[sel] / res ** 2  # pixels in each whole cell (its own area, PW-1628)
     cx, cy = fr.to_plane(g.centers[sel])
     sig = 0.5 * g.spacing * R_KM
     ok_c = (cnt > 0.25 * full_px) & (np.asarray(L["elevation"])[sel] > 0)

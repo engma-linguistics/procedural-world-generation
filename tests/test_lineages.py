@@ -667,7 +667,11 @@ def test_demography_defaults_inheritance_and_numbers(faketz):
     pop = h.population(k)
     assert abs(pop.sum() - 0.5 * big.sum() * 1e-5 * h.cell_mkm2 * 1e6) < 1e-6 * pop.sum()
     _, _, pres = H.simulate(t, ps, tries=1)
-    assert pres["lines"]["f"]["population"] > 100 * pres["lines"].get("g2", {"population": 1})["population"]
+    # (PW-1558: g2 is no longer stranded on a fake island, so compare people per km2, not head counts: f's
+    # agricultural/seafaring defaults give it the denser country; g2's sparse defaults come from insular g)
+    lf, l2 = pres["lines"]["f"], pres["lines"]["g2"]
+    assert lf["area_mkm2"] > 0 and l2["area_mkm2"] > 0
+    assert lf["population"] / lf["area_mkm2"] > l2["population"] / l2["area_mkm2"]
     first = [m for m in pres["landmasses"] if m["discovered"]]
     assert first and all(m["discovered"]["by"] in t.lines for m in first)
 
@@ -3762,7 +3766,7 @@ def test_live_confederation_bands_a_peoples_villages_beside_a_foreign_state(fake
 
 def test_live_central_places_read_the_ledgers_site_factor(faketz, monkeypatch):
     """PW-1587 (lane 245): the history's central places are sized and chosen as the ledger's (settlements._site_factor): a harbour
-    on a cell that is a coast now makes its town bigger and the best of its ring on even ground; a harbour inland counts for nothing.
+    beside a cell that is a coast now makes its town bigger and the best of its ring on even ground; a harbour inland counts for nothing.
     Without a world every cell is an ordinary site (1)."""
     from planet.lineages import settlements as SE
     h, env, step, land = _live_setup(faketz, monkeypatch)
@@ -3774,7 +3778,8 @@ def test_live_central_places_read_the_ledgers_site_factor(faketz, monkeypatch):
              and lm[R.idx[R.off[c]:R.off[c + 1]]].sum() >= 3]
     inland = next(int(c) for c in np.flatnonzero(lm) if lm[R.idx[R.off[c]:R.off[c + 1]]].all() and deg[c] >= 5)
     c0 = coast[0]
-    R.W["harbour"][[c0, inland]] = 3.0
+    sea0 = next(int(x) for x in R.idx[R.off[c0]:R.off[c0 + 1]] if not lm[x])
+    R.W["harbour"][[sea0, inland]] = 3.0  # (PW-1640: the layer marks the harbour water; the shore beside it reads it)
     q = R._site()
     assert q[c0] == pytest.approx(1.0 + SE.CONST["SITE_HARBOUR"][3]) and q[inland] == 1.0
     sed = np.where(lm, 100.0, 0.0)
@@ -3806,6 +3811,7 @@ def test_a_live_state_seat_is_hemmed_in_over_its_own_two_rings(faketz, monkeypat
     bars fully; not the people's whole border."""
     from planet.lineages import polities as PO
     from planet.lineages.history import params as HP
+    from planet.lineages.seafood import rings_for
     h, env, step, land = _live_setup(faketz, monkeypatch)
     R = h.rule
     fk, kb = h.idx["folk"], h.idx["kob"]
@@ -3813,7 +3819,7 @@ def test_a_live_state_seat_is_hemmed_in_over_its_own_two_rings(faketz, monkeypat
     ice = np.zeros(h.grid.n, bool)
     el = np.where(L, np.asarray(env["elevation"], float), 0.0)
     folk = h.p[fk] > 0
-    rings = PO._rings(h.grid, PO.HEMMED_RINGS)
+    rings = PO._rings(h.grid, rings_for(h.grid, PO.HEMMED_KM))
     c = next(int(c) for c in land[:300] if L[rings[int(c)]].all() and folk[rings[int(c)]].all() and (el[rings[int(c)]] < 3000).all())
     ring = rings[c]
     assert sorted(R.r2b[R.r2off[c]:R.r2off[c + 1]].tolist()) == sorted(ring.tolist() + [c])

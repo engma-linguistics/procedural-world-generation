@@ -26,7 +26,9 @@ import csv
 import functools
 import math
 import sys
+import zlib
 from dataclasses import dataclass, field
+from . import contact as CT
 from .percepts import replace  # (PW-1555: the interned Segment's fast path; dataclasses.replace otherwise)
 from pathlib import Path
 from typing import Callable, Iterable
@@ -177,7 +179,10 @@ CONTRAST_OPEN = frozenset({frozenset({"THOU", "YOU"}), *(frozenset(p) for p in (
 AFFIX_RENEW = 0.01            # per generation: a derivational affix worn to nothing is renewed from a word (or coined)
 ELAB_THRESHOLD = 0.5          # niche weight above which a concept starts to split
 ELAB_RATE = 0.02              # per generation, times the niche weight, once past the threshold
-AFFIX_MEANINGS = ("little", "place", "agent", "thing", "do", "like", "cause", "intens")  # derivational morphemes, one form each
+AFFIX_MEANINGS = ("little", "place", "agent", "thing", "do", "like", "cause", "intens", "time")  # derivational morphemes, one form each
+# ('time': the temporal formative of WHEN, 'at what time': WHEN had borrowed the 'place' affix and was born a homophone
+# of WHERE, PW-1635; Heine & Kuteva 2002 TIME > temporal)
+WHAT_X = frozenset({"WHO"})   # question words a noun renews as 'what + noun' ('what person' > who: Latin quis homo; PW-1635)
 # Derivation is table-driven (data/derivations.tsv: relation, base, target): an affix only makes the targets its
 # meaning gives it from bases that fit (HUNT -> HUNTER 'agent', RIVER -> STREAM 'little', SLEEP -> BED 'place', CUT ->
 # KNIFE 'thing', BLOOD -> RED 'like', SALT -> SALT (FOOD) 'do', DIE -> KILL 'cause'). Stacking: a living word carries at most
@@ -423,7 +428,22 @@ _EXTRA = [
     *[(g, "N", 4, "social", c, False, False, False, b) for g, c, b in [
         ("PRIEST", "PRIEST", ("GOD", "PERSON")), ("TEMPLE", "TEMPLE", ("GOD", "HOUSE")),
     ]],
+    # trade, rule and law words (PW-1636, lane 13: the vocabulary a trading partner or a ruling people lends, which the
+    # list lacked: proposal-2026-11-10 Part 2, P3), each once the people knows the technology (TECH_CONCEPT); WOLD scores
+    # for all but PROFIT and ACCOUNT (borrowability.tsv)
+    *[(g, p_, f, "social", None, False, False, False, b) for g, p_, f, b in [
+        ("PRICE", "N", 4, ("BUY", "GIVE")), ("MONEY", "N", 3, ("PAY", "STONE")), ("DEBT", "N", 4, ("LEND", "GIVE")),
+        ("WEIGH", "V", 4, ("HEAVY",)), ("MEASURE", "V", 4, ("COUNT",)), ("PROFIT", "N", 5, ("GET", "MANY")),
+        ("ACCOUNT", "N", 5, ("COUNT", "WORD")), ("LAW", "N", 4, ("RULE", "WORD")), ("JUDGE", "N", 4, ("RULE", "PERSON")),
+        ("TAX", "N", 5, ("GIVE", "KING")), ("COURT", "N", 5, ("RULE", "HOUSE")), ("NOBLE", "N", 4, ("CHIEF", "PERSON")),
+    ]],
 ]
+# the meat of each herd animal and of the deer (PW-1636, P3): sibling concepts of the animals, so a loan for the animal
+# can be kept for its meat beside the native word (beef beside cow: contact.doublet, data/splits.tsv). A proto-language
+# names them with a compound of the animal and MEAT (proto_lexicon), the global default (German Rindfleisch, Korean
+# sogogi, Mandarin niurou); no meat word for the dog
+MEAT_OF = "meat:"
+_NO_MEAT = frozenset({"dog"})
 
 # concept -> the techtree technologies (any of them) that bring it (history.tech_step); BREAD and BEER had no way in
 # before 2026-11-08 (proto=False, and only crops and herds arrived)
@@ -436,6 +456,10 @@ TECH_CONCEPT = {
     "STEAM (FOOD)": ("steaming",), "PICKLE": ("pickling",), "YEAST": ("leavened_bread",), "GRIDDLE": ("griddle_bread",),
     "PRIEST": ("temples",), "TEMPLE": ("temples",), "FISH SAUCE": ("fish_sauce",), "PORRIDGE": ("wild_cereal_harvest", "cultivation"), "DOUGH": ("bread", "griddle_bread"),
     "CURD": ("cheese", "fermented_dairy"),
+    "PRICE": ("markets", "commodity_money"), "MONEY": ("commodity_money", "coinage"), "DEBT": ("credit_debt",),
+    "WEIGH": ("balance_scale", "weights_measures"), "MEASURE": ("weights_measures",), "PROFIT": ("markets", "trade"),
+    "ACCOUNT": ("bullae", "proto_writing", "census", "abacus"), "LAW": ("law",), "JUDGE": ("law",), "TAX": ("taxation",),
+    "COURT": ("law", "kingship"), "NOBLE": ("kingship", "chiefdoms"),
 }
 
 
@@ -552,6 +576,12 @@ def _all_concepts() -> tuple[Concept, ...]:
         cid = resolve(f"animal:{a.id}")
         cl, base = _ANIMAL.get(a.id, (None, ("ANIMAL",)))
         add(Concept(_i(cid), a.label, "N", 3, "animal", frozenset(), cl, True, True, True, base))
+    for a in animal_defs.TABLE:
+        if a.id not in _NO_MEAT:
+            add(Concept(_i(f"{MEAT_OF}{a.id}"), f"{a.label} meat", "N", 4, "food", frozenset(), None, True, False, False,
+                        ("MEAT", resolve(f"animal:{a.id}"))))
+    add(Concept(_i(f"{MEAT_OF}deer"), "venison (deer meat)", "N", 4, "food", frozenset(), None, True, False, False,
+                ("MEAT", "DEER")))
     for fu in fuels.FUELS:
         core_id, cl, proto, base = _FUEL.get(fu, (None, None, True, ("FIRE",)))
         if core_id is None:
@@ -577,7 +607,12 @@ def concepts(run_meta: dict | None = None) -> list[Concept]:
         st = (run_meta.get(key) or {}).get("stocks")
         if st is not None:
             keep[dom] = {f"{dom}:{k}" for k in st}
-    return [c for c in allc if c.domain not in keep or c.id in keep[c.domain] or c.id in ALIASES.values()]
+    if "animal" in keep:   # (a meat concept only for an animal the run has; the deer is always there)
+        keep["meat"] = {f"{MEAT_OF}{k.split(':', 1)[1]}" for k in keep["animal"]} | {f"{MEAT_OF}deer"}
+
+    def dom(c):
+        return "meat" if c.id.startswith(MEAT_OF) else c.domain
+    return [c for c in allc if dom(c) not in keep or c.id in keep[dom(c)] or c.id in ALIASES.values()]
 
 
 @functools.cache
@@ -896,6 +931,8 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
     homophones where avoidable, and a few colexifications from strong CLICS edges (TREE/WOOD, HAND/ARM...) with one
     word for both. Concepts with `proto=False` (crops, metals, straw) are left out unless `include_late`."""
     cl = [c for c in concepts if include_late or c.proto]
+    meats = [c for c in cl if c.id.startswith(MEAT_OF)]   # (built last, as compounds: below)
+    cl = [c for c in cl if not c.id.startswith(MEAT_OF)]
     from . import lexsys as LS
     # (the lexical systems and sound symbolism draw from a child stream, so the rest of the proto is drawn as before)
     srng = rng.spawn(1)[0]
@@ -977,6 +1014,13 @@ def proto_lexicon(rng, inv, concepts: Iterable[Concept], kyr: float, lect_id: st
         lex.words[nb] = Word(nb, w.form, c.pos, c.freq_class,
                              w.etym[:-1] + (_step(kyr, lect_id, w.etym[-1].process, w.form, c.gloss,
                                                   f"colexified with {src}"),), float(kyr), w.roots, etym_roots(w))
+    if meats:   # (the meats: 'cattle meat', from their own child stream so the rest of the proto is drawn as before)
+        mrng = np.random.default_rng(zlib.crc32(f"meat|{lect_id}|{float(kyr):g}".encode()))
+        for c in sorted(meats, key=lambda c: c.id):
+            animal = next((b for b in c.base if b != "MEAT"), None)
+            w = compound(mrng, lex, c.id, inv, kyr, lect_id, head_first, head="MEAT", modifier=animal) \
+                if animal in lex.words and "MEAT" in lex.words else None
+            lex.words[c.id] = w if w is not None else root_word(c)
     LS.set_colours(srng, lex, kyr, lect_id)   # (the Berlin & Kay stage: composite colour categories share one word)
     LS.set_kin(srng, lex, kyr, lect_id, inv)   # (the kinship system: which kin share a word)
     LS.set_numerals(srng, lex, numeral_label, inv, kyr, lect_id)   # (the counting system; history re-sets it from the grammar)
@@ -1637,6 +1681,22 @@ def _self_renewed(w: Word, head: str, modifier: str) -> bool:
     return any(st.process == p for st in w.etym)
 
 
+def reinforce_parts(target: str, m: str) -> tuple[str, str]:
+    """(head, modifier) of the compound that renews `target` with its reinforcer `m` (a 'reinforce' / 'repair' row of
+    data/derivations.tsv): the word itself + the reinforcer (THIS + HERE, 'we others'), except a question word in WHAT_X
+    renewed by a noun, which is built WHAT + that noun ('what person' > who), not old-who + person (PW-1635)."""
+    if target in WHAT_X and m != "WHAT":
+        return m, "WHAT"
+    return target, m
+
+
+def _reinforce_ok(lex: Lexicon, target: str, m: str) -> bool:
+    """Can `target` be renewed with `m` now: both parts there, distinct, and the word not renewed so before."""
+    h, mod = reinforce_parts(target, m)
+    return (target in lex.words and h in lex.words and mod in lex.words and lex.words[h].form != lex.words[mod].form
+            and not _self_renewed(lex.words[target], h, mod))
+
+
 def _compound_parts(rng, lex: Lexicon, c: Concept, head: str | None, modifier: str | None,
                     kyr: float = 0.0) -> tuple[str | None, str | None]:
     """(head, modifier) for a compound naming `c`: a recipe of data/compounds.tsv (`compound_templates`: SKIN + TREE =
@@ -1648,11 +1708,10 @@ def _compound_parts(rng, lex: Lexicon, c: Concept, head: str | None, modifier: s
     if head is not None and modifier is not None:
         return resolve(head), resolve(modifier)
     if head is None and modifier is None and c.pos == "FUNC":   # a function word reinforced by another (THIS + HERE)
-        rs = [(m, w) for m, w in reinforcers().get(c.id, ()) if m in lex.words and c.id in lex.words
-              and not _self_renewed(lex.words[c.id], c.id, m)]   # (not 'they-that-that')
+        rs = [(m, w) for m, w in reinforcers().get(c.id, ()) if _reinforce_ok(lex, c.id, m)]   # (not 'they-that-that')
         if not rs:
             return None, None
-        return c.id, _pick(rng, rs)
+        return reinforce_parts(c.id, _pick(rng, rs))
     from . import lexsys as LS
     cand = []
     for r in compound_templates(c.id):
@@ -1978,7 +2037,7 @@ def calibrate_base_replace(classes: Iterable[int] | None = None, retention: floa
 #: words a worn-away derivational affix is renewed from (its first syllable); none present: a coined syllable
 _AFFIX_SOURCES = {"little": ("CHILD (YOUNG HUMAN)", "SMALL"), "place": ("EARTH (SOIL)", "LAND", "HOUSE"),
                   "agent": ("PERSON", "MAN"), "thing": (), "do": ("DO OR MAKE",), "like": ("BODY",),
-                  "cause": ("DO OR MAKE", "GIVE")}
+                  "cause": ("DO OR MAKE", "GIVE"), "time": ("TIME",)}
 
 
 def _lexical_last(w: Word) -> EtymStep | None:
@@ -2080,18 +2139,20 @@ def _derive_tries(rng, lex: Lexicon, k: str, c: Concept, inv, kyr: float, lect_i
 
 def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, inv, kyr: float, lect_id: str,
                   head_first, have: list, contact_words, profile, repair: bool = False, weights: dict | None = None,
-                  intensity: float = 0.0) -> tuple[str, Word | None]:
+                  intensity: float = 0.0, loan_mult: float = 1.0, kinds: dict | None = None) -> tuple[str, Word | None]:
     """The replacement for `k` from the drawn source, falling back to the next plausible one in the order derive
     (DERIVE_TRIES bases), compound, colexification shift, the word's own diminutive when it is a homophone being
     repaired (`repair`, Gilliéron's abeille), a loan from a contact lect (BORROW_FALLBACK); a fresh root only when it was
     the drawn source. When nothing can be made the old word lives on: returns ("keep", None). The loan's donor is drawn
-    by its contact weight (`weights`); a closed-class word (`closed_class`) never falls back to a loan.
+    by its contact weight (`weights`); a closed-class word (`closed_class`) never falls back to a loan. `loan_mult` (the
+    donors' contact-kind multiplier for the concept, contact.mult) scales the fallback too; `kinds` {donor: contact kind}
+    names the loan's channel in its note (contact.channel).
     Returns (process actually used, word)."""
     order = [src] + [x for x in ("derive", "compound", "shift") if x in opts and x != src]
     if repair and "renew" in opts and "renew" not in order:   # (a homonymic clash is repaired by the word's own
         order.append("renew")                                  # diminutive too: Latin apis > apicula > French abeille)
     if have and "borrow" not in order and not closed_class(k):
-        pf = min(1.0, BORROW_FALLBACK * intensity * loan_factor(k, intensity))
+        pf = min(1.0, BORROW_FALLBACK * intensity * loan_factor(k, intensity) * loan_mult)
         if repair:   # (a homonymic clash is repaired by a neighbour's word as readily as before the intensity scaling)
             pf = max(pf, REPAIR_FALLBACK)
         if rng.random() < pf:
@@ -2102,7 +2163,8 @@ def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, i
             if have:
                 wd = np.array([max((weights or {}).get(x, CONTACT_DEFAULT), 1e-9) for x in have])
                 d = have[int(rng.choice(len(have), p=wd / wd.sum()))]
-                return s, borrow(contact_words[d][k], d, lex, profile, inv, kyr, "contact", store=False, rng=rng,
+                note = CT.channel((kinds or {}).get(d))
+                return s, borrow(contact_words[d][k], d, lex, profile, inv, kyr, note, store=False, rng=rng,
                                  intensity=intensity)
         elif s in ("derive", "renew"):
             new = _derive_tries(rng, lex, k, c, inv, kyr, lect_id, renew=s == "renew")
@@ -2184,7 +2246,8 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
          kyr: float = 0.0, lect_id: str | None = None, niche_weights: dict[str, float] | None = None,
          profile=None, head_first: bool | None = None, contact_weights: dict[str, float] | None = None,
          numeral_base: str | None = None, population: float | None = None,
-         kin_weights: dict | None = None, speech_taboo: float = 1.0) -> list[tuple[str, str]]:
+         kin_weights: dict | None = None, speech_taboo: float = 1.0,
+         contact_kinds: dict | None = None) -> list[tuple[str, str]]:
     """Lexical events over `n_generations` (fractional is fine) in one batch: each word is replaced with probability
     1 - (1 - h)^n, h = BASE_REPLACE * RATE_BY_FREQ[freq_class] (x HOMOPHONE_BOOST for the rarer members of a homophone
     group, `_renewal_boost`), the new word coming from SOURCES: a derivation, a compound (data/compounds.tsv recipes only), a colexification
@@ -2198,7 +2261,13 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
     the bilingual share); their sum, capped at 1, is the contact intensity that scales the loan source with the
     meaning's borrowability (`loan_factor`). The lexical systems (lexsys: numerals by base, colour terms by Berlin & Kay
     stage) keep their words in line: a composite numeral is rebuilt by its system's recipe, a colour composite is
-    renewed as one word and splits by a loan or by `lexsys.colour_step`."""
+    renewed as one word and splits by a loan or by `lexsys.colour_step`.
+
+    Contact kinds (PW-1636): `contact_kinds` {lect id: elite | trade | city | flat} (history.loan_kinds) weight the loan
+    source by the donors' pull-weighted field multiplier for the concept (contact.mult, mean-normalised profiles) and
+    draw the donor by pull x multiplier; a loan from an elite, trade or city donor may come in as a doublet beside the
+    native word (contact.doublet: beef beside cow, a high-register synonym). The high-register doublets (`high:<k>`)
+    are not replaced: they die at their concept's hazard x contact.HIGH_DEATH."""
     from . import lexsys as LS
 
     lect_id = lect_id or lex.lect
@@ -2209,7 +2278,15 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
     if inv is not None:
         lex.length_scale, lex.syllable_space = scale, syllable_space(inv)
     if n_generations > 0 and lex.words:
-        keys = [k for k, w in lex.words.items() if w.pos != "NAME"]   # (names are renamed, not replaced: faiths.py)
+        keys = [k for k, w in lex.words.items() if w.pos != "NAME" and not k.startswith(CT.HIGH)]   # (names are renamed,
+        # not replaced: faiths.py; high-register doublets only die, below)
+        hk = CT.high_words(lex)
+        if hk:
+            ph = 1.0 - (1.0 - np.array([min(1.0, hazard(concept_info(x[len(CT.HIGH):]).freq_class) * CT.HIGH_DEATH)
+                                         for x in hk])) ** n_generations
+            for x, dead in zip(hk, rng.random(len(hk)) < ph):
+                if dead or x[len(CT.HIGH):] not in lex.words:
+                    del lex.words[x]
         boost = _renewal_boost(lex)
         h = np.array([min(1.0, hazard(lex.words[k].freq_class) * boost.get(k, 1.0)
                           * (speech_taboo if not closed_class(k) else 1.0)) for k in keys])   # (name taboos: lexsys)
@@ -2239,7 +2316,13 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
             if not have:
                 opts.pop("borrow")
             else:
-                opts["borrow"] = LOAN_MAX * intensity * loan_factor(k, intensity)
+                lm = 1.0
+                if contact_kinds:   # (contact kinds: the donors' field multipliers, contact.py)
+                    mk = {d: CT.mult(contact_kinds.get(d), k) for d in have}
+                    tot = sum(weights[d] for d in have)
+                    lm = sum(weights[d] * mk[d] for d in have) / tot if tot > 0 else 1.0
+                    dw = {d: weights[d] * mk[d] for d in have}
+                opts["borrow"] = LOAN_MAX * intensity * loan_factor(k, intensity) * lm
             # a word-building source the concept cannot use (taboo for a harmless thing, compounding for a verb or
             # quality) hands its weight to derivation, the way verbs and qualities are mostly renewed; only borrowing
             # and shift are renormalised away, so a fresh root stays near its intended share
@@ -2267,7 +2350,20 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
             w = np.array([opts[s] for s in names])
             src = names[int(rng.choice(len(names), p=w / w.sum()))]
             src, new = _replace_word(rng, lex, k, c, src, opts, inv, kyr, lect_id, head_first, have, contact_words,
-                                     profile, repair=k in boost, weights=weights, intensity=intensity)
+                                     profile, repair=k in boost, weights=dw if have and contact_kinds else weights,
+                                     intensity=intensity, loan_mult=lm if have else 1.0, kinds=contact_kinds)
+            if src == "borrow" and contact_kinds and new is not None:   # (a doublet beside the native word: contact.py)
+                d = new.etym[-1].process.split(":", 1)[1]
+                kd = contact_kinds.get(d)
+                nw = CT.narrow_meat(rng, lex, k, new, d, kd, contact_words, profile, inv, kyr, intensity)
+                if nw is not None:
+                    new = nw
+                else:
+                    db = CT.doublet(rng, lex, k, new, d, kd, contact_words, profile, inv, kyr, intensity)
+                    if db is not None:
+                        lex.counts["doublet"] = lex.counts.get("doublet", 0) + 1
+                        events.append((db[0], "doublet:" + db[1]))
+                        continue
             if new is None:   # (no competitor could be made: the old word lives on)
                 lex.counts["keep"] = lex.counts.get("keep", 0) + 1
                 continue
@@ -2384,11 +2480,12 @@ def core_repair(rng, lex: "Lexicon", inv, kyr: float, lect_id: str, contact_word
                 new, how = w, "recipe"
         if new is None:
             for m, _w in repair_rows().get(k, ()):
-                if m not in lex.words or lex.words[m].form == lex.words[k].form or _self_renewed(lex.words[k], k, m):
+                if m not in lex.words or lex.words[m].form == lex.words[k].form or not _reinforce_ok(lex, k, m):
                     continue   # (a reinforcer used once is not used again: no 'we-others-others')
-                w = compound(rng, lex, k, inv, kyr, lect_id, head=k, modifier=m,
-                             process=f"compound:{k}+{m}", note=f"{k.lower()} + {m.lower()}: renewed, the old form had "
-                                                               f"fallen together with {('/'.join(sorted({a, b} - {k}))).lower()}")
+                hd, md = reinforce_parts(k, m)   # (WHO: 'what person', PW-1635)
+                w = compound(rng, lex, k, inv, kyr, lect_id, head=hd, modifier=md,
+                             process=f"compound:{hd}+{md}", note=f"{hd.lower()} + {md.lower()}: renewed, the old form had "
+                                                                 f"fallen together with {('/'.join(sorted({a, b} - {k}))).lower()}")
                 if ok(w):
                     new, how = w, "reinforce"
                     break

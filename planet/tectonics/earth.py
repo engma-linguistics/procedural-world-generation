@@ -360,8 +360,11 @@ def weathering(sim, land):
     lost to erosion
     (sim.weathered: not under land ice, where glaciers grind their beds fast but the rock flour hardly
     weathers chemically in the cold, and counting it made a cold era draw down more CO2 the more ice it grew).
-    The bare part is the sink of the cell's unplanted ground, which goes as X^WEATHER_CO2_BARE."""
-    supply = sim.weathered * land  # (per dt step, as erode keeps it: the references are learnt in those)
+    The bare part is the sink of the cell's unplanted ground, which goes as X^WEATHER_CO2_BARE.
+    Each is an amount, the cell's depth times its own area over the mean cell's (Grid.area_weight, PW-1637): the
+    cells run 0.67-1.21 of the mean on L6, and the sums over them are the planet's totals."""
+    # (per dt step, as erode keeps it: the references are learnt in those)
+    supply = sim.weathered * land * sim.grid.area_weight
     # chemical weathering: faster when warm and when wet (the weathering thermostat, Walker et al. 1981: a cold
     # planet weathers slower, CO2 builds up and warms it back, PW-235): the kinetics on the local temperature,
     # and the cell's own land runoff (WEATHER_RUNOFF; PW-881)
@@ -519,7 +522,7 @@ def global_temperature(sim, growth, newc, rng, plume=None):
     continents' volume on target and is a bookkeeping knob, not a magma
     flux: at L6 it climbed ~1.4 -> ~2.5-3.3 over 300-1000 Myr, at L7 it
     stayed ~1.1-1.8, and the CO2 it added made L6 ~1 C warmer than L7,
-    PW-741); newc: number of new ocean-floor cells this step."""
+    PW-741); newc: the new ocean-floor cells this step (a mask)."""
     p, dt = sim.params, sim.dt_now
     a = np.exp(-dt / p.climate_drift_time)
     sim.drift = sim.drift * a + p.climate_drift * np.sqrt(1 - a * a) * rng.normal()
@@ -528,9 +531,13 @@ def global_temperature(sim, growth, newc, rng, plume=None):
     # (plume: km/Myr of plume melt per cell; as new ocean floor's cells of OCEAN_KM crust per step, times its yield)
     # (the source and the sink are counted per step of dt, the run's step, which the references are learnt in;
     # a finish-window step's per-step amounts are scaled to that: Simulation.step_length)
-    melt = float(plume.sum()) * sim.dt / OCEAN_KM if plume is not None else 0.0
+    # (each a total: a cell's melt or new floor times its own area over the mean cell's, Grid.area_weight, PW-1637)
+    aw = sim.grid.area_weight
+    melt = float((plume * aw).sum()) * sim.dt / OCEAN_KM if plume is not None else 0.0
     sim.plume_src = PLUME_CO2 * melt / sim.scale**2
-    source = (newc * (sim.dt / dt) / sim.scale**2 + 20.0 * growth.sum() / sim.scale**2 + sim.plume_src) * noise
+    sim.ridge_src = float(aw[newc].sum()) * (sim.dt / dt) / sim.scale**2
+    sim.arc_src = 20.0 * float((growth * aw).sum()) / sim.scale**2
+    source = (sim.ridge_src + sim.arc_src + sim.plume_src) * noise
     sink_cells, supply, warm, _, bare_cells = weathering(sim, land)
     sink = float(sink_cells.sum()) / sim.scale**2
     if sink > 0.0:  # (the first step: nothing has eroded yet; the references start from the first real rates)
@@ -1136,11 +1143,14 @@ def ablation_zone(sim, land, iced, smb, rings=ICE_RINGS, *, cost):
     dearest coastal cells (their loss less their own snow) until it can;
     before, a coastal accumulation zone paid nothing for its coast and the
     time zoom shed ~20-100 m of the run's ice in 50 kyr. iced: the
-    accumulation zones (in place); cost: coast_cost's (m/yr, lost)."""
+    accumulation zones (in place); cost: coast_cost's (m/yr, lost). The budgets are a sheet's ice per year: each
+    cell's m/yr times its own area over the mean cell's (Grid.area_weight, PW-1637), and so are the cells' costs."""
     g = sim.grid
     off, idx = g.nbr_off, g.nbr_idx
     src = np.repeat(np.arange(g.n), np.diff(off))
     calve, lost = cost
+    aw = g.area_weight
+    smb, calve = smb * aw, calve * aw
     iced &= ~lost
     land = land & ~lost
     for _ in range(rings):

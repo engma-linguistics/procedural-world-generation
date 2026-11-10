@@ -220,7 +220,8 @@ def update(sim, bd):
     sim.mantle_lid += (1 - np.exp(-dt / 100.0)) * (sim.w_cont - sim.mantle_lid)
     warm = p.insulation * sim.w_cont * sim.mantle_lid
     # slabs: per trench edge, convergence (cm/yr / 5) x slab age (/80 Myr),
-    # per unit length (level-independent: x edge length / cell area)
+    # per unit length (level-independent: x edge length / cell area; the mean cell's area, not each cell's: smooth's
+    # basis weighs the cells equally, so a cell's total over the mean area puts the whole slab into the field, PW-1628)
     cold = np.zeros(n)
     conv = np.clip(bd.at_trenches(bd.conv), 0, 15) / 5.0
     age = np.clip(sim.w_age[bd.sinking] / 80.0, 0.3, 1.5)
@@ -300,7 +301,7 @@ def traction(sim) -> np.ndarray:
     p = sim.params
     if p.mantle_drag <= 0:
         return np.zeros((sim.grid.n, 3))
-    w = sim.cell_area * (1 + p.continental_keel * sim.w_cont)
+    w = sim.cell_sr * (1 + p.continental_keel * sim.w_cont)
     return -p.mantle_drag * gradient(sim, sim.mantle + eddies(sim)) * w[:, None]
 
 

@@ -2,9 +2,9 @@
 id: PW-1622
 title: "Languages: the phonotactic veto is per draw, so CV languages gain codas within 2.5 kyr"
 type: task
-status: todo
+status: done
 parent: PW-767
-milestone: later
+milestone: v4
 subsystem: peoples
 effort: s
 impact: med
@@ -28,4 +28,5 @@ Fix direction: decide the veto once per rule per interval (or per line, with a m
 If never done: every CV-language seed (hand-seeded or drawn "simple") drifts toward (C)V(C) in a few thousand years. Families do not keep their syllable type, and the finder's Hawaiian or Japanese look-alikes get rarer as runs get older.
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 12: a vetoed change is set aside for the interval (weight kept in the draw's mass); one bringing in a syllable type the lect lacks (inventory.new_violations types_only) is refused for the re-fire wait (Lect.refused, inherited, also blocks wave adoption); hiatus repairs that break the syllables weighted down by PHONO_VETO. real_inventory.py full tier, 2.5 kyr, closed share before -> after: Swahili 0.25 -> 0.01, Hawaiian 0.25 -> 0.18, Japanese 0.01 -> 0.01; finder distance Swahili 3.18 -> 1.44, Hawaiian 3.15 -> 2.84, Japanese 1.69 -> 1.74. a24559: checks unchanged in pass/fail; WALS-style simple syllables 0.16 -> 0.22, under-5% final C 0.24 -> 0.33 (the one-way coda catalogue: draft-language-coda-supply-one-way).
 - 2026-11-10: Created from inbox draft draft-language-phonotactic-veto-per-draw.md (found by lang-realinv).

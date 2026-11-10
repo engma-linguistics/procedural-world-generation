@@ -67,7 +67,13 @@ class Recorder:
             "ch4_ppb": round(ghg_conc(p, sim.t, float(sim.dT), free)[0], 1),
             "ice_share": round(float(sim.ice_share if sim.ice_share is not None else 0.0), 3), "source_raw": float(source), "sink_raw": float(sink),
             "plume_src": round(float(getattr(sim, "plume_src", 0.0)), 6),
+            "ridge_src": round(float(getattr(sim, "ridge_src", 0.0)), 6),  # (the source's parts before the drift)
+            "arc_src": round(float(getattr(sim, "arc_src", 0.0)), 6),
             "src": round(float(rel[0]), 4), "sink": round(float(rel[1]), 4), "ice_frac": round(float(ice_frac), 4),
+            # (the stock's driver, ln(s / w): its steady state is ln co2_law(X) = drive. After REF_FREEZE the source's
+            # reference cancels out of it (the sink's is the source's over YARDSTICK), so src alone is no cold-era
+            # signal: lane 273, docs/review/v1-cut/source-reference-option-d.md)
+            "drive": round(float(np.log(max(rel[0], 1e-300) / max(rel[1], 1e-300))), 4),
             **self._sink_parts(sim)}
 
     @staticmethod
@@ -85,7 +91,8 @@ class Recorder:
         w, supply, warm, plants, bare = earth.weathering(sim, land)
         s, sp = float(supply.sum()), float((supply * plants).sum())
         free = land & (sim.ice <= 0)
-        out = {"w_area": round(float(free.mean()), 4), "w_supply": s / sim.scale**2,
+        a = sim.grid.cell_area_km2  # (each cell's own area, PW-1628)
+        out = {"w_area": round(float(a[free].sum() / a.sum()), 4), "w_supply": s / sim.scale**2,
                "w_plant": round(sp / s, 4) if s > 0 else None, "w_temp": round(float(w.sum()) / sp, 4) if sp > 0 else None}
         if w.sum() > 0:  # the sink's share on bare ground and its CO2 log-slope there (earth.co2_law, v1-finish-11)
             out["w_bare"] = round(float(bare.sum() / w.sum()), 4)
@@ -95,7 +102,8 @@ class Recorder:
         if s > 0 and sim.temp is not None:
             out["w_T"] = round(float((supply * sim.temp).sum()) / s, 2)
             out["w_q"] = round(float((supply * sim.runoff).sum()) / s, 1) if sim.runoff is not None else None
-        out["w_rate"] = round(s / max(int(free.sum()), 1) / sim.dt, 5)  # (the supply is per step of dt)
+        # (the supply is per step of dt, each cell's times its area over the mean's: earth.weathering)
+        out["w_rate"] = round(s / max(float(sim.grid.area_weight[free].sum()), 1.0) / sim.dt, 5)
         return out
 
     def step(self, sim) -> None:
@@ -129,7 +137,7 @@ class Recorder:
                "air_rounds": int(info.get("air_rounds", 0)), "air_capped": bool(info.get("air_capped", False)),
                "temp": round(float(np.mean(sim.temp)), 3), "precip": round(float(np.mean(sim.precip)), 1),
                "precip_ice": round(float(sim.precip[iced].mean()), 1) if iced.any() else 0.0,
-               "sea_frozen": round(float(((~land) & (c["sea_ice_growth"] > 0.05)).sum()) / max(int((~land).sum()), 1), 4),
+               "sea_frozen": round(float(area_km2[(~land) & (c["sea_ice_growth"] > 0.05)].sum()) / ocean_km2, 4),
                "sea_ice": round(float(sim.sea_ice), 2), "sea_tect": round(float(sim.sea_tect), 2),
                "iced_lat_min": round(float(np.abs(g.lat[iced]).min()), 2) if iced.any() else None,
                "iced_lat_max": round(float(np.abs(g.lat[iced]).max()), 2) if iced.any() else None}
@@ -160,8 +168,9 @@ class Recorder:
                 rec[f"{key}_grass"] = round(100 * float(herb[land][m].mean()), 2) if m.any() else None
         # land poleward of the snowline, ice-free and iced (the glacial index's cooling share, PW-538)
         smb0, _ = icemass.balance(g.lat, land, t_warm, t_cold, sim.p_jul, sim.p_jan, 0.0, 0.0, tilt=sim.params.tilt)
-        rec["snow_land"] = round(float((land & (smb0 > 0)).sum()) / max(int(land.sum()), 1), 4)
-        rec["snow_land_free"] = round(float((land & (smb0 > 0) & ~iced).sum()) / max(int(land.sum()), 1), 4)
+        land_km2 = max(float(area_km2[land].sum()), 1.0)
+        rec["snow_land"] = round(float(area_km2[land & (smb0 > 0)].sum()) / land_km2, 4)
+        rec["snow_land_free"] = round(float(area_km2[land & (smb0 > 0) & ~iced].sum()) / land_km2, 4)
         sheets = []
         if iced.any():
             cover = icemass.sheet_cover(g, ice, info.get("air"))
@@ -180,17 +189,18 @@ class Recorder:
             acc, mel, sea = (tot(np.maximum(smb, 0) * area_km2) * to_sl, tot(np.maximum(-smb, 0) * area_km2) * to_sl,
                              tot(calve * area_km2) * to_sl)
             cnt = tot(np.ones(g.n))
+            km2 = tot(area_km2)  # (sheet areas and means by each cell's own area, PW-1628)
             vol = tot(ice * area_km2) * -sle
-            lat = tot(g.lat) / np.maximum(cnt, 1)
+            lat = tot(g.lat * area_km2) / np.maximum(km2, 1e-9)
             surf = np.where(iced, e + ice, -np.inf)
             hmax = np.full(nk, -np.inf)
             np.maximum.at(hmax, k[iced], surf[iced])
             latmin = np.full(nk, 90.0)
             np.minimum.at(latmin, k[iced], np.abs(g.lat[iced]))
-            msurf = tot(np.where(iced, e + ice, 0.0)) / np.maximum(cnt, 1)
-            order = np.argsort(-cnt)
+            msurf = tot(np.where(iced, e + ice, 0.0) * area_km2) / np.maximum(km2, 1e-9)
+            order = np.argsort(-km2, kind="stable")
             for j in order[:self.top]:
-                sheets.append({"cells": int(cnt[j]), "area_pct_land": round(100 * cnt[j] / max(int(land.sum()), 1), 2),
+                sheets.append({"cells": int(cnt[j]), "area_pct_land": round(100 * km2[j] / land_km2, 2),
                                "vol_m": round(float(vol[j]), 2), "lat": round(float(lat[j]), 1),
                                "lat_min": round(float(latmin[j]), 1), "surf_mean": round(float(msurf[j])),
                                "surf_max": round(float(hmax[j])), "acc": round(float(acc[j]), 4),

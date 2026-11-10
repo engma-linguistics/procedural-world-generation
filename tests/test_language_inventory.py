@@ -226,6 +226,21 @@ def test_coda_liquids_are_allophones():
     assert _seg("ɹ") not in I.phonemic(forms + _forms("ɹa"), segs)
 
 
+def test_allophones_stay_allophones_in_word_building():
+    """Lane 14b: word building works on the phonemes (a coda ɹ that a suffix puts before a vowel is r again, Dutch maar
+    [maːɹ] / mare [maːrə]), and the allophone rule stays productive (a new coda r is said ɹ), so the pair keeps its
+    complementary distribution."""
+    forms = _forms("rapa", "kira", "paɹ", "taɹku", "ruki", "tama")
+    inv = I.Inventory(consonants=[_seg(x) for x in "rptkm"], vowels=[_seg(x) for x in "aiu"],
+                      shapes={"CV": 0.6, "CVC": 0.4}, max_coda=1)
+    ob = I.observed(inv, forms)
+    assert ob.allophones.get(_seg("ɹ")) == (_seg("r"), "coda")
+    assert I.allophonic(tuple(from_ipa("paɹa")), ob, underlying=True) == tuple(from_ipa("para"))
+    assert I.allophonic(tuple(from_ipa("paɹa")), ob) == tuple(from_ipa("paɹa"))   # (a sound change's stranding stays)
+    assert I.allophonic(tuple(from_ipa("kurta")), ob) == tuple(from_ipa("kuɹta"))
+    assert I.realize(tuple(from_ipa("paɹi")), ob) == tuple(from_ipa("pari"))
+
+
 def test_intervocalic_voicing_allophone():
     forms = _forms("tada", "pata", "tiku", "kadi", "tupa", "atu")
     segs = list(dict.fromkeys(s for f in forms for s in f))
@@ -359,3 +374,15 @@ def test_drawn_marked_stops_have_their_plain_partner(draws):
             if s.larynx in (1, 2) and s.manner in (0, 1) and not s.lateral:
                 assert I.plain_partners(s) & have, (to_ipa(s), [to_ipa(x) for x in inv.consonants])
 
+
+
+def test_token_priors_follow_lexical_counts():
+    """PW-1623: phonemes are drawn by their token class's busyness in words (data/token_frequency.tsv, from NorthEuraLex),
+    not by how many inventories have them: a is busier than u, t and k than p, b and g; a class the table lacks keeps
+    its presence weight."""
+    from planet.language import inventory as INV
+    from planet.language.percepts import parse_segment as P
+    t = INV.token_priors()
+    assert t and t[INV.token_class(P("a"))] > t[INV.token_class(P("u"))]
+    assert t[INV.token_class(P("t"))] > t[INV.token_class(P("p"))] > t[INV.token_class(P("ɡ")) ] * 0.9
+    assert INV.token_class(P("ǃ")) not in t and INV._lexical(P("ǃ"), 0.04) == pytest.approx(0.2)

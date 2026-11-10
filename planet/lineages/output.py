@@ -79,7 +79,7 @@ def colors(h: History) -> list[str]:
     return out
 
 
-def save(h: History, res: dict, pres: dict, world: str | None = None, name: str | None = None) -> Path:
+def save(h: History, res: dict, pres: dict, world: str | None = None, name: str | None = None, languages: bool = True) -> Path:
     g, ps = h.grid, h.ps
     frames = res["frames"]
     pres["homeland"] = homeland(h, res["present"], world)
@@ -209,7 +209,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
             ST.report_section(out)
         else:
             ST.write(out)
-    if (out / "demes.json").exists():  # (languages over the demes: planet/language, PW-986; languages.json; a failure is logged, not fatal)
+    if languages and (out / "demes.json").exists():  # (languages over the demes: planet/language, PW-986; languages.json; a failure is logged, not fatal; planet make runs it as its own stage instead, PW-1634)
         try:
             from ..language import run as LR
             sm = LR.write(out)

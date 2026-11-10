@@ -1446,3 +1446,294 @@ syllable, class concord on every word, CLICS derivation families, and gaps that 
 | shortest god name kept | 2 beats (a long vowel counts 2) | `faiths.MIN_NAME_MORAS` |
 | intervals between garbage collections in the pass | 20 | `history.COLLECT_EVERY` |
 | which ruins get names | every abandoned site but mines, in the last holders' lect at abandonment | `personal.Personal.ruins` |
+
+## Lane 12 (lang-lane12, 2026-11-10): make runs the languages, open-syllable languages stay open, 'who' and 'when'
+
+- **New worlds get languages (PW-1634).** In plain words: a world made with peoples, from the viewer's New planet
+  form or `planet make --peoples`, now gets its languages too, as the last step. The form has a "Languages of those
+  peoples" box, ticked by default; the CLI has `--no-languages` and `--language-workers N` (default 8).
+  The estimate lists the step: about 7 min at L6 and 11 min at L7 with 8 workers. Progress shows how far back in time
+  the pass is. Measured: an L6 make of 200 Myr gave 422 living languages in 423 s. The peoples step used to run the
+  pass itself, on one process, with no progress and no way to switch it off; inside make it now leaves the pass to
+  the new step. The gods file with its faiths is written by the peoples step first, so the pass does not work the
+  faiths out again (2.6 s, not ~90). If the pass fails, for example on a time zoom shorter than its 20 kyr, the
+  failure is noted in run.txt and the peoples run is kept.
+- **Open-syllable languages stay open (PW-1622).** In plain words: a language that allows only open syllables, like
+  Hawaiian or Swahili, used to start ending words in consonants within about 2,500 years. The resistance to such a
+  change was rolled again every time the change came up, about 440 times a step, so it nearly always got through.
+  Now each line decides once: a change that would bring in a syllable type the language does not have (a final
+  consonant in an open-syllable language, a consonant cluster or a closed middle syllable where there are none) is
+  refused for 4 kyr, the same wait as after a change fires, and daughters inherit the refusal. A change that only
+  makes an existing type bigger (a second final consonant) is decided again each 0.5 kyr step. A hiatus repair
+  that would make a final glide (-ai > -aj) is avoided in favour of another repair.
+  Measured with the real-inventory experiment (10 seeds, 2.5 kyr, full toolkit, closed-syllable share of the
+  daughter's words, before -> after): Swahili 0.25 -> 0.01, Hawaiian 0.25 -> 0.18 (half the seeds stay open; the
+  other half let apocope through at its one 1-in-5 chance), Japanese 0.01 -> 0.01 (it has no stress, so it never
+  had apocope). Finder distance to the real language: Swahili 3.18 -> 1.44, Hawaiian 3.15 -> 2.84, Japanese
+  1.69 -> 1.74.
+  The cost: languages with closed syllables now gain new ones less easily and lose them as before, since losing
+  them is not resisted. On a24559, the share of living languages with simple syllables (WALS 12A reading) went
+  0.16 -> 0.22, against WALS 0.12; those ending under 5% of words in a consonant 0.24 -> 0.33; complex 0.43 -> 0.37
+  (WALS 0.31). The engine still has many ways to lose final consonants and few to make them; that is the real
+  cause, and the fix belongs there (draft).
+- **'Who' and 'when' (PW-1635, option A of the 11-10 proposal).** In plain words: when a language rebuilt its word
+  for 'who' from 'person', it made 'who-person' out of the old 'who'; it now makes 'what person', as Latin
+  *quis homo* does. And 'when' used to be made from 'what' with the same 'place' ending as 'where', so the two were
+  born sounding alike; 'when' now has a 'time' ending of its own. On a24559: 'who' built on the old 'who' + 'person'
+  0.034 -> 0, on 'what' 0 -> 0.076; 'when' built on 'what' 0.15 -> 0.19. The full table of question words
+  (options B and C) waits for your answer on the Language Desk.
+- **Checks** (a24559, main -> this lane): 620 living; all pass but the scholars' horizon; sisters 0.562 -> 0.602;
+  pronoun loans 0.082 -> 0.073 (now under the 0.08 cap); WOLD rho 0.403 -> 0.410; areal typology difference
+  0.018 -> 0.012 (passes). The pass took 642 s. The demo builds with no fable warning.
+
+**Defaults I chose**
+
+| what | default | where |
+| --- | --- | --- |
+| how long a refused new syllable type stays refused | the re-fire wait (4 kyr) | `lect.Lect.refused`, `may_fire` |
+| a larger cluster of a type the language has | decided again each step | `lect.Lect.step` |
+| make's language workers | 8 (1-16) | `make.LANGUAGE_WORKERS` |
+| make's languages step at L4 / L5 / L6 / L7 / L8 | 3 / 5 / 7 / 11 / 25 min | `make.LANGUAGES_S` |
+
+## Lane 13 (lang-lane13, 2026-11-10): conquest and trade borrowing, cow ~ beef doublets
+
+In plain words: which words a language borrows now depends on who lends them. Rulers lend law, rule, faith, war,
+dress, the house and the kitchen; traders lend market, money and measure words and goods; ordinary neighbours lend
+as before. And a borrowed word can now come in beside the native word instead of replacing it: a conquered people
+keeps its word for the cow and takes the rulers' word for the beef, keeps its word for milk and takes the rulers' or
+traders' word for cheese or butter, or keeps a borrowed word as the formal synonym. The sketches and the demo page
+list these doublets with the conquest or trade that brought them. Ticket PW-1636; design: the proposal of 11-10,
+Part 2 (your rulings D2.1 B, D2.2 B). Trade numerals are not switched on (desk card p.numerals).
+
+**What changed**
+
+- **Field profiles by contact kind (P1, `planet/language/contact.py`).** Each donor of a language is labelled each
+  interval (`history.loan_kinds`):
+  - *elite*: an elite incursion or a takeover over this language's deme (takeover is nearly all of them: 87 to 1 on
+    a24559), and the rulers' speech for the old speech of a deme that shifted under them;
+  - *trade*: a trade trigger, or a deme of another people that handed this one a crop, a herd animal or a technology
+    in the last 1 kyr;
+  - *city*: a mixed city; everything else is *neighbour* (unchanged).
+
+  The kind's profile multiplies how likely a meaning is to be borrowed from that donor, and the donor is drawn by pull x
+  the multiplier, so the ruler supplies the law word and the trader the market word. Each profile averages 1 over the
+  concept list, so the amount of borrowing stays the same; only its spread moves. Pronouns, numerals, question words
+  and deictics stay at 1 in every profile. Crops stay at x1 under trade (the food routes already carry them).
+
+  | kind | raised | lowered |
+  | --- | --- | --- |
+  | elite | law and social x4.0, religion and war x3.0, cuisine and the meats x3.0, dress and the house x2.0, the farm animals and ingredients x2.0, commerce x1.5 | body, kin, perception, motion, basic list, nature x0.25 |
+  | trade | commerce x2.9, goods and metals x2.5, cuisine x1.5 | body, kin x0.5 |
+  | city | crafts, dress, house, cuisine x1.8 | |
+
+- **The swamp fix (D2.1 B).** When newcomers shift to the locals' speech (a swamp trigger), they now keep words of the
+  fields rulers lend (war, rule, cuisine, dress), not "local landscape" words they never had. The shift records say
+  `kept_as: superstrate`. On a24559, 47 such shifts kept 7 to 40 words each (e.g. ferment, peace, pillow, rich, table,
+  tasty, thread).
+- **New concepts (P3).** The meat of every herd animal the run has and of the deer (`meat:cattle`, `meat:caprine`,
+  `meat:fowl`, `meat:horse`, `meat:deer` ...). A proto-language names them 'cattle-meat' (a compound of the animal and
+  MEAT, the usual way: German Rindfleisch, Mandarin niúròu), so a specialised word like beef is the special case. Also
+  12 trade, rule and law words: PRICE, MONEY, DEBT, WEIGH, MEASURE, PROFIT, ACCOUNT, LAW, JUDGE, TAX, COURT, NOBLE. A
+  people gets each once it knows the technology (markets, coinage, credit and debt, weights and measures, law,
+  taxation, kingship, writing), borrowed with it from the teaching people when they are in contact, as BREAD and
+  CHEESE already were. The ingredient/product pairs use concepts that already existed (milk ~ cheese, butter; grain,
+  wheat, rye ~ flour, bread; grape ~ wine; honey ~ mead; cane ~ sugar), listed in `data/splits.tsv`.
+- **Doublets (P2).** When a language is borrowing an animal or an ingredient word from a ruler, the loan comes in
+  for the meat or the product instead, with chance 0.7, and the native word stays (`contact.doublet`). That is the
+  English path: Old French *boef* meant the ox; English kept it for the meat. For a product the donor's own product word
+  is taken when it has one (Latin *caseus* > cheese). Traders and mixed cities do this for products only (0.3, 0.2).
+  And a ruler's loan for a word of the fields rulers lend, or an abstract word (feelings, thought, speech), comes in as
+  a formal synonym with chance 0.15, kept in `systems.registers.high` like the faiths' learned register. Formal
+  synonyms die off at the word's normal replacement rate, so they are not permanent. Every contact loan's etymology
+  note now names its channel ("contact, elite"), and each language keeps the list of its rulers and trading partners
+  with dates and the reason (`systems.contact_layers`).
+- **Pages.** The sketches and the demo page have a "Doublets" list, food first: "cattle (animal) ~ cattle (meat):
+  native *euyi*, the meat word *lobut* from human 9 (now), after 5 site(s) of the dragonborn taken by the human about
+  7.5 kyr ago". When the animal word is itself an older loan the line says "the older word" instead of "native". The
+  viewer does not show them yet (draft).
+- **Two new checks.** "Loans follow the contact kind": loans from rulers must have at least 1.5 x the neighbours'
+  share of law, social, religion and war words. "Doublets under elite rule": of the living languages ruled for 2 kyr
+  or more, at least 20% must have a meat or product doublet.
+
+**Numbers** (a24559, main -> this lane; the history is re-rolled, since the new concepts change every draw)
+
+| check | main | lane 13 | mark |
+| --- | --- | --- | --- |
+| living languages | 620 | 625 | |
+| loans follow borrowability (WOLD rho) | 0.403 | 0.425 | >= 0.3 |
+| pronoun loans | 0.082 (fail) | 0.066 | <= 0.08 |
+| sisters recognisable | 0.562 | 0.531 | >= 0.5 |
+| areal (near - far) | 0.018 | 0.015 | >= 0.01 |
+| share of words that are loans | 30.4% | 29.3% | |
+| loans from rulers: prestige-field share over the neighbours' | (no channel) | 1.78 x (11.7% vs 6.5%) | >= 1.5 |
+| ruled 2 kyr or more with a food doublet | | 115 of 150 (77%) | >= 20% |
+| scholars' horizon | fail | fail | accepted |
+
+All checks pass except the accepted horizon. On de1cc6 (an earlier build of this lane, before the formal synonyms
+were narrowed to fitting fields; main -> lane): sisters 0.478 (fail) -> 0.512; horizon fail -> pass; WOLD rho 0.398 ->
+0.419; pronoun loans 0.085 -> 0.093 (fail both times, within the 0.065-0.093 seen across rebuilds); elite prestige
+share 1.9 x; 124 of 156 ruled languages with a food doublet. The inventory-size and overused-segment fails of de1cc6
+are there on main too.
+
+Doublets on a24559 (573 living, majority speech): 190 meat words and 159 product words in 170 languages; 1,052 formal
+synonyms (about 1.8 a language; the first build gave 4.6 a language, many for frog, jaw or bite, so I limited them to
+the fields rulers lend and the abstract ones).
+
+The farm side and the kitchen side, share of languages whose word is a loan (main -> lane 13). The proposal's
+complaint was that the farm side was always borrowed more; now the kitchen side catches up where conquest happened.
+a24559 has no pigs, so there is no pig/pork pair.
+
+| animal or ingredient / meat or product | main | lane 13 |
+| --- | --- | --- |
+| wheat / flour | 60.5% / 26.6% | 68.1% / 45.6% |
+| grain / flour | 45.7% / 22.0% | 37.5% / 34.2% |
+| milk / butter | 44.7% / 34.4% | 43.8% / 46.8% |
+| milk / cheese | 55.9% / 46.7% | 54.4% / 47.9% |
+| honey / mead | 43.5% / 32.8% | 36.5% / 39.2% |
+| grape / wine | 65.5% / 56.0% | 59.0% / 59.8% |
+| cattle / its meat | (no meat word) | 18.3% / 17.8% |
+| deer / its meat | (no meat word) | 25.3% / 22.3% |
+
+Examples from a24559 (romanised):
+- d151.2 (a dragonborn people under human rule): cattle *euyi* ~ the meat word *lobut*, and caprine *euyuwiwh* ~ *sosutuwu*,
+  both from the humans who took 5 dragonborn sites about 7.5 kyr ago.
+- d149: cattle *njigyai'ē* ~ *unji*, deer *njigylēnd* ~ *urr*, milk *its'aj* ~ butter *jelunji*, all from the
+  humans who took 2 dragonborn sites about 5 kyr ago.
+- d148.1: cattle *euygeuy* ~ *unguw*, deer *eu* ~ *teil*, after 76 dragonborn sites taken by humans about 2 kyr ago.
+- d143.1 (kobold): milk ~ cheese *eiluḷimu*, after 2 kobold sites taken by humans about 3 kyr ago.
+- d129: king *ulule*, formal *uyanae*, from the humans who took 2 dwarf sites about 5.5 kyr ago.
+- de1cc6, d19.1 (cervid folk under antelope folk): cattle, caprine and deer each with an antelope-folk meat word, after
+  14 cervid-folk sites were taken about 7 kyr ago.
+
+**Not done, and why**
+- Trade numerals: the hook is there (`contact.TRADE_NUMERALS`, e.g. {"HUNDRED": 3, "THOUSAND": 3}), off until desk
+  card p.numerals is answered.
+- The viewer (P4) and the cuisine pages do not show the doublets yet (draft). The per-language "layers" table of the
+  proposal is in the same draft.
+- "Trade" is broad: the run's trade triggers cover most long contact between two peoples, so on a24559 there are more
+  trade loans (56,600) than neighbour loans (46,900). Harmless while the trade profile is mild, but it would spread
+  trade numerals everywhere (draft).
+- The sisters number fell 0.562 -> 0.531 on a24559 and rose 0.478 -> 0.512 on de1cc6; I read both as re-roll noise.
+
+**Defaults I chose**
+
+| what | default | where |
+| --- | --- | --- |
+| profile multipliers | the table above (raw: law 4, religion 3, cuisine 3, animals 2, lowered 0.25; trade commerce 3, goods 2.5) | `contact.RAW` |
+| chance a ruler's animal or ingredient loan becomes the meat or product word | 0.7 (traders 0.3, cities 0.2, products only) | `contact.DOUBLET_P` |
+| chance a ruler's loan becomes a formal synonym | 0.15, freq class 3 and rarer, fitting fields only | `contact.REGISTER_P`, `REGISTER_FIELDS` |
+| how long a crop or technology hand-over makes two peoples trading partners | 1 kyr | `history.TRADE_PARTNER_KYR` |
+| new check marks | rulers' prestige share >= 1.5 x neighbours'; >= 20% of languages ruled 2 kyr with a food doublet | `checks.ELITE_PRESTIGE_X`, `ELITE_SPLIT_MIN` |
+
+## Lane 14 (lang-lane14 + 14b, 2026-11-10): families that stay families, the real-language benchmark as a standing check
+
+In plain words: languages used to drift toward one middle sound over the millennia. Now each family keeps its own leanings
+(one keeps losing final vowels, another keeps softening consonants between vowels), and a branch can take one
+defining change at its split and keep it as its mark, the way centum and satem did. Each language also holds its
+word shape: a language with open syllables stays open, and a language with codas keeps them. The seven real languages
+given to the engine as protos (English, Spanish, Swahili, Japanese, Mandarin, Hawaiian, Arabic) now stay much more like
+themselves after 2,500 years. That test is now a standing check with a stored baseline, run after every language change,
+like the Earth check for the physics. Tickets PW-1641, PW-1624, PW-1642, PW-1638, PW-1623.
+
+**What changed**
+
+- **The benchmark as a check (PW-1641).** `uv run python -I tools/language/real_inventory.py --check` (about a minute
+  at 8 workers) prints the table below against a stored baseline (`tools/language/data/real_inventory_baseline.json`,
+  main before lane 14) and says which numbers got worse. The finder now counts vowel qualities, not long and nasal
+  vowels separately, and scores a sparse reference profile on the terms it fills (PW-1624).
+- **Family leanings (PW-1642).** Each line leans toward some kinds of sound change and away from others. The leaning
+  is inherited at each split and drifts slowly (sisters share their parent's, distant branches drift apart). The
+  spread is wider than before (LINE_FAMILY_SIGMA 0.7 to 1.5), so a disfavoured kind of change can be skipped for a
+  whole family.
+- **Signature changes at splits (PW-1642).** A new branch takes one defining change with probability 0.2 at its split
+  (more in a founder or a shifted line), drawn from the changes that touch at least 5% of its common words. It fires
+  at once, keeps firing when its input comes back, and the branch's daughters inherit it.
+- **Word shape held (PW-1642, PW-1638).** Each line holds the share of words ending in a consonant, with a medial coda
+  and with an onset cluster, and its word length. A change that moves the words away from that shape is usually turned
+  down; the held shape follows the words slowly (10 kyr). Before, a dozen catalogue rows took final consonants and few
+  made them, so coda languages wore down to open syllables.
+- **Sounds used by how busy they are in words (PW-1623).** A proto's words now use each sound by its token frequency in
+  real word lists (NorthEuraLex), not by how many languages have it. /a/ is now 26% of vowels in living a24559 lects
+  (main 18%), high vowels 47% (main 59%).
+- **Allophones stay allophones (lane 14b, the fix for overused ɹ).** A sound that only stands in one position, like
+  Dutch coda [ɹ] beside [r], is an allophone, not a phoneme. Two things used to make it a phoneme at once: a suffix or
+  compound putting the coda [ɹ] before a vowel, and a later sound change making a new coda r. Now word building works
+  on the phonemes (a coda [ɹ] before a suffix vowel is [r] again, as Dutch maar [maːɹ] but mare [maːrə]), and an
+  allophone rule stays productive (a new coda r is said [ɹ] too). An allophone a sound change strands outside its
+  position still becomes a phoneme, the way umlaut did.
+
+**Benchmark (20 seeds, +2.5 kyr, full toolkit): main before lane 14 -> now**
+
+| | main | now |
+| --- | --- | --- |
+| mean distance growth (how far a language drifts from itself) | 1.29 | 0.73 |
+| languages that kept their character (growth 0.5 or less) | 1 of 7 | 2 of 7 |
+| drift signatures (one change in 80%+ of all daughters) | 6 | 1 |
+| distinct changes a daughter | | 38 (control 46) |
+
+Six of the seven end closer to themselves after 2,500 years than on main (Japanese is unchanged), and they keep their
+closed-syllable and final-consonant shares (shift 0.00-0.14, main up to 0.32). No number is worse than the baseline. Vowel harmony still
+arises in 60-95% of daughters (a draft from lane 14 asks about it).
+
+**World checks (living lects; main after lane 13 -> lane 14b)**
+
+| | a24559 main | a24559 now | de1cc6 main | de1cc6 now |
+| --- | --- | --- | --- | --- |
+| living lects | 623 | 622 | 535 | 529 |
+| sisters recognisable | 0.586 ok | 0.588 ok | 0.475 FAIL | 0.524 ok |
+| scholars' horizon (target 6-10 kyr) | 14.6 FAIL | 13.5 FAIL | 13.0 FAIL | 10.0 ok |
+| overused segments | none | ʁ 12.1% (PHOIBLE 3.7%) FAIL | ɖ, ⁿt, ᵑk FAIL | ɖ FAIL |
+| WOLD loans (rho; pronoun loans, cap 0.08) | 0.43; 0.081 FAIL | 0.49; 0.065 ok | 0.43; 0.090 FAIL | 0.50; 0.077 ok |
+| contact kind, doublets (lane 13) | ok, ok | ok, ok | ok, ok | ok, ok |
+
+**Syllable types against WALS 12A** (simple / moderate / complex; WALS 0.12 / 0.56 / 0.31)
+
+| | simple | moderate | complex |
+| --- | --- | --- | --- |
+| a24559 main | 0.22 | 0.40 | 0.38 |
+| a24559 now | 0.05 | 0.62 | 0.33 |
+| de1cc6 main | 0.11 | 0.38 | 0.51 |
+| de1cc6 now | 0.07 | 0.61 | 0.32 |
+
+Moderate and complex are now near WALS on both worlds. Open-syllable languages are too few. Lane 14b checked the
+suspected cause (codas in long words the anchor never sees) and it is not that: the anchor's sample matches the core
+words. Main's 22% came almost wholly from coda languages wearing down (116 of 138), which the anchor now stops; the
+proto draw is right (11.5% open); open-syllable lines keep their shape in 56% of daughters (main 31%) and lose it
+through loans and coined words once their template opens. Nothing yet lets a coda language go open the way Polynesian
+did. A draft asks for that next step (draft-open-syllable-stable-state).
+
+**Families look like families** (`tools/language/families_apart.py`; mean distance between pairs of living lects)
+
+| | a24559 main | a24559 now | de1cc6 main | de1cc6 now |
+| --- | --- | --- | --- | --- |
+| sound, same branch | 2.16 | 1.74 | 2.12 | 1.97 |
+| sound, other branch of the family | 2.56 | 2.04 | 2.72 | 2.38 |
+| sound, other family | 5.23 | 4.93 | 4.97 | 4.77 |
+| word shape, same branch / other family | 0.45 / 0.85 | 0.24 / 0.61 | 0.32 / 0.76 | 0.31 / 0.59 |
+| branches carrying a signature change | 0 | 25 of 50 | 0 | 14 of 32 |
+
+Relatives are closer together and other families relatively farther away: a family's languages sound and shape their
+words alike. (Lane 14 saw the leaning gap larger within a branch than between branches; that was the tool: it took
+each family's first child as the branch, and that child is nearly always the proto's own continuation. The tool now
+splits families at their living languages' last common ancestor: leaning gap same branch 1.51, other branch 1.57,
+other family 2.11 on a24559.)
+
+**Sister languages side by side.** The sisters page (`tools/language/sisters_page.py`) shows two languages of one
+family that split 2.5 kyr ago on a24559 (no three sisters split inside the 2-4 kyr window, so it takes the closest
+two), with their shared ancestor's words: one has lost its final vowels (*pabɯnɯ 'woman' > abɯn) and kept z and ʒ, the
+other keeps the vowels (pabɯnɯ) and turned z, ʒ into n, x (zi > ni 'what', ʒi > xi 'two'): the French-and-Spanish
+kind of split. Below them a family whose two branches took different marks (one lost final vowels, the other softened k
+to x after vowels), and two unrelated languages for contrast.
+
+**What is left**
+
+- **Uvular r is overused on a24559** (12.1% of living lects, PHOIBLE 3.7%; the check's bar is 3x). The change r > ʁ
+  fires less than on main, but what it makes now lasts: clusters like tʁ and codas survive (r in onset clusters is 4x
+  main), lines run fewer changes in all (14 a kyr against 18), and r comes back beside ʁ in 77 of 115 lects. de1cc6
+  passes this check except for ɖ, which main fails too. Left open on PW-1642.
+- **The scholars' horizon swing is noise, not this change.** It is the first pair of 2-kyr windows where fewer than half
+  the true splits are found, and each window has 7-13 splits, so one or two splits move it by many kyr. Main itself
+  went 4.3 to 14.6 across lane 13, which did not touch it. The steadier logistic fit reads 11.6-14.4 on main's passes
+  and 12.8-16.1 on lane 14's. The living count (611 on lane 14's last pass) is 622 now, against main's 623.
+- Drafts: back vowel harmony too common (lane 14), the token priors' Eurasian sample (lane 14), open-syllable languages
+  too few (lane 14b).

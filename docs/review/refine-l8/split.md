@@ -128,3 +128,52 @@ L7). Nothing absurd: no people in the sea, conservation exact, the map reads as 
 - The ledger on L8 (coast, islands, cities): measured evidence for PW-1627, `issue-tracking/inbox/draft-l8-ledger-coast-cities.md`.
 - The settled window grows fewer people on L8 (one draw): `issue-tracking/inbox/draft-l8-settled-window-fewer-people.md`.
 - The all-L8 run (`--no-split`) was not timed: optional, 3-4 h expected.
+
+## 6. After PW-1627's km rings and the refine's detail on the prolonged frames (lane 270)
+
+Code 5bd8e407 (lane 270): the settled history's rings in km (TOWN_KM 60, CITY_KM 120, PIT_KM 60, COAST_BOAT_KM 120,
+HEMMED_KM 120, the live history's ring table, ISLAND_FLOOR_KM2), and `recent.Pass.detail` (the split's prolonged L7 frames carry
+the refined world's own elevation and temperature detail, so the settled window's present is the fine world's own coast).
+Earth-like A, dnd tree, one try. Split run 727c35 on 69958b (899985 refined to L8) against the L7 run 2e0a95 on 899985,
+**same code**; both read on the fine world 69958b with `compare.py` (box 80-40W, 50-25S, the coast-with-islands region of §4).
+Scratch root `l270/root` (deleted after the lane). Column (b) is §4's split 025b98 on 5d09cc (older code, its own L7 run ebd83a).
+
+| | (a) L7 2e0a95, same code | split 727c35 | (b) split 025b98, §4 (its L7 ebd83a) |
+|---|---|---|---|
+| villages / towns / cities | 22,399 / 6,170 / 283 | 57,473 / 5,228 / 244 | 58,091 / 6,984 / 119 (21,440 / 6,494 / 331) |
+| towns and cities on the fine coast (7.5% of the fine land) | 7.3% | 4.2% | 1.9% (7.0%) |
+| ...within ~60 km of the fine sea (13.2% of the fine land) | 14.8% | 8.8% | not measured |
+| ...on a navigable river of the fine world | 34.4% | 34.6% | 36.0% (30.4%) |
+| ...in the fine world's water | 1.1% | 0.0% | 0.00% (0.95%) |
+| islands (< 0.3 Mkm2) with a town | 21 | 11 | 6 (19) |
+| peopled land share; lead peoples | 0.923; 32 | 0.919; 33 | 0.916; 33 (0.923; 33) |
+| people today (42 living lines, run.txt) | 1,043 million | 909 million (-13%) | 980 M (1,069 M) |
+| humans; orcs (run.txt, two figures) | 660 M; 140 M | 430 M (-35%); 120 M | 564 M; 114 M (694 M; 148 M) |
+| history; wall; peak memory | 1,267 s; 1:08:19; 11.3 GB | 3,544 s; 2:15:58; 37.5 GB | 3,316 s; 1:56:41; 35.5 GB |
+
+The ~60 km band (`band.py` in the lane's scratch: towns by ring distance to the fine sea) checks that the coast share is
+not just the narrower L8 coast cell: L7 towns sit at 1.1x the land's share of that band, the split's at 0.67x.
+
+**Attribution** (the split run's ledger redone with `planet settlements 727c35 --set TOWN_KM=30 CITY_KM=60 PIT_KM=30`, the
+old L8 ring counts, then restored; a control redo at the defaults reproduces the run's own ledger exactly). This redoes only
+the ledger: the live history (polity_live's town and hemmed rings), the coastal boat reach and the island floor ran with km
+in both, so it separates the ledger's rings from the coast fix, not every km change.
+
+| split on 69958b | coast | islands with a town | cities | towns | villages |
+|---|---|---|---|---|---|
+| ledger at the old L8 rings (coast fix only) | 3.9% | 8 | 134 | 6,548 | 58,176 |
+| ledger in km (as run) | 4.2% | 11 | 244 | 5,228 | 57,473 |
+
+So the coast fix most likely carries most of the coast (1.9% -> 3.9%; §4's run is a sibling refine of the same world and a
+separate draw, so this step is not a clean pair) and a little of
+the islands (6 -> 8); the km rings carry the cities (134 -> 244: a city's hinterland is again ~120 km, so it gathers the
+heads it did on L7) and the rest of the islands (8 -> 11), and thin the towns (6,548 -> 5,228: towns again stand ~60 km
+apart, as on L7). Villages scale with the cell count by construction: 2.6x L7's on 4x the cells; reported, not tuned.
+
+**Against the bar** (no worse than L7 beyond what the fine land changes): cities are close (244 vs 283, -14%), rivers and
+water are as good or better. The coast is not: 4.2% on the coast and 8.8% within ~60 km, against 7.3% and 14.8% for the
+same code on L7, and islands with a town 11 against 21. Not tuned toward L7 (no threshold moved). What remains is left on
+PW-1630. One suspect is a grid-independent bug found on the way: the ledger's harbour bonus never fires on either grid
+(`draft-ledger-harbour-on-sea-cells.md`), so ports lean on whatever else favours the coast, and that may read
+differently at 30 km. The people today are 13% fewer on the split (humans 35%), against 8% (19%) in §4: still one draw
+each (PW-1631).

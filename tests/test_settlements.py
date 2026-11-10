@@ -255,3 +255,22 @@ def test_pits_on_ordinary_ore_follow_need_and_smelting(tmp_path, monkeypatch):
             assert all(s["tier_now"] in ("pit", "ruin") and s["district"] == "copper" and not s["colony"] for s in pits)
             cells = {s["cell"] for s in pits if s["abandoned_kyr"] is None}
             assert len(cells) < g.n // 3  # (one per ring, not one per cell)
+
+
+def test_a_coast_cell_reads_the_harbour_water_beside_it():
+    """PW-1640: humanuse.harbours marks the harbour on sea cells; a coastal land cell takes the best harbour of its sea neighbours
+    (so the site factor's SITE_HARBOUR and the fishers' share fire), an inland cell none, and a harbour on land is no harbour."""
+    g = shared_grid(LEVEL)
+    off, idx = np.asarray(g.nbr_off), np.asarray(g.nbr_idx)
+    sea = g.centers[:, 2] > 0.3
+    coastal = ~sea & np.array([sea[idx[off[i]:off[i + 1]]].any() for i in range(g.n)])
+    c0 = int(np.flatnonzero(coastal)[0])
+    s0 = next(int(x) for x in idx[off[c0]:off[c0 + 1]] if sea[x])
+    inland = int(np.flatnonzero(~sea & ~coastal)[0])
+    harbour = np.zeros(g.n)
+    harbour[s0], harbour[inland] = 2.0, 3.0
+    hb = ST.coast_harbour(g, harbour, sea, coastal)
+    assert hb[c0] == 2.0 and hb[inland] == 0.0 and hb[s0] == 0.0
+    W = {"river_nav": np.zeros(g.n), "fresh_water": np.zeros(g.n), "fertile_score": np.full(g.n, 0.5), "pass": np.zeros(g.n)}
+    q = ST._site_factor(W, coastal, ST.CONST, hb)
+    assert abs(q[c0] - (1.0 + ST.CONST["SITE_HARBOUR"][2])) < 1e-12 and q[inland] == 1.0

@@ -200,7 +200,7 @@ def site(world: dict, meta: dict, lay: dict, R: dict, hist: dict | None = None, 
     ang = arc_km(g.centers @ fr.c)
     sel = np.flatnonzero(ang < size_km * 0.7072 + 4 * sp)
     cx, cy = fr.to_plane(g.centers[sel])
-    cell_area = cell_area_km2(g.n)
+    cell_area = g.cell_area_km2[own].reshape(ny, nx)  # each pixel's cell's own area (a cell's odds over its pixels, PW-1628)
     px_area = res * res
 
     # the world's fields on the pixels: likelihoods (Gaussian-weighted, as the zoom interpolates its world)

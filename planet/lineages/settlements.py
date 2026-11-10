@@ -15,11 +15,12 @@ The model (every judgement constant is in the block below; `derive(..., **overri
 - When a people may build: its technology (meta.techtree.known) caps the tier. 'villages' allows a village, 'towns' a town
   (TOWN_MIN or more people), 'cities' a city (CITY_MIN or more). The holder is the cell's people with most heads (mix_lead).
 - How big, as a hierarchy of central places: a village gathers SHARE[1] of its own cell's sedentary people; a town SHARE[2]
-  of its cell and the ring of cells around it (its hinterland), and only where its cell is the best site of that ring; a city
-  SHARE[3] of two rings, and only where it is the best of those (so towns stand at least two cells apart and cities three).
+  of its cell and the cells within TOWN_KM (its hinterland: one ring at L7), and only where its cell is the best site of
+  those; a city SHARE[3] within CITY_KM (two L7 rings), and only where it is the best of those (so towns stand at least
+  ~120 km apart and cities ~180 km; PW-1627: km, not rings, so an L8 refine reads the same country).
   The best site is the sedentary people of the hinterland x the site factor. Each share is x the site factor, and the
   place takes the largest tier its holder may build and its cell may hold. Sedentary people = density (stored per frame: eraq 'dens') x cell area x farmers' share (eraq 'farm'),
-  plus FISHER_SHARE of the others on a cell with a harbour or a navigable river (fisher and river villages), plus HOLD_SHARE of
+  plus FISHER_SHARE of the others on a coast cell beside a harbour (the harbour layer is the water: coast_harbour, PW-1640) or on a navigable river (fisher and river villages), plus HOLD_SHARE of
   the holder's people where the holder is a mining people (trait miner or subterranean: dwarves) that knows 'mines' (the land
   use counts miners as neither farmers nor herders, so without this the dwarves' halls would hold no one). The site
   factor (SITE_MIN..SITE_MAX) adds for a harbour on a coast that is still a coast at that time, a navigable river, fresh
@@ -31,8 +32,8 @@ The model (every judgement constant is in the block below; `derive(..., **overri
   under the sea or the ice. Why (the first that holds): the sea, the ice, drought (rain DROUGHT or more below the rain at
   its founding), driven out (the holder changed in the last HAND_KYR, or the new holder cannot keep sites), else its people
   left. A ruin stays in the ledger; the cell can be settled again ("on the ruins of" the old site).
-- Who lives there: a village's people are its cell's (mostly one people); a town's are its cell and the ring around it, a
-  city's two rings, weighted by heads (towns draw people in: the realistic mixing of PW-910). (Minorities' quarters, PW-889, went with
+- Who lives there: a village's people are its cell's (mostly one people); a town's are those within TOWN_KM, a
+  city's CITY_KM, weighted by heads (towns draw people in: the realistic mixing of PW-910). (Minorities' quarters, PW-889, went with
   the city groups, PW-1369: they wait for a towns and minorities model.)
 - Rivers moving: the history keeps the world's present rivers through time, so there is no drainage per frame to read. A
   stand-in: a site on a navigable river in the lowlands (under RIVER_LOW_M) is left at a seeded chance of RIVER_SHIFT per
@@ -58,6 +59,7 @@ from ..grid import shared_grid
 from . import attitudes as AT
 from . import landuse as LU
 from .years import years_ago
+from .seafood import rings_for
 from .demes import _place, landmass_rank
 from .spread import graph_dist
 from .techtree import keyed
@@ -65,7 +67,10 @@ from .techtree import keyed
 # --- judgement constants (PW-1011 v0; see the docstring) -------------------------------------------------------------------
 CONST = {
     "STEP_KYR": 0.1,        # the ledger's time step (100 years)
-    "SHARE": (0.0, 0.02, 0.008, 0.010),  # share of the sedentary people of its hinterland (own cell; + 1 ring; + 2 rings) a village, town, city gathers
+    "SHARE": (0.0, 0.02, 0.008, 0.010),  # share of the sedentary people of its hinterland (own cell; + TOWN_KM; + CITY_KM) a village, town, city gathers
+    # PW-1627: the hinterlands and spacings in km, not rings (rings_for: the old one and two rings at L7, twice the rings on an L8 refine)
+    "TOWN_KM": 60.0,        # a town's hinterland and the spacing of towns, mining districts and pits: one L7 ring (60 km)
+    "CITY_KM": 120.0,       # a city's hinterland, and the reach of a town's market and of a standing mine's exposure (mining): two L7 rings
     "FISHER_SHARE": 0.25,   # share of the non-farmers on a harbour or navigable-river cell who live settled (fisher and river villages)
     "HOLD_SHARE": 0.5,      # share of a mining people's heads (the holder, by mix_lead_share) that live settled in its halls and mine towns
     "SITE_MIN": 0.6, "SITE_MAX": 2.0,  # the site factor's range (1 = an ordinary inland cell of middling soil)
@@ -106,26 +111,26 @@ CONST = {
     "MINE_SHARE": 0.004,    # a mine's people: this share of its cell's people. Ore is mined from 'copper' on (the first metalworking,
                             # owner 10-30), rock salt from 'mines'
     # D12 (owner 10-30): mining follows need, not knowledge. A people opens mines where it wants their goods: its own farmers'
-    # and herders' metal tools and salt (MINE_NEED), a town's or city's market within two rings (trade), or its own way of life
+    # and herders' metal tools and salt (MINE_NEED), a town's or city's market within CITY_KM (two L7 rings) (trade), or its own way of life
     # (a mining kind, MINE_KIND). Earth: the Archaic foragers of the Great Lakes hammered native copper from quarries for ~5 kyr
     # and never smelted; the Andes smelted from ~700 BC (ice cores) and Mesoamerica only from AD 800; large copper mines such as
     # the Great Orme open ~4 kyr ago, some three kyr after the first smelting (sources in docs/overview.md 2.25).
     "MINE_NEED": 0.3,       # farmers' + herders' share of a cell's people (eraq farm + herd) from which it wants metal tools and salt (judgement)
     "MINE_LAG_KYR": 1.0,    # median wait, per people (seeded, lognormal), from its copper smelting to its own first ore mines (judgement)
     "MINE_LAG_SIGMA": 0.5,  # ... its spread (ln)
-    "MINE_EXPOSE_STEPS": 10,  # a people without the need takes mining up where a mine has stood within two rings this long (1 kyr): slow, by exposure
+    "MINE_EXPOSE_STEPS": 10,  # a people without the need takes mining up where a mine has stood within CITY_KM this long (1 kyr): slow, by exposure
     "MINE_KIND": 0.8,       # a mining affinity (MINING_TRAIT) from this is a mining kind (miner or subterranean: dwarves, kobolds,
                             # gnomes): it mines for its own sake, at once, and sends colonies
     "COLONY_KM": 300.0,     # a mining kind works the rich districts this far from its own country as a colony of incomers (mining.COLONY_KM, PW-854)
     # PW-1146 (owner D18, option 3): small local pits on ordinary ore. A district is a rich seam (raw ore >= mining.ORE_MIN, one per ring);
     # a pit is a village's own copper or iron pit on ordinary ore (raw >= PIT_ORE, the old 0.5), opened by the lead people where it
-    # smelts the metal and has the same need rule as a mine (farmers and herders, a market within two rings, a mining kind, exposure;
+    # smelts the metal and has the same need rule as a mine (farmers and herders, a market within CITY_KM, a mining kind, exposure;
     # a mining kind at once, so its pits come first and near home). Denser than districts: the lower ore bar admits ~5x the cells, and
-    # one pit per cell stands where the cell feeds it (PIT_SHARE of its people; PIT_FOUND), or one per ring of PIT_RINGS (0: every cell).
+    # one pit per cell stands where the cell feeds it (PIT_SHARE of its people; PIT_FOUND), or one per PIT_KM around it (0: every cell).
     "PIT_SHARE": 0.002,     # a pit's people: this share of its cell's people (a quarter or a half of a mine's) (judgement)
     "PIT_FOUND": 25,        # people: a pit is opened where its target holds this many (a mine: FOUND 300), for FOUND_STEPS running ...
     "PIT_ABANDON": 10,      # ... and is given up under this
-    "PIT_RINGS": 1,         # 0: a pit in every eligible cell (2500 a run, ~17x the districts: too many); 1: only the best of a cell and its ring of 1 (~7x the districts)
+    "PIT_KM": 60.0,         # 0: a pit in every eligible cell (2500 a run, ~17x the districts: too many); 60 (one L7 ring): only the best within it (~7x the districts)
     "COLONY_ORE": 0.75,     # ... an ore district this rich (the raw best ore good; PW-1146: districts are now >= mining.ORE_MIN = 0.75, so this is no stricter)
     # PW-1108: war and raids, read from what the run stored (no second war model; see _War). Sources and judgements: docs/overview.md
     # 2.25 and the ticket. A place taken by force (its cell changed hands and its old people lost its stake there, DISPLACED) is sacked at SACK x the winner's aggression / AGG_MID x meta.war, else occupied ('taken'); RAZE
@@ -324,8 +329,17 @@ def _world_layers(world: str | None, n: int) -> dict:
     return out
 
 
-def _site_factor(W: dict, coastal: np.ndarray, c: dict) -> np.ndarray:
-    hb = np.clip(np.rint(W["harbour"]), 0, 3).astype(int)
+def coast_harbour(g, harbour: np.ndarray, sea: np.ndarray, coastal: np.ndarray) -> np.ndarray:
+    """Each coastal land cell's harbour class: the best of its neighbours' that are sea at this time (PW-1640: humanuse.harbours
+    marks the harbour water, at sea; a town stands on the shore beside it, as land.py carries harbours to the coast). 0 elsewhere."""
+    off, idx = np.asarray(g.nbr_off, np.int64), np.asarray(g.nbr_idx, np.int64)
+    hb = np.where(sea, np.clip(np.rint(np.asarray(harbour, float)), 0, 3), 0.0)
+    return np.where(coastal, np.maximum.reduceat(hb[idx], off[:-1]), 0.0)
+
+
+def _site_factor(W: dict, coastal: np.ndarray, c: dict, hb_coast: np.ndarray) -> np.ndarray:
+    """The site factor (SITE_MIN..SITE_MAX); hb_coast: coast_harbour's class on the coast's land cells at this time."""
+    hb = np.clip(np.rint(hb_coast), 0, 3).astype(int)
     rv = np.clip(np.rint(W["river_nav"]), 0, 3).astype(int)
     q = (1.0 + np.where(coastal, np.asarray(c["SITE_HARBOUR"])[hb], 0.0) + np.asarray(c["SITE_RIVER"])[rv]
          + c["SITE_FRESH"] * (np.rint(W["fresh_water"]) >= 3) + c["SITE_FERTILE"] * (W["fertile_score"] - 0.5) + c["SITE_PASS"] * (W["pass"] > 0))
@@ -587,7 +601,8 @@ def derive(run_dir: Path, **over) -> dict:
             coastal = land & (np.add.reduceat(sea[g.nbr_idx].astype(np.int64), g.nbr_off[:-1]) > 0)
             e = {"land": land, "sea": sea, "elev": np.asarray(elev), "ice": np.asarray(ice) > 0.5, "coastal": coastal,
                  **{k: np.asarray(arr[k][fj]) for k in ("mix_lead", "mix_lead_share", "mix_second", "mix_second_share", "mix_other_share", "peoples_overlay")}}
-            e["q"] = _site_factor(W, coastal, c)
+            e["harbour"] = coast_harbour(g, W["harbour"], sea, coastal)  # (PW-1640: the harbour water beside a coastal land cell)
+            e["q"] = _site_factor(W, coastal, c, e["harbour"])
             cache.clear()
             cache[j] = e
         return cache[j]
@@ -613,7 +628,9 @@ def derive(run_dir: Path, **over) -> dict:
     SHARE = np.asarray(c["SHARE"], float)
     TOWN_MIN = np.asarray(c["TOWN_MIN"], float)
     CITY_CAP = np.asarray(c["CITY_CAP"], float)
-    R1, R2 = _ring_index(g, 1), _ring_index(g, 2)  # (n, k) padded with the cell itself
+    r_town, r_city = rings_for(g, c["TOWN_KM"]), rings_for(g, c["CITY_KM"])  # (PW-1627: 1 and 2 rings at L7, 2 and 4 at L8)
+    R1, R2 = _ring_index(g, r_town), _ring_index(g, r_city)  # (n, k) padded with the cell itself
+    RP = R1 if rings_for(g, c["PIT_KM"]) == r_town else _ring_index(g, rings_for(g, c["PIT_KM"]))
     tieb = 1 + 1e-6 * np.random.default_rng((seed, 1011, 1)).random(n)
     # indexed by line, with one more row for NONE (np.minimum(line, nl)): never
     tech_x = np.r_[tech, np.full((1, 3), -1.0)]
@@ -634,10 +651,10 @@ def derive(run_dir: Path, **over) -> dict:
     kind_x = affinity >= c["MINE_KIND"]
     lag = np.exp(np.log(c["MINE_LAG_KYR"]) + c["MINE_LAG_SIGMA"] * np.random.default_rng((seed, 1131)).standard_normal(nl + 1)) if c["MINE_LAG_KYR"] > 0 else np.zeros(nl + 1)
     ore_from = np.where(copper_any >= 0, copper_any - np.where(kind_x, 0.0, lag), -1.0)  # (kyr ago a people opens ore mines of its own will)
-    exp_run = np.zeros(n, np.int64)  # (steps a mine has stood within two rings of the cell)
+    exp_run = np.zeros(n, np.int64)  # (steps a mine has stood within CITY_KM of the cell)
     # mining colonies (D12, the PW-854 rule for ore): a mining kind works the rich districts within COLONY_KM of its country
     col_lines = [i for i in range(nl) if kind_x[i]]
-    col_rings = max(1, int(round(c["COLONY_KM"] / (g.spacing * R_KM))))
+    col_rings = rings_for(g, c["COLONY_KM"])
     col_cache: dict[int, np.ndarray] = {}
     rich = deposit[0] & (D["ore"] >= c["COLONY_ORE"])
     same_people = np.zeros((nl + 1, nl + 1), bool)
@@ -647,7 +664,7 @@ def derive(run_dir: Path, **over) -> dict:
 
     def who(cell, tier, e, dens, step_ago):
         """{people: % of the place's heads} for a place of `tier` in `cell`."""
-        cells = _rings(g, cell, {1: 0, 2: 1, 3: 2}.get(tier, 0))
+        cells = _rings(g, cell, {1: 0, 2: r_town, 3: r_city}.get(tier, 0))
         heads: dict[str, float] = {}
         for x in cells.tolist():
             w = dens[x] * area
@@ -732,7 +749,7 @@ def derive(run_dir: Path, **over) -> dict:
         stage0 = np.where(has, stage_of(lead, ago), 0)
         capc = caps_of(stage0)
         hold = np.where(has, mines_x[np.minimum(lead, nl)] >= ago - 1e-9, False) * e["mix_lead_share"] / 100  # (a mining holder's halls)
-        waterside = ((W["harbour"] > 0) & e["coastal"] | (W["river_nav"] > 0))
+        waterside = (e["harbour"] > 0) | (W["river_nav"] > 0)
         settled_p = dens * area * (farm + c["FISHER_SHARE"] * (1 - farm) * waterside + c["HOLD_SHARE"] * hold)
         sp = np.where(e["land"], settled_p, 0.0)
         target = np.zeros(n)
@@ -777,8 +794,8 @@ def derive(run_dir: Path, **over) -> dict:
 
         # a mine (owner 10-30): a cell with an ore or rock-salt deposit, worked by its lead people if it knows 'mines', else
         # by its second people; MINE_SHARE of the cell's people (the miners and those who feed them). D12: only where it is
-        # wanted: a mining kind; farmers and herders (MINE_NEED) or a town's market within two rings, for ore only once the
-        # people's own lag after its smelting is over; or a mine has stood within two rings for MINE_EXPOSE_STEPS (exposure)
+        # wanted: a mining kind; farmers and herders (MINE_NEED) or a town's market within CITY_KM, for ore only once the
+        # people's own lag after its smelting is over; or a mine has stood within CITY_KM for MINE_EXPOSE_STEPS (exposure)
         mine_now = active[2] >= 0
         exp_run = np.where(mine_now[R2].any(1), exp_run + 1, 0)
         exposed = exp_run >= c["MINE_EXPOSE_STEPS"]
@@ -822,7 +839,7 @@ def derive(run_dir: Path, **over) -> dict:
                   & (kind_x[np.minimum(lead, nl)] | (want_ & (ore_from[np.minimum(lead, nl)] >= ago - 1e-9)) | exposed))
         pwant = np.where(pit_ok, c["PIT_SHARE"] * (0.5 + affinity[np.minimum(lead, nl)]) * dens * area, 0.0)
         pscore = pwant * tieb
-        target3 = pwant if c["PIT_RINGS"] <= 0 else np.where(pscore >= pscore[R1].max(1) - 1e-9, pwant, 0.0)
+        target3 = pwant if c["PIT_KM"] <= 0 else np.where(pscore >= pscore[RP].max(1) - 1e-9, pwant, 0.0)
         pl = np.where(pit_ok, lead, NONE)
 
         for k, tgt, hl in ((0, target, lead), (1, target1, l1), (2, target2, lm), (3, target3, pl)):

@@ -2,9 +2,9 @@
 id: PW-1624
 title: "Language finder: sparse profiles win by default and long vowels count as vowel qualities"
 type: task
-status: todo
+status: done
 parent: PW-767
-milestone: later
+milestone: v4
 subsystem: peoples
 effort: s
 impact: low
@@ -28,4 +28,6 @@ Fix direction: count vowel qualities in `lect_features` (length and nasality are
 If never done: the long-vowel count mis-ranks lects with long vowels for `--like hawaiian`, `japanese`, `finnish` and `arabic` (Daniel's language-finder skill). Any "closest real language" readout leans to Black Speech, Klingon and Sindarin.
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 14: the finder counts vowel qualities (length and nasality as series) and scores a sparse profile on the terms it fills (rescaled), so sparse profiles no longer win by default; tests in test_language_find.py.
+- 2026-11-10: Owner 11-10: the real-language experiment is a standing benchmark for the language model, like Earth for physics; its gaps are now-work, not later. Moved to v4; lane 14.
 - 2026-11-10: Created from inbox draft draft-language-finder-distance-not-comparable.md (found by lang-realinv).

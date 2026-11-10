@@ -2,9 +2,9 @@
 id: PW-1623
 title: "Languages: words use sounds by world inventory presence, not lexical frequency (a too rare, p/b/d/g/m too common, r and ʔ too rare)"
 type: task
-status: todo
+status: done
 parent: PW-767
-milestone: later
+milestone: v4
 subsystem: peoples
 effort: m
 impact: med
@@ -31,4 +31,6 @@ Fix direction: token-frequency priors by sound class (vowel height, manner) from
 If never done: every language's texture is flatter and more stop-heavy than real ones. Hand-seeded and drawn languages alike sound "engine-made", and the finder's texture term stays the main reason nothing in a run reads as close to a real language.
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 14: protos draw sounds by NorthEuraLex token frequency per class (data/token_frequency.tsv, tools/language/token_priors.py). a24559 living lects: a 18% -> 26% of vowels, high vowels 59% -> 47%. Eurasian-sample caveat in lane 14's draft.
+- 2026-11-10: Owner 11-10: the real-language experiment is a standing benchmark for the language model, like Earth for physics; its gaps are now-work, not later. Moved to v4; lane 14.
 - 2026-11-10: Created from inbox draft draft-language-segment-token-frequencies.md (found by lang-realinv).

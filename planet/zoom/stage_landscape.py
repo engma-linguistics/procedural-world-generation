@@ -692,6 +692,10 @@ def drainage_tools(ctx):
                     first, last, open_ = commit(s, pix, blocked)
                     if first < 0:
                         continue
+                    # (linked while it grows on: else a branch further down could join its own
+                    # ancestors (walk's joins() follows the links) and loop back, which took
+                    # the whole delta's distributaries away, PW-1629; kids[0] again below)
+                    ov[s] = first
                     if open_ and not (len(gp) > 1 and grow(last, gp, seg, blocked)):
                         ov.clear()
                         ov.update(snap_k[0])
@@ -800,24 +804,57 @@ def drainage_tools(ctx):
             # (nor across a young volcano held at its cone: the channel rode over it, PW-363)
             blk = blocked | (ctx.target > RG.BRANCH_MAX_Z) | (ctx.vpin > -np.inf)
             grow(a, goals, max(int(0.15 * ln / ctx.res), 2), blk)
-            # A finger the split tree's branches didn't reach (the trunk's own
-            # course or high ground near the apex in the way) gets a branch of
-            # its own from the delta's channel nearest its base, splitting off
-            # there with its share of the water: else it was a strip of land
-            # with no channel (PW-363).
+            # A finger or a funnel the split tree's branches didn't reach (the
+            # trunk's own course, another branch or high ground near the apex in
+            # the way) gets a branch of its own from the delta's channel nearest
+            # its base (a finger's) or its goal (a funnel's head on the coast),
+            # splitting off there with its share of the water: else a finger was
+            # a strip of land with no channel (PW-363), and a tide delta's mouths
+            # were however many of its funnels the split tree happened to reach,
+            # 1 to 7 of 8 by the zoom's seed (PW-1629, docs/review/pw1629/).
             sp_src = {sp_[0] for sp_ in splits if sp_ is not None}
             trunk_s = set(trunk)
+
+            def carried():
+                """The river's share each pinned channel pixel carries below
+                the apex (all of it down the trunk to the apex): down the links,
+                divided at the splits laid so far."""
+                at_s = {sp_[0]: sp_ for sp_ in splits if sp_ is not None}
+                w_, stack = {int(c): 1.0 for c in trunk}, [(int(a), 1.0)]
+                while stack:
+                    p, f = stack.pop()
+                    n_ = 0
+                    while p >= 0 and n_ < ctx.npx:
+                        w_[p] = w_.get(p, 0.0) + f
+                        if p in at_s:
+                            _, kids_, fr = at_s[p]
+                            stack += [(int(c), f * float(fk)) for c, fk in zip(kids_[1:], fr[1:])]
+                            f *= float(fr[0])
+                        if p not in ov:
+                            break
+                        p, n_ = int(ov[p]), n_ + 1
+                return w_
+
             for q in goals:
-                if q in reached or q not in via_map:
+                if q in reached:
                     continue
                 own = np.array([c for c in ov if c not in sp_src and (c in trunk_s or c == a or
                                                                        np.hypot(ctx.px[c] - ctx.px[a], ctx.py[c] - ctx.py[a]) < 1.5 * R)],
                                dtype=np.int64)
                 if not len(own):
                     continue
-                v0 = via_map[q][0]
-                s0 = int(own[np.argmin(np.hypot(ctx.px[own] - v0[0], ctx.py[own] - v0[1]))])
-                pix = toward(s0, v0[0], v0[1], ctx.npx, blk, via_map[q], 0)
+                v0 = via_map[q][0] if q in via_map else (ctx.px[q], ctx.py[q])
+                # (off a channel with the water to give it its share, if one is near enough: the
+                # nearest of those, else the nearest; not off a branch that's a share itself)
+                wc = carried()
+                rich = own[np.array([wc.get(int(c), 0.0) for c in own]) >= 2.0 / max(len(goals), 2)]
+                dd = np.hypot(ctx.px[own] - v0[0], ctx.py[own] - v0[1])
+                if len(rich):
+                    dr_ = np.hypot(ctx.px[rich] - v0[0], ctx.py[rich] - v0[1])
+                    if dr_.min() < 0.5 * R + dd.min():
+                        own, dd = rich, dr_
+                s0 = int(own[np.argmin(dd)])
+                pix = toward(s0, v0[0], v0[1], ctx.npx, blk, via_map.get(q), 0)
                 snap_k = (dict(ov), assigned.copy())
                 first, last, open_ = commit(s0, pix, blk)
                 # (out to the sea, or out of the region: a finger running on
@@ -833,7 +870,9 @@ def drainage_tools(ctx):
                     assigned[:] = snap_k[1]
                     continue
                 r0 = ov[s0] if s0 in ov else int(rec0[s0])
-                share = 1.0 / max(len(goals), 2)
+                # (its fair share of the river, 1 / the goals, from the water the channel there
+                # carries: 1 / the goals of a small branch's water left the branch dry, PW-1629)
+                share = min(0.5, 1.0 / max(len(goals), 2) / max(float(wc.get(s0, 1.0)), 1e-6))
                 # (before any split further down its channel: route() divides
                 # the water in this order, upstream first)
                 down_, c = set(), r0
