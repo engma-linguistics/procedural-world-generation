@@ -28,6 +28,7 @@ v2 (right after the v1.0 tag, owner: "at least a try at some of it fairly immedi
 v3: the real GPU work (detail synthesis in shaders, seamless streaming down to fine-zoom scale, L9 everywhere).
 
 ## Updates
+- 2026-11-10: Lane 282: v1.0 build plan in docs/review/zoom/lod-plan.md: explicit clicks with smooth camera flights (globe -> 4000 km tiling section at 2 km/px -> ~500 km at 0.5 km -> ~30 km at 25 m, rungs by the fine pass), not tile streaming; 6 steps of 1-1.5 lane-days, 3 questions for Daniel (section resolution, grid vs centred section, middle rung).
 - 2026-11-10: Owner 11-10: required for v1.0 (milestone v1.0): from the globe, zoom into a ~4,000 km section, then down to the finest zooms we have.
 - 2026-11-03: Triage 11-03: v2 -> later: L8/L9 whole-world work, post-v2 (see PW-1198 space-to-ground globe)
 - 2026-11-01: Lane 104 merged: planet refine (L7 -> L8/L9). World fb5e11 (from L7 783674, run b13ee9). L8 route ~20-25 min vs 146 direct; L9 38 min / 38.8 GB, too big for the viewer (PW-1209). docs/review/refine-l8/report.md
