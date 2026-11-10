@@ -1,0 +1,32 @@
+# source: WRITTEN FROM KNOWLEDGE, not extracted from any book or database. Each row is a meaning split (PW-1636, proposal-2026-11-10-paradigms-and-conquest.md Part 2, P2): a loan that comes in for the parent meaning under elite rule or intense trade may be kept beside the native word with the narrower child meaning (the native word keeps the parent). After: Baugh & Cable 2002 (A History of the English Language, 5th ed., ch. 7: ox/beef < OF boef 'ox', swine/pork < porc, sheep/mutton < moton, calf/veal < veel, deer/venison < venesoun 'hunted game'); Durkin 2014 (Borrowed Words: the meat sense is an English specialisation, centuries after the Conquest); Japanese ushi 'cow' beside gyuuniku 'beef'; the Latin product layer of Germanic (vinum > wine, caseus > cheese) for ingredient > product.
+# version: hand-authored 2026-11-10 (language lane 13, PW-1636)
+# licence: original text for this repository (no third-party data copied); cite the works above when using it.
+# columns: parent = the meaning the donor's word had (an animal, an ingredient); child = the narrower meaning it keeps in the receiver (its meat, the product made from it); kind = meat | product (contact.py: elite and takeover rule split both kinds, trade and mixed cities only products); example = a real case.
+# Every meat:<animal> child is also a concept of its own (lexicon._MEAT): a lect without the split names it with a compound of the animal and MEAT (data/compounds.tsv), the global default (German Rindfleisch, Korean sogogi, Mandarin niurou).
+parent	child	kind	example
+animal:cattle	meat:cattle	meat	English beef < Old French boef 'ox', beside native cow, ox
+animal:pig	meat:pig	meat	English pork < Old French porc 'pig', beside native swine
+animal:caprine	meat:caprine	meat	English mutton < Old French moton 'ram, sheep', beside native sheep
+animal:fowl	meat:fowl	meat	English poultry < Old French pouletrie, beside native hen, fowl
+DEER	meat:deer	meat	English venison < Old French venesoun 'hunted game', beside native deer
+animal:great_elk	meat:great_elk	meat	(as deer / venison)
+animal:reindeer	meat:reindeer	meat	(as deer / venison)
+animal:buffalo	meat:buffalo	meat	(as cow / beef)
+animal:yak	meat:yak	meat	(as cow / beef)
+animal:camel	meat:camel	meat	(as sheep / mutton)
+animal:llama	meat:llama	meat	(as sheep / mutton)
+animal:horse	meat:horse	meat	(as cow / beef)
+animal:riding_lizard	meat:riding_lizard	meat	(as cow / beef)
+MILK	CHEESE	product	Germanic *kasjus 'cheese' < Latin caseus, beside native milk
+MILK	BUTTER	product	Latin butyrum < Greek boutyron 'cow-cheese', borrowed into Germanic beside native milk
+GRAIN	FLOUR	product	English flour (the 'flower' of meal) < Old French flor, beside native corn
+GRAIN	BREAD	product	Swahili mkate, Hausa burodi: the made thing borrowed, the grain kept
+crop:wheat	FLOUR	product	(as grain / flour)
+crop:wheat	BREAD	product	(as grain / bread)
+crop:rye	FLOUR	product	(as grain / flour)
+crop:rye	BREAD	product	(as grain / bread)
+crop:vine	WINE	product	Germanic *win < Latin vinum, beside native grape and berry words
+crop:rice	RICE WINE	product	(as grape / wine)
+HONEY	MEAD	product	(as grape / wine)
+crop:cane	SUGAR	product	English sugar < Arabic sukkar, beside native cane
+crop:sap_sugar	SUGAR	product	(as cane / sugar)
