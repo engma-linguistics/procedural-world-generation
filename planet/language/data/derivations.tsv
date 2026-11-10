@@ -110,7 +110,7 @@ place	MOUNTAIN	PASS	1	'mountain place'
 place	THIS	HERE	3	Latin hic 'this' / hic 'here'; English here < demonstrative + locative
 place	THAT	THERE	3	English there < demonstrative *tha- + locative
 place	WHAT	WHERE	2	English where < interrogative *hw- + locative
-place	WHAT	WHEN	1	'at what (time)'
+time	WHAT	WHEN	1	'at what time': Latin quando, Gothic hwan < interrogative + temporal; Turkish ne zaman 'what time' (its own time formative, PW-1635)
 little	RIVER	STREAM	3	Latin rivulus < rivus 'stream'
 little	LAKE	POND	3	'little lake'
 little	STONE	PEBBLE	3	Latin calculus < calx 'stone'

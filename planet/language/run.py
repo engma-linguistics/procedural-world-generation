@@ -12,15 +12,18 @@ FILE = "languages.json"
 THIN_BYTES = 60_000_000
 
 
-def write(run_dir, out_dir=None, seed: int | None = None, workers: int | None = None, report: bool = False) -> dict:
+def write(run_dir, out_dir=None, seed: int | None = None, workers: int | None = None, report: bool = False, progress=None) -> dict:
     """Run the pass and write languages.json and its sidecars (output.save: languages-etym.json, languages-snapshots.json)
-    into the run (and meta.languages), or into out_dir leaving the run untouched. Returns the summary."""
+    into the run (and meta.languages), or into out_dir leaving the run untouched. Returns the summary.
+    progress(fraction, message), if given: through the intervals, then the write-up (planet make, PW-1634)."""
     from . import history as HI, output as OU
     t = time.perf_counter()
     if workers is not None:
         HI.WORKERS = int(workers)
     run_dir = Path(run_dir)
-    res = HI.generate(run_dir, seed=seed)
+    res = HI.generate(run_dir, seed=seed, progress=progress)
+    if progress is not None:
+        progress(0.9, "languages: writing languages.json")
     t2 = time.perf_counter()
     doc = OU.document(res)
     doc["timing"]["document_s"] = round(time.perf_counter() - t2, 1)

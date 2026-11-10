@@ -1446,3 +1446,51 @@ syllable, class concord on every word, CLICS derivation families, and gaps that 
 | shortest god name kept | 2 beats (a long vowel counts 2) | `faiths.MIN_NAME_MORAS` |
 | intervals between garbage collections in the pass | 20 | `history.COLLECT_EVERY` |
 | which ruins get names | every abandoned site but mines, in the last holders' lect at abandonment | `personal.Personal.ruins` |
+
+## Lane 12 (lang-lane12, 2026-11-10): make runs the languages, open-syllable languages stay open, 'who' and 'when'
+
+- **New worlds get languages (PW-1634).** In plain words: a world made with peoples, from the viewer's New planet
+  form or `planet make --peoples`, now gets its languages too, as the last step. The form has a "Languages of those
+  peoples" box, ticked by default; the CLI has `--no-languages` and `--language-workers N` (default 8).
+  The estimate lists the step: about 7 min at L6 and 11 min at L7 with 8 workers. Progress shows how far back in time
+  the pass is. Measured: an L6 make of 200 Myr gave 422 living languages in 423 s. The peoples step used to run the
+  pass itself, on one process, with no progress and no way to switch it off; inside make it now leaves the pass to
+  the new step. The gods file with its faiths is written by the peoples step first, so the pass does not work the
+  faiths out again (2.6 s, not ~90). If the pass fails, for example on a time zoom shorter than its 20 kyr, the
+  failure is noted in run.txt and the peoples run is kept.
+- **Open-syllable languages stay open (PW-1622).** In plain words: a language that allows only open syllables, like
+  Hawaiian or Swahili, used to start ending words in consonants within about 2,500 years. The resistance to such a
+  change was rolled again every time the change came up, about 440 times a step, so it nearly always got through.
+  Now each line decides once: a change that would bring in a syllable type the language does not have (a final
+  consonant in an open-syllable language, a consonant cluster or a closed middle syllable where there are none) is
+  refused for 4 kyr, the same wait as after a change fires, and daughters inherit the refusal. A change that only
+  makes an existing type bigger (a second final consonant) is decided again each 0.5 kyr step. A hiatus repair
+  that would make a final glide (-ai > -aj) is avoided in favour of another repair.
+  Measured with the real-inventory experiment (10 seeds, 2.5 kyr, full toolkit, closed-syllable share of the
+  daughter's words, before -> after): Swahili 0.25 -> 0.01, Hawaiian 0.25 -> 0.18 (half the seeds stay open; the
+  other half let apocope through at its one 1-in-5 chance), Japanese 0.01 -> 0.01 (it has no stress, so it never
+  had apocope). Finder distance to the real language: Swahili 3.18 -> 1.44, Hawaiian 3.15 -> 2.84, Japanese
+  1.69 -> 1.74.
+  The cost: languages with closed syllables now gain new ones less easily and lose them as before, since losing
+  them is not resisted. On a24559, the share of living languages with simple syllables (WALS 12A reading) went
+  0.16 -> 0.22, against WALS 0.12; those ending under 5% of words in a consonant 0.24 -> 0.33; complex 0.43 -> 0.37
+  (WALS 0.31). The engine still has many ways to lose final consonants and few to make them; that is the real
+  cause, and the fix belongs there (draft).
+- **'Who' and 'when' (PW-1635, option A of the 11-10 proposal).** In plain words: when a language rebuilt its word
+  for 'who' from 'person', it made 'who-person' out of the old 'who'; it now makes 'what person', as Latin
+  *quis homo* does. And 'when' used to be made from 'what' with the same 'place' ending as 'where', so the two were
+  born sounding alike; 'when' now has a 'time' ending of its own. On a24559: 'who' built on the old 'who' + 'person'
+  0.034 -> 0, on 'what' 0 -> 0.076; 'when' built on 'what' 0.15 -> 0.19. The full table of question words
+  (options B and C) waits for your answer on the Language Desk.
+- **Checks** (a24559, main -> this lane): 620 living; all pass but the scholars' horizon; sisters 0.562 -> 0.602;
+  pronoun loans 0.082 -> 0.073 (now under the 0.08 cap); WOLD rho 0.403 -> 0.410; areal typology difference
+  0.018 -> 0.012 (passes). The pass took 642 s. The demo builds with no fable warning.
+
+**Defaults I chose**
+
+| what | default | where |
+| --- | --- | --- |
+| how long a refused new syllable type stays refused | the re-fire wait (4 kyr) | `lect.Lect.refused`, `may_fire` |
+| a larger cluster of a type the language has | decided again each step | `lect.Lect.step` |
+| make's language workers | 8 (1-16) | `make.LANGUAGE_WORKERS` |
+| make's languages step at L4 / L5 / L6 / L7 / L8 | 3 / 5 / 7 / 11 / 25 min | `make.LANGUAGES_S` |

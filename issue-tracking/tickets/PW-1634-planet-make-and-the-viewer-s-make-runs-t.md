@@ -2,7 +2,7 @@
 id: PW-1634
 title: planet make (and the viewer's make) runs the language pass by default after the peoples stage
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: v4
 subsystem: culture
@@ -28,4 +28,5 @@ request field for the viewer), include it in `estimate`, report progress, cap wo
 gods.json matters: run the religion readout first if the pass needs it, so faiths are not re-derived (~87 s).
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 12: make runs the language pass as its own stage after peoples (on by default; CLI --no-languages / --language-workers N, request fields languages / language_workers, viewer New planet checkbox), default 8 workers (1-16), estimate make.LANGUAGES_S (L6 ~7 min, L7 ~11 min), per-interval progress. The peoples stage leaves the pass to it (lineages job/run/save languages=False). gods.json with faiths is written by the peoples stage first, so faiths are not re-derived (2.6 s). A failure (e.g. a time zoom under 20 kyr) is logged in run.txt, not fatal. Tested: L6 200 Myr make --peoples into a scratch data root, 422 living, 423 s. Peoples made outside make: draft-viewer-peoples-job-languages-single-process.
 - 2026-11-10: Created from inbox draft draft-make-runs-languages.md (found by lang-coordinator).
