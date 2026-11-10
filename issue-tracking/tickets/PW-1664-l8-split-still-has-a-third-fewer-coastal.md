@@ -1,4 +1,5 @@
 ---
+id: PW-1664
 title: L8 split still has a third fewer coastal towns than L7 after the km fixes, while inland has more
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane272c-pw1630
 blocked_by: []
 relates: [PW-1630, PW-1631, PW-1265, PW-1584]
-refs: ["planet/lineages/ladder.py::WATER_CELL_KM", "planet/lineages/ladder.py::RICH_KM", "planet/lineages/settlements.py", docs/review/refine-l8/split.md, "runs 732ed6 and 3413e1 (L7 on 899985), f465d8 and 393622 (split on 9cf1c3), lane 272 scratch, may be gone", "townband.py, townlife.py, bestsite2.py (lane 272 scratch)"]
+refs: ["planet/lineages/ladder.py::WATER_CELL_KM", "planet/lineages/ladder.py::RICH_KM", planet/lineages/settlements.py, docs/review/refine-l8/split.md, "runs 732ed6 and 3413e1 (L7 on 899985), f465d8 and 393622 (split on 9cf1c3), lane 272 scratch, may be gone", "townband.py, townlife.py, bestsite2.py (lane 272 scratch)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -32,3 +35,6 @@ candidates, cheapest first: (a) the refine's soils (fertile within 60 km of the 
 less land; (c) draw noise: re-roll 2-3 tries of both before calling it signal.
 - [ ] after the soils draft lands, rerun the split on 9cf1c3 and re-read coast share, band towns and islands
 - [ ] if still short, check (b) with the founding thresholds expressed in km2, not per cell
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-l8-coast-towns-remaining-gap.md (found by lane272c-pw1630).
