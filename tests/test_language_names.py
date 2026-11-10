@@ -248,7 +248,8 @@ def test_on_the_tiny_driver_run():
     from planet.language import romanize as RO
     named = [v["endonym"] for v in a["peoples"].values()] + [pl for d in a["demes"].values() for pl in d["places"]]
     assert named and all(n["roman_full"] for n in named)  # the book spelling in roman, the full one in roman_full
-    assert all(RO.diacritics(n["roman"]) <= RO.diacritics(n["roman_full"]) for n in named)
+    # (the book adds a mark only where its length style writes a long vowel with one, ā or á, which the workbench doubles)
+    assert all(RO.diacritics(n["roman"]) <= RO.diacritics(n["roman_full"]) + n["ipa"].count("ː") for n in named)
     json.dumps(a)  # (the block is plain json)
     # personal names: every living lect has a tradition, given names (old and new) with etymologies, and bynames
     pn = a["personal"]
