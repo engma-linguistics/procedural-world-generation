@@ -243,3 +243,40 @@ cell counts 3,600 km2 of land, often more than the island), not checked further.
 ladder.RICH_KM / domain_mean (the richness averaged over rings_for(g, 60 km) - 1 rings: none at L7, one on L8). L7 is
 unchanged by construction (the same arrays: tests/test_people_units.py). Not tuned toward L7: no threshold moved; the
 soils are left to their owner.
+
+### 7.1 After the fix (lane 272c)
+
+Code 3d21c18b (ladder.WATER_CELL_KM and RICH_KM) on d17142c6's tree. Same world pair, same tree and seed, one try; the L7
+rerun 3413e1 against 732ed6 and the new split 393622 against f465d8. Baselines: L7 732ed6 and split f465d8 (both code 2a2876cd,
+table above); lane 270's 727c35 (code 5bd8e407) is the third old draw (909 M, humans 430 M).
+
+**L7 is unchanged.** 3413e1 matches 732ed6 in every file of people, demes, cultures, settlements and layers, byte for
+byte; gods, taboos and languages differ only in timings and the run id (checked by field).
+
+| | L7 732ed6 (= 3413e1) | split f465d8 (old) | split 393622 (new) |
+|---|---|---|---|
+| villages / towns / cities | 22,493 / 6,209 / 286 | 57,634 / 5,245 / 245 | 58,820 / 5,721 / 271 |
+| towns and cities on the fine coast (7.5% of fine land) | 7.6% | 4.4% | 5.2% |
+| ...within ~60 km of the fine sea (13.2%) | 15.2% | 9.1% | 10.2% |
+| ...beside a harbour (2.9%) | 3.39% | 1.97% | 2.49% |
+| ...on a navigable river | 34.4% | 34.5% | 39.5% |
+| islands (< 0.3 Mkm2) with a town | 22 | 11 | 13 |
+| people today (run.json, every line) | 1,042 M | 912 M (-12.4%) | 984 M (-5.6%) |
+| humans: people; held Mkm2; per km2 | 660 M; 85.0; 7.77 | 433 M; 81.4; 5.32 | 461 M; 81.9; 5.63 |
+| people summed on the fine cells: 4 kyr / 2 kyr / 1.5 kyr / today | 358 / 626 / 673 / 1,011 M | 299 / 561 / 674 / 890 M | 308 / 599 / 720 / 958 M |
+| sedentary within ~60 km of the sea (townband) | 136 M (6.09 /km2) | 106 M (4.39) | 119 M (4.85) |
+| places ever a town or city: coast band / inland | 1,384 / 7,984 | 724 / 8,701 | 869 / 9,233 |
+| band's share of the best town sites, 4 kyr / 2 kyr / today | 6.9 / 9.4 / 11.8% | 2.6 / 6.6 / 11.0% | 4.8 / 8.7 / 13.2% |
+
+**PW-1631 (people): about half closed.** The gap to L7 goes from -12.4% to -5.6% in the run totals (-12% to -5% on the
+fine cells today), the humans' from -34% to -30%. Not the whole: the rest is the refine's soils (draft
+`draft-l8-refine-soils-thinner-peatier`), which the static estimate put at about half of the gap. One draw: the
+earlier three (§4, §6, §7) were all within -8% to -13%, so -5.6% is outside their spread, but it is still one draw.
+
+**PW-1630 (coast): partly closed.** Coast share 4.4% -> 5.2% (L7 7.6%), within ~60 km 9.1% -> 10.2% (15.2%), islands
+with a town 11 -> 13 (22), harbour towns 1.97 -> 2.49% (3.39%). The band's sedentary density rose 4.39 -> 4.85 /km2 (L7 6.09)
+and its share of the best sites now matches or beats L7's at the end (13.2% against 11.8%). What remains is a coast-only
+shortfall in towns: places ever a town or city in the band 869 against 1,384 while inland has 9,233 against 7,984; towns per
+10 M sedentary in the 0-30 km band 43 (L7: 72 for the 60 km band). Candidates (not done here): the refine's poorer
+soils near the sea (fertile 0.439 against 0.539), the town rule's per-cell reads on a half-width coast cell. Inbox draft
+`draft-l8-coast-towns-remaining-gap`.

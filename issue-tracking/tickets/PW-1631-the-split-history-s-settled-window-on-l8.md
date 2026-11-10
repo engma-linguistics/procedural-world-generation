@@ -35,3 +35,4 @@ ladder's density remade on the fine land in the first step after the hand-over (
 ## Updates
 - 2026-11-10: Lane 270 draw (split 727c35 vs L7 2e0a95, same code 5bd8e407): 909 M vs 1,043 M today (-13%), humans 430 M vs 660 M (-35%, run.txt's two-figure rounding). Second draw, same sign, larger: leaning signal, not chaos.
 - 2026-11-10: Created from inbox draft draft-l8-settled-window-fewer-people.md (found by lane267b-pw1265).
+- 2026-11-10: Lane 272c, after ladder.WATER_CELL_KM and RICH_KM (3d21c18b): split 393622 on 9cf1c3 gives 984 M today against L7 732ed6's 1,042 M (-5.6%; old split f465d8 912 M, -12.4%), humans 461 M vs 660 M (433 M before). Same code on L7 is identical (3413e1). About half closed; the rest is the refine's soils (draft draft-l8-refine-soils-thinner-peatier). One draw. split.md 7.1.
