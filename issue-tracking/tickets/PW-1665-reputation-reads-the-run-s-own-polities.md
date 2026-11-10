@@ -1,4 +1,5 @@
 ---
+id: PW-1665
 title: "Reputation reads the run's own polities: a people ruled by another's state for centuries remembers it as 'resented'"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane276
 blocked_by: []
 relates: [PW-756, PW-731, PW-785]
-refs: [planet/lineages/reputation.py::_view, planet/lineages/reputation.py::parse_events, planet/lineages/output.py, planet/lineages/polities.py::derive, planet/lineages/polities.py::step_view, planet/lineages/history/params.py::POLITIES_LIVE, "tests/test_lineages.py::test_an_authored_polity_is_resented_by_the_ruled_and_compact_ranges_give_a_direction"]
+refs: ["planet/lineages/reputation.py::_view", "planet/lineages/reputation.py::parse_events", planet/lineages/output.py, "planet/lineages/polities.py::derive", "planet/lineages/polities.py::step_view", "planet/lineages/history/params.py::POLITIES_LIVE", "tests/test_lineages.py::test_an_authored_polity_is_resented_by_the_ruled_and_compact_ranges_give_a_direction"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -32,3 +35,6 @@ people per polity over ~126 century steps.
 - [ ] a people ruled by another's polity for at least N centuries carries a 'resented' row naming its rulers, with the dates
 - [ ] authored `polity` rows stand only where the run's own polities found no rule of S over O
 - [ ] the brief and the Peoples tab read the same rows (no second table)
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-resented-from-the-runs-own-polities.md (found by lane276).
