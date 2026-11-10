@@ -76,7 +76,7 @@ from pathlib import Path
 import numpy as np
 from numba import njit
 
-from .seafood import cells_for
+from .seafood import cells_for, rings_for
 
 FORMAT = "procgen-polities/1"
 VERSION = 7  # (bump when the rules change: the server's cached docs are remade)
@@ -98,8 +98,8 @@ SAILS = ("sails",)
 DRAGON_KM = 250.0  # judgement (O4: the range a dragon can fly and defend against rival dragons): flight ignores sea and slope
 # ---- seats
 HEMMED_X = 0.5  # judgement (Carneiro 2012, circumscription speeds states up): a fully hemmed-in town is a state seat at half a city's size
-HEMMED_RINGS = 2  # judgement: hemmed-in is read over the cells within two rings of the seat (~120 km at L7; kept in rings with the live
-# history's own two-ring table, polity_live.r2a/r2b: both to km together, see the lane 266 draft)
+HEMMED_KM = 120.0  # judgement: hemmed-in is read over the cells within this of the seat (two rings at L7, four on an L8 refine: PW-1627;
+# the live history's own table, polity_live.r2a/r2b, reads the same rings_for)
 HOLD = 0.8  # judgement: a seat keeps its tier until it shrinks under 0.8 of the size that made it
 INCUMBENT = 1.5  # judgement: last step's capital ranks as if 1.5x its size (the ruler in place keeps the advantage)
 GAP_STEPS = 2  # judgement: a seat that rules again within 2 steps (200 years) is the same polity, not a new one
@@ -486,7 +486,7 @@ def derive(run_dir: Path, war=None, invasions=None, over: dict | None = None) ->
     off, idx = np.asarray(g.nbr_off, np.int64), np.asarray(g.nbr_idx, np.int64)
     dist = np.full(g.n, np.inf)
     touched = np.zeros(g.n, np.int64)
-    rings = _rings(g, HEMMED_RINGS)
+    rings = _rings(g, rings_for(g, HEMMED_KM))
     C = R.C["cultures"]
 
     polities: list[dict] = []  # (one record per polity; key -> its index in `open_`)
@@ -964,7 +964,7 @@ def _lines_by_cell(F: dict, n: int) -> dict:
 
 def _hemmed(R: _Run, F: dict, ring: np.ndarray, people: str, here_lines: dict, social_q: float, ago: float) -> float:
     """How hemmed in a seat is, 0..1 (Carneiro 2012, as history.rule.StandIns.circumscribed reads it in the history): over the cells within
-    HEMMED_RINGS of it, sea (for a people without boats), ice and peaks of 3,000 m or more bar fully; land other peoples hold and its
+    HEMMED_KM of it, sea (for a people without boats), ice and peaks of 3,000 m or more bar fully; land other peoples hold and its
     own people do not bars SOCIAL_Q (social circumscription, "less tight"); the rest bars nothing."""
     if not len(ring):
         return 1.0

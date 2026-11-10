@@ -77,3 +77,29 @@ def test_split_history_hands_over_at_the_first_farming_and_keeps_the_coarse_past
     assert all(f["peoples"].shape == (ps4.grid.n,) for f in rs["frames"])
     out = O.save(hs, rs, present_summary(hs, rs["present"]), name="split test")
     assert out.exists()
+
+
+def test_a_refined_worlds_detail_rides_on_every_prolonged_frame(faketz, monkeypatch):
+    """PW-1627 (lane 270): on a world refined finer than its time zoom, the window's frames carry the refine's own detail (the
+    refined world's elevation and temperature less its source world's, prolonged), so the present is the refined world's land and
+    coast; the zoom's own changes through the window stay on top. Without a refined world nothing is added."""
+    from planet import store as S, world as W
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1), level=4)
+    assert ps.detail("elevation") is None  # (no world: the plain prolongation)
+    i, j, w = ps._bracket(0.0)
+    now_c = {k: ps.arr[k][i].astype(float) * (1 - w) + ps.arr[k][j].astype(float) * w for k in ("elevation", "temperature")}
+    rng = np.random.default_rng(3)
+    fine = {k: R.finer(v, ps.grid) + rng.normal(0, 40.0, ps.grid.n) for k, v in now_c.items()}  # (a refine: the source plus detail)
+    worlds = {"fine": {"meta": {"refined_from": {"world": "coarse"}}, "layers": fine}, "coarse": {"meta": {}, "layers": now_c}}
+    monkeypatch.setattr(S, "find_world", lambda ref: ref)
+    monkeypatch.setattr(S, "read_header", lambda p: worlds[p])
+    monkeypatch.setattr(S, "exists", lambda kind, ref: ref in worlds)
+    monkeypatch.setattr(W, "load", lambda p: worlds[p])
+    ps.world_ref = "fine"
+    for k in ("elevation", "temperature"):
+        assert np.allclose(ps._lerp(k, 0.0), fine[k])  # (the present is the refined world)
+    t = float(ps.start) / 2
+    ii, jj, ww = ps._bracket(t)
+    past = R.finer(ps.arr["elevation"][ii].astype(float) * (1 - ww) + ps.arr["elevation"][jj].astype(float) * ww, ps.grid)
+    assert np.allclose(ps._lerp("elevation", t), past + fine["elevation"] - R.finer(now_c["elevation"], ps.grid))
+    assert ps.detail("ice") is None

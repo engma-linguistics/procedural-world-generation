@@ -33,4 +33,5 @@ ladder's density remade on the fine land in the first step after the hand-over (
 - [ ] if signal: name the mechanism; do not rescale to match L7
 
 ## Updates
+- 2026-11-10: Lane 270 draw (split 727c35 vs L7 2e0a95, same code 5bd8e407): 909 M vs 1,043 M today (-13%), humans 430 M vs 660 M (-35%, run.txt's two-figure rounding). Second draw, same sign, larger: leaning signal, not chaos.
 - 2026-11-10: Created from inbox draft draft-l8-settled-window-fewer-people.md (found by lane267b-pw1265).

@@ -47,6 +47,7 @@ from numba import njit
 
 from ..geo import R_KM
 from . import trade as TR
+from .seafood import rings_for
 
 VERSION = 11  # (11: camel, llama, yak and reindeer herds count as pack animals, PW-1609, lane 264; 10: a bulk cargo's season at sea, SEASON, PW-1572; a need for dried fish, trade.py, PW-1573; lane 244; 9: boats follow the river's course, the hands on river hauls, herds and horses walk as droves, lane 226, step4c.md; 8: the hands, time and risk of a sea haul, HAND_KM, lane 225, step4b.md; 7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
 # PW-1530; lane 224, step4a.md. 2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
@@ -99,6 +100,8 @@ DROVE = 0.25  # a drove's cost per km, a pack animal = 1. Texas to Kansas, "as m
 # 3e0eb4, past the sourced ~1,000-3,000 km)
 CANOE_COAST = RIVER_UP  # a canoe along the coast, one cell out (`canoes`). JUDGEMENT: paddled, as against a current; no coastal canoe cost
 # was found
+COAST_BOAT_KM = 120.0  # a land culture's boats work its coastal water this far along the coast (PW-1627: the old two rings at L7, four at L8).
+# JUDGEMENT: a coastal boat's day or two from its home shore
 # --- a port call (PW-1529, step4a.md section 2): loading and unloading, and the harbour's dues, on top of the per-km cost, so a sea haul is
 # not almost free over distance. ORBIS prices sea carriage at 0.1 denarii per kg of wheat per day under sail (Scheidel, Meeks & Weiland
 # 2012, ORBIS v1 paper) and ~0.001 per km, so a day of a ship's time is ~100 sea-km; and ORBIS has no transshipment cost (Page 2026, J.
@@ -616,7 +619,7 @@ class _Frame:
         f_land = np.where(pack, np.minimum(f_land, M["pack"] * hm), f_land)
         f_land = np.where(wheel & (hills < 0.5), np.minimum(f_land, M["cart"]), f_land)
         f_land = np.where(roads, np.minimum(f_land, M["cart"]), f_land)
-        # sea: a coastal cell (next to land) is open to the best boats of the land cultures beside it (and two cells along the coast);
+        # sea: a coastal cell (next to land) is open to the best boats of the land cultures beside it (and COAST_BOAT_KM along the coast);
         # open sea once ocean ships sail or anyone on the map knows navigation; a sea people's own cells always
         nbr_off, nbr_idx = g.nbr_off, g.nbr_idx
         srcs = np.repeat(np.arange(n), np.diff(nbr_off))
@@ -624,7 +627,7 @@ class _Frame:
         tier = np.zeros(n)
         np.maximum.at(tier, srcs, np.where(land[nbr_idx], boat[nbr_idx], 0))
         tier = np.where(coastal, tier, 0)
-        for _ in range(2):
+        for _ in range(rings_for(g, COAST_BOAT_KM)):
             t2 = tier.copy()
             np.maximum.at(t2, srcs, np.where(coastal[nbr_idx], tier[nbr_idx], 0))
             tier = np.where(coastal, t2, 0)

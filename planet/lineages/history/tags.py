@@ -8,7 +8,11 @@ from ...geo import R_KM
 from .. import land as LD, spec as SP
 from .params import BREAKS_RAIN, BREAKS_RISE, CHAIN_KM
 from ..gridops import nbr_reduce
+from ..seafood import cells_for
 from .gridops import _isin
+
+ISLAND_FLOOR_KM2 = 9340.0  # an island is a landmass under 0.004 of the land, and at least under this (three L7 cells; the floor only
+# matters on coarse grids; PW-1627: in km2, so an L8 refine's floor is twelve of its cells)
 
 
 def _tags(grid, env: dict, chains: bool = True, volcanic: np.ndarray | None = None) -> dict:
@@ -25,7 +29,7 @@ def _tags(grid, env: dict, chains: bool = True, volcanic: np.ndarray | None = No
     sizes = np.bincount(lab[lab >= 0], minlength=k) if k else np.zeros(0)
     island = np.zeros(grid.n, bool)
     if k:
-        small = sizes < max(3, 0.004 * env["land"].sum())
+        small = sizes < max(cells_for(grid, ISLAND_FLOOR_KM2), 0.004 * env["land"].sum())
         island = env["land"] & (lab >= 0) & small[np.maximum(lab, 0)]
     trees = env.get("tree_cover", np.zeros(grid.n))
     rain = env["precipitation"]
