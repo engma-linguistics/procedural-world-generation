@@ -2,7 +2,7 @@
 id: PW-1661
 title: The glacial time zoom runs 2 Myr instead of 1 Myr for v1.0
 type: task
-status: todo
+status: in-progress
 parent: null
 milestone: v1.0
 subsystem: timezoom
@@ -23,4 +23,5 @@ Daniel (2026-11-10): v1.0 runs are 2 Myr instead of 1 Myr. In plain words: the g
 - [ ] peoples presets' deep dates still sensible on 2 Myr (dnd, seven_meals, humans)
 
 ## Updates
+- 2026-11-10: Status todo -> in-progress. Lane 280 merged (80f46bf8/5519d730): 2 Myr default everywhere, costs in docs/review/timezoom/two-myr.md. Left: the L8 split measurement on the refined 2 Myr world (chain running in /data/personal/scratch/lane280).
 - 2026-11-10: Created.

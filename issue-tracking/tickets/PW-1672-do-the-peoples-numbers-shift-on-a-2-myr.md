@@ -1,4 +1,5 @@
 ---
+id: PW-1672
 title: Do the peoples' numbers shift on a 2 Myr time zoom? Compare over re-rolled tries
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane280
 blocked_by: []
 relates: [PW-1661]
 refs: [docs/review/timezoom/two-myr.md, planet/lineages/history/steps.py, planet/timezoom/cycle.py, tools/peoples_robust.py, "run 0b3439 (December A)", "scratch runs b74691 and 580f8c (lane 280, deleted after measuring)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -29,3 +32,6 @@ look at what the glacial epoch adds from 1-2 Myr ago (tabaxi, giantkin, the sapi
 feline and avian stems).
 - [ ] per-people share and total people, 1 Myr vs 2 Myr, over >= 3 draws each, same code
 - [ ] a verdict: inside the draw spread, or a named mechanism to fix
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-peoples-2myr-redraw.md (found by lane280).
