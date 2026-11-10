@@ -1,4 +1,5 @@
 ---
+id: PW-1629
 title: The zoom's tide-dominated delta cuts 4 mouths or 3 depending on a 4% change in the river's size
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lane263
 blocked_by: []
 relates: [PW-1043]
-refs: [tests/test_coast.py::test_delta_types_differ, tests/test_coast.py::three_deltas, tests/test_coast.py::_measures, tests/test_zoom_water.py::water_world, planet/zoom/, "scratch: lane 263 delta.py (gone)"]
+refs: ["tests/test_coast.py::test_delta_types_differ", "tests/test_coast.py::three_deltas", "tests/test_coast.py::_measures", "tests/test_zoom_water.py::water_world", planet/zoom/, "scratch: lane 263 delta.py (gone)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -36,3 +39,6 @@ What to try: build the tide delta at several discharges (e.g. 42-52k m3/s in 2k 
 whether the mouth count is smooth or flips. If it flips, judge the test on the median over a few draws or a measure
 that doesn't jump (sea_near, rough). Then put the fixture's rain back to 1200.
 - [ ] the tide-delta test passes with the river anywhere in 44-50k m3/s, or the test states the band it holds for
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-tide-delta-mouth-count-brittle.md (found by lane263).

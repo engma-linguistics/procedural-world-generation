@@ -4,7 +4,7 @@ title: Turn polities-in-the-history on by default? States now match the read-out
 type: task
 status: todo
 parent: PW-661
-milestone: v4
+milestone: later
 subsystem: peoples
 effort: s
 impact: high
@@ -13,7 +13,7 @@ blocked_by: [PW-1597]
 relates: [PW-1587, PW-1460, PW-1466]
 refs: [docs/review/culture/polities/round21.md, planet/lineages/history/params.py, "planet/lineages/history/polity_live.py::LivePolities._step", "planet/lineages/history/polity_live.py::LivePolities._hem_local", docs/review/culture/polities/round18.md, docs/review/culture/polities/round18/live_run.py, docs/review/culture/polities/round16/measure_v1.py, docs/review/culture/polities/round14/measure.py, "world 4360a3", "world 899985"]
 created: 2026-11-09
-updated: 2026-11-09
+updated: 2026-11-10
 ---
 
 ## Description
@@ -52,6 +52,7 @@ state cards and the Polities layer keep showing a read-out that cannot affect th
 the switch sits unused.
 
 ## Updates
+- 2026-11-10: Parked with PW-1597 (three strikes, 11-10): POLITIES_LIVE stays off for v0.3.0. v4 -> later.
 - 2026-11-09: Lane 262: not flipped; PW-1597's check (new bar) fails on 3 of 5 pairs on 061c6eca, with a consistent sign (round21.md section 3). No steadiness runs made. Goldens untouched.
 - 2026-11-09: Lane 258: not flipped; PW-1597's check fails on all five pairs on 3a52d1bc (round20.md section 3). No steadiness runs made. Goldens untouched.
 - 2026-11-09: Lane 254b: not flipped, PW-1597's check fails on 3 of 5 pairs (round19.md section 4). Switch-off calendar moved with 81fc3851: L6 seed 7 first state 3,700 -> 3,400 ya, writing 3,347 -> 3,005; L7 seed 7 4,100 -> 3,700, 4,462 -> 4,305; L7 seed 10 unchanged. Steadiness over re-rolls only started: seed 7 on, nudge A (halflings 0.8 -> 0.9): same ruler 26% 1,000 ya / 21% now; the other 11 nudge pairs were left queued in scratch (lane 254b).
