@@ -14,6 +14,7 @@ Start with the ticket id, the done-when criteria, and the files worth reading. T
 - Run `uv run pytest -q` (background; 7-15 min) before committing under `planet/`; update goldens only for purposeful output changes.
 - Stop rule: ~5 tuning attempts, then report. Start long simulations in the background and read only the summary.
 - Final report: what was done, numbers, files, anything unclear. Handoff, not a wall of prose.
+- Language lanes (owner 11-10, PW-1641): every change to the language model runs the real-language benchmark, the language model's Earth: `uv run python -I tools/language/real_inventory.py --check` (~50 s at 8 workers; seven real languages seeded as protos and aged 2.5 kyr). It prints birth and +2.5 kyr distances, word-shape shifts, drift signatures and spread against the stored baseline (`tools/language/data/real_inventory_baseline.json`) and exits 1 when a number is worse than its band. Report the table before/after; re-record (`--check --record "why"`) only when merging an intended change. Plausible-or-better, never a fidelity target. Also `tools/language/families_apart.py <languages.json>` on a full pass: families should read as families, and different families as different.
 - Grid level 7 for showcases, 6 for quick tests. Earth is a test analogue, not a target. Thresholds scale to each planet's own orbit and sunshine.
 - The culinary-dnd repo is read-only.
 

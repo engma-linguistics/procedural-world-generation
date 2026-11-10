@@ -69,6 +69,9 @@ NUMERIC = ("consonants", "vowels", "tones", "max_onset", "max_coda", "final_vowe
 WEIGHTS = {"consonants": 1.0, "vowels": 0.7, "tones": 1.0, "max_onset": 0.5, "max_coda": 0.8, "final_vowel_share": 1.2,
            "mean_syllables": 0.6, "cluster_share": 0.6, "series": 0.25, "stress": 0.3, "word_order": 0.3,
            "adposition": 0.1, "case": 0.2, "synthesis": 0.2, "texture": 2.5, "nonhuman": 0.8}
+#: the terms a profile can leave blank; distance() rescales the filled ones to their full weight (PW-1624)
+OPTIONAL = frozenset(WEIGHTS) - {"series", "nonhuman"}
+OPTIONAL_WEIGHT = sum(WEIGHTS[k] for k in OPTIONAL)
 TEXTURE_SCALE = 0.6      # 1 - cosine at which the texture term is full (lects span cosine ~0.1-0.9 to a profile; median ~0.5)
 
 
@@ -179,6 +182,16 @@ def _place(deme_name: str | None) -> str:
     return m.group(1) if m else ""
 
 
+def vowel_qualities(vowels: list[str]) -> int:
+    """The number of vowel qualities (PW-1624): long and nasal vowels are series (long_vowels, nasal_vowels), not more
+    qualities, as the profiles count them; tone, phonation and colouring aside. An unreadable symbol counts as its own."""
+    out = set()
+    for x in vowels:
+        s = SK.seg(x)
+        out.add(x if s is None else (s.height, s.back, s.round, s.retroflex))
+    return len(out)
+
+
 def lect_features(l: dict, names: dict) -> dict:
     """The feature vector of one living lect (plus id, names and the texture vector under 'texture')."""
     inv = l.get("inventory") or {}
@@ -189,7 +202,7 @@ def lect_features(l: dict, names: dict) -> dict:
     f = {"id": l["id"], "name": nm["roman"] if nm else "", "people": l.get("people", ""),
          "place": _place(l.get("deme_name")), "language": l.get("language"), "family": l.get("family_scholars"),
          "family_true": l.get("family_true"), "population": int(l.get("population") or 0),
-         "consonants": len(inv.get("consonants", [])), "vowels": len(inv.get("vowels", [])),
+         "consonants": len(inv.get("consonants", [])), "vowels": vowel_qualities(inv.get("vowels", [])),
          "tones": len(inv.get("tones") or []), "max_onset": inv.get("max_onset", 1), "max_coda": inv.get("max_coda", 0),
          "stress": inv.get("stress"), "synthesis": cx.get("mean_level"), "fusion": cx.get("fused"),
          "nonhuman": sum(1 for s in segs if P.is_nonhuman(s))}
@@ -277,7 +290,16 @@ def distance(f: dict, prof: dict) -> tuple[float, dict]:
     if prof.get("texture"):
         put("texture", (1 - cosine(f["texture"], prof["texture"])) / TEXTURE_SCALE)
     put("nonhuman", f["nonhuman"] / 3)
-    return sum(c.values()), c
+    # PW-1624: a profile with blank cells (Black Speech leaves stress, word order, adposition, case and synthesis blank)
+    # has fewer terms, so it looked nearer to everything. The filled optional terms are rescaled to a full profile's
+    # weight (their weighted mean gap x OPTIONAL_WEIGHT), so distances to different profiles compare. The components
+    # returned stay unscaled.
+    opt = [k for k in c if k in OPTIONAL]
+    filled = sum(WEIGHTS[k] for k in opt)
+    total = sum(c.values())
+    if 0 < filled < OPTIONAL_WEIGHT:
+        total += sum(c[k] for k in opt) * (OPTIONAL_WEIGHT / filled - 1.0)
+    return total, c
 
 
 # ---- filters ---------------------------------------------------------------------------------------------------------------

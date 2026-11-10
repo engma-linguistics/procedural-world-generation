@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools" / "language"))
 
 import find  # noqa: E402
+import pytest  # noqa: E402
 
 HAWAIIAN_LIKE = {"SUN": "laːmaka", "WATER": "wai", "MOTHER": "makuahine", "FIRE": "ahi", "BIRD": "manu", "I": "au",
                  "TWO": "lua", "EAT": "ʔai", "STONE": "pohaku", "NIGHT": "poː", "WIND": "makani", "TREE": "laːʔau",
@@ -101,3 +102,21 @@ def test_cli_json(tmp_path, capsys):
     assert out["matched"] == 3 and len(out["hits"]) == 2 and out["hits"][0]["id"] == "d0"
     assert "texture" not in out["hits"][0] and out["hits"][0]["samples"][0]["concept"] == "sun"
     assert find.main([str(_write(tmp_path)), "--where", "nosuchkey>1"]) == 2
+
+
+def test_vowel_qualities_and_sparse_profiles():
+    """PW-1624: long and nasal vowels are series, not more qualities; a profile with blank cells is not nearer to
+    everything (its filled terms are scaled to a full profile's weight)."""
+    assert find.vowel_qualities(["a", "aː", "i", "iː", "u", "ã"]) == 3
+    f = {"consonants": 10, "vowels": 5, "tones": 0, "max_onset": 1, "max_coda": 0, "final_vowel_share": 0.5,
+         "cluster_share": 0.2, "mean_syllables": 2.0, "stress": "initial", "word_order": "SOV", "adposition": "post",
+         "case": "none", "synthesis": 1.0, "texture": {}, "nonhuman": 0, **{k: 0 for k in find.SERIES}}
+    full = {"consonants": 20, "vowels": 5, "tones": 0, "max_onset": 1, "max_coda": 0, "final_vowel_share": 0.5,
+            "cluster_share": 0.2, "mean_syllables": 2.0, "stress": "penult", "word_order": "SOV", "adposition": "post",
+            "case": "none", "synthesis": 1.0, "series": []}
+    sparse = dict(full, stress=None, word_order=None, adposition=None, case=None, synthesis=None)
+    d_full, _ = find.distance(f, full)
+    d_sparse, comp = find.distance(f, sparse)
+    assert d_sparse > sum(comp.values())   # (the filled terms scaled up to a full profile's weight)
+    assert d_sparse == pytest.approx(sum(comp.values()) * find.OPTIONAL_WEIGHT /
+                                     sum(find.WEIGHTS[k] for k in comp if k in find.OPTIONAL))

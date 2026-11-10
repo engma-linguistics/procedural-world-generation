@@ -106,6 +106,30 @@ PHONO_STATS = {"vetoed": 0}
 # Bantu kept open syllables for millennia), while a larger cluster of a type the lect has is decided again each interval.
 # A hiatus repair that would break the syllables (glide formation -ai > -aj in a CV lect) is weighted down by the same
 # factor among the repairs.
+# PW-1642, the soft and general part (Kisseberth 1970's conspiracies; the stable-state view of typology, in which families
+# hold a word shape for millennia: Polynesian and Bantu open syllables, Germanic closed monosyllables, Chinese codas lost and
+# kept lost). Each line holds a word-shape pattern (inventory.pattern_of: words ending in a consonant, words with a medial
+# coda, words with an onset cluster, syllables per word), read off its words at its first step and inherited; it follows
+# the line's actual words slowly (relaxing toward them with time constant PATTERN_KYR, the way the inventory size re-anchors).
+# A change that would carry the words farther from that pattern is let through with probability exp(-PATTERN_K x the
+# distance it adds, each measure over its PATTERN_SCALE), once per line: turned down, it is refused for the re-fire wait
+# like a new syllable type (PW-1622). Changes that keep or restore the pattern pass, so a line keeps moving along its own
+# shape rather than toward the catalogue's: before this, coda languages lost their codas (English-seeded protos 0.64 ->
+# 0.36 of words ending in a consonant in 2.5 kyr) because a dozen rows take final consonants and few make them, and CV
+# languages took codas from apocope. Loosened BURST_ANCHOR_X times in a burst (a founder or shifted line can reshape).
+PATTERN_K = 10.0
+PATTERN_SCALE = (1.0, 1.0, 1.0, 1.5)   # final coda, medial coda, onset cluster shares; syllables per word
+PATTERN_KYR = 10.0
+PATTERN_STATS = {"resisted": 0}
+# The three shares are compared on the arcsine-square-root scale (_firm): a pattern held by nearly every word, or nearly
+# none (a CV language's 0% codas), is held firmly, so 0 -> 3% of words with a coda costs as much as 50 -> 67%. On the plain
+# scale a CV line let codas in a percent at a time (each slip re-anchoring it), and the share of living a24559 lects with
+# simple syllables fell to 0.05 against WALS 12A's 0.12.
+
+
+def _firm(x: float, i: int) -> float:
+    """A pattern measure on the scale its resistance is read on: arcsine-sqrt for the shares, as is for word length."""
+    return math.asin(math.sqrt(min(1.0, max(0.0, x)))) if i < 3 else x
 LOAD_SAMPLE = 120  # forms handed to rules.pick_rule for the functional-load estimate (the most frequent words first)
 REFIRE_KYR = 4.0  # a rule that fired in a lect is not drawn (nor adopted by wave) again for this long ... (3 until the
 # sound lane, 2026-11-08: a line re-ran ~half the catalogue it fired, so "the same law again" was most of a late history).
@@ -149,9 +173,35 @@ ONE_OFF_IDS = frozenset({"S099", "S124"})
 # PW-1551: one draw, no redraw). Saturation is mostly structural: ~200 drawn changes a line in 20 kyr against ~100-140
 # applicable rows, so a row whose input is there fires within a kyr or so; the naturalness weight (rules.NATURAL_BASE)
 # sets how often the rest fire.
-LINE_FAMILY_SIGMA = 0.7
+# PW-1642 (lane 14): the family tendencies were too weak to matter. About 440 draws a 0.5 kyr step against the catalogue's
+# mass give a naturalness-3 row whose input is there ~0.7 draws a step, so it fired within 2.5 kyr on nearly every line
+# whatever its x0.4-x2.5 preference: every line ran the same common changes (harmony.back in 76-100% of the real-inventory
+# benchmark's daughters, h-loss 97%) and drifted to the engine's middle. LINE_FAMILY_SIGMA 0.7 -> 1.5 makes a line's
+# disfavoured families (x0.2 and under at the 15th percentile) rare enough to skip, its favoured ones dominant. The family
+# tendency is now inherited as a slow random walk (an Ornstein-Uhlenbeck step at each split: the parent's log preference
+# x rho + a fresh draw x sqrt(1 - rho^2), rho = exp(-parent's age / LINE_DRIFT_KYR)), so sisters share their parent's
+# tendencies and distant branches drift apart while the spread stays LINE_FAMILY_SIGMA.
+# Benchmark (20 seeds, 2.5 kyr, with the word-shape pattern below): mean distance growth 0.84 -> 0.70, changes fired in
+# >= 80% of all daughters 3 -> 1, languages keeping their character 1 -> 3 of 7, distinct changes per daughter 52 -> 42.
+LINE_FAMILY_SIGMA = 1.5
 LINE_ROW_SIGMA = 1.0
 LINE_BUD_SIGMA = 0.2
+LINE_DRIFT_KYR = 15.0
+# Signature changes (owner 11-10, PW-1642: centum and satem: one change, palatovelars becoming sibilants, defined a whole set
+# of Indo-European branches). A new lect draws, with probability SIGNATURE_P at its split (x SIGNATURE_FOUNDER_X when it
+# starts in a burst: a founder or shifted line) and SIGNATURE_RATE per kyr through its first SIGNATURE_EARLY_KYR, one
+# signature change: a catalogue row that touches at least SIGNATURE_MIN of its frequent words (drawn by weight x the line's
+# preference). The row is drawn SIGNATURE_X times as often (so it fires in its first interval or two and again whenever its
+# input comes back), and its family's tendency rises by SIGNATURE_FAMILY_LOG (e ** 1.1 = x3). Daughters inherit both, so
+# the branch keeps the change as its mark (Lect.signatures, in the lect's json and the sketch's history notes).
+SIGNATURE_P = 0.2
+SIGNATURE_FOUNDER_X = 2.0
+SIGNATURE_RATE = 0.1
+SIGNATURE_EARLY_KYR = 1.5
+SIGNATURE_MIN = 0.05
+SIGNATURE_X = 20.0
+SIGNATURE_FAMILY_LOG = 1.1
+SIGNATURE_SKIP = frozenset({"tone", "hiatus", "epenthesis"})   # (tone and repairs are not a branch's mark; epenthesis feeds itself)
 # Hiatus (2026-11-04, hiatus round). Consonant losses (h > ∅, j > ∅ / V_V, w > ∅, ð ɣ > ∅) leave vowels side by side, and
 # languages resolve such hiatus fast (Casali 1997, 2011): identical vowels fuse (normalize, below), and a change that leaves
 # new hiatus in the lect's words is followed at once by HIATUS_REPAIRS firing(s) of the catalogue's hiatus family
@@ -433,6 +483,11 @@ class Lect:
     #                                             loss of it (inherited; `alternates`, PW-1537 R9)
     refused: dict = field(default_factory=dict)  # catalogue rule id -> kyr the lect's phonotactics turned it down (inherited;
     #                                              refused for the re-fire wait: may_fire, PW-1622)
+    tendency: dict | None = None  # rule family -> the line's log preference (PW-1642; set at each split by child_tendency,
+    #                               None in a proto: its hashed draw, family_log)
+    signatures: list = field(default_factory=list)  # [{rule, family, kyr, lect}] the branch's signature changes (inherited)
+    pattern: tuple | None = None  # (kyr, anchor) the word-shape pattern the line holds (inventory.pattern_of; inherited,
+    #                               pattern_resist, PW-1642); None until the line's first step
 
     def copy(self, new_id: str, deme: int | None, kyr: float, how: str, rng=None) -> "Lect":
         """A daughter lect: same inventory, a copied lexicon and grammar, the rate re-drawn a little (budding)."""
@@ -450,7 +505,9 @@ class Lect:
                     glottal_phonetic=self.glottal_phonetic, hiatus_key=self.hiatus_key or self.id,
                     live=list(self.live), dead_rules=list(self.dead_rules), sandhi_drawn=self.sandhi_drawn,
                     size_base=dict(self.size_base) if self.size_base else None, orth=tuple(self.orth),
-                    insdel=dict(self.insdel), refused=dict(self.refused))
+                    insdel=dict(self.insdel), refused=dict(self.refused), pattern=self.pattern,
+                    tendency=self.tendency if how == "split" else self.child_tendency(new_id, kyr),
+                    signatures=list(self.signatures))
 
     def gaps(self) -> list:
         """The major places (GAP_PLACES) the lect has no consonant at though its speakers make the place cheaply
@@ -775,6 +832,51 @@ class Lect:
             return "type" if got[2] >= PHONO_MIN else "size"
         return False
 
+    def hold_pattern(self, kyr: float) -> tuple | None:
+        """The line's word-shape anchor now (PW-1642): set from its words at its first step, then relaxed toward them
+        with time constant PATTERN_KYR (kyr counts down)."""
+        if self.lexicon is None:
+            return None
+        cur = _inv_mod().pattern_of(self.load_forms())
+        if self.pattern is None:
+            self.pattern = (float(kyr), cur)
+            return cur
+        k0, a = self.pattern
+        dt = max(0.0, k0 - float(kyr))
+        if dt > 0 and PATTERN_KYR > 0:
+            f = 1.0 - math.exp(-dt / PATTERN_KYR)
+            a = tuple(x + (y - x) * f for x, y in zip(a, cur))
+            self.pattern = (float(kyr), a)
+        return a
+
+    def pattern_resist(self, rule, rng, memo: dict | None, kyr: float) -> bool:
+        """True when the line turns the change down for carrying its words away from the pattern it holds (PATTERN_K;
+        decided once per line: the caller refuses it for the re-fire wait)."""
+        if PATTERN_K <= 0 or self.pattern is None or self.lexicon is None or rule.family in ("tone", "hiatus"):
+            return False
+        if self.signatures and any(s["rule"] == base_id(rule.id) for s in self.signatures):
+            return False   # (the branch's own mark is not resisted by the shape it is changing)
+        a = self.pattern[1]
+        inv_mod = _inv_mod()
+        key = ("pattern", id(rule))
+        got = memo.get(key) if memo is not None else None
+        if got is None or got[0] is not rule:
+            forms = self.load_forms()
+            outs = RU.apply_all(rule, forms, stress_of(self.inventory))
+            got = (rule, inv_mod.pattern_of(forms), inv_mod.pattern_of(outs))
+            if memo is not None:
+                memo[key] = got
+        _r, cur, new = got
+        bad = sum(max(0.0, abs(_firm(n, i) - _firm(x, i)) - abs(_firm(c, i) - _firm(x, i))) / s
+                  for i, (c, n, x, s) in enumerate(zip(cur, new, a, PATTERN_SCALE)))
+        if bad <= 0:
+            return False
+        k = PATTERN_K / (BURST_ANCHOR_X if self.in_burst(kyr) else 1.0)
+        if rng.random() < math.exp(-k * bad):
+            return False
+        PATTERN_STATS["resisted"] += 1
+        return True
+
     def all_forms(self) -> list:
         return [w.form for w in self.lexicon.words.values()]
 
@@ -859,10 +961,78 @@ class Lect:
         line = self.hiatus_key or self.id
         b = base_id(rule.id)
         fam = rule.family or b.split(".")[0]
-        f = _lognormal(f"{line}|fam|{fam}", LINE_FAMILY_SIGMA) * _lognormal(f"{line}|row|{b}", LINE_ROW_SIGMA)
+        f = math.exp(self.family_log(fam)) * _lognormal(f"{line}|row|{b}", LINE_ROW_SIGMA)
         if self.hiatus_key:
             f *= _lognormal(f"{self.id}|bud|{b}", LINE_BUD_SIGMA)
+        if self.signatures and any(s["rule"] == b for s in self.signatures):
+            f *= SIGNATURE_X
         return f
+
+    def family_log(self, fam: str) -> float:
+        """The line's log preference for a rule family (PW-1642): inherited down the tree as a slow random walk
+        (`tendency`, set at each split), the proto's own hashed draw before that, plus its signatures' family boosts."""
+        t = self.tendency.get(fam) if self.tendency else None
+        if t is None:
+            t = LINE_FAMILY_SIGMA * _z(f"{self.hiatus_key or self.id}|fam|{fam}")
+        return t + SIGNATURE_FAMILY_LOG * sum(1 for s in self.signatures if s["family"] == fam)
+
+    def child_tendency(self, new_id: str, kyr: float) -> dict:
+        """A daughter's family tendencies: one Ornstein-Uhlenbeck step from this lect's over its age (LINE_DRIFT_KYR),
+        without the signature boosts (the daughter inherits the signatures themselves)."""
+        fams = sorted({r.family or base_id(r.id).split(".")[0] for r in catalogue_for(self.profile, self.profile_key)})
+        rho = math.exp(-max(0.0, self.born_kyr - float(kyr)) / LINE_DRIFT_KYR) if LINE_DRIFT_KYR > 0 else 1.0
+        s = math.sqrt(max(0.0, 1.0 - rho * rho)) * LINE_FAMILY_SIGMA
+        line = self.hiatus_key or self.id
+        out = {}
+        for fam in fams:
+            t = self.tendency.get(fam) if self.tendency else None
+            if t is None:
+                t = LINE_FAMILY_SIGMA * _z(f"{line}|fam|{fam}")
+            out[fam] = rho * t + (s * _z(f"{new_id}|walk|{fam}") if s > 0 else 0.0)
+        return out
+
+    def maybe_signature(self, rng, kyr: float) -> dict | None:
+        """At its first step (its split) with probability SIGNATURE_P, then at SIGNATURE_RATE per kyr through its first
+        SIGNATURE_EARLY_KYR (both x SIGNATURE_FOUNDER_X in a burst), a daughter takes a signature change."""
+        if self.parent is None or self.lexicon is None or self.how == "split":
+            return None
+        age = self.born_kyr - float(kyr)
+        if age > SIGNATURE_EARLY_KYR + 1e-9:
+            return None
+        first = not getattr(self, "_sig_tried", False)
+        self._sig_tried = True
+        dt = max(0.0, (getattr(self, "_sig_kyr", self.born_kyr)) - float(kyr))
+        self._sig_kyr = float(kyr)
+        p = SIGNATURE_P if first else 1.0 - math.exp(-SIGNATURE_RATE * dt)
+        if self.in_burst(kyr):
+            p = min(1.0, p * SIGNATURE_FOUNDER_X)
+        if p <= 0 or rng.random() >= p:
+            return None
+        forms = self.load_forms()
+        stress = stress_of(self.inventory)
+        have = {s["rule"] for s in self.signatures}
+        cands, ws = [], []
+        for r in self.weighted_rules(catalogue_for(self.profile, self.profile_key)):
+            b = base_id(r.id)
+            if r.weight <= 0 or r.family in SIGNATURE_SKIP or one_off(r) or b in have or not self.may_fire(r, kyr):
+                continue
+            outs = RU.apply_all(r, forms, stress)
+            if sum(1 for a, o in zip(forms, outs) if tuple(a) != tuple(o)) < SIGNATURE_MIN * max(1, len(forms)):
+                continue
+            cands.append(r)
+            ws.append(r.weight * self.line_pref(r))
+        if not cands:
+            return None
+        tot = sum(ws)
+        x = rng.random() * tot
+        for r, w in zip(cands, ws):
+            x -= w
+            if x <= 0:
+                break
+        sig = {"rule": base_id(r.id), "family": r.family or base_id(r.id).split(".")[0], "kyr": round(float(kyr), 3),
+               "lect": self.id}
+        self.signatures = list(self.signatures) + [sig]
+        return sig
 
     def hiatus_pref(self, rule) -> float:
         """The line's standing preference for a hiatus repair: a lognormal (sigma HIATUS_SPREAD) keyed by the line
@@ -989,6 +1159,8 @@ class Lect:
         fired = []
         lam = n_generations * RATE_RULE * ctx.get("rate_scale", 1.0) * self.rate_now(kyr)
         k = int(rng.poisson(lam)) if lam > 0 else 0
+        self.hold_pattern(kyr)
+        self.maybe_signature(rng, kyr)
         if k:
             rules = catalogue_for(self.profile, self.profile_key)
             pool, mass = self.rule_pool(rules, kyr, ctx.get("rule_weight"), with_mass=True)
@@ -1002,6 +1174,8 @@ class Lect:
                 if r is None:
                     continue
                 why = self.phonotactic_veto(r, rng, memo)
+                if not why and self.pattern_resist(r, rng, memo, kyr):
+                    why = "type"   # (away from the line's word shape: refused for the wait, as a new type; PW-1642)
                 if why:   # (not drawn again this interval; a new syllable type is refused for the wait: PW-1622)
                     if why == "type":
                         self.refused[base_id(r.id)] = round(float(kyr), 3)
@@ -1044,6 +1218,15 @@ class Lect:
 def one_off(rule) -> bool:
     """A one-off row (ONE_OFF_IDS: the whole-class coda changes): at most ONE_OFF_MAX firings a line."""
     return base_id(rule.id) in ONE_OFF_IDS
+
+
+def _z(key: str) -> float:
+    """A standard normal fixed by the key (crc32-seeded, so the same in every process and run)."""
+    v = _PREF.get((key, None))
+    if v is None:
+        import zlib
+        v = _PREF[(key, None)] = float(np.random.default_rng(zlib.crc32(key.encode("utf-8"))).normal())
+    return v
 
 
 def _lognormal(key: str, sigma: float) -> float:
@@ -1426,6 +1609,7 @@ def _sync_inventory(lect: Lect, kyr: float | None = None) -> None:
     ones on the vowels, and a ʔ that only prothesis put before initial vowels is left out (not a phoneme)."""
     tones = tone_hygiene(lect, kyr)
     voice2_hygiene(lect, kyr)
+    _allophony(lect, kyr)
     inv = _inv_mod().observed(lect.inventory, lect.all_forms(), lect.profile)
     inv = _inv_mod().retemplate(inv, lect.all_forms())
     if hasattr(inv, "tones"):
@@ -1438,6 +1622,21 @@ def _sync_inventory(lect: Lect, kyr: float | None = None) -> None:
         else:
             lect.glottal_phonetic = False  # (ʔ now stands elsewhere too: it has phonemicized)
     lect.inventory = inv
+
+
+def _allophony(lect: Lect, kyr: float | None = None) -> None:
+    """The lect's allophonic rules stay productive (lane 14b): a phoneme a sound change has newly put in one of its
+    allophones' environments takes the allophone (a new coda r in a lect that says coda r as [ɹ] is said [ɹ] too), so the
+    allophone keeps its complementary distribution instead of contrasting with the phoneme at the first new coda r. Only
+    this direction: an allophone a sound change strands outside its environment stays (environment loss phonologizes it,
+    as umlaut did when the i that caused it was lost). Recorded as an `allophony` sound step on the words it touches."""
+    inv = lect.inventory
+    if inv is None or lect.lexicon is None or not any(p is not None for p, _t in (inv.allophones or {}).values()):
+        return
+    INV = _inv_mod()
+    k = float(kyr if kyr is not None else lect.born_kyr)
+    if LX.apply_rule_to_lexicon(lect.lexicon, lambda f: INV.allophonic(f, inv), "allophony", k, lect.id):
+        lect.touch()
 
 
 def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:

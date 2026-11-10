@@ -443,7 +443,9 @@ def test_roots_stop_at_opacity(concepts):
     lex2 = _proto(92, concepts, "Y")[2]
     c = L.compound(rng, lex2, "BARK", inv, 12.0, head="SKIN", modifier="TREE")
     lex2.set(c)
-    assert L.felt_roots(lex2, c, 12.0) == lex2["SKIN"].roots + lex2["TREE"].roots
+    # (the parts' roots as felt then: a part that is itself an old proto derivation, STICK < HIT + 'thing' at 20 kyr, is
+    # opaque by 12 kyr and felt as its own root, whatever its stored birth roots say)
+    assert L.felt_roots(lex2, c, 12.0) == L.felt_roots(lex2, lex2["SKIN"], 12.0) + L.felt_roots(lex2, lex2["TREE"], 12.0)
     assert L.felt_roots(lex2, c, 8.0) == ("Y:BARK@12",)
     lex2.gen = 1000.0
     s = L.shift_word(rng, lex2, "WOOD", 11.0)
