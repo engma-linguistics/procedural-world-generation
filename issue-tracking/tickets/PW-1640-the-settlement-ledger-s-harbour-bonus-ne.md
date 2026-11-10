@@ -1,5 +1,6 @@
 ---
-title: The settlement ledger's harbour bonus never fires: the harbour layer is on sea cells, the ledger reads it on the land coast
+id: PW-1640
+title: "The settlement ledger's harbour bonus never fires: the harbour layer is on sea cells, the ledger reads it on the land coast"
 type: task
 status: todo
 parent: null
@@ -11,6 +12,8 @@ found_by: lane270-pw1627
 blocked_by: []
 relates: [PW-1627, PW-1630, PW-1011]
 refs: ["planet/lineages/settlements.py::_site_factor", "planet/lineages/settlements.py::derive", "planet/lineages/history/polity_live.py::LivePolities._site", "planet/humanuse.py::harbours", "world 899985", "world 69958b (899985 refined to L8, lane 270 scratch root l270/root, may be gone)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -35,3 +38,6 @@ If never done: every world's coastal towns lack the harbour and fisher terms the
 than the model claims and the coast-vs-river balance of towns (a number lanes compare) is biased toward rivers.
 - [ ] harbour read from the sea neighbours of a coastal land cell (ledger and live polities)
 - [ ] before/after coast share and harbour towns on Earth-like A L7
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-ledger-harbour-on-sea-cells.md (found by lane270-pw1627).

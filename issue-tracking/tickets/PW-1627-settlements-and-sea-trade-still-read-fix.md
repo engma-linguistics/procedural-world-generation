@@ -2,7 +2,7 @@
 id: PW-1627
 title: Settlements and sea trade still read fixed rings (town footprints, pits, mine exposure, coastal boat reach), so they shrink on L8
 type: task
-status: todo
+status: done
 parent: null
 milestone: v5
 subsystem: peoples
@@ -42,6 +42,7 @@ If never done: on the December L8 refine, towns and cities read half the country
 and coastal boats reach half as far as on the same planet at L7, so the settled map changes with the grid, not the world.
 
 ## Updates
+- 2026-11-10: Status todo -> done. Merged (lanes 270/270b): TOWN_KM, CITY_KM, PIT_KM, COAST_BOAT_KM, HEMMED_KM, ring_pairs, ISLAND_FLOOR_KM2; L7 unchanged (goldens). Coast and island remainder on PW-1630, harbour bug PW-1640.
 - 2026-11-10: Lane 270 (5bd8e407): every ring on the list in km (settlements TOWN_KM/CITY_KM/PIT_KM, trade_flow COAST_BOAT_KM, polities HEMMED_KM with the live history's ring table, tags ISLAND_FLOOR_KM2), L7 counts unchanged (tests/test_people_units.py, goldens pass). seafood's one-ring sea reads left as adjacency; dispersal's hop left (deep history stays on L7; lane 269c owns that file). Split rerun: cities 119 -> 244 (L7 same code 283), the ledger's rings carrying it (split.md §6). Done for the conversions; the coast remainder is PW-1630.
 - 2026-11-10: Evidence from the first split run is PW-1630 (coast 7.0% -> 1.9%, cities to a third, islands lose towns on L8); take both together.
 - 2026-11-10: Created from inbox draft draft-settled-window-grid-rings.md (found by lane266-pw1584).
