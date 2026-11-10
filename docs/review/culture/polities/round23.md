@@ -66,17 +66,35 @@ ledger's footprint: both halves are needed.
 |---|---|---|---|
 | L6 4360a3, 7 | 3,800 / 3,172 ya (6f9aec) | 4,000 / 3,172 (8baaea) | writing equal; first state 200 later |
 | L6, 3 | 6,600 / 6,166 (4487f0) | 6,800 / 6,166 (1597be) | writing equal; first state 200 later |
-| L6, 10 | 5,900 / 5,061 (50c4d5) | (queued, not measured by hand-off) | |
-| L7 899985, 7 | (queued) | (queued) | |
+| L6, 10 | 5,900 / 5,061 (50c4d5) | 6,300 / 5,340 (045f3d) | first state 400 later; writing 279 later |
+| L7 899985, 7 | 3,500 / 4,462 (d02f5d) | 4,300 / 4,462 (f7d48a) | writing equal; first state 800 later |
 | L7, 10 | 5,500 / 5,340 (77ef27) | 5,500 / 5,637 (2e818e) | first state equal; writing 297 later (1.5 steps) |
 
 All the default numbers moved since lane 265's table (round22.md section 3) with the merges since (PW-1584 km rules, PW-1627 km
 rings, PW-1640 harbour water), so these are not comparable with it.
 
-**On the fix, 9306190c: not measured by hand-off.** The ten runs are queued in the lane's scratch (jobs4: N6s7, N6s3, N6s10,
-N7s10, N7s7, on and off). What to expect, from the mechanism: the switch-on runs do not move (the live tree already read the
-footprint as it was counted, and the ledger's thinning does not enter the history); the switch-off calendars move later where a
-people's first towns were read early. An offline re-make of an off run's read-outs on the new code (`round23/offline_off.py`) did
+**On the fix, 9306190c** (on and off both on 9306190c's planet/; same runner and measure):
+
+| world, seed | on | off | on - off |
+|---|---|---|---|
+| L6 4360a3, 7 | 3,800 / 3,172 ya (e44ca8) | 4,000 / 3,007 (d35b8b) | writing 165 *earlier* (1 step); first state 200 later |
+| L6, 3 | 6,600 / 6,166 (3043fd) | 6,800 / 6,166 (d5f32c) | writing equal; first state 200 later |
+| L6, 10 | 5,900 / 5,061 (38fb4a) | 5,900 / 4,970 (3bfe7d) | first state equal; writing 91 earlier (under a step) |
+| L7 899985, 7 | 3,500 / 4,462 (d2d9fb) | 4,300 / 4,462 (b1d49f) | writing equal; first state 800 later |
+| L7, 10 | 5,500 / 5,340 (3aea0b) | 5,300 / 5,340 (9eeb39) | writing equal; first state 200 earlier |
+
+As the mechanism says, the switch-on runs did not move: every on run on 9306190c equals its 3bd4bd28 run in every number
+measured. The fix moved only the default (switch off), always later or equal: writing on L6 seed 7 3,172 -> 3,007, L6 seed 10
+5,340 -> 4,970, L7 seed 10 5,637 -> 5,340; first states L6 seed 10 6,300 -> 5,900, L7 seed 10 5,500 -> 5,300.
+
+**The calendar bar passes on 9306190c.** Writing is within one tree step on all five pairs (equal on three, with the switch on
+one step and under a step *earlier* on two), so there is no consistent sign. **The first states do not follow it.** With the
+switch on, the first state comes 200 years later on L6 seeds 7 and 3, equal on L6 seed 10, 200 years earlier on L7 seed 10,
+and **800 years later on L7 seed 7**, though writing there is equal on and off. That gap is in the state gate, not the
+calendar, and it was not diagnosed here. A first state comes from a city, writing, and kingship or law; with the switch on, the
+history counts its own seats.
+
+An offline re-make of an off run's read-outs on the new code (`round23/offline_off.py`) did
 not reproduce the stored off tree on its own code (L6 seed 7: 3,470 against 3,172 ya; the run's first tree is built with Crossings'
 raw label and the history's own frames, the rebuild with the filled map), so it is not used; the measure needs the real reruns.
 
@@ -103,12 +121,14 @@ Daniel's picture: small early kingdoms raiding each other, campaign and siege re
 
 ## 4. Left
 
-- The five pairs on 9306190c (section 2), then the bar (within one tree step on every pair, no consistent sign). If it passes:
-  PW-1596's flip in its own commit, the not-slow suite and goldens, and the steadiness table under the nudge.
+- The calendar bar passes on 9306190c (section 2). The next lane decides whether the first-state gap is acceptable; the worst
+  is 800 years later with the switch on, L7 seed 7. If it is, the next steps are: PW-1596's flip in its own commit, the not-slow
+  suite and goldens, and the steadiness table under the nudge. Not run here: the coordinator asked for a fresh lane to do them.
 - PW-1625 (contacts): real, thousands of deep records, but no writing date on L7 seed 10; check on the other pairs before building.
 - The sensitivity itself: one or two town cells a century apart move the world's writing a tree step or two (draft
   `draft-writing-hinges-on-one-peoples-first-town.md`).
-- The first states with the switch on were 200 years later on both L6 pairs measured on 3bd4bd28 with writing equal: not
-  diagnosed (the state gate reads writing and kingship or law and a city; the live history's seats are counted in the history).
+- The first states with the switch on: 200 years later on L6 seeds 7 and 3, 800 later on L7 seed 7, with writing equal. The
+  same on 3bd4bd28 and 9306190c. Not diagnosed. The state gate reads writing, kingship or law, and a city; with the switch on,
+  the seats are counted inside the history.
 
 Scratch runs under the lane's scratch root, to be deleted after the lane.
