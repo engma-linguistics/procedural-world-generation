@@ -507,6 +507,19 @@ def lang_section(doc, l, why_head, why, au: Audio, k: int) -> str:
         h.append(f"<tr><td>{E(SK.cname(c))}</td><td class='ipa'>{E(e['ipa'])}</td><td><i>{E(e.get('roman') or '')}</i></td>"
                  f"<td>{play(cid)}</td></tr>")
     h.append("</table>")
+    # doublets (PW-1636): the farmer's word beside the ruler's or trader's (cow ~ beef), then formal synonyms
+    dbl = SK.doublet_rows(doc, l)
+    if dbl:
+        food = [r for r in dbl if r["kind"] != "register"]
+        reg = [r for r in dbl if r["kind"] == "register"]
+        h.append("<h3>Doublets</h3><p class='muted'>Words that came in beside a native word instead of replacing it: the "
+                 "native word kept for the animal or the ingredient, the newcomers' word for the meat or the dish (as "
+                 "English cow and beef), or kept as the formal word (as ask and question).</p><ul>")
+        for r in food + reg[:8]:
+            h.append("<li>" + SK.re.sub(r"\*([^*]+)\*", r"<i>\1</i>", E(SK.doublet_line(doc, l, r))) + "</li>")
+        if len(reg) > 8:
+            h.append(f"<li class='muted'>… and {len(reg) - 8} more formal words</li>")
+        h.append("</ul>")
     # families
     h.append("<h3>Word families</h3><div class='two'><div class='card'><h4>Families a speaker feels</h4>"
              "<p class='muted'>Roots a speaker still hears: derivations and compounds younger than about 3,000 years whose "

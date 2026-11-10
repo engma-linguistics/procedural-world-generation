@@ -37,6 +37,7 @@ import numpy as np
 from . import faiths as FT
 from . import inputs as I
 from . import lect as LC
+from . import contact as CT
 from . import lexicon as LX
 from . import lexsys as LS
 from . import rules as RU
@@ -93,6 +94,13 @@ KOINE_LEVEL = 0.1  # per interval, chance each differing core word of a koine re
 # the contact intensity.
 LOAN_CONTACT = 0.1
 MINORITY_PULL = 1.0
+# Contact kinds of the donors (PW-1636, contact.py): a ruler (elite incursion or takeover trigger over the lect's deme)
+# lends by the elite profile, a trading partner (a trade trigger either way, or a deme of another people that handed this
+# one a crop, a herd animal or a technology within TRADE_PARTNER_KYR) by the trade profile, a mixed city's holder by the
+# city profile; the old speech of a deme that shifted under rulers borrows from the rulers' speech by the elite profile.
+# (Route partners of the same people, and a 2 kyr window, made trade the largest channel on a24559: 5,629 route layers
+# against 1,552 trade triggers; now other peoples only, 1 kyr)
+TRADE_PARTNER_KYR = 1.0
 TECH_LOAN = 0.7  # chance a technology's word comes with it from the teaching people's lect in contact (history.tech_step)
 # Substrate on shift (contact-gaps.md rec. 2): each local word (landscape, plants, animals) survives with a chance drawn
 # per shift from SUBSTRATE_KEEP (a handful plus the names, like Celtic in English, not 18% of the lexicon); names always.
@@ -169,6 +177,11 @@ class History:
         self.route_ev: dict = {}  # (lect, concept, kyr, process) of a route event's etymology step -> its food route key
         self._lang: dict = {}
         self.splits: dict[str, tuple[float, LC.Lect]] = {}  # lect id -> (kyr, frozen copy) at its first bud in SPLIT_KYR
+        self.partners: dict = {}  # (receiver deme, donor deme) -> kyr of the last crop, herd or technology handed over
+        self.shift_kind: dict[str, str] = {}  # lect id made by a shift -> the trigger kind behind it
+        self.rule: dict[str, dict] = {}  # lect id -> {donor lect id: {kind: [from kyr, to kyr, why]}} (elite and trade
+        # contact over its history, inherited by daughters: contact.py, the sketch's doublet lines)
+        self._kinds_now: tuple = (None, {}, set())  # (frame, {ruled deme: {ruler deme: (kinds, trigger)}}, trade pairs)
 
     # ------------------------------------------------------------------ helpers
     def say(self, kyr: float, text: str) -> None:
@@ -240,6 +253,8 @@ class History:
             lid = f"d{deme}.{n}"
         l = parent.copy(lid, deme, kyr, how, rng)
         l.orth = RO.reform_style(self.seed, lid, parent.orth)
+        if parent.id in self.rule:   # (the contact layers it inherits with the words)
+            self.rule[lid] = {k: {kk: list(vv) for kk, vv in v.items()} for k, v in self.rule[parent.id].items()}
         people = self.R.people_of(deme)
         if people != parent.people:  # (a deme of another people speaking it: its own voice)
             l.people = people
@@ -338,7 +353,9 @@ class History:
         for l in living:
             n = change_generations((t0 - t1) * 1000.0, l.gen_yr)
             cw = self.loan_weights(l, contacts[l.deme], i)
-            ctx = {"contact_ids": sorted(cw), "contact_weights": cw, "niche": niche_for(R, l.deme, i), "l2": R.l2_share(l.deme, i),
+            ck = self.loan_kinds(l, cw, i)
+            ctx = {"contact_ids": sorted(cw), "contact_weights": cw, "contact_kinds": ck, "niche": niche_for(R, l.deme, i),
+                   "l2": R.l2_share(l.deme, i),
                    "population": R.deme_population(l.deme, i), "isolation": R.isolation(l.deme, i),
                    "rate_scale": RATE_SCALE, "replace_scale": REPLACE_SCALE, "rule_weight": RULE_WEIGHT,
                    "kin": LS.kin_pull(R.culture_rules(l.deme)), "speech_taboo": LS.speech_taboo(R.culture_rules(l.deme))}
@@ -469,6 +486,65 @@ class History:
                 out[x.id] = MINORITY_PULL
             else:
                 out[x.id] = round(LOAN_CONTACT * max(l.shares.get(x.id, 0.0), MINORITY_MIN), 4)
+        return out
+
+    def _kinds_at(self, i: int) -> tuple:
+        """({ruled deme: {ruler deme: {trigger kind: strongest such trigger}}}, {frozenset trade pair: why}) at frame i."""
+        if self._kinds_now[0] == i:
+            return self._kinds_now[1], self._kinds_now[2]
+        rule: dict = {}
+        trade: dict = {}
+        t1 = self.R.kyr(i)
+        for (a, b), k in sorted(self.partners.items()):
+            if k - t1 <= TRADE_PARTNER_KYR + 1e-9:
+                trade[frozenset((a, b))] = "trade routes"
+        for tr in self.R.shift_triggers(i):
+            if tr.kind == "trade":
+                trade[frozenset((tr.ruler_deme, tr.ruled_deme))] = tr.source
+            cur = rule.setdefault(tr.ruled_deme, {}).setdefault(tr.ruler_deme, {})
+            if tr.kind not in cur or tr.strength > cur[tr.kind].strength:
+                cur[tr.kind] = tr
+        self._kinds_now = (i, rule, trade)
+        return rule, trade
+
+    def loan_kinds(self, l: LC.Lect, cw: dict, i: int) -> dict:
+        """{donor lect id: elite | trade | city | flat} for `l`'s donors `cw` this interval (contact.py); the elite and
+        trade contact is noted in `self.rule`."""
+        out: dict = {}
+        if l.deme is None or not cw:
+            return out
+        rule, trade = self._kinds_at(i)
+        mine = rule.get(l.deme, {})
+        t0, t1 = self.R.kyr(i - 1), self.R.kyr(i)
+        for did in sorted(cw):
+            x = self.lects.get(did)
+            if x is None or x.deme is None:
+                out[did] = "flat"
+                continue
+            why = None
+            if x.deme == l.deme:   # (the other speech of the deme: the rulers' speech, for the old speech of a shift)
+                k = "elite" if l.minority and self.shift_kind.get(x.id) in CT.ELITE_TRIGGERS else "flat"
+                if k == "elite":
+                    why = "the speech of the rulers the deme shifted to"
+            else:
+                kinds = mine.get(x.deme, {})
+                el = [kinds[e] for e in CT.ELITE_TRIGGERS if e in kinds]
+                if el:
+                    k, why = "elite", max(el, key=lambda t: t.strength).source
+                elif frozenset((l.deme, x.deme)) in trade:
+                    k, why = "trade", trade[frozenset((l.deme, x.deme))]
+                elif "city" in kinds:
+                    k = "city"
+                else:
+                    k = "flat"
+            out[did] = k
+            if k in ("elite", "trade"):
+                r = self.rule.setdefault(l.id, {}).setdefault(did, {})
+                e = r.get(k)
+                if e is None:
+                    r[k] = [round(t0, 3), round(t1, 3), why or ""]
+                else:
+                    e[1] = round(t1, 3)
         return out
 
     def areal_step(self, i: int, living: list, contacts: dict) -> None:
@@ -805,7 +881,15 @@ class History:
             if m in old.shares and self.lects[m].alive:
                 new.shares[m] = old.shares[m]
         p_keep = float(rng.uniform(*SUBSTRATE_KEEP))
-        loc = [k for k in LX.local_concepts(old.lexicon) if old.lexicon.words[k].pos == "NAME" or rng.random() < p_keep]
+        if trig is not None:
+            self.shift_kind[new.id] = trig.kind
+        if trig is not None and trig.kind == "swamp":
+            # (newcomers who shift to the locals' speech keep the words of their standing, not "local landscape" words they
+            # never had: the superstrate fields of the elite profile, Frankish guerre, garder in French; PW-1636, D2.1 B)
+            loc = [k for k in sorted(old.lexicon.words) if not k.startswith(CT.HIGH) and old.lexicon.words[k].pos != "NAME"
+                   and CT.mult("elite", k) > 1.0 and rng.random() < p_keep]
+        else:
+            loc = [k for k in LX.local_concepts(old.lexicon) if old.lexicon.words[k].pos == "NAME" or rng.random() < p_keep]
         kept = LX.substrate_transfer(old.lexicon, new.lexicon, loc, kyr=t1, inv=new.inventory, profile=new.profile)
         new.touch()
         accent = self.accent(rng, old, new, t1)
@@ -822,6 +906,7 @@ class History:
         rec = {"deme": deme, "kyr": t1, "from_lect": old.id, "to_lect": new.id, "ruler_lect": ruler.id,
                "ruler_deme": ruler.deme, "trigger": trig.to_json() if trig is not None else None,
                "substrate_words": kept, "substrate_keep": round(p_keep, 3), "accent": accent, "nativised": native,
+               "kept_as": "superstrate" if trig is not None and trig.kind == "swamp" else "substrate",
                "calques": calques,
                "speakers": R.people_of(deme), "ruler_people": ruler.people}
         self.shifts.append(rec)
@@ -938,6 +1023,8 @@ class History:
                               note=f"with the {LX.concept_info(concept).gloss.lower()} from {self.deme_label(donor)}"
                                    f"{' over the sea' if how == 'sea' else ''}")
                 self.route_hop(concept, src, w, l, dl, d, donor, t1, how)
+                if dl.people != l.people:   # (a crop handed between peoples: a trading partner, TRADE_PARTNER_KYR)
+                    self.partners[(d, donor)] = t1
             else:
                 self.coin_food(l, concept, t1, d, origin=origin)
             l.touch()
@@ -981,6 +1068,8 @@ class History:
                     pick = max(have, key=lambda x: (cw[x], x))
                 if pick is not None:
                     dl = self.lects[pick]
+                    if dl.deme is not None and dl.people != l.people:
+                        self.partners[(d, dl.deme)] = t1
                     LX.borrow(dl.lexicon[concept], dl.id, l.lexicon, l.profile, l.inventory, t1,
                               note=f"with {tech.replace('_', ' ')} from "
                                    f"{self.deme_label(dl.deme) if dl.deme is not None else dl.id}")
@@ -1469,6 +1558,12 @@ def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse
         lr = FT.learned_register(h, l)   # (the liturgy's sacred words beside the lect's own: faiths.py)
         if lr:
             l.lexicon.systems["learned"] = lr
+    for l in h.lects.values():   # (the high-register doublets out of the lexicon, into systems.registers.high: contact.py)
+        if l.lexicon is not None:
+            CT.finish_registers(l.lexicon)
+            if h.rule.get(l.id):   # ({donor lect: {elite | trade: [from kyr, to kyr, why]}}: the pages' doublet lines)
+                l.lexicon.systems["contact_layers"] = {k: {kk: list(vv) for kk, vv in sorted(v.items())}
+                                                       for k, v in sorted(h.rule[l.id].items())}
     gn = h.__dict__["god_names"] = FT.finish_names(h, last)   # (late holders named, worn names renewed: PW-1548)
     if gn["named"] or gn["renewed"]:
         h.say(R.kyr(last), f"god names: {gn['named']} named late (holders born after their faith's events), "

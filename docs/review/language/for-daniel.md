@@ -1446,3 +1446,133 @@ syllable, class concord on every word, CLICS derivation families, and gaps that 
 | shortest god name kept | 2 beats (a long vowel counts 2) | `faiths.MIN_NAME_MORAS` |
 | intervals between garbage collections in the pass | 20 | `history.COLLECT_EVERY` |
 | which ruins get names | every abandoned site but mines, in the last holders' lect at abandonment | `personal.Personal.ruins` |
+
+## Lane 13 (lang-lane13, 2026-11-10): conquest and trade borrowing, cow ~ beef doublets
+
+In plain words: which words a language borrows now depends on who lends them. Rulers lend law, rule, faith, war,
+dress, the house and the kitchen; traders lend market, money and measure words and goods; ordinary neighbours lend
+as before. And a borrowed word can now come in beside the native word instead of replacing it: a conquered people
+keeps its word for the cow and takes the rulers' word for the beef, keeps its word for milk and takes the rulers' or
+traders' word for cheese or butter, or keeps a borrowed word as the formal synonym. The sketches and the demo page
+list these doublets with the conquest or trade that brought them. Ticket PW-1636; design: the proposal of 11-10,
+Part 2 (your rulings D2.1 B, D2.2 B). Trade numerals are not switched on (desk card p.numerals).
+
+**What changed**
+
+- **Field profiles by contact kind (P1, `planet/language/contact.py`).** Each donor of a language is labelled each
+  interval (`history.loan_kinds`):
+  - *elite*: an elite incursion or a takeover over this language's deme (takeover is nearly all of them: 87 to 1 on
+    a24559), and the rulers' speech for the old speech of a deme that shifted under them;
+  - *trade*: a trade trigger, or a deme of another people that handed this one a crop, a herd animal or a technology
+    in the last 1 kyr;
+  - *city*: a mixed city; everything else is *neighbour* (unchanged).
+
+  The kind's profile multiplies how likely a meaning is to be borrowed from that donor, and the donor is drawn by pull x
+  the multiplier, so the ruler supplies the law word and the trader the market word. Each profile averages 1 over the
+  concept list, so the amount of borrowing stays the same; only its spread moves. Pronouns, numerals, question words
+  and deictics stay at 1 in every profile. Crops stay at x1 under trade (the food routes already carry them).
+
+  | kind | raised | lowered |
+  | --- | --- | --- |
+  | elite | law and social x4.0, religion and war x3.0, cuisine and the meats x3.0, dress and the house x2.0, the farm animals and ingredients x2.0, commerce x1.5 | body, kin, perception, motion, basic list, nature x0.25 |
+  | trade | commerce x2.9, goods and metals x2.5, cuisine x1.5 | body, kin x0.5 |
+  | city | crafts, dress, house, cuisine x1.8 | |
+
+- **The swamp fix (D2.1 B).** When newcomers shift to the locals' speech (a swamp trigger), they now keep words of the
+  fields rulers lend (war, rule, cuisine, dress), not "local landscape" words they never had. The shift records say
+  `kept_as: superstrate`. On a24559, 47 such shifts kept 7 to 40 words each (e.g. ferment, peace, pillow, rich, table,
+  tasty, thread).
+- **New concepts (P3).** The meat of every herd animal the run has and of the deer (`meat:cattle`, `meat:caprine`,
+  `meat:fowl`, `meat:horse`, `meat:deer` ...). A proto-language names them 'cattle-meat' (a compound of the animal and
+  MEAT, the usual way: German Rindfleisch, Mandarin niúròu), so a specialised word like beef is the special case. Also
+  12 trade, rule and law words: PRICE, MONEY, DEBT, WEIGH, MEASURE, PROFIT, ACCOUNT, LAW, JUDGE, TAX, COURT, NOBLE. A
+  people gets each once it knows the technology (markets, coinage, credit and debt, weights and measures, law,
+  taxation, kingship, writing), borrowed with it from the teaching people when they are in contact, as BREAD and
+  CHEESE already were. The ingredient/product pairs use concepts that already existed (milk ~ cheese, butter; grain,
+  wheat, rye ~ flour, bread; grape ~ wine; honey ~ mead; cane ~ sugar), listed in `data/splits.tsv`.
+- **Doublets (P2).** When a language is borrowing an animal or an ingredient word from a ruler, the loan comes in
+  for the meat or the product instead, with chance 0.7, and the native word stays (`contact.doublet`). That is the
+  English path: Old French *boef* meant the ox; English kept it for the meat. For a product the donor's own product word
+  is taken when it has one (Latin *caseus* > cheese). Traders and mixed cities do this for products only (0.3, 0.2).
+  And a ruler's loan for a word of the fields rulers lend, or an abstract word (feelings, thought, speech), comes in as
+  a formal synonym with chance 0.15, kept in `systems.registers.high` like the faiths' learned register. Formal
+  synonyms die off at the word's normal replacement rate, so they are not permanent. Every contact loan's etymology
+  note now names its channel ("contact, elite"), and each language keeps the list of its rulers and trading partners
+  with dates and the reason (`systems.contact_layers`).
+- **Pages.** The sketches and the demo page have a "Doublets" list, food first: "cattle (animal) ~ cattle (meat):
+  native *euyi*, the meat word *lobut* from human 9 (now), after 5 site(s) of the dragonborn taken by the human about
+  7.5 kyr ago". When the animal word is itself an older loan the line says "the older word" instead of "native". The
+  viewer does not show them yet (draft).
+- **Two new checks.** "Loans follow the contact kind": loans from rulers must have at least 1.5 x the neighbours'
+  share of law, social, religion and war words. "Doublets under elite rule": of the living languages ruled for 2 kyr
+  or more, at least 20% must have a meat or product doublet.
+
+**Numbers** (a24559, main -> this lane; the history is re-rolled, since the new concepts change every draw)
+
+| check | main | lane 13 | mark |
+| --- | --- | --- | --- |
+| living languages | 620 | 625 | |
+| loans follow borrowability (WOLD rho) | 0.403 | 0.425 | >= 0.3 |
+| pronoun loans | 0.082 (fail) | 0.066 | <= 0.08 |
+| sisters recognisable | 0.562 | 0.531 | >= 0.5 |
+| areal (near - far) | 0.018 | 0.015 | >= 0.01 |
+| share of words that are loans | 30.4% | 29.3% | |
+| loans from rulers: prestige-field share over the neighbours' | (no channel) | 1.78 x (11.7% vs 6.5%) | >= 1.5 |
+| ruled 2 kyr or more with a food doublet | | 115 of 150 (77%) | >= 20% |
+| scholars' horizon | fail | fail | accepted |
+
+All checks pass except the accepted horizon. On de1cc6 (an earlier build of this lane, before the formal synonyms
+were narrowed to fitting fields; main -> lane): sisters 0.478 (fail) -> 0.512; horizon fail -> pass; WOLD rho 0.398 ->
+0.419; pronoun loans 0.085 -> 0.093 (fail both times, within the 0.065-0.093 seen across rebuilds); elite prestige
+share 1.9 x; 124 of 156 ruled languages with a food doublet. The inventory-size and overused-segment fails of de1cc6
+are there on main too.
+
+Doublets on a24559 (573 living, majority speech): 190 meat words and 159 product words in 170 languages; 1,052 formal
+synonyms (about 1.8 a language; the first build gave 4.6 a language, many for frog, jaw or bite, so I limited them to
+the fields rulers lend and the abstract ones).
+
+The farm side and the kitchen side, share of languages whose word is a loan (main -> lane 13). The proposal's
+complaint was that the farm side was always borrowed more; now the kitchen side catches up where conquest happened.
+a24559 has no pigs, so there is no pig/pork pair.
+
+| animal or ingredient / meat or product | main | lane 13 |
+| --- | --- | --- |
+| wheat / flour | 60.5% / 26.6% | 68.1% / 45.6% |
+| grain / flour | 45.7% / 22.0% | 37.5% / 34.2% |
+| milk / butter | 44.7% / 34.4% | 43.8% / 46.8% |
+| milk / cheese | 55.9% / 46.7% | 54.4% / 47.9% |
+| honey / mead | 43.5% / 32.8% | 36.5% / 39.2% |
+| grape / wine | 65.5% / 56.0% | 59.0% / 59.8% |
+| cattle / its meat | (no meat word) | 18.3% / 17.8% |
+| deer / its meat | (no meat word) | 25.3% / 22.3% |
+
+Examples from a24559 (romanised):
+- d151.2 (a dragonborn people under human rule): cattle *euyi* ~ the meat word *lobut*, and caprine *euyuwiwh* ~ *sosutuwu*,
+  both from the humans who took 5 dragonborn sites about 7.5 kyr ago.
+- d149: cattle *njigyai'ē* ~ *unji*, deer *njigylēnd* ~ *urr*, milk *its'aj* ~ butter *jelunji*, all from the
+  humans who took 2 dragonborn sites about 5 kyr ago.
+- d148.1: cattle *euygeuy* ~ *unguw*, deer *eu* ~ *teil*, after 76 dragonborn sites taken by humans about 2 kyr ago.
+- d143.1 (kobold): milk ~ cheese *eiluḷimu*, after 2 kobold sites taken by humans about 3 kyr ago.
+- d129: king *ulule*, formal *uyanae*, from the humans who took 2 dwarf sites about 5.5 kyr ago.
+- de1cc6, d19.1 (cervid folk under antelope folk): cattle, caprine and deer each with an antelope-folk meat word, after
+  14 cervid-folk sites were taken about 7 kyr ago.
+
+**Not done, and why**
+- Trade numerals: the hook is there (`contact.TRADE_NUMERALS`, e.g. {"HUNDRED": 3, "THOUSAND": 3}), off until desk
+  card p.numerals is answered.
+- The viewer (P4) and the cuisine pages do not show the doublets yet (draft). The per-language "layers" table of the
+  proposal is in the same draft.
+- "Trade" is broad: the run's trade triggers cover most long contact between two peoples, so on a24559 there are more
+  trade loans (56,600) than neighbour loans (46,900). Harmless while the trade profile is mild, but it would spread
+  trade numerals everywhere (draft).
+- The sisters number fell 0.562 -> 0.531 on a24559 and rose 0.478 -> 0.512 on de1cc6; I read both as re-roll noise.
+
+**Defaults I chose**
+
+| what | default | where |
+| --- | --- | --- |
+| profile multipliers | the table above (raw: law 4, religion 3, cuisine 3, animals 2, lowered 0.25; trade commerce 3, goods 2.5) | `contact.RAW` |
+| chance a ruler's animal or ingredient loan becomes the meat or product word | 0.7 (traders 0.3, cities 0.2, products only) | `contact.DOUBLET_P` |
+| chance a ruler's loan becomes a formal synonym | 0.15, freq class 3 and rarer, fitting fields only | `contact.REGISTER_P`, `REGISTER_FIELDS` |
+| how long a crop or technology hand-over makes two peoples trading partners | 1 kyr | `history.TRADE_PARTNER_KYR` |
+| new check marks | rulers' prestige share >= 1.5 x neighbours'; >= 20% of languages ruled 2 kyr with a food doublet | `checks.ELITE_PRESTIGE_X`, `ELITE_SPLIT_MIN` |
