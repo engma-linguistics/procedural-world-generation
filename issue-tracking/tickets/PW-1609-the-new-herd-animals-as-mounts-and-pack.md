@@ -2,7 +2,7 @@
 id: PW-1609
 title: "The new herd animals as mounts and pack animals: camels, yaks and reindeer for riding, camels and llamas for caravans"
 type: task
-status: todo
+status: done
 parent: PW-1498
 milestone: later
 subsystem: peoples
@@ -28,4 +28,5 @@ a visible gap once trade routes reach the culinary book. Needs a source per use 
 any number is set.
 
 ## Updates
+- 2026-11-09: Status todo -> done. Done in lane 264 (docs/review/food/lane264.md): riding opens on camel, yak and reindeer; ox traction on water buffalo and yak; camel, llama, yak and reindeer herds count as pack animals in the exchange (same pack cost, trade_flow VERSION 11). On a fresh dnd run no people gains a use it lacked on main (the horse or pack_animals comes first everywhere); the wiring matters where a mount herd has no horse near it.
 - 2026-11-09: Created from inbox draft draft-pack-and-riding-herds.md (found by lane256).
