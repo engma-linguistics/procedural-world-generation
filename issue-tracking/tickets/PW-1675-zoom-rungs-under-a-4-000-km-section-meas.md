@@ -2,7 +2,7 @@
 id: PW-1675
 title: "Zoom rungs under a 4,000 km section: measure and judge 500 km at 0.5 km and 30 km at 25 m made by the fine pass"
 type: task
-status: todo
+status: done
 parent: PW-1198
 milestone: v1.0
 subsystem: zoom
@@ -33,4 +33,5 @@ On one land section of a v1.0 showcase world at 2 km (CLI, own scratch data root
 - [ ] `docs/review/zoom/lod-rungs.md` with a yes/no on rung 1; a "no" goes to Daniel as the plan's question Q3 with the pictures
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 284 merged (f62f157b): docs/review/zoom/lod-rungs.md. Yes on the 500 km rung (rougher than a regional zoom, rivers carry through); 30 km @ 25 m fine. Each rung ~35-55 s and 8-12 GB. Q3 not needed. Follow-up PW-1679 (25 missing layers on fine zooms).
 - 2026-11-10: Created from inbox draft draft-lod-3-rung-chain.md (found by lane282).

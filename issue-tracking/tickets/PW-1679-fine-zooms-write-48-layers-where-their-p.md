@@ -1,4 +1,5 @@
 ---
+id: PW-1679
 title: Fine zooms write 48 layers where their parent has 71, so the game and human-use overlays are blank on every zoom rung
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane284
 blocked_by: []
 relates: [PW-1675, PW-1299, PW-516, PW-485]
-refs: [docs/review/zoom/lod-rungs.md, "planet/zoom/fine.py::build", "planet/zoom/fine.py::save", "planet/zoom/regional.py::build", "planet/humanuse.py", "zoom 2a4463", "zoom 44d6d6", "zoom 80880d", "zoom 61b06a", "zoom 0ce324", docs/proposals/nested_fine_zoom.md]
+refs: [docs/review/zoom/lod-rungs.md, "planet/zoom/fine.py::build", "planet/zoom/fine.py::save", "planet/zoom/regional.py::build", planet/humanuse.py, "zoom 2a4463", "zoom 44d6d6", "zoom 80880d", "zoom 61b06a", "zoom 0ce324", docs/proposals/nested_fine_zoom.md]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -34,3 +37,6 @@ travel, river_nav, harbour, shore_form, coast_type, glacial_form).
 - [ ] a 500 km rung and a 30 km rung have all 71 layers the section has
 - [ ] the viewer's layer list draws each of them on a rung without an error
 - [ ] fine-zoom build time and RAM stay under ~2x the measured 34-53 s / 8-12 GB
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-fine-zoom-missing-layers.md (found by lane284).
