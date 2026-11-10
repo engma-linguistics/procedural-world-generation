@@ -1,4 +1,5 @@
 ---
+id: PW-1670
 title: The world's writing date hinges on one people's first one or two town cells, read at 260-year tree steps
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane278
 blocked_by: []
 relates: [PW-1597, PW-1596, PW-1464]
 refs: [docs/review/culture/polities/round23.md, docs/review/culture/polities/round23/split.py, docs/review/culture/polities/round23/trace_tech.py, docs/review/culture/polities/round23/foot_when.py, "planet/lineages/techtree.py::Calendar.settled", "planet/lineages/techtree.py::town_cells_within", "planet/lineages/techtree.py::Calendar.advance", "planet/lineages/settlements.py::_tier_turns", "world 899985", "world 4360a3"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -35,3 +38,6 @@ history is, and the on/off and before/after checks keep finding one-to-two-step 
 history.
 - [ ] the 12 largest peoples' writing median moves less than one tree step when one people's first town cell moves one century
   (measured by shifting the footprint on one of the five PW-1597 pairs)
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-writing-hinges-on-one-peoples-first-town.md (found by lane278).
