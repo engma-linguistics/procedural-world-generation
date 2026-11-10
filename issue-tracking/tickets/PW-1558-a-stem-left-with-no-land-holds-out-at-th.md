@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1184, PW-1152, PW-1181]
 refs: ["planet/lineages/history/dispersal.py::_hold_out", "planet/lineages/history/origins.py::_origin_split", "planet/lineages/history/origins.py::_take", "planet/lineages/history/model.py::_advance", tools/peoples_robust.py, docs/review/peoples/origins-spread.md, "lane 228 numbers: exports/lane228/ in the lane worktree (after/, base2/)", "world af2677 (time zoom f2201f)"]
 created: 2026-11-08
-updated: 2026-11-09
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -36,8 +36,9 @@ What to try: keep the refuge near the stem's last land (exp(-d / FOUNDER_KM), as
 (K less what rivals take, as an arrival's `_rivals_here` pocket), so a squeezed stem holds out at the nearest country it can actually
 live in; or let the founding take leave the stem the cells outside the founders' own country. Judge on the suite's af2677 dnd runs.
 - [ ] no stem refuge lands further than ~20 x FOUNDER_KM from its last land; leonin/goblin/hobgoblin/halfling ranges on af2677 dnd
-  not below main's median
+  never under 1 Mkm2 in any run of the suite (owner D71, 11-10: a floor, not main's median)
 
 ## Updates
+- 2026-11-10: Owner D71 (11-10): bar is now a 1 Mkm2 floor in every suite run (not main's median). Lane 233 left a couple of nudged runs at ~0.1 Mkm2 (leonin, halfling): those are what's left. Queued after lane 266 (which touches demes MIN_CELLS).
 - 2026-11-09: Lane 233 (12f38974) merged: refuge within LAST_LAND_REACH x FOUNDER_KM (8,000 km) of the last land, in a free country at least one founders' country in size; refuge distance median 9,795 -> 1,876-3,280 km; jitter brittle 9 -> 4; leonin swing 998 -> 84. Range bar (measured against the teleport) not met; asked on the desk (D71).
 - 2026-11-08: Created from inbox draft draft-stem-refuge-teleport-carries-peoples.md (found by lane228).

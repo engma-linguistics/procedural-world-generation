@@ -2,7 +2,7 @@
 id: PW-1577
 title: PW-1558's range bar (leonin/goblin/halfling ranges on af2677 not below main's median) measures the teleport it was meant to remove
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v5
 subsystem: peoples
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1558, PW-1184]
 refs: ["planet/lineages/history/dispersal.py::_refuge_cell", "planet/lineages/history/dispersal.py::_hold_out", tools/peoples_robust.py, docs/review/peoples/origins-spread.md, "lane 233 suite dirs (scratch, gone after reboot): out_main, out_br; compare.py"]
 created: 2026-11-09
-updated: 2026-11-09
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -31,4 +31,5 @@ Options:
 Lean: B. If never decided, PW-1558 stays open on a bar measured against the teleport itself, and the next lane may put the jump back.
 
 ## Updates
+- 2026-11-10: Status needs-decision -> done. Owner D71 (11-10): B. PW-1558's range bar becomes a floor: none of leonin/goblin/hobgoblin/halfling under 1 Mkm2 in any af2677 dnd suite run. Main's median (the teleport's) is no longer the bar. Checkbox on PW-1558 rewritten.
 - 2026-11-09: Created from inbox draft draft-stem-refuge-range-bar.md (found by lane233).
