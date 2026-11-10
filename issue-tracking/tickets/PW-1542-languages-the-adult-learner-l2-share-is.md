@@ -4,7 +4,7 @@ title: "Languages: the adult-learner (L2) share is a co-presence proxy; a third 
 type: task
 status: todo
 parent: PW-767
-milestone: null
+milestone: later
 subsystem: culture
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-985]
 refs: ["planet/language/inputs.py::l2_share", "planet/language/grammar.py::social_factors", docs/review/language/calibration.md, "run a24559"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -42,5 +42,6 @@ synthesis bins and the hubs check re-measured (`scratchpad synth/fullan.py`).
 - [ ] re-measure WALS 22A bins and hub/isolated complexity after the change
 
 ## Updates
+- 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-11-08: Created from inbox draft draft-language-l2-proxy-ceiling.md (found by lang-synth (synthesis lane, 2026-11-08)).
 - 2026-11-08: RULING (owner, Language Desk 11-08): option (b), a concave map with the median near 0.25; re-measure synthesis bins and hubs.

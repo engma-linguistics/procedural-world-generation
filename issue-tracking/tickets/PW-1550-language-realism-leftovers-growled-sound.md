@@ -4,7 +4,7 @@ title: "Language realism leftovers: growled sounds in most bird and reptile prot
 type: task
 status: todo
 parent: PW-767
-milestone: null
+milestone: later
 subsystem: culture
 effort: m
 impact: med
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-982, PW-1423]
 refs: ["planet/language/lect.py::rule_factor", "planet/language/lect.py::keep_part", "planet/language/inventory.py::_pool_for", planet/language/profiles.py, planet/language/data/voice_profiles.toml, planet/language/data/sound_changes.tsv, tools/language/knowledge_tables.py, "planet/language/lexicon.py::step", planet/language/data/derivations.tsv, planet/language/data/grammaticalization_paths.tsv, docs/review/language/calibration.md, docs/review/language/voice-profiles.md, "scratchpad sinkH/flow.py", "scratchpad compJ/coins.py", "Heine & Kuteva 2002", "run a24559"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -76,4 +76,5 @@ overused segments (all-lect check passes; sound pass 2 also fixed ɑ, lʲ, ɤ). 
 1). Open: the growl share and function-word coinage above.
 
 ## Updates
+- 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-11-08: Created from inbox draft draft-language-realism-leftovers.md (found by lang-design (sinks, compounds and shifts rounds)).

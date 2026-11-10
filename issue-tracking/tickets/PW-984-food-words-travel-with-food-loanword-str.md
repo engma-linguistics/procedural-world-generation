@@ -2,7 +2,7 @@
 id: PW-984
 title: "Food words travel with food: loanword strata for crops, animals and dishes along trade and crop spread, nativized to each language's sounds, in the culinary brief"
 type: story
-status: todo
+status: done
 parent: PW-767
 milestone: later
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-982, PW-728, PW-692]
 refs: []
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-11-09
 ---
 
 ## Description
@@ -21,4 +21,5 @@ Owner 2026-10-28 ('great catch'). Real analogues: tea/chai, tomato from Nahuatl.
 - [ ] the brief shows, per food, the word, where it was borrowed from and along which route
 
 ## Updates
+- 2026-11-09: Status todo -> done. Built in the lang-design merge (71a173cc, 11-08) and refined by language lanes 4-10 (11-09); a24559 carries it end to end, food words in the culinary brief. Coordinator closing at language wrap-up.
 - 2026-10-28: Created.

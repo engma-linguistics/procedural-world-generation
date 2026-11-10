@@ -4,7 +4,7 @@ title: "Languages: proto inventories draw the rare prenasals (ⁿt, ᵑk, ᵐp, 
 type: task
 status: todo
 parent: PW-767
-milestone: null
+milestone: later
 subsystem: culture
 effort: m
 impact: low
@@ -38,4 +38,5 @@ and a reader of any world sees voiceless prenasals about twice as often as real 
 - [ ] P(ⁿt | prenasal series) within ~1.3x of PHOIBLE's 0.13 in a 3000-draw harness, other series' sizes not worse
 
 ## Updates
+- 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-11-09: Created from inbox draft draft-language-prenasal-tail.md (found by language lane 10 (PW-1615)).

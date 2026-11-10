@@ -4,7 +4,7 @@ title: "Languages: since the single sound-change draw, long-lived lines make ~2x
 type: task
 status: todo
 parent: PW-767
-milestone: null
+milestone: later
 subsystem: culture
 effort: s
 impact: med
@@ -41,5 +41,6 @@ Options:
 Lean: A for v1, B if the dragon trees read too shallow.
 
 ## Updates
+- 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-11-09: Status needs-decision -> todo. Coordinator call (not a trade-off for the owner, 11-09): accept for v1. The 'long generations change less' check passes (4.84); per-generation parity for long-lived lines is a refinement, pick up with PW-1579.
 - 2026-11-09: Created from inbox draft draft-language-change-rate-not-linear-in-generations.md (found by lang-weights (PW-1551 lane)).

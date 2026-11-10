@@ -2,7 +2,7 @@
 id: PW-985
 title: "Morphological complexity as a cycle: one scalar per language nudged by population, adult L2 share and isolation (sociolinguistic typology), starting low"
 type: story
-status: todo
+status: done
 parent: PW-767
 milestone: later
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-982, PW-981, PW-947, PW-856]
 refs: []
 created: 2026-10-28
-updated: 2026-11-03
+updated: 2026-11-09
 ---
 
 ## Description
@@ -21,6 +21,7 @@ Owner 2026-10-28. No built-in decay ('complex past, simple present' is an artefa
 - [ ] empire and trade-hub languages trend simpler, isolated small demes richer, across several seeds
 
 ## Updates
+- 2026-11-09: Status todo -> done. Built in the lang-design merge (71a173cc, 11-08) and refined by language lanes 4-10 (11-09); a24559 carries it end to end, food words in the culinary brief. Coordinator closing at language wrap-up.
 - 2026-11-03: Daniel 2026-11-03: amendment agreed. Sociolinguistic factors push on gram fusion and loss rates; complexity is measured from the grammar, not stored.
 - 2026-11-03: Daniel 2026-11-03 design doc (https://claude.ai/artifact/58m5qxKajjfn6TkTqq3EL2): proposed amendment, awaiting his yes: population, adult L2 share and isolation push on fusion and loss rates of the grams (PW-982's grammar ladder) instead of setting a stored complexity scalar; complexity is measured from the grammar as the check.
 - 2026-10-28: Created.

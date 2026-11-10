@@ -2,7 +2,7 @@
 id: PW-1538
 title: "Decisions: language defaults to confirm, part 3 of 3: grammar, species leanings and the pages"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -73,6 +73,7 @@ the grammar-shares draft for a follow-up if it does not settle.
 - [ ] Daniel confirms or changes the table rows (silence = keep)
 
 ## Updates
+- 2026-11-09: Status todo -> done. All parts ruled by Daniel on the Language Desk 11-08 and built in the rulings lane and lanes 4-10. Closing at language wrap-up.
 - 2026-11-09: C threshold follow-through merged dffed688: LONG_GEN_YR 140 so elves (144.9 yr) count as long-generation.
 - 2026-11-08: Created from inbox draft draft-language-defaults-grammar-pages.md (found by lang-design (grammar A-D, finish, polish lanes, 2026-11-07/08)).
 - 2026-11-08: RULING (owner, Language Desk 11-08): A label class marking without agreement 'noun class marking (no agreement)', gender only with agreement; B animate nouns fall to person/animate first; C all three species leanings (long generations, kenku reduplication, short generations), each one constant; D comparison prior to WALS 121A; E keep the core sentence set and add one per-language sentence; F keep politeness, soften the page wording. Table rows kept.

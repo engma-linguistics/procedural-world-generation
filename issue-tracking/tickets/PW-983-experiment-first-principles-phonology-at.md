@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-981, PW-982, PW-965]
 refs: []
 created: 2026-10-28
-updated: 2026-10-28
+updated: 2026-11-09
 ---
 
 ## Description
@@ -25,4 +25,5 @@ Validation (all unforced): inventory sizes and segment frequencies PHOIBLE-ish; 
 - [ ] the four validation checks on a full deme tree
 
 ## Updates
+- 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-10-28: Created.

@@ -4,7 +4,7 @@ title: "Languages: big case systems (6+) wear away in the full history, not in t
 type: task
 status: todo
 parent: PW-767
-milestone: null
+milestone: later
 subsystem: culture
 effort: m
 impact: low
@@ -41,4 +41,5 @@ small ones a third too common; a reader takes the world's grammar as poorer in c
 - [ ] 6+ within ~4 points of 32% and 2-5 within ~5 of 20% in a full a24559 pass, none + borderline kept near 47%
 
 ## Updates
+- 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-11-09: Created from inbox draft draft-language-case-big-systems-history.md (found by language lane 10 (PW-1605)).

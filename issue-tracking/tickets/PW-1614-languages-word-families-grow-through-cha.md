@@ -4,7 +4,7 @@ title: "Languages: word families grow through chains of compounds (hand > wing >
 type: task
 status: todo
 parent: PW-767
-milestone: null
+milestone: later
 subsystem: culture
 effort: m
 impact: low
@@ -40,4 +40,5 @@ which may be all it is).
 - [ ] the felt-family share per people reported before and after
 
 ## Updates
+- 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-11-09: Created from inbox draft draft-language-felt-families-chains.md (found by language lane 9 (PW-1537 R10)).

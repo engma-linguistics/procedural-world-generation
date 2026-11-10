@@ -2,7 +2,7 @@
 id: PW-1539
 title: "Decisions: language defaults to confirm, part 1 of 3: sounds, sound change and spelling"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-982, PW-1423]
 refs: [docs/review/language/for-daniel.md, docs/review/language/calibration.md, docs/review/language/phonology-gaps.md, docs/review/language/soundchange-gaps.md, docs/review/language/names-spelling-gaps.md, planet/language/phonology.py, "planet/language/rules.py::_produce", planet/language/rules.py, planet/language/lect.py, planet/language/inventory.py, planet/language/history.py, planet/language/romanize.py, planet/language/data/sound_changes.tsv, planet/language/data/voice_profiles.toml, planet/language/data/phoible_series.tsv, tools/language/knowledge_tables.py, "run a24559"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 ## Description
@@ -73,5 +73,6 @@ Numbers are from full scratch passes of run a24559 (the fantasy D&D run) on 11-0
 - [ ] Daniel confirms or changes the table rows (silence = keep)
 
 ## Updates
+- 2026-11-09: Status todo -> done. All parts ruled by Daniel on the Language Desk 11-08 and built in the rulings lane and lanes 4-10. Closing at language wrap-up.
 - 2026-11-08: Created from inbox draft draft-language-defaults-sounds-spelling.md (found by lang-design (finish, sound, names lanes, 2026-11-07/08)).
 - 2026-11-08: RULING (owner, Language Desk 11-08): A long-tail rule life (b); B dragon sub-bass stays a hallmark; C settled (S221 0.3); D nativise partially, and let sounds spread into places of articulation the old speakers lacked (no gap-filling pull exists today); E try rate sigma 0.5 plus founder/shift bursts, compare with 0.5 alone, report both. Table rows kept.

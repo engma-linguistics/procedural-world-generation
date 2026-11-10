@@ -4,7 +4,7 @@ title: "Languages: the names backlog after lane 7 (spelling depth, type-site sch
 type: task
 status: todo
 parent: PW-767
-milestone: null
+milestone: later
 subsystem: culture
 effort: m
 impact: low
@@ -35,4 +35,5 @@ language reads as old or literary; and a P6 word appears on the names page but c
 dictionary.
 
 ## Updates
+- 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-11-09: Created from inbox draft draft-language-names-backlog-rest.md (found by language lane 7 (PW-1546)).
