@@ -14,6 +14,14 @@ from tests.test_trade_flow import _get, _line_ctx
 A = np.repeat(np.arange(N), np.diff([0, 1, 3, 5, 7, 9, 10]))  # (the line's edge sources, as _line_ctx builds them)
 
 
+@pytest.fixture(autouse=True)
+def _toy_pool(monkeypatch):
+    """The toy line's cells are HOP_KM / ROUTE (~38 km) apart; keep its market pool at the town's cell and its neighbours (1.5
+    spacings), as these tests were written for (PW-1584 states the pool in km for real grids: 1.5 spacings at L7)."""
+    from tests.test_trade_flow import HOP_KM
+    monkeypatch.setattr(TF, "POOL_KM", 1.5 * HOP_KM / TF.ROUTE)
+
+
 def _with_town(ctx, tmp_path, cell=2, pop=5000):
     """A settlement-ledger town of `pop` people in `cell` (the farmers' plain by default)."""
     doc = {"tiers": {"town_min_by_stage": [1000, 1000, 1000, 1000, 2000], "city_min": 10000},
@@ -214,7 +222,7 @@ def test_every_good_looks_on_until_none_is_left(tmp_path):
 
 
 def test_a_town_pools_its_hinterland_and_its_goods_leave_from_the_town(tmp_path, monkeypatch):
-    """PW-1514 (D64: towns are the hubs): cells within POOL_HOPS spacings join their nearest town's market; inside the pool spare goods
+    """PW-1514 (D64: towns are the hubs): cells within POOL_KM (pool_hops spacings) join their nearest town's market; inside the pool spare goods
     meet wants first, and what is left travels from the town. A pool ends at the cap."""
     ctx = _with_town(_line_ctx(tmp_path), tmp_path, cell=2)
     fr = TF._Frame(ctx, 0, None, None)

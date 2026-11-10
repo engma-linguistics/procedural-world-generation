@@ -35,7 +35,8 @@ START_KM = 1500.0  # a start hint's reach (PW-763): 'far_from' ramps from x0.05 
 NEAR_SCORE_KM = 330.0  # a 'near' wish is met for the share of a's range within this of b's (3 cells at L6)
 LINGER_KYR = 10.0  # a contact hybrid lingers where its parents no longer meet, fading with this e-folding time...
 ARRIVAL_ROOM = (0.5, 0.2, 0.0)  # an arrival near its hybrid partner takes the free room (share of its best habitat) of the first tier that has some, PW-861
-ARRIVAL_POCKET_RINGS = 3  # ...and the free room around a cell is averaged over this many rings (PW-861)
+ARRIVAL_POCKET_KM = 180.0  # ...and the free room around a cell is averaged over this far, in whole rings (PW-861; PW-1584: the old 3
+# rings at L7)
 SPECIES_AREA_Z = 0.3  # PW-888: the share of origins a landmass draws goes as (its habitable area)^z, z ~ 0.25-0.35 (the species-area relationship, Rosenzweig 1995, Species Diversity in Space and Time); islands keep some, as isolation drives speciation
 ORIGIN_MVP_MULT = 8.0  # PW-888: the census minimum viable population over the REFERENCE horizon, this many times tree.viable_pop (500 in the presets = Frankham 2014's 500 for lasting evolutionary potential): Traill et al. 2007's median MVP for vertebrates is ~4000 = 8 x 500, for about MVP_REF_GEN generations
 MVP_REF_GEN = 40.0  # ...Traill et al. 2007 take persistence over ~40 generations
@@ -106,7 +107,7 @@ PALETTE = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#4
            "#fabebe", "#008080", "#e6beff", "#9a6324", "#fffac8", "#800000", "#aaffc3", "#808000", "#ffd8b1",
            "#000075", "#a9a9a9", "#ff7f50", "#7fffd4", "#dc143c", "#00bfff", "#adff2f", "#ff69b4", "#cd853f"]
 
-CHAIN_CELLS = 4
+CHAIN_KM = 240.0  # an island chain: another island or landmass within this over the sea, in whole rings (PW-1584: the old 4 cells at L7)
 BREAKS_RISE = 2.0  # PW-1024: 'breaks' (badlands, buttes, river breaks) is open country rising at least this many m per km to a neighbour (~120 m
 BREAKS_RAIN = 1100.0  # over an L7 cell) with under this much rain, below the mountains. Badlands are far finer than a cell, so this is a proxy:
 # rugged open grassland, about a third of the open land under 1,100 mm on world 2a7385 (lane 50 probe). A design judgement

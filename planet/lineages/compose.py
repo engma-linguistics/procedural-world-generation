@@ -25,8 +25,10 @@ EARLY = 0.2  # before the late mixing every pair counts this much (a little cont
 # of a boundary cell. Inside one people's country the other counts EARLY_INTERIOR (no band of another tribe lives there)
 EARLY_INTERIOR = 0.0
 SUIT_K = 0.4  # a cell suits a people fully at habitat K >= this (less: in proportion; under the establishing threshold: not at all)
-REACH_CELLS = 10  # by the present a people's presence reaches this many cells beyond its range (travel, trade, settlers: ~560 km at L7)...
-REACH_DECAY = 0.85  # ...each cell out at this share of the one before, less in closed country...
+REACH_KM = 600.0  # by the present a people's presence reaches this far beyond its range (travel, trade, settlers), in whole rings
+# (seafood.rings_for; PW-1584: the old 10 cells at L7, 20 at L8)...
+REACH_DECAY = 0.85  # ...each REACH_STEP_KM out at this share of the one before, less in closed country...
+REACH_STEP_KM = 60.0  # (PW-1584: the old one L7 cell; a ring of REACH_KM / rings km decays by REACH_DECAY^(ring km / this))
 REACH_CLOSED = 0.3  # ...x (0.7 + 0.3 contact) per cell: forest and mountain slow the settling
 MIN_SHARE = 0.03  # a second people below this share is left in the 'other'
 
@@ -53,13 +55,18 @@ def cohabitation(tree: SP.Tree, lines: list, idx: dict) -> np.ndarray:
 
 def reach(g, Pw: np.ndarray, suit: np.ndarray, corr: np.ndarray, open_land: np.ndarray, ramp: float, est: float) -> np.ndarray:
     """Pw with each people's presence carried over land past its range: settlers, traders and neighbours who live
-    beside the others. After i cells it counts REACH_DECAY^i (less through closed country), up to REACH_CELLS x ramp
-    cells, and only where the land suits the people (suit 0..1, its habitat). With no mixing yet (ramp 0) it is Pw."""
-    R = int(round(REACH_CELLS * ramp))
+    beside the others. After i x REACH_STEP_KM it counts REACH_DECAY^i (less through closed country), up to REACH_KM x ramp
+    (whole rings), and only where the land suits the people (suit 0..1, its habitat). With no mixing yet (ramp 0) it is Pw."""
+    from .seafood import rings_for
+    rings = rings_for(g, REACH_KM)
+    e = (REACH_KM / rings) / REACH_STEP_KM  # (a ring's share of a step: exactly 1 at L7, 0.5 at L8)
+    R = int(round(rings * ramp))
     out = Pw.copy()
     if R <= 0:
         return out
     step = np.nan_to_num(REACH_DECAY * (1 - REACH_CLOSED + REACH_CLOSED * corr) * open_land)
+    if e != 1.0:
+        step = step ** e
     for j in np.flatnonzero(Pw.max(1) >= est):
         D = Pw[j].copy()
         for _ in range(R):

@@ -89,7 +89,7 @@ RAID_CAP = 0.3  # the most of a den people's food raiding gives. No measured sha
 RAID_HALF = 5.0  # farmers' and herders' people/km2 within reach at which raiding gives half its cap (a judgement: a gardening
 # village country; raids on herders or foragers like themselves only swap herds back and forth, Khazanov p. 155, so the share follows
 # the settled density, near 0 among foragers)
-RAID_REACH = 2  # cells (neighbour rings) a den people raids over
+RAID_REACH_KM = 120.0  # km a den people raids over, in whole neighbour rings (seafood.rings_for; PW-1584: the old 2 rings at L7, 4 at L8)
 # PW-1386: foragers who trade with farmer neighbours (docs/review/peoples/forager-trade/round1.md has the sources and the quotes). A
 # forager people (one that knows no crops, not a den people or a hold) gets a share b of its foraging food from farmers within reach,
 # for meat, forest goods and labour: its foraging rung / (1 - b), b = BARTER_CAP x farmers near / (farmers near + BARTER_HALF). The
@@ -102,7 +102,8 @@ BARTER_HALF = 5.0  # farmers' people/km2 within reach at which the share is half
 # country; no source relates the share to the farmers' density. The one relation found is distance: Aka camps 3-4 hours' walk from the
 # village eat more farm food than camps 5-8 hours away, Bahuchet 1988 via Kitanishi 1995 p. 107; and with no farmers near the share is 0,
 # as on the Baka's months-long molongo, "solely on wild food resources", Yasuoka 2004 p. 36)
-BARTER_REACH = 1  # cells (neighbour rings) a forager people trades over (those camps are within a day's walk: one ring of ~60 km cells)
+BARTER_REACH_KM = 60.0  # km a forager people trades over (those camps are within a day's walk), in whole neighbour rings (PW-1584: the old
+# 1 ring at L7, 2 at L8)
 REFRESH_KYR = 0.5  # the ladder is redone at least this often in the recent epochs (raids and the plough's stage move with time)
 ERA_STAGE = {"stone age": -1, "bronze age": 0, "classical": 1, "medieval": 2, "renaissance": 2, "industrial": 2}  # the plough stage an era allows
 RUNGS = ("forager", "fisher", "garden", "plough", "irrigation", "nomad", "agro_pastoral", "hold", "raider")
@@ -306,12 +307,13 @@ class Ladder:
         return bool(self.people[k] and not t[0] and not self.den[k] and not self.hold[k] and not self.h.lines[k].marine)
 
     def farmers_near(self) -> np.ndarray:
-        """Farmers' people/km2 per cell, averaged over BARTER_REACH rings of neighbours (PW-1386: whom a forager people trades with)."""
-        return self.settled_near(("farm",), BARTER_REACH)
+        """Farmers' people/km2 per cell, averaged over BARTER_REACH_KM of neighbours (PW-1386: whom a forager people trades with)."""
+        return self.settled_near(("farm",), BARTER_REACH_KM)
 
-    def settled_near(self, ways: tuple = ("farm", "herd"), reach: int = RAID_REACH) -> np.ndarray:
-        """Farmers' and herders' people/km2 per cell, averaged over RAID_REACH rings of neighbours (what a den people raids); `ways` and
-        `reach` pick the ways counted and the rings."""
+    def settled_near(self, ways: tuple = ("farm", "herd"), reach_km: float = RAID_REACH_KM) -> np.ndarray:
+        """Farmers' and herders' people/km2 per cell, averaged over RAID_REACH_KM of neighbours (whole rings: what a den people raids);
+        `ways` and `reach_km` pick the ways counted and the reach."""
+        from .seafood import rings_for
         h = self.h
         P = np.where(h.p >= EST, h.p, 0.0) if getattr(h, "p", None) is not None else None
         s = np.zeros(h.grid.n)
@@ -322,7 +324,7 @@ class Ladder:
                 s += P[k] * h._dmap[k] * sum(self.sh[w][k] for w in ways)
         g = h.grid
         deg = np.diff(g.nbr_off).astype(float)
-        for _ in range(reach):
+        for _ in range(rings_for(g, reach_km)):
             s = 0.5 * s + 0.5 * nbr_reduce(g, np.add, s[g.nbr_idx]) / np.maximum(deg, 1)
         return s
 

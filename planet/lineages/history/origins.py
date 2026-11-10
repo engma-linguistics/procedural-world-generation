@@ -9,8 +9,9 @@ from .. import spec as SP
 from ..crossing import modes, sea_gap
 from ..spread import EST, graph_dist, rings
 from . import params as PM
-from .params import HYBRID_FROM_KYR, ARRIVAL_POCKET_RINGS, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, SPECIES_AREA_Z, START_KM
+from .params import HYBRID_FROM_KYR, ARRIVAL_POCKET_KM, ARRIVAL_ROOM, FOUNDER_KM, HYBRID_REACH_KM, MVP_REF_GEN, ORIGIN_MVP_MULT, PARTNER_PULL, PERSIST_EXP, SPECIES_AREA_Z, START_KM
 from ..gridops import dist_km, nbr_reduce
+from ..seafood import rings_for
 from .habitat import hold_mask
 
 
@@ -232,7 +233,7 @@ class OriginsMixin:
             arrival_room = free if (free >= EST).any() else None
             if arrival_room is not None:
                 pocket = free
-                for _ in range(ARRIVAL_POCKET_RINGS):
+                for _ in range(rings_for(self.grid, ARRIVAL_POCKET_KM)):
                     pocket = self._smooth(pocket)
                 score = score * pocket / np.maximum(K, 1e-9)
         if line.origin == "arrival":  # a newcomer whose hybrids are wanted comes near the other parent
@@ -255,7 +256,7 @@ class OriginsMixin:
                             # ...in the roomier half of those cells: room round about it (the free country within a few rings), so the
                             # newcomer is not squeezed into a pocket of a few cells (it then held 50-100 cells where 1000+ were usual)
                             pocket = np.clip(free, 0, None) * (K > EST)
-                            for _ in range(ARRIVAL_POCKET_RINGS):
+                            for _ in range(rings_for(self.grid, ARRIVAL_POCKET_KM)):
                                 pocket = self._smooth(pocket)
                             ok = ok & (pocket >= np.median(pocket[ok]))  # (a restriction, not a weight: the origin's noise is heavy-tailed, a weight of 0.05 is beaten by its luck)
                             m = np.where(ok, m, 0.0)
@@ -376,7 +377,7 @@ class OriginsMixin:
         free = np.clip(K - self._rivals_here(line, K), 0, None) * (K > EST)
         room = free if (free * ok >= EST).any() else K
         pocket = room
-        for _ in range(ARRIVAL_POCKET_RINGS):
+        for _ in range(rings_for(self.grid, ARRIVAL_POCKET_KM)):
             pocket = self._smooth(pocket)
         score = np.where(ok, pocket, 0.0) * self._place_mult(line, tags) * self._wish_near(line, origin=True) \
             * self._start_hints(line, env, tags) * noise
