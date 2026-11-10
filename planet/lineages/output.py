@@ -174,6 +174,7 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
                  "contacts": contacts, "techtree": techtree, "eraq": eraq_meta,
                  "land_use": None if h.goods is None else {"pull": h.tree.land_pull, "worked_out": h.goods["_made"],
                                                            "missing": h.goods["_missing"]}, "present": pres, "try_seed": h.seed,
+                 **({"handover": h.handover} if getattr(h, "handover", None) else {}),  # (the split history's cut, PW-1265)
                  "presence_present": {"file": "layers/presence_present.bin", "dtype": "uint8",
                                       "shape": [len(h.lines), g.n], "units": "%"},
                  "presence": presence_meta,
