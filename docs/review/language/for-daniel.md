@@ -1624,3 +1624,116 @@ Examples from a24559 (romanised):
 | chance a ruler's loan becomes a formal synonym | 0.15, freq class 3 and rarer, fitting fields only | `contact.REGISTER_P`, `REGISTER_FIELDS` |
 | how long a crop or technology hand-over makes two peoples trading partners | 1 kyr | `history.TRADE_PARTNER_KYR` |
 | new check marks | rulers' prestige share >= 1.5 x neighbours'; >= 20% of languages ruled 2 kyr with a food doublet | `checks.ELITE_PRESTIGE_X`, `ELITE_SPLIT_MIN` |
+
+## Lane 14 (lang-lane14 + 14b, 2026-11-10): families that stay families, the real-language benchmark as a standing check
+
+In plain words: languages used to drift toward one middle sound over the millennia. Now each family keeps its own leanings
+(one keeps losing final vowels, another keeps softening consonants between vowels), and a branch can take one
+defining change at its split and keep it as its mark, the way centum and satem did. Each language also holds its
+word shape: a language with open syllables stays open, and a language with codas keeps them. The seven real languages
+given to the engine as protos (English, Spanish, Swahili, Japanese, Mandarin, Hawaiian, Arabic) now stay much more like
+themselves after 2,500 years. That test is now a standing check with a stored baseline, run after every language change,
+like the Earth check for the physics. Tickets PW-1641, PW-1624, PW-1642, PW-1638, PW-1623.
+
+**What changed**
+
+- **The benchmark as a check (PW-1641).** `uv run python -I tools/language/real_inventory.py --check` (about a minute
+  at 8 workers) prints the table below against a stored baseline (`tools/language/data/real_inventory_baseline.json`,
+  main before lane 14) and says which numbers got worse. The finder now counts vowel qualities, not long and nasal
+  vowels separately, and scores a sparse reference profile on the terms it fills (PW-1624).
+- **Family leanings (PW-1642).** Each line leans toward some kinds of sound change and away from others. The leaning
+  is inherited at each split and drifts slowly (sisters share their parent's, distant branches drift apart). The
+  spread is wider than before (LINE_FAMILY_SIGMA 0.7 to 1.5), so a disfavoured kind of change can be skipped for a
+  whole family.
+- **Signature changes at splits (PW-1642).** A new branch takes one defining change with probability 0.2 at its split
+  (more in a founder or a shifted line), drawn from the changes that touch at least 5% of its common words. It fires
+  at once, keeps firing when its input comes back, and the branch's daughters inherit it.
+- **Word shape held (PW-1642, PW-1638).** Each line holds the share of words ending in a consonant, with a medial coda
+  and with an onset cluster, and its word length. A change that moves the words away from that shape is usually turned
+  down; the held shape follows the words slowly (10 kyr). Before, a dozen catalogue rows took final consonants and few
+  made them, so coda languages wore down to open syllables.
+- **Sounds used by how busy they are in words (PW-1623).** A proto's words now use each sound by its token frequency in
+  real word lists (NorthEuraLex), not by how many languages have it. /a/ is now 26% of vowels in living a24559 lects
+  (main 18%), high vowels 47% (main 59%).
+- **Allophones stay allophones (lane 14b, the fix for overused ɹ).** A sound that only stands in one position, like
+  Dutch coda [ɹ] beside [r], is an allophone, not a phoneme. Two things used to make it a phoneme at once: a suffix or
+  compound putting the coda [ɹ] before a vowel, and a later sound change making a new coda r. Now word building works
+  on the phonemes (a coda [ɹ] before a suffix vowel is [r] again, as Dutch maar [maːɹ] but mare [maːrə]), and an
+  allophone rule stays productive (a new coda r is said [ɹ] too). An allophone a sound change strands outside its
+  position still becomes a phoneme, the way umlaut did.
+
+**Benchmark (20 seeds, +2.5 kyr, full toolkit): main before lane 14 -> now**
+
+| | main | now |
+| --- | --- | --- |
+| mean distance growth (how far a language drifts from itself) | 1.29 | 0.73 |
+| languages that kept their character (growth 0.5 or less) | 1 of 7 | 2 of 7 |
+| drift signatures (one change in 80%+ of all daughters) | 6 | 1 |
+| distinct changes a daughter | | 38 (control 46) |
+
+Six of the seven end closer to themselves after 2,500 years than on main (Japanese is unchanged), and they keep their
+closed-syllable and final-consonant shares (shift 0.00-0.14, main up to 0.32). No number is worse than the baseline. Vowel harmony still
+arises in 60-95% of daughters (a draft from lane 14 asks about it).
+
+**World checks (living lects; main after lane 13 -> lane 14b)**
+
+| | a24559 main | a24559 now | de1cc6 main | de1cc6 now |
+| --- | --- | --- | --- | --- |
+| living lects | 623 | 622 | 535 | 529 |
+| sisters recognisable | 0.586 ok | 0.588 ok | 0.475 FAIL | 0.524 ok |
+| scholars' horizon (target 6-10 kyr) | 14.6 FAIL | 13.5 FAIL | 13.0 FAIL | 10.0 ok |
+| overused segments | none | ʁ 12.1% (PHOIBLE 3.7%) FAIL | ɖ, ⁿt, ᵑk FAIL | ɖ FAIL |
+| WOLD loans (rho; pronoun loans, cap 0.08) | 0.43; 0.081 FAIL | 0.49; 0.065 ok | 0.43; 0.090 FAIL | 0.50; 0.077 ok |
+| contact kind, doublets (lane 13) | ok, ok | ok, ok | ok, ok | ok, ok |
+
+**Syllable types against WALS 12A** (simple / moderate / complex; WALS 0.12 / 0.56 / 0.31)
+
+| | simple | moderate | complex |
+| --- | --- | --- | --- |
+| a24559 main | 0.22 | 0.40 | 0.38 |
+| a24559 now | 0.05 | 0.62 | 0.33 |
+| de1cc6 main | 0.11 | 0.38 | 0.51 |
+| de1cc6 now | 0.07 | 0.61 | 0.32 |
+
+Moderate and complex are now near WALS on both worlds. Open-syllable languages are too few. Lane 14b checked the
+suspected cause (codas in long words the anchor never sees) and it is not that: the anchor's sample matches the core
+words. Main's 22% came almost wholly from coda languages wearing down (116 of 138), which the anchor now stops; the
+proto draw is right (11.5% open); open-syllable lines keep their shape in 56% of daughters (main 31%) and lose it
+through loans and coined words once their template opens. Nothing yet lets a coda language go open the way Polynesian
+did. A draft asks for that next step (draft-open-syllable-stable-state).
+
+**Families look like families** (`tools/language/families_apart.py`; mean distance between pairs of living lects)
+
+| | a24559 main | a24559 now | de1cc6 main | de1cc6 now |
+| --- | --- | --- | --- | --- |
+| sound, same branch | 2.16 | 1.74 | 2.12 | 1.97 |
+| sound, other branch of the family | 2.56 | 2.04 | 2.72 | 2.38 |
+| sound, other family | 5.23 | 4.93 | 4.97 | 4.77 |
+| word shape, same branch / other family | 0.45 / 0.85 | 0.24 / 0.61 | 0.32 / 0.76 | 0.31 / 0.59 |
+| branches carrying a signature change | 0 | 25 of 50 | 0 | 14 of 32 |
+
+Relatives are closer together and other families relatively farther away: a family's languages sound and shape their
+words alike. (Lane 14 saw the leaning gap larger within a branch than between branches; that was the tool: it took
+each family's first child as the branch, and that child is nearly always the proto's own continuation. The tool now
+splits families at their living languages' last common ancestor: leaning gap same branch 1.51, other branch 1.57,
+other family 2.11 on a24559.)
+
+**Sister languages side by side.** The sisters page (`tools/language/sisters_page.py`) shows two languages of one
+family that split 2.5 kyr ago on a24559 (no three sisters split inside the 2-4 kyr window, so it takes the closest
+two), with their shared ancestor's words: one has lost its final vowels (*pabɯnɯ 'woman' > abɯn) and kept z and ʒ, the
+other keeps the vowels (pabɯnɯ) and turned z, ʒ into n, x (zi > ni 'what', ʒi > xi 'two'): the French-and-Spanish
+kind of split. Below them a family whose two branches took different marks (one lost final vowels, the other softened k
+to x after vowels), and two unrelated languages for contrast.
+
+**What is left**
+
+- **Uvular r is overused on a24559** (12.1% of living lects, PHOIBLE 3.7%; the check's bar is 3x). The change r > ʁ
+  fires less than on main, but what it makes now lasts: clusters like tʁ and codas survive (r in onset clusters is 4x
+  main), lines run fewer changes in all (14 a kyr against 18), and r comes back beside ʁ in 77 of 115 lects. de1cc6
+  passes this check except for ɖ, which main fails too. Left open on PW-1642.
+- **The scholars' horizon swing is noise, not this change.** It is the first pair of 2-kyr windows where fewer than half
+  the true splits are found, and each window has 7-13 splits, so one or two splits move it by many kyr. Main itself
+  went 4.3 to 14.6 across lane 13, which did not touch it. The steadier logistic fit reads 11.6-14.4 on main's passes
+  and 12.8-16.1 on lane 14's. The living count (611 on lane 14's last pass) is 622 now, against main's 623.
+- Drafts: back vowel harmony too common (lane 14), the token priors' Eurasian sample (lane 14), open-syllable languages
+  too few (lane 14b).

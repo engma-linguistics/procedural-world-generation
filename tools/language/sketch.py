@@ -756,6 +756,13 @@ def history(doc: Doc, l: dict) -> list[str]:
     out.append("Each stage of the line, oldest first; within a stage, by half-millennium. \"Rare sounds merged\" (the "
                "inventory clean-up) is counted, not listed. Ids in the last column are the engine's rule ids.")
     out.append("")
+    sigs = (line[0].get("signatures") or []) if line else []
+    if sigs:   # (PW-1642: a branch's defining change, taken at its split and kept by its daughters; centum/satem-like)
+        out.append("Signature changes of the line (a branch's defining change, taken up at or just after a split and "
+                   "favoured by every daughter since): " + "; ".join(
+                       f"the {doc.label(s['lect'], True)} branch, {s['kyr']:g} kyr ago: {rule_text(doc, s['rule'])}"
+                       for s in sigs) + ".")
+        out.append("")
     stages = list(reversed(line))
     for i, x in enumerate(stages):
         chs = x.get("changes") or []

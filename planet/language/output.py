@@ -299,7 +299,11 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1, phonology: d
             "affixes": {m: {"ipa": word_ipa(f), "suffix": s} for m, (f, s) in (lect.lexicon.affixes.items() if lect.lexicon is not None else [])},
             **({"systems": LX.systems_json(lect.lexicon)} if lect.lexicon is not None and lect.lexicon.systems else {}),
             "changes": [[c["kyr"], c["rule"], c["cause"], c["origin_lect"]] + ([{k: c[k] for k in ("city", "peoples", "merged") if k in c}] if "merged" in c else [])
-                        for c in lect.changes], "rules_applied": lect.rules_applied, "generations": _r(lect.generations, 1),
+                        for c in lect.changes],
+            **({"signatures": [dict(x) for x in lect.signatures]} if getattr(lect, "signatures", None) else {}),
+            **({"tendency": {k: round(v, 2) for k, v in sorted(lect.tendency.items())}}
+               if getattr(lect, "tendency", None) else {}),   # (the line's family tendencies, log scale; PW-1642)
+            "rules_applied": lect.rules_applied, "generations": _r(lect.generations, 1),
             "l2": _r(lect.l2), "population": _r(lect.population, 0), "isolation": _r(lect.isolation),
             "shares_history": lect.shares_history,
             "stats": _round_all(LX.stats(lect.lexicon)) if full and lect.lexicon is not None else None,

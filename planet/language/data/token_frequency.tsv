@@ -1,0 +1,49 @@
+# Relative token frequency per phoneme, by inventory.token_class (PW-1623): the median over NorthEuraLex 0.9's
+# languages (Dellert et al. 2020, CC-BY 4.0) of a class's share of its kind's tokens, per phoneme of the class,
+# over the average phoneme of the kind (1.0 = average). Built by tools/language/token_priors.py; classes in
+# fewer than 20 languages left out. Eurasian sample: a lexical prior, not a world average.
+class	relative	languages
+C:affricate-d	0.258	41
+C:affricate-t	0.455	88
+C:affricate-t-sec	0.476	34
+C:approx-j	0.975	101
+C:fric-glot	0.765	61
+C:fric-lab-d	0.976	68
+C:fric-lab-t	0.290	63
+C:fric-sib-d	0.535	74
+C:fric-sib-d-sec	0.189	20
+C:fric-sib-t	1.225	107
+C:fric-sib-t-sec	0.492	45
+C:fric-uvu-t	0.633	24
+C:fric-vel-d	0.548	33
+C:fric-vel-t	0.579	57
+C:labial-velar	0.571	49
+C:lateral	1.343	100
+C:lateral-sec	0.222	41
+C:nasal-cor	1.656	106
+C:nasal-cor-sec	0.215	21
+C:nasal-lab	1.228	106
+C:nasal-lab-sec	0.209	21
+C:nasal-pal	0.293	44
+C:nasal-vel	0.310	70
+C:stop-cor-d	1.132	97
+C:stop-cor-d-sec	0.381	22
+C:stop-cor-t	1.973	106
+C:stop-cor-t-sec	0.298	24
+C:stop-lab-d	0.824	97
+C:stop-lab-t	0.943	103
+C:stop-uvu-t	1.086	24
+C:stop-vel-d	0.783	93
+C:stop-vel-t	1.746	105
+C:trill	2.050	91
+C:trill-sec	0.165	29
+V:a	1.539	107
+V:e	0.718	79
+V:i	1.033	106
+V:o	0.522	81
+V:u	0.700	105
+V:y	0.287	39
+V:ɔ	0.720	54
+V:ə	1.220	58
+V:ɛ	1.015	59
+V:ɨ	0.680	41

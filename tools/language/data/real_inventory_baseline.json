@@ -1,0 +1,291 @@
+{
+ "label": "main 80d89894, before lane 14 (PW-1642/1638/1623)",
+ "seeds": 20,
+ "kyr": 2.5,
+ "metrics": {
+  "langs": {
+   "english": {
+    "birth": {
+     "mean": 2.063,
+     "se": 0.031
+    },
+    "aged": {
+     "mean": 3.471,
+     "se": 0.24
+    },
+    "growth": {
+     "mean": 1.409,
+     "se": 0.246
+    },
+    "closed_shift": {
+     "mean": 0.316,
+     "se": 0.04
+    },
+    "final_c_shift": {
+     "mean": 0.293,
+     "se": 0.05
+    },
+    "harmony": {
+     "mean": 1.0,
+     "se": 0.0
+    },
+    "closed": {
+     "proto": 0.581,
+     "daughter": 0.272
+    },
+    "final_c": {
+     "proto": 0.636,
+     "daughter": 0.36
+    }
+   },
+   "spanish": {
+    "birth": {
+     "mean": 1.314,
+     "se": 0.044
+    },
+    "aged": {
+     "mean": 3.67,
+     "se": 0.118
+    },
+    "growth": {
+     "mean": 2.356,
+     "se": 0.115
+    },
+    "closed_shift": {
+     "mean": 0.202,
+     "se": 0.019
+    },
+    "final_c_shift": {
+     "mean": 0.268,
+     "se": 0.033
+    },
+    "harmony": {
+     "mean": 1.0,
+     "se": 0.0
+    },
+    "closed": {
+     "proto": 0.222,
+     "daughter": 0.247
+    },
+    "final_c": {
+     "proto": 0.262,
+     "daughter": 0.318
+    }
+   },
+   "swahili": {
+    "birth": {
+     "mean": 1.143,
+     "se": 0.045
+    },
+    "aged": {
+     "mean": 2.316,
+     "se": 0.257
+    },
+    "growth": {
+     "mean": 1.173,
+     "se": 0.255
+    },
+    "closed_shift": {
+     "mean": 0.151,
+     "se": 0.044
+    },
+    "final_c_shift": {
+     "mean": 0.202,
+     "se": 0.061
+    },
+    "harmony": {
+     "mean": 0.85,
+     "se": 0.082
+    },
+    "closed": {
+     "proto": 0.0,
+     "daughter": 0.151
+    },
+    "final_c": {
+     "proto": 0.0,
+     "daughter": 0.202
+    }
+   },
+   "japanese": {
+    "birth": {
+     "mean": 1.347,
+     "se": 0.028
+    },
+    "aged": {
+     "mean": 1.693,
+     "se": 0.069
+    },
+    "growth": {
+     "mean": 0.345,
+     "se": 0.081
+    },
+    "closed_shift": {
+     "mean": 0.005,
+     "se": 0.001
+    },
+    "final_c_shift": {
+     "mean": 0.004,
+     "se": 0.003
+    },
+    "harmony": {
+     "mean": 0.85,
+     "se": 0.082
+    },
+    "closed": {
+     "proto": 0.004,
+     "daughter": 0.0
+    },
+    "final_c": {
+     "proto": 0.003,
+     "daughter": 0.001
+    }
+   },
+   "mandarin": {
+    "birth": {
+     "mean": 1.421,
+     "se": 0.039
+    },
+    "aged": {
+     "mean": 2.781,
+     "se": 0.165
+    },
+    "growth": {
+     "mean": 1.359,
+     "se": 0.165
+    },
+    "closed_shift": {
+     "mean": 0.2,
+     "se": 0.025
+    },
+    "final_c_shift": {
+     "mean": 0.201,
+     "se": 0.03
+    },
+    "harmony": {
+     "mean": 0.85,
+     "se": 0.082
+    },
+    "closed": {
+     "proto": 0.289,
+     "daughter": 0.089
+    },
+    "final_c": {
+     "proto": 0.323,
+     "daughter": 0.126
+    }
+   },
+   "hawaiian": {
+    "birth": {
+     "mean": 0.791,
+     "se": 0.026
+    },
+    "aged": {
+     "mean": 1.827,
+     "se": 0.169
+    },
+    "growth": {
+     "mean": 1.036,
+     "se": 0.167
+    },
+    "closed_shift": {
+     "mean": 0.065,
+     "se": 0.028
+    },
+    "final_c_shift": {
+     "mean": 0.098,
+     "se": 0.044
+    },
+    "harmony": {
+     "mean": 1.0,
+     "se": 0.0
+    },
+    "closed": {
+     "proto": 0.0,
+     "daughter": 0.065
+    },
+    "final_c": {
+     "proto": 0.0,
+     "daughter": 0.098
+    }
+   },
+   "arabic": {
+    "birth": {
+     "mean": 2.578,
+     "se": 0.041
+    },
+    "aged": {
+     "mean": 3.902,
+     "se": 0.245
+    },
+    "growth": {
+     "mean": 1.324,
+     "se": 0.241
+    },
+    "closed_shift": {
+     "mean": 0.223,
+     "se": 0.035
+    },
+    "final_c_shift": {
+     "mean": 0.277,
+     "se": 0.041
+    },
+    "harmony": {
+     "mean": 0.7,
+     "se": 0.105
+    },
+    "closed": {
+     "proto": 0.446,
+     "daughter": 0.341
+    },
+    "final_c": {
+     "proto": 0.499,
+     "daughter": 0.432
+    }
+   }
+  },
+  "near": {
+   "mean": 1.0,
+   "se": 0.0
+  },
+  "mean_growth": {
+   "mean": 1.286,
+   "se": 0.073
+  },
+  "spread_ratio": {
+   "mean": 0.985,
+   "se": 0.015
+  },
+  "universal": {
+   "mean": 6.0,
+   "se": 0.0
+  },
+  "signatures": [
+   [
+    "lenition.h_loss",
+    0.97
+   ],
+   [
+    "simplification",
+    0.96
+   ],
+   [
+    "S055",
+    0.84
+   ],
+   [
+    "S175",
+    0.84
+   ],
+   [
+    "S019",
+    0.84
+   ],
+   [
+    "S031",
+    0.8
+   ]
+  ],
+  "changes_per_daughter": 53.3,
+  "control_changes_per_daughter": 62.5
+ }
+}

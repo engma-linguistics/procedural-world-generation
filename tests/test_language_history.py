@@ -3,6 +3,7 @@ takeover and one crop spreading over two hops. No stored run is read."""
 from __future__ import annotations
 
 import json
+import math
 
 import numpy as np
 import pytest
@@ -272,10 +273,14 @@ def test_hiatus_is_repaired_after_a_change():
     assert set(l.fired) == {"lenition.h_loss"}
     d = l.copy("y", 0, 0.4, "bud")
     assert d.hiatus_key == "x" and d.hiatus_pref(cat["S126"]) == l.hiatus_pref(cat["S126"])
-    # line drift: a daughter keeps its line's family and row preferences, up to its own small budding jitter
+    # line drift: a daughter keeps its line's row preferences, up to its own small budding jitter, and its family
+    # tendencies as one slow random-walk step over its parent's age (PW-1642)
     r = cat["S001"]
     ratio = d.line_pref(r) / l.line_pref(r)
-    assert ratio == pytest.approx(LC._lognormal(f"y|bud|{r.id}", LC.LINE_BUD_SIGMA))
+    walk = math.exp(d.family_log(r.family) - l.family_log(r.family))
+    assert ratio == pytest.approx(LC._lognormal(f"y|bud|{r.id}", LC.LINE_BUD_SIGMA) * walk)
+    rho = math.exp(-(l.born_kyr - 0.4) / LC.LINE_DRIFT_KYR)
+    assert abs(math.log(walk)) < 6 * LC.LINE_FAMILY_SIGMA * math.sqrt(1 - rho * rho) + 1e-9
     assert len({round(LC.Lect(id=f"q{k}", deme=None, people="human", parent=None, how="first", born_kyr=1.0, rate=1.0,
                               inventory=None, lexicon=None).line_pref(r), 6) for k in range(5)}) == 5
     # a one-off row (a whole-class coda change) fires once a line; an ordinary row (a chain shift too) again after REFIRE_KYR
@@ -753,3 +758,69 @@ def test_an_inserted_sound_is_not_lost_again_within_the_wait():
     assert l._apply_rule(ins, 9.0 - wait - 0.2) == 0           # (and the glide may not come straight back)
     d = l.copy("y", 0, 4.0, "bud")
     assert d.insdel == l.insdel                                # (a daughter inherits the memory)
+
+
+def _cl_lect(forms, lid="x", stress="penult"):
+    from planet.language import lect as LC
+    from planet.language import lexicon as LX
+    from planet.language import inventory as INV
+    from planet.language import profiles as PR
+    from planet.language.percepts import from_ipa
+    lex = LX.Lexicon(lid, {}, {}, True)
+    for k, f in enumerate(forms):
+        lex.words[f"W{k}"] = LX.Word(f"W{k}", tuple(from_ipa(f)), "N", 3, (), 0.0)
+    segs = sorted({x for f in forms for x in from_ipa(f)}, key=repr)
+    inv = INV.Inventory(consonants=[x for x in segs if x.kind == "C"], vowels=[x for x in segs if x.kind == "V"],
+                        shapes={"CVC": 0.5, "CV": 0.5}, max_coda=1, stress=stress)
+    return LC.Lect(id=lid, deme=0, people="human", parent=None, how="proto", born_kyr=2.0, lexicon=lex, inventory=inv,
+                   profile=PR.HUMAN, profile_key="human")
+
+
+def test_line_holds_its_word_shape():
+    """PW-1642: a line holds the word shape it has (inventory.pattern_of). A change that takes every final consonant
+    away from a closed-syllable line is turned down (nearly always: PATTERN_K), one that keeps the shape passes, and the
+    anchor follows the words slowly (PATTERN_KYR) and is inherited."""
+    from planet.language import lect as LC, profiles as PR
+    from planet.language import inventory as INV
+    l = _cl_lect(["kat", "pom", "sil", "tun", "mak", "bes", "nop", "lit", "rak", "dum"] * 4)
+    a = l.hold_pattern(2.0)
+    assert a[0] == pytest.approx(1.0) and l.pattern[1] == a
+    cat = {LC.base_id(r.id): r for r in LC.catalogue_for(PR.HUMAN, "human")}
+    rng = np.random.default_rng(1)
+    assert sum(l.pattern_resist(cat["S099"], rng, {}, 2.0) for _ in range(50)) >= 49   # (every final consonant lost)
+    assert not any(l.pattern_resist(cat["S013"], rng, {}, 2.0) for _ in range(20))     # (t, d > ɾ between vowels)
+    l.pattern = (2.0, (0.0,) + a[1:])   # (the anchor relaxes toward the words with PATTERN_KYR; a daughter keeps it)
+    b = l.hold_pattern(2.0 - LC.PATTERN_KYR)
+    assert b[0] == pytest.approx(1 - math.exp(-1), abs=1e-6)
+    assert l.copy("y", 1, 1.0, "bud").pattern == l.pattern
+    assert INV.pattern_of([]) == (0.0, 0.0, 0.0, 1.0)
+
+
+def test_tendencies_walk_and_signatures_mark_a_branch():
+    """PW-1642: family tendencies are inherited as a slow random walk (a daughter born at once has its parent's, a late
+    one has drifted, the spread is kept), and a daughter can take a signature change at its split that it and its own
+    daughters then favour (owner 11-10: centum and satem)."""
+    from planet.language import lect as LC
+    l = _cl_lect(["kati", "pomi", "sile", "tuna", "maki", "besu", "nopi", "lite", "raki", "dumo"] * 4)
+    near = l.copy("near", 1, 2.0, "bud")
+    far = l.copy("far", 1, 2.0 - 10 * LC.LINE_DRIFT_KYR, "bud")
+    fams = sorted(near.tendency)
+    assert all(near.tendency[f] == pytest.approx(l.family_log(f)) for f in fams)
+    xs = [far.tendency[f] for f in fams]
+    m = sum(xs) / len(xs)
+    assert max(abs(far.tendency[f] - l.family_log(f)) for f in fams) > 0.3
+    assert math.sqrt(sum((x - m) ** 2 for x in xs) / len(xs)) < 3 * LC.LINE_FAMILY_SIGMA
+    assert l.copy("snap", 1, 1.0, "split").tendency is l.tendency   # (history's split snapshot is the same lect)
+    d = l.copy("d", 1, 2.0, "bud")
+    old = LC.SIGNATURE_P
+    try:
+        LC.SIGNATURE_P = 1.0
+        sig = d.maybe_signature(np.random.default_rng(3), 2.0)
+    finally:
+        LC.SIGNATURE_P = old
+    assert sig is not None and d.signatures == [sig] and sig["lect"] == "d"
+    r = {LC.base_id(x.id): x for x in LC.catalogue_for(d.profile, "human")}[sig["rule"]]
+    assert d.line_pref(r) / near.line_pref(r) > LC.SIGNATURE_X   # (the row and its family both favoured)
+    g = d.copy("g", 2, 1.5, "bud")
+    assert g.signatures == d.signatures
+    assert d.maybe_signature(np.random.default_rng(4), 2.0 - LC.SIGNATURE_EARLY_KYR - 1) is None   # (past its early life)

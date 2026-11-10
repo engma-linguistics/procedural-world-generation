@@ -2,7 +2,7 @@
 id: PW-1641
 title: Real-language benchmark as a standing check for the language model (like earth_check for physics)
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: v4
 subsystem: culture
@@ -29,4 +29,5 @@ never a fidelity target: the goal is that a Hawaiian-like or English-like people
 it reproduces Hawaiian.
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 14/14b: real_inventory.py --check with a stored baseline (main 80d89894) and bands, in the language lane playbook. After lane 14b: mean distance growth 1.29 -> 0.73, drift signatures 6 -> 1, kept character 1 -> 2 of 7, 0 metrics worse.
 - 2026-11-10: Created from inbox draft draft-real-language-benchmark.md (found by lang-coordinator).

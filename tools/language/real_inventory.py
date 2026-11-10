@@ -5,6 +5,8 @@ proto the phonemic inventory of a real language, 10x, and see what pops out ... 
     uv run python -I tools/language/real_inventory.py --seeds 10 --kyr 2.5 --workers 8 \\
         --json /scratch/realinv/real-inventories.json --html /scratch/realinv/real-inventories.html [--extra-html F]
     uv run python -I tools/language/real_inventory.py --extract data/language/raw/phoible/phoible.csv   # rebuild the TSV
+    uv run python -I tools/language/real_inventory.py --check            # the standing check (PW-1641), ~50 s at 8 workers
+    uv run python -I tools/language/real_inventory.py --check --record "LABEL"   # store a new baseline (say why in LABEL)
 
 Tiers, per language and seed (seeds 1..N):
 - `inv`: a proto made exactly as history.History.make_proto makes one (inventory draw, proto lexicon, proto grammar,
@@ -285,7 +287,7 @@ def make_proto(seed: int, key: str | None, tier: str, refw: dict | None = None) 
         inv = replace(inv, shapes=shapes_of(list(refw[key].values()), mo, mc), max_onset=mo, max_coda=mc,
                       coda_class=fu["coda_class"] if mc else "any", onset_required=fu["onset_required"],
                       stress=fu["stress"])
-    pid = f"p{seed}"
+    pid = f"p{seed}" if key is None else f"p{seed}{key[:3]}"   # (a line's drift is keyed by its id: one per language)
     lex = LX.proto_lexicon(rng, inv, LX.concepts(None), PROTO_KYR, pid)
     GR = LC._gr_mod()
     if tier == "full":
@@ -313,7 +315,7 @@ def make_proto(seed: int, key: str | None, tier: str, refw: dict | None = None) 
 def evolve(p: LC.Lect, seed: int, kyr: float) -> tuple[LC.Lect, list[int]]:
     """One daughter budded from p, stepped for `kyr` thousand years (0.5 kyr steps, no contact), and the number of sound
     changes that fired in each step."""
-    l = p.copy(f"d{seed}", 0, PROTO_KYR, "bud", H.rng_for(seed, "bud", "realinv"))
+    l = p.copy("d" + p.id[1:], 0, PROTO_KYR, "bud", H.rng_for(seed, "bud", "realinv"))
     fired = []
     for i in range(max(1, int(round(kyr / 0.5)))):
         t1 = PROTO_KYR - 0.5 * (i + 1)
@@ -378,7 +380,7 @@ def finder(d: dict, profiles: dict, target: str) -> dict:
     return {"distance": round(dist, 3), "sound_distance": round(sum(v for k, v in comp.items() if k in PHON_KEYS), 3),
             "contributions": {k: round(v, 3) for k, v in comp.items()},
             "rank": [k for _, k in ranked].index(target) + 1, "nearest": ranked[0][1],
-            "features": F.public(f)}
+            "features": F.public(f), "texture": f["texture"]}
 
 
 def lect_record(l: LC.Lect, concepts: list[str], profiles: dict, target: str | None, with_text: bool = False) -> dict:
@@ -704,17 +706,181 @@ def calibrate_scale(key: str, concepts: list[str], refw: dict, seeds=(101, 102, 
     return round(max(0.6, min(2.5, real / max(st.mean(ours), 0.5))), 3)
 
 
+# ---- the standing check (PW-1641) -----------------------------------------------------------------------------------------
+# Owner 11-10: this experiment is the language model's Earth, a plausibility anchor run after every language-model change
+# (as tools/earth_check.py is for climate). Plausible-or-better, never a fidelity target: the question is whether a
+# language seeded Hawaiian-like stays recognisably itself for 2.5 kyr, not whether it reproduces Hawaiian. `--check`
+# runs the full-toolkit tier and the control, prints the table below against the stored baseline
+# (BASELINE, written by `--check --record`), and flags a number that moved the wrong way by more than its band (BAND_SE
+# combined standard errors over the seeds, and at least the metric's floor).
+
+BASELINE = DATA / "real_inventory_baseline.json"
+CHECK_SEEDS = 20       # seeds the check runs (10 leave the per-language means too noisy to band; ~50 s with 8 workers)
+BAND_SE = 2.0          # a change is flagged when it is worse than the baseline by this many combined standard errors ...
+NEAR_GROWTH = 0.5      # a language counts as "kept its character" when its +kyr distance is within this of its birth one
+UNIVERSAL_SHARE = 0.8  # a change fired in this share of all full-toolkit daughters (every language) is a drift signature:
+#                        the engine's own habit, not any line's
+#: metric -> (better direction, floor of its band)
+CHECK_METRICS = {"birth": (-1, 0.15), "aged": (-1, 0.15), "growth": (-1, 0.15), "closed_shift": (-1, 0.04),
+                 "final_c_shift": (-1, 0.04), "harmony": (-1, 0.15)}
+AGG_METRICS = {"near": (+1, 1.0), "spread_ratio": (+1, 0.05), "universal": (-1, 1.0), "mean_growth": (-1, 0.1)}
+
+
+def _mse(xs: list[float]) -> tuple[float, float]:
+    xs = [x for x in xs if x is not None]
+    if not xs:
+        return float("nan"), 0.0
+    m = st.mean(xs)
+    return m, (st.stdev(xs) / math.sqrt(len(xs)) if len(xs) > 1 else 0.0)
+
+
+def _as_profile(f: dict) -> dict:
+    """A lect's finder features read as a reference profile, for the lect-to-lect distance."""
+    p = {k: f.get(k) for k in ("consonants", "vowels", "tones", "max_onset", "max_coda", "final_vowel_share",
+                               "cluster_share", "mean_syllables", "stress", "word_order", "adposition", "case", "synthesis")}
+    p["series"] = [k for k in F.SERIES if f.get(k)]
+    p["texture"] = f.get("texture") or {}
+    return p
+
+
+def lect_gap(a: dict, b: dict) -> float:
+    """Symmetric finder distance between two lects (each read once as the other's profile)."""
+    return 0.5 * (F.distance(a, _as_profile(b))[0] + F.distance(b, _as_profile(a))[0])
+
+
+def check_metrics(results: list[dict]) -> dict:
+    """Per language (full toolkit): birth and +kyr distance to the real language, their growth, the shift in
+    closed-syllable share and in word-final consonants (|daughter - proto|: a language keeping its own pattern, either
+    way), the share of daughters that fired a harmony change; and over all of them: how many kept their character
+    (growth under NEAR_GROWTH), how far apart the seven daughters stay against the seven protos (spread_ratio: 1 = no
+    convergence), and the drift signatures (changes fired in UNIVERSAL_SHARE of all daughters)."""
+    fam = {base_id: r.family for r in LC.catalogue_for(PR.HUMAN, "human") for base_id in (LC.base_id(r.id),)}
+    out: dict = {"langs": {}}
+    full = [r for r in results if r["tier"] == "full"]
+    for key in [k for k in LANGS if any(r["key"] == k for r in full)]:
+        rs = sorted((r for r in full if r["key"] == key), key=lambda r: r["seed"])
+        fp = [r["proto"]["by_target"][key] for r in rs]
+        fd = [r["daughter"]["by_target"][key] for r in rs]
+        per = {"birth": [x["finder"]["distance"] for x in fp], "aged": [x["finder"]["distance"] for x in fd]}
+        per["growth"] = [b - a for a, b in zip(per["birth"], per["aged"])]
+        per["closed_shift"] = [abs(b["measures"]["closed_share"] - a["measures"]["closed_share"]) for a, b in zip(fp, fd)]
+        per["final_c_shift"] = [abs(b["measures"]["final_vowel_share"] - a["measures"]["final_vowel_share"])
+                                for a, b in zip(fp, fd)]
+        per["harmony"] = [float(any(fam.get(LC.base_id(c)) == "harmony" for c in r["changes"])) for r in rs]
+        row = {}
+        for k, xs in per.items():
+            m, se = _mse(xs)
+            row[k] = {"mean": round(m, 3), "se": round(se, 3)}
+        row["closed"] = {"proto": round(st.mean(x["measures"]["closed_share"] for x in fp), 3),
+                         "daughter": round(st.mean(x["measures"]["closed_share"] for x in fd), 3)}
+        row["final_c"] = {"proto": round(1 - st.mean(x["measures"]["final_vowel_share"] for x in fp), 3),
+                          "daughter": round(1 - st.mean(x["measures"]["final_vowel_share"] for x in fd), 3)}
+        out["langs"][key] = row
+    L = out["langs"]
+    growths = [v["growth"]["mean"] for v in L.values()]
+    out["near"] = {"mean": float(sum(g <= NEAR_GROWTH for g in growths)), "se": 0.0}
+    out["mean_growth"] = {"mean": round(st.mean(growths), 3), "se": round(math.sqrt(sum(v["growth"]["se"] ** 2
+                                                                                      for v in L.values())) / len(L), 3)}
+    # spread: per seed, the mean pairwise gap among the languages' daughters over that among their protos
+    ratios = []
+    for s in sorted({r["seed"] for r in full}):
+        rs = [r for r in full if r["seed"] == s]
+        if len(rs) < 2:
+            continue
+        fe = {st_: [(r["proto" if st_ == "p" else "daughter"]["by_target"][r["key"]]["finder"]) for r in rs] for st_ in "pd"}
+        g = {st_: st.mean(lect_gap({**a["features"], "texture": a["texture"]}, {**b["features"], "texture": b["texture"]})
+                          for i, a in enumerate(fe[st_]) for b in fe[st_][i + 1:]) for st_ in "pd"}
+        ratios.append(g["d"] / max(g["p"], 1e-9))
+    m, se = _mse(ratios)
+    out["spread_ratio"] = {"mean": round(m, 3), "se": round(se, 3)}
+    n = len(full)
+    cnt = Counter(b for r in full for b in {LC.base_id(c) for c in r["changes"]})
+    sig = sorted(((c, round(v / n, 2)) for c, v in cnt.items() if v / n >= UNIVERSAL_SHARE), key=lambda t: -t[1])
+    out["universal"] = {"mean": float(len(sig)), "se": 0.0}
+    out["signatures"] = sig
+    out["changes_per_daughter"] = round(st.mean(len(r["changes"]) for r in full), 1)
+    ctl = [r for r in results if r["tier"] == CONTROL]
+    out["control_changes_per_daughter"] = round(st.mean(len(r["changes"]) for r in ctl), 1) if ctl else None
+    return out
+
+
+def _verdict(new: dict, old: dict | None, better: int, floor: float) -> str:
+    if old is None:
+        return ""
+    d = (new["mean"] - old["mean"]) * better      # > 0: better
+    band = max(floor, BAND_SE * math.sqrt(new["se"] ** 2 + old["se"] ** 2))
+    if d < -band:
+        return "WORSE"
+    if d > band:
+        return "better"
+    return "ok"
+
+
+def check_report(m: dict, base: dict | None, args) -> tuple[str, int]:
+    """The printed table and the number of WORSE flags."""
+    L = []
+    p = L.append
+    worse = 0
+    bl = (base or {}).get("metrics")
+    p(f"=== Real-language benchmark (PW-1641): {args.seeds} seeds, +{args.kyr:g} kyr, full toolkit ===")
+    if base:
+        p(f"baseline: {base.get('label', '?')} ({base.get('seeds')} seeds, +{base.get('kyr')} kyr)")
+    else:
+        p("baseline: none stored (run with --record)")
+    p("distance = tools/language/find.py's distance to the real language's profile (lower = closer); "
+      "growth = +kyr minus birth")
+    p("shift = |daughter - proto| (a language keeping its own pattern, open or closed); harmony = daughters firing one")
+    head = f"{'':9s} {'birth':>6s} {'+kyr':>6s} {'growth':>7s}  {'closed p>d':>11s} {'shift':>6s}  " \
+           f"{'final C p>d':>11s} {'shift':>6s}  {'harm':>5s}  vs baseline"
+    p("")
+    p(head)
+    for key, row in m["langs"].items():
+        flags = []
+        for k, (bt, fl) in CHECK_METRICS.items():
+            v = _verdict(row[k], (bl or {}).get("langs", {}).get(key, {}).get(k), bt, fl)
+            if v == "WORSE":
+                worse += 1
+            if v and v != "ok":
+                old = bl["langs"][key][k]["mean"]
+                flags.append(f"{k} {v} ({old:.2f})")
+        p(f"{LANGS[key]['label']:9s} {row['birth']['mean']:6.2f} {row['aged']['mean']:6.2f} {row['growth']['mean']:+7.2f}  "
+          f"{row['closed']['proto']:5.2f}>{row['closed']['daughter']:4.2f} {row['closed_shift']['mean']:6.2f}  "
+          f"{row['final_c']['proto']:5.2f}>{row['final_c']['daughter']:4.2f} {row['final_c_shift']['mean']:6.2f}  "
+          f"{row['harmony']['mean']:5.2f}  {', '.join(flags) or ('ok' if bl else '')}")
+    p("")
+    labels = {"near": f"languages that kept their character (growth <= {NEAR_GROWTH})",
+              "mean_growth": "mean distance growth",
+              "spread_ratio": "spread kept (daughters' mutual distance / protos'; 1 = no convergence)",
+              "universal": f"drift signatures (changes in >= {UNIVERSAL_SHARE:.0%} of all daughters)"}
+    for k, (bt, fl) in AGG_METRICS.items():
+        old = (bl or {}).get(k)
+        v = _verdict(m[k], old, bt, fl)
+        worse += v == "WORSE"
+        was = f"  baseline {old['mean']:g}" if old else ""
+        p(f"{labels[k]:72s} {m[k]['mean']:6g}{was}  {v}")
+    p("signatures: " + (", ".join(f"{c} {s:.0%}" for c, s in m["signatures"]) or "none"))
+    p(f"distinct changes per daughter: full toolkit {m['changes_per_daughter']}, control {m['control_changes_per_daughter']}")
+    p("")
+    p(f"{worse} metric(s) WORSE than the baseline" if bl else "no baseline to compare with")
+    return "\n".join(L), worse
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--extract", help="rebuild tools/language/data/real_inventories.tsv from PHOIBLE's phoible.csv and exit")
     ap.add_argument("--langs", default=",".join(LANGS))
-    ap.add_argument("--seeds", type=int, default=10)
+    ap.add_argument("--seeds", type=int, default=None, help=f"seeds per language and tier (10; --check {CHECK_SEEDS})")
     ap.add_argument("--kyr", type=float, default=2.5)
     ap.add_argument("--workers", type=int, default=8, help="processes (capped at 8)")
     ap.add_argument("--json", help="write the raw results and summary here")
     ap.add_argument("--html", help="write the page here")
     ap.add_argument("--extra-html", help="an HTML fragment: an overview part, then <!--GAPS-->, then the gaps section")
+    ap.add_argument("--check", action="store_true", help="the standing check (PW-1641): print the benchmark table "
+                    "against the stored baseline; exit 1 if a number is worse than its band")
+    ap.add_argument("--record", metavar="LABEL", help="with --check: store this run as the baseline, labelled LABEL")
     a = ap.parse_args(argv)
+    if a.seeds is None:
+        a.seeds = CHECK_SEEDS if a.check else 10
     if a.extract:
         extract(a.extract)
         return 0
@@ -748,6 +914,17 @@ def main(argv=None) -> int:
         doc = page(summ, results, a, show, refw, extra)
         Path(a.html).write_text(doc, encoding="utf-8")
         print(f"wrote {a.html} ({len(doc.encode()) / 1e6:.2f} MB)")
+    if a.check:
+        m = check_metrics(results)
+        base = json.loads(BASELINE.read_text(encoding="utf-8")) if BASELINE.exists() and not a.record else None
+        text, worse = check_report(m, base, a)
+        print()
+        print(text)
+        if a.record:
+            BASELINE.write_text(json.dumps({"label": a.record, "seeds": a.seeds, "kyr": a.kyr, "metrics": m},
+                                           ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+            print(f"recorded the baseline in {BASELINE}")
+        return 1 if worse else 0
     return 0
 
 
