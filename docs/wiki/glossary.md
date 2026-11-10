@@ -6,7 +6,7 @@ Project vocabulary. Geology and climate terms: the glossary in [overview section
 - **run**: a simulation of a planet over 0.5-2 Gyr (`planet simulate`), with keyframes and checkpoints. Id = 6 hex. Folder `runs/<id>/`.
 - **world**: one moment of a run, sliced and finished (climate, rivers, lakes, biomes, waves, tides). `worlds/<id>.json`. Made by `planet slice` or `planet make`.
 - **regional zoom** (zoom): a world refined to 1-4 km/px over a region (`zooms/<id>/`). A **fine zoom** nests inside one (tens of m/px; PW-129, PW-516).
-- **time zoom**: 1 Myr of glacial cycles (ice ages) replayed from a run moment. A world's "now" is picked from it (PW-479, `--now interglacial`).
+- **time zoom**: 2 Myr of glacial cycles (PW-1661; was 1 Myr) (ice ages) replayed from a run moment. A world's "now" is picked from it (PW-479, `--now interglacial`).
 - **highlights**: detectors that pick interesting places and pre-make zooms (`planet highlights`).
 - **L5 / L6 / L7 / L8**: icosphere grid level. L6 = 41k cells, ~110 km (quick tests, ~6 min per Gyr); L7 = 164k cells, ~55 km (showcases, 35-40 min per Gyr quiet, ~50 under load). Costs: the run-costs table in [coordination.md](../coordination.md).
 

@@ -1,6 +1,6 @@
-"""Glacial "time zoom": ~1 Myr of ice sheets at 500-year steps, whole planet.
+"""Glacial "time zoom": ~2 Myr of ice sheets at 500-year steps, whole planet.
 
-    uv run python -m planet timezoom <run-id> --at <Myr> [--kyr 1000] [--step 0.5]
+    uv run python -m planet timezoom <run-id> --at <Myr> [--kyr 2000] [--step 0.5]
     uv run python -m planet timezoom earth [--kyr 150]          # real Earth (ETOPO1)
 
 A side simulation: it starts from one moment of a main run and never feeds

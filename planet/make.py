@@ -53,7 +53,7 @@ LEVELS = (4, 5, 6, 7, 8)
 # (2-63 load average): treat as "about", the machine's load moves them by 2x.
 RUN_S_PER_GYR = {4: 230, 5: 400, 6: 705, 7: 3010, 8: 12000}
 # seconds per kyr of glacial time zoom
-TZ_S_PER_KYR = {4: 0.07, 5: 0.12, 6: 0.21, 7: 0.65, 8: 2.6}
+TZ_S_PER_KYR = {4: 0.07, 5: 0.12, 6: 0.21, 7: 3.5, 8: 15}  # (PW-1661: L7 measured 3.4-3.7 s/kyr for 1 and 2 Myr at load ~15-35, docs/review/timezoom/two-myr.md; L8 10-20 s/kyr, docs/coordination.md)
 FINISH_S = {4: 1.5, 5: 3, 6: 9, 7: 38, 8: 155}   # finishing / slicing one world (PW-609: with its coast and resource layers, +1.5 s at L6, +9 s at L7)
 HIGHLIGHTS_S = {4: 0.3, 5: 0.5, 6: 1.2, 7: 4.8, 8: 19}
 ZOOM_S = {4: 8, 5: 11, 6: 15, 7: 22, 8: 31}   # one regional zoom (500 px); 25-50 km zooms run ~1/3 of this
@@ -102,7 +102,7 @@ UNSUPPORTED = ["orbit (distance, eccentricity)", "a different star (always Sun-l
 
 NOW_CHOICES = [{"key": "interglacial", "label": "Interglacial (like Earth today)"},
                {"key": "glacial", "label": "Glacial maximum"}, {"key": "end", "label": "End of the time zoom"}]
-DEFAULTS = {"level": 6, "myr": 1000, "kyr": 300, "now": "interglacial", "timezoom": True, "finish": True, "highlights": True, "zooms": 4,
+DEFAULTS = {"level": 6, "myr": 1000, "kyr": 2000, "now": "interglacial", "timezoom": True, "finish": True, "highlights": True, "zooms": 4,
             "require_ice": False, "tries": 3, "peoples": "", "languages": True, "language_workers": LANGUAGE_WORKERS}  # require_ice (owner D19, PW-1164): refuse a finish with no permanent ice, re-rolling the seed up to `tries` runs
 
 

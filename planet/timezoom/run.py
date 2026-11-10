@@ -12,7 +12,7 @@ from .sim import simulate
 from .sources import source_earth, source_from_run
 
 
-def timezoom(run_ref: str, at: float = 0.0, kyr: float = 1000.0, step: float = 0.5, every: float = 2.0,
+def timezoom(run_ref: str, at: float = 0.0, kyr: float = 2000.0, step: float = 0.5, every: float = 2.0,
              overrides: dict | None = None, level: int = 6, name: str | None = None,
              progress=True) -> Path:
     """CLI entry: source (a run id, or 'earth') -> simulate -> runs/<id>/.

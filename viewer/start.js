@@ -301,7 +301,7 @@ export async function showStart() {
           <div class="hp">How long plate tectonics, climate and erosion run. Longer gives older, more worked-over land.</div></div></fieldset>
       <fieldset><legend>What to make</legend>
         <label class="ck"><input type="checkbox" id="fTz"><span>Ice-age time zoom from a typical moment of the run</span>
-          <select id="fKyr" style="width:auto;flex:none">${[100, 300, 1000].map((k) => `<option value="${k}">${k} kyr</option>`).join('')}</select></label>
+          <select id="fKyr" style="width:auto;flex:none">${[100, 300, 1000, 2000].map((k) => `<option value="${k}">${k} kyr</option>`).join('')}</select></label>
         <label class="ck"><input type="checkbox" id="fFinish"><span>Finished world (climate, rivers, lakes, biomes) <span style="color:var(--muted)">at a typical moment of the run without a time zoom, or at:</span></span>
           <select id="fNow" style="width:auto;flex:none" title="Which moment of the ice-age cycle is the planet's present">${opt.nows.map((w) => `<option value="${w.key}">${esc(w.label)}</option>`).join('')}</select>
           or <input id="fNowKyr" type="number" min="0" step="1" placeholder="kyr" title="A specific kyr of the time zoom (overrides the choice above)" style="width:90px"> kyr</label>

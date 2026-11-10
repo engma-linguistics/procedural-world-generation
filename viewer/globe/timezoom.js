@@ -107,13 +107,13 @@ function timezoomChart() {
 }
 
 // "Glacial time zoom from here" (main runs): the server runs it as a
-// background job, ~4 min per 1000 kyr at level 6, then we open it.
-const TZ_KYR = [100, 300, 1000];
+// background job, ~4 min per 1000 kyr at level 6 (~1 h at level 7), then we open it.
+const TZ_KYR = [100, 300, 1000, 2000];
 export function timezoomBox() {
   const s = S.V.run.frames[S.V.frame].stats;
   let html = '<div class="tzBox">';
   if (s.sea_level_m == null) return html + '<span class="muted">Glacial time zooms need a run made with the climate model.</span></div>';
-  const min = Math.max(1, Math.round(4 * S.tzKyr / 1000 * S.V.n / 40962));
+  const min = Math.max(1, Math.round(4 * S.tzKyr / 1000 * (S.V.n / 40962) ** 1.9));  // (~4 min per 1000 kyr at L6, ~1 h at L7: PW-1661)
   const busy = S.tzJob && !S.tzJob.finished;
   html += `<b>Glacial time zoom from here</b> <span class="muted" title="${COLD_HELP}">(ice ages at ${S.V.t} Myr;
     blue under the time slider = cold eras)</span><br>
