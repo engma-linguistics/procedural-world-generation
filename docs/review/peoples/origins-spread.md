@@ -288,3 +288,22 @@ Candidates:
   No new constant; the jump rate and kernel are unchanged.
 - Rejected: raising REFUGE_MKM2 or FOUNDER_KM to 1 Mkm2 (a clamp that meets the bar by fiat, and does nothing for a people that never
   grew past its founding patch, which is the goliath case); a per-people habitat or rate.
+
+### Screens (af2677, arm now, dnd s7/j1/j2/j4; baseline = lane 269b's branch on the same seeds)
+People-runs of land peoples under 1 Mkm2 (drow and troglodytes listed apart):
+
+| arm | s7 | j1 | j2 | j4 | total |
+|---|---|---|---|---|---|
+| lane 269b branch | goliath 0.93 | goliath 0.51, firbolg 0.87, kobold 0.50 | goliath 0.57, firbolg 0.86, leonin 0.51 | goliath 0.60, halfling 0.54 | 9 |
+| G + A | - | - | goliath 0.52, firbolg 0.76 | goliath 0.51 | 3 |
+| GF + A | - | - | goliath 0.52, firbolg 0.76 | dwarf 0.85 | 3 |
+| G (patch >= 1 Mkm2) + A, evidence arm | - | - | firbolg 0.85 | - | 1 |
+
+- G alone is what is committed (32e9fb19). A (pinned jumps) barely fired: the small peoples jumped 0-2 times and none of them got
+  above 1 that way. Its jumps went to stems instead, so it only added chaos, and it was dropped. GF adds a dependence on the rivals
+  and did no better.
+- The goliaths left under 1 with G (j2, j4) are founded on a 46-48 cell highland patch near (9 S, 124 E). Main 673436c0 founds them
+  on the same patch, and there they end at 0.58 (j2) and 1.63 (j4). The patch holds one founders' country (37 cells) but not 1
+  Mkm2. Only the evidence arm, with the patch required to hold 1 Mkm2, lifts them (8.8 and 9.7). That arm uses D71's number as a
+  founding rule, so it is a decision for Daniel: `issue-tracking/inbox/draft-d71-floor-at-founding.md`.
+- The full suite on G (main fdb11199 as the baseline) was started by lane 269c and handed over unfinished.
