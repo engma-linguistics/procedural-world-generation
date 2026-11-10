@@ -17,6 +17,7 @@ Main 1090b13f (+ desk/wiki commit). Full suite 2009 passed after merging lanes 2
 - lane 268b: PW-1628 (tectonics/volcanism true areas, 857324b2) scorecard then merge; PW-1629 tide-delta mouths.
 - lane 269c (worktree lane269b): PW-1558 floor; fix goliath regression; PW-1182 loser-niche mechanism. Attempt 3 on the floor.
 - lane 270: PW-1627 + PW-1630 L8 settlement rings in km (coast/islands/cities); optional PW-1631.
+- language lane (worktree lang-lane, separate coordinator; Language Desk https://claude.ai/artifact/HYNL244a8zVvfSGFWK5Fgw): lane 11 merged 11-10 (pass 32→11 min, identical output; ruins named, PW-1604 language side). a24559 language files and gods.json rebuilt. Next: `planet make` runs languages by default, then conquest/trade borrowing + food doublets + PW-1622. PW-1549 waits for polities.
 Parked: states switch PW-1596/1597 (three strikes, `later`).
 Waiting on Daniel: nothing.
 
