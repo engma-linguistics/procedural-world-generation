@@ -52,8 +52,8 @@ class Params:
     # flattened at the numerical limit: ~1 km in 4 Myr from flow alone.)
     crust_flow: float = 0.0006
     # PW-1497 (lane 275, scout9.md): post-orogenic collapse. Crust not squeezed for collapse_delay Myr flows
-    # (1 + collapse) x faster (crust.flow_and_orogeny). 0: off.
-    collapse: float = 0.0
+    # (1 + collapse) x faster (crust.flow_and_orogeny). 0: off. On since lane 275b (30: dead high ground gone 30-60 Myr after its last squeeze).
+    collapse: float = 30.0
     collapse_delay: float = 20.0
     # tectonic subsidence beyond local isostasy (isostasy.subsidence, PW-054):
     # share of a mountain belt's spread root that drags the plain beside it
@@ -77,7 +77,7 @@ class Params:
     # (cm/yr, at most the convergence) taken up by contracting its edge (crust.andean_contraction; Medvedev et al.
     # 2006: the central Andes shorten 1-1.75 of the foreland's ~3 cm/yr). 0: off. andean_steer: the area thermostat's
     # factor steers it, as it steers subduction erosion (both are the trench's sinks of continental area).
-    andean_shortening: float = 0.0
+    andean_shortening: float = 0.1
     andean_steer: float = 0.0
     subduction_erosion: float = 0.05  # km/Myr per cm/yr: forearc crust ground away at ocean-continent trenches (over a crust.FOREARC_KM wide forearc)
     accretion: float = 0.5  # share of the sediment arriving at a trench scraped onto the overriding plate
