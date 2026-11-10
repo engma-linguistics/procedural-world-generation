@@ -636,13 +636,17 @@ def kin_pairs(lines: list[dict], kin_kyr: float) -> set:
 
 
 def town_cells_at(tw, ago: float) -> float:
-    """A people's town cells at a time, from its footprint (agos oldest first, counts); 0 before it or without one."""
+    """A people's town cells at a time, from its footprint (agos oldest first, counts): its sample at or before the time, held until
+    the next; 0 before it or without one. PW-1597 (lane 278, round23.md): drawn straight toward the next sample, the after-run tree
+    read up to a ledger step of its future (a tree step 0.02 kyr after a people's first towns read a fifth of them), which the tree
+    inside the history cannot (it has the counts so far): the same anachronism as the tracks' (_frame_of) and the ledger's
+    (PW-1612)."""
     if tw is None:
         return 0.0
     a, c = tw
     if ago > a[0] + 1e-9:
         return 0.0
-    return float(np.interp(-ago, -np.asarray(a), np.asarray(c)))
+    return float(np.asarray(c)[_frame_of(a, ago)])
 
 
 def town_cells_within(tw, ago: float, w: float) -> float:
