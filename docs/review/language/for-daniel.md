@@ -1329,3 +1329,52 @@ syllable, class concord on every word, CLICS derivation families, and gaps that 
 | a sound the shifting people cannot make at all | replaced in every word (hard-but-possible sounds keep the 60% share) | `history.nativise` |
 | a drawn aspirate/ejective with no plain partner | slot redrawn; lateral affricates exempt | `inventory._fill_partners` |
 | order of noun-class groups | weighted draw: person 12, animal 2, plant 2, small 1.5, liquid 1, people 1, place 0.8, abstract 0.8, manner 0.5 (a taste default) | `grammar.CLASS_GROUP_W` |
+
+## Lane 10 (lang-lane10, 2026-11-09): one growl mark per syllable, case prepositions stay words, the second world
+
+- **Growled voice on the pages (PW-1613, your option A).** In plain words: dragon words no longer read as clumps of
+  marks. On the demo page and the sketches, a syllable whose voiced sounds are all growled shows one ‼ after its vowel:
+  the blue dragons' 'dog' w‼ɔ‼j‼ is now written wɔ‼j. A syllable with only some growled sounds keeps a mark on each
+  growled sound (j‼ɨn), so nothing is lost. The data, the viewer and the audio still keep the growl per sound; the
+  key under each page says "one ‼ after a vowel growls its whole syllable".
+- **Case prepositions stay words (PW-1605).** In plain words: languages with prepositions (words like 'to', 'at'
+  before the noun) were turning them into little unstressed particles glued in front of the noun (proclitics) as fast
+  as postpositional languages glue theirs on behind, and then those particles sat there for ever. Real languages almost
+  never do this: of 1031 languages in WALS, 17 have case proclitics and 123 have case enclitics. The model counted those
+  particles as 'borderline' case. Now a preposition becomes a proclitic at a twentieth of the speed, so it mostly stays a
+  word. Same world (a24559), before -> after: languages with only case proclitics 13.6% -> 3.4% (real: 1.6%);
+  'borderline' case 20% -> 10.5% (real: 9%); no case 28% -> 35% (real: 38%); no case plus borderline 48% -> 46% (real:
+  47%). Second world (de1cc6): borderline 18% -> 9%, no case 27% -> 42%.
+  Still off: 2-5 cases 28% (real: 20%) and 6+ cases 26% (real: 32%). I found where the big systems go: a test bench that
+  runs a language's grammar and sound changes alone keeps 6+ at about a third for 20,000 years, but in the world's
+  history the big systems wear away in the first 6,000 years. So the cause is in contact, shift or city life, not in
+  the grammar cycle; left as a draft with the next step.
+- **The second world (PW-1615).** In plain words: the three checks that fail on de1cc6 fail because of that world's
+  history, not a fault in the model, with one small exception below.
+  - *Sisters recognisable (0.49, mark 0.5):* three quarters of de1cc6's young sister pairs belong to one family that
+    spread by language shift to half-orcs, humans, halflings and others, and most of those pairs split 1,500-2,000
+    years ago. With a24559's mix of ages it would read 0.53. Whether the check should weigh each family equally is
+    your call (draft, my lean: leave it unless a third world fails the same way).
+  - *Overused prenasal sounds (ⁿt, ᵑk; this time also ⁿd):* two families inherited them (one alone has 21 of the 66
+    languages with ⁿt). Without that family ⁿt is in 8.5% of languages, under the 10% mark. But reading it showed a real
+    small fault: a new proto-language with prenasal stops picks up the rare voiceless ones (ⁿt, ᵑk, ᵐp) about twice as
+    often as real languages do (4.3% of protos against PHOIBLE's 1.7%). Three quick fixes did not cure it; left as a
+    draft.
+  - *Pronoun loans (0.085-0.092, cap 0.08):* de1cc6 borrows more of everything (a quarter of its languages came from
+    a shift, against a sixth in a24559); pronouns stay at the real-world ratio to other words (0.23-0.25 against WOLD's
+    0.21). One pattern holds in both worlds (for PW-1568): a language that came from a shift borrows pronouns about
+    half again as readily as others, mostly from its own sister languages.
+- **Checks.** a24559 (stored -> this lane): all pass but the scholars' horizon, as before; sisters 0.572 -> 0.573;
+  pronoun loans 0.065 -> 0.076 (under the cap; run-to-run spread, the ticket's earlier passes ranged 0.070-0.088);
+  WOLD rho 0.41 -> 0.407. The demo builds with no fable warning. de1cc6 (lane 9 -> this lane): sisters 0.488 -> 0.478,
+  pronoun loans 0.092 -> 0.085, the same overused sounds plus ⁿd just over the mark, inventory sizes failing at the
+  edge, and the human horizon flipping (6.5 -> 13 kyr on 16-31 human languages).
+- **Left as drafts:** the prenasal draw (a fix to make); the sisters check and one big family (your call); where big
+  case systems go in the history (a diagnosis to finish).
+
+**Defaults I chose**
+
+| what | default | where |
+| --- | --- | --- |
+| how much slower a case preposition becomes a proclitic | x0.05 (0.01 matches WALS's proclitics but leaves case prefixes at a third of WALS's) | `grammar.PRE_CASE_CLITIC` |
+| when a syllable gets one growl mark on the page | every voiced sound in it growled, and at least two voiced sounds | `percepts.page_growl` |

@@ -2,7 +2,7 @@
 id: PW-1615
 title: "Languages: on the second world (de1cc6) current code fails three checks a24559 passes: sisters 0.47, overused ⁿt/ᵑk, pronoun loans 0.10"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -11,7 +11,7 @@ impact: med
 found_by: language lane 9 (PW-1566 second seed)
 blocked_by: []
 relates: [PW-1566, PW-1537]
-refs: [planet/language/checks.py, "planet/language/checks.py::living_sizes", "run de1cc6", docs/review/language/calibration.md]
+refs: [planet/language/checks.py, "planet/language/checks.py::living_sizes", "planet/language/checks.py::sister_distant", "planet/language/checks.py::living_overuse", "planet/language/checks.py::borrowability", "planet/language/families.py::horizon_from", "planet/language/inventory.py::_pick_consonants", "planet/language/lexicon.py::loan_factor", "planet/language/lexicon.py::core_repair", "run de1cc6", "run a24559", docs/review/language/calibration.md]
 created: 2026-11-09
 updated: 2026-11-09
 ---
@@ -43,4 +43,5 @@ whether it is a model fix or a world that is allowed to differ.
 - [ ] each of the three either passes on de1cc6 or has a written reason it may differ there
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 10 (lang-lane10): read per check on lane 9's de1cc6 output and on lane 10's own de1cc6 pass (scratch lane10/pass/de1cc6). All three are the world, not a model change: (1) sisters 0.488 / 0.478: 229 of 294 (lane 10: 207 of 266) sister pairs are one family, p234, spread by shift to half-orcs, humans, halflings and others; 180 of 294 pairs parted 1.5-2 kyr ago (a24559: 90 of 165); per-age strict shares sit 0.04-0.08 under a24559's; re-weighted to a24559's age mix de1cc6 reads 0.53 (draft draft-language-sisters-one-family, needs-decision). (2) overused ⁿt/ᵑk (lane 10 also ⁿd 33.5%): founder effects of p94 (tabaxi proto, 21-22 living lects, 18-21 with ⁿt) and p234 (ⁿd in 59 of 85); without p94, ⁿt is 8.5% and ᵑk 7.5%; under them a real draw flaw, prenasal series tails at ~2x PHOIBLE in proto draws (ⁿt 4.3% of human protos vs 1.7%; draft draft-language-prenasal-tail). (3) pronoun loans 0.092 / 0.085: de1cc6 borrows more of everything (median lect loan share 0.37 vs 0.30; 26% of living lects are shift lects vs 16%); pronouns stay at WOLD's ratio to other meanings (pronoun/all-meaning loan share 0.23-0.25 vs WOLD 0.21). For PW-1568: by route, a24559 lane 10 contact 152 / paradigm repair 67; de1cc6 contact 155 / repair 33 / koine ~10; shift lects borrow pronouns at 0.14-0.16 (ratio 0.30-0.34 to their other words) in both worlds, protos and buds at 0.19-0.22; the largest single route is a shift lect borrowing from its own true family (57-74 pronoun words per world). Inventory sizes fail at the edge (consonant tail 0 of 157 above PHOIBLE p95; lane 9 0 of 160); the horizon flips with 16-31 human lects (lane 9 6.5 kyr pass, lane 10 13 kyr fail).
 - 2026-11-09: Created from inbox draft draft-language-de1cc6-checks.md (found by language lane 9 (PW-1566 second seed)).
