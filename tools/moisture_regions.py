@@ -189,7 +189,7 @@ def masks(grid, d):
 
 
 def budget(grid, d, c, rec, obs, sea, M):
-    area = ocean_mod.cell_area_km2(grid)
+    area = grid.cell_area_km2
     sc = mb.mm_scale(c, rec)
     tag = np.where(sea, 1, 0)  # 0 other land, 1 other sea, 2.. boxes
     for k, (name, *_b) in enumerate(BOXES):
@@ -406,7 +406,7 @@ def b_share(grid, d, c, p):
 
 
 def score(grid, d, c, rec, M, p, P, sc_k, obs):
-    area = ocean_mod.cell_area_km2(grid)
+    area = grid.cell_area_km2
     out = {}
     for name in SCORE:
         m = M[name]
@@ -585,7 +585,7 @@ def main():
     for r in B["rows"]:
         org = ", ".join(f"{k} {v:.0f}" for k, v in sorted(r["origin"].items(), key=lambda kv: -kv[1]) if v >= 2)
         print(f"- {r['box']}, {r['half']}: {org}")
-    area = ocean_mod.cell_area_km2(grid)
+    area = grid.cell_area_km2
     Pp = B["probe"]
     phys = float((Pp["r"].mean(0) * area).sum() / area.sum() / Pp["dt"] * mb.YEAR_S * B["k_pw"])
     print(f"\nThe kernel's own global rain (vapour units x {B['k_pw']:.1f} mm, the open-sea PW fit): {phys:.0f} "
@@ -612,8 +612,8 @@ def main():
             res[name] = score(grid, d, c, rec, M, p, P, sc_k, obs)
             print(f"  cf {name}: {time.time() - t0:.0f} s", file=sys.stderr)
         base = res["base"]
-        obs_s = {nm: [float((obs["P"][k] * ocean_mod.cell_area_km2(grid))[M[nm] & np.isfinite(obs["P"][k])].sum()
-                            / ocean_mod.cell_area_km2(grid)[M[nm] & np.isfinite(obs["P"][k])].sum())
+        obs_s = {nm: [float((obs["P"][k] * grid.cell_area_km2)[M[nm] & np.isfinite(obs["P"][k])].sum()
+                            / grid.cell_area_km2[M[nm] & np.isfinite(obs["P"][k])].sum())
                       for k in range(2)] for nm in SCORE}
         print("\n## Sensitivities (annual mm/yr; kernel only, global mean held)")
         print("| | obs | " + " | ".join(res) + " |")
