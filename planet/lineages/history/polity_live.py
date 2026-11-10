@@ -44,6 +44,7 @@ from ..gridops import nbr_reduce
 from ..spread import EST
 from .gridops import _csr_gather
 from . import params as PM
+from ..seafood import rings_for
 from .rule import StandIns
 
 FORMAT = "procgen-polities-live/2"  # (/2, PW-1575: map entries carry the seat's people and the provinces; took and the row logs carry record ids)
@@ -78,6 +79,25 @@ def harshness(hostility: float, tol: float, agg: float) -> float:
     return hostility + TOL_X * (0.5 - tol) + TOL_X * (agg - AGG_HARSH) * (1.0 - tol)
 
 
+def ring_pairs(off, idx, r: int):
+    """(a, b): every (cell, other) pair with `other` within r neighbour rings of `cell`, the cell itself included, once each, sorted
+    by cell then other (PW-1627: any number of rings; the frontier alone is expanded, so an L8 refine's four rings stay cheap)."""
+    off, idx = np.asarray(off, np.int64), np.asarray(idx, np.int64)
+    n = len(off) - 1
+    deg = np.diff(off)
+    seen = np.arange(n, dtype=np.int64) * (n + 1)  # (codes a * n + b: each cell itself)
+    fa, fb = np.arange(n, dtype=np.int64), np.arange(n, dtype=np.int64)
+    for _ in range(r):
+        d = deg[fb]
+        na = np.repeat(fa, d)
+        nb = idx[np.repeat(off[fb], d) + np.arange(int(d.sum())) - np.repeat(np.cumsum(d) - d, d)]
+        cand = np.unique(na * n + nb)
+        new = cand[~np.isin(cand, seen, assume_unique=True)]
+        seen = np.union1d(seen, new)
+        fa, fb = new // n, new % n
+    return seen // n, seen % n
+
+
 class LivePolities(StandIns):
     """StandIns with live polities: begin_step runs one polity step; pacification, frontier and circumscribed read its owners."""
 
@@ -93,14 +113,13 @@ class LivePolities(StandIns):
         self.dist = np.full(g.n, np.inf)
         self.touched = np.zeros(g.n, np.int64)
         self.claimed = np.zeros(g.n, np.int64)
-        deg = np.diff(self.off)  # (the cells within two rings of each cell, once: (cell, other) pairs, the cell itself included)
-        e = np.repeat(np.arange(len(self.idx)), deg[self.idx])
-        dn = deg[self.idx]
-        far = self.idx[self.off[self.idx[e]] + np.arange(len(e)) - np.repeat(np.cumsum(dn) - dn, dn)]  # (each neighbour's neighbours)
-        pairs = np.unique(np.concatenate([np.stack([np.arange(g.n), np.arange(g.n)], 1), np.stack([self.src, self.idx], 1),
-                                          np.stack([self.src[e], far], 1)]), axis=0)
-        self.r2a, self.r2b = pairs[:, 0], pairs[:, 1]
-        self.r2off = np.searchsorted(self.r2a, np.arange(g.n + 1))  # (pairs are sorted by cell: each cell's two rings, r2b[r2off[c]:r2off[c+1]])
+        # (the cells within HEMMED_KM of each cell, once: (cell, other) pairs, the cell itself included; PW-1627: two rings at L7,
+        # four on an L8 refine, the seat's hemmed-in reading and the city's hinterland in km together)
+        from ..settlements import CONST as SE_CONST
+        self.r_town, self.r_city = rings_for(g, SE_CONST["TOWN_KM"]), rings_for(g, SE_CONST["CITY_KM"])
+        self.r2a, self.r2b = ring_pairs(self.off, self.idx, rings_for(g, PO.HEMMED_KM))
+        self.r2off = np.searchsorted(self.r2a, np.arange(g.n + 1))  # (pairs are sorted by cell: each cell's ring, r2b[r2off[c]:r2off[c+1]])
+        self._pairs: dict[int, tuple] = {}
         L = h.lines
         self.ppl = np.array([i for i, l in enumerate(L) if not (l.overlay or l.megafauna or l.marine)], np.int64)  # (peoples that may hold towns)
         self.dragons = [i for i, l in enumerate(L) if l.megafauna and "dragon" in l.id and l.trait("flies", 0.0)]
@@ -219,18 +238,30 @@ class LivePolities(StandIns):
         coastal = land & (nbr_reduce(self.g, np.maximum, (~land)[self.idx].astype(np.int8)) > 0)
         return self.SE._site_factor(self.W, coastal, self.SE.CONST)
 
+    def _hin(self, v, r):
+        """The sum of v over each cell's cells within r rings (the cell itself included): a town's or a city's hinterland."""
+        if r == 1:  # (the one-ring sum as it always was, so L7 is unchanged to the bit)
+            return v + nbr_reduce(self.g, np.add, v[self.idx])
+        if r not in self._pairs:
+            self._pairs[r] = (self.r2a, self.r2b) if r == rings_for(self.g, PO.HEMMED_KM) else ring_pairs(self.off, self.idx, r)
+        a, b = self._pairs[r]
+        return np.bincount(a, weights=v[b], minlength=self.g.n)
+
+    def _ringmax(self, v, r):
+        """The max of v over each cell's cells within r rings (itself included)."""
+        for _ in range(r):
+            v = np.maximum(v, nbr_reduce(self.g, np.maximum, v[self.idx]))
+        return v
+
     def _places(self, sed, q):
         """(the size of each cell's central place, town or city; the city size alone): settlements' SHARE on the hinterland's sedentary
-        heads (one ring for a town, two for a city) x the cell's site factor q, at a cell that is the best of its ring by that score
+        heads (TOWN_KM for a town, CITY_KM for a city) x the cell's site factor q, at a cell that is the best of its ring by that score
         (as the ledger), else 0."""
         from ..settlements import CONST
         g = self.g
         tie = 1.0 + 1e-9 * (g.n - np.arange(g.n)) / g.n  # (equal hinterlands: the lower cell id is the best of its ring)
-        H1 = (sed + nbr_reduce(g, np.add, sed[self.idx])) * q * tie
-        H2 = np.bincount(self.r2a, weights=sed[self.r2b], minlength=g.n) * q * tie
-        mx1 = np.maximum(H1, nbr_reduce(g, np.maximum, H1[self.idx]))
-        mx2 = np.maximum(H2, nbr_reduce(g, np.maximum, H2[self.idx]))
-        mx2 = np.maximum(mx2, nbr_reduce(g, np.maximum, mx2[self.idx]))
+        H1, H2 = self._hin(sed, self.r_town) * q * tie, self._hin(sed, self.r_city) * q * tie
+        mx1, mx2 = self._ringmax(H1, self.r_town), self._ringmax(H2, self.r_city)
         town = np.where(H1 >= mx1, CONST["SHARE"][2] * H1, 0.0)
         city = np.where(H2 >= mx2, CONST["SHARE"][3] * H2, 0.0)
         return np.maximum(town, city), city
@@ -257,7 +288,7 @@ class LivePolities(StandIns):
         return own, np.where(ok, second, -1)
 
     def _hem_local(self, c, k, people, ago, land, ice, el) -> float:
-        """How hemmed in the seat at cell c is, 0..1, as the read-out reads it (polities._hemmed): over the cells within two rings of it,
+        """How hemmed in the seat at cell c is, 0..1, as the read-out reads it (polities._hemmed): over the cells within HEMMED_KM of it,
         sea (for a people without boats), ice and peaks of 3,000 m or more bar fully; land other peoples hold and its own does not bars
         SOCIAL_Q; the rest bars nothing."""
         ring = self.r2b[self.r2off[c]:self.r2off[c + 1]]
@@ -370,12 +401,9 @@ class LivePolities(StandIns):
         al0, stage0 = al_x[lead], stage_x[lead]
         cap0 = caps(stage0)
         tie = 1.0 + 1e-9 * (n - np.arange(n)) / n  # (equal hinterlands: the lower cell id is the best of its ring)
-        H1 = sed + nbr_reduce(g, np.add, sed[self.idx])
-        H2 = np.bincount(self.r2a, weights=sed[self.r2b], minlength=n)
+        H1, H2 = self._hin(sed, self.r_town), self._hin(sed, self.r_city)
         s1, s2 = H1 * q * tie, H2 * q * tie
-        best1 = s1 >= np.maximum(s1, nbr_reduce(g, np.maximum, s1[self.idx]))
-        mx2 = np.maximum(s2, nbr_reduce(g, np.maximum, s2[self.idx]))
-        best2 = s2 >= np.maximum(mx2, nbr_reduce(g, np.maximum, mx2[self.idx]))
+        best1, best2 = s1 >= self._ringmax(s1, self.r_town), s2 >= self._ringmax(s2, self.r_city)
         tgt0 = np.zeros(n)
         for t, hin, best in ((1, sed, True), (2, H1, best1), (3, H2, best2)):
             tgt0 = np.maximum(tgt0, np.minimum(np.where(best & (al0 >= t), SH[t] * hin * q, 0.0), cap0[t - 1]))
