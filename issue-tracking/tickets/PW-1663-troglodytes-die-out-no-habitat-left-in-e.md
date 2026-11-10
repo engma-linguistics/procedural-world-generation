@@ -1,4 +1,5 @@
 ---
+id: PW-1663
 title: Troglodytes die out ("no habitat left") in every dnd run on af2677, and drow end under 1 Mkm2 in every run
 type: task
 status: todo
@@ -11,7 +12,10 @@ found_by: lane269b
 blocked_by: []
 relates: [PW-1558, PW-1182, PW-1379]
 refs: [tools/peoples_robust.py, "planet/lineages/samples/dnd.toml (saurian stem: tortle, lizardfolk, troglodyte)", planet/lineages/dens.py, planet/lineages/ladder.py, docs/review/peoples/origins-spread.md, "suite af2677 arm now, main 673436c0 (lane 269; scratch outputs deleted)", "world af2677"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
+
 ## In plain words
 In the dnd tree on world af2677 the troglodytes are extinct by the present in all 17 dnd runs of the robustness suite, always
 "no habitat left" (e.g. seed 7: died out 62 kyr ago). The drow hold 0.04-0.75 million km2 in every run. So a dnd world on af2677
@@ -23,3 +27,6 @@ Suite af2677, arm now, 22 runs, main 673436c0 (lane 269's branch leaves both unc
 cause for troglodytes: the probe of dnd-j4 shows them founded 1,488 kyr ago on a 3,760-cell habitat, the parent's patch 724 cells.
 Find what removes their habitat (the den-ground layer, PW-1382, or a cave/karst habitat that shrinks with climate) and whether drow
 are PW-1182's loser floor. D71 says no land people under 1 Mkm2 at the end of any run.
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-troglodytes-extinct-every-dnd-run-af2677.md (found by lane269b).
