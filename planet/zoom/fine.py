@@ -109,6 +109,7 @@ MAX_STEP = 20.0  # a fine zoom is at most this many times finer than its parent 
 MIN_STEP = 2.0  # ... and at least this many (else it adds nothing)
 PARENT_RES = (0.1, 4.0)  # km/px: the parents the conditioning is designed for
 MAX_PX = 1200  # pixels across
+WIDE_PX, WIDE_PX_BIG_STEP = 1000, 1200  # px across of the menu's wide sizes (4x steps, 10-20x steps: PW-1675)
 EDGE_PX = 3  # parent px: the built area (region + halo) stays this far inside the parent
 HALO_PARENT_PX = 1.0  # parent px of terrain built round the region (drainage), cropped off
 RIVER_AREA_PX = 25.0  # parent rivers imposed: draining at least this many parent pixels ...
@@ -173,6 +174,12 @@ def size_options(parent_res: float) -> dict:
             if not 32 <= round(s / r) <= MAX_PX:
                 continue
             opts.append({"size_km": round(s, 4), "res_km": r, "default": abs(r - dr) < 1e-9})
+            # the wide size of that step: the rungs of the level-of-detail chain (PW-1675, lane 284): 500 km at 0.5 km
+            # from a 2 km section (1000 px), 30 km at 25 m from a 0.5 km rung (1200 px); a build is under a minute
+            # and 12 GB at 1200 px, so these are as cheap as the 500 px sizes
+            wide = (WIDE_PX_BIG_STEP if step >= 10 else WIDE_PX) * r
+            if parent_res >= 0.4 - 1e-9 and round(wide, 4) > round(s, 4) and round(wide / r) <= MAX_PX:
+                opts.append({"size_km": round(wide, 4), "res_km": r, "default": False})
     return {"default": {"size_km": ds, "res_km": dr}, "options": opts}
 
 
@@ -203,7 +210,7 @@ def check(pmeta: dict, lat: float, lon: float, size_km: float, res_km: float) ->
     if not -90 <= lat <= 90:
         raise ValueError("lat must be within -90..90")
     fp = Z.frame_of(pmeta["center"])
-    fr = Z.Frame(lat, lon)
+    fr = Z.Frame(lat, lon, up=pmeta["center"].get("up"))  # (the parent's orientation, PW-1341)
     half = 0.5 * size_km + _halo_px(rp, res_km) * res_km
     t = np.array([-1.0, 0.0, 1.0]) * half
     X, Y = np.meshgrid(t, t)
@@ -347,7 +354,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     world = Z.land_world(world)[0]
 
     # --- 1. projection ---------------------------------------------------
-    fr = Z.Frame(lat, lon)
+    fr = Z.Frame(lat, lon, up=pmeta["center"].get("up"))  # (turned like its parent, PW-1341: pixels stay square to it)
     xs = (np.arange(nb) + 0.5 - nb / 2) * res
     ys = (nb / 2 - np.arange(nb) - 0.5) * res
     X, Y = np.meshgrid(xs, ys)
@@ -1981,6 +1988,7 @@ def save(z: dict, pmeta: dict, lat: float, lon: float, size_km: float, res_km: f
         write_png(out / Z.SAT_FILES[k], img)
     write_png(out / "coarse.png", Z.coarse_image(z))
     fr = z["frame"]
+    up = Z._up_list(fr)
     half = z["size_km"] / 2
     corners = {k: [round(v, 5) for v in Z._latlon(fr.to_sphere(np.array([x]), np.array([y]))[0])]
                for k, (x, y) in {"nw": (-half, half), "ne": (half, half), "se": (half, -half),
@@ -1994,15 +2002,18 @@ def save(z: dict, pmeta: dict, lat: float, lon: float, size_km: float, res_km: f
         "generated_in_s": z["seconds"],
         "source_world": pmeta["source_world"],
         "parent_zoom": z["parent"],
-        "center": {"lat": lat, "lon": lon},
+        "center": {"lat": lat, "lon": lon, **({"up": up} if up else {})},  # (up: the parent's orientation, PW-1341)
         "size_km": z["size_km"],
         "res_km": z["res"],
         "nx": z["nx"], "ny": z["ny"],
         "seed": seed,
         "projection": {
             "type": "azimuthal_equidistant", "lat0": lat, "lon0": lon, "planet_radius_km": R_KM,
-            "pixel_x_km": "(col + 0.5 - nx/2) * res_km   (east of centre)",
-            "pixel_y_km": "(ny/2 - row - 0.5) * res_km   (north of centre; row 0 = north edge)",
+            **({"up": up, "up_bearing_deg": Z._bearing(fr),
+                "pixel_x_km": "(col + 0.5 - nx/2) * res_km   (right of centre: 90 degrees clockwise of up)",
+                "pixel_y_km": "(ny/2 - row - 0.5) * res_km   (along `up` from the centre; row 0 = the up edge)"} if up else {
+                "pixel_x_km": "(col + 0.5 - nx/2) * res_km   (east of centre)",
+                "pixel_y_km": "(ny/2 - row - 0.5) * res_km   (north of centre; row 0 = north edge)"}),
             "corners_latlon": corners,
         },
         "files": {"heightmap": "heightmap.png", "preview": "preview.png", "coarse": "coarse.png",

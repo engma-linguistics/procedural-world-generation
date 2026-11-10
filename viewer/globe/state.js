@@ -20,7 +20,7 @@ export const S = {
   seaShell: null,       // the 3D relief's sea surface (one per view mode, kept across frames)
   lmEdit: -1,           // the landmass whose name is being edited (panel.js)
   tzJob: null,          // the glacial time zoom job being made, and its span (timezoom.js)
-  tzKyr: 300,
+  tzKyr: 2000,
   IDX: { runs: [], worlds: [], zooms: [] },  // the run / world / zoom indexes
   FAVS: new Set(),      // "run:<dir>" / "world:<id>" the owner starred (GET /api/favourites; kept by the server, not the browser)
   detailCell: -1,       // the cell the "More detail" panel shows

@@ -45,7 +45,9 @@ keeps it), so tests can drive them without a socket.
 from __future__ import annotations
 
 import itertools
+import functools
 import json
+import math
 import os
 import queue
 import shutil
@@ -53,6 +55,8 @@ import tempfile
 import threading
 import time
 from pathlib import Path
+
+import numpy as np
 
 from . import highlights as H
 from . import store as S
@@ -93,6 +97,8 @@ def parse_zoom_request(req: dict) -> dict:
         raise BadRequest("give either run (+ t), world, or zoom (a fine zoom of that zoom)")
     if req.get("zoom"):
         return _parse_fine_request(req)
+    if req.get("section"):
+        return _parse_section_request(req)
     out = {"lat": _num(req, "lat"), "lon": _num(req, "lon"), "size_km": _num(req, "size_km", 1000)}
     out["res_km"] = _num(req, "res_km", out["size_km"] / 500)
     out["seed"] = int(_num(req, "seed", 1))
@@ -111,6 +117,39 @@ def parse_zoom_request(req: dict) -> dict:
         out["t"] = _num(req, "t")
     else:
         out["world"] = str(req["world"]).removesuffix(".json")
+    return out
+
+
+SECTION_KM = 4000.0  # the tiling's section size (zoom/tiling.py)
+SECTION_RES_KM = (SECTION_KM / 4096, 4.0)  # km/px: at most 4,096 px across (regional.zoom); at most 4 so fine zooms nest in it (fine.PARENT_RES)
+
+
+@functools.lru_cache(maxsize=1)
+def _tiling() -> dict:
+    """{cell id: section} of the 54-section tiling (zoom/tiling.py; the same for every world)."""
+    from .zoom import tiling as ZT
+    return {s["id"]: s for s in ZT.sections(None, SECTION_KM)}
+
+
+def _parse_section_request(req: dict) -> dict:
+    """POST /api/zoom {world, section, res_km}: the tiling's section of this cell (world only: a section is a zoom of a
+    saved world; res_km 0.98-4, default 2). Returns {world, section, size_km, res_km, seed, iterations}: no lat/lon/up,
+    the job takes them from the tiling."""
+    if not req.get("world") or req.get("run") or req.get("zoom"):
+        raise BadRequest("a section takes a world (and section, res_km), not a run or a zoom")
+    cell = str(req["section"])
+    if cell not in _tiling():
+        raise BadRequest(f"no section {cell!r} in the {SECTION_KM:g} km tiling (ids are face.i.j: px.1.1, pz.0.2 ...; "
+                         "GET /api/sections?world= lists them)")
+    res = _num(req, "res_km", 2.0)
+    lo, hi = SECTION_RES_KM
+    if not lo - 1e-9 <= res <= hi:
+        raise BadRequest(f"res_km for a {SECTION_KM:g} km section must be within {lo:.3g}..{hi:g} (at most 4,096 px across; "
+                         f"coarser than {hi:g} km/px leaves no room for fine zooms inside it)")
+    out = {"world": str(req["world"]).removesuffix(".json"), "section": cell, "size_km": SECTION_KM, "res_km": res,
+           "seed": int(_num(req, "seed", 1)), "iterations": int(_num(req, "iterations", 15))}
+    if not 1 <= out["iterations"] <= 100:
+        raise BadRequest("iterations must be within 1..100")
     return out
 
 
@@ -202,6 +241,8 @@ def zoom_job(req: dict, progress=lambda f, msg: None) -> dict:
     r = parse_zoom_request(req)
     if "zoom" in r:
         return _fine_zoom_job(r, progress)
+    if "section" in r:
+        return _section_zoom_job(r, progress)
     if "run" in r:
         world_path = slice_run(r["run"], r["t"], lambda f, msg: progress(0.5 * f, msg))
     else:
@@ -211,6 +252,7 @@ def zoom_job(req: dict, progress=lambda f, msg: None) -> dict:
         if S.exists("zoom", zid):
             progress(1.0, f"zoom {zid} already exists")
             return {"zoom": zid, "world": world_path.stem}
+        _require_room(r)
         return _build_zoom(r, world_path, progress)
 
 
@@ -237,6 +279,7 @@ def _fine_zoom_job(r: dict, progress) -> dict:
         if S.exists("zoom", zid):
             progress(1.0, f"zoom {zid} already exists")
             return {"zoom": zid, "world": wid, "parent_zoom": r["zoom"]}
+        _require_room(r)
         done = [0]
 
         def log(msg):  # build() logs three stages
@@ -247,6 +290,156 @@ def _fine_zoom_job(r: dict, progress) -> dict:
         out = ZF.zoom(r["zoom"], r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"], log=log)
         progress(1.0, "done")
         return {"zoom": out.name, "world": wid, "parent_zoom": r["zoom"]}
+
+
+# ---- sections of the tiling, and the RAM a zoom job needs (PW-1674; docs/review/zoom/lod-plan.md step 1)
+ZOOM_RAM_SPARE_GB = 8.0  # memory left free beside a zoom's expected peak (as REFINE_RAM_SPARE_GB)
+HEAVY_ZOOM_PX = 1_000_000  # a zoom this big (and >= 1,000 km) is "section-sized": one at a time
+# (pixels, peak GB) of one regional zoom of a 4,000 km section, the budget figure for each resolution:
+ZOOM_PEAK_ANCHORS = (
+    (1_000_000, 8.0),    # 4 km/px, 1,000 x 1,000: 6-8 GB per build with five at once (docs/review/land-zoom/seams-round2.md l.47)
+    (4_000_000, 25.0),   # 2 km/px: 23.1 GB measured alone after lane 122's fixes (docs/review/land-zoom/cost.md), rounded up
+    (16_000_000, 110.0),  # 1 km/px: 85.9 GB alone, 104-108 GB under load; the budget is 110 (cost.md, seams-round2.md l.145-148)
+)
+
+
+def zoom_peak_gb(size_km: float, res_km: float) -> float:
+    """Expected peak memory (GB) of building a zoom of size_km x size_km at res_km/px. ESTIMATE from the pixel count:
+    log-log interpolation between the three measured section builds in ZOOM_PEAK_ANCHORS, per-pixel scaling beyond
+    them (7-8 GB per million px at the small end, 6.9 at the large), never under 1.5 GB (the world, the grid and
+    numba). Measured on regional zooms; fine zooms (<= 1,200 px) are not measured and are taken the same way, which is
+    on the safe side (lod-plan.md: "small, measured in step 2")."""
+    px = (size_km / res_km) ** 2
+    pts = ZOOM_PEAK_ANCHORS
+    if px <= pts[0][0]:
+        return max(1.5, pts[0][1] * px / pts[0][0])
+    if px >= pts[-1][0]:
+        return pts[-1][1] * px / pts[-1][0]
+    for (pa, ga), (pb, gb) in zip(pts, pts[1:]):
+        if pa <= px <= pb:
+            t = math.log(px / pa) / math.log(pb / pa)
+            return math.exp(math.log(ga) + t * math.log(gb / ga))
+    raise AssertionError("unreachable")
+
+
+def zoom_is_heavy(r: dict) -> bool:
+    """A section-sized zoom job: at most one runs at a time (the server has 4 job workers; four 2 km sections would want
+    ~92 GB). r: a parsed zoom request."""
+    return (r.get("size_km", 0) >= 1000 and bool(r.get("res_km"))
+            and (r["size_km"] / r["res_km"]) ** 2 >= HEAVY_ZOOM_PX)
+
+
+def zoom_estimate(r: dict, busy: str | None = None) -> dict:
+    """The cost of a parsed zoom request and the machine's room for it: {peak_gb, need_gb, free_ram_gb, heavy, refuse}.
+    refuse: why it must not start now (memory short, naming the RAM it needs; or, with `busy`, the id of another
+    section-sized zoom job: one at a time)."""
+    peak = zoom_peak_gb(r["size_km"], r["res_km"])
+    need = peak + ZOOM_RAM_SPARE_GB
+    ram, heavy, refuse = free_ram_gb(), zoom_is_heavy(r), []
+    what = (f"section {r['section']} " if r.get("section") else "") + f"{r['size_km']:g} km at {r['res_km']:g} km/px"
+    if busy and heavy:
+        refuse.append(f"another section-sized zoom is queued or running (job {busy}): one at a time")
+    if ram is not None and ram < need:
+        coarser = ""
+        if heavy:
+            alts = [x for x in (4.0, 2.0, 1.0) if x > r["res_km"] and zoom_peak_gb(r["size_km"], x) + ZOOM_RAM_SPARE_GB <= ram]
+            coarser = f"; {alts[-1]:g} km/px would fit now" if alts else ""
+        refuse.append(f"not enough free memory: {ram:.0f} GB free, the {what} zoom needs about {peak:.0f} GB plus "
+                      f"{ZOOM_RAM_SPARE_GB:.0f} GB to spare ({need:.0f} GB in all). Close something or wait for other "
+                      f"jobs{coarser}")
+    return {"peak_gb": round(peak, 1), "need_gb": round(need, 1), "free_ram_gb": None if ram is None else round(ram, 1),
+            "heavy": heavy, "refuse": refuse}
+
+
+def _require_room(r: dict):
+    """In the job, just before a build: the memory may have gone to other jobs while it waited."""
+    est = zoom_estimate(r)
+    if est["refuse"]:
+        raise BadRequest("not started: " + "; ".join(est["refuse"]))
+
+
+def section_zoom_id(r: dict, world_id: str) -> str:
+    """The id of the zoom a parsed section request builds (what regional.zoom saves it under)."""
+    s = _tiling()[r["section"]]
+    lon = (s["lon"] + 180) % 360 - 180
+    up = Z._up_list(Z.Frame(s["lat"], lon, up=s["up"]))
+    return Z.zoom_id(world_id, s["lat"], lon, r["size_km"], r["res_km"], r["seed"], r["iterations"], None, up)
+
+
+def existing_zoom(r: dict) -> str | None:
+    """The id of the zoom a parsed request would build, if it is already saved (None: not yet, or unknown without
+    slicing: a run request)."""
+    try:
+        if "zoom" in r:
+            zid = ZF.fine_id(r["zoom"], r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"])
+        elif "world" in r:
+            wid = S.find_world(r["world"]).stem
+            zid = (section_zoom_id(r, wid) if "section" in r else
+                   Z.zoom_id(wid, r["lat"], r["lon"], r["size_km"], r["res_km"], r["seed"], r["iterations"]))
+        else:
+            return None
+    except SystemExit:
+        return None
+    return zid if S.exists("zoom", zid) else None
+
+
+def _section_zoom_job(r: dict, progress) -> dict:
+    """POST /api/zoom {world, section, res_km}: the tiling's section, built as regional.zoom(section=...) (turned to the
+    cell's face, PW-1338), or the one already built (ids are deterministic). {"zoom", "world", "section"}."""
+    world_path = S.find_world(r["world"])
+    zid = section_zoom_id(r, world_path.stem)
+    with S.lock(S.zooms_dir(), zid):
+        if S.exists("zoom", zid):
+            progress(1.0, f"zoom {zid} already exists")
+            return {"zoom": zid, "world": world_path.stem, "section": r["section"]}
+        _require_room(r)
+        done = [0]
+
+        def log(msg):  # build() logs four stages
+            done[0] += 1
+            progress(0.1 + 0.8 * min(done[0], 4) / 5, msg.strip())
+
+        progress(0.1, f"zooming section {r['section']} at {r['res_km']:g} km/px")
+        out = Z.zoom(str(world_path), None, None, r["size_km"], r["res_km"], r["seed"], r["iterations"], log=log,
+                     section=r["section"])
+        progress(1.0, "done")
+        return {"zoom": out.name, "world": world_path.stem, "section": r["section"]}
+
+
+@functools.lru_cache(maxsize=4)
+def _land_by_cell(path: str, mtime: float) -> tuple:
+    """((cell id, land cells, all cells) ...) of a world: the tiling's land counts (cached per file version)."""
+    from .zoom import tiling as ZT
+    ss = ZT.sections(W.load(path), SECTION_KM, keep_all=True)
+    return tuple((s["id"], s["land_cells"], s["world_cells"]) for s in ss)
+
+
+def sections_listing(world: str) -> dict:
+    """GET /api/sections?world=: the tiling's 54 sections for a world: id, face/i/j, centre, up (the section's +y, a unit
+    vector), corners (lat, lon of nw, ne, se, sw), margin_km (least, greatest), neighbours, land_share (the share of
+    the home cell's world cells that are land; land_cells/world_cells), and zooms: {res_km: zoom id} of the section
+    zooms of this world already built ("built": any). Raises SystemExit for an unknown world."""
+    path = S.find_world(world)
+    land = {c: (lc, wc) for c, lc, wc in _land_by_cell(str(path), path.stat().st_mtime)}
+    built: dict[str, dict[str, str]] = {}
+    for _, e in S.items("zoom"):
+        if e.get("world") == path.stem and e.get("section") and not e.get("parent_zoom"):
+            built.setdefault(e["section"], {})[f"{e['res_km']:g}"] = e["id"]
+    out = []
+    for cid, s in _tiling().items():
+        lc, wc = land[cid]
+        fr = Z.Frame(s["lat"], s["lon"], up=s["up"])
+        half = s["size_km"] / 2
+        corners = {k: [round(v, 4) for v in Z._latlon(fr.to_sphere(np.array([x]), np.array([y]))[0])]
+                   for k, (x, y) in {"nw": (-half, half), "ne": (half, half), "se": (half, -half), "sw": (-half, -half)}.items()}
+        z = built.get(cid, {})
+        out.append({"id": cid, "face": s["face"], "i": s["i"], "j": s["j"], "lat": round(s["lat"], 4), "lon": round(s["lon"], 4),
+                    "up": [round(float(v), 6) for v in s["up"]], "corners": corners,
+                    "margin_km": [round(v, 1) for v in s["margin_km"]], "neighbours": s["neighbours"],
+                    "land_cells": lc, "land_share": round(lc / wc, 4) if wc else 0.0,
+                    "zooms": z, "built": bool(z)})
+    return {"world": path.stem, "size_km": SECTION_KM, "res_km_range": [round(SECTION_RES_KM[0], 3), SECTION_RES_KM[1]],
+            "sections": out}
 
 
 def parse_source(req: dict) -> dict:
@@ -316,7 +509,7 @@ def parse_timezoom_request(req: dict) -> dict:
     BadRequest, or SystemExit for an unknown run."""
     if not isinstance(req, dict) or not req.get("run"):
         raise BadRequest("give run and t")
-    out = {"type": "timezoom", "run": str(req["run"]), "kyr": _num(req, "kyr", 300)}
+    out = {"type": "timezoom", "run": str(req["run"]), "kyr": _num(req, "kyr", 2000)}
     if not 1 <= out["kyr"] <= 2000:
         raise BadRequest("kyr must be within 1..2000")
     run_dir = S.find_run(out["run"])
@@ -757,6 +950,12 @@ class Jobs:
         with self.lock:
             return next((j["id"] for j in self.jobs.values()
                          if j["status"] in ("queued", "running") and j["request"].get("type") == kind), None)
+
+    def active_where(self, pred) -> str | None:
+        """The id of a queued or running job whose request satisfies pred(request), or None."""
+        with self.lock:
+            return next((j["id"] for j in self.jobs.values()
+                         if j["status"] in ("queued", "running") and pred(j["request"])), None)
 
     def get(self, jid: str) -> dict | None:
         with self.lock:

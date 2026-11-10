@@ -76,6 +76,9 @@ IRR = (30.0, 75.0, 130.0, 140.0, 180.0, 240.0)  # people per watered km2 at thos
 WATER_Q = (500.0, 20000.0)  # m3/s of river from which a cell has a floodplain to water, to the greatest rivers' (a judgement; PW-820:
 # the old 5 and 200 cells of runoff at L7, 493 and 19,730 m3/s)
 WATER_MAX = 0.3  # the share of a cell water reaches on the greatest rivers (a judgement: a 10-20 km valley in a ~60 km cell)
+WATER_CELL_KM = 60.0  # PW-1631: WATER_MAX is the share of a cell this wide (one L7 cell). A river crosses about one cell per cell width,
+# so a finer grid's river cell carries the same valley width over a narrower cell: its share is WATER_MAX x rings_for(g, WATER_CELL_KM)
+# (x1 at L7, x2 on an L8 refine), and the watered km2 per km of river do not depend on the grid (L8 had 1.81 Mkm2 against L7's 3.32)
 FARM_FULL = 0.5  # the fertile good at which all of a cell farms (a judgement: half the world's best farmland class)
 DEN_FARM_W = 0.1  # Q4 A: a den people farms at this share of what another people would (rare, not forbidden; a judgement)
 TERRACE_LAG = 6.5  # kyr from cultivation to terraces (techtree.toml: cultivation 11.5, terracing 5): a hold's plough-stage valleys
@@ -116,6 +119,10 @@ RICH_HALF = 3.0  # the excess richness half farmed when crops are new (a judgeme
 RICH_T = 1.0  # kyr over which that half point grows by RICH_HALF (Ertebolle ~1 kyr beside farmers, Gron NSF; Yayoi rice reached
 # southern Tohoku ~0.6 kyr after Kyushu, Mizoguchi): moderately rich land farms within ~1-1.5 kyr, the richest waters hold for millennia
 RICH_POW = 2.0  # the steepness (a judgement: from 90% to 10% farmed across a ninefold richness)
+RICH_KM = 60.0  # PW-1630: the richness is read over a country this wide (one L7 cell): the cases above are densities over a whole
+# domain, and a finer grid's shore cell alone reads its strip of the richest waters (the fish good 0.69 on L8's coast cells against
+# 0.51 on L7's), so on an L8 refine the coast farmed less for millennia. Finer grids average it over rings_for(g, RICH_KM) - 1 rings
+# (none at L7, one on L8): ladder.domain_mean
 KNOWN_STEP, KNOWN_CAP = 0.5, 15.0  # kyr: the years a people has known crops, in steps (redo a line only when they move) and capped
 HERD_POW = 2.0  # PW-1385: herding goes where it feeds more people than the wild, smoothly (a judgement: half where they feed the same)
 FREE_RANGING = 0.8  # (the kind factor the dnd preset gives free-ranging kinds, leonin and tabaxi; den peoples 1.2: samples/dnd.toml)
@@ -161,6 +168,19 @@ def herd_keep(nomad: np.ndarray, wild: np.ndarray) -> np.ndarray:
     there, smoothly (half where they feed the same; HERD_POW the steepness; rich_foragers.md)."""
     a, b = nomad ** HERD_POW, wild ** HERD_POW
     return a / np.maximum(a + b, 1e-30)
+
+
+def domain_mean(g, x: np.ndarray, km: float) -> np.ndarray:
+    """x averaged over a country about km wide (PW-1630): rings_for(g, km) - 1 passes of the cell-and-neighbours mean, so x as it is on a
+    grid whose cells are that wide (L7 for 60 km: no pass, the same array) and one L7 cell's worth of a finer grid (one pass on L8)."""
+    from .seafood import rings_for
+    passes = rings_for(g, km) - 1
+    if passes <= 0:
+        return x
+    deg = 1.0 + np.diff(g.nbr_off).astype(float)
+    for _ in range(passes):
+        x = (x + nbr_reduce(g, np.add, x[g.nbr_idx])) / deg
+    return x
 
 
 def _interp_stage(t: float, steps, vals) -> float:
@@ -218,9 +238,10 @@ class Ladder:
         if flow is None:
             self.water = np.zeros(n)
         else:
+            from .seafood import rings_for
             q = discharge(h.grid, np.asarray(flow, float))
             f = np.log10(np.maximum(q, 1e-6) / WATER_Q[0]) / np.log10(WATER_Q[1] / WATER_Q[0])
-            self.water = WATER_MAX * np.clip(f, 0, 1)
+            self.water = min(1.0, WATER_MAX * rings_for(h.grid, WATER_CELL_KM)) * np.clip(f, 0, 1)  # (PW-1631: the valley's width in km)
 
     # -- what a people knows ----------------------------------------------------------------------
     def tech(self, k: int, ago: float) -> tuple:
@@ -273,7 +294,7 @@ class Ladder:
             wild = np.maximum(forage / (1.0 - barter), fish)
         sf = self.farmable * (DEN_FARM_W if self.den[k] else 1.0) if cult else np.zeros_like(forage)
         if cult:  # (PW-1385 A: rich wild land resists farming)
-            sf = sf * rich_keep(wild0 / np.maximum(forage, FORAGER), known, v["rich_t"])
+            sf = sf * rich_keep(domain_mean(self.h.grid, wild0 / np.maximum(forage, FORAGER), RICH_KM), known, v["rich_t"])
         sh = (1.0 - sf) * self.grazable * herd_keep(nomad, wild0) if herd else np.zeros_like(forage)
         if cult:
             if lvl >= 0:

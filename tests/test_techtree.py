@@ -15,6 +15,15 @@ def line(id, origin="root", at=0.0, parents=(), ended=None, group_of=None, **kw)
             "group_of": group_of, "overlay": False, "demography": {"insularity": 0.3}, **kw}
 
 
+def test_the_town_footprint_is_read_at_the_sample_at_or_before():
+    """PW-1597 (lane 278): a time between two footprint samples reads the older one, held (the tree inside the history has no later
+    count yet); before the first sample, none."""
+    tw = ([7.4, 7.3, 7.2], [0.0, 77.0, 122.0])
+    assert TT.town_cells_at(tw, 7.379) == 0.0 and TT.town_cells_at(tw, 7.3) == 77.0 and TT.town_cells_at(tw, 7.25) == 77.0
+    assert TT.town_cells_at(tw, 7.5) == 0.0 and TT.town_cells_at(tw, 0.0) == 122.0 and TT.town_cells_at(None, 7.0) == 0.0
+    assert TT.town_cells_within(tw, 7.25, 0.2) == 77.0
+
+
 def test_file_is_a_tree_with_sources():
     assert len(T["track"]) >= 6
     assert len(T["techs"]) >= 40

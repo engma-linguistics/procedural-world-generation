@@ -2,7 +2,7 @@
 id: PW-1658
 title: "Place names: each language family gets its own naming habits (first six: English, Welsh/Gaelic, Slavic, Arabic, Japanese, Bantu)"
 type: story
-status: todo
+status: done
 parent: PW-767
 milestone: v4
 subsystem: culture
@@ -11,7 +11,7 @@ impact: high
 found_by: coordinator
 blocked_by: []
 relates: [PW-972]
-refs: [planet/language/names.py, planet/language/personal.py]
+refs: [planet/language/names.py, planet/language/personal.py, planet/language/placenames.py, tests/test_language_names.py, docs/review/language/for-daniel.md]
 created: 2026-11-10
 updated: 2026-11-10
 ---
@@ -33,3 +33,4 @@ Acceptance: on a24559, place names of two families are told apart by eye in a si
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-naming-habits-first-six.md (found by coordinator).
+- 2026-11-10: Done in language lane 15 (`planet/language/placenames.py`). Each proto draws one of six templates as patterns (suffix/English, prefix/Welsh-Gaelic, possessive/Slavic, construct/Arabic with a frozen article, feature/Japanese with rendaku, locative/Bantu class prefix; spec-first templates for head-final protos, generic-first for head-first, locative favoured with live noun classes) with its own weights; daughters inherit it and drift (12% a lect: a generic dropped, taken up, or made commoner). Generics wear to one syllable by age x the template's wear (construct and locative keep theirs). Settlements carry `habit`, `frame`, `meaning` and `history`; `names.habits` lists each living lect's habit. Habit generics overlap 0.94 within a family against 0.23 across on a24559 (de1cc6 0.96 / 0.26). Side-by-side page and a place-names row on the sisters page in the lane report. Rivers and peaks on habits, and the contact layer (Danelaw -by), are lane 15 drafts.

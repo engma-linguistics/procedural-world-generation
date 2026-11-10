@@ -4,7 +4,7 @@ title: "Civilization simulation: states, trade, warfare and displaced peoples (v
 type: epic
 status: todo
 parent: null
-milestone: v3
+milestone: v4
 subsystem: surface
 effort: xl
 impact: med

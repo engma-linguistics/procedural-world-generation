@@ -914,6 +914,34 @@ def test_step_leaves_no_core_mergers(concepts):
         assert not L.core_mergers(lex)
 
 
+def test_cross_merger_is_repaired(concepts):
+    """PW-1653: 'what' and 'one' worn to one form (WHAT = ONE in 7% of a24559's lects) is a clash of basic words: one is
+    renewed within a few centuries (Gillieron's Gascon gat 'cat' = 'rooster'); a CLICS-attested colexification
+    (EAT = DRINK) is not touched."""
+    rng, inv, lex = _proto(91, concepts)
+    _merge(lex, "ONE", "WHAT")
+    _merge(lex, "EAT", "DRINK")
+    pairs = L.cross_mergers(lex)
+    assert ("ONE", "WHAT") in pairs
+    assert not [p for p in pairs if set(p) == {"EAT", "DRINK"}]
+    one = lex.words["ONE"].form
+    ev = L.cross_repair(rng, lex, inv, 1.0, "L", n_generations=1e3)   # (a long step: repaired for sure)
+    assert ev and ev[0][0] == "WHAT" and ev[0][1].startswith("repair:")
+    assert lex.words["ONE"].form == one and lex.words["WHAT"].form != one
+    assert lex.words["EAT"].form == lex.words["DRINK"].form
+
+
+def test_cross_repair_takes_a_few_centuries(concepts):
+    """PW-1653: the repair is a hazard, not instant: over one generation a merged pair mostly survives."""
+    kept = 0
+    for seed in range(92, 112):
+        rng, inv, lex = _proto(seed, concepts)
+        _merge(lex, "ONE", "NOT")
+        L.cross_repair(rng, lex, inv, 1.0, "L", n_generations=1.0)
+        kept += lex.words["ONE"].form == lex.words["NOT"].form
+    assert kept >= 14
+
+
 def test_twelve_and_twenty_differ_in_any_order(concepts):
     """The addend stands on the other side of the base from the multiplier, so 'ten two' (12) and 'two ten' (20) never
     meet, whatever the grammar's numeral order (an NNum lect put both after the base before)."""

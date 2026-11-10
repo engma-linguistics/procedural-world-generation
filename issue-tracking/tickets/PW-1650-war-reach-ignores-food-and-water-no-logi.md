@@ -4,7 +4,7 @@ title: "War reach ignores food and water: no logistics scalar, no supply-distanc
 type: story
 status: needs-decision
 parent: PW-661
-milestone: null
+milestone: v4
 subsystem: culture
 effort: l
 impact: high

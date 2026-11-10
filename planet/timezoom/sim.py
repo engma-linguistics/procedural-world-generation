@@ -570,7 +570,7 @@ class _Sim:
                     print("  " + msg, flush=True)
 
 
-def simulate(src: dict, kyr: float = 1000.0, step: float = 0.5, every: float = 2.0,
+def simulate(src: dict, kyr: float = 2000.0, step: float = 0.5, every: float = 2.0,
              params: TZParams | None = None, progress=False) -> dict:
     """Run the time zoom in memory. progress: True prints a line every 5%,
     or a function(fraction, message) gets them. Returns {"frames": [per-frame dicts:

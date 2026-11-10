@@ -14,6 +14,7 @@
   GET    /api/planets                 runs, time zooms, worlds and zooms grouped by provenance (family.py)
   GET    /api/thumb?kind=run|world&id=<id>   a small PNG preview (thumbs.py; &proj=equal-earth|equirect &w=192|512|1024)
   GET    /api/make/options, /api/make/estimate?seed=&preset=&level=...   the New planet form (make.py)
+  GET    /api/sections?world=<id>     the 54 tiling sections of a world: centre, up, corners, land share, built zooms
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/jobs?type=refine        {"active": the queued or running job of that type, or null} (a page opened later follows it)
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
@@ -114,6 +115,17 @@ def active_job(jobs: api.Jobs | None, query: str) -> dict:
     progress), or None}. The viewer asks on load, so a refine started in another page shows its progress (PW-1438)."""
     jid = jobs.active(dict(parse_qsl(query)).get("type", "")) if jobs else None
     return {"active": jobs.get(jid) if jid else None}
+
+
+def sections_list(query: str) -> tuple[dict, int]:
+    """GET /api/sections?world=<id>: api.sections_listing, or an error."""
+    world = dict(parse_qsl(query)).get("world", "").removesuffix(".json")
+    if not world:
+        return {"error": "give ?world=<id>"}, 400
+    try:
+        return api.sections_listing(world), 200
+    except SystemExit as e:
+        return {"error": str(e)}, 404
 
 
 def refine_estimate(jobs: api.Jobs | None, query: str) -> tuple[dict, int]:
@@ -976,7 +988,13 @@ def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
         if path == "/api/make":
             req = make.parse_make_request(req)
         elif path == "/api/zoom":
-            api.parse_zoom_request(req)
+            req = api.parse_zoom_request(req)  # (normalised: the same zoom asked two ways is one job)
+            if not api.existing_zoom(req):  # (a zoom already built costs nothing: no guard)
+                # at most one section-sized zoom at a time (the identical request is the same job: Jobs.submit)
+                busy = jobs.active_where(lambda q: q != req and "type" not in q and api.zoom_is_heavy(q))
+                est = api.zoom_estimate(req, busy=busy)
+                if est["refuse"]:
+                    return {"error": "not started: " + "; ".join(est["refuse"]), "estimate": est}, 409
         elif path == "/api/highlight-zooms":
             req = api.parse_highlight_zooms_request(req)
         elif path == "/api/enrich":  # resource / coast layers added to a saved world
@@ -1179,6 +1197,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 return self.send_json({"error": "res_km must be a number"}, 400)
             return self.send_json({**ZF.rules(), **({"sizes": ZF.size_options(res)} if res else {})})
+        if url.path == "/api/sections":  # ?world=: the tiling's sections with what is built (api.sections_listing)
+            return self.send_json(*sections_list(url.query))
         if url.path == "/api/planets":
             return self.send_json({"planets": family.planets()})
         if url.path == "/api/make/options":

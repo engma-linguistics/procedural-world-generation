@@ -533,4 +533,33 @@ def test_size_menu_matches_check():
         for o in out["options"]:
             ZF.check(pm, 0.0, 0.0, o["size_km"], o["res_km"])
     assert not ZF.size_options(0.05)["options"] and not ZF.size_options(8.0)["options"]
+    # the level-of-detail rungs are on the menu (PW-1675): 500 km at 0.5 km from a 2 km section, 30 km at 25 m from 0.5 km
+    assert {"size_km": 500.0, "res_km": 0.5, "default": False} in ZF.size_options(2.0)["options"]
+    assert {"size_km": 30.0, "res_km": 0.025, "default": False} in ZF.size_options(0.5)["options"]
     assert ZF.rules()["max_step"] == ZF.MAX_STEP and ZF.rules()["parent_res"] == list(ZF.PARENT_RES)
+
+
+# --- a fine zoom is turned like its parent (PW-1674, the generation half of PW-1341) ----------------------
+def test_fine_zoom_keeps_a_turned_parents_orientation(data_root, world):
+    meta, layers = _parent()
+    f0 = Z.Frame(*CENTRE)
+    f_par = Z.Frame(*CENTRE, up=np.cos(np.radians(40)) * f0.n + np.sin(np.radians(40)) * f0.e)  # a section turned 40 deg
+    wpath = W.save(world, "turned fine test world")
+    meta = {**meta, "id": "fpar02", "source_world": {"id": wpath.stem, "name": "turned"},
+            "center": {"lat": CENTRE[0], "lon": CENTRE[1], "up": [float(v) for v in f_par.up]}}
+    v = dict(meta["stats"]["volcanoes"][0])  # (the volcano's lat/lon, which the north-up parent put with its x_km/y_km)
+    v["lat"], v["lon"] = Z._latlon(f_par.to_sphere(np.array([v["x_km"]]), np.array([v["y_km"]]))[0])
+    meta["stats"] = {**meta["stats"], "volcanoes": [v]}
+    _save_parent(meta, layers)
+    x, y = (53 + 0.5 - NP / 2) * RP, (NP / 2 - 48 - 0.5) * RP
+    lat, lon = Z._latlon(f_par.to_sphere(np.array([x]), np.array([y]))[0])  # (the pixel in the parent's own plane)
+    ZF.check(meta, lat, lon, 20, 0.1)  # (the edge test is made in the turned plane)
+    out = ZF.zoom(meta["id"], lat, lon, size_km=20, res_km=0.1, log=lambda *a: None)
+    m2 = json.loads((out / "zoom.json").read_text())
+    want = Z.Frame(lat, lon, up=f_par.up)
+    assert np.allclose(m2["center"]["up"], want.up, atol=1e-5) and np.allclose(m2["projection"]["up"], want.up, atol=1e-5)
+    assert abs(m2["projection"]["up_bearing_deg"] - 40) < 5  # (about the parent's 40, a little off from convergence)
+    assert np.allclose(Z.frame_of(m2["center"]).n, want.n, atol=1e-5)  # (what the viewer and a fine zoom of it read back)
+    # the conditioning works in the turned plane: the parent's means are kept as in the north-up case
+    assert abs(m2["stats"]["parent_mean_bias_m"]) < 5.0
+    assert abs(m2["stats"]["mean_elev_m"] - m2["stats"]["parent_mean_elev_m"]) < 5.0

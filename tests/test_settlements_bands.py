@@ -6,6 +6,20 @@ from planet.lineages import settlements as ST
 from test_settlements import LEVEL, _flat, _run, _two_peoples
 
 
+def test_a_thinned_series_reads_back_on_the_right_side_of_each_threshold():
+    """PW-1597 (lane 278): a place held a person under a town (999) until its people learned towns, then 1,097: thinned to SERIES_KEEP
+    points and read back by straight lines, it must not read as a town before the step it became one."""
+    import numpy as np
+    ser = [[round(10.0 - 0.1 * i, 3), min(600 + 20 * i, 999) if i < 61 else 1097 + 10 * (i - 61)] for i in range(100)]
+    bands = [[10.0, 1000.0, 10000.0]]
+    thin_ = lambda extra: [ser[i] for i in np.unique(np.r_[np.linspace(0, len(ser) - 1, 40).round().astype(int), np.asarray(extra, int)])]
+    site = {"founded_kyr": 10.0, "abandoned_kyr": None, "series": thin_(ST._tier_turns(ser, bands))}
+    for a, p in ser:
+        assert (ST.pop_at(site, a) >= 1000) == (p >= 1000), a
+    old = {**site, "series": thin_([])}
+    assert any((ST.pop_at(old, a) >= 1000) != (p >= 1000) for a, p in ser)  # (the case it fixes: a town a step early)
+
+
 def test_size_classes_follow_the_holders_techs(tmp_path):
     """A town is 1,000 people to a people with 'towns' and 2,000 once it has 'cities' and 'roads'; a place's bands say so."""
     g = shared_grid(LEVEL)

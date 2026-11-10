@@ -1,0 +1,128 @@
+diff --git a/planet/lineages/history/polity_live.py b/planet/lineages/history/polity_live.py
+index 0f6808e0..76f6e49c 100644
+--- a/planet/lineages/history/polity_live.py
++++ b/planet/lineages/history/polity_live.py
+@@ -178,8 +178,10 @@ class LivePolities(StandIns):
+         On a step that stores a frame the tree also keeps the presence as stored, for its regions (LiveTech.at_frame, PW-1597)."""
+         if step.store and hasattr(self.tech, "at_frame"):
+             self.tech.at_frame()
+-        if step.epoch == "recent" and getattr(self.tech, "towns", None) is not None:
+-            self.tech.note_towns(float(step.ago), self.town_cells(float(step.ago), fresh=step.store))
++        if step.epoch == "recent":  # (the places are also the seats' places from the next step on, PW-1596: kept with or without the arms)
++            towns = self.town_cells(float(step.ago), fresh=step.store)
++            if getattr(self.tech, "towns", None) is not None:
++                self.tech.note_towns(float(step.ago), towns)
+ 
+     def begin_step(self, step):
+         self.tech.step(step)  # (every step: the tree runs down to the history's time before anything reads it)
+@@ -468,6 +470,28 @@ class LivePolities(StandIns):
+         up = self.lines[self.lidx[l.group_of]]["traits"] if l.group_of in self.lidx else []
+         return bool(self.SE.MINERS & (set(l.traits or []) | set(up)))
+ 
++    def _seat_places(self, ago: float, inc: np.ndarray) -> tuple:
++        """(per cell: the biggest of its places in town_cells' ledger state, the chief place or a second people's own, of town size for
++        its holder's stage (settlements' TOWN_MIN; x HOLD where last step's seat stood), 0 none; its holder line, -1 none): as
++        polities.derive seats a ledger site (_site_tables' town_min by the site's bands)."""
++        from ..settlements import CONST as C
++        n = self.g.n
++        best, who = np.zeros(n), np.full(n, -1, np.int64)
++        st = getattr(self, "_towns_st", None)
++        if st is None:
++            return best, who
++        TM = np.asarray(C["TOWN_MIN"], float)
++        tm_of = {-1: np.inf}
++        for s in (0, 1):
++            act, pop, hl = st["act"][s], st["pop"][s], st["holder"][s]
++            for k in np.unique(hl[act]).tolist():
++                if k not in tm_of:
++                    tm_of[k] = float(TM[self._allowed(k, ago)[1]])
++            tm = np.array([tm_of.get(k, np.inf) for k in hl.tolist()])
++            ok = act & (hl >= 0) & (pop >= tm * np.where(inc, PO.HOLD, 1.0)) & (pop > best)
++            best[ok], who[ok] = pop[ok], hl[ok]
++        return best, who
++
+     def _step(self, step):
+         h, g = self.h, self.g
+         ago = self._ago = float(step.ago)
+@@ -505,18 +529,23 @@ class LivePolities(StandIns):
+         # 1. town seats: the history's central places (settlements' SHARE on the hinterland's sedentary heads, the best of its ring)
+         from ..settlements import CONST
+         q = self._site()  # (PW-1587: the ledger's site factor; without it the history had about as many cities as a ledger without it)
+-        size, city = self._places(sed, q)
++        size, _ = self._places(sed, q)
+         own, second = self._second_places(heads, lead, q)  # (PW-1583: a second people's own place, as the ledger's minority places)
+-        m = own > size  # (one seat per cell, as derive: the bigger place; its people holds the seat, and a second people's is a town at most)
+-        size, hold, city = np.where(m, own, size), np.where(m, second, lead), np.where(m, 0.0, city)
++        m = own > size  # (the confederations' places, 1b: the bigger place per cell and its people)
++        size, hold = np.where(m, own, size), np.where(m, second, lead)
+         city_min = float(CONST["CITY_MIN"])
+-        inc_cells = np.array([int(k[1:]) for k in self.prev_cap if k.startswith("c")], np.int64)
+-        thr = np.full(g.n, float(min(CONST["TOWN_MIN"])))
+-        thr[inc_cells] *= PO.HOLD
+-        cand = np.flatnonzero(peopled & land & (size >= thr))
+-        # (PW-1594: a state seat is tested on its place whichever its tier, as derive tests a site's people; the ledger caps a town
+-        # under a city's size, so a town (the best of its ring) passes only where the seat is hemmed in, a city (the best of two) anywhere)
+-        place_st = np.maximum(np.minimum(size, city_min - 1e-6), city)
++        inc = np.zeros(g.n, bool)
++        inc[np.array([int(k[1:]) for k in self.prev_cap if k.startswith("c")], np.int64)] = True
++        # (PW-1596, lane 281, round24.md: a seat is the biggest of the cell's places as the settlement ledger keeps them (town_cells'
++        # chief place and second people's own place: the ledger's rule on the history's inputs, as at the end of the last step), of
++        # town size for its holder's stage, as derive seats a ledger site; a state tests that place against a city's size (PW-1594:
++        # the ledger caps a town under a city, so a town passes only where the seat is hemmed in). Before, the history sized seats on
++        # its own central places, without the ledger's mining halls (HOLD_SHARE of a mining people's heads: a hold may grow into a
++        # city, PW-1117), and asked for the 'cities' tech by name where the ledger also counts a mining people's delving or
++        # fortifications: on L7 899985 seed 7 the read-out on the switch-on history seated gnome holds as states 1,700 years before
++        # the live polities did)
++        seat_pop, seat_k = self._seat_places(ago, inc)
++        cand = np.flatnonzero(peopled & land & (seat_k >= 0))
+         wcell = np.zeros(g.n, bool)  # (cells where a people that knows proto-writing or writing lives, and their neighbours: D49's lenience)
+         for k in heads:
+             if any(self.knows(L[k].id, t, ago) for t in PO.WRITING_TECHS):
+@@ -524,25 +553,22 @@ class LivePolities(StandIns):
+         wcell = wcell | (nbr_reduce(g, np.maximum, wcell[self.idx].astype(np.int8)) > 0)
+         seats = []
+         for c in cand.tolist():
+-            k = int(hold[c])
++            k = int(seat_k[c])
+             ppl = L[k].id
+             key = f"c{c}"
+             if not wcell[c] or not self.knows(ppl, "chiefdoms", ago):
+                 continue
+-            tmin = float(CONST["TOWN_MIN"][self._stage(ppl, ago)])  # (PW-1583: a town by its people's stage, as the ledger and town_cells)
+-            if size[c] < tmin * (PO.HOLD if key in self.prev_cap else 1.0) or not self.knows(ppl, "towns", ago):
+-                continue
+             tier = "chiefdom"
+             if (self.knows(ppl, "kingship", ago) or self.knows(ppl, "law", ago)) and self.knows(ppl, PO.STATE_WRITING, ago) \
+-                    and self.cool.get(key, -1) < k_ and self.knows(ppl, "cities", ago):  # (D49: a state needs its own people's writing)
++                    and self.cool.get(key, -1) < k_:  # (D49: a state needs its own people's writing; the city is the ledger's, capped by stage)
+                 hem = self._hem_local(c, k, ppl, ago, land, ice, el)  # (PW-1594: the seat's own two rings, as derive)
+                 need = city_min * (1 - PO.HEMMED_X * hem) * (PO.HOLD if self.prev_cap.get(key) in ("state", "empire") else 1.0)
+-                if place_st[c] >= need:
++                if seat_pop[c] >= need:
+                     tier = "state"
+             strong = tier == "state" and self.knows(ppl, PO.STRONG_TECH, ago)
+             self.founded.setdefault(key, ago)
+-            seats.append({"key": key, "cell": c, "people": ppl, "line": k, "uid": None, "pop": float(size[c]), "tier": tier,
+-                          "cls": 0 if strong else (2 if tier == "state" else 3), "rank": float(size[c]) * (PO.INCUMBENT if key in self.prev_cap else 1.0)})
++            seats.append({"key": key, "cell": c, "people": ppl, "line": k, "uid": None, "pop": float(seat_pop[c]), "tier": tier,
++                          "cls": 0 if strong else (2 if tier == "state" else 3), "rank": float(seat_pop[c]) * (PO.INCUMBENT if key in self.prev_cap else 1.0)})
+         # 1b. confederations (polities' step 1b, Turchin 2009's mirror empires, PW-1583): the read-out's rule on the history's own places
+         if PO.CONFED and self.owner is not None:
+             place = np.where(peopled & land, np.maximum(CONST["SHARE"][1] * sed * q, size), 0.0)
+diff --git a/tests/test_lineages.py b/tests/test_lineages.py
+index 316b7ed3..03d39b9a 100644
+--- a/tests/test_lineages.py
++++ b/tests/test_lineages.py
+@@ -3723,6 +3723,12 @@ def _live_setup(faketz, monkeypatch):
+     h.p[fk][land[:300]] = 0.9
+     h.p[kb][land[300:330]] = 0.9
+     _sync_pm(h)
++    h._linger = np.zeros((len(h.lines), h.grid.n), bool)
++    from planet.lineages import landuse as LU  # (the land use's farmers, as a frame stores them: everyone farms here, as _farm_share)
++    _fi = LU.frame_inputs
++    monkeypatch.setattr(LU, "frame_inputs", lambda *a, **k: {**_fi(*a, **k), "farm": np.full(h.grid.n, 100, np.uint8)})
++    for ago in np.round(np.arange(4.0, 1.25, -0.1), 3):  # (PW-1596: seats are the ledger's places (town_cells), grown step by step first)
++        h.rule.end_step(types.SimpleNamespace(epoch="recent", ago=float(ago), dt=0.1, store=True))
+     return h, env, step, land
+ 
+ 

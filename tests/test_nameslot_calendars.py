@@ -84,6 +84,16 @@ def test_faiths_and_states_take_the_slot():
     assert P[0]["gloss_names"] == [[2.0, "South (humans)"], [1.0, "South (elves)"]]
 
 
+def test_places_carry_the_english_common_name():
+    """PW-1654: a place in the slot keeps what the locals call it and the Common's English name beside it."""
+    lang = _lang()
+    lang["names"]["demes"]["1"]["settlements"][0]["english"] = "Grimsby"
+    sl = NS.slot(None, settlements=[{"id": 7, "tier_peak": "town", "place": "the town"}], lang=lang)
+    assert sl["places"]["7"] == {"name": "Iligya", "gloss_name": "the town", "name_from": "language", "local": "Iligya",
+                                 "english": "Grimsby"}
+    assert NS.place_english(lang) == {7: "Grimsby"}
+
+
 def test_calendar_dates_and_context():
     cal = {"name": "the Founding of Iligya", "epoch_kyr": 0.212}
     assert calendar_date(0.0, cal) == "year 213 of the Founding of Iligya"

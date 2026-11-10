@@ -18,7 +18,7 @@ uv run python -m planet delete <id>                # a run, world or zoom (a wor
 uv run python -m planet slice <run-id> --at 300    # full world (climate, rivers, vegetation) at 300 Myr
 uv run python -m planet slice <run-id> --at auto   # ... at a representative moment (typical land/landmasses after 300 Myr, once every plant group exists)
 uv run python -m planet zoom <world-id> --lat 10 --lon 40   # a 1000 km region at 2 km -> zooms/<id>/
-uv run python -m planet timezoom <run-id> --at 300          # 1 Myr of ice ages from that moment -> runs/<id>/ (time in kyr; --kyr to change)
+uv run python -m planet timezoom <run-id> --at 300          # 2 Myr of ice ages from that moment -> runs/<id>/ (time in kyr; --kyr to change)
 uv run python -m planet finish <timezoom-id> --kyr 120     # a finished world at that frame of the time zoom (default: its end)
 uv run python -m planet finish <run-id> --at 300            # ... or straight from a run's keyframe (no ice ages)
 uv run python -m planet refine <world-id> --level 8           # a finished world's moment remade on a finer grid (L8; L9 can't be opened yet, PW-1209)
@@ -152,9 +152,9 @@ the frame on screen); its `run.txt` has the sea-level / ice / orbit table and
 glacial events.
 
 From the viewer: on a run, "Glacial time zoom from here" (summary panel)
-starts one at the frame on screen (100, 300 or 1000 kyr; ~4 min per 1000 kyr
-at level 6) as a server job, and opens it when done. The viewer (and
-`POST /api/timezoom`) defaults to 300 kyr; the CLI's `--kyr` defaults to 1000. The time slider of a
+starts one at the frame on screen (100, 300, 1000 or 2000 kyr; ~4 min per 1000 kyr
+at level 6) as a server job, and opens it when done. The viewer, `POST /api/timezoom`,
+`planet make` and the CLI's `--kyr` all default to 2000 kyr (PW-1661: v1.0 worlds get 2 Myr of ice ages). The time slider of a
 run is tinted blue where the run is cold (land ice on > 1% of the surface or
 a global mean < 13 °C; darkest = Earth today or colder): that's where a time
 zoom shows ice ages.
