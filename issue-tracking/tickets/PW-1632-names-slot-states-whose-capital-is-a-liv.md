@@ -1,4 +1,5 @@
 ---
+id: PW-1632
 title: "Names slot: states whose capital is a living village keep a gloss name (the languages name only each deme's 3 biggest places)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lang-lane11
 blocked_by: []
 relates: [PW-1604, PW-1436]
 refs: ["planet/language/personal.py::Personal.settlements", "planet/language/personal.py::SITES_PER_DEME", "planet/language/personal.py::Personal.ruins", "planet/language/names.py::_Pass", "planet/lineages/nameslot.py::place_names", "planet/lineages/nameslot.py::apply_polities", "planet/lineages/polities.py::derive", "run a24559"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -38,3 +41,6 @@ Options:
   but every state of one deme then shares a name.
 
 - [ ] most states with a living capital get a name from the languages on a24559 (or the share left is explained)
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-living-capitals-unnamed.md (found by lang-lane11).

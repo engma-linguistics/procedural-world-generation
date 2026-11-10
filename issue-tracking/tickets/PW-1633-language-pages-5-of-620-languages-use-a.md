@@ -1,4 +1,5 @@
 ---
+id: PW-1633
 title: "Language pages: 5 of 620 languages use a consonant in a word or two that their sound chart does not list"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lang-lane11
 blocked_by: []
 relates: [PW-1548]
-refs: ["planet/language/inventory.py::observed", "planet/language/history.py::generate", "planet/language/history.py::offense_pass", "planet/language/lexsys.py::avoidance", "planet/language/faiths.py::learned_register", "planet/language/output.py::lect_json", "tools/language/sketch.py::vowel_chart", "tools/language/demo_page.py", "run a24559"]
+refs: ["planet/language/inventory.py::observed", "planet/language/history.py::generate", "planet/language/history.py::offense_pass", "planet/language/lexsys.py::avoidance", "planet/language/faiths.py::learned_register", "planet/language/output.py::lect_json", "tools/language/sketch.py::vowel_chart", tools/language/demo_page.py, "run a24559"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -29,3 +32,6 @@ chart.
 
 - [ ] no living lect on a24559 has a segment in its lexicon that its inventory (and allophones) lacks, or the page
   says which sounds occur only in loans
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-sound-in-words-not-in-chart.md (found by lang-lane11).
