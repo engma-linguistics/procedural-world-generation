@@ -56,15 +56,45 @@ as it grows (PW-1473, `LiveTech._links`, `_retime`), the after-run tree one inte
 border (`techtree.links_of`). The live tree cannot know the whole run's median; the after-run tree could read the border of the
 time, but that is a change to how every front is timed, not done here.
 
-## 3. Where lane 265 stopped (paused by the coordinator, 11-09 20:45)
+## 3. PW-1597 on this code (on and off both on 3e0e8b80's planet/; dnd, 30 kyr, languages skipped; `round19/live_run.py`, `round16/measure_v1.py`)
 
-- PW-1597's check on this code was **not made**: the queue (`scratchpad/l265/jobs3.txt`: C on/off for the five pairs on code
-  f43385ce's planet/ (= 3e0e8b80), plus main a6ed6954 off for the three L6 pairs) was killed 18 minutes in, with no run finished.
-- Measured so far, L6 4360a3 seed 7 switch on (first state / writing median of the 12 largest): main a6ed6954 3,300 / 2,698 ya
-  (fee5e2); + PW-1612 B 3,400 / 2,848 (ab1aa0); + B + R + tracks 3,400 / 2,848 (314c9b): B moves the live writing 150 years later
-  (one step); R and the tracks change nothing on this run's live tree (the tracks change is after-run only). The switch-off run on
-  this code is still to make; round21's off on 061c6eca was 3,400 / 3,005, but main has history changes since (counter, dispersal),
-  so the baseline must be rerun on a6ed6954.
-- L6 seed 10 on, main a6ed6954: 4,900 / 4,079 ya (4e67d8).
-- To resume: rebuild the scratch root (`scratchpad/l265/mkroot.sh`), re-run `q.sh jobs3.txt` (go.sh waits for load <= 30),
-  measure with `m.sh measure <tag> ...`, then the on/off table, flip or not (PW-1596). This is the third attempt at PW-1597's gap.
+The tree's own steps here (`round22/grid.py`; the same grid in every run): ... 2,797, 2,899, 3,005, 3,115 ... 4,153, 4,305, 4,462,
+4,625, 4,795 ... 6,625, 6,868 ya. A median of 12 that falls between two steps is their mean (2,848 = 2,797 and 2,899).
+
+| world, seed | on: first state / writing median | off: first state / writing median | on - off (writing in tree steps) | lane 262 on 061c6eca |
+|---|---|---|---|---|
+| L6 4360a3, 7 | 3,400 / 2,848 ya (314c9b) | 3,400 / 3,005 (3bc51d) | equal; writing 157 later (1.5 steps) | 100 / 307 later |
+| L6, 3 | 6,600 / 6,746 (898473) | 6,600 / 6,868 (ed58ba) | equal; writing 122 later (0.5 step) | equal |
+| L6, 10 | 4,900 / 4,153 (2638a0) | 4,900 / 4,153 (39b7c4) | equal | 400 / 309 later |
+| L7 899985, 7 | 3,500 / 4,305 (a40118) | 3,500 / 4,305 (2ca8e9) | equal | 100 / 152 later |
+| L7, 10 | 4,600 / 4,384 (e19ccb) | 4,200 / 4,710 (780e24) | first state 400 earlier; writing 326 later (2 steps) | 200 earlier / 333 later |
+
+**Fails the bar** (within one tree step on every pair, no consistent sign): L7 seed 10 is two steps apart and L6 seed 7 one and a
+half, and writing with the switch on is later or equal on all five pairs. Closer than lane 262's (two pairs now equal in both,
+L6 seed 3 half a step), but not through. **Not flipped (PW-1596); no steadiness runs; goldens untouched.** This was the third
+attempt at this gap (lanes 258, 262, 265).
+
+What each change did to the live calendar, L6 seed 7 (switch on; first state / writing): main a6ed6954 3,300 / 2,698 (fee5e2);
++ B 3,400 / 2,848 (ab1aa0); + B, R and the tracks 3,400 / 2,848 (314c9b). B moved it one step toward off; R and the tracks
+changed nothing there (R moved the tortles' early inventions, which did not reach writing on this seed).
+
+What is left (section 2, last paragraph): on the same history the two trees still read contacts differently (draft
+`draft-after-run-tree-reads-whole-run-borders.md`). L7 seed 10 is not that alone: its on and off histories differ (states 2,000
+years ago 53 on against 80 off), so part of the gap may be the history itself, which the bar does not allow for.
+
+## 4. The default (switch off): main a6ed6954 against this code (same world, seed, tree; `round21/firsts.py`)
+
+| world, seed | first state, main / new | writing median, main / new | sites founded, main / new | median founding |
+|---|---|---|---|---|
+| L6 4360a3, 7 (4d51eb / 3bc51d) | 3,400 / 3,400 ya | 3,060 / 3,005 | 13,717 / 13,717 | 3,900 / 3,900 ya |
+| L6, 3 (7a0fc4 / ed58ba) | 6,600 / 6,600 | 6,868 / 6,868 | 12,701 / 12,701 | 4,100 / 4,100 |
+| L6, 10 (7b30e7 / 39b7c4) | 4,900 / 4,900 | 4,153 / 4,153 | 13,734 / 13,733 | 4,300 / 4,300 |
+| L7 899985, 7 (f9b953 / 2ca8e9) | 3,500 / 3,500 | 4,305 / 4,305 | 32,173 / 32,174 | 3,400 / 3,400 |
+| L7, 10 (0aadc9 / 780e24) | 4,300 / 4,200 | 4,710 / 4,710 | 35,452 / 35,447 | 2,000 / 2,000 |
+
+Only the tracks change touches the default (B and R are switch-on only). First towns of the 12 largest are unchanged except one
+people (L6 seed 10 gnomes, 300 years later). Per-people writing moves on a few: L6 seed 7 humans 110 years later, orcs 114 and
+leonin 208 earlier, tabaxi 92 earlier; L6 seed 10 orcs 131 later, gnomes 527 later; L7 seed 7 half-elves 163 earlier. One first state
+moved (L7 seed 10, 100 years later).
+
+Scratch runs under the lane's scratch root, deleted after the lane.
