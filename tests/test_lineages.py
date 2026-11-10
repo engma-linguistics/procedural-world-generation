@@ -4087,6 +4087,23 @@ def test_the_live_town_count_is_taken_at_the_end_of_a_step(faketz, monkeypatch):
     assert seen == [(1.0, {"folk": 0, "fresh": True})]
 
 
+def test_the_live_tree_maps_regions_as_the_after_run_tree(faketz, monkeypatch):
+    """PW-1597 R (lane 265, round22.md): the live tree's region learners read the after-run tree's landmass map (today's sea takes
+    the nearest landmass, demes.landmass_rank) and the presence as a frame stores it (peoples as wholes, established cells, whole %)."""
+    from planet.lineages.history import tech_live as TL
+    from planet.lineages.spread import EST
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    h.started, h.ended = {l.id: 40.0 for l in h.lines}, {}
+    h._linger = np.zeros(h.p.shape, bool)
+    lt = TL.LiveTech(h)
+    lm, lab = lt.landmass(), np.asarray(h.cross.label)
+    assert (lm >= 0).all() and (lm[lab >= 0] == lab[lab >= 0]).all()
+    fk = h.idx["folk"]
+    h.p[fk][land[300]] = EST / 2  # (a thin fringe: not established, not stored)
+    P = h.presence_stored()
+    assert P[fk][land[300]] == 0 and P[fk][land[0]] == 0.9
+
+
 def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
     """Lane 183: under one ruler, the hostile peoples living inside its land are co-subjects (no frontier); on unruled land the
     stand-in's frontier holds."""
