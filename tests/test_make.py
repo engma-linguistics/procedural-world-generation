@@ -87,9 +87,28 @@ def test_peoples_option_parses_estimates_and_lists_trees():
         with pytest.raises(api.BadRequest):
             make.parse_make_request({"seed": 1, **bad})
     assert {"dnd", "seven_meals"} <= set(make.options()["peoples"]) and "techtree" not in make.options()["peoples"]
-    est = make.estimate(make.parse_make_request({"seed": 1, "level": 6, "peoples": "dnd"}))
+    est = make.estimate(make.parse_make_request({"seed": 1, "level": 6, "peoples": "dnd", "languages": False}))
     assert [s["key"] for s in est["stages"]][-1] == "peoples" and est["stages"][-1]["s"] == make.PEOPLES_S[6]
     assert server.make_query("seed=1&peoples=dnd")["peoples"] == "dnd"
+
+
+def test_languages_stage_on_by_default_with_peoples():
+    """PW-1634: with peoples, make runs the language pass as its own stage (on unless switched off), over at most
+    `language_workers` processes (default 8), and the estimate counts it; without peoples there is no such stage."""
+    assert make.parse_make_request({"seed": 1})["languages"] is False   # (no peoples, no languages)
+    r = make.parse_make_request({"seed": 1, "level": 6, "peoples": "dnd"})
+    assert r["languages"] is True and r["language_workers"] == 8
+    assert make.parse_make_request({"seed": 1, "peoples": "dnd", "languages": False})["languages"] is False
+    for bad in (0, 17):
+        with pytest.raises(api.BadRequest):
+            make.parse_make_request({"seed": 1, "peoples": "dnd", "language_workers": bad})
+    est = make.estimate(r)
+    assert [s["key"] for s in est["stages"]][-2:] == ["peoples", "languages"] and est["stages"][-1]["s"] == make.LANGUAGES_S[6]
+    slow = make.estimate(make.parse_make_request({"seed": 1, "level": 6, "peoples": "dnd", "language_workers": 2}))
+    assert slow["stages"][-1]["s"] == 4 * make.LANGUAGES_S[6]
+    assert server.make_query("seed=1&peoples=dnd&languages=0")["languages"] is False
+    assert server.make_query("seed=1&peoples=dnd&language_workers=4")["language_workers"] == "4"
+    assert make.options()["defaults"]["languages"] is True
 
 
 # ---------------------------------------------------------------- the command line
@@ -192,7 +211,7 @@ def test_make_builds_a_peoples_run_of_its_own_kind(made, tmp_path):
     which the index, the planet family and the land-use reader know as such, and not as a time zoom."""
     from planet.lineages import landuse
     out, _ = made
-    req = {"seed": 2, "level": 4, "myr": 40, "kyr": 6, "zooms": 0, "name": "tiny make", "peoples": "dnd"}
+    req = {"seed": 2, "level": 4, "myr": 40, "kyr": 6, "zooms": 0, "name": "tiny make", "peoples": "dnd", "language_workers": 1}
     state = tmp_path / "state.json"
     state.write_text(json.dumps({"spec": make.parse_make_request(req), "out": {k: out[k] for k in ("run", "t_myr", "timezoom", "world")}}))
     log = []
@@ -202,6 +221,13 @@ def test_make_builds_a_peoples_run_of_its_own_kind(made, tmp_path):
     assert run["kind"] == "peoples" and run["meta"]["kind"] == "peoples" and "phase" not in run["meta"]
     assert run["meta"]["world"] == out["world"] and run["meta"]["tree_name"]
     assert [f for f, _ in log][-1] == 1.0
+    # (PW-1634: the languages stage, after the peoples stage, which leaves the pass to it; one report section in run.txt)
+    rd = S.find_run(pid)
+    assert (rd / "run.txt").read_text().count("languages (PW-986)") == 1 and any(m.startswith("languages:") for _, m in log)
+    if "error" in res["languages"]:   # (this tiny chain's 6 kyr time zoom is shorter than the pass's 20 kyr: logged, not fatal)
+        assert "lacks frames" in res["languages"]["error"] and not (rd / "languages.json").exists()
+    else:
+        assert res["languages"]["living"] > 0 and (rd / "languages.json").exists()
     item = next(e for e in S.update_index("run") if e["dir"] == pid)
     assert item["kind"] == "peoples" and item["world"] == out["world"] and item["timezoom"] == out["timezoom"] and "phase" not in item
     ps = family.planets()

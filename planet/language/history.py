@@ -1441,8 +1441,10 @@ def offense_pass(h: "History", R, last: int) -> None:
                        f"spelling guard")
 
 
-def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse: bool = True, frames: int | None = None) -> dict:
-    """The whole pass: {"history": History, "lects", "shifts", "food_routes", "families", "checks", "log", "timing"}."""
+def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse: bool = True, frames: int | None = None,
+             progress=None) -> dict:
+    """The whole pass: {"history": History, "lects", "shifts", "food_routes", "families", "checks", "log", "timing"}.
+    progress(fraction, message), if given, after each interval (planet make's languages stage, PW-1634)."""
     from . import checks as CK
     from . import families as FA
     t = time.perf_counter()
@@ -1450,10 +1452,13 @@ def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse
     h = History(R, seed)
     h.start()
     h.observe(0)
-    for i in range(1, len(R.frames_kyr) if frames is None else frames):
+    n_int = len(R.frames_kyr) if frames is None else frames
+    for i in range(1, n_int):
         h.interval(i)
         if WORKERS > 1 and i % COLLECT_EVERY == 0:
             collect_frozen()
+        if progress is not None:
+            progress(0.9 * i / max(n_int - 1, 1), f"languages: {R.kyr(i):g} kyr ago, {sum(1 for l in h.lects.values() if l.alive)} living lects")
     # (adoptions decided in the last interval would land in the next one, which does not exist: they are dropped)
     h.timing["driver_s"] = round(time.perf_counter() - t, 1)
     last = len(R.frames_kyr) - 1

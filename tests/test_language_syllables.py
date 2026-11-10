@@ -56,3 +56,34 @@ def test_new_violations_counts_only_new_shapes():
     before = [w("pata"), w("kalu")]
     assert I.new_violations(before, [w("pat"), w("kalu")], prof) == 1.0  # a final coda in an open-syllable lect
     assert I.new_violations(before, [w("pada"), w("kalu")], prof) == 0.0
+
+
+def test_new_violations_types_only_counts_a_new_syllable_type():
+    """PW-1622: a coda in an open-syllable lect is a new type; a second coda consonant in a lect with single codas is not."""
+    before = [w("pata"), w("kalu")]
+    assert I.new_violations(before, [w("pat"), w("kalu")], (1, 0, False), types_only=True) == 1.0
+    assert I.new_violations([w("pant"), w("kalu")], [w("pantk"), w("kalu")], (1, 1, True)) == 1.0
+    assert I.new_violations([w("pant"), w("kalu")], [w("pantk"), w("kalu")], (1, 1, True), types_only=True) == 0.0
+
+
+def test_phonotactic_refusal_is_the_lines_not_the_draws():
+    """PW-1622: a change the phonotactics turn down is not drawn again until the re-fire wait has passed (it was re-rolled
+    each draw, about 440 a step, so CV lects grew codas within an interval or two), and daughters inherit the refusal."""
+    from planet.language import lect as LC, lexicon as LX, profiles as PR
+    lex = LX.Lexicon("x", {}, {}, True)
+    for k, f in enumerate(["pata", "kalu", "mina", "sefo", "tuke", "lamo", "nupi", "kesa"] * 4):
+        lex.words[f"W{k}"] = LX.Word(f"W{k}", w(f), "N", 3, (), 0.0)
+    segs = sorted({s for x in lex.words.values() for s in x.form}, key=repr)
+    inv = I.Inventory(consonants=[s for s in segs if s.kind == "C"], vowels=[s for s in segs if s.kind == "V"],
+                      shapes={"CV": 1.0}, stress="initial")
+    lc = LC.Lect(id="x", deme=0, people="human", parent=None, how="proto", born_kyr=10.0, lexicon=lex, inventory=inv,
+                 profile=PR.HUMAN, profile_key="human")
+    apocope = rule("V > ∅ / _#")
+
+    class Always:
+        def random(self):
+            return 0.0
+    assert lc.phonotactic_veto(apocope, Always()) == "type"   # (every word would end in a consonant: a new syllable type)
+    lc.refused[LC.base_id(apocope.id)] = 9.0
+    assert not lc.may_fire(apocope, 8.0) and lc.may_fire(apocope, 9.0 - lc.refire_kyr())
+    assert not lc.copy("y", 0, 8.0, "bud").may_fire(apocope, 8.0)

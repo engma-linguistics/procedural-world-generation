@@ -97,7 +97,8 @@ def load_tree(ref: str, mode: str | None = None) -> SP.Tree:
 
 
 def run(ref: str, tree: SP.Tree, tries: int = 4, now: float | None = None, recent_kyr: float = 30.0,
-        name: str | None = None, progress=lambda f, msg: None, climate_every: float = 2.0, split: bool = True) -> Path:
+        name: str | None = None, progress=lambda f, msg: None, climate_every: float = 2.0, split: bool = True,
+        languages: bool = True) -> Path:
     tz, now0, world = R.resolve(ref)
     now1 = now0 if now is None else now
 
@@ -123,7 +124,7 @@ def run(ref: str, tree: SP.Tree, tries: int = 4, now: float | None = None, recen
     else:
         ps, goods = setup(world)
     h, res, pres = simulate(tree, ps, tries, progress, goods=goods, fine=fine)
-    return save(h, res, pres, world=world, name=name)
+    return save(h, res, pres, world=world, name=name, languages=languages)
 
 
 def job(req: dict, progress=lambda f, msg: None) -> dict:
@@ -138,5 +139,6 @@ def job(req: dict, progress=lambda f, msg: None) -> dict:
         if req["gods_mode"] not in SP.GODS_MODES:
             raise ValueError(f"gods_mode must be one of {list(SP.GODS_MODES)}")
         tree.gods_mode = req["gods_mode"]
-    out = run(str(ref).removesuffix(".json"), tree, int(req.get("tries", 4)), progress=progress)
+    out = run(str(ref).removesuffix(".json"), tree, int(req.get("tries", 4)), progress=progress,
+              languages=req.get("languages", True) is not False)  # (planet make runs the pass as its own stage, PW-1634)
     return {"run": out.name}

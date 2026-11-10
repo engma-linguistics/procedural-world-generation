@@ -177,7 +177,10 @@ CONTRAST_OPEN = frozenset({frozenset({"THOU", "YOU"}), *(frozenset(p) for p in (
 AFFIX_RENEW = 0.01            # per generation: a derivational affix worn to nothing is renewed from a word (or coined)
 ELAB_THRESHOLD = 0.5          # niche weight above which a concept starts to split
 ELAB_RATE = 0.02              # per generation, times the niche weight, once past the threshold
-AFFIX_MEANINGS = ("little", "place", "agent", "thing", "do", "like", "cause", "intens")  # derivational morphemes, one form each
+AFFIX_MEANINGS = ("little", "place", "agent", "thing", "do", "like", "cause", "intens", "time")  # derivational morphemes, one form each
+# ('time': the temporal formative of WHEN, 'at what time': WHEN had borrowed the 'place' affix and was born a homophone
+# of WHERE, PW-1635; Heine & Kuteva 2002 TIME > temporal)
+WHAT_X = frozenset({"WHO"})   # question words a noun renews as 'what + noun' ('what person' > who: Latin quis homo; PW-1635)
 # Derivation is table-driven (data/derivations.tsv: relation, base, target): an affix only makes the targets its
 # meaning gives it from bases that fit (HUNT -> HUNTER 'agent', RIVER -> STREAM 'little', SLEEP -> BED 'place', CUT ->
 # KNIFE 'thing', BLOOD -> RED 'like', SALT -> SALT (FOOD) 'do', DIE -> KILL 'cause'). Stacking: a living word carries at most
@@ -1637,6 +1640,22 @@ def _self_renewed(w: Word, head: str, modifier: str) -> bool:
     return any(st.process == p for st in w.etym)
 
 
+def reinforce_parts(target: str, m: str) -> tuple[str, str]:
+    """(head, modifier) of the compound that renews `target` with its reinforcer `m` (a 'reinforce' / 'repair' row of
+    data/derivations.tsv): the word itself + the reinforcer (THIS + HERE, 'we others'), except a question word in WHAT_X
+    renewed by a noun, which is built WHAT + that noun ('what person' > who), not old-who + person (PW-1635)."""
+    if target in WHAT_X and m != "WHAT":
+        return m, "WHAT"
+    return target, m
+
+
+def _reinforce_ok(lex: Lexicon, target: str, m: str) -> bool:
+    """Can `target` be renewed with `m` now: both parts there, distinct, and the word not renewed so before."""
+    h, mod = reinforce_parts(target, m)
+    return (target in lex.words and h in lex.words and mod in lex.words and lex.words[h].form != lex.words[mod].form
+            and not _self_renewed(lex.words[target], h, mod))
+
+
 def _compound_parts(rng, lex: Lexicon, c: Concept, head: str | None, modifier: str | None,
                     kyr: float = 0.0) -> tuple[str | None, str | None]:
     """(head, modifier) for a compound naming `c`: a recipe of data/compounds.tsv (`compound_templates`: SKIN + TREE =
@@ -1648,11 +1667,10 @@ def _compound_parts(rng, lex: Lexicon, c: Concept, head: str | None, modifier: s
     if head is not None and modifier is not None:
         return resolve(head), resolve(modifier)
     if head is None and modifier is None and c.pos == "FUNC":   # a function word reinforced by another (THIS + HERE)
-        rs = [(m, w) for m, w in reinforcers().get(c.id, ()) if m in lex.words and c.id in lex.words
-              and not _self_renewed(lex.words[c.id], c.id, m)]   # (not 'they-that-that')
+        rs = [(m, w) for m, w in reinforcers().get(c.id, ()) if _reinforce_ok(lex, c.id, m)]   # (not 'they-that-that')
         if not rs:
             return None, None
-        return c.id, _pick(rng, rs)
+        return reinforce_parts(c.id, _pick(rng, rs))
     from . import lexsys as LS
     cand = []
     for r in compound_templates(c.id):
@@ -1978,7 +1996,7 @@ def calibrate_base_replace(classes: Iterable[int] | None = None, retention: floa
 #: words a worn-away derivational affix is renewed from (its first syllable); none present: a coined syllable
 _AFFIX_SOURCES = {"little": ("CHILD (YOUNG HUMAN)", "SMALL"), "place": ("EARTH (SOIL)", "LAND", "HOUSE"),
                   "agent": ("PERSON", "MAN"), "thing": (), "do": ("DO OR MAKE",), "like": ("BODY",),
-                  "cause": ("DO OR MAKE", "GIVE")}
+                  "cause": ("DO OR MAKE", "GIVE"), "time": ("TIME",)}
 
 
 def _lexical_last(w: Word) -> EtymStep | None:
@@ -2384,11 +2402,12 @@ def core_repair(rng, lex: "Lexicon", inv, kyr: float, lect_id: str, contact_word
                 new, how = w, "recipe"
         if new is None:
             for m, _w in repair_rows().get(k, ()):
-                if m not in lex.words or lex.words[m].form == lex.words[k].form or _self_renewed(lex.words[k], k, m):
+                if m not in lex.words or lex.words[m].form == lex.words[k].form or not _reinforce_ok(lex, k, m):
                     continue   # (a reinforcer used once is not used again: no 'we-others-others')
-                w = compound(rng, lex, k, inv, kyr, lect_id, head=k, modifier=m,
-                             process=f"compound:{k}+{m}", note=f"{k.lower()} + {m.lower()}: renewed, the old form had "
-                                                               f"fallen together with {('/'.join(sorted({a, b} - {k}))).lower()}")
+                hd, md = reinforce_parts(k, m)   # (WHO: 'what person', PW-1635)
+                w = compound(rng, lex, k, inv, kyr, lect_id, head=hd, modifier=md,
+                             process=f"compound:{hd}+{md}", note=f"{hd.lower()} + {md.lower()}: renewed, the old form had "
+                                                                 f"fallen together with {('/'.join(sorted({a, b} - {k}))).lower()}")
                 if ok(w):
                     new, how = w, "reinforce"
                     break
