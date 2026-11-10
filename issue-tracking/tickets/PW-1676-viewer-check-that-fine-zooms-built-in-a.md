@@ -1,5 +1,6 @@
 ---
-title: Viewer: check that fine zooms built in a turned parent's orientation draw right in 2D and 3D, then close the viewer half of the turned-section fine zoom ticket
+id: PW-1676
+title: "Viewer: check that fine zooms built in a turned parent's orientation draw right in 2D and 3D, then close the viewer half of the turned-section fine zoom ticket"
 type: task
 status: todo
 parent: PW-1299
@@ -11,6 +12,8 @@ found_by: lane283
 blocked_by: []
 relates: [PW-1341, PW-1674, PW-1198]
 refs: ["viewer/zoom.html::drawFine", "viewer/zoom.html::fineHost", "viewer/zoom3d_place.js::place", "planet/zoom/fine.py::zoom", "planet/zoom/regional.py::frame_of", "tests/test_zoom_fine.py::test_fine_zoom_keeps_a_turned_parents_orientation"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -26,3 +29,6 @@ parent is still north-up (delete and remake those). Also check the 3D placement 
 Fine zooms list's fly-to for turned children, and a fine zoom of a fine zoom in a turned section.
 - [ ] a turned section (e.g. pz.1.1 of a showcase world at 4 km) with a fine zoom and a fine of that: outline in 2D matches where the 3D tile lands
 - [ ] PW-1341 closed or its remaining text updated
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-viewer-turned-fine-zoom-check.md (found by lane283).

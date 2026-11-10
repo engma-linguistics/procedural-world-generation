@@ -1,4 +1,5 @@
 ---
+id: PW-1677
 title: Measure zoom build peaks that the RAM guard only estimates (mid resolutions, 500 km zooms, 1,200 px fine zooms)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane283
 blocked_by: []
 relates: [PW-1674, PW-1337]
 refs: ["planet/api.py::zoom_peak_gb", "planet/api.py::ZOOM_PEAK_ANCHORS", docs/review/land-zoom/cost.md, docs/review/land-zoom/seams-round2.md, tools/]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -24,3 +27,6 @@ a 500 px zoom, a 1,200 px fine zoom of a 4 km section, and a 1,200 px fine of a 
 measured table and cite it in the docstring.
 - [ ] each of the five peaks measured and listed in `docs/review/land-zoom/cost.md`
 - [ ] `ZOOM_PEAK_ANCHORS` (or a separate fine-zoom constant) updated; tests still pass
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-zoom-peak-measure-mid-and-fine.md (found by lane283).

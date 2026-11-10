@@ -1,4 +1,5 @@
 ---
+id: PW-1678
 title: Zoom RAM guard checks MemAvailable per request, not the sum of the jobs already queued or running
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane283
 blocked_by: []
 relates: [PW-1674, PW-1438, PW-1337]
 refs: ["planet/api.py::zoom_estimate", "planet/api.py::free_ram_gb", "planet/api.py::Jobs.active_where", "planet/server.py::submit", docs/review/zoom/lod-plan.md]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Fix to try: in `server.submit` add the expected peaks of the queued or running z
 `api.zoom_peak_gb` / `refine.cost`, to the need before comparing with MemAvailable (subtract what the running ones have
 already taken: their RSS, or simply count each job's full peak for its first minutes). Keep the one-section-at-a-time rule.
 - [ ] a test with a fake `Jobs` holding two running 2 km sections' worth of peak and `free_ram_gb` patched shows a third request refused with the summed need in the message
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-zoom-ram-guard-sums-running-jobs.md (found by lane283).

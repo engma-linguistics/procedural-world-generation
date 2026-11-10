@@ -2,7 +2,7 @@
 id: PW-1674
 title: "Zoom API: build a 4,000 km tiling section by its cell, list a world's sections, and refuse zoom jobs the free RAM can't hold"
 type: task
-status: todo
+status: done
 parent: PW-1299
 milestone: v1.0
 subsystem: zoom
@@ -31,4 +31,5 @@ push the machine into swap or OOM.
 - [ ] tests for the request parsing and the guard; `uv run pytest -q` passes
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 283 merged (914bfded): GET /api/sections, POST /api/zoom {world, section, res_km}, RAM guard (api.zoom_peak_gb), one section-sized zoom at a time, fine zooms in the parent's orientation. Follow-ups: PW-167x drafts (guard sums running jobs, measure mid/fine peaks, viewer turned-fine check).
 - 2026-11-10: Created from inbox draft draft-lod-2-sections-in-api.md (found by lane282).
