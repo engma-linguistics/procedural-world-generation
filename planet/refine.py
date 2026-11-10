@@ -35,7 +35,6 @@ from .constants import T_REF_C
 from .geo import R_KM, is_land, smoothstep
 from .grid import Grid, build_grid
 from .nest import chain
-from .ocean import cell_area_km2
 from .tectonics.isostasy import grounded
 from .zoom import kernels as ZK
 from .zoom import regional as RG
@@ -105,7 +104,7 @@ class Nest:
         self.cand = np.where(self.valid, cand, self.own[:, None])
         self.d2 = (((G.centers[:, None, :] - g.centers[self.cand]) * R_KM) ** 2).sum(-1)
         self.steps = chain(G, g.level)
-        self.area = cell_area_km2(G)
+        self.area = G.cell_area_km2
 
     def interp(self, vals, wts=None, sigma_km: float = 1.0):
         """vals (coarse) at each fine cell: a Gaussian-weighted mean of its candidates (sigma km) with per-cell
@@ -247,7 +246,7 @@ def terrain(nest: Nest, L: dict, seed: int = 1, log=print) -> dict:
     stats = {"interior_cells": int(interior.sum()), "inland_cell_mean_bias_m": round(float(bias.mean()), 2),
              "inland_cell_mean_rms_error_m": round(float(np.sqrt((bias ** 2).mean())), 2),
              "land_cells": int(land.sum()), "filled_cells": filled, "land_share": round(float((nest.area * land).sum() / nest.area.sum()), 4),
-             "coarse_land_share": round(float((cell_area_km2(g) * land7).sum() / cell_area_km2(g).sum()), 4)}
+             "coarse_land_share": round(float((g.cell_area_km2 * land7).sum() / g.cell_area_km2.sum()), 4)}
     log(f"  terrain: land {stats['land_share']:.1%} (coarse {stats['coarse_land_share']:.1%}); inland cell means "
         f"bias {stats['inland_cell_mean_bias_m']:+.1f} m, RMS {stats['inland_cell_mean_rms_error_m']:.1f} m")
     # the geology's warped positions: ragged boundaries between coarse cells' rock columns, not hexagons

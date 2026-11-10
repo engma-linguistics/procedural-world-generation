@@ -443,7 +443,7 @@ def edge_fluxes(grid, P, sc) -> dict:
 
 def analyse(grid, d, c, rec) -> dict:
     lat, lon = grid.lat, grid.lon
-    area = ocean_mod.cell_area_km2(grid)
+    area = grid.cell_area_km2
     # (the land by its ice surface: the bed under the ice is the true one,
     # below the sea in West Antarctica and central Greenland, PW-354)
     surf = d["elev"].astype(np.float64) + d["ice"].astype(np.float64)

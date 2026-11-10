@@ -17,7 +17,6 @@ import numpy as np
 from .. import climate, hydrology, icemass, kernels, nest, surface, vegetation
 from ..constants import GRAV, RHO_ICE
 from ..geo import R_KM, is_land
-from ..ocean import cell_area_km2 as ocean_area
 from ..surface import COAL as COAL_ROCK, EVAPORITE, LIMESTONE, SANDSTONE, SHALE
 from . import record
 from .isostasy import (CARB, COAL, EVAP, MIX, OCEAN_KM, RHO_MANTLE, RHO_WATER, SAND, VALLEY, elevation, ice_load, iso_rate, land_view,
@@ -445,7 +444,7 @@ PLUME_CO2 = 3.3  # CO2 per km3 of plume melt (plume heads, their vents and apron
 def ghg_icefree(sim, ice_frac: float, ice_ref: float) -> float:
     """The ice-free land against Earth's (its ice, earth_ice), for ghg_conc: (land - ice) / (land - Earth's ice),
     planet shares."""
-    land = float((sim.land() * ocean_area(sim.grid)).sum() / ocean_area(sim.grid).sum())
+    land = float((sim.land() * sim.grid.cell_area_km2).sum() / sim.grid.cell_area_km2.sum())
     return max(land - ice_frac, 0.0) / max(land - ice_ref, 1e-6)
 
 
@@ -600,7 +599,7 @@ def global_temperature(sim, growth, newc, rng, plume=None):
     # crust and shallower ocean basins, so the same water stands higher
     # on the continents (one reason the young Earth was mostly sea).
     sim.sea_tect += p.hot_sea * (sim.heat() - 1.0)
-    w = ocean_area(sim.grid)
+    w = sim.grid.cell_area_km2
     sim.sea_cont = continent_water(sim, w)
     sim.sea_sed = floor_sediment_water(sim, w)
     sim.sea_tect += sim.sea_cont + sim.sea_sed
@@ -722,8 +721,9 @@ def update_climate(sim, e):
     sim.t_warm, sim.t_cold, sim.temp = climate.ice_surface(*c["ground"], ice, icemass.sheet_cover(g, ice, info["air"]),
                                                            g.lat, sim.p_jul, sim.p_jan)
     # The water locked up in it lowers the sea everywhere (ice ~0.9 g/cm3).
-    vol = (sim.ice / 1000.0).sum() * sim.cell_area * R_KM**2
-    ocean_area = (~land).sum() * sim.cell_area * R_KM**2
+    area = g.cell_area_km2
+    vol = (sim.ice / 1000.0 * area).sum()
+    ocean_area = area[~land].sum()
     sim.sea_ice = -0.9 * vol / max(ocean_area, 1.0) * 1000.0
     sim.sea_level = sim.sea_ice + sim.sea_tect
     if getattr(sim, "diag", None) is not None:  # (opt-in diagnostics, read only: tectonics/diag.py)
@@ -935,8 +935,9 @@ AIR_SEA_TOL = 0.5  # m: ... until the ice settles within this much sea level of 
 
 def ice_sea_level(sim, land, ice):
     """The sea level change (m) that land ice (m) makes, by its volume over the sea's area (~0.9 g/cm3)."""
-    vol = (np.where(land, ice, 0.0) / 1000.0).sum() * sim.cell_area * R_KM**2
-    return -0.9 * vol / max((~land).sum() * sim.cell_area * R_KM**2, 1.0) * 1000.0
+    area = sim.grid.cell_area_km2  # (true areas, PW-1043)
+    vol = (np.where(land, ice, 0.0) / 1000.0 * area).sum()
+    return -0.9 * vol / max(area[~land].sum(), 1.0) * 1000.0
 
 
 def margin_band(g, bare):

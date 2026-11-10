@@ -130,7 +130,7 @@ from numba import njit, prange
 
 from . import climate
 from .constants import GRAV, SEC_PER_YR
-from .geo import R_KM, cell_area_km2, is_land
+from .geo import R_KM, is_land
 from .kernels import walk_nearest
 
 # waves
@@ -533,7 +533,8 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
     hops, _ = bfs_within(shallow, np.zeros(n, np.int64), grid.nbr_off, grid.nbr_idx, 10 ** 6)
     deep = ocean & (depth > DEEP_M) & (hops * h > GATE_KM)
     dlab, dn = grid.components(deep)
-    dsize = np.sqrt(np.bincount(dlab[deep], minlength=dn) * 4 * np.pi * R_KM ** 2 / n)
+    area = grid.cell_area_km2
+    dsize = np.sqrt(np.bincount(dlab[deep], area[deep], minlength=dn))
     big = deep & (dsize[np.maximum(dlab, 0)] >= BASIN_KM)
     fixed = big & (openness >= OPEN_FRAC)
     src = np.repeat(np.arange(n), np.diff(grid.nbr_off))
@@ -543,7 +544,7 @@ def tide_range(grid, elev: np.ndarray, detail: bool = False, ice_share: np.ndarr
     conn = _tide_spread(fixed, fixed.astype(float), cond, decay, grid.nbr_off, grid.nbr_idx, ocean, min(iters, 3000))
     # seas without an ocean connection raise their own small tide
     lab, nl = grid.components(ocean)
-    size = np.sqrt(np.bincount(lab[ocean], minlength=nl) * 4 * np.pi * R_KM ** 2 / n)
+    size = np.sqrt(np.bincount(lab[ocean], area[ocean], minlength=nl))
     own = np.clip(size / SELF_KM, 0, 1) ** 2
     own[np.unique(lab[fixed])] = 0.0  # (seas joined to the open ocean get its tide, above)
     conn = np.maximum(conn ** CONN_POW, own[np.maximum(lab, 0)])
@@ -598,11 +599,11 @@ def upstream_cells(down: np.ndarray, mouth: int) -> np.ndarray:
     return np.array(out)
 
 
-def river_sediment(L: dict, basin: np.ndarray, q_m3s: float, cell_area_km2: float) -> float:
+def river_sediment(L: dict, basin: np.ndarray, q_m3s: float, cell_km2: np.ndarray) -> float:
     """BQART sediment load (kg/s) of a river with discharge q_m3s draining
-    the given cells of world layers L."""
+    the given cells of world layers L (cell_km2: every cell's area)."""
     elev = np.asarray(L["elevation"], float)[basin]
-    A = len(basin) * cell_area_km2
+    A = float(cell_km2[basin].sum())
     relief = float(np.percentile(elev, 98))  # m: the basin's high ground (robust max)
     T = float(np.mean(np.asarray(L["temperature"], float)[basin]))
     soft = float(np.mean(np.asarray(L["sediment_cover"], float)[basin] > 0.5)) if "sediment_cover" in L else 0.3
@@ -676,7 +677,7 @@ def delta_at(grid, L: dict, mouth: int, q_m3s: float, plain_km: float) -> dict:
     (the mean over the sea cells next to the mouth) and whether the world
     has those layers at all ("marine"; without them waves and tides count
     as 0)."""
-    from .geo import R_KM, world_land
+    from .geo import world_land
     sea = ~world_land(L, grid)
     down = np.asarray(L["downstream"], int)
     nb = grid.nbr_idx[grid.nbr_off[mouth]:grid.nbr_off[mouth + 1]]
@@ -685,7 +686,6 @@ def delta_at(grid, L: dict, mouth: int, q_m3s: float, plain_km: float) -> dict:
     marine = "wave_power" in L and "tide_range" in L and len(wet) > 0
     wave = float(np.mean(np.asarray(L["wave_power"], float)[wet])) if marine else 0.0
     tide = float(np.mean(np.asarray(L["tide_range"], float)[wet])) if marine else 0.0
-    cell_area = cell_area_km2(grid.n)
-    qs = river_sediment(L, upstream_cells(down, int(mouth)), q_m3s, cell_area)
+    qs = river_sediment(L, upstream_cells(down, int(mouth)), q_m3s, grid.cell_area_km2)
     return {**galloway(qs, q_m3s, wave, tide, plain_km), "wave_power_kw_m": round(wave, 1),
             "tide_range_m": round(tide, 2), "marine": marine}

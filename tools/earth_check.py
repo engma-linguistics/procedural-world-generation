@@ -555,16 +555,14 @@ def earth_rivers(grid, d, c, w) -> dict:
     lift = 1.0 - min(ground[(~sea & (ice <= 0)) | inland].min(), 0.0)
     elev = np.where(sea & ~inland, ground, ground + lift)
     land = elev > 0
-    scale = w / w.mean()  # flow in units of mean-cell x m/yr; true areas
-    sq = 4 * np.pi * (6371e3) ** 2 / grid.n / 3.156e7  # mean cell x m/yr -> m3/s
+    sq = float(hydrology.discharge(grid, np.ones(1))[0])  # flow units (mean cell x m/yr; true areas) -> m3/s
 
     # the rivers' own heights where they cross gorges narrower than a cell
     # and its closed basins (HydroSHEDS, as the Earth world: PW-236), the
     # heights on the same lifted datum
     outlet, closed = earth_data.earth_outlets(grid) + lift, earth_data.earth_closed(grid)
 
-    def routed(cc):
-        cc = {k2: cc[k2] * scale for k2 in ("runoff", "aet", "lake_evap")}
+    def routed(cc):  # (hydrology weights the runoff by the cells' true areas itself, PW-1043)
         return hydrology.rivers_and_lakes(grid, elev, cc, ice, outlet=outlet, closed=closed)
 
     flow, down, lk = routed(c)

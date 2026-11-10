@@ -2,7 +2,7 @@
 id: PW-1618
 title: "Forked screens have no null for a code change: seed 77's inland share jumps ~3-4 points under any hydrology change"
 type: task
-status: todo
+status: done
 parent: null
 milestone: later
 subsystem: infra
@@ -11,7 +11,7 @@ impact: med
 found_by: scout261
 blocked_by: []
 relates: [PW-054, PW-831]
-refs: [docs/review/wetlands/scout261.md, docs/review/wetlands/scout261/same_state.py, docs/review/basins/scout251/fork_run.py, docs/review/wetlands/scout260.md]
+refs: [tools/fork_screen.py, docs/coordination.md, docs/review/wetlands/scout261.md, docs/review/wetlands/scout261/same_state.py, docs/review/basins/scout251/fork_run.py, docs/review/wetlands/scout260.md]
 created: 2026-11-09
 updated: 2026-11-09
 ---
@@ -31,7 +31,8 @@ read a 3-4 point inland jump as the change's effect.
 What to try: a null that perturbs the code path, not just the climate: e.g. main continued with a tiny change in the
 erosion step (a 1e-9 relative nudge to elevation at the fork) or offsets large enough to diverge within 50 Myr;
 check whether main's spread on seed 77 then covers 12-16%.
-- [ ] main's draws on seed 77 differ by as much as an unrelated code change moves them, or the screen states it can't judge seed 77
+- [x] main's draws on seed 77 differ by as much as an unrelated code change moves them, or the screen states it can't judge seed 77
 
 ## Updates
 - 2026-11-09: Created from inbox draft draft-fork-screen-code-perturbation-null.md (found by scout261).
+- 2026-11-09: Done (lane 263). `tools/fork_screen.py` (spin / cont / queue / measure / spread; README in docs/coordination.md "Forked screens"): draws now perturb the noise (`--kind rng`: the per-step random streams keyed by the draw) or the state (`--kind elev`: crust thickness x 1 + 1e-12 N), plus a code-change null (`--fp-null`: (elev + 1000) - 1000 into surface.erode). On main a866c5ad, L6 seeds 1/2/77/3199, every draw diverges (rng at 204 Myr, elev 220-308, fp-null 228-296) and main's spread is wide: inland medians 4.2-11.2 / 6.4-10.7 / 6.7-12.7 / 12.4-15.2%, giant-lake frames up to 30%. Seed 77's 6.7-12.7 covers scout 261's fix at 14.2 only in part (its 15.9-16.1 lie above; scout 261's main was older code): a single seed can't judge; the README says judge all seeds at once plus the same-state check.

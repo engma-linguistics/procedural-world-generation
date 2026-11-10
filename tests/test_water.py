@@ -6,7 +6,6 @@ import numpy as np
 from planet import climate, hydrology, kernels, timeline as T
 from planet.geo import xyz
 from planet.grid import build_grid
-from planet.ocean import cell_area_km2
 
 
 def test_water_balance_limits():
@@ -182,7 +181,7 @@ def test_fill_shallow_drains_wide_flat_basins():
     """Two bowls 40 m deep: a narrow one holds water, a wide one (flatter than
     min_slope from rim to middle) is a plain and drains."""
     g = build_grid(5)
-    area = cell_area_km2(g)
+    area = g.cell_area_km2
     mid = np.array([[np.cos(0.35), 0, np.sin(0.35)], [0, np.cos(0.35), np.sin(0.35)]])  # 20 N; 0 E, 90 E
     d = np.arccos(np.clip(g.centers @ mid.T, -1, 1)) * 6371  # km from the bowls' middles
     e = 500.0 + 0.01 * (g.lat + 60)  # land falling gently south to the sea

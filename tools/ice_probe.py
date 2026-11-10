@@ -141,7 +141,7 @@ def main():
     p = Params()
     p.tilt = 23.44
     cell = 4 * np.pi / g.n
-    w = ocean.cell_area_km2(g)
+    w = g.cell_area_km2
     for dT in a.dT:
         ice = src["ice"].copy() if a.start == "earth" else np.zeros(g.n)
         sim = SimpleNamespace(grid=g, params=p, cell_area=cell, precip=None, p_jul=None, p_jan=None)

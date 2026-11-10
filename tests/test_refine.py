@@ -6,7 +6,6 @@ import pytest
 from planet import finish as F, refine as RF, store as S, timeline as T, timezoom as TZ, world as W
 from planet.geo import is_land
 from planet.grid import build_grid
-from planet.ocean import cell_area_km2
 from planet.tectonics import Params
 
 
@@ -50,7 +49,7 @@ def test_coarse_cells_keep_their_land_and_means(made):
     assert abs(st["inland_cell_mean_bias_m"]) < 25 and st["inland_cell_mean_rms_error_m"] < 80
     e5 = np.asarray(b["layers"]["elevation"], float)
     land5 = is_land(e5, np.asarray(b["layers"]["ice"], float), b["grid"])
-    a4, a5 = cell_area_km2(g4), cell_area_km2(b["grid"])
+    a4, a5 = g4.cell_area_km2, b["grid"].cell_area_km2
     assert abs((a5 * land5).sum() / a5.sum() - (a4 * land4).sum() / a4.sum()) < 0.04
     # the geology comes from the coarse cells (rock ids, plates)
     assert set(np.unique(b["layers"]["plate"])) <= set(np.unique(a["layers"]["plate"]))
@@ -59,7 +58,7 @@ def test_coarse_cells_keep_their_land_and_means(made):
 def test_refined_climate_follows_the_coarse_one(made):
     a, b = W.load(made["src"]), W.load(made["out"])
     ga, gb = a["grid"], b["grid"]
-    wa, wb = cell_area_km2(ga), cell_area_km2(gb)
+    wa, wb = ga.cell_area_km2, gb.cell_area_km2
     for k, tol in (("temperature", 1.5), ("precipitation", 150.0)):
         ma = (wa * a["layers"][k]).sum() / wa.sum()
         mb = (wb * b["layers"][k]).sum() / wb.sum()
@@ -76,7 +75,7 @@ def test_nest_sums_and_kernel():
     m, share = n.mean(np.full(G.n, 3.0))
     assert np.allclose(m, 3.0) and np.allclose(share, 1.0)
     # the fine area's full-weighting sums are the coarse cells' areas
-    assert np.allclose(n.total(n.area).sum(), cell_area_km2(g).sum())
+    assert np.allclose(n.total(n.area).sum(), g.cell_area_km2.sum())
     v = n.interp(np.full(g.n, 5.0), None, 0.5 * g.spacing * 6371)
     assert np.allclose(v, 5.0)
     pick = n.pick(G.centers)

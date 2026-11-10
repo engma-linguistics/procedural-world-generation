@@ -19,7 +19,7 @@ def basins():
 
 
 def _mean_sss(g, elev, c):
-    a = ocean.cell_area_km2(g)
+    a = g.cell_area_km2
     sea = elev <= 0
     return (c["sss"] * a)[sea].sum() / a[sea].sum()
 
@@ -159,7 +159,7 @@ def test_overturning_moves_heat_without_making_it(basins):
     each latitude band cools to match (PW-265): over the whole sea its
     area-weighted warming is ~0, while it still warms some places."""
     g, elev, c = basins
-    a = ocean.cell_area_km2(g)
+    a = g.cell_area_km2
     sea = elev <= 0
     h = c["moc_heat"]
     assert np.abs(h[sea]).max() > 0.5
@@ -176,7 +176,7 @@ def test_water_books_close():
     land = (((lon > -20) & (lon < 20)) | ((lon > 120) & (lon < 170))) & (g.lat > -60) & (g.lat < 72)
     elev = np.where(land, 500.0, -4000.0)
     c = climate.compute(g, elev)
-    a = ocean.cell_area_km2(g)
+    a = g.cell_area_km2
     sea = elev <= 0
     net = ((c["precip"] - c["sea_evap"]) * a)[sea].sum() + (c["runoff"] * a)[~sea].sum()
     assert abs(net / 1000.0 / a[sea].sum()) < 0.01

@@ -59,7 +59,7 @@ from . import hydrology
 from . import projection as PJ
 from . import store as S
 from . import world as W
-from .geo import R_KM, arc, arc_km, cell_area_km2, is_land, latlon, smoothstep, world_land, xyz
+from .geo import R_KM, arc, arc_km, is_land, latlon, smoothstep, world_land, xyz
 from .images import write_png
 from .provenance import code_version
 
@@ -715,14 +715,14 @@ def _human_use_features(feats: Features, tab: dict, node_ll, kind: str, min_km: 
     if kind == "world" and grid is not None and L is not None and "fertile" in L:
         comp, n = grid.components(np.asarray(L["fertile"]) >= 3)
         score = np.asarray(L["fertile_score"], float) / 100
-        area = cell_area_km2(grid.n)
+        area = grid.cell_area_km2
         for k in range(n):
             cells = np.flatnonzero(comp == k)
             if len(cells) < 3:
                 continue
             c = grid.centers[cells].mean(0)
             la, lo = latlon(c / np.linalg.norm(c))
-            feats.point("fertile_land", float(la), float(lo), area_km2=round(len(cells) * area),
+            feats.point("fertile_land", float(la), float(lo), area_km2=round(float(area[cells].sum())),
                         mean_score=round(float(score[cells].mean()), 2),
                         prime_share=round(float((np.asarray(L["fertile"])[cells] == 4).mean()), 2))
 
@@ -744,13 +744,13 @@ def _world_features(world: dict, path: Path, river_min: float, with_highlights: 
     if "lake" in L or "lake_kind" in L:
         lake = np.asarray(L["lake"] if "lake" in L else L["lake_kind"]) > 0
         comps, n = grid.components(lake)
-        area = cell_area_km2(grid.n)
+        area = grid.cell_area_km2
         kinds = {1: "fresh", 2: "salt", 3: "salt pan"}
         for k in range(n):
             cells = np.flatnonzero(comps == k)
             c = grid.centers[cells].mean(0)
             la, lo = latlon(c / np.linalg.norm(c))
-            props = {"area_km2": round(len(cells) * area)}
+            props = {"area_km2": round(float(area[cells].sum()))}
             if "lake_level" in L:
                 props["level_m"] = round(float(np.mean(np.asarray(L["lake_level"])[cells])))
             if "lake_kind" in L:

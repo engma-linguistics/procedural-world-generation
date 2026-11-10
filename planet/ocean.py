@@ -100,22 +100,6 @@ def density(t, s, z: float = 0.0):
             + 0.76554 * (1.0 - 0.5 * 5.4914e-4 * sa - 1.109e-5 * z) * sa - 2.4341e-3 * ta * sa)
 
 
-def cell_area_km2(grid: Grid) -> np.ndarray:
-    """Spherical area of each cell, km2 (cached)."""
-    G = C._geom(grid)
-    if "area_km2" not in G:
-        k = max(len(c) for c in grid.cell_corners)
-        idx = np.array([c + [c[-1]] * (k - len(c)) for c in grid.cell_corners])
-        a = grid.centers[:, None, :]
-        b = grid.corners[idx]
-        c = grid.corners[np.roll(idx, -1, axis=1)]
-        num = np.abs(np.einsum("nkj,nkj->nk", a, np.cross(b, c)))
-        den = (1 + np.einsum("nkj,nkj->nk", a, b) + np.einsum("nkj,nkj->nk", b, c)
-               + np.einsum("nkj,nkj->nk", c, a))
-        G["area_km2"] = (2 * np.arctan2(num, den)).sum(1) * R_KM**2
-    return G["area_km2"]
-
-
 def _csr_dir(grid: Grid) -> np.ndarray:
     """Unit tangent direction from each cell to each neighbour, in the CSR
     order of grid.nbr_idx."""
@@ -200,8 +184,9 @@ def river_input(grid: Grid, surf: np.ndarray, sea: np.ndarray, water_mm: np.ndar
         return np.zeros(grid.n)
     _, down, order = kernels.priority_flood(np.where(sea, np.minimum(surf, 0.0), np.maximum(surf, 1e-3)), sea,
                                             grid.nbr_off, grid.nbr_idx, 0.01)
-    flow = kernels.accumulate(down, order, land_w)
-    return _spread(grid, np.where(sea, flow, 0.0), sea, km)
+    aw = grid.area_weight  # (volumes in mean-cell x m/yr, true areas: PW-1043)
+    flow = kernels.accumulate(down, order, land_w * aw)
+    return _spread(grid, np.where(sea, flow, 0.0), sea, km) / aw
 
 
 def ice_growth(t_air: np.ndarray, half: np.ndarray) -> np.ndarray:
@@ -407,7 +392,7 @@ def overturning(grid: Grid, sea: np.ndarray, rho_w: np.ndarray, rho_a: np.ndarra
     of each sea and hemisphere, at moc_z), sites (list of dicts per connected sinking area: lat, lon, sv, drho
     (kg/m3, sinking water minus the water feeding it), area_km2, heat_pw)."""
     n = grid.n
-    area = cell_area_km2(grid)
+    area = grid.cell_area_km2
     h = C._geom(grid)["h"]
     lat = np.abs(grid.lat)
     sinking = np.zeros(n)
@@ -617,7 +602,7 @@ def salinity(grid: Grid, sea: np.ndarray, fresh: np.ndarray, cur: np.ndarray, tu
     # (carried as the difference from S0, which starts the iterations nearer the answer)
     s = S0 + _carry(grid, out_w, np.where(sea, (1 - keep) * (s_eq - S0), 0.0), keep,
                     1.5 * tune["cur_max"] * tune["salt_km"], tune["salt_diff"], None if s0 is None else s0 - S0)
-    area = cell_area_km2(grid)
+    area = grid.cell_area_km2
     s = np.where(sea, s, S0)
     return s + (S0 - (s * area)[sea].sum() / area[sea].sum())
 
@@ -637,7 +622,7 @@ def freshwater(grid: Grid, sea: np.ndarray, surf: np.ndarray, precip: np.ndarray
     evaporate (PW-266), so without meltwater that mean is only the books'
     small residue (the temperatures move a little after the rain): a warning
     above FW_RESIDUE m/yr."""
-    area = cell_area_km2(grid)
+    area = grid.cell_area_km2
     ep = np.where(sea, (precip - evap) / 1000.0, 0.0)
     melt = np.zeros(grid.n) if melt is None else np.maximum(np.asarray(melt, float), 0.0)
     river = river_input(grid, surf, sea, np.where(sea, 0.0, runoff), tune["river_km"])
@@ -660,7 +645,7 @@ def _circumpolar(grid: Grid, sea: np.ndarray, tune: dict) -> np.ndarray:
     (islands smaller than island_km2 don't block them, as for the currents)."""
     land = ~sea
     lab, k = grid.components(land)
-    area = cell_area_km2(grid)
+    area = grid.cell_area_km2
     sizes = np.bincount(lab[land], area[land], max(k, 1))
     wall = land & (sizes[np.maximum(lab, 0)] >= tune["island_km2"])
     nb = 90
@@ -829,7 +814,7 @@ def solve(grid: Grid, sea: np.ndarray, sst_of, sst0: np.ndarray, t_eq: np.ndarra
     # back on the fine grid
     sst_f = sst_of(np.clip(_up(M, st["share"]), 0, 1), _up(M, st["t_in"]))
     sss_f = np.where(sea, _up(M, sss), S0)
-    area = cell_area_km2(grid)
+    area = grid.cell_area_km2
     sss_f = np.where(sea, sss_f + S0 - (sss_f * area)[sea].sum() / max(area[sea].sum(), 1e-9), S0)
     brine_f = S0 * ICE_FRESH * np.where(sea, ice_m, 0.0) / tune["brine_m"]
     sink_f = _up(M, ov["sinking"]) * sea
@@ -878,7 +863,7 @@ def _west_distance(grid: Grid, land: np.ndarray, max_km: float, min_km2: float) 
     not an island in mid-ocean), at most max_km: the deep western boundary
     currents hug the continental slope on a basin's west side."""
     lab, k = grid.components(land)
-    area = cell_area_km2(grid)
+    area = grid.cell_area_km2
     sizes = np.bincount(lab[land], area[land], max(k, 1))
     land = land & (sizes[np.maximum(lab, 0)] >= min_km2)
     out = np.full(grid.n, max_km)

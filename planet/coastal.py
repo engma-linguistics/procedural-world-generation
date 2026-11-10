@@ -92,8 +92,8 @@ from numba import njit
 from . import coast
 from . import surface as SF
 from . import vegetation as V
-from .constants import GRAV, SEC_PER_YR
-from .geo import R_KM, cell_area_km2, ramp, world_land, xyz
+from .constants import GRAV
+from .geo import R_KM, ramp, world_land, xyz
 
 # turbidity and light
 SSC_BG = 0.5  # mg/L: clear coastal water's suspended matter, away from rivers
@@ -195,9 +195,10 @@ def river_loads(grid, L: dict) -> tuple[np.ndarray, np.ndarray]:
             if "sediment_cover" in L else np.full(len(mouths), 0.3))
     ice = np.asarray(L.get("ice", np.zeros(n)), float)
     iced = np.add.reduceat((ice[cells] > 1).astype(float), start) / cnt
-    area = cell_area_km2(n)
-    q = np.asarray(L["flow"], float)[mouths] * area * 1e6 / SEC_PER_YR
-    return mouths, coast.bqart(q, cnt * area, relief, temp, soft, iced)
+    from .hydrology import discharge
+    q = discharge(grid, np.asarray(L["flow"], float)[mouths])
+    basin_km2 = np.add.reduceat(grid.cell_area_km2[cells], start)
+    return mouths, coast.bqart(q, basin_km2, relief, temp, soft, iced)
 
 
 @njit(cache=True)
@@ -240,7 +241,7 @@ def river_turbidity(grid, L: dict) -> np.ndarray:
         np.add.at(src, np.asarray(L["downstream"], int)[mouths], load)
     lam = (grid.spacing * R_KM / PLUME_KM) ** 2
     m = _plume(src, lam, grid.nbr_off, grid.nbr_idx, sea, 5000, 1e-4)
-    area_m2 = 4 * np.pi * (R_KM * 1e3) ** 2 / grid.n
+    area_m2 = grid.cell_area_km2 * 1e6
     ssc = SSC_BG + lam * m / (W_NET * area_m2) * 1e3  # kg/m^3 -> mg/L
     return np.where(sea, ssc, 0.0)
 
@@ -469,7 +470,7 @@ def volcano_reefs(grid, meta: dict | None, sea: np.ndarray) -> np.ndarray:
                 continue
             i = nb[0]
         out[i] += a
-    return np.clip(out / (cell_area_km2(grid.n)), 0, 1)
+    return np.clip(out / grid.cell_area_km2, 0, 1)
 
 
 def world_layers(grid, L: dict, meta: dict | None = None, unlocked=None) -> dict:
@@ -500,5 +501,5 @@ def world_layers(grid, L: dict, meta: dict | None = None, unlocked=None) -> dict
 def areas_km2(grid, layers: dict, percent: bool = True) -> dict:
     """Total area of each habitat (km^2) from its layer: % of each cell (as
     worlds store them), or shares 0..1 with percent=False."""
-    a = cell_area_km2(grid.n) / (100.0 if percent else 1.0)
-    return {k: round(float(np.asarray(layers[k], float).sum() * a)) for k in LAYERS if k in layers}
+    a = grid.cell_area_km2 / (100.0 if percent else 1.0)
+    return {k: round(float((np.asarray(layers[k], float) * a).sum())) for k in LAYERS if k in layers}

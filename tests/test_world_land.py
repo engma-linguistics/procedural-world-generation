@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from planet import climate, coastal, world as W
-from planet.geo import is_land, world_land, xyz
+from planet.geo import cell_area_km2, is_land, world_land, xyz
 from planet.grid import build_grid
 from planet.tectonics.isostasy import grounded
 
@@ -43,7 +43,8 @@ def _chain(n):
     """A grid of n cells in a row, each linked to the next, each 1/n of the sphere."""
     from types import SimpleNamespace
     nb = [[j for j in (i - 1, i + 1) if 0 <= j < n] for i in range(n)]
-    return SimpleNamespace(n=n, nbr_off=np.cumsum([0] + [len(x) for x in nb]), nbr_idx=np.concatenate(nb))
+    return SimpleNamespace(n=n, nbr_off=np.cumsum([0] + [len(x) for x in nb]), nbr_idx=np.concatenate(nb),
+                           cell_area_km2=np.full(n, cell_area_km2(n)))
 
 
 def test_true_bed_under_marine_ice_is_land(marine):

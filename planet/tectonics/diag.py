@@ -31,7 +31,6 @@ from __future__ import annotations
 import numpy as np
 
 from .. import climate, icemass, kernels
-from ..geo import R_KM
 from . import output
 
 ARID = [k for k, c, _, _ in climate.KOPPEN if c.startswith("B")]  # Koppen group B ids
@@ -121,9 +120,9 @@ class Recorder:
         from . import earth
         g = sim.grid
         ice = np.where(land, sim.ice, 0.0)
-        area_km2 = sim.cell_area * R_KM**2
-        ocean_km2 = max(float((~land).sum()) * area_km2, 1.0)
-        sle = -0.9 / ocean_km2 * area_km2  # m of sea level per m of ice on one cell (negative: the sea falls)
+        area_km2 = g.cell_area_km2  # (true areas, as earth.update_climate's sea_ice: PW-1043)
+        ocean_km2 = max(float(area_km2[~land].sum()), 1.0)
+        sle = -0.9 / ocean_km2  # m of sea level per m of ice on one km2 (negative: the sea falls)
         t_warm, t_cold, _ = c["ground"]
         iced = ice > 0
         rec = {"t": round(float(sim.t), 3), "dT": round(float(sim.dT), 3), "passes": int(info.get("passes", 0)),
@@ -176,11 +175,12 @@ class Recorder:
             def tot(f):
                 return np.bincount(k, weights=f * w, minlength=nk)
 
-            # m/yr of ice x cells -> m of sea level per kyr (x 1000 yr), signs: + = the sea falls
+            # m/yr of ice x km2 -> m of sea level per kyr (x 1000 yr), signs: + = the sea falls
             to_sl = -sle * 1000.0 * 0.917  # (smb is m of ice: x 0.917 to water, as the sea's -0.9)
-            acc, mel, sea = tot(np.maximum(smb, 0)) * to_sl, tot(np.maximum(-smb, 0)) * to_sl, tot(calve) * to_sl
+            acc, mel, sea = (tot(np.maximum(smb, 0) * area_km2) * to_sl, tot(np.maximum(-smb, 0) * area_km2) * to_sl,
+                             tot(calve * area_km2) * to_sl)
             cnt = tot(np.ones(g.n))
-            vol = tot(ice) * -sle
+            vol = tot(ice * area_km2) * -sle
             lat = tot(g.lat) / np.maximum(cnt, 1)
             surf = np.where(iced, e + ice, -np.inf)
             hmax = np.full(nk, -np.inf)

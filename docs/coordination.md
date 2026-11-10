@@ -94,6 +94,39 @@ A change to the peoples history (planet/lineages/history/, the spread, the sampl
 
 What passes: no crash; no authored people dead at the present without a stated reason (authored extinctions excepted); no people over 85% of all people in a tree of 3+; each knob people's share and cells led rising with its own density (x0.5 <= x1 <= x2); and fewer brittle peoples (share swinging over 10x across seeds and jitters, or dead in a run) than before. Shares are of people (presence x density x area, groups rolled up; megafauna and overlays apart), so a sparse people is small by construction: judge it by its swing and its range, not its share. `tests/test_peoples_robust.py` checks the variant builders and one run per arm on the small fake time zoom.
 
+## Forked screens (physics scouts; `tools/fork_screen.py`, PW-1618)
+A forked screen spins one state to 200 Myr with main's code, continues it to 400 Myr with main and with a candidate
+(each a frozen copy of the code: a directory holding `planet/`), several draws each, and asks whether the candidate's
+inland %, lakes %, giant-lake frames and discharge to the sea sit outside main's draw-to-draw spread. The old draw (a
+1e-5 C climate offset) is no null: on seed 77 L6 three of main's four such draws were the same trajectory. Draw with
+`--kind rng` (the per-step random streams get an extra key after the fork: a different future of drift, volcanism and
+rifting from the same state); `--kind elev` (crust thickness x 1 + 1e-12 N(0,1) at the fork) and `--fp-null` (main
+with a no-op that changes floating-point rounding in the erosion step: what any code change does to the trajectory)
+are the chaos and code-change nulls. A candidate's shift no bigger than `--fp-null`'s is no evidence.
+- Scratch dir with `spin.jobs` / `cont.jobs` (one tool command per line), `PLANET_DATA=<scratch>/data`,
+  `NUMBA_NUM_THREADS=4`; `uv run python tools/fork_screen.py queue cont.jobs --parallel 2 --pids pids.txt` (a job starts
+  only below load 30). Runs are named `s{seed}_{arm}_{kind}{draw}`; `--kind base --draw 0` is the unperturbed run.
+- `fork_screen.py measure <scratch>/data --out m.json` then `fork_screen.py spread m.json --null main fpnull --cand cand`:
+  per seed, the null's range over all its draws and each candidate draw in or out of it; `div_t` in the json says
+  when a draw left its seed's base run (None: it never did, so it is no draw).
+- Cost at L6: a spin ~200 s, a continuation ~215 s at 4 threads (2 at a time). Main's measured spread: below.
+
+Main's real spread (lane 263, main a866c5ad, L6, fork 200 -> 400 Myr, frames after the fork; 7 draws: base, rng 1-3,
+elev 1-3; plus the fp-null run):
+
+| seed | inland median % | lakes % of land | giant-lake frames % | giant >= 300 % | to the sea, k m3/s | fp-null |
+|---|---|---|---|---|---|---|
+| 1 | 4.2-11.2 | 0.56-0.88 | 6.0-29.9 | 0-37.2 | 2780-3077 | in on all five |
+| 2 | 6.4-10.7 | 0.46-0.80 | 1.5-3.0 | 0-2.3 | 2756-3194 | in |
+| 77 | 6.7-12.7 | 0.59-1.05 | 1.5-11.9 | 0-9.3 | 2617-2807 | in |
+| 3199 | 12.4-15.2 | 0.51-0.95 | 1.5-29.9 | 0-46.5 | 2638-3051 | sea 2601 just below |
+
+Every rng draw leaves the base run at the first keyframe (204 Myr); elev draws at 220-308 Myr (seed 77 slowest);
+the fp-null at 228-296 Myr. So any code change puts a run on another trajectory within ~100 Myr, and a seed's inland
+median then moves 4-7 points, its giant-lake frames by up to 30: one seed's run against main's is no evidence either
+way. Judge on every seed at once (a shift that is the same sign on all four and outside the range on several), and on
+the same-state check (the change applied to one checkpoint, as `docs/review/wetlands/scout261/same_state.py`).
+
 ## Current state
 See [wiki/state.md](wiki/state.md) (one overwritten page) and [wiki/index.md](wiki/index.md). The dated journals of 2026-10-15 to 2026-10-21 were removed from this file; they are in its git history.
 

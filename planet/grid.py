@@ -71,6 +71,28 @@ class Grid:
         return _frozen(np.array([i for i, c in enumerate(self.cell_corners) if len(c) == 5]))
 
     @cached_property
+    def cell_area_km2(self) -> np.ndarray:
+        """Spherical area of each cell, km2. The cells are not equal: on L6 the smallest is 0.675 of the mean and
+        the largest 1.206 (PW-1043), so anything that adds up cells (river flow, island and sea sizes) uses these."""
+        from .geo import R_KM
+        k = max(len(c) for c in self.cell_corners)
+        idx = np.array([c + [c[-1]] * (k - len(c)) for c in self.cell_corners])
+        a = self.centers[:, None, :]
+        b = self.corners[idx]
+        c = self.corners[np.roll(idx, -1, axis=1)]
+        num = np.abs(np.einsum("nkj,nkj->nk", a, np.cross(b, c)))
+        den = (1 + np.einsum("nkj,nkj->nk", a, b) + np.einsum("nkj,nkj->nk", b, c)
+               + np.einsum("nkj,nkj->nk", c, a))
+        return _frozen((2 * np.arctan2(num, den)).sum(1) * R_KM ** 2)
+
+    @cached_property
+    def area_weight(self) -> np.ndarray:
+        """Each cell's area over the mean cell's (mean 1): what a per-cell rate (m/yr of runoff) is multiplied by
+        before it is added up into flow, so flow stays in mean-cell x m/yr units (hydrology.discharge)."""
+        a = self.cell_area_km2
+        return _frozen(a / a.mean())
+
+    @cached_property
     def nbr_src(self) -> np.ndarray:
         """The cell each directed edge (CSR order of nbr_idx) leaves."""
         return _frozen(np.repeat(np.arange(self.n), np.diff(self.nbr_off)))
@@ -175,7 +197,7 @@ def _subdivide(verts: np.ndarray, faces: np.ndarray) -> tuple[np.ndarray, np.nda
 def shared_grid(level: int) -> Grid:
     """One Grid per level for the whole process (the coarse grids the climate
     and the ocean work on): the caches keyed on a grid (climate._geom,
-    ocean.cell_area_km2, ...) then fill once instead of on every new copy.
+    Grid.cell_area_km2, ...) then fill once instead of on every new copy.
     Don't modify it."""
     return build_grid(level)
 

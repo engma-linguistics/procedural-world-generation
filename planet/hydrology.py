@@ -75,7 +75,7 @@ def erode(grid: Grid, elev: np.ndarray, c: dict, iterations: int = 12, strength:
             lk = lakes(grid, hr, c["runoff"], c["aet"], c["lake_evap"], iced, land=land, pet_mm=c.get("pet"))
         if lk is None:
             _, down, order = priority_flood(grid, hr, sea=~land)
-            flow = accumulate(down, order, np.where(land, c["runoff"], 0.0) / 1000.0)
+            flow = accumulate(down, order, np.where(land, c["runoff"], 0.0) / 1000.0 * area_w(grid))
         else:
             lk["bed"] = np.where(lk["wet"], lk["bed"], hr)
             flow, down, order, _ = route(grid, hr, lk)
@@ -114,8 +114,15 @@ VALLEY_MYR = 20.0
 
 
 def discharge(grid: Grid, flow: np.ndarray) -> np.ndarray:
-    """m^3/s from flow units (cells x m/yr of runoff)."""
+    """m^3/s from flow units: mean cells x m/yr of runoff (each cell's runoff is weighted by its own area,
+    area_w, before it is added up, so this is the true discharge; PW-1043). Every caller converts with this."""
     return flow * (4 * np.pi * (R_KM * 1000) ** 2 / grid.n) / SEC_PER_YR
+
+
+def area_w(grid: Grid) -> np.ndarray:
+    """Each cell's area over the mean cell's (Grid.area_weight; a walled grid's base's): what a per-cell m/yr
+    is multiplied by before it is added up into flow units."""
+    return getattr(grid, "base", grid).area_weight
 
 
 def _bed(grid, ground, sea, min_depth, min_slope):
@@ -124,9 +131,8 @@ def _bed(grid, ground, sea, min_depth, min_slope):
     rest of the land drains as priority_flood has it."""
     if min_depth <= 0:
         return ground
-    from .ocean import cell_area_km2
     h, keep = kernels.fill_shallow(ground, sea, grid.nbr_off, grid.nbr_idx, float(min_depth),
-                                   cell_area_km2(getattr(grid, "base", grid)), float(min_slope))
+                                   getattr(grid, "base", grid).cell_area_km2, float(min_slope))
     return np.where(keep, h, kernels.flood_fill(h, sea, grid.nbr_off, grid.nbr_idx, 0.01))
 
 
@@ -305,10 +311,11 @@ def lakes(grid: Grid, elev: np.ndarray, runoff_mm: np.ndarray, aet_mm: np.ndarra
     channel = CHANNEL_K if channel is None else channel
     land = is_land(elev, grid=grid) if land is None else land
     ground = elev.astype(float)
-    src = np.where(land, runoff_mm, 0.0) / 1000.0
-    loss = np.where(land, np.maximum(lake_evap_mm - aet_mm, 0.0), 0.0) / 1000.0
+    w = area_w(grid)  # (per-cell rates weighted by the cells' true areas: PW-1043)
+    src = np.where(land, runoff_mm, 0.0) / 1000.0 * w
+    loss = np.where(land, np.maximum(lake_evap_mm - aet_mm, 0.0), 0.0) / 1000.0 * w
     carved = ground
-    dry = None if pet_mm is None else (np.where(land, runoff_mm + aet_mm, 0.0), np.where(land, pet_mm, 0.0))
+    dry = None if pet_mm is None else (np.where(land, runoff_mm + aet_mm, 0.0) * w, np.where(land, pet_mm, 0.0) * w)
     keep = None  # (the dry hollows: worked out on the uncarved ground, once, and kept across the carve tries)
     # (the channels already known, for the dry hollows: the finer data's river heights, the remembered valleys)
     chan = None
@@ -468,13 +475,14 @@ def seasonal_flow(grid: Grid, down: np.ndarray, order: np.ndarray, runoff_mm: np
     nf = frozen.sum(0)
     open_m = np.where(nf < 12, ~frozen / np.maximum(12 - nf, 1), 1 / 12)
     b = np.where(nf >= 6, FROZEN_BASEFLOW, BASEFLOW)
-    src = np.maximum(runoff_mm, 0) / 1000.0 * 12 * ((1 - b) * share + b * open_m)
+    w = area_w(grid)
+    src = np.maximum(runoff_mm, 0) / 1000.0 * w * 12 * ((1 - b) * share + b * open_m)
     # lake outlets: lake cells draining out of the lake, damped by lake area / catchment area
     lab, k = grid.components(wet)
     damp = np.zeros(grid.n)
     if k:
-        upstream = kernels.accumulate(down, order, np.ones(grid.n))
-        size = np.bincount(lab[lab >= 0], minlength=k).astype(float)
+        upstream = kernels.accumulate(down, order, np.asarray(w, float))
+        size = np.bincount(lab[lab >= 0], w[lab >= 0], minlength=k)
         out = wet & (down >= 0) & ~wet[np.maximum(down, 0)]
         damp[out] = np.clip(3.0 * size[lab[out]] / np.maximum(upstream[out], 1), 0, 0.9)
     q = kernels.accumulate_months(down, order, src, damp)
@@ -558,7 +566,7 @@ def rivers_and_lakes(grid: Grid, elev: np.ndarray, c: dict, ice: np.ndarray | No
         lk["wet"] &= ~dry
         lk["kind"][dry] = NO_LAKE
         lk["level"] = np.where(lk["wet"], np.minimum(lk["level"], top), surf)
-        lk["src"] = np.where(dry, np.where(land, c["runoff"], 0.0) / 1000.0, lk["src"])
+        lk["src"] = np.where(dry, np.where(land, c["runoff"], 0.0) / 1000.0 * area_w(grid), lk["src"])
     flow, down, order, _ = route(grid, surf, lk)
     lk["endorheic"] = endorheic(down, order, lk["sink"]) & land
     lk["level"] = np.where(lk["wet"], lk["level"], elev)  # (no lakes on the ice)

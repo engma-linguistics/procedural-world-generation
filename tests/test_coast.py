@@ -314,7 +314,8 @@ def test_sea_ice_share():
     # a warm sea, a sea frozen all year, and an Arctic one open ~3 months in its (northern) summer
     from types import SimpleNamespace
     g = SimpleNamespace(lat=np.array([10.0, 80.0, 72.0, 72.0]), n=4,  # (cells in a row: the three of sea are one body)
-                        nbr_off=np.array([0, 1, 3, 5, 6]), nbr_idx=np.array([1, 0, 2, 1, 3, 2]))
+                        nbr_off=np.array([0, 1, 3, 5, 6]), nbr_idx=np.array([1, 0, 2, 1, 3, 2]),
+                        cell_area_km2=np.full(4, 4 * np.pi * 6371.0 ** 2 / 4))
     c = {"t_warm": np.array([28.0, -10.0, 8.0, 8.0]), "t_cold": np.array([20.0, -40.0, -30.0, -30.0])}
     elev = np.array([-100.0, -100.0, -100.0, 50.0])
     s = coast.sea_ice_share(g, elev, c)

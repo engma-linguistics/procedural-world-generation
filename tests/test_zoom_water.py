@@ -27,7 +27,9 @@ def water_world():
     s = smoothstep(150.0, 450.0, x)
     elev = np.where(d0 < 2500, (1 - s) * (8 + 0.05 * x) + s * (60 + 0.3 * x), -3000.0)
     elev = elev - np.where(d0 < 2300, 500 * np.exp(-(_dist_km(g, *LAKE_AT) / 500) ** 2), 0)
-    precip = np.full(g.n, 1200.0)
+    # (1149 mm: the big river keeps the 46,400 m3/s it had when river flow counted every cell as the mean one;
+    # on true cell areas 1200 mm gives 48,500, and test_coast's tide-dominated delta then cuts 3 mouths, not 4: PW-1043)
+    precip = np.full(g.n, 1149.0)
     # wet enough that the basin overflows: an open lake
     c = {"runoff": 0.5 * precip, "aet": 0.5 * precip, "lake_evap": np.full(g.n, 300.0)}
     # (its 53,000 m3/s river would cut the outlet of this ~200 m deep basin
