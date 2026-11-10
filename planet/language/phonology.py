@@ -39,7 +39,8 @@ from __future__ import annotations
 
 import math
 import zlib
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
+from .percepts import replace  # (PW-1555: the interned Segment's fast path; dataclasses.replace otherwise)
 
 import numpy as np
 
@@ -462,6 +463,13 @@ def example(lect, x: Live, inv) -> list | None:
     stress = getattr(inv, "stress", None)
     words = _words_of(lect)
     r = x.rule
+    seen: dict = {}
+
+    def obeys(f) -> bool:   # (_obeys, once per word: the pair loops ask it again for every partner; PW-1555)
+        v = seen.get(f)
+        if v is None:
+            v = seen[f] = _obeys(r, f, stress)
+        return v
     if x.ref.startswith("a:"):
         xs, ps = x.ref[2:].split("|")[:2]
         try:
@@ -481,7 +489,7 @@ def example(lect, x: Live, inv) -> list | None:
             for f2, c2 in words[:60]:
                 if f1 is f2:
                     continue
-                if not (_obeys(r, f1, stress) and _obeys(r, f2, stress)):
+                if not (obeys(f1) and obeys(f2)):
                     continue
                 g = apply_phrase([f1, f2], [r], stress)
                 if g != [f1, f2] and g[0][:-2] == f1[:-2] and g[1][2:] == f2[2:]:
@@ -492,7 +500,7 @@ def example(lect, x: Live, inv) -> list | None:
         for m, (af, suffix) in affixes:
             joined = tuple(f) + tuple(af) if suffix else tuple(af) + tuple(f)
             k = len(f) if suffix else len(af)
-            if not _obeys(r, f, stress):
+            if not obeys(f):
                 break
             g = _at_join(r, joined, k, stress, stem_index=0 if suffix else len(af))
             if g is not None:
@@ -502,7 +510,7 @@ def example(lect, x: Live, inv) -> list | None:
         for f2, c2 in words[:40]:
             if f1 is f2:
                 continue
-            if not (_obeys(r, f1, stress) and _obeys(r, f2, stress)):
+            if not (obeys(f1) and obeys(f2)):
                 continue
             joined = tuple(f1) + tuple(f2)
             g = _at_join(r, joined, len(f1), stress)

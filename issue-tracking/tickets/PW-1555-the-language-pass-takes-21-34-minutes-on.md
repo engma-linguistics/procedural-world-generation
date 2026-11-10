@@ -2,7 +2,7 @@
 id: PW-1555
 title: "The language pass takes 21-34 minutes on a24559: speed up rule application in the workers before it joins every peoples run (file size done)"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-986, PW-1423]
 refs: [planet/language/output.py, planet/language/history.py, planet/language/percepts.py, planet/language/profiles.py, planet/language/rules.py, viewer/langview.js]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-10
 ---
 
 ## Description
@@ -59,4 +59,5 @@ one worker with cProfile first. If never done, any peoples run that includes lan
 - [ ] pass under 5 minutes with 12 workers on a24559 (now ~21-34 min wall: worker-side rule application is next)
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 11 (lang-lane11): 1922 s -> 663 s on a24559 at 8 workers (11 min 43 s wall), output byte-identical (old-code vs new-code full pass: languages.json, -etym, -snapshots; timings aside). Before -> after: steps 1283 -> 327 s, wave 110 -> 49, faiths 89 -> 91 (87 s of it re-deriving a24559's pre-faith gods.json: a fresh run pays none, ~10 min), observe 46 -> 28, start 30 -> 7, after the history ~335 -> ~110. How: interned Segment; per-step memo of rule loads; spelling memo; workers send back only changed words by reference; no GC walk of the heap each interval (frozen, collected every 20); start protos, offence spellings, document phonology and snapshots over the workers (history.fork_map). The 5-min/12-worker box is not met: the steps are now bound by the workers' own sound-change work (40-60 CPU-s per interval). Write-up: docs/review/language/for-daniel.md Lane 11.
 - 2026-11-08: Created from inbox draft draft-languages-json-size-and-cost.md (found by lang-design).

@@ -433,6 +433,48 @@ class Personal:
         here.sort(key=lambda s: (-(s.get("pop_now") or 0), s["id"]))
         return [x for x in (self.settlement(lect, s, river_ids, given) for s in here[:SITES_PER_DEME]) if x is not None]
 
+    def ruins(self, sites: list, river_ids=None) -> dict:
+        """PW-1604: names for the abandoned places of the ledger, so a state whose capital is now a ruin is named for it.
+        Each ruin is named as it was said by the last people to hold it, in the lect of their deme on its cell when it was
+        abandoned (the founders' name, kept as heard when the holders were newcomers: `settlement`), its generic chosen by
+        its peak tier. Returns {deme id of that lect: [entry]}; an entry is the settlement record, kind "ruin", with
+        `abandoned_kyr` and without the long `plain` line (thousands of ruins: the main file stays small)."""
+        R = self.P.R
+        by_deme: dict = {}
+        for l in self.P.lects.values():
+            if l.deme is not None and getattr(l, "lexicon", None) is not None:
+                by_deme.setdefault(l.deme, []).append(l)
+        for v in by_deme.values():
+            v.sort(key=lambda l: (-l.born_kyr, l.id))
+        out: dict = {}
+        for s in sites:
+            k = s.get("abandoned_kyr")
+            if k is None or s.get("kind") == "mine" or s.get("cell") is None or not s.get("founded_by"):
+                continue
+            k = float(k)
+            hs = s.get("holders") or []
+            who = hs[-1][1] if hs else (s.get("holder") or s.get("founded_by"))
+            try:
+                d = R.deme_at_cell(who, int(s["cell"]), R.frame_of(k))
+            except Exception:   # noqa: BLE001 - a people the run cannot place there: the founders' lect names it
+                d = None
+            lect = None
+            for l in by_deme.get(d, ()) if d is not None else ():
+                if l.born_kyr + 1e-9 >= k and (l.died_kyr is None or l.died_kyr <= k + 1e-9):
+                    lect = l
+                    break
+            if lect is None:
+                lect = self._founder_lect(s, None)
+            if lect is None:
+                continue
+            x = self.settlement(lect, dict(s, tier_now=s.get("tier_peak") or "village"), river_ids, None)
+            if x is None:
+                continue
+            x = {kk: v for kk, v in x.items() if kk not in ("plain", "pop", "pattern", "tautology")}
+            x.update(kind="ruin", abandoned_kyr=round(k, 3))
+            out.setdefault(lect.deme, []).append(x)
+        return out
+
     def _founder_lect(self, site, lect=None):
         """The lect that named a site: the lect's own ancestor (or itself) alive at the founding when the founders were of its
         people, else the deme's lect then, else the founders' most numerous lect then."""

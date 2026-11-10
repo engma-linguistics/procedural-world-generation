@@ -4,6 +4,7 @@ checks (inventory sizes and segment frequencies vs PHOIBLE, 2026-11-04). Each re
 from __future__ import annotations
 
 import math
+import time
 
 import numpy as np
 
@@ -539,8 +540,11 @@ def run_all(result: dict) -> list[dict]:
                     (long_generations, result), (complexity, result), (living_sizes, result), (living_segments, result),
                     (living_overuse, result), (typology_consistency, result), (borrowability, result), (areal, result),
                     (possible_segments, result), (second_voice, result)):
+        t = time.perf_counter()
         try:
             out.append(fn(arg))
         except Exception as e:  # (a check that cannot run says so; it never stops the pass)
             out.append(_row(fn.__name__, None, "", False, f"check failed: {type(e).__name__}: {e}"))
+        if isinstance(result.get("timing"), dict):
+            result["timing"]["check_" + fn.__name__ + "_s"] = round(time.perf_counter() - t, 1)
     return out

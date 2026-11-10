@@ -1378,3 +1378,71 @@ syllable, class concord on every word, CLICS derivation families, and gaps that 
 | --- | --- | --- |
 | how much slower a case preposition becomes a proclitic | x0.05 (0.01 matches WALS's proclitics but leaves case prefixes at a third of WALS's) | `grammar.PRE_CASE_CLITIC` |
 | when a syllable gets one growl mark on the page | every voiced sound in it growled, and at least two voiced sounds | `percepts.page_growl` |
+
+## Lane 11 (lang-lane11, 2026-11-10): the pass in under 12 minutes, every god named, ruins named
+
+- **Speed (PW-1555).** In plain words: the language pass on a24559 now takes under 12 minutes from start to written
+  file, down from about 32, and its output is the same down to the byte. Same machine, 8 workers, the lane 10 code
+  against this lane's: 1922 s -> 663 s for the pass (11 min 43 s on the clock, start to written file; lane 10's own
+  passes took 1606-1647 s on a quieter machine). Proof: a full pass of the old code and one of the new code wrote
+  identical languages.json, languages-etym.json and languages-snapshots.json (timings aside); the last two speed
+  changes were proven the same way against this lane's final output.
+  Where the time went, before -> after: the language steps 1283 -> 327 s; the spread of changes between neighbours
+  110 -> 49 s; faiths 89 -> 91 s; the frame readings 46 -> 28 s; building the protos 30 -> 7 s; the work after the
+  history (offence check, checks, writing the page data) about 335 -> about 110 s.
+  What changed:
+  - every sound is one shared object, so comparing sounds is a pointer check;
+  - a sound change works out each candidate rule's load once per step, not once per draw;
+  - spellings are remembered;
+  - the workers send back only the words that changed;
+  - Python's garbage collector no longer walks the whole history after every interval;
+  - building the protos, the offence check's spellings and the page data's sound rules and snapshots run on the
+    workers.
+  Still slow: about 87 s of the faiths' 91 is a24559 re-deriving its gods.json, which predates the faith records; a
+  run made today does not pay it, so a fresh run takes about 10 minutes. The steps are now limited by the workers'
+  own sound-change work (40-60 CPU-seconds an interval). The ticket's "5 minutes on 12 workers" would need that work
+  itself made faster.
+- **Every god named, no god called 'I' (PW-1548).** In plain words: 8 languages held a faith without names for some
+  of its gods, and 78 god names had worn down to a single short sound ('A', 'I'). These languages were born a frame
+  or two after their faith reached them, so they missed the naming. Now, after the history, such a language takes the
+  god's name from a neighbour that has it (or coins one). A name worn below two beats (a long vowel counts two) is
+  replaced by an epithet, the way names are replaced through the whole history: same world, before -> after, 8 -> 0
+  unnamed, 78 -> 0 one-sound names (158 renewed in all, counting single consonants; 7 names that are one long vowel,
+  'Aa', stay). This runs after the history, so the history itself and every check are unchanged. The first version
+  did it during the history; that re-rolled the world and tipped the near-vs-far check just under its mark, so I
+  moved it.
+- **The other page slips (PW-1548).**
+  - Done: a word-family card whose root came from another language says so ("(a loan: the root is the gnome
+    proto-language's)"). History lines quoting a grammar marker as it was mark the old form: "then (/ŋɨ̞n/ now)".
+  - Already fixed before this lane: the polite-address note no longer mentions rank; recipes follow the food (wheat,
+    maize, sorghum, horse meat; no "grind the cane").
+  - Gone on today's run: the dwarf ä missing from the vowel chart; no language now has a vowel in its words that its
+    chart lacks. But 5 of 620 have one consonant in a word or two that the chart does not list (draft).
+  - Left, and why: the complexity tab says on the page that it uses today's population and contact. A god whose
+    domain has no word borrows a neighbour's ('chief of the fire' for a desert spirit). Sister languages each call a
+    god 'the lord', which is what inheritance does. Hawaiian-type kin call cousins by the sibling words, which is
+    what Hawaiian does; the concept list has no separate words for male and female cousins. A god name that sounds
+    like a grammar marker (Moow) is ordinary homophony. Instrument 'with' and comitative 'with' are glossed apart
+    ("with (using) the stone" against "with the dog").
+- **Old capitals named (PW-1604, the language side).** In plain words: the languages now name every abandoned town
+  and village, about 14,000 places, in the language of whoever held it last when it was left. So a state whose
+  capital is now a ruin gets a real name in the names slot: on a24559, 4,352 states, all of them. States with a
+  named capital: 1,848 -> 6,200 of 15,013. The names slot needs no change; it already reads every named place by
+  its site. The ruins are listed under the deme whose language named them; a deme that is gone keeps a small entry
+  marked `gone`. The sketches list them under "Ruins". The viewer counts them ("and 3 named ruins") without listing
+  them. languages.json grows from 55 to 58 MB.
+  Still missing: 8,618 states (57%) have a capital that is lived in but not among its deme's three biggest places,
+  so it has no name yet (draft, v5).
+- **Checks** (a24559, lane 10 -> this lane): the same numbers, since the history is unchanged: 620 living, all pass
+  but the scholars' horizon; sisters 0.573; pronoun loans 0.076; WOLD rho 0.407. The second-voice tone share moved
+  0.019 -> 0.038 (one renewed god name; still passes). The demo builds with no fable warning.
+- **Drafts:** living capitals with no name (v5, three options, my lean: name every capital); a consonant in a few
+  words that is missing from the chart (later).
+
+**Defaults I chose**
+
+| what | default | where |
+| --- | --- | --- |
+| shortest god name kept | 2 beats (a long vowel counts 2) | `faiths.MIN_NAME_MORAS` |
+| intervals between garbage collections in the pass | 20 | `history.COLLECT_EVERY` |
+| which ruins get names | every abandoned site but mines, in the last holders' lect at abandonment | `personal.Personal.ruins` |
