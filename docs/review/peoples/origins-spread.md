@@ -159,3 +159,42 @@ the landmass draw already uses a species-area exponent, and the crowding comes f
 
 ## Tests
 `tests/test_lineages.py` and `tests/test_peoples_robust.py` (area) and the not-slow suite, NUMBA_NUM_THREADS=4, -n 2, on the final code.
+
+## Lane 269: the 1 Mkm2 floor (PW-1558, owner D71 B)
+
+### Diagnosis (written before the code change; main 673436c0, af2677, arm now)
+On main, 4 of the 17 dnd runs of the suite (base 3, jitter 4, portal 4, knob 6) leave one of the four peoples under 1 Mkm2:
+jitter 2 hobgoblin 0.14, jitter 3 leonin 0.11, jitter 4 leonin 0.11 and halfling 0.05. Each was *founded* on 1-9 cells
+(found 0.012-0.10 Mkm2; in the passing runs 0.11-0.71). A probe of the three runs (each traced line's range, its landmass, the
+good cells next to it and how many another people holds, every ~5 kyr) shows one cause, and it is not the refuge:
+
+- The mammal radiation starts on an islet of 0.10-0.16 Mkm2 near (0, 178). A stem founded there "at the edge of its parent's
+  range" (feline in jitters 3 and 4, greater goblinoid in jitter 2, archaic humans in jitter 4) holds 3-14 cells of it for
+  0.3-6 Myr: every good cell next to it is held by a sibling (good cells next door 1-8, all taken), it has no boats and no
+  jump reaches land (0 jumps, 0 crossings). It never holds fewer than 3 cells, so `_hold_out` never fires: lane 233's refuge
+  is not involved. (In jitter 2 the refuge did fire for the goblinoid, which moved to a 20 Mkm2 continent; the goblins there
+  are fine at 2.1 Mkm2. The greater goblinoid, split off just before onto the same islet, stayed.)
+- Its daughter is then founded by the usual split rule (inside, at the edge of, or beside the parent's range), which on that
+  islet is the islet itself or a 1-2 cell rock next to it: leonin "beside the parent's range" on 1 cell (jitter 4) or 7 cells
+  (jitter 3); hobgoblin at the edge, 8 cells; halfling beside, 2 cells. It too has no way off before boats, so it stays at
+  0.05-0.14 Mkm2 to the present (leonin jitter 4: 1-3 cells for 1.4 Myr; crossings come only in the last 30 kyr).
+- So: not a refuge too small, not a failure to re-expand after a hold-out, and not rivals around a refuge. It is the
+  founders' country rule: a split is founded where its parent is, even when the country there cannot hold a founders'
+  country. Lane 233 already required a held-out stem's refuge to be a free country at least one founders' country in size;
+  a split born beside a stranded stem had no such check.
+
+### Mechanism (lane 269, in progress)
+`origins._origin_split`: before a land split is founded, `_founders_room` asks whether the landmass under the chosen cell
+holds at least one founders' country (`_founders_cells`: the cells within FOUNDER_KM, the size lane 233's refuge already
+requires) of country the daughter can live in (K > 2 EST), anywhere on it. If not (an islet, or an island with little of its
+habitat), the founders arise at `_refuge_cell(line, K, parent's range)`: the nearest free country of founders' size within
+LAST_LAND_REACH x FOUNDER_KM of the parent's range: the same choice as a stem with no land, so no new constant. Origin
+reason: "no founders' country on the parent's islet: the nearest free country". `_refuge_cell`'s reach is now also checked in
+great-circle km (`_km_from`): counted in grid steps it let a fire-giant refuge land 8,180 km out (grid steps are longer than
+cell_km in places).
+
+First try (landmass size only, without the habitat count), partial suite (af2677 arm now; main = 673436c0, same seeds):
+base s7/s10/s13 and jitters 1-3 all changed (the mammal islet sits in every dnd run: feline, hominid and goblinoid are now
+founded 1,570-1,700 km off it); Seven Meals runs identical to main. Leonin 4.9-5.8 -> 19-29 Mkm2 on the base seeds and
+jitters 1 and 3, but jitter 2's leonin fell 5.2 -> 0.51 (founded on an island of more than a founders' country of land
+but only ~0.5 Mkm2 of its grassland, no boats). Hence the habitat count. The full suite on the final rule is still to run.

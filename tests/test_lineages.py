@@ -202,6 +202,25 @@ def test_a_stem_s_land_lies_empty_at_its_end(faketz):
     assert (h._last_held[h.idx["stem"]] == (west | east)).all()
 
 
+def test_a_split_needs_a_landmass_for_its_founders(faketz):
+    """PW-1558 (lane 269): a split founded on an islet smaller than a founders' country has no room there (it arises in the nearest
+    free country instead, _origin_split); on a continent it has, however little of it suits it."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raw()), ps, 1)
+    env = h.steps[-1].get()
+    tags = H._tags(h.grid, env)
+    lon, lat = h.grid.lon, h.grid.lat
+    west = tags["land"] & (np.abs(lon) < 60)
+    c = int(np.argmax(np.where(west, -np.abs(lon) - np.abs(lat), -1e9)))
+    islet = H.rings(c, np.ones(h.grid.n, bool), 1, h.grid.nbr_off, h.grid.nbr_idx)
+    K = np.where(islet, 1.0, 0.0)  # (it can live only there)
+    assert islet.sum() < h._founders_cells(K)
+    assert not h._founders_room(c, K, islet)
+    assert not h._founders_room(c, K, tags["land"] | islet)  # (a continent with only the islet's worth of its habitat: no room either)
+    K2 = np.where(tags["land"] | islet, 1.0, 0.0)
+    assert h._founders_room(c, K2, tags["land"] | islet)
+
+
 def test_walkers_dont_cross_the_sea_swimmers_do(faketz):
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     g = ps.grid
