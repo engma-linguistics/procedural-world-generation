@@ -55,3 +55,16 @@ step). What is left there is the contacts: the live tree reads each pair's borde
 as it grows (PW-1473, `LiveTech._links`, `_retime`), the after-run tree one interval per pair with the whole run's median
 border (`techtree.links_of`). The live tree cannot know the whole run's median; the after-run tree could read the border of the
 time, but that is a change to how every front is timed, not done here.
+
+## 3. Where lane 265 stopped (paused by the coordinator, 11-09 20:45)
+
+- PW-1597's check on this code was **not made**: the queue (`scratchpad/l265/jobs3.txt`: C on/off for the five pairs on code
+  f43385ce's planet/ (= 3e0e8b80), plus main a6ed6954 off for the three L6 pairs) was killed 18 minutes in, with no run finished.
+- Measured so far, L6 4360a3 seed 7 switch on (first state / writing median of the 12 largest): main a6ed6954 3,300 / 2,698 ya
+  (fee5e2); + PW-1612 B 3,400 / 2,848 (ab1aa0); + B + R + tracks 3,400 / 2,848 (314c9b): B moves the live writing 150 years later
+  (one step); R and the tracks change nothing on this run's live tree (the tracks change is after-run only). The switch-off run on
+  this code is still to make; round21's off on 061c6eca was 3,400 / 3,005, but main has history changes since (counter, dispersal),
+  so the baseline must be rerun on a6ed6954.
+- L6 seed 10 on, main a6ed6954: 4,900 / 4,079 ya (4e67d8).
+- To resume: rebuild the scratch root (`scratchpad/l265/mkroot.sh`), re-run `q.sh jobs3.txt` (go.sh waits for load <= 30),
+  measure with `m.sh measure <tag> ...`, then the on/off table, flip or not (PW-1596). This is the third attempt at PW-1597's gap.
