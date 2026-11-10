@@ -1,4 +1,5 @@
 ---
+id: PW-1638
 title: "Languages: final consonants are easy to lose and hard to gain, so simple syllables drift to twice WALS's share"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lang-lane12
 blocked_by: []
 relates: [PW-1622]
 refs: ["planet/language/lect.py::Lect.phonotactic_veto", "planet/language/lect.py::Lect.step", "planet/language/lect.py::PHONO_VETO", "planet/language/inventory.py::new_violations", "planet/language/inventory.py::retemplate", planet/language/data/sound_changes.tsv, tools/language/real_inventory.py, docs/review/language/calibration.md, docs/review/language/for-daniel.md, "run a24559"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -36,3 +39,6 @@ resists losing it all at once (S099's whole-class loss refused like a new type);
 refusal wait. Re-measure with tools/language/real_inventory.py and the WALS reading on a full a24559 pass.
 - [ ] simple syllables on a24559 within 0.08-0.16, complex within 0.25-0.40
 - [ ] CV protos (Swahili, Hawaiian, Japanese in real_inventory.py) still under 10% closed after 2.5 kyr
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-language-coda-supply-one-way.md (found by lang-lane12).

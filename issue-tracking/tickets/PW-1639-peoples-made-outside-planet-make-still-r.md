@@ -1,5 +1,6 @@
 ---
-title: "Peoples made outside planet make still run the language pass on one process, with no progress or opt-out"
+id: PW-1639
+title: Peoples made outside planet make still run the language pass on one process, with no progress or opt-out
 type: task
 status: todo
 parent: PW-767
@@ -11,6 +12,8 @@ found_by: lang-lane12
 blocked_by: []
 relates: [PW-1634, PW-1555]
 refs: ["planet/lineages/output.py::save", "planet/lineages/run.py::job", "planet/lineages/run.py::run", "planet/api.py::lineages_job", "planet/make.py::make", "planet/language/run.py::write", "planet/language/history.py::WORKERS", viewer/navigator.js, viewer/lineages.html]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -28,3 +31,6 @@ Do: give POST /api/lineages the same `languages` and `language_workers` fields a
 takes `languages`), and run the pass after `run()` in the job with the job's progress, as make.py does; a checkbox
 in the tree editor's run panel. The peoples stage itself should then never run the pass (drop the call in
 output.save), so there is one place it is run from.
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-viewer-peoples-job-languages-single-process.md (found by lang-lane12).
