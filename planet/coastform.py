@@ -55,8 +55,8 @@ import numpy as np
 
 from . import coast
 from . import coastal as CL
-from .constants import SEC_PER_YR
-from .geo import R_KM, cell_area_km2, latlon, ramp, world_land
+from .hydrology import discharge
+from .geo import R_KM, latlon, ramp, world_land
 
 # barrier islands (Hayes 1979; Davis & Fitzgerald 2004)
 BAR_RELIEF = (150.0, 40.0)  # m: the coast's land this low (mean height or half the rise to the highest neighbour)
@@ -103,9 +103,10 @@ def island_mask(grid, land, label=None, size=None):
     if label is None:
         label, k = grid.components(land)
         size = np.bincount(label[label >= 0], minlength=k)
-    km2 = 4.0 * np.pi * R_KM ** 2 / grid.n
+    a = grid.cell_area_km2
+    km2 = np.bincount(label[label >= 0], a[label >= 0], minlength=len(size))[np.maximum(label, 0)]
     s = size[np.maximum(label, 0)]
-    return land & (label >= 0) & ((s * km2 <= ISLAND_KM2) | (s <= 1))
+    return land & (label >= 0) & ((km2 <= ISLAND_KM2) | (s <= 1))
 
 
 ICE, FJORD, DELTA, MANGROVE, TIDAL, BARRIER, CORAL, CLIFF, ROCKY, BEACH, LOW = range(1, 12)
@@ -174,7 +175,7 @@ def scores(grid, L: dict, meta: dict | None = None) -> dict:
     mouths, kgs = CL.river_loads(grid, L)
     load = np.zeros(n)
     load[mouths] = kgs
-    q = np.asarray(L["flow"], float) * (cell_area_km2(n)) * 1e6 / SEC_PER_YR  # m^3/s
+    q = discharge(grid, np.asarray(L["flow"], float))  # m^3/s
     delta = (load >= DELTA_KGS) & (q >= DELTA_Q)
     load_near = np.maximum(load, grid.nbr_max_in(load, land))
     sand = np.maximum(sand, ramp(load_near, 10.0, 100.0))
@@ -289,7 +290,7 @@ def summary(grid, L: dict) -> dict:
                   "best": [{"lat": round(float(grid.lat[i]), 1), "lon": round(float(grid.lon[i]), 1),
                             "score": round(float(v[i]), 2)} for i in best if v[i] > 0]}
     hz = np.asarray(L.get("nav_hazard", np.zeros(grid.n)), float)
-    out["hazard_km2"] = round(float((hz >= 0.5).sum() * 4 * np.pi * R_KM ** 2 / grid.n))
+    out["hazard_km2"] = round(float(grid.cell_area_km2[hz >= 0.5].sum()))
     return out
 
 

@@ -34,7 +34,7 @@ def test_water_the_continents_give_up_raises_the_sea(grid4):
     depth over the ocean, and continents that sink take it back. An ice age's drained shelves don't count."""
     s = Simulation(grid4, 1, Params(heat_start=1.0), 2.0)
     s.step()
-    w = earth.ocean_area(s.grid)
+    w = s.grid.cell_area_km2
     assert s.cont_water_ref is not None
     s.cont_water_ref = None  # (taken again at this moment: the reference is what the continents hold then)
     assert abs(earth.continent_water(s, w)) < 1e-9 and s.cont_water_ref > 0
@@ -116,7 +116,7 @@ def test_sediment_moved_off_a_shelf_onto_the_ocean_floor_keeps_the_sea(grid4):
     from planet.tectonics.isostasy import elevation, sediment_km
     s = Simulation(grid4, 1, Params(heat_start=1.0), 2.0)
     s.step()
-    w = earth.ocean_area(s.grid)
+    w = s.grid.cell_area_km2
     assert s.sed_water_ref is not None
     s.cont_water_ref = s.sed_water_ref = None  # (references taken at this moment)
     assert abs(earth.continent_water(s, w)) < 1e-9 and abs(earth.floor_sediment_water(s, w)) < 1e-9

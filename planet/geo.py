@@ -69,7 +69,7 @@ def is_land(elev, ice=None, grid=None) -> np.ndarray:
     if not wet.any():
         return ~wet
     g = _grid_of(elev.shape[0], grid)
-    return _land_k(wet, np.ascontiguousarray(elev, dtype=np.float64), g.nbr_off, g.nbr_idx, cell_area_km2(g.n),
+    return _land_k(wet, np.ascontiguousarray(elev, dtype=np.float64), g.nbr_off, g.nbr_idx, g.cell_area_km2,
                    SEA_MIN_KM2, SILL_M)
 
 
@@ -83,19 +83,18 @@ def _find(parent, x):
 
 @njit(cache=True)
 def _land_k(wet, elev, nbr_off, nbr_idx, area, min_km2, sill_m):
-    """is_land after the wet mask, in one sequential pass (integer logic, so the answer is the numpy form's exactly):
-    the wet bodies, the ones big enough or the largest are sea, bodies one low cell apart join (union-find), a group
-    with a sea in it is sea."""
+    """is_land after the wet mask, in one sequential pass: the wet bodies, the ones big enough (area: km2 of each
+    cell) or the largest are sea, bodies one low cell apart join (union-find), a group with a sea in it is sea."""
     n = wet.shape[0]
     lab, k = components(wet, nbr_off, nbr_idx)
-    size = np.zeros(k, np.int64)
+    size = np.zeros(k)
     for i in range(n):
         if wet[i]:
-            size[lab[i]] += 1
+            size[lab[i]] += area[i]
     sea = np.zeros(k, np.bool_)
     big = 0
     for b in range(k):
-        sea[b] = size[b] * area >= min_km2
+        sea[b] = size[b] >= min_km2
         if size[b] > size[big]:
             big = b
     sea[big] = True
@@ -147,7 +146,8 @@ def arc_km(dots) -> np.ndarray:
 
 
 def cell_area_km2(n: int) -> float:
-    """Area of one of n equal-area cells on the sphere, km^2."""
+    """Area of the mean of n cells on the sphere, km^2 (the cells are not equal: Grid.cell_area_km2 has each
+    one's; this is for per-cell scales, never for adding cells up)."""
     return 4 * np.pi * R_KM ** 2 / n
 
 

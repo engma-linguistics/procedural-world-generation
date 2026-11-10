@@ -5,7 +5,6 @@ import pytest
 
 from planet import climate, nest
 from planet.grid import build_grid
-from planet.ocean import cell_area_km2
 from planet.tectonics import Simulation, earth
 from planet.tectonics.params import Params
 
@@ -19,7 +18,7 @@ def test_restrict_keeps_area_means_and_prolong_is_linear(grid4):
     assert c.level == 3 and np.array_equal(s["p0"][:c.n], np.arange(c.n))
     f = grid4.centers[:, 0] + 2.0
     r = nest._restrict(s, f)
-    a4, a3 = cell_area_km2(grid4), cell_area_km2(c)
+    a4, a3 = grid4.cell_area_km2, c.cell_area_km2
     assert abs((a4 * f).sum() / a4.sum() - (a3 * r).sum() / a3.sum()) < 2e-3
     assert np.allclose(nest._restrict(s, np.full(grid4.n, 7.0)), 7.0)
     # a linear field comes back to within its curvature over a cell
@@ -37,7 +36,7 @@ def test_coarse_climate_is_close_to_the_native_one(sim4_60):
     for k in ("temp", "t_warm", "t_cold", "precip", "runoff", "sst"):
         assert b[k].shape == a[k].shape, k
     assert b["wind_jul"].shape == (g.n, 3) and np.abs((b["wind_jul"] * g.centers).sum(1)).max() < 1e-9
-    w = cell_area_km2(g) * land
+    w = g.cell_area_km2 * land
     assert abs(((a["temp"] - b["temp"]) * w).sum() / w.sum()) < 1.0
     # (plumbing, not accuracy: L3's ~500 km cells rain ~20% less on L4's land; L6 on L7 is measured in
     # docs/review/speed/README.md)
@@ -123,7 +122,7 @@ def test_the_l7_climate_is_as_arid_and_as_wet_as_its_nested_l6_climate_on_one_gr
     ice = np.where(e > 0, sim.ice, 0.0)
     a = climate.compute(g, e, sim.dT, sim.params.tilt, ice)
     b = nest.climate_coarse(g, 6, e, sim.dT, sim.params.tilt, ice)
-    w = cell_area_km2(g) * ((e > 0) & (ice <= 0))
+    w = g.cell_area_km2 * ((e > 0) & (ice <= 0))
     arid = [k[0] for k in climate.KOPPEN if k[1].startswith("B")]
 
     def share(c):

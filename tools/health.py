@@ -192,7 +192,7 @@ def measure_frame(grid, L: dict, stats: dict) -> dict:
     """The health measures of one keyframe: L holds decoded layers
     (MEASURE_LAYERS, real units), stats the frame's run.json stats."""
     n = grid.n
-    cell_km2 = EARTH_KM2 / n
+    cell_km2 = grid.cell_area_km2  # (true areas: the cells span 0.67-1.21 of the mean, PW-1043)
     elev = np.asarray(L["elevation"], float)
     land = is_land(elev, grid=grid)  # (the frame's ground, no ice; geo.is_land)
     ice = np.asarray(L["ice"], float)
@@ -204,9 +204,9 @@ def measure_frame(grid, L: dict, stats: dict) -> dict:
     down = np.asarray(L["downstream"]).astype(np.int64)
     nland, nfree = max(1, int(land.sum())), max(1, int(free.sum()))
     lab, nl = grid.components(lake)
-    lake_max = float(np.bincount(lab[lab >= 0]).max()) * cell_km2 / 1e6 if nl else 0.0
-    vol_ice = (ice[land] / 1000.0).sum() * cell_km2  # km3
-    ocean_km2 = max(1.0, float((~land).sum()) * cell_km2)
+    lake_max = float(np.bincount(lab[lab >= 0], cell_km2[lab >= 0]).max()) / 1e6 if nl else 0.0
+    vol_ice = (ice[land] / 1000.0 * cell_km2[land]).sum()  # km3
+    ocean_km2 = max(1.0, float(cell_km2[~land].sum()))
     return {
         "t": round(float(stats["t"]), 1),
         "land_pct": round(100 * float(land.mean()), 2),

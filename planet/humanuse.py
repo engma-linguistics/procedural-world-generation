@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .geo import R_KM, arc_km, cell_area_km2, is_land, xyz
+from .geo import R_KM, arc_km, is_land, xyz
 
 FREEZE_SEA = -1.8  # C: sea water freezes (climate.FREEZE)
 
@@ -107,7 +107,7 @@ class Net:
             nxt = np.asarray(downstream).astype(np.int64)
             nxt = np.where((nxt >= 0) & (nxt < grid.n), nxt, -1)
             dk = np.where(nxt >= 0, arc_km((c * c[np.maximum(nxt, 0)]).sum(1)), 0.0)
-        return cls(grid.n, e[:, 0], e[:, 1], elen, nxt, dk, np.full(grid.n, cell_area_km2(grid.n)),
+        return cls(grid.n, e[:, 0], e[:, 1], elen, nxt, dk, np.array(grid.cell_area_km2),
                    grid.spacing * R_KM, "world", grid.lat)
 
     @classmethod

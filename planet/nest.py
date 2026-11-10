@@ -23,7 +23,6 @@ import numpy as np
 from . import climate
 from .geo import is_land
 from .grid import Grid, shared_grid
-from .ocean import cell_area_km2
 
 _NEST: dict = {}
 # climate.compute's fields that are totals per cell (Sv of deep water sinking in the cell), not values at a point:
@@ -47,7 +46,7 @@ def step(fine: Grid) -> dict:
             par = par[par < nc]
             assert len(par) == 2, (i, par)
             p0[i], p1[i] = par
-        w = 0.5 * cell_area_km2(fine)
+        w = 0.5 * fine.cell_area_km2
         wsum = np.bincount(p0, w, nc) + np.bincount(p1, w, nc)
         _NEST[key] = dict(coarse=coarse, nc=nc, p0=p0, p1=p1, w=w, wsum=wsum)
     return _NEST[key]
@@ -123,7 +122,7 @@ def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_s
     for k in air:
         out[k] = climate.LAPSE * surf_c + c[k]
     for k in PER_CELL:  # (per-cell totals go down as densities: a coarse cell's Sv shared by its fine cells' areas)
-        out[k] = c[k] / cell_area_km2(coarse)
+        out[k] = c[k] / coarse.cell_area_km2
     for i in range(len(steps) - 1, -1, -1):  # up one level at a time
         s, cm, fm = steps[i], masks[i + 1], masks[i]
         for k, v in list(out.items()):
@@ -140,7 +139,7 @@ def climate_coarse(fine: Grid, level: int, elev, dT, tilt, ice, veg=None, rain_s
             elif v.ndim == 2 and v.shape[1] == s["nc"]:  # (k, n) stacks
                 out[k] = np.stack([_prolong(s, r, cm, fm) for r in v])
     for k in PER_CELL:
-        out[k] = out[k] * cell_area_km2(fine)
+        out[k] = out[k] * fine.cell_area_km2
     surf, bed = np.maximum(e + np.where(land, ice, 0.0), 0.0), np.maximum(e, 0.0)
     for k in air:
         out[k] = out[k] - climate.LAPSE * surf

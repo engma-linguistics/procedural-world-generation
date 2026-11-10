@@ -42,7 +42,7 @@ from numba import njit, prange
 from . import kernels
 from . import ocean as ocean_mod
 from .constants import GRAV, RHO_C_SEA
-from .geo import R_KM, arc, arc_km, cell_area_km2, is_land
+from .geo import R_KM, arc, arc_km, is_land
 from .grid import Grid
 
 PCO2_REF = 350.0  # ppm: the CO2 of the climate model's dT = 0, Earth's climate as its data show it (~1960-2000,
@@ -206,7 +206,6 @@ def _faces(grid: Grid) -> dict:
     (nbr). Cached with _geom."""
     G = _geom(grid)
     if "faces" not in G:
-        from .ocean import cell_area_km2
         n = grid.n
         ea, eb = grid.edges[:, 0].astype(np.int64), grid.edges[:, 1].astype(np.int64)
         # each icosphere triangle is a corner of its three cells, so an edge's two
@@ -234,7 +233,7 @@ def _faces(grid: Grid) -> dict:
         o = np.argsort(cells, kind="stable")
         off = np.concatenate([[0], np.cumsum(np.bincount(cells, minlength=n))]).astype(np.int64)
         eid, sg = eid[o], sg[o]
-        G["faces"] = dict(ea=ea, eb=eb, L=L, n=nrm, lc=lc, A=cell_area_km2(grid) * 1e6, off=off, eid=eid, sg=sg,
+        G["faces"] = dict(ea=ea, eb=eb, L=L, n=nrm, lc=lc, A=grid.cell_area_km2 * 1e6, off=off, eid=eid, sg=sg,
                           nbr=np.where(sg > 0, eb[eid], ea[eid]))
     return G["faces"]
 
@@ -863,7 +862,7 @@ def currents(grid: Grid, ocean: np.ndarray, wind_v: np.ndarray, tune: dict | Non
     lab, nlab = grid.components(land)
     nl = max(nlab, 1)
     k = np.maximum(lab, 0)
-    sizes = np.bincount(lab[lab >= 0], minlength=nl) * (cell_area_km2(grid.n))
+    sizes = np.bincount(lab[lab >= 0], grid.cell_area_km2[lab >= 0], minlength=nl)
     lo = np.full(nl, 90.0)
     hi = np.full(nl, -90.0)
     np.minimum.at(lo, lab[lab >= 0], lat[lab >= 0])

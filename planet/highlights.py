@@ -129,6 +129,7 @@ from pathlib import Path
 import numpy as np
 
 from . import coast, kernels
+from .hydrology import discharge
 from . import store as S
 from . import world as W
 from .climate import BIOMES, KOPPEN, LAPSE
@@ -192,7 +193,8 @@ class _Ctx:
         g = self.g
         self.n = g.n
         self.cell_km = g.spacing * R_KM
-        self.area = cell_area_km2(g.n)  # km^2 per cell (cells are near-equal)
+        self.area = cell_area_km2(g.n)  # km^2 of the mean cell
+        self.cell_km2 = g.cell_area_km2  # km^2 of each cell (they span 0.67-1.21 of the mean, PW-1043)
         self.elev = self.L["elevation"].astype(float)
         self.summit = summit_m(self.g, self.elev)  # a display height (cell mean + sub-cell relief, PW-846)
         self.land = world_land(self.L)  # (a bed below the sea under grounded ice is land, PW-307)
@@ -234,6 +236,10 @@ class _Ctx:
         out = [m for m in out if len(m) >= min_cells]
         out.sort(key=lambda m: (-len(m), m[0]))
         return out
+
+    def km2(self, cells) -> float:
+        """km^2 of the cells (true areas)."""
+        return float(self.cell_km2[np.asarray(cells, np.int64)].sum())
 
     def middle(self, cells) -> int:
         """The member cell nearest the region's centroid."""
@@ -485,7 +491,7 @@ def _rivers(ctx: _Ctx) -> dict:
         if np.array_equal(ni, iced):
             break
         iced = ni
-    q = L["flow"].astype(float) * ctx.area * 1e6 / SEC_PER_YR  # cells x m/yr -> m^3/s
+    q = discharge(ctx.g, L["flow"].astype(float))  # m^3/s
     ctx._riv = {"down": down, "mouth": mouth, "dist": dist, "outlet": outlet, "q": q, "iced": iced}
     return ctx._riv
 
@@ -532,13 +538,13 @@ def rivers(ctx: _Ctx) -> list[dict]:
         length, course = _river_course(ctx, m)
         basin = _basin_cells(ctx, m)
         q = float(R["q"][m])
-        stats = {"discharge_m3s": round(q), "length_km": round(length), "basin_km2": round(len(basin) * ctx.area),
+        stats = {"discharge_m3s": round(q), "length_km": round(length), "basin_km2": round(ctx.km2(basin)),
                  "mouth_lat": ctx.latlon(m)[0], "mouth_lon": ctx.latlon(m)[1]}
         if kind == "largest_river":
             d = delta_score(ctx, m)
             site = " Low coast and shallow shelf at the mouth: a likely delta site." if d["delta_like"] else ""
             gal = galloway_note(ctx, m, q) if d["delta_like"] else {}
-            blurb = (f"{_n(q)} m³/s reaches the sea here, from a {_area(len(basin) * ctx.area)} basin; "
+            blurb = (f"{_n(q)} m³/s reaches the sea here, from a {_area(ctx.km2(basin))} basin; "
                      f"{_n(length)} km from its farthest source.{site}{gal.pop('note', '')}")
             d.pop("delta_score")
             feats.append(_feature(ctx, kind, "Largest river (its mouth)", blurb, m, 1000, {**stats, **d, **gal},
@@ -649,7 +655,7 @@ def lakes(ctx: _Ctx) -> list[dict]:
     mid = ctx.middle(cells)
     level = float(filled[cells].max())
     depth = float((filled[cells] - ctx.elev[cells]).max())
-    a = len(cells) * ctx.area
+    a = ctx.km2(cells)
     blurb = f"Surface at {_m(level)} above sea level, up to ~{_m(depth)} deep."
     return [_feature(ctx, "lake", f"Biggest lake: {_area(a)}", blurb, mid, zoom_size(ctx.span_km(cells, mid)),
                      {"area_km2": round(a), "surface_m": round(level), "max_depth_m": round(depth)})]
@@ -663,7 +669,7 @@ def inland_seas(ctx: _Ctx) -> list[dict]:
         return []
     cells = regions[1]  # [0] is the world ocean
     mid = ctx.middle(cells)
-    a = len(cells) * ctx.area
+    a = ctx.km2(cells)
     floor = float(ctx.elev[cells].min())
     blurb = f"Sea cut off from the ocean (like the Caspian), its floor down to {_m(floor)}."
     return [_feature(ctx, "inland_sea", f"Landlocked sea: {_area(a)}", blurb, mid,
@@ -684,7 +690,7 @@ def desert(ctx: _Ctx) -> list[dict]:
     if cells is None:
         return []
     mid = ctx.middle(cells)
-    a = len(cells) * ctx.area
+    a = ctx.km2(cells)
     hot = (k[cells] == 3).mean() >= 0.5
     rain = float(ctx.L["precipitation"][cells].mean())
     t_warm = float(ctx.L["warm_month"][cells].mean())
@@ -712,7 +718,7 @@ def rainforest(ctx: _Ctx) -> list[dict]:
     if cells is None:
         return []
     mid = ctx.middle(cells)
-    a = len(cells) * ctx.area
+    a = ctx.km2(cells)
     rain = float(L["precipitation"][cells].mean())
     stats = {"area_km2": round(a), "rain_mm": round(rain)}
     if "vegetation" in L:
@@ -733,7 +739,7 @@ def ice_sheet(ctx: _Ctx) -> list[dict]:
     if cells is None:
         return []
     mid = ctx.middle(cells)
-    a = len(cells) * ctx.area
+    a = ctx.km2(cells)
     big = a > 1e6
     coast = ctx.dilate(~ctx.land)[cells].any()
     blurb = f"Land ice up to ~{_m(ice[cells].max())} thick" + (", reaching the sea." if coast else ".")
@@ -761,7 +767,7 @@ def mediterranean(ctx: _Ctx, top: int = 2) -> list[dict]:
     feats = []
     for rank, cells in enumerate(regions[:top]):
         mid = ctx.middle(cells)
-        a = len(cells) * ctx.area
+        a = ctx.km2(cells)
         L = ctx.L
         hilly = float(np.mean((relief[cells] > 150) & (relief[cells] < 2000)))
         on_coast = float(coast[cells].mean())
@@ -1259,7 +1265,7 @@ def flood_basalts(ctx: _Ctx, top: int = 1) -> list[dict]:
     m &= ctx.land
     out = []
     for cells in ctx.components(m, min_cells=1, bridge=1):
-        a = len(cells) * ctx.area
+        a = ctx.km2(cells)
         if a < FLOOD_MIN_KM2 or len(out) >= top:
             break
         mid = ctx.middle(cells)
@@ -1386,16 +1392,16 @@ def landmasses(ctx: _Ctx) -> list[dict]:
         return []
     feats = []
     big = masses[0]
-    a = len(big) * ctx.area
+    a = ctx.km2(big)
     mid = ctx.middle(big)
     pct = 100 * len(big) / max(ctx.land.sum(), 1)
     feats.append(_feature(ctx, "continent", f"Largest continent: {_area(a)}",
                           f"{pct:.0f}% of all land; highest point {_m(ctx.elev[big].max())}.", mid,
                           4000, {"area_km2": round(a), "pct_of_land": round(pct)}, zoomable=False))
-    islands = [m for m in masses if len(m) * ctx.area < ISLAND_MAX_KM2]
+    islands = [m for m in masses if ctx.km2(m) < ISLAND_MAX_KM2]
     if islands and len(islands[0]) >= 3:
         isl = islands[0]
-        a = len(isl) * ctx.area
+        a = ctx.km2(isl)
         mid = ctx.middle(isl)
         bigger = np.concatenate([m for m in masses if len(m) > len(isl)])
         off = float(ctx.dist(mid, bigger).min())
@@ -1628,11 +1634,11 @@ def salt(ctx: _Ctx) -> list[dict]:
                 continue
             cells = regions[0]
             mid = ctx.middle(cells)
-            a = len(cells) * ctx.area
+            a = ctx.km2(cells)
             lvl = float(np.median(ws[cells]))
             below = f"{_m(-lvl)} below sea level" if lvl < 0 else f"at {_m(lvl)}"
             basin = _inland_basins(ctx).get(int(_sink(ctx, [cells[0]])[0]))
-            basin_a = len(basin) * ctx.area if basin is not None else a
+            basin_a = ctx.km2(basin) if basin is not None else a
             evap = f"; ~{_n(pet[cells].mean())} mm a year could evaporate" if pet is not None else ""
             rain = float(L["precipitation"][cells].mean())
             if k == 2:
@@ -1651,7 +1657,7 @@ def salt(ctx: _Ctx) -> list[dict]:
     basins = _inland_basins(ctx)
     if basins:
         cells = max(basins.values(), key=len)
-        a = len(cells) * ctx.area
+        a = ctx.km2(cells)
         if a >= 5 * ctx.area:
             low = int(cells[np.argmin(_water_surface(ctx)[cells])])
             mid = ctx.middle(cells)
@@ -1672,7 +1678,7 @@ def salt(ctx: _Ctx) -> list[dict]:
         if regions:
             cells = regions[0]
             mid = ctx.middle(cells)
-            a = len(cells) * ctx.area
+            a = ctx.km2(cells)
             blurb = (f"{_area(a)} of salt and gypsum beds at the surface, ~{_m(np.median(ctx.elev[cells]))} up, "
                      f"~{L['precipitation'][cells].mean():.0f} mm of rain a year: the floors of old salt lakes "
                      f"and seas that dried out.")
@@ -1737,7 +1743,7 @@ def _landmass_km2(ctx: _Ctx) -> np.ndarray:
     """km^2 of the landmass each land cell belongs to (0 at sea)."""
     if getattr(ctx, "_lm", None) is None:
         lab, k = ctx.g.components(ctx.land)
-        size = np.bincount(lab[lab >= 0], minlength=k) * ctx.area
+        size = np.bincount(lab[lab >= 0], ctx.cell_km2[lab >= 0], minlength=k)
         ctx._lm = np.where(lab >= 0, size[np.maximum(lab, 0)], 0.0)
     return ctx._lm
 
@@ -1772,7 +1778,7 @@ def _reef_sites(ctx: _Ctx) -> dict:
         m = np.zeros(ctx.n, bool)
         m[cells] = True
         ring = ctx.dilate(m) & ~m
-        a = len(cells) * ctx.area
+        a = ctx.km2(cells)
         reef_km2 = float(share[cells].sum()) / 100 * ctx.area
         if (share[cells] >= REEF_CELL).sum() == 0:
             continue
@@ -2080,7 +2086,7 @@ def plateaus(ctx: _Ctx, top: int = 3) -> list[dict]:
     regions = ctx.components(mask, min_cells=4)
     for rank, cells in enumerate(regions[:top]):
         mid = ctx.middle(cells)
-        a = len(cells) * ctx.area
+        a = ctx.km2(cells)
         h, r = float(ctx.elev[cells].mean()), float(np.median(relief[cells]))
         clim = ""
         if "climate" in L:
@@ -2200,7 +2206,7 @@ def great_forests(ctx: _Ctx, top: int = 2) -> list[dict]:
             continue
         groups.add(VEG_GROUP[d])
         mid = ctx.middle(cells)
-        a = len(cells) * ctx.area
+        a = ctx.km2(cells)
         tc = float(np.asarray(L["tree_cover"], float)[cells].mean())
         stats = {"area_km2": round(a), "tree_cover_pct": round(tc), "type": VEG_NAME[d], "group": VEG_GROUP[d]}
         if "canopy_height" in L:
@@ -2227,7 +2233,7 @@ def savanna(ctx: _Ctx) -> list[dict]:
     if cells is None:
         return []
     mid = ctx.middle(cells)
-    a = len(cells) * ctx.area
+    a = ctx.km2(cells)
     stats = {"area_km2": round(a), "rain_mm": round(float(L["precipitation"][cells].mean()))}
     blurb = f"{_area(a)} of grass and scattered trees, ~{_n(stats['rain_mm'])} mm of rain a year"
     if "tree_cover" in L:
@@ -2255,12 +2261,12 @@ def wetlands(ctx: _Ctx, top: int = 2) -> list[dict]:
     cand = []
     for cells in regions[:20]:
         f = float(fl[cells].mean()) if fl is not None else 30.0
-        cand.append((len(cells) * ctx.area * (0.5 + f / 100), cells, f))
+        cand.append((ctx.km2(cells) * (0.5 + f / 100), cells, f))
     cand.sort(key=lambda c: -c[0])
     feats = []
     for rank, (_, cells, f) in enumerate(cand[:top]):
         mid = ctx.middle(cells)
-        a = len(cells) * ctx.area
+        a = ctx.km2(cells)
         d = _dominant(ctx, cells)
         stats = {"area_km2": round(a), "flooded_pct": round(f), "type": VEG_NAME[d]}
         blurb = (f"{_area(a)} of wetland, ~{round(f)}% of it under water part of the year: {_veg_mix(ctx, cells)}. "
@@ -2289,7 +2295,7 @@ def maquis_coast(ctx: _Ctx) -> list[dict]:
         return []
     _, cells, on = best
     mid = ctx.middle(cells[coast[cells]])
-    a = len(cells) * ctx.area
+    a = ctx.km2(cells)
     stats = {"area_km2": round(a), "coast_pct": round(100 * on),
              "warm_month_c": round(float(L["warm_month"][cells].mean())),
              "rain_mm": round(float(L["precipitation"][cells].mean()))}
@@ -2343,7 +2349,7 @@ def treelines(ctx: _Ctx) -> list[dict]:
     cells = _largest_region(ctx, ctx.land & (veg == 42), min_cells=3)  # forest-tundra
     if cells is not None:
         mid = ctx.middle(cells)
-        ar = len(cells) * ctx.area
+        ar = ctx.km2(cells)
         stats = {"area_km2": round(ar), "lat": round(float(ctx.g.lat[mid]), 1),
                  "warm_month_c": round(float(L["warm_month"][cells].mean()), 1)}
         blurb = (f"The northern edge of the forest" if ctx.g.lat[mid] >= 0 else "The southern edge of the forest") + (

@@ -56,7 +56,7 @@ EARTH_SEAS = [
 
 def openness(grid, sea, idx, km=OPEN_KM):
     """Sea's share (by area) of the disc within km of each cell in idx."""
-    area = ocean.cell_area_km2(grid)
+    area = grid.cell_area_km2
     c = np.cos(km / R_KM)
     out = np.empty(len(idx))
     for j, i in enumerate(idx):
@@ -67,7 +67,7 @@ def openness(grid, sea, idx, km=OPEN_KM):
 
 def report(grid, c, sea, label, earth=None):
     lat, lon = grid.lat, grid.lon
-    area = ocean.cell_area_km2(grid)
+    area = grid.cell_area_km2
     sink = np.where(sea, c["overturning"], 0.0)
     sites = sorted(c["moc_sites"], key=lambda s: -s["sv"])
     lab, k = kernels.components(sea, grid.nbr_off, grid.nbr_idx)
@@ -105,7 +105,7 @@ def report(grid, c, sea, label, earth=None):
         land = ~sea
         nw = sea & (lat > 62) & (lat < 72) & (lon > -5) & (lon < 15)
         fs = land & (d["ice"] <= 0) & (lat > 58) & (lat < 71) & (lon > 5) & (lon < 32) & np.isfinite(d["obs_t_cold"])
-        w = ocean.cell_area_km2(grid)
+        w = grid.cell_area_km2
         open_w = float(w[nw & (c["sst_jan"] > climate.FREEZE + 0.2)].sum() / w[nw].sum())
         f = lambda x, m: float((x * w)[m].sum() / w[m].sum())
         R["norway"] = dict(open_winter=open_w, sea_air_cold=f(c["t_cold"], nw), sst_cold=f(c["sst_jan"], nw),
