@@ -359,3 +359,15 @@ def test_drawn_marked_stops_have_their_plain_partner(draws):
             if s.larynx in (1, 2) and s.manner in (0, 1) and not s.lateral:
                 assert I.plain_partners(s) & have, (to_ipa(s), [to_ipa(x) for x in inv.consonants])
 
+
+
+def test_token_priors_follow_lexical_counts():
+    """PW-1623: phonemes are drawn by their token class's busyness in words (data/token_frequency.tsv, from NorthEuraLex),
+    not by how many inventories have them: a is busier than u, t and k than p, b and g; a class the table lacks keeps
+    its presence weight."""
+    from planet.language import inventory as INV
+    from planet.language.percepts import parse_segment as P
+    t = INV.token_priors()
+    assert t and t[INV.token_class(P("a"))] > t[INV.token_class(P("u"))]
+    assert t[INV.token_class(P("t"))] > t[INV.token_class(P("p"))] > t[INV.token_class(P("ɡ")) ] * 0.9
+    assert INV.token_class(P("ǃ")) not in t and INV._lexical(P("ǃ"), 0.04) == pytest.approx(0.2)

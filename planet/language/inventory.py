@@ -891,19 +891,94 @@ def stressed_ipa(ipa: str, stress: str | None) -> str:
 
 # --- words --------------------------------------------------------------------------------------------------------------
 
-# how often a segment of each manner turns up in words, relative to its share of inventories: glides and glottals are in
-# nearly every inventory but carry far fewer words than stops and nasals (a house prior, not a published table)
-LEXICAL_MANNER = {0: 1.4, 1: 0.9, 2: 1.0, 3: 1.2, 4: 0.45, 5: 0.9, 6: 0.8, 7: 0.8, 8: 0.6, 9: 0.6}
+# Token frequency (PW-1623). How often a word uses a phoneme is not how many languages have it: i, a and u are each in
+# about 90% of inventories, yet a is the commonest vowel token almost everywhere, and p b d g, in most inventories, are
+# quieter in words than t k n s l r. Until PW-1623 a phoneme was drawn by sqrt(PHOIBLE presence share / (1 + cost)) times a
+# house manner factor (stops x1.4, glides x0.45, glottals x0.5), which put /a/ at 13% of Arabic-seeded segments against
+# 31% real, Japanese b d g p at 4-5% each against ~0.5%, and m at 8-10% everywhere against 3-6%. Now a phoneme is drawn by
+# its token class's relative busyness (data/token_frequency.tsv, tools/language/token_priors.py: in each of NorthEuraLex
+# 0.9's 107 languages, a class's token share per phoneme of that class, over the average phoneme of its kind; the median
+# over the languages that have the class), times 1 / sqrt(1 + make cost) as before (a sound dear for the species is used
+# less). A class the table lacks (clicks, the non-human sounds) keeps the old presence weight. NorthEuraLex is Eurasian
+# (Uralic, Indo-European, Turkic, Mongolic, Tungusic, Caucasian, Paleosiberian, Dravidian, Japonic, Koreanic, Sino-
+# Tibetan...), so the table is a Eurasian lexical prior; a richer world sample (ASJP, Lexibank) can replace the file.
+TOKEN_TSV = DATA / "token_frequency.tsv"
 
 
-def _lexical(s: Segment) -> float:
-    if s.kind != "C":
-        return 1.0
-    return LEXICAL_MANNER.get(s.manner, 1.0) * (0.5 if s.place == 8 else 1.0)
+def token_class(s: Segment) -> str:
+    """The class a phoneme's token frequency is read by (token_priors.py builds the table with the same function): vowel
+    height and backness/rounding; consonant manner, place group and voicing; marked series (ejective, implosive,
+    aspirated, prenasal, secondary articulation) as their own classes."""
+    if s.kind == "V":
+        if s.back <= 1 and s.round:
+            return "V:y"
+        if s.height <= 1:
+            return "V:a"
+        if s.back <= 1:
+            return "V:i" if s.height >= 5 else ("V:e" if s.height >= 3 else "V:ɛ")
+        if s.back >= 3 and s.round:
+            return "V:u" if s.height >= 5 else ("V:o" if s.height >= 3 else "V:ɔ")
+        return "V:ɨ" if s.height >= 5 else "V:ə"
+    m = s.manner
+    if m in (8, 9):
+        return f"C:m{m}"
+    if s.larynx == 2:
+        return "C:ejective"
+    if s.larynx == 3:
+        return "C:implosive"
+    if s.prenasal:
+        return "C:prenasal"
+    if s.double:
+        return "C:labial-velar"
+    pg = ("lab" if s.place == 0 else "cor" if s.place <= 3 else "pal" if s.place == 4 else "vel" if s.place == 5
+          else "uvu" if s.place == 6 else "phar" if s.place == 7 else "glot")
+    v = "d" if s.voice else "t"
+    if m == 0:
+        base = f"stop-{pg}-{v}" if pg != "glot" else "stop-glot"
+    elif m == 1:
+        base = f"affricate-{v}"
+    elif m == 2:
+        base = (f"fric-sib-{v}" if s.sibilant else f"fric-lat" if s.lateral else
+                f"fric-{pg}" if pg in ("glot", "phar") else f"fric-{pg}-{v}")
+    elif m == 3:
+        base = f"nasal-{pg}"
+    elif m == 4:
+        base = "approx-lat" if s.lateral else ("approx-w" if pg in ("lab", "vel") else "approx-j" if pg == "pal"
+                                               else "approx-r")
+    else:
+        base = {5: "lateral", 6: "trill", 7: "tap"}.get(m, f"m{m}")
+    if s.retroflex:   # (retroflex and dental series apart: d and ɖ are not one busyness; Dravidian-only in the sample)
+        base += "-retro"
+    if s.larynx == 1 or s.phonation == 1:
+        base += "-asp"
+    if s.secondary:
+        base += "-sec"
+    return "C:" + base
+
+
+@functools.lru_cache(maxsize=1)
+def token_priors() -> dict:
+    """token class -> relative token frequency per phoneme (data/token_frequency.tsv; empty without the file)."""
+    if not TOKEN_TSV.exists():
+        return {}
+    out = {}
+    for line in TOKEN_TSV.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.startswith("#") or line.startswith("class\t"):
+            continue
+        k, v = line.split("\t")[:2]
+        out[k] = float(v)
+    return out
+
+
+def _lexical(s: Segment, presence: float) -> float:
+    """A phoneme's draw weight before its make cost: its token class's busyness, or the presence weight it had before
+    PW-1623 for a class the table lacks."""
+    t = token_priors().get(token_class(s))
+    return t if t is not None else math.sqrt(presence)
 
 
 def _weights(inv: Inventory, segs: list) -> np.ndarray:
-    w = np.array([_lexical(s) * math.sqrt(inv.freq.get(s, 0.05) / (1.0 + inv.cost.get(s, 0.0))) for s in segs], float)
+    w = np.array([_lexical(s, inv.freq.get(s, 0.05)) / math.sqrt(1.0 + inv.cost.get(s, 0.0)) for s in segs], float)
     w = np.where(np.isfinite(w) & (w > 0), w, 1e-6)
     return w / w.sum()
 
@@ -1314,6 +1389,25 @@ def word_shape(f) -> tuple:
         return None
     medial = any((b - a - 1) >= 2 or (b - a - 1 == 1 and f[a + 1].length) for a, b in zip(vi, vi[1:]))
     return vi[0], len(f) - 1 - vi[-1], medial
+
+
+def pattern_of(forms) -> tuple:
+    """The word-shape pattern a line holds on to (lect.Lect.pattern_resist, PW-1642): the share of words ending in a
+    consonant, the share with a medial coda, the share with an onset cluster, and syllables per word (vowel runs)."""
+    n = fc = med = oc = syl = 0
+    for f in forms:
+        f = [s for s in f if s.kind != "T"]
+        vi = [i for i, s in enumerate(f) if s.kind == "V"]
+        if not vi:
+            continue
+        n += 1
+        fc += vi[-1] < len(f) - 1
+        oc += vi[0] >= 2
+        med += any((b - a - 1) >= 2 or (b - a - 1 == 1 and f[a + 1].length) for a, b in zip(vi, vi[1:]))
+        syl += 1 + sum(1 for a, b in zip(vi, vi[1:]) if b > a + 1)
+    if not n:
+        return 0.0, 0.0, 0.0, 1.0
+    return fc / n, med / n, oc / n, syl / n
 
 
 def syllable_profile(forms, share: float = TEMPLATE_SHARE) -> tuple:
