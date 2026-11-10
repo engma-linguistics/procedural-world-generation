@@ -20,7 +20,7 @@ The model (every judgement constant is in the block below; `derive(..., **overri
   ~120 km apart and cities ~180 km; PW-1627: km, not rings, so an L8 refine reads the same country).
   The best site is the sedentary people of the hinterland x the site factor. Each share is x the site factor, and the
   place takes the largest tier its holder may build and its cell may hold. Sedentary people = density (stored per frame: eraq 'dens') x cell area x farmers' share (eraq 'farm'),
-  plus FISHER_SHARE of the others on a cell with a harbour or a navigable river (fisher and river villages), plus HOLD_SHARE of
+  plus FISHER_SHARE of the others on a coast cell beside a harbour (the harbour layer is the water: coast_harbour, PW-1640) or on a navigable river (fisher and river villages), plus HOLD_SHARE of
   the holder's people where the holder is a mining people (trait miner or subterranean: dwarves) that knows 'mines' (the land
   use counts miners as neither farmers nor herders, so without this the dwarves' halls would hold no one). The site
   factor (SITE_MIN..SITE_MAX) adds for a harbour on a coast that is still a coast at that time, a navigable river, fresh
@@ -329,8 +329,17 @@ def _world_layers(world: str | None, n: int) -> dict:
     return out
 
 
-def _site_factor(W: dict, coastal: np.ndarray, c: dict) -> np.ndarray:
-    hb = np.clip(np.rint(W["harbour"]), 0, 3).astype(int)
+def coast_harbour(g, harbour: np.ndarray, sea: np.ndarray, coastal: np.ndarray) -> np.ndarray:
+    """Each coastal land cell's harbour class: the best of its neighbours' that are sea at this time (PW-1640: humanuse.harbours
+    marks the harbour water, at sea; a town stands on the shore beside it, as land.py carries harbours to the coast). 0 elsewhere."""
+    off, idx = np.asarray(g.nbr_off, np.int64), np.asarray(g.nbr_idx, np.int64)
+    hb = np.where(sea, np.clip(np.rint(np.asarray(harbour, float)), 0, 3), 0.0)
+    return np.where(coastal, np.maximum.reduceat(hb[idx], off[:-1]), 0.0)
+
+
+def _site_factor(W: dict, coastal: np.ndarray, c: dict, hb_coast: np.ndarray) -> np.ndarray:
+    """The site factor (SITE_MIN..SITE_MAX); hb_coast: coast_harbour's class on the coast's land cells at this time."""
+    hb = np.clip(np.rint(hb_coast), 0, 3).astype(int)
     rv = np.clip(np.rint(W["river_nav"]), 0, 3).astype(int)
     q = (1.0 + np.where(coastal, np.asarray(c["SITE_HARBOUR"])[hb], 0.0) + np.asarray(c["SITE_RIVER"])[rv]
          + c["SITE_FRESH"] * (np.rint(W["fresh_water"]) >= 3) + c["SITE_FERTILE"] * (W["fertile_score"] - 0.5) + c["SITE_PASS"] * (W["pass"] > 0))
@@ -592,7 +601,8 @@ def derive(run_dir: Path, **over) -> dict:
             coastal = land & (np.add.reduceat(sea[g.nbr_idx].astype(np.int64), g.nbr_off[:-1]) > 0)
             e = {"land": land, "sea": sea, "elev": np.asarray(elev), "ice": np.asarray(ice) > 0.5, "coastal": coastal,
                  **{k: np.asarray(arr[k][fj]) for k in ("mix_lead", "mix_lead_share", "mix_second", "mix_second_share", "mix_other_share", "peoples_overlay")}}
-            e["q"] = _site_factor(W, coastal, c)
+            e["harbour"] = coast_harbour(g, W["harbour"], sea, coastal)  # (PW-1640: the harbour water beside a coastal land cell)
+            e["q"] = _site_factor(W, coastal, c, e["harbour"])
             cache.clear()
             cache[j] = e
         return cache[j]
@@ -739,7 +749,7 @@ def derive(run_dir: Path, **over) -> dict:
         stage0 = np.where(has, stage_of(lead, ago), 0)
         capc = caps_of(stage0)
         hold = np.where(has, mines_x[np.minimum(lead, nl)] >= ago - 1e-9, False) * e["mix_lead_share"] / 100  # (a mining holder's halls)
-        waterside = ((W["harbour"] > 0) & e["coastal"] | (W["river_nav"] > 0))
+        waterside = (e["harbour"] > 0) | (W["river_nav"] > 0)
         settled_p = dens * area * (farm + c["FISHER_SHARE"] * (1 - farm) * waterside + c["HOLD_SHARE"] * hold)
         sp = np.where(e["land"], settled_p, 0.0)
         target = np.zeros(n)
