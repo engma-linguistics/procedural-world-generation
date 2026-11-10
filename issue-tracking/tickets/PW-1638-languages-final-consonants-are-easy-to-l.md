@@ -4,7 +4,7 @@ title: "Languages: final consonants are easy to lose and hard to gain, so simple
 type: task
 status: todo
 parent: PW-767
-milestone: later
+milestone: v4
 subsystem: peoples
 effort: m
 impact: med
@@ -41,4 +41,5 @@ refusal wait. Re-measure with tools/language/real_inventory.py and the WALS read
 - [ ] CV protos (Swahili, Hawaiian, Japanese in real_inventory.py) still under 10% closed after 2.5 kyr
 
 ## Updates
+- 2026-11-10: Owner 11-10: the real-language experiment is a standing benchmark for the language model, like Earth for physics; its gaps are now-work, not later. Moved to v4; lane 14.
 - 2026-11-10: Created from inbox draft draft-language-coda-supply-one-way.md (found by lang-lane12).

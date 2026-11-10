@@ -4,7 +4,7 @@ title: "Languages: the phonotactic veto is per draw, so CV languages gain codas 
 type: task
 status: done
 parent: PW-767
-milestone: later
+milestone: v4
 subsystem: peoples
 effort: s
 impact: med

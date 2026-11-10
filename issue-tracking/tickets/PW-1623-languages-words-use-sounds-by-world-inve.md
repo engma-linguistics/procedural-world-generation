@@ -4,7 +4,7 @@ title: "Languages: words use sounds by world inventory presence, not lexical fre
 type: task
 status: todo
 parent: PW-767
-milestone: later
+milestone: v4
 subsystem: peoples
 effort: m
 impact: med
@@ -31,4 +31,5 @@ Fix direction: token-frequency priors by sound class (vowel height, manner) from
 If never done: every language's texture is flatter and more stop-heavy than real ones. Hand-seeded and drawn languages alike sound "engine-made", and the finder's texture term stays the main reason nothing in a run reads as close to a real language.
 
 ## Updates
+- 2026-11-10: Owner 11-10: the real-language experiment is a standing benchmark for the language model, like Earth for physics; its gaps are now-work, not later. Moved to v4; lane 14.
 - 2026-11-10: Created from inbox draft draft-language-segment-token-frequencies.md (found by lang-realinv).
