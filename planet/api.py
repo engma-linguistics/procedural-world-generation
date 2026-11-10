@@ -316,7 +316,7 @@ def parse_timezoom_request(req: dict) -> dict:
     BadRequest, or SystemExit for an unknown run."""
     if not isinstance(req, dict) or not req.get("run"):
         raise BadRequest("give run and t")
-    out = {"type": "timezoom", "run": str(req["run"]), "kyr": _num(req, "kyr", 300)}
+    out = {"type": "timezoom", "run": str(req["run"]), "kyr": _num(req, "kyr", 2000)}
     if not 1 <= out["kyr"] <= 2000:
         raise BadRequest("kyr must be within 1..2000")
     run_dir = S.find_run(out["run"])

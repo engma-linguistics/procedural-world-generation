@@ -768,10 +768,10 @@ def main():
                   "1: one after the other in this process)")
     h.set_defaults(func=cmd_highlights)
 
-    tz = sub.add_parser("timezoom", help="glacial time zoom: ~1 Myr of ice ages from one moment of a run -> runs/<id>/")
+    tz = sub.add_parser("timezoom", help="glacial time zoom: ~2 Myr of ice ages from one moment of a run -> runs/<id>/")
     tz.add_argument("run", help="run id (see `list`), or 'earth' for today's Earth (ETOPO1)")
     tz.add_argument("--at", type=float, default=0.0, help="moment of the run, Myr (nearest keyframe)")
-    tz.add_argument("--kyr", type=float, default=1000, help="how long to simulate (thousand years)")
+    tz.add_argument("--kyr", type=float, default=2000, help="how long to simulate (thousand years)")
     tz.add_argument("--step", type=float, default=0.5, help="time step (kyr)")
     tz.add_argument("--every", type=float, default=2.0, help="keep a viewer frame every N kyr")
     tz.add_argument("--level", "-l", type=int, default=6, help="grid level (earth only; runs use their own)")

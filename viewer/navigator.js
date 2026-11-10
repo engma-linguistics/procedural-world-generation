@@ -108,9 +108,9 @@ export function createNavigator(host) {
   function actions(n) {
     const here = keyOf(view) === n.key, dis = busy() ? 'disabled' : '';
     if (n.kind === 'run' && here && view.kind === 'run') {
-      const kyr = forms.kyr || 300;
+      const kyr = forms.kyr || 2000;
       return `<button class="pl-btn sm" data-do="timezoom" ${dis} title="${kyr} kyr of ice ages from ${view.t} Myr">Time zoom from here</button>
-        <select class="pl-btn sm" data-kyr title="How long the time zoom runs">${[100, 300, 1000].map((k) => `<option value="${k}"${k === kyr ? ' selected' : ''}>${k} kyr</option>`).join('')}</select>
+        <select class="pl-btn sm" data-kyr title="How long the time zoom runs">${[100, 300, 1000, 2000].map((k) => `<option value="${k}"${k === kyr ? ' selected' : ''}>${k} kyr</option>`).join('')}</select>
         <button class="pl-btn sm" data-do="finishRun" ${dis} title="The full world at this keyframe">Finish world here</button>`;
     }
     if (n.kind === 'peoples')  // (a peoples run: its tree opens in the editor; worlds are finished from the time zoom)
@@ -304,7 +304,7 @@ export function createNavigator(host) {
       delete f.est;
       return start('refine', { world: e.target.dataset.id, level: lv }, `Refine ${e.target.dataset.id} to L${lv}`, 'world');
     }
-    if (d === 'timezoom') return start('timezoom', { run: view.id, t: view.t, kyr: forms.kyr || 300 }, `Time zoom from ${view.t} Myr (${forms.kyr || 300} kyr)`, 'timezoom');
+    if (d === 'timezoom') return start('timezoom', { run: view.id, t: view.t, kyr: forms.kyr || 2000 }, `Time zoom from ${view.t} Myr (${forms.kyr || 2000} kyr)`, 'timezoom');
     if (d === 'finishRun') return start('finish', { run: view.id, t: view.t }, `World at ${view.t} Myr`, 'world');
     if (d === 'finishIg' || d === 'finishGl') {
       const ig = d === 'finishIg';
