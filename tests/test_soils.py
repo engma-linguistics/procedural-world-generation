@@ -224,3 +224,24 @@ def test_world_soils(sim4):
     share = np.bincount(soil[land], minlength=len(SO.TYPES)) / land.sum()
     assert share.max() < 0.6
     assert (np.asarray(L["soil_carbon"])[~land] == 0).all()
+
+
+def test_finer_grid_reads_slope_at_the_cell_scale(monkeypatch):
+    """A finer grid (a refine) reads relief at the reference cells' scale (vegetation.cell_relief, lane 274): the
+    reference grid itself is unchanged, a smooth slope reads the same on the finer nested grid, and rough ground
+    between the reference cells doesn't steepen it the way the fine neighbours' own relief does."""
+    from planet.geo import R_KM
+    g4, g5 = build_grid(4), build_grid(5)
+    monkeypatch.setattr(V, "CELL_KM", g4.spacing * R_KM)
+    assert V.cell_rings(g4) == 1 and V.cell_rings(g5) == 2
+    ramp = lambda g: 4000.0 + 3000.0 * g.centers[:, 0]  # noqa: E731 (land everywhere)
+    e4 = ramp(g4)
+    assert np.array_equal(V.cell_relief(g4, e4), V.relief(g4, e4))
+    n4 = g4.n
+    s4 = SO.cell_slope(g4, e4)
+    s5 = SO.cell_slope(g5, ramp(g5))[:n4]  # (the fine grid's first cells are the coarse ones)
+    assert 0.85 < np.median(s5 / s4) < 1.2
+    rough = ramp(g5) + np.where(np.arange(g5.n) >= n4, 400.0 * np.sin(np.arange(g5.n)), 0.0)
+    own = V.relief(g5, rough)[:n4] / (g5.spacing * R_KM)
+    cell = SO.cell_slope(g5, rough)[:n4]
+    assert np.median(own / s4) > 2.0 and np.median(cell / s4) < 1.6

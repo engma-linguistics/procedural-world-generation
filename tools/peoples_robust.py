@@ -537,7 +537,7 @@ def measure(h, res, pres) -> dict:
     # (lane 97: per line, the share of its K each brake held off at its last step, history.counter)
     brakes = dict(getattr(h, "lost", None) or {})
     origins_all = {lid: o.get("why") for lid, o in h.origins.items()}  # (every line's founding reason, stems included: the fallback counts)
-    return {"peoples": out, "n_peoples": len(peoples), "origins_all": origins_all, "refuges": list(getattr(h, "_refuges", [])), "lost": lost, "brakes": brakes, "event_kinds": kinds, "runtime_s": round(getattr(h, "runtime", 0.0), 1), "blocs": blocs,
+    return {"peoples": out, "n_peoples": len(peoples), "origins_all": origins_all, "refuges": list(getattr(h, "_refuges", [])), "refuge_picks": list(getattr(h, "_refuge_picks", [])), "lost": lost, "brakes": brakes, "event_kinds": kinds, "runtime_s": round(getattr(h, "runtime", 0.0), 1), "blocs": blocs,
             "total_pop": float(tot), "megafauna": {k: v.get("count") if isinstance(v, dict) else None for k, v in (pres.get("megafauna") or {}).items()}}
 
 
@@ -558,6 +558,14 @@ def run_one(spec: dict) -> dict:
                 c = int(np.argmax(self.p[k]))
                 km = float(dist_km(self.grid, float(self.grid.lat[c]), float(self.grid.lon[c]))[last].min()) if last is not None and last.any() else None
                 self.__dict__.setdefault("_refuges", []).append({"line": l.id, "ago_kyr": round(step.ago, 3), "km": None if km is None else round(km)})
+
+        def _refuge_cell(self, l, K, last):  # (PW-1558, lane 269: every nearest-free-country pick, a stem's refuge or a split's founders, and how far from the land it left)
+            c = super()._refuge_cell(l, K, last)
+            if last is not None and last.any():
+                from planet.lineages.gridops import dist_km
+                km = float(dist_km(self.grid, float(self.grid.lat[c]), float(self.grid.lon[c]))[last].min())
+                self.__dict__.setdefault("_refuge_picks", []).append({"line": l.id, "km": round(km)})
+            return c
 
         def _end_parent(self, line, step, env, tags):
             before = {c: float((self.p[self.idx[c]] >= 0.12).sum()) for c in self._realm_kids(line)}

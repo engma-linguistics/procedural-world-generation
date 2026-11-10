@@ -202,6 +202,29 @@ def test_a_stem_s_land_lies_empty_at_its_end(faketz):
     assert (h._last_held[h.idx["stem"]] == (west | east)).all()
 
 
+def test_a_split_needs_a_patch_of_its_habitat_for_its_founders(faketz):
+    """PW-1558 (lanes 269, 269c): a split founded on an islet smaller than a founders' country has no room there (it arises in the
+    nearest free country instead, _origin_split), nor on a sliver of its habitat on a landmass whose other habitat lies apart from it;
+    on a continent of its habitat it has."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raw()), ps, 1)
+    env = h.steps[-1].get()
+    tags = H._tags(h.grid, env)
+    lon, lat = h.grid.lon, h.grid.lat
+    west = tags["land"] & (np.abs(lon) < 60)
+    c = int(np.argmax(np.where(west, -np.abs(lon) - np.abs(lat), -1e9)))
+    islet = H.rings(c, np.ones(h.grid.n, bool), 1, h.grid.nbr_off, h.grid.nbr_idx)
+    K = np.where(islet, 1.0, 0.0)  # (it can live only there)
+    assert islet.sum() < h._founders_cells(K)
+    assert not h._founders_room(c, K, islet)
+    assert not h._founders_room(c, K, tags["land"] | islet)  # (a continent with only the islet's worth of its habitat: no room either)
+    K2 = np.where(tags["land"] | islet, 1.0, 0.0)
+    assert h._founders_room(c, K2, tags["land"] | islet)
+    apart = tags["land"] & ~h._dilate(islet, 2)  # (its habitat elsewhere on the land, not touching the patch at c)
+    K3 = np.where(islet | apart, 1.0, 0.0)
+    assert apart.sum() >= h._founders_cells(K3) and not h._founders_room(c, K3, tags["land"] | islet)
+
+
 def test_walkers_dont_cross_the_sea_swimmers_do(faketz):
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     g = ps.grid
@@ -644,7 +667,11 @@ def test_demography_defaults_inheritance_and_numbers(faketz):
     pop = h.population(k)
     assert abs(pop.sum() - 0.5 * big.sum() * 1e-5 * h.cell_mkm2 * 1e6) < 1e-6 * pop.sum()
     _, _, pres = H.simulate(t, ps, tries=1)
-    assert pres["lines"]["f"]["population"] > 100 * pres["lines"].get("g2", {"population": 1})["population"]
+    # (PW-1558: g2 is no longer stranded on a fake island, so compare people per km2, not head counts: f's
+    # agricultural/seafaring defaults give it the denser country; g2's sparse defaults come from insular g)
+    lf, l2 = pres["lines"]["f"], pres["lines"]["g2"]
+    assert lf["area_mkm2"] > 0 and l2["area_mkm2"] > 0
+    assert lf["population"] / lf["area_mkm2"] > l2["population"] / l2["area_mkm2"]
     first = [m for m in pres["landmasses"] if m["discovered"]]
     assert first and all(m["discovered"]["by"] in t.lines for m in first)
 

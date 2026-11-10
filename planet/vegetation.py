@@ -911,6 +911,43 @@ def relief(grid, elev) -> np.ndarray:
     return np.maximum.reduceat(d, grid.nbr_off[:-1])
 
 
+# The cell scale (lane 274, docs/review/refine-l8/soils.md). The rules that read relief (the wetlands' flat ground and
+# floodplains here, the thin buckets on steep ground, the soils' erosion law and slope classes) are written for the
+# relief between neighbouring L7 cells, each the mean height of its own ~60 km footprint. A finer grid (a refined
+# world, PW-1198) resolves steeper, rougher ground between closer cells: on 899985's L8 refine the neighbour slope is
+# ~2x the L7 world's on the same land, and the soils' erosion (~ slope^2) thinned them by a quarter. So a finer grid
+# reads its relief at the cell scale, as a zoom's pixel does (soils.zoom_slope): its heights averaged over one
+# reference cell's footprint, then the relief to the highest and lowest of those within one reference spacing (k
+# rings of its own cells). The L7 grid, and the coarser ones, read their own neighbours as before.
+CELL_KM = 60.2  # km: the L7 grid's mean neighbour spacing (Grid.spacing x R_KM), the scale the relief rules are written for
+
+
+def cell_rings(grid) -> int:
+    """How many of the grid's own neighbour rings span one reference spacing (CELL_KM): 1 at L7 and coarser, 2 at
+    L8, 4 at L9."""
+    from .geo import R_KM
+    return max(1, int(round(CELL_KM / (grid.spacing * R_KM))))
+
+
+def cell_relief(grid, elev) -> np.ndarray:
+    """m to the steepest ground one reference cell away (CELL_KM), as relief() reads it on the L7 grid: a finer
+    grid's heights first averaged over a reference cell's footprint. One pass of (the cell + half of each
+    neighbour) spreads a height over the area of four cells (a reference cell's at k = 2); passes add their
+    variance, so a k-ring reference cell (k^2 x as large) takes ~0.74 k^2 / 4 of them."""
+    k = cell_rings(grid)
+    if k <= 1:
+        return relief(grid, elev)
+    e = np.asarray(elev, float)
+    deg = np.diff(grid.nbr_off)
+    for _ in range(max(1, int(round(0.74 * k * k / 4)))):
+        e = (e + 0.5 * np.add.reduceat(e[grid.nbr_idx], grid.nbr_off[:-1])) / (1 + 0.5 * deg)
+    hi, lo = e, e
+    for _ in range(k):
+        hi = np.maximum(hi, np.maximum.reduceat(hi[grid.nbr_idx], grid.nbr_off[:-1]))
+        lo = np.minimum(lo, np.minimum.reduceat(lo[grid.nbr_idx], grid.nbr_off[:-1]))
+    return np.maximum(hi - e, e - lo)
+
+
 FLOOD_REF = 2.0  # a typical river's flood ratio (peak month / mean month): floodplains as calibrated on the mean flow
 
 
@@ -928,7 +965,7 @@ def floodplain(grid, elev, flow, rel=None, flood_ratio=None) -> np.ndarray:
     """The share of each cell that is a big river's floodplain or delta
     (part of flooded(); the zoom places it along its own rivers), from its
     flood flow (the mean x flood_scale)."""
-    rel = relief(grid, elev) if rel is None else rel
+    rel = cell_relief(grid, elev) if rel is None else rel
     flat = np.clip(1 - rel / 400.0, 0, 1)
     from .hydrology import discharge
     q = discharge(grid, np.asarray(flow, float)) * flood_scale(flood_ratio)  # m3/s
@@ -946,7 +983,7 @@ def flooded(grid, elev, flow, lake_kind, s: dict, ice=None, flood_ratio=None, pe
     colder than -2 C on average counts as permafrost (the run and the zoom)."""
     from .hydrology import CLOSED_LAKE, OPEN_LAKE
     land = is_land(elev, grid=grid)
-    rel = relief(grid, elev)
+    rel = cell_relief(grid, elev)
     flat = np.clip(1 - rel / 400.0, 0, 1)
     plain = floodplain(grid, elev, flow, rel, flood_ratio)
     # flat ground with more rain than evaporation can't drain it all (mires),
@@ -1614,7 +1651,7 @@ def model(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt=23.4, cloud_jul=N
     if lake is not None:
         land &= ~np.asarray(lake).astype(bool)
     unlocked = all_unlocked() if unlocked is None else np.asarray(unlocked, bool)
-    rel = relief(grid, elev)
+    rel = cell_relief(grid, elev)
     s = site(grid.lat, temp, t_warm, t_cold, p_jul, p_jan, tilt, cloud_jul, cloud_jan, rel)
     if sky is not None:
         s["cloud"] = 0.5 * (np.asarray(sky[0], float) + np.asarray(sky[1], float))
