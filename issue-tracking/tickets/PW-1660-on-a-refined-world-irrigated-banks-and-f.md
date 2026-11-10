@@ -1,15 +1,19 @@
 ---
+id: PW-1660
 title: On a refined world, irrigated banks and floodplains are a share of a river's own cells, so they halve at L8 and cost the fertile class ~1.3 points
 type: task
 status: todo
 parent: PW-1198
+milestone: null
 subsystem: surface
 effort: s
 impact: med
 found_by: lane274
 blocked_by: []
 relates: [PW-1584, PW-1265]
-refs: [planet/humanuse.py::IRRIGATE_Q, planet/humanuse.py::fertile, planet/vegetation.py::floodplain, planet/vegetation.py::cell_relief, planet/soils.py::mineral, docs/review/refine-l8/soils.md, "world 899985 (Earth-like A, L7)", "lane 274 scratch: ed3e56 (899985 re-finished at L7), 108b4f (L8 refine, lane 274 branch); deleted after the lane"]
+refs: ["planet/humanuse.py::IRRIGATE_Q", "planet/humanuse.py::fertile", "planet/vegetation.py::floodplain", "planet/vegetation.py::cell_relief", "planet/soils.py::mineral", docs/review/refine-l8/soils.md, "world 899985 (Earth-like A, L7)", "lane 274 scratch: ed3e56 (899985 re-finished at L7), 108b4f (L8 refine, lane 274 branch); deleted after the lane"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -38,3 +42,6 @@ channel. The floodplain share could be the width (share × CELL_KM at L7) over t
 spread to the neighbouring cells. At L7 and coarser this must be exactly today's numbers.
 - [ ] L7 world bit-identical
 - [ ] L8 refine of 899985: irrigated and floodplain shares of land within 10% of ed3e56's
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-river-line-shares-halve-on-refine.md (found by lane274).
