@@ -1,4 +1,5 @@
 ---
+id: PW-1675
 title: "Zoom rungs under a 4,000 km section: measure and judge 500 km at 0.5 km and 30 km at 25 m made by the fine pass"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane282
 blocked_by: []
 relates: [PW-1299, PW-516, PW-541, PW-485, PW-129]
 refs: [docs/review/zoom/lod-plan.md, "planet/zoom/fine.py::default_size", "planet/zoom/fine.py::check", "planet/zoom/fine.py::zoom", docs/proposals/nested_fine_zoom.md, docs/review/land-zoom/cost.md, "planet/zoom/tiling.py::section", "world dba204"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -28,3 +31,6 @@ On one land section of a v1.0 showcase world at 2 km (CLI, own scratch data root
 - [ ] rung 1 compared with a regional 500 km zoom at 0.5 km of the same spot: what the fine pass lacks
 - [ ] `fine.default_size` (and the viewer's size menu rules) give the rung sizes for 0.5-4 km parents
 - [ ] `docs/review/zoom/lod-rungs.md` with a yes/no on rung 1; a "no" goes to Daniel as the plan's question Q3 with the pictures
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-lod-3-rung-chain.md (found by lane282).

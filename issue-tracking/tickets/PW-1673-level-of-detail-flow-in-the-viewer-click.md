@@ -1,7 +1,8 @@
 ---
+id: PW-1673
 title: "Level-of-detail flow in the viewer: click the globe, fly down into a 4,000 km section, double-click down the rungs to 25 m, fly back out"
 type: story
-status: todo
+status: needs-decision
 parent: PW-1198
 milestone: v1.0
 subsystem: viewer
@@ -11,6 +12,8 @@ found_by: lane282
 blocked_by: []
 relates: [PW-1198, PW-1299, PW-1341, PW-1360, PW-129, PW-393]
 refs: [docs/review/zoom/lod-plan.md, "viewer/globe/tabs.js::showTab", "viewer/globe/tabs.js::buildZoomOutlines", "viewer/globe/zoom.js::startZoom", viewer/globe/scene.js, "viewer/zoom.html::fetchZoom", viewer/zoom3d.js, viewer/zoom3d_place.js, viewer/navigator.js, planet/zoom/tiling.py, "world dba204", tools/viewer_perf.py]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -39,3 +42,7 @@ outlines drawn turned in a turned section (PW-1341's viewer half).
 section, ~2.5 GB at 1 km: estimates from the zooms' layer specs). Load the drawn layers first and the rest on demand;
 free a rung's buffers when leaving it.
 - [ ] globe + 2 km section + both rungs under ~1.5 GB renderer memory (target; confirm on first measurement)
+
+## Updates
+- 2026-11-10: Status todo -> needs-decision. Desk D78 (section sharpness, lean 2 km/px) and D79 (fixed sections vs centred, lean fixed). PW-1674/1675 proceed meanwhile: the API takes res_km as a parameter.
+- 2026-11-10: Created from inbox draft draft-lod-1-viewer-globe-to-finest.md (found by lane282).
