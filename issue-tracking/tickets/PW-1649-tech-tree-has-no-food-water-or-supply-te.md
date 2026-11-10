@@ -4,7 +4,7 @@ title: Tech tree has no food, water or supply techs on the arcane side (and no f
 type: task
 status: needs-decision
 parent: PW-661
-milestone: null
+milestone: v4
 subsystem: culture
 effort: s
 impact: med

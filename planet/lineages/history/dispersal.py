@@ -6,6 +6,7 @@ import zlib
 
 import numpy as np
 
+from ...geo import arc_km
 from .. import spec as SP
 
 from ..crossing import modes, short_hop
@@ -192,14 +193,15 @@ class DispersalMixin:
             return int(np.argmax(K))
         maxd = int(np.ceil(LAST_LAND_REACH * FOUNDER_KM / self.cell_km))
         d = graph_dist(last, maxd, g.nbr_off, g.nbr_idx)
+        d[d >= 0] = np.where(self._km_from(last, d >= 0) <= LAST_LAND_REACH * FOUNDER_KM, d[d >= 0], -1)  # (the reach in km over the
+        # sphere, not in steps: a grid step is longer than cell_km in places, lane 269 saw a refuge 8,180 km out)
         live = (d >= 0) & (K > 2 * EST)
         if not live.any():
             live = (d >= 0) & (K > EST)
             if not live.any():
                 return int(np.argmax(K))
         free = np.clip(K - self._rivals_here(l, K), 0, None) * (K > EST)
-        r = max(2, int(round(FOUNDER_KM / self.cell_km)))
-        need = int(rings(int(np.argmax(K)), np.ones(g.n, bool), r, g.nbr_off, g.nbr_idx).sum())  # (a founders' country, in cells)
+        need = self._founders_cells(K)  # (a founders' country, in cells)
         ok = np.zeros(g.n, bool)
         for share in ARRIVAL_ROOM:
             room = (free >= max(share * K.max(), EST)) & (K > EST)
@@ -213,6 +215,15 @@ class DispersalMixin:
             ok = live
         near = np.exp(-np.maximum(d, 0) * self.cell_km / FOUNDER_KM)
         return int(np.argmax(np.where(ok, (free + 1e-3 * K) * near, -1.0)))
+
+    def _km_from(self, src, sel):
+        """Great-circle km from the nearest cell of mask `src` to each cell of mask `sel` (in sel's order), in blocks."""
+        c = self.grid.centers
+        s, t = c[src], c[sel]
+        best = np.full(len(t), -1.0)
+        for i in range(0, len(s), 512):
+            best = np.maximum(best, (t @ s[i:i + 512].T).max(1))
+        return arc_km(best)
 
     def _jump_push(self, k, K, room, held) -> float:
         """How hard a hemmed-in people pushes founders out, 0..1 (PW-920): its crowding by rivals, or the share of the land it holds that

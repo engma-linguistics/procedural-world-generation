@@ -19,7 +19,9 @@ RINGS = [(LA.RAID_REACH_KM, 2, 4), (LA.BARTER_REACH_KM, 1, 2), (CO.REACH_KM, 10,
          # PW-1627: the settled history's own reaches (a town's and a city's hinterland, pit spacing, a coastal boat's reach,
          # the hemmed-in seat's ring)
          (ST.CONST["TOWN_KM"], 1, 2), (ST.CONST["CITY_KM"], 2, 4), (ST.CONST["PIT_KM"], 1, 2), (TF.COAST_BOAT_KM, 2, 4),
-         (PO.HEMMED_KM, 2, 4)]
+         (PO.HEMMED_KM, 2, 4),
+         # PW-1630/1631: the river valley's watered width (ladder: WATER_MAX of one L7 cell) and the country the wild's richness is read over
+         (LA.WATER_CELL_KM, 1, 2), (LA.RICH_KM, 1, 2)]
 CELLS = [(DM.MIN_KM2, 40, 161), (DM.ADAPT_MIN_KM2, 20, 80), (AN.OVERLAP_MIN_KM2, 3, 12), (PO.SUBJECT_KM2, 3, 12),
          (TG.ISLAND_FLOOR_KM2, 3, 12)]
 
@@ -76,3 +78,18 @@ def test_ring_pairs_is_the_old_two_ring_table_and_any_ring_count(g7):
         off = np.searchsorted(a, np.arange(g.n + 1))
         for c in range(0, g.n, 37):
             assert sorted(b[off[c]:off[c + 1]].tolist()) == sorted(ST._rings(g, c, r).tolist())
+
+
+def test_ladder_reads_rivers_and_richness_in_km(g7):
+    """PW-1630/1631: at L7 the richness is the cell's own (the same array, L7 unchanged); on a finer grid it is averaged over about one L7
+    cell (a single rich cell among poor ones reads poorer), and the watered share of a river cell scales with the rings so the watered
+    km2 per km of river stay WATER_MAX x one L7 cell's width."""
+    x = np.random.default_rng(1).random(g7.n)
+    assert LA.domain_mean(g7, x, LA.RICH_KM) is x
+    g = build_grid(5)
+    spike = np.zeros(g.n)
+    spike[123] = 9.0
+    m = LA.domain_mean(g, spike, 4 * g.spacing * 6371.0)  # (four cells wide: three passes)
+    assert m[123] < 9.0 and m.max() == m[123] and (m > 0).sum() > 7  # (spread out, still peaked on the rich cell)
+    g8 = _l8(g7)
+    assert min(1.0, LA.WATER_MAX * rings_for(g8, LA.WATER_CELL_KM)) * (g8.spacing) == pytest.approx(LA.WATER_MAX * g7.spacing, rel=0.01)

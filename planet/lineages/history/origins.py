@@ -343,16 +343,47 @@ class OriginsMixin:
                "edge of the parent's range" if edge[cell] else "inside the parent's range") if P[cell] \
             else "across the sea from the parent's range (founders carried over)" if across[cell] \
             else "beside the parent's range (new niche)"
+        r = max(2, int(round(FOUNDER_KM / self.cell_km)))
+        if not line.megafauna and not line.marine and not self._founders_room(cell, K, env["land"]):
+            # (PW-1558, lanes 269, 269c: the founders stand on an islet, or a sliver of their habitat, too small for a founders' country:
+            # they arise in the nearest free country that can hold one, within reach of the parent's range, as a stem with no land holds out)
+            cell = self._refuge_cell(line, K, P)
+            why = "no founders' country of its habitat by the parent: the nearest free country"
+            blob, _ = self._found_spread(line, k, cell, np.where(K > 2 * EST, K, 0.0), K, K > EST, r, env)
+            self._take(pk, blob, P)
+            return cell, why
         # the founders hold the country around the origin that suits them at least half as well as it
         # suits the parent (FOUNDER_KM)
         pK = self._K(self.tree.lines[line.parents[0]], env, tags, step)
-        r = max(2, int(round(FOUNDER_KM / self.cell_km)))
         blob, _ = self._found_spread(line, k, cell, score, K, (K > EST) & ((K >= 0.5 * pK) | ~P), r, env)  # (a few sites over one country, D27)
         # (owner 10-30 and D20, PW-1152, PW-1181: a new people emerges at one spot and spreads from there; it takes neither the cut-off
         # part of the parent's range it arises in nor patches across it, so a split of a worldwide stem, the kobolds of the dragons, starts
         # as one people of one country)
         self._take(pk, blob, P)
         return cell, why
+
+    def _founders_room(self, cell, K, land) -> bool:
+        """PW-1558 (lanes 269, 269c): whether a split founded at `cell` stands on a patch of its habitat that can hold a founders' country:
+        the connected land at the step where it can live (K > 2 EST) that holds the cell has at least one founders' country of cells
+        (the cells within FOUNDER_KM, _founders_cells, what a held-out stem's refuge needs). Not so on an islet (lane 269: dnd jitters on
+        af2677, main 673436c0, leonins, halflings, hobgoblins at 0.05-0.14 Mkm2, born beside a stem stranded on a 0.1 Mkm2 islet), nor
+        on a sliver of its habitat on a big landmass (lane 269c: a cold mountain stem, the giantkin, born at the edge of a tropical stem's
+        range on an 18-cell highland patch, its daughters goliaths and firbolgs then founded on highland patches of 0.5-0.7 Mkm2 and
+        staying there; a halfling founded on a 26-cell patch, 0.54 Mkm2 at the end). The whole landmass's habitat (lane 269) let those
+        through. There the founders arise at the nearest free country that can hold one (_origin_split: _refuge_cell)."""
+        if not land[cell]:
+            return True  # (not a land founding this rule speaks to: as before)
+        hab = land & (K > 2 * EST)
+        if not hab[cell]:
+            return False
+        lab, _ = self.grid.components(hab)
+        return int((lab == lab[cell]).sum()) >= self._founders_cells(K)
+
+    def _founders_cells(self, K) -> int:
+        """A founders' country in cells: the cells within FOUNDER_KM of a cell (a split's founding take, _origin_split), at the best habitat."""
+        g = self.grid
+        r = max(2, int(round(FOUNDER_KM / self.cell_km)))
+        return int(rings(int(np.argmax(K)), np.ones(g.n, bool), r, g.nbr_off, g.nbr_idx).sum())
 
     def _take(self, pk, blob, P):
         """A daughter takes the stem's land under its founding blob (D20). Where that is the last of it, the stem's land is kept as its

@@ -159,3 +159,222 @@ the landmass draw already uses a species-area exponent, and the crowding comes f
 
 ## Tests
 `tests/test_lineages.py` and `tests/test_peoples_robust.py` (area) and the not-slow suite, NUMBA_NUM_THREADS=4, -n 2, on the final code.
+
+## Lane 269: the 1 Mkm2 floor (PW-1558, owner D71 B)
+
+### Diagnosis (written before the code change; main 673436c0, af2677, arm now)
+On main, 4 of the 17 dnd runs of the suite (base 3, jitter 4, portal 4, knob 6) leave one of the four peoples under 1 Mkm2:
+jitter 2 hobgoblin 0.14, jitter 3 leonin 0.11, jitter 4 leonin 0.11 and halfling 0.05. Each was *founded* on 1-9 cells
+(found 0.012-0.10 Mkm2; in the passing runs 0.11-0.71). A probe of the three runs (each traced line's range, its landmass, the
+good cells next to it and how many another people holds, every ~5 kyr) shows one cause, and it is not the refuge:
+
+- The mammal radiation starts on an islet of 0.10-0.16 Mkm2 near (0, 178). A stem founded there "at the edge of its parent's
+  range" (feline in jitters 3 and 4, greater goblinoid in jitter 2, archaic humans in jitter 4) holds 3-14 cells of it for
+  0.3-6 Myr: every good cell next to it is held by a sibling (good cells next door 1-8, all taken), it has no boats and no
+  jump reaches land (0 jumps, 0 crossings). It never holds fewer than 3 cells, so `_hold_out` never fires: lane 233's refuge
+  is not involved. (In jitter 2 the refuge did fire for the goblinoid, which moved to a 20 Mkm2 continent; the goblins there
+  are fine at 2.1 Mkm2. The greater goblinoid, split off just before onto the same islet, stayed.)
+- Its daughter is then founded by the usual split rule (inside, at the edge of, or beside the parent's range), which on that
+  islet is the islet itself or a 1-2 cell rock next to it: leonin "beside the parent's range" on 1 cell (jitter 4) or 7 cells
+  (jitter 3); hobgoblin at the edge, 8 cells; halfling beside, 2 cells. It too has no way off before boats, so it stays at
+  0.05-0.14 Mkm2 to the present (leonin jitter 4: 1-3 cells for 1.4 Myr; crossings come only in the last 30 kyr).
+- So: not a refuge too small, not a failure to re-expand after a hold-out, and not rivals around a refuge. It is the
+  founders' country rule: a split is founded where its parent is, even when the country there cannot hold a founders'
+  country. Lane 233 already required a held-out stem's refuge to be a free country at least one founders' country in size;
+  a split born beside a stranded stem had no such check.
+
+### Mechanism (lane 269)
+`origins._origin_split`: before a land split is founded, `_founders_room` asks whether the landmass under the chosen cell
+holds at least one founders' country (`_founders_cells`: the cells within FOUNDER_KM, the size lane 233's refuge already
+requires) of country the daughter can live in (K > 2 EST), anywhere on it. If not (an islet, or an island with little of its
+habitat), the founders arise at `_refuge_cell(line, K, parent's range)`: the nearest free country of founders' size within
+LAST_LAND_REACH x FOUNDER_KM of the parent's range: the same choice as a stem with no land, so no new constant. Origin
+reason: "no founders' country on the parent's islet: the nearest free country". `_refuge_cell`'s reach is now also checked in
+great-circle km (`_km_from`): counted in grid steps it let a fire-giant refuge land 8,180 km out (grid steps are longer than
+cell_km in places).
+
+First try (landmass size only, without the habitat count), partial suite (af2677 arm now; main = 673436c0, same seeds):
+base s7/s10/s13 and jitters 1-3 all changed (the mammal islet sits in every dnd run: feline, hominid and goblinoid are now
+founded 1,570-1,700 km off it); Seven Meals runs identical to main. Leonin 4.9-5.8 -> 19-29 Mkm2 on the base seeds and
+jitters 1 and 3, but jitter 2's leonin fell 5.2 -> 0.51 (founded on an island of more than a founders' country of land
+but only ~0.5 Mkm2 of its grassland, no boats). Hence the habitat count. The full suite on the final rule is still to run.
+
+### Full suite (lane 269b; branch = c6907d5b merged with main 31c3b00d; baseline = main 673436c0)
+Main 31c3b00d has no change under planet/, tools/ or tests/ since 673436c0, so the 673436c0 suite is the baseline (af2677, arm
+now, 22 runs: dnd base 3 + jitter 4 + knob 6 + sites 4, Seven Meals base 3 + jitter 2; 2 jobs x 4 threads).
+
+| people | main min (run) | main median | main runs < 1 | branch min (run) | branch median | branch runs < 1 |
+|---|---|---|---|---|---|---|
+| leonin | 0.11 (dnd-j3) | 4.93 | 2 | 0.51 (dnd-j2) | 21.6 | 1 |
+| goblin | 2.13 (dnd-j2) | 4.13 | 0 | 1.91 (dnd-j3) | 2.43 | 0 |
+| hobgoblin | 0.14 (dnd-j2) | 46.8 | 1 | 24.6 (dnd-dwarfx2-s7) | 44.2 | 0 |
+| halfling | 0.05 (dnd-j4) | 7.66 | 1 | 0.46 (dnd-bugbearx0.5-s7) | 5.06 | 4 |
+| tabaxi | 0.10 (dnd-bugbearx0.5-s7) | 0.12 | 17 | 7.24 (sm-s10) | 8.10 | 0 |
+| goliath | 0.10 (sm-j1) | 8.09 | 5 | 0.10 (sm-j1) | 0.70 | 17 |
+| firbolg | 1.17 (dnd-j3) | 10.8 | 0 | 0.86 (dnd-j2) | 1.47 | 3 |
+| bugbear | 0.03 (dnd-j2) | 8.25 | 4 | 0.40 (dnd-s10) | 4.35 | 3 |
+| gnome | 0.51 (dnd-sites1-s10) | 12.4 | 1 | 1.32 (sm-j1) | 14.6 | 0 |
+| kobold | 0.51 (sm-s7) | 19.7 | 1 | 0.50 (dnd-j1) | 16.5 | 2 |
+| human | 20.8 (dnd-j4) | 23.7 | 0 | 21.0 (sm-s13) | 39.4 | 0 |
+| aarakocra | 1.08 (dnd-j3) | 3.99 | 0 | 1.22 (dnd-j1) | 15.3 | 0 |
+| tortle | 1.99 (dnd-j2) | 4.21 | 0 | 1.56 (dnd-bugbearx2-s7) | 2.23 | 0 |
+| lizardfolk | 14.2 (dnd-sites3-s7) | 24.7 | 0 | 5.80 (dnd-j3) | 22.0 | 0 |
+| drow | 0.04 (dnd-sites1-s7) | 0.75 | 17 | 0.04 (dnd-sites1-s7) | 0.75 | 17 |
+| troglodyte | 0 (extinct, all 17 dnd) | 0 | 17 | 0 (extinct, all 17 dnd) | 0 | 17 |
+
+(Mkm2 at the present. Unchanged or above 1 everywhere on both: dwarf (one run at 0.40, sm-s13, both), elf (2 runs, 0.24, sm-s13, both),
+half_orc (never founded in sm-j1, both), dragonborn, kenku, orc, the Seven Meals-only peoples. Sea peoples (sea_elf, triton) are not
+land peoples.)
+
+- **Seven Meals: identical** to main in all 5 runs (every people's area and share).
+- **Brittle (dnd, base + jitter): 7 -> 5**; worst swing 2,210x (hobgoblin) -> 110x (bugbear); worst within one family 2,170x ->
+  50x (drow). Seven Meals 6 -> 6, unchanged.
+- **Refuge and founder picks:** 53 picks, median 1,629 km, farthest 7,911 km (fire_giant, dnd-j3); the split founders' picks
+  (feline, hominid, goblinoid, once kobold) 1,415-2,020 km. The run's own refuge log (distance from the stem's last land) puts that
+  fire-giant refuge at 8,041 km: it measures from a different mask than the pick (the last land on record, not the range passed
+  in), 41 km over.
+
+**The floor is not met.** The islet stranding is gone (tabaxi, hobgoblin, leonin jitter 3/4, halfling jitter 4 founded off the islet;
+the stems are founded 1,400-2,000 km away), but 34 people-runs of land peoples other than drow and troglodytes still end under 1
+Mkm2 (main: 36, of which 17 tabaxi), and goliaths now do so in every dnd run (5 -> 17 of 22).
+
+### Why the rest fall short (written before any further change; probes of dnd-s7, dnd-j2, dnd-j4, sm-s7 on the branch)
+- The remaining small peoples are not on islets. Goliath (s7, 0.93), leonin (j2, 0.51), halfling (j4, 0.54), firbolg (j1/j2,
+  0.86) are each founded on the 20 Mkm2 continent that the moved hominid, feline and goblinoid stems now share, 175-540 kyr ago, on
+  8-43 cells, and every good cell next to them is held by another people for the rest of the run (good cells next door 12-129, all
+  taken; habitat on the landmass that no other people holds: 0-4 cells). They sit at 0.5-0.9 Mkm2: the refuge floor the history
+  stops pushing a losing people back at (PW-1182, ~0.5 Mkm2), not the founding rule.
+- No landmass count at the founding step separates them from splits that thrive: at each land split of dnd-j4 and sm-s7 the
+  landmass's habitat, its free room by the rivals' load (at 50%, 20% or any of the best K), the parent's own patch, or the cells
+  no other people holds, are as low for hobgoblins (44 Mkm2 at the end), dwarves or orcs as for goliaths or halflings (e.g.
+  hobgoblin: parent's patch 0, unheld 0; goliath: 22 and 0). A stricter founding check would move thriving peoples too (and Seven
+  Meals, which is now untouched).
+- Goliaths and firbolgs got worse because the hominid stem now starts beside the continent where humans grow (human median 23.7 ->
+  39.4 Mkm2): giantkin's later daughters are born into that crowd; on main they started on the far continent (28 N, 43 W) and grew.
+- So D71's 1 Mkm2 sits above the history's own loser floor (~0.5 Mkm2, PW-1182). The founding change cannot carry it; the floor
+  needs PW-1182's mechanism (a losing people finds a niche of its own, or is pushed to ~1 Mkm2 rather than ~0.5) or a ruling.
+
+## Lane 269c: the goliath regression and PW-1182 (losers at the refuge floor)
+
+### Diagnosis (written before the sweep; probes of the lane 269b branch c6907d5b+main 31c3b00d, af2677, arm now)
+Two lane probes (scratch, not committed): `probe_pin.py` records, for each land people at the last step (ago <= 1 kyr), the cells
+where it has room of its own (room = K less its rivals' load, as `_compete` computes it, >= 0.3 with K >= 0.3) split by on its
+landmass / within its jump reach / anywhere, and held by another people or free; `probe_patch.py` records, at each land split, the
+connected patch of the daughter's habitat (K > 2 EST) at the founding cell, against a founders' country (37 cells at L6).
+
+- **Goliath and firbolg** (dnd-s7: goliath 0.93, firbolg 1.44 Mkm2; main 12.4 and 11.1): on main the giantkin stem was founded "no
+  room for it by the parent: nearest habitat", on the cold northern continent (goliath origin 28 N, 43 W). On the branch the hominid
+  stem moves off the islet at once (lane 269's rule) onto the tropical continent, and the giantkin (cold, mountain) arises at the edge
+  of its range on a highland patch of its habitat of **18 cells** (s7; 52 in dnd-j4), under one founders' country. Goliath is then
+  founded on a 46-48 cell patch (an "isolated part of the parent's range" at 9-29 S) and fills it: 0.5-0.9 Mkm2. A sky-island endemic.
+  Firbolg's patch is large (891-986 cells) but only 344-378 of them are free of rivals; it ends at 1.4-1.5.
+- **The same patch shape** explains the other small founders: halfling dnd-j4 (26-cell patch, 0 free: 0.54 Mkm2), dwarf dnd-s7 (2
+  cells: 1.98), leonin (1 cell, but a nomad: it thrives at 21-25). The lane 269 check reads the whole landmass's habitat, so a
+  daughter whose own patch by its parent is a sliver of a big landmass passes it.
+- **Losers pinned at the floor have no own room on their landmass** (dnd-s7, at the present): goliath 23 cells with room >= 0.3 on
+  its landmass (all held by others), firbolg 2, goblin 10, bugbear 26, dwarf 5, each 0 free; but within their jump reach (mostly
+  over the sea) 345-1,103 such cells held by others and 0-24 free. Their ring (the cells next to their range) has 0 good cells, so
+  they are hemmed in, but a jump founds only on land no people holds (`_jump`: "a jump founds new country, not a mixed one"), and
+  a crowded continent has none. So specialisation into habitat the winners do not use (option 1) has almost nothing to work with on
+  their own landmass; the room is over the sea, among other peoples.
+
+Candidates:
+- **G (founding, PW-1558):** lane 269's founders' room check on the daughter's own habitat patch at the founding cell, not the
+  whole landmass: a split whose patch by its parent cannot hold one founders' country arises at the nearest free country that can
+  (`_refuge_cell`, as now). No new constant: the same founders' country. Variant **GF**: the patch counted on its free part (habitat
+  less the rivals' load, `_rivals_here`), the same free country `_refuge_cell` asks for.
+- **A (PW-1182 option A):** a line held at the refuge floor (range under 2 x REFUGE_MKM2, where `_compete`'s displacement is slowed
+  by the floor) jumps to where it has room of its own, held by others or not (`_jump` drops the "free land only" filter for it).
+  No new constant; the jump rate and kernel are unchanged.
+- Rejected: raising REFUGE_MKM2 or FOUNDER_KM to 1 Mkm2 (a clamp that meets the bar by fiat, and does nothing for a people that never
+  grew past its founding patch, which is the goliath case); a per-people habitat or rate.
+
+### Screens (af2677, arm now, dnd s7/j1/j2/j4; baseline = lane 269b's branch on the same seeds)
+People-runs of land peoples under 1 Mkm2 (drow and troglodytes listed apart):
+
+| arm | s7 | j1 | j2 | j4 | total |
+|---|---|---|---|---|---|
+| lane 269b branch | goliath 0.93 | goliath 0.51, firbolg 0.87, kobold 0.50 | goliath 0.57, firbolg 0.86, leonin 0.51 | goliath 0.60, halfling 0.54 | 9 |
+| G + A | - | - | goliath 0.52, firbolg 0.76 | goliath 0.51 | 3 |
+| GF + A | - | - | goliath 0.52, firbolg 0.76 | dwarf 0.85 | 3 |
+| G (patch >= 1 Mkm2) + A, evidence arm | - | - | firbolg 0.85 | - | 1 |
+
+- G alone is what is committed (32e9fb19). A (pinned jumps) barely fired: the small peoples jumped 0-2 times and none of them got
+  above 1 that way. Its jumps went to stems instead, so it only added chaos, and it was dropped. GF adds a dependence on the rivals
+  and did no better.
+- The goliaths left under 1 with G (j2, j4) are founded on a 46-48 cell highland patch near (9 S, 124 E). Main 673436c0 founds them
+  on the same patch, and there they end at 0.58 (j2) and 1.63 (j4). The patch holds one founders' country (37 cells) but not 1
+  Mkm2. Only the evidence arm, with the patch required to hold 1 Mkm2, lifts them (8.8 and 9.7). That arm uses D71's number as a
+  founding rule, so it is a decision for Daniel: `issue-tracking/inbox/draft-d71-floor-at-founding.md`.
+- The full suite on G (main fdb11199 as the baseline) was started by lane 269c and finished by lane 269d (below).
+
+## Lane 269d: the full suite on main, G and the evidence arm A
+
+Baseline throughout: **main fdb11199**. Suite: af2677, arm now, 17 dnd runs (base s7/s10/s13, jitter j1-j4, portals, knob
+x0.5/x2) and 5 Seven Meals runs (s7/s10/s13, j1/j2), `tools/peoples_robust.py run --jobs 2 --threads 4` on a scratch data root.
+- **G** = 32e9fb19 (the branch as committed: a split's habitat patch must hold one founders' country, 37 cells at L6).
+- **A** = G plus side-branch commit 1d6a4c39 (`lane269d-armA`, not for merge): the patch must hold max(one founders' country,
+  `FOUNDING_FLOOR_MKM2` = 1 Mkm2), and a split that fails it arises at the nearest free country of that size (`_refuge_cell` is
+  given the same need; a stem's own hold-out is unchanged). No pinned jumps.
+
+Harness note: A changed `_refuge_cell`'s signature (new `need` argument), which the measuring probe in `tools/peoples_robust.py` overrode without it, so the first A pass crashed all 22 runs. The probe was given `need=None` and passed it through, in the scratch copy only; the A suite above is the rerun. Nothing in `tools/` is changed on this branch.
+
+### Land peoples under 1 Mkm2, per tree (min (run) / median / runs under 1; drow, troglodytes and the sea peoples apart)
+
+dnd (17 runs):
+
+| people | main fdb11199 | G | A |
+|---|---|---|---|
+| bugbear | 0.03 (j2) / 8.49 / 4 (j2 0.03; s10, sites1-s10, sites3-s10 0.45) | 0.50 (s10) / 4.10 / 3 (s10, sites1-s10, sites3-s10 0.50) | 0.37 (s10) / 7.10 / 3 (s10, sites1-s10, sites3-s10 0.37) |
+| goliath | 0.58 (j2) / 12.39 / 3 (j2 0.58, j1 0.60, j3 0.76) | 0.55 (j2) / 1.20 / 5 (j2 0.55, j4 0.55, sites1-s10 0.61, sites3-s10 0.62, s10 0.83) | 4.68 (sites1-s7) / 5.30 / 0 |
+| kobold | 6.04 (j3) / 19.72 / 0 | 0.50 (j1) / 11.76 / 1 (j1) | 0.98 (j1) / 11.69 / 1 (j1) |
+| gnome | 0.51 (sites1-s10) / 12.59 / 1 | 2.38 (sites1-s7) / 15.79 / 0 | 2.40 (sites1-s7) / 15.30 / 0 |
+| halfling | 0.05 (j4) / 7.67 / 1 | 4.74 (gnomex0.5-s7) / 5.01 / 0 | 4.69 (bugbearx2-s7) / 19.61 / 0 |
+| hobgoblin | 0.14 (j2) / 46.83 / 1 | 34.47 (j3) / 43.59 / 0 | 17.12 (s13) / 44.03 / 0 |
+| leonin | 0.11 (j3) / 4.93 / 2 (j3, j4 0.11) | 9.35 (bugbearx2-s7) / 20.93 / 0 | 9.29 (j2) / 19.04 / 0 |
+| tabaxi | 0.10 (bugbearx0.5-s7) / 0.10 / **17** | 8.01 (j4) / 8.19 / 0 | 7.84 (j1) / 8.01 / 0 |
+| firbolg | 1.17 (j3) / 10.76 / 0 | 1.06 (j2) / 1.82 / 0 | 1.49 (sites3-s7) / 2.19 / 0 |
+| dwarf | 1.08 (sites3-s10) / 3.64 / 0 | 1.67 (j3) / 10.26 / 0 | 5.84 (s13) / 7.57 / 0 |
+| aarakocra | 1.08 (j3) / 3.96 / 0 | 1.02 (bugbearx2-s7) / 1.11 / 0 | 0.95 (j1) / 1.05 / 4 (j1 0.95; gnomex0.5-s7, gnomex2-s7, s7 1.00 rounded, just under) |
+| goblin | 2.13 (j2) / 3.87 / 0 | 1.71 (j3) / 2.40 / 0 | 2.33 (s13) / 3.19 / 0 |
+| **people-runs under 1 (land)** | **29** | **9** | **8** |
+| apart: drow / troglodyte | 17 / 17 | 17 / 17 | 16 / 17 |
+| apart: sea_elf / triton | 6 / 2 | 7 / 2 | 7 / 2 |
+
+Every other dnd land people stays above 1 in every run of every arm (dragonborn, elf, human, kenku, lizardfolk, orc, tortle).
+
+Seven Meals (5 runs): G differs from main in 2 of 5 runs (sm-j1, sm-j2); s7/s10/s13 are identical. Its people-runs under 1 are
+the same count (main 7: dwarf s13 0.40, elf s13 0.24 and s7 0.26, goliath j1 0.10 and s10 0.50, half_orc j1 0.00 (never founded),
+kobold s7 0.51; G 7: the same but goliath j1 0.83). A differs from main in all 5 of 5 runs (G: 2 of 5). A's count under 1 is 6: dwarf in 4 runs (s7 0.58, s13 0.86, j1 and j2 0.97), goliath j2 0.98, half_orc s7 0.00 (never founded); kobold and elf are lifted (s13 elf 2.32, kobold min 16.57), but dwarf goes from 1 run under 1 to 4, and dragonborn's minimum falls from 8.23 to 2.69 and cervid_folk's from 34.5 to 24.9.
+
+### Brittleness (`peoples_robust.py report`, worst swing within one world and one family, PW-1207)
+
+| arm | dnd brittle | dnd worst swing | Seven Meals brittle | Seven Meals worst swing | any-fail runs |
+|---|---|---|---|---|---|
+| main fdb11199 | 7 | 2,170x (hobgoblin) | 6 | 1,020x (half_orc) | 1 (sm-j1 half_orc never founded) |
+| G | 4 | 52x (drow) | 6 | 1,090x (half_orc) | 1 (the same) |
+| A | 5 | 1,200x (half_orc) | 5 | 1,200x (half_orc) | 1 (sm-s7 half_orc never founded) |
+
+### How far founders and refuges go (the runs' own logs)
+
+- main: refuges 55, farthest 5,592 km (giantkin, dnd-sites3-s7); main logs no split founder picks.
+- G: refuges 12, farthest 1,595 km (fire_giant, dnd-sites3-s7); refuge/founder picks 117, farthest 7,251 km (goliath, dnd-s13),
+  inside the 8,000 km reach.
+- A: refuges 12, farthest 1,595 km (fire_giant, dnd-sites3-s7); refuge/founder picks 180, farthest 6,930 km (giantkin, dnd-j4), inside the 8,000 km reach.
+
+### The failing test
+
+`tests/test_lineages.py::test_demography_defaults_inheritance_and_numbers` asserts `f.population > 100 x g2.population`: main's
+g2 is stranded on the fake island. Under G it fails (4,821,793 against 100 x 889,509): g2 is founded off the island and grows.
+Under A it fails the same way, with the same numbers (4,821,793 against 100 x 889,509): the check is about g2 no longer stranded, and A keeps that. The assertion is left as it is, for Daniel.
+
+### What the three arms say (baseline main fdb11199)
+
+- A cures goliath (5 runs under 1 with G, 0 with A) but not the rest: bugbear stays at 3 runs (and its floor drops from 0.50 to
+  0.37), kobold j1 is 0.98, and aarakocra falls just under 1 in 4 runs (0.95-1.00). Land people-runs under 1 in dnd: main 29, G 9,
+  A 8. That is one run better than G for an extra rule.
+- A changes all 5 Seven Meals runs (G changes 2) and makes dwarf fragile there (1 run under 1 becomes 4). Founders travel up to
+  6,930 km, against 7,251 for G.
+- Every dnd land people is at 0.50 or above under G (bugbear 0.50, kobold 0.50, goliath 0.55); the Seven Meals ones under 0.5
+  (dwarf 0.40, elf 0.24) are the same as on main.
+- Lean: C (G as committed, bar at 0.5 Mkm2). A's numbers do not support the floor at founding.

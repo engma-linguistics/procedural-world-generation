@@ -14,7 +14,7 @@ Four short milestones, one a week, then the release:
 | **v0.2.0** (milestone v2) | Tue 10 Nov | **Write your own faiths, read what a culture cooks, and see dates in years.** |
 | **v0.3.0** (v3) | Tue 17 Nov | **States and war, first cut:** who rules where at any year, empires as states that rule several cultures, and invasions you schedule. |
 | **v0.4.0** (v4) | Mon 23 Nov | **History that moves:** states fight and change hands inside the history, empires rise and fall, cultures found their own calendars, and every culture, faith, state and place has a name slot for the languages work. |
-| **v0.5.0** (v5) | Sat 28 Nov | **Your December world:** pick it from three candidates, refine it from L7 to L9, every Seven Meals people right, the food sheet complete. |
+| **v0.5.0** (v5) | Sat 28 Nov | **Your December world:** pick it from three candidates, refine it from L7 to L8 (owner 11-10), every Seven Meals people right, the food sheet complete. |
 | **v1.0.0** | Tue 1 Dec | Freeze, walk the checklist, tag. Seven Meals campaign work starts. |
 
 Everything in the four milestones is non-physics work: viewer, peoples, culture and food. These rebuild in seconds or
@@ -273,3 +273,9 @@ unless it breaks a "done when" line above.
 **New items listed above but not filed** (the coordinator files them when a lane starts): years everywhere, faiths you
 write (v2); polities v0, war v0, invasions you schedule (v3); polities in the history, calendars cultures found, names
 slot (v4); three candidate worlds, refine from the viewer (v5); the checklist walk (v1.0).
+
+## v1.0 milestone (owner 2026-11-10)
+`milestone: v1.0` holds everything required for the v1.0.0 tag that has no earlier milestone of its own. Tags may run v0.6.0 … v0.10.0 before v1.0.0; new milestones are cut out of v1.0 as it is groomed. Required so far:
+- the L7 → L8 refine with the split history (PW-1265, done);
+- the glacial time zoom at 2 Myr instead of 1 Myr (PW-1661);
+- level-of-detail zooming: from the globe into a ~4,000 km section, then down to the finest zooms (PW-1198, PW-1299, PW-1296).

@@ -202,6 +202,29 @@ def test_a_stem_s_land_lies_empty_at_its_end(faketz):
     assert (h._last_held[h.idx["stem"]] == (west | east)).all()
 
 
+def test_a_split_needs_a_patch_of_its_habitat_for_its_founders(faketz):
+    """PW-1558 (lanes 269, 269c): a split founded on an islet smaller than a founders' country has no room there (it arises in the
+    nearest free country instead, _origin_split), nor on a sliver of its habitat on a landmass whose other habitat lies apart from it;
+    on a continent of its habitat it has."""
+    ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
+    h = H.History(SP.parse(_raw()), ps, 1)
+    env = h.steps[-1].get()
+    tags = H._tags(h.grid, env)
+    lon, lat = h.grid.lon, h.grid.lat
+    west = tags["land"] & (np.abs(lon) < 60)
+    c = int(np.argmax(np.where(west, -np.abs(lon) - np.abs(lat), -1e9)))
+    islet = H.rings(c, np.ones(h.grid.n, bool), 1, h.grid.nbr_off, h.grid.nbr_idx)
+    K = np.where(islet, 1.0, 0.0)  # (it can live only there)
+    assert islet.sum() < h._founders_cells(K)
+    assert not h._founders_room(c, K, islet)
+    assert not h._founders_room(c, K, tags["land"] | islet)  # (a continent with only the islet's worth of its habitat: no room either)
+    K2 = np.where(tags["land"] | islet, 1.0, 0.0)
+    assert h._founders_room(c, K2, tags["land"] | islet)
+    apart = tags["land"] & ~h._dilate(islet, 2)  # (its habitat elsewhere on the land, not touching the patch at c)
+    K3 = np.where(islet | apart, 1.0, 0.0)
+    assert apart.sum() >= h._founders_cells(K3) and not h._founders_room(c, K3, tags["land"] | islet)
+
+
 def test_walkers_dont_cross_the_sea_swimmers_do(faketz):
     ps = R.Pass(faketz, 40.0, R.RecentParams(kyr=20, seed=1))
     g = ps.grid
@@ -644,7 +667,11 @@ def test_demography_defaults_inheritance_and_numbers(faketz):
     pop = h.population(k)
     assert abs(pop.sum() - 0.5 * big.sum() * 1e-5 * h.cell_mkm2 * 1e6) < 1e-6 * pop.sum()
     _, _, pres = H.simulate(t, ps, tries=1)
-    assert pres["lines"]["f"]["population"] > 100 * pres["lines"].get("g2", {"population": 1})["population"]
+    # (PW-1558: g2 is no longer stranded on a fake island, so compare people per km2, not head counts: f's
+    # agricultural/seafaring defaults give it the denser country; g2's sparse defaults come from insular g)
+    lf, l2 = pres["lines"]["f"], pres["lines"]["g2"]
+    assert lf["area_mkm2"] > 0 and l2["area_mkm2"] > 0
+    assert lf["population"] / lf["area_mkm2"] > l2["population"] / l2["area_mkm2"]
     first = [m for m in pres["landmasses"] if m["discovered"]]
     assert first and all(m["discovered"]["by"] in t.lines for m in first)
 
@@ -1673,7 +1700,9 @@ def test_an_authored_conquest_event_is_remembered_by_the_overrun_under_the_legen
     assert 0.3 < r["strength"] < RP.EVENT_STRENGTH  # (0.8 x exp(-12 / 20))
     plain = SP.parse({**raw, "event": [], "exonym": [e for e in raw["exonym"] if "efold_kyr" not in e]})  # no legend row: 12 kyr is gone
     assert RP.build(plain, c)["rows"]["hunters"]["herders"]["valence"] != "feared"
-    for bad in ({"kind": "polity", "by": "herders", "over": "hunters", "at": "1 kyr"}, {"by": "herders", "over": "nobody", "at": "1 kyr"},
+    for bad in ({"kind": "raid", "by": "herders", "over": "hunters", "at": "1 kyr"}, {"by": "herders", "over": "nobody", "at": "1 kyr"},
+                {"by": "herders", "over": "hunters", "at": "1 kyr", "until": "0.5 kyr"},
+                {"kind": "polity", "by": "herders", "over": "hunters", "at": "1 kyr", "until": "2 kyr"},
                 {"by": "herders", "over": "hunters"}, {"by": "herders", "over": "hunters", "at": "1 kyr", "from": "the steppe"},
                 {"by": "herders", "over": "hunters", "at": "1 kyr", "strength": 0}):
         with pytest.raises(ValueError):
@@ -1823,6 +1852,34 @@ def test_reputation_reads_derived_incursions_before_authored_events_and_names_th
     r2 = RP.build(t, c)["rows"]["farmers"]["herders"]
     assert r2["basis"].startswith("conquest (authored)") and "from_dir" not in r2
     assert RP.compass(0) == "north" and RP.compass(350) == "north" and RP.compass(135) == "south-east" and RP.compass(260) == "west"
+
+
+def test_an_authored_polity_is_resented_by_the_ruled_and_compact_ranges_give_a_direction():
+    """PW-756: `[[event]] kind = polity` (S ruled O from `at` until `until`) is read as 'resented', fading from the rule's end;
+    a feared or resented row with no derived direction takes the bearing between the two present ranges where both are compact."""
+    raw = SP.to_raw(_rep_tree())
+    raw["exonym"].append({"id": "overlords", "label": "the overlords", "valence": ["resented"]})
+    raw["event"] = [{"kind": "polity", "by": "herders", "over": ["hunters"], "at": "3 kyr", "until": "0.5 kyr"}]
+    t = SP.parse(raw)
+    assert t.events[0]["kind"] == "polity" and t.events[0]["until"] == 0.5 and SP.parse(SP.to_raw(t)).events == t.events
+    c = _contacts(took_kyr=40.0)
+    c["pairs"].append(_pair("herders", "hunters", 40000, mixed=2.0))
+    r = RP.build(t, c)["rows"]["hunters"]["herders"]
+    assert r["valence"] == "resented" and r["name"] == "the overlords" and r["basis"].startswith("rule (authored)") and r["since_kyr"] == 0.5
+    assert 0.6 < r["strength"] < RP.EVENT_STRENGTH and "until 500 years ago" in r["text"] and "from_dir" not in r  # (no centroids: no direction)
+    standing = SP.parse({**raw, "event": [{"kind": "polity", "by": "herders", "over": "hunters", "at": "3 kyr"}]})
+    r2 = RP.build(standing, c)["rows"]["hunters"]["herders"]
+    assert r2["strength"] == RP.EVENT_STRENGTH and "to this day" in r2["text"]
+    assert RP.build(t, c)["rows"]["herders"]["hunters"]["valence"] != "resented"  # (the rulers do not resent the ruled)
+    # direction from the present ranges: the herders lie due west of the hunters, both compact
+    c["substrate"]["hunters"].update(lat=0.0, lon=20.0, compact=0.97)
+    c["substrate"]["herders"].update(lat=0.0, lon=0.0, compact=0.95)
+    r3 = RP.build(t, c)["rows"]["hunters"]["herders"]
+    assert r3["from_dir"] == "west" and "from the west" in r3["text"]
+    c["substrate"]["herders"]["compact"] = 0.5  # spread round the globe: no one direction
+    assert "from_dir" not in RP.build(t, c)["rows"]["hunters"]["herders"]
+    c["substrate"]["herders"].update(lon=19.0, compact=0.95)  # (about 111 km apart: too close to say)
+    assert "from_dir" not in RP.build(t, c)["rows"]["hunters"]["herders"]
 
 
 def test_herders_press_on_pasture_only_in_proportion_to_the_herds_they_keep(faketz):
