@@ -37,6 +37,19 @@ from ..geo import is_land
 from .gridops import dist_km
 
 TZ_LAYERS = ("elevation", "ice", "temperature", "climate", "tree_cover")
+
+
+def finer(f: np.ndarray, fine: Grid | None, categorical: bool = False) -> np.ndarray:
+    """A coarser grid's field on `fine` (PW-1265: an L7 time zoom's frames under a world refined to L8, planet.refine): each new
+    cell takes the mean of its two parents (nest.step's prolongation), or for a category its first parent's. Unchanged when the
+    sizes already match."""
+    if fine is None or len(f) == fine.n:
+        return f
+    from .. import nest as NE
+    level = int(round(np.log((len(f) - 2) / 10) / np.log(4)))
+    for s in reversed(NE.chain(fine, level)):
+        f = f[s["p0"]] if categorical else NE._prolong(s, f)
+    return f
 RAIN_K = 0.07  # per C: the time zoom's rain scaling (Clausius-Clapeyron)
 STAT_KEYS = ("sea_level_m", "sea_level_change_m", "ice_pct", "ice_volume_mkm3", "ice_sea_equiv_mkm3", "max_ice_m",
              "global_temp_c", "obliquity", "eccentricity", "perihelion", "precession_index", "insol_65n_jul_anom",
@@ -92,6 +105,11 @@ class Pass:
             raise ValueError(f"{tz_ref} is not a glacial time zoom")
         m = self.run["meta"]
         self.grid = build_grid(m["level"])
+        self.coarse = None  # (PW-1265: the time zoom's own grid, when the world is refined finer than it; frames prolonged by finer())
+        if world_ref:
+            wl = int(S.read_header(S.find_world(world_ref))["meta"].get("level", m["level"]))
+            if wl > m["level"]:
+                self.coarse, self.grid = self.grid, build_grid(wl)
         self.ts = np.array([f["t"] for f in self.run["frames"]], float)
         self.now = float(self.ts[-1] if now_kyr is None else now_kyr)
         if not self.ts[0] <= self.now <= self.ts[-1]:
@@ -117,7 +135,11 @@ class Pass:
     def _lerp(self, name: str, t: float) -> np.ndarray:
         i, j, w = self._bracket(t)
         a, b = (T.frame(self.run, self.arr, name, k).astype(float) for k in (i, j))
-        return a * (1 - w) + b * w
+        return self.fine(a * (1 - w) + b * w)
+
+    def fine(self, f: np.ndarray, categorical: bool = False) -> np.ndarray:
+        """f on the history's grid (the refined world's, when finer than the time zoom: PW-1265)."""
+        return f if self.coarse is None else finer(f, self.grid, categorical)
 
     def _rain_ref(self, world_ref):
         """Annual rain at a reference moment and that moment's temperature."""
@@ -193,7 +215,7 @@ class Pass:
             s = self.run["frames"][k]["stats"]
             st = {"stats": s, "elevation": surf - ice, "ice": ice, "dT": s["global_temp_c"] - T_REF_C}
             orbit = finish.orbit_dt(self.run, st) if all(k in s for k in finish.ORBIT_STATS) else None  # (a time zoom stores its orbit)
-            c = climate.compute(self.grid, st["elevation"], st["dT"], tilt, ice, orbit_dt=orbit)
+            c = climate.compute(self.grid if self.coarse is None else self.coarse, st["elevation"], st["dT"], tilt, ice, orbit_dt=orbit)  # (on the zoom's grid)
             rain.append(np.asarray(c["precip"], float))
         self._clim = (ts[keep] - self.now, np.stack(rain))
         self._clim_write(key)
@@ -235,10 +257,10 @@ class Pass:
         if t < tn[0] - 1e-9 or t > tn[-1] + 1e-9:
             return None
         if len(tn) == 1:
-            return rn[0]
+            return self.fine(rn[0])
         j = int(np.clip(np.searchsorted(tn, t), 1, len(tn) - 1))
         w = float(np.clip((t - tn[j - 1]) / (tn[j] - tn[j - 1]), 0, 1))
-        return rn[j - 1] * (1 - w) + rn[j] * w
+        return self.fine(rn[j - 1] * (1 - w) + rn[j] * w)
 
     # -- variability ----------------------------------------------------------------------------
     def _variability(self):
@@ -276,7 +298,7 @@ class Pass:
                 if len(after) and gi[hi] - gi[after].min() >= 0.4:
                     lo = after[np.argmin(gi[after])]
                     mid = 0.5 * (self.ts[hi] + self.ts[lo]) - self.now
-                    ice = T.frame(self.run, self.arr, "ice", int(hi))
+                    ice = self.fine(T.frame(self.run, self.arr, "ice", int(hi)))
                     hemi = 1 if (ice[g.lat > 0] > 0).sum() >= (ice[g.lat < 0] > 0).sum() else -1
                     self.episodes.append(Episode("cold reversal", round(mid - 0.6, 2), round(mid + 0.6, 2),
                                                  50.0 * hemi, 0.0, 0.0, -2.0, hemi))
@@ -308,7 +330,7 @@ class Pass:
         """The habitat inputs at t (kyr rel. to present)."""
         i, j, w = self._bracket(t)
         elev, ice, temp = self._lerp("elevation", t), self._lerp("ice", t), self._lerp("temperature", t)
-        clim = T.frame(self.run, self.arr, "climate", i if w < 0.5 else j)
+        clim = self.fine(T.frame(self.run, self.arr, "climate", i if w < 0.5 else j), categorical=True)
         trees = self._lerp("tree_cover", t) if "tree_cover" in self.arr else np.zeros(self.grid.n)
         dT, rf, g = self.anomaly(t) if variability else (0.0, 1.0, 0.0)
         rain = self._rain_at(t)
