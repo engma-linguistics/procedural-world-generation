@@ -403,9 +403,12 @@ def mineral(grid, elev, temp, t_warm, t_cold, p_jul, p_jan, tilt: float = 23.4, 
 
 def cell_slope(grid, elev) -> np.ndarray:
     """m per km to the steepest neighbour, the sea counted at sea level: a
-    coastal lowland isn't steep for the drop to the sea floor beside it."""
-    from .vegetation import relief
-    return relief(grid, np.maximum(np.asarray(elev, float), 0.0)) / (grid.spacing * R_KM)
+    coastal lowland isn't steep for the drop to the sea floor beside it. On a
+    grid finer than L7 (a refine), read at the cell scale (vegetation.cell_relief:
+    the erosion law and the slope classes are in L7 cells' measure), so a finer
+    grid's ground doesn't thin its soils for being finer."""
+    from .vegetation import cell_relief, cell_rings
+    return cell_relief(grid, np.maximum(np.asarray(elev, float), 0.0)) / (cell_rings(grid) * grid.spacing * R_KM)
 
 
 def salt_near(grid, lake_kind) -> np.ndarray:
