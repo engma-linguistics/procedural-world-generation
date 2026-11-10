@@ -1,9 +1,10 @@
 ---
-title: "With Andean shortening and collapse on, land above 4 km rises late in a run (1 Gyr) where the 600 Myr screen saw it fall; check before 1-2 Gyr showcases"
+id: PW-1680
+title: With Andean shortening and collapse on, land above 4 km rises late in a run (1 Gyr) where the 600 Myr screen saw it fall; check before 1-2 Gyr showcases
 type: task
 status: todo
 parent: null
-milestone: later
+milestone: v1.0
 subsystem: tectonics
 effort: m
 impact: med
@@ -11,6 +12,8 @@ found_by: lane 275b
 blocked_by: []
 relates: [PW-1497, PW-1446]
 refs: [docs/scorecard.jsonl, docs/review/tectonics/mountains/scout9.md, docs/review/tectonics/mountains/scout7_measure.py, "planet/tectonics/crust.py::andean_contraction", "planet/tectonics/crust.py::flow_and_orogeny", tools/scorecard.py, tools/judge.py]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -29,3 +32,6 @@ this may be chance. The paired judge (18 draws) also shows glacial maxima 10 vs 
 - [ ] Re-run `scout7_measure.py` (Andes share, land >3 km, >4 km) on L6 seeds 1, 2, 6001 to 1 Gyr, main against
       the defaults, and say whether the 900-1000 Myr window breaks scout8.md's bar (>3 km mean <= 3.0%, no seed > 3.5%)
 - [ ] If it does: find which belts are high late (live Andean margins, or collision plateaus that collapse cannot touch)
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-andes-late-high-ground-1gyr.md (found by lane 275b).
