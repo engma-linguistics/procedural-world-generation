@@ -14,6 +14,9 @@ The chain, each stage optional after the first:
   zooms          regional zooms of the top N highlights (api.zoom_job)
   peoples        optional (PW-1394): a peoples run (kind 'peoples') of a named tree (dnd, seven_meals, a saved
                  tree) on the finished world and its time zoom (api.lineages_job); needs both
+  languages      with peoples, on by default (PW-1634): the language pass over the peoples run (planet/language/run.py,
+                 languages.json, the names), over `language_workers` forked processes; the peoples stage leaves it to this one.
+                 Its gods.json (faiths) is already written by the peoples stage, so the pass does not re-derive the faiths
 
 Settings: what the code honours today is listed in SETTINGS (tectonics.Params
 fields that change the planet's character, plus seed, level and length) and
@@ -58,6 +61,10 @@ DT, EVERY = 2.0, 4.0                          # the simulate defaults
 
 # The showcase recipes (docs/coordination.md), as presets. `set` are tectonics.Params overrides.
 PEOPLES_S = {4: 25, 5: 70, 6: 220, 7: 700, 8: 3000}   # one peoples run (store timings of 60 runs: L6 median ~220 s, L7 ~100-1800 s, median ~500 s)
+# the language pass over a peoples run at 8 workers (PW-1634): L7 a24559 ~11 min (PW-1555, 620 living lects); L6 423 s (a 200 Myr
+# make, 422 living, lane 12): it scales with the demes more than the cells; L4, L5 and L8 guessed from those
+LANGUAGES_S = {4: 180, 5: 300, 6: 420, 7: 660, 8: 1500}
+LANGUAGE_WORKERS = 8  # (the default cap: the pass forks this many processes; a shared machine keeps lanes under ~32 cores)
 PRESETS = {
     "earthlike": {"label": "Earth-like", "myr": 1000, "set": {},
                   "blurb": "Default parameters: a few continents drifting around, Earth's tilt and climate."},
@@ -96,7 +103,7 @@ UNSUPPORTED = ["orbit (distance, eccentricity)", "a different star (always Sun-l
 NOW_CHOICES = [{"key": "interglacial", "label": "Interglacial (like Earth today)"},
                {"key": "glacial", "label": "Glacial maximum"}, {"key": "end", "label": "End of the time zoom"}]
 DEFAULTS = {"level": 6, "myr": 1000, "kyr": 300, "now": "interglacial", "timezoom": True, "finish": True, "highlights": True, "zooms": 4,
-            "require_ice": False, "tries": 3, "peoples": ""}  # require_ice (owner D19, PW-1164): refuse a finish with no permanent ice, re-rolling the seed up to `tries` runs
+            "require_ice": False, "tries": 3, "peoples": "", "languages": True, "language_workers": LANGUAGE_WORKERS}  # require_ice (owner D19, PW-1164): refuse a finish with no permanent ice, re-rolling the seed up to `tries` runs
 
 
 GODS_MODE_LABELS = [["faith_made", "faith-made (gods exist while worshipped)"], ["belief_only", "belief only (no gods are real, no divine magic)"],
@@ -111,8 +118,10 @@ def peoples_trees() -> list[str]:
 
 def parse_make_request(req: dict) -> dict:
     """Validates a make request and fills defaults. Raises api.BadRequest.
-    {seed, preset, level, myr, set, timezoom, kyr, now, finish, highlights, zooms, name, require_ice, tries, peoples}
-    (peoples: the name of a peoples tree, a preset such as dnd or seven_meals or a saved one; "" makes none)"""
+    {seed, preset, level, myr, set, timezoom, kyr, now, finish, highlights, zooms, name, require_ice, tries, peoples, languages,
+    language_workers}
+    (peoples: the name of a peoples tree, a preset such as dnd or seven_meals or a saved one; "" makes none; languages: with
+    peoples, run the language pass too (default on, PW-1634), over language_workers processes (1..16, default 8))"""
     from dataclasses import fields
     from .tectonics import Params
     if not isinstance(req, dict):
@@ -155,6 +164,10 @@ def parse_make_request(req: dict) -> dict:
         if not (out["timezoom"] and out["finish"]):
             raise api.BadRequest("peoples need the time zoom and the finished world (they are built on both)")
     out.update(api._gods_mode(req) if out["peoples"] else {})  # (PW-1309: the peoples run's gods mode)
+    out["languages"] = bool(out["peoples"]) and bool(req.get("languages", DEFAULTS["languages"]))  # (PW-1634)
+    out["language_workers"] = int(api._num(req, "language_workers", DEFAULTS["language_workers"]))
+    if not 1 <= out["language_workers"] <= 16:
+        raise api.BadRequest("language_workers must be within 1..16")
     out["zooms"] = int(api._num(req, "zooms", DEFAULTS["zooms"]))
     if not 0 <= out["zooms"] <= 12:
         raise api.BadRequest("zooms must be within 0..12")
@@ -205,6 +218,9 @@ def estimate(spec: dict) -> dict:
         st.append(("zooms", f"{spec['zooms']} regional zoom{'s' if spec['zooms'] > 1 else ''}", spec["zooms"] * ZOOM_S[L]))
     if spec["peoples"]:
         st.append(("peoples", f"Peoples ({spec['peoples']})", PEOPLES_S[L]))
+    if spec.get("languages"):
+        w = spec.get("language_workers", LANGUAGE_WORKERS)
+        st.append(("languages", f"Languages ({w} worker{'s' if w > 1 else ''})", LANGUAGES_S[L] * 8 / min(w, 8)))
     stages = [{"key": k, "label": lab, "s": round(s, 1)} for k, lab, s in st]
     return {"stages": stages, "total_s": round(sum(s["s"] for s in stages), 1)}
 
@@ -236,11 +252,15 @@ def _load_state(state, spec: dict) -> dict:
     if d.get("spec") != json.loads(json.dumps(spec)) or not S.exists("run", out.get("run", "")):
         return {}
     have = {"timezoom": "run", "world": "world", "peoples": "run"}
-    return {k: v for k, v in out.items() if k not in have or S.exists(have[k], v)}
+    out = {k: v for k, v in out.items() if k not in have or S.exists(have[k], v)}
+    if out.get("languages") and "peoples" not in out:  # (languages belong to the peoples run they were made over)
+        out.pop("languages")
+    return out
 
 
 def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = False) -> dict:
-    """Runs the chain. Returns {"run", "timezoom", "world", "zooms": [...], "highlights": n, "peoples": run id, "t_myr"};
+    """Runs the chain. Returns {"run", "timezoom", "world", "zooms": [...], "highlights": n, "peoples": run id, "languages": {living,
+    languages, secs} (PW-1634), "t_myr"};
     only what was made. progress(fraction, message). A failure names the stage and what exists so far.
     state: a file the finished stages are recorded in (the server's make jobs); with resume, a run,
     time zoom or world an earlier try of the same request finished is reused, not made again (a server
@@ -338,7 +358,30 @@ def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = Fal
             if "peoples" in out:
                 prog("peoples")(1.0, f"peoples run {out['peoples']} already made")
             else:
-                out["peoples"] = api.lineages_job({"type": "lineages", "world": out["world"], "tree": spec["peoples"], **({"gods_mode": spec["gods_mode"]} if spec.get("gods_mode") else {})}, prog("peoples"))["run"]
+                out["peoples"] = api.lineages_job({"type": "lineages", "world": out["world"], "tree": spec["peoples"], "languages": False,
+                                                   **({"gods_mode": spec["gods_mode"]} if spec.get("gods_mode") else {})}, prog("peoples"))["run"]
+                save()
+        if spec["languages"]:
+            stage = "languages"
+            if "languages" in out:
+                prog("languages")(1.0, f"languages of {out['peoples']} already made")
+            else:
+                from .language import run as LR
+                p = prog("languages")
+                p(0.0, f"languages: the pass over peoples run {out['peoples']} ({spec['language_workers']} workers)")
+                rd = S.find_run(out["peoples"])
+                try:  # (a failure is logged, not fatal, as in the peoples stage before: the peoples run stands without languages)
+                    sm = LR.write(rd, workers=spec["language_workers"], report=True, progress=p)
+                except api.Cancelled:
+                    raise
+                except Exception as e:  # noqa: BLE001 (a run too short for the pass's 20 kyr, no demes...)
+                    with open(rd / "run.txt", "a") as f:
+                        f.write(f"languages (PW-986): failed, {type(e).__name__}: {e}\n")
+                    out["languages"] = {"error": f"{type(e).__name__}: {e}"}
+                    p(1.0, f"languages: not made ({e}); `planet languages {out['peoples']}` retries")
+                else:
+                    out["languages"] = {"living": sm.get("living"), "languages": sm.get("languages"), "secs": sm.get("generated_in_s")}
+                    p(1.0, f"languages: {sm.get('living')} living lects, {sm.get('languages')} languages")
                 save()
     except api.Cancelled:
         raise
