@@ -1,4 +1,5 @@
 ---
+id: PW-1622
 title: "Languages: the phonotactic veto is per draw, so CV languages gain codas within 2.5 kyr"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lang-realinv
 blocked_by: []
 relates: [PW-1551]
-refs: [planet/language/lect.py::Lect.phonotactic_veto, planet/language/lect.py::Lect.step, "planet/language/lect.py::PHONO_VETO", planet/language/inventory.py::retemplate, tools/language/real_inventory.py, docs/review/language/for-daniel.md]
+refs: ["planet/language/lect.py::Lect.phonotactic_veto", "planet/language/lect.py::Lect.step", "planet/language/lect.py::PHONO_VETO", "planet/language/inventory.py::retemplate", tools/language/real_inventory.py, docs/review/language/for-daniel.md]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Cause. `Lect.phonotactic_veto` turns a shape-breaking change down with probabili
 Fix direction: decide the veto once per rule per interval (or per line, with a memory), so 0.8 means 0.8. Also consider whether a glide made from a final vowel should count as a new coda. Then re-check the coda numbers in calibration.md "Sound lane pass 3", since codas came back partly through this leak.
 
 If never done: every CV-language seed (hand-seeded or drawn "simple") drifts toward (C)V(C) in a few thousand years. Families do not keep their syllable type, and the finder's Hawaiian or Japanese look-alikes get rarer as runs get older.
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-language-phonotactic-veto-per-draw.md (found by lang-realinv).

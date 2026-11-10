@@ -1,4 +1,5 @@
 ---
+id: PW-1623
 title: "Languages: words use sounds by world inventory presence, not lexical frequency (a too rare, p/b/d/g/m too common, r and ʔ too rare)"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lang-realinv
 blocked_by: []
 relates: []
-refs: [planet/language/inventory.py::_weights, "planet/language/inventory.py::LEXICAL_MANNER", planet/language/inventory.py::draw_word, tools/language/real_inventory.py, tools/language/find.py::word_stats, tools/language/data/reference_words.tsv]
+refs: ["planet/language/inventory.py::_weights", "planet/language/inventory.py::LEXICAL_MANNER", "planet/language/inventory.py::draw_word", tools/language/real_inventory.py, "tools/language/find.py::word_stats", tools/language/data/reference_words.tsv]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Cause: `inventory._weights` weights a segment by LEXICAL_MANNER (approximants x0
 Fix direction: token-frequency priors by sound class (vowel height, manner) from lexical counts (the reference lists are a start; a larger source such as NorthEuraLex or the ASJP word lists would be better), in place of presence shares. Keep the house manner factors only where they are measured.
 
 If never done: every language's texture is flatter and more stop-heavy than real ones. Hand-seeded and drawn languages alike sound "engine-made", and the finder's texture term stays the main reason nothing in a run reads as close to a real language.
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-language-segment-token-frequencies.md (found by lang-realinv).

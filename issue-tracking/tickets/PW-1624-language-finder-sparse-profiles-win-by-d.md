@@ -1,4 +1,5 @@
 ---
+id: PW-1624
 title: "Language finder: sparse profiles win by default and long vowels count as vowel qualities"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lang-realinv
 blocked_by: []
 relates: []
-refs: [tools/language/find.py::distance, tools/language/find.py::lect_features, tools/language/data/reference_profiles.tsv, tools/language/real_inventory.py]
+refs: ["tools/language/find.py::distance", "tools/language/find.py::lect_features", tools/language/data/reference_profiles.tsv, tools/language/real_inventory.py]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -23,3 +26,6 @@ Measured with `uv run python -I tools/language/real_inventory.py` (scores of pro
 Fix direction: count vowel qualities in `lect_features` (length and nasality are already series). Normalise the distance by the weight of the terms the profile fills, so profiles are comparable. Or say in find.py's docstring that distances compare lects for one profile, not profiles for one lect.
 
 If never done: the long-vowel count mis-ranks lects with long vowels for `--like hawaiian`, `japanese`, `finnish` and `arabic` (Daniel's language-finder skill). Any "closest real language" readout leans to Black Speech, Klingon and Sindarin.
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-language-finder-distance-not-comparable.md (found by lang-realinv).
