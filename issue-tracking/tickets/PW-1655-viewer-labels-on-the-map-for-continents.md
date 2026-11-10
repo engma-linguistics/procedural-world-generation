@@ -17,7 +17,7 @@ updated: 2026-11-10
 ---
 
 ## Description
-In plain words: owner 2026-11-10: continents, states, towns and features labelled on the globe and zoom maps, thinned by size and zoom so they don't pile up. A toggle switches between the English Common (default; English-Common ticket) and what the locals call each place. Reads the names slot (PW-1436).
+In plain words: owner 2026-11-10: continents, states, towns and features labelled on the globe and zoom maps, thinned by size and zoom so they don't pile up. A toggle switches between the English Common (default; PW-1654) and what the locals call each place. Reads the names slot (PW-1436).
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-map-labels.md (found by coordinator).
