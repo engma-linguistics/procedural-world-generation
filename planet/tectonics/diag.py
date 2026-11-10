@@ -70,6 +70,10 @@ class Recorder:
             "ridge_src": round(float(getattr(sim, "ridge_src", 0.0)), 6),  # (the source's parts before the drift)
             "arc_src": round(float(getattr(sim, "arc_src", 0.0)), 6),
             "src": round(float(rel[0]), 4), "sink": round(float(rel[1]), 4), "ice_frac": round(float(ice_frac), 4),
+            # (the stock's driver, ln(s / w): its steady state is ln co2_law(X) = drive. After REF_FREEZE the source's
+            # reference cancels out of it (the sink's is the source's over YARDSTICK), so src alone is no cold-era
+            # signal: lane 273, docs/review/v1-cut/source-reference-option-d.md)
+            "drive": round(float(np.log(max(rel[0], 1e-300) / max(rel[1], 1e-300))), 4),
             **self._sink_parts(sim)}
 
     @staticmethod
