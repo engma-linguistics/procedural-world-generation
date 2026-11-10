@@ -3,7 +3,7 @@
 State
 -----
 Configuration (fixed for a run): grid, seed, params, dt, and what follows
-from them (scale, cell_area, edge_len).
+from them (scale, cell_area, cell_sr, edge_len).
 
 Everything else that changes is listed in Simulation.STATE, by group:
   clock      step_no, t
@@ -36,7 +36,7 @@ from typing import ClassVar
 
 import numpy as np
 
-from ..geo import is_land
+from ..geo import R_KM, is_land
 from ..grid import Grid
 from . import crust, earth, events, mantle, motion, output, record, volcanism
 from .crust import Column
@@ -122,7 +122,10 @@ class Simulation:
         """What follows from the grid."""
         g = self.grid
         self.scale = 2.0 ** (g.level - 5)  # widths below are tuned in level-5 cells
+        # the mean cell's area (sr): only for per-cell densities fed to mantle.smooth, whose basis treats the
+        # cells as equal (Y.T @ Y = I); anything summed over cells (a plate's drag) takes each cell's own, cell_sr
         self.cell_area = 4 * np.pi / g.n
+        self.cell_sr = g.cell_area_km2 / R_KM**2  # each cell's area, sr (0.67-1.21 of the mean on L6, PW-1043)
         self.edge_len = g.spacing
         self.dt_now = self.dt  # Myr: this step's length (step_length; dt but in the finish window)
 

@@ -1779,7 +1779,7 @@ def _reef_sites(ctx: _Ctx) -> dict:
         m[cells] = True
         ring = ctx.dilate(m) & ~m
         a = ctx.km2(cells)
-        reef_km2 = float(share[cells].sum()) / 100 * ctx.area
+        reef_km2 = float((share * ctx.cell_km2)[cells].sum()) / 100  # (each cell's own area, PW-1628)
         if (share[cells] >= REEF_CELL).sum() == 0:
             continue
         land_next = ring & ctx.land
@@ -1808,7 +1808,7 @@ def _reef_sites(ctx: _Ctx) -> dict:
                 shore = np.flatnonzero(land_next & (lm >= BIG_LAND_KM2))
                 offshore = float(np.median([ctx.dist(int(c), shore).min() for c in rc]))
                 lagoon = m & coast
-                ctx._reefs["barrier"].append((rc, float(share[rc].sum()) / 100 * ctx.area, {
+                ctx._reefs["barrier"].append((rc, float((share * ctx.cell_km2)[rc].sum()) / 100, {
                     "length_km": length, "spine": spine, "offshore_km": offshore, "shelf_km2": a,
                     "lagoon_m": float(np.median(-ctx.elev[lagoon])) if lagoon.any() else 0.0}))
     ctx._reefs["bank"].sort(key=lambda s: (-len(s[0]), -s[1]))
@@ -1904,7 +1904,7 @@ def coral_coasts(ctx: _Ctx, top: int = 2) -> list[dict]:
     lime = ctx.land & np.isin(L["surface_rock"], (6, 14)) if "surface_rock" in L else None  # limestone, dolomite
     cand = []
     for cells in ctx.components(reef, min_cells=2, bridge=1)[:12]:
-        cand.append((float(share[cells].sum()) / 100 * ctx.area, cells))
+        cand.append((float((share * ctx.cell_km2)[cells].sum()) / 100, cells))
     cand.sort(key=lambda c: -c[0])
     feats = []
     best = cand[0][0] if cand else 1.0
@@ -1955,7 +1955,7 @@ def mangrove_coasts(ctx: _Ctx, top: int = 1) -> list[dict]:
         return []
     share = np.asarray(L["mangrove"], float)
     mg = ctx.land & (share >= MANGROVE_CELL)
-    cand = [(float(share[c].sum()) / 100 * ctx.area, c) for c in ctx.components(mg, min_cells=2, bridge=1)[:12]]
+    cand = [(float((share * ctx.cell_km2)[c].sum()) / 100, c) for c in ctx.components(mg, min_cells=2, bridge=1)[:12]]
     cand.sort(key=lambda c: -c[0])
     feats = []
     for rank, (a, cells) in enumerate(cand[:top]):
