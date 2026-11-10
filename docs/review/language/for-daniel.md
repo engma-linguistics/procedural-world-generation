@@ -1737,3 +1737,94 @@ to x after vowels), and two unrelated languages for contrast.
   and 12.8-16.1 on lane 14's. The living count (611 on lane 14's last pass) is 622 now, against main's 623.
 - Drafts: back vowel harmony too common (lane 14), the token priors' Eurasian sample (lane 14), open-syllable languages
   too few (lane 14b).
+
+## Lane 15 (lang-lane15, 2026-11-10): basic words kept apart, each family's own place names, the Common in English
+
+In plain words: three things. First, basic words no longer collapse into one another: 'what' and 'one' both worn down
+to zi now gets repaired within a few centuries, the way Gascon renamed the rooster once 'cat' and 'rooster' both came
+out as gat. Second, each language family now has its own habits for naming towns: one puts a worn-down generic at the
+end (English -ton, -bury), one puts it first (Welsh Llan-, Aber-), one says 'mountain of the X' with an article frozen in
+(Arabic Jabal, Wadi), one uses 'X's' with no generic at all or 'X's descendants' (Krakow, Katowice), one names places for
+the land with a voicing rule (Japanese -yama, -gawa), one puts a locative class prefix on the root (Bantu). Every form is
+the language's own words; the six are patterns only. Third, every place has an English name in the Common, built from
+its meaning the way Tolkien gives Imladris as Rivendell (Grimsby-style founders, Redford, Micklewood, Whitehead), with
+what the locals call it and the names it went through beside it. Tickets PW-1653, PW-1658, PW-1654 (data side; the
+viewer toggle and map labels are PW-1655).
+
+**What changed**
+
+- **Basic words kept apart (PW-1653, `lexicon.cross_repair`).** Lane 9's paradigm repair kept 'I' and 'we' apart but
+  not 'what' and 'one', which sit in different paradigms. Now any two basic words (frequency class 1-2, on a core list
+  or closed-class) that sound change makes identical are repaired with a chance that halves the clash's life every 8
+  generations (about 200 years): the rarer one is renewed, a content word before a function word, a pronoun last and
+  never by a loan, by the same means as the paradigm repair ('what thing', a loan, a derivation, a compound, a new
+  root). Real colexifications are left alone: any pair CLICS3 attests in 5 or more families (eat = drink 26, tree = wood
+  59, man = person 41, woman = mother 7), a counting system's own (hundred = many in a restricted count) and deliberate
+  shifts (belly > in).
+- **The 'not' that lost its negator.** In d713.2, 'not' was renewed as 'one-not' (head-final, so the negator came last)
+  and sound change then ate the final -mɛ, leaving 'not' = 'one' = zi. The renewal was right; the merger after it is
+  what the repair now catches. A draft notes that 'not one' is the only reinforcer 'not' ever takes (40% of lects).
+- **Naming habits per family (PW-1658, `planet/language/placenames.py`).** Each proto draws a template (head-final
+  protos the generic-last ones, head-first the generic-first ones; the locative one mostly where nouns have classes) and
+  its own weights over the template's generics (enclosure, house, field, fort, market, holy enclosure, river mouth,
+  head, gate, valley, mountain, island, cape...) and specifics (a founder, 'X's people', an adjective, a thing of nature,
+  the river, the people's own root). Daughters inherit the habit and now and then (12% a lect) drop a generic, take one
+  up or use one more. A generic wears down to one syllable with age, fastest in the English-like habit, never in the
+  Arabic- and Bantu-like ones. Each settlement now records its habit, how it was put together, its meaning, and its
+  `history`: the founders' name and each later holder's hearing of it, when the place changed hands between peoples of
+  different speech.
+- **The Common in English (PW-1654).** Every settlement, ruin, river, lake, sea, peak and land carries `english` and
+  `english_how` ("Grim's + -by 'house'"). Names are unique within a region (Great, Upper, Kirk... where two would
+  clash), a river or a site keeps one English name in every deme on it, and no name trips the spelling guard (0 flagged
+  of 1,430 settlements and 1,237 features on a24559). The names slot (`nameslot.slot`) gives each place `local` and
+  `english` for the viewer lane.
+- **Sisters page.** 'child' now shows (it was looked up under the wrong key); the ancestor's form of a word outside the
+  100-word snapshot list (mother, father, child, three) is traced through a sister's etymology instead of '?'; the page
+  takes the biggest fan of three to six daughters of one ancestor (widening the 2-4 kyr window until three or more turn
+  up: four daughters of d570.1 on a24559, split 6 to 2 kyr ago); a row of each sister's place names with the Common's
+  English.
+
+**Basic words that sound alike (living lects; pairs in the repair's scope: both frequency class 1-2, CLICS3 fewer than 5
+families, not one paradigm)**
+
+| | a24559 main | a24559 now | de1cc6 main | de1cc6 now |
+| --- | --- | --- | --- | --- |
+| pairs (per lect) | 1,808 (2.9) | 350 (0.56) | 1,293 (2.4) | 295 (0.56) |
+| what = one | 45 | 0 | 6 | 0 |
+| I = one | 15 | 1 | 3 | 1 |
+| not = one | 13 | 2 | 4 | 0 |
+| eat = drink (attested, kept) | 69 | 82 | 51 | 58 |
+| woman = mother (attested, kept) | 21 | 13 | 21 | 10 |
+
+What is left is a scatter of one-to-fifteen-lect pairs (he/she/it = what 8, long = what 15 on de1cc6), each young or
+waiting its turn: a clash lives a few centuries on average.
+
+**Families named alike** (each living lect's habit: generics it uses)
+
+| | a24559 | de1cc6 |
+| --- | --- | --- |
+| generics shared, two lects of one family (Jaccard) | 0.94 | 0.96 |
+| generics shared, two lects of different families | 0.23 | 0.26 |
+| templates across lects (suffix / prefix / possessive / construct / feature / locative) | 101 / 94 / 50 / 103 / 151 / 126 | 74 / 115 / 158 / 64 / 51 / 66 |
+
+**World checks (main -> now)**
+
+| | a24559 main | a24559 now | de1cc6 main | de1cc6 now | de1cc6 seed 7 main | seed 7 now |
+| --- | --- | --- | --- | --- | --- | --- |
+| failing checks | horizon, overused ʁ | horizon, overused ʁ | overused ɖ | horizon, inventory tail, overused ɖ, pronoun loans | overused ɖ, pronoun loans | overused ɖ, pronoun loans |
+
+a24559 fails what main fails. On de1cc6 three checks flipped, and a second draw of the same world (seed 7, both codes)
+says they are draw swings, not this lane: pronoun loans sit on the 0.08 bar (main 0.077 and 0.085, now 0.085 and 0.083;
+the jump is 'they' taken in trade, 63 to 100 lects, and this lane's repair never borrows a pronoun); the inventory
+tail is one lect of 160 above PHOIBLE's 95th percentile against none (both pass on seed 7); the horizon is lane 14's
+known swing (10 to 16 kyr; 6.5 and 11 on seed 7, both inside the bar).
+
+**Pages.** The place names of four families side by side (local name, the Common's English, meaning, history) and the
+regenerated sisters page are in the lane report.
+
+**What is left (drafts)**
+
+- Rivers, lakes and peaks still ignore the family habit (water word + adjective in compound order everywhere), so the
+  biggest map labels do not yet show the family difference.
+- 'Not' is renewed as 'not one' in about 40% of lects; real reinforcers vary (a step, a thing, a crumb, a second negator).
+- No contact layer: a ruling or trading people's generics never enter the local habit (no Danelaw -by).

@@ -348,6 +348,18 @@ def _people_name(lect, mods: list, gloss: str, variant: str, root_override=None,
             "plain": f"{roman}, '{gloss}': from {plain_parts}" if plain_parts else f"{roman}, '{gloss}'"}
 
 
+def _english_feature(parts: list, key) -> tuple[str, str]:
+    """A feature's Common English name (PW-1654) from its parts' concepts ([modifier, head] or [head], the head last):
+    Blackwater, Whitemere, Coldfell; a sea apart (the White Sea)."""
+    from .placenames import english
+    head = parts[-1] if parts else None
+    mod = parts[0] if len(parts) > 1 else None
+    if head == "SEA":
+        en, how = english({"generic": head, "spec": {"kind": "adj", "concept": mod} if mod else {}}, key)
+        return ("The " + en if mod else "The Sea"), how
+    return english({"generic": head, "spec": {"kind": "adj", "concept": mod} if mod else {}}, key)
+
+
 def _public(n: dict | None) -> dict | None:
     if n is None:
         return None
@@ -729,7 +741,9 @@ class _Pass:
         etym.append([k0, namer.id, f"name:{kind}", word_ipa(base["form"]), base["gloss"], ""])
         if sub:
             etym.append([None, cur.id, f"substrate:{sub}", word_ipa(form), base["gloss"], via or ""])
-        return {"kind": kind, "id": int(rid), "ipa": word_ipa(form), "roman": roman, "roman_full": roman_full, "gloss": base["gloss"],
+        en, en_how = _english_feature([w.concept for w in base["words"]], f"{kind}{rid}")
+        return {"kind": kind, "id": int(rid), "english": en, "english_how": en_how,
+                "meaning": {"parts": [w.concept for w in base["words"]]}, "ipa": word_ipa(form), "roman": roman, "roman_full": roman_full, "gloss": base["gloss"],
                 "lect": cur.id, "tautology": bool(sub and "tautology" in (via or "")),
                 "named_by": namer.id, "kyr": round(float(k0), 3), "substrate_of": sub, "pattern": "P2" if sub else None,
                 "locative": None if loc is None else {"ipa": loc["ipa"], "roman": _roman_words(cur, loc["words"]),
@@ -754,7 +768,8 @@ class _Pass:
         g = getattr(cur, "grammar", None)
         loc = GR.place_name(form, g) if g is not None else None
         etym = [st for w in words for st in _merge_steps(w.etym)] + [[None, cur.id, f"name:{kind}", word_ipa(form), gloss, ""]]
-        return {"kind": kind, "ipa": word_ipa(form), "roman": roman, "roman_full": RO.title_name(_roman_form(cur, form, False)),
+        en, en_how = _english_feature([w.concept for w in words], f"{kind}{key}")
+        return {"kind": kind, "ipa": word_ipa(form), "english": en, "english_how": en_how, "roman": roman, "roman_full": RO.title_name(_roman_form(cur, form, False)),
                 "gloss": gloss, "lect": cur.id, "named_by": cur.id,
                 "kyr": None, "substrate_of": None, "pattern": None,
                 "locative": None if loc is None else {"ipa": loc["ipa"], "roman": _roman_words(cur, loc["words"]),
@@ -782,11 +797,16 @@ class _Pass:
                 out.append(r)
         if endo is not None:
             land = endo["set"]["land"]
-            out.append({"kind": "land", "ipa": land["ipa"], "roman": land["roman"], "roman_full": land["roman_full"], "gloss": f"the land of the {endo['gloss'].split(' (')[0].removeprefix('the ')}",
+            from .placenames import anglicize
+            en = anglicize(endo["roman"]) + ("land" if zlib.crc32(str(l.deme).encode()) % 3 else "mark")
+            out.append({"kind": "land", "ipa": land["ipa"], "roman": land["roman"], "roman_full": land["roman_full"],
+                        "english": en, "english_how": f"{endo['roman']} + -{en[len(anglicize(endo['roman'])):]} 'land'",
+                        "gloss": f"the land of the {endo['gloss'].split(' (')[0].removeprefix('the ')}",
                         "lect": l.id, "named_by": l.id, "kyr": None, "substrate_of": None, "pattern": endo["pattern"],
                         "locative": None, "etym": endo["etym"][-1:], "plain": f"{land['roman']}: their land ({land['how']})"})
         for p in out:
             p.pop("form", None)
+            p.pop("meaning", None)
         return out[:5]
 
     # -------------------------------------------------------------- exonyms
@@ -982,6 +1002,32 @@ class _Pass:
         return None
 
     # -------------------------------------------------------------- the Common and the scholars
+    def unique_english(self, demes: dict) -> None:
+        """PW-1654: the Common's English names unique per region (the deme's place, 'the west of Simath'): living places
+        first by size, then ruins (placenames.unique_english)."""
+        from .placenames import unique_english
+        recs = []
+        for d, e in demes.items():
+            for x in e.get("places") or []:
+                recs.append((0, -(x.get("id") is not None), 0, d, x))
+            for x in e.get("settlements") or []:
+                recs.append((1 if x.get("kind") == "ruin" else 0, 1, -(x.get("pop") or 0), d, x))
+        recs.sort(key=lambda r: (r[0], r[1], r[2], str(r[3]), r[4].get("site") or r[4].get("id") or 0, r[4].get("kind")))
+
+        def region(r):
+            d = int(r["_deme"])
+            try:
+                return (self.R.demes[d].get("place") or str(d)) if hasattr(self.R, "demes") else str(d)
+            except Exception:  # noqa: BLE001
+                return str(d)
+        xs = []
+        for _a, _b, _c, d, x in recs:
+            x["_deme"] = d
+            xs.append(x)
+        unique_english(xs, region)
+        for x in xs:
+            x.pop("_deme", None)
+
     def common(self) -> tuple[object, str]:
         score: dict = {}
         try:
@@ -1339,6 +1385,8 @@ class _Pass:
                     lid = ru[0]["lect"]
                     e = demes[str(d)] = {"gone": True, "people": self._people(self.lects[lid]), "lect": lid, "places": []}
                 e["settlements"] = (e.get("settlements") or []) + ru
+        self.unique_english(demes)
+        habits = {l.id: PN.H.summary(l) for l in self.living if getattr(l, "lexicon", None) is not None}
         rows = ((getattr(self.R, "meta", {}) or {}).get("present") or {}).get("reputation") or {}
         # (three rounds: neighbours first, whose X1 names the misattributed X9 names and relays reuse; then the rest; then
         # the relayed rows, X4, heard from the third people's own name for the subject)
@@ -1386,7 +1434,7 @@ class _Pass:
             if ds:
                 demes[str(l.deme)]["dishes"] = ds
         return {"peoples": peoples, "demes": demes, "common": out_common, "scholars": self.scholars(common), "personal": personal,
-                "landmasses": self.landmasses(),
+                "landmasses": self.landmasses(), "habits": habits,
                 "patterns": PATTERNS, "note": "PW-972: patterns from the owner's ethnonym taxonomy; forms from each lect's words "
                                               "and grammar (names.py)"}
 

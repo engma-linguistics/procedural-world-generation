@@ -423,3 +423,66 @@ def test_name_length_by_tradition():
     assert sh and lo and all(p["tradition"]["length"] == "short" for p in out["short"].values())
     mean = lambda gs: sum(syllables(from_ipa(g["ipa"])) for g in gs) / len(gs)  # noqa: E731
     assert mean(lo) > mean(sh)
+
+
+# ---------------------------------------------------------------------------------------------- PW-1658 / PW-1654
+def test_english_common_renders_meanings():
+    """PW-1654: a name's meaning as an English compound with English's own generics (Grimsby-style founders)."""
+    from planet.language import placenames as PL
+    assert PL.english({"generic": "FORD", "spec": {"kind": "adj", "concept": "RED"}}, 1)[0] == "Redford"
+    en, how = PL.english({"generic": "HOUSE", "spec": {"kind": "founder", "name": "Grïm"}}, 2)
+    assert en in ("Grimsham", "Grimstead", "Grimsby") and "Grïm's" in how
+    assert PL.english({"generic": None, "spec": {"kind": "descendants", "name": "Kato"}}, 3)[0] == "Katoings"
+    assert PL.english({"generic": "MARKET", "spec": {"kind": "adj", "concept": "NEW"}}, 4)[0] in ("Newwick", "Chipping New")
+    assert PL.anglicize("Ġèrrrhèlinè") == "Gerel" and PL.anglicize("Trrerhrris") == "Treris"
+
+
+def test_english_unique_per_region_and_clean():
+    """Two places of one region with the same English name are told apart by a qualifier; a river keeps one name along
+    its course; nothing reads as a slur."""
+    from planet.language import placenames as PL
+    from planet.language import romanize as RO
+    recs = [{"site": 1, "english": "Newton"}, {"site": 2, "english": "Newton"}, {"site": 3, "english": "Newton"},
+            {"kind": "river", "id": 4, "english": "Redburn"}, {"kind": "river", "id": 4, "english": "Redburn"},
+            {"site": 5, "english": "Newton", "reg": "b"}]
+    PL.unique_english(recs, lambda r: r.get("reg", "a"))
+    names = [r["english"] for r in recs]
+    assert names[0] == "Newton" and len(set(names[:3])) == 3 and all(n.endswith("Newton") for n in names[:3])
+    assert names[3] == names[4] == "Redburn" and names[5] == "Newton"
+    assert all(RO.offensive(n.replace(" ", "")) is None for n in names)
+
+
+def test_naming_habits_inherited_and_rendered(tmp_path):
+    """PW-1658: every settlement carries its family's habit, meaning, English Common name and naming history; sister
+    lects share the habit their proto drew."""
+    from planet.language import personal as PE
+    res, run = _world()
+    run = _with_files(tmp_path, run)
+    a = NM.build_names(res, run)
+    st = a["demes"]["0"]["settlements"]
+    assert all(s["english"] and s["english"][0].isupper() and s["meaning"]["template"] == s["habit"] for s in st)
+    assert all(s["history"] and s["history"][0][1] == s["named_by"] for s in st)
+    assert st[0]["pattern"] == "P2" and st[0]["history"][-1][1] == st[0]["lect"]
+    assert a["habits"] and all(h["template"] in ("suffix", "prefix", "possessive", "construct", "feature", "locative")
+                               for h in a["habits"].values())
+    P = NM._Pass(res, run, 11, None)
+    pe = PE.Personal(P)
+    for l in P.living:
+        ch = pe.chain(l)
+        assert pe.H.habit(l)["origin"] == ch[0].id   # (drawn by the proto at the root of the line)
+
+
+def test_rendaku_voices_the_generic():
+    """The feature habit voices the generic's first consonant in a compound (-kawa > -gawa) when the lect has the voiced
+    counterpart, and leaves it alone otherwise."""
+    from planet.language import placenames as PL
+
+    class L:
+        def __init__(self, segs):
+            self._s = segs
+
+        def segments(self):
+            return self._s
+    k, g, a = from_ipa("k")[0], from_ipa("g")[0], from_ipa("a")[0]
+    assert PL.Habits._rendaku(L([k, g, a]), (k, a))[0] == g
+    assert PL.Habits._rendaku(L([k, a]), (k, a))[0] == k

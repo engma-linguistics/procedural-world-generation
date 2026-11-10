@@ -2,7 +2,7 @@
 id: PW-1654
 title: The Common rendered in English, Tolkien-style (on by default), with what the locals actually call each place alongside
 type: story
-status: todo
+status: done
 parent: PW-767
 milestone: v4
 subsystem: culture
@@ -11,7 +11,7 @@ impact: high
 found_by: coordinator
 blocked_by: []
 relates: [PW-972, PW-1549]
-refs: [planet/language/names.py, planet/lineages/nameslot.py]
+refs: [planet/language/names.py, planet/lineages/nameslot.py, "planet/language/placenames.py::english", "planet/language/placenames.py::unique_english", tests/test_nameslot_calendars.py, docs/review/language/for-daniel.md]
 created: 2026-11-10
 updated: 2026-11-10
 ---
@@ -25,3 +25,4 @@ Toggle: viewer control (owner uses the viewer, not the CLI), default English. Ac
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-english-common-translation.md (found by coordinator).
+- 2026-11-10: Data side done in language lane 15 (`placenames.english`, `names._english_feature`): every settlement, ruin, river, lake, sea, peak and land carries `english` (a calque of its meaning with English generics: -ton/-worth/-hay, -ham/-stead, -field/-ley, -bury/-borough, -wick/Chipping, -ford, -mouth, -kirk/-minster, -dale/-combe, -fell/-horn, -ness; a founder Grimsby-style, 'X's people' -ing-, descendants -ings) and `english_how`. Unique per region (the deme's place) by a qualifier (Great, Upper, Kirk...), one name per river along its course; every name passes romanize.offensive (0 flagged on a24559). The local name and the `history` chain (founders' name, each later holder's hearing) sit beside it; nameslot.slot places carry `local` and `english` (nameslot.place_english). The viewer toggle and map labels are PW-1655.
