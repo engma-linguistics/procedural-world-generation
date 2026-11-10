@@ -278,7 +278,7 @@ def rules_table(lects, h) -> dict:
     return out
 
 
-def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
+def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1, phonology: dict | None = None) -> dict:
     sp = Speller(lect)
     inv = lect.inventory
     gj = grammar_json(lect, sp)
@@ -302,7 +302,8 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1) -> dict:
             "l2": _r(lect.l2), "population": _r(lect.population, 0), "isolation": _r(lect.isolation),
             "shares_history": lect.shares_history,
             "stats": _round_all(LX.stats(lect.lexicon)) if full and lect.lexicon is not None else None,
-            **({"phonology": PH.to_json(lect)} if full and lect.lexicon is not None else {}),   # (sound lane: live rules)
+            **({"phonology": phonology if phonology is not None else PH.to_json(lect)} if full and lect.lexicon is not None
+               else {}),   # (sound lane: live rules)
             "snapshots": thin_snapshots(lect.snapshots, snap_every)}
 
 
@@ -445,7 +446,11 @@ def document(result: dict, thin_dead: int = 1) -> dict:
     land = landscape_json(R)
     et = EtymTable()
     living_ids = {l.id for l in lects if l.alive and l.deme is not None}
-    lj = [lect_json(l, full=l.id in living_ids, et=et, snap_every=1 if l.id in living_ids else thin_dead)
+    full = [l for l in sorted(lects, key=_lect_order) if l.id in living_ids and l.lexicon is not None]
+    # (the living lects' phonology, worked examples and all, in parallel: it reads one lect and changes nothing, PW-1555)
+    phon = dict(zip((l.id for l in full), HI.fork_map(PH.to_json, full))) if HI.WORKERS > 1 else {}
+    lj = [lect_json(l, full=l.id in living_ids, et=et, snap_every=1 if l.id in living_ids else thin_dead,
+                    phonology=phon.get(l.id))
           for l in sorted(lects, key=_lect_order)]
     from . import sentences as SN
     last = len(R.frames_kyr) - 1

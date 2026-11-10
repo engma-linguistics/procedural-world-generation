@@ -26,7 +26,8 @@ import csv
 import functools
 import math
 import sys
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
+from .percepts import replace  # (PW-1555: the interned Segment's fast path; dataclasses.replace otherwise)
 from pathlib import Path
 from typing import Callable, Iterable
 

@@ -27,7 +27,8 @@ import csv
 import unicodedata
 import math
 import re
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
+from .percepts import replace  # (PW-1555: the interned Segment's fast path; dataclasses.replace otherwise)
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Iterable, Sequence
@@ -625,8 +626,12 @@ def _apply_one(rule: Rule, w: tuple, stress_index, stem_index) -> tuple:
     target = rule.target
     if target is None:
         return _apply_insert(rule, w, stress_index)
+    tm = target._memo   # (the class memo read inline: this loop is the pass's hottest; PW-1555)
     for s in w:
-        if target(s):
+        r = tm.get(s)
+        if r is None:
+            r = target(s)
+        if r:
             break
     else:
         return w
@@ -644,7 +649,10 @@ def _apply_one(rule: Rule, w: tuple, stress_index, stem_index) -> tuple:
     while i < n:
         seg = w[i]
         end = i + 1 + k
-        if target(seg) and end <= n and all(p(w[i + 1 + q]) for q, p in enumerate(rule.span)) \
+        r = tm.get(seg)
+        if r is None:
+            r = target(seg)
+        if r and end <= n and all(p(w[i + 1 + q]) for q, p in enumerate(rule.span)) \
                 and (not need_stress or _stress_ok(env.stress, s_idx, i, seg)) \
                 and (not env.syll or _syll_ok(env.syll, w, i, end)) \
                 and _env_ok(env, out, w, end, sat_l, sat_r):
@@ -833,7 +841,7 @@ def cumulative_weights(rules: Sequence[Rule]) -> list:
 
 
 def pick_rule(rng, rules: Sequence[Rule], lexicon_forms: Sequence, inventory_segments: Iterable,
-              stress_index=None, mass: float | None = None, cum: list | None = None) -> Rule | None:
+              stress_index=None, mass: float | None = None, cum: list | None = None, memo: dict | None = None) -> Rule | None:
     """Draw one rule by weight, once (PW-1551, owner ruling 11-08: no redraw). A draw that lands on a rule whose input the
     inventory lacks, or that would change none of ``lexicon_forms`` (its environment never met), fires nothing (counted
     in ``PICK_STATS["noop_draws"]``), so each rule fires in proportion to its weight wherever it applies and the
@@ -847,7 +855,11 @@ def pick_rule(rng, rules: Sequence[Rule], lexicon_forms: Sequence, inventory_seg
     the cost).
 
     (Until PW-1551 a no-op draw was set aside and redrawn up to 16 times: the draw was then among the few rules that
-    applied now, and nearly every one fired as soon as its re-fire wait allowed, whatever its weight.)"""
+    applied now, and nearly every one fired as soon as its re-fire wait allowed, whatever its weight.)
+
+    ``memo``: a dict the caller keeps while ``lexicon_forms``, ``inventory_segments`` and ``stress_index`` stay the same
+    (PW-1555): a rule drawn again is not run over the forms again (whether it applies, changes any form, and its
+    functional load are worked out once). The draws and the veto use the rng exactly as without it."""
     PICK_STATS["picks"] += 1
     if cum is None:
         cum = cumulative_weights(rules)
@@ -857,25 +869,49 @@ def pick_rule(rng, rules: Sequence[Rule], lexicon_forms: Sequence, inventory_seg
         PICK_STATS["noop_draws"] += 1
         return None
     rule = rules[min(bisect.bisect_right(cum, x), len(rules) - 1)]
-    inv = list(inventory_segments)
-    if rule is None or not applies(rule, inv):
+    if rule is None:
         PICK_STATS["noop_draws"] += 1
+        return None
+    got = memo.get(id(rule)) if memo is not None else None
+    if got is None or got[0] is not rule:
+        load = _pick_load(rule, lexicon_forms, inventory_segments, stress_index)
+        if memo is not None:
+            memo[id(rule)] = got = (rule, load)
+    else:
+        load = got[1]
+    if load is None:   # (no input in the inventory, or no form changed)
+        PICK_STATS["noop_draws"] += 1
+        return None
+    if rng.random() >= veto_probability(load):
+        return rule
+    PICK_STATS["vetoed"] += 1
+    key = ("push", id(rule))
+    pg = memo.get(key) if memo is not None else None
+    if pg is None or pg[0] is not rule:
+        inv = list(inventory_segments)
+        push = dispersion_rule(rule, inv)
+        pl = None if push is None else functional_load(push, [tuple(f) for f in lexicon_forms], stress_index)
+        pg = (rule, push, pl)
+        if memo is not None:
+            memo[key] = pg
+    _r, push, pl = pg
+    if push is None:
+        return None
+    if rng.random() >= veto_probability(pl):
+        return push
+    return None
+
+
+def _pick_load(rule: Rule, lexicon_forms: Sequence, inventory_segments: Iterable, stress_index) -> float | None:
+    """pick_rule's deterministic part for one rule: None when it fires nothing (its input is not in the inventory, or it
+    changes none of the forms), else its functional load over the forms."""
+    if not applies(rule, list(inventory_segments)):
         return None
     forms = [tuple(f) for f in lexicon_forms]
     outs = apply_all(rule, forms, stress_index)
     if forms and all(a == b for a, b in zip(outs, forms)):
-        PICK_STATS["noop_draws"] += 1
         return None
-    load = functional_load(rule, forms, stress_index, outputs=outs)
-    if rng.random() >= veto_probability(load):
-        return rule
-    PICK_STATS["vetoed"] += 1
-    push = dispersion_rule(rule, inv)
-    if push is None:
-        return None
-    if rng.random() >= veto_probability(functional_load(push, forms, stress_index)):
-        return push
-    return None
+    return functional_load(rule, forms, stress_index, outputs=outs)
 
 
 def dispersion_rule(rule: Rule, inventory_segments: Iterable) -> Rule | None:

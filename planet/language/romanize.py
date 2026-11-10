@@ -38,7 +38,7 @@ after the first run of sounds that carry it (no rhrh, no samhshunwanmh), and a g
 from __future__ import annotations
 
 import unicodedata
-from dataclasses import replace
+from .percepts import replace  # (PW-1555: the interned Segment's fast path)
 from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
@@ -856,8 +856,29 @@ class Orthography:
         return tuple(out)
 
     def word(self, form, book: bool = False, guard: bool = True) -> str:
-        return romanize_word(self.phonemic(form), self.cs, self.inv, book=book, folds=self.folds if book else None,
-                             guard=guard)
+        """The form's spelling (romanize_word over its phonemes); remembered per form and register (PW-1555: the pass
+        spells the same words many times, for the offence check, the lexicon, the snapshots and the etymologies)."""
+        key = (tuple(form), book, guard)
+        memo = self.__dict__.get("_spelt")
+        if memo is None:
+            memo = self.__dict__["_spelt"] = {}
+        got = memo.get(key)
+        if got is None:
+            if guard:   # (the guarded spelling is the raw one through `unoffend`: romanize_word)
+                got = memo[key] = unoffend(self.word(form, book, guard=False))
+            else:
+                got = memo[key] = romanize_word(self.phonemic(form), self.cs, self.inv, book=book,
+                                                folds=self.folds if book else None, guard=False)
+        return got
+
+    def spelt(self) -> dict:
+        """The spellings remembered so far ({(form, book, guard): spelling}), for `remember`."""
+        return dict(self.__dict__.get("_spelt") or {})
+
+    def remember(self, spelt: dict) -> None:
+        """Take spellings worked out elsewhere by an Orthography built from the same lect state (a forked worker's:
+        history.offense_pass); the same words then spell without romanizing again."""
+        self.__dict__.setdefault("_spelt", {}).update(spelt)
 
     def offends(self, form) -> str | None:
         """The blocklisted substring the form's raw spelling holds in either register (no `unoffend`), or None."""

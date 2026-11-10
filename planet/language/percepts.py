@@ -18,7 +18,7 @@ listener lacks them (kw > p, Romanian lupta < lucta; the parrot's labial substit
 from __future__ import annotations
 
 import unicodedata
-from dataclasses import dataclass, field, fields, replace
+from dataclasses import dataclass, field, fields, replace as _dc_replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Iterable
@@ -26,7 +26,7 @@ from typing import Callable, Iterable
 DATA = Path(__file__).parent / "data"
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class Segment:
     kind: str  # "C" | "V" | "T" (standalone tone letter)
     place: int = 0  # 0 labial 1 dental 2 alveolar 3 postalveolar 4 palatal 5 velar 6 uvular 7 pharyngeal 8 glottal
@@ -54,18 +54,88 @@ class Segment:
     # generated hash rebuilt a 20-field tuple on every lookup (a fifth of the pass's time). Same value as the generated
     # one, so set and dict behaviour is unchanged; not compared, not an init argument (replace() starts it afresh).
     _h: int = field(default=0, init=False, compare=False, repr=False)
+    # (PW-1555: segments are interned. Every Segment(...) and every replace() of one returns the one object for its
+    # value, so the dict and set lookups that fill the pass (the rules' class memos, inventories, homophone buckets) find
+    # their key by identity and never call the generated field-by-field __eq__, a sixth of the workers' time before.
+    # Equality, hashing and every value are unchanged; `_k` is the value as a tuple, the interning key.)
+    _k: tuple = field(default=(), init=False, compare=False, repr=False)
+
+    def __new__(cls, *args, **kw):
+        vals = list(_SEG_DEFAULTS)
+        if len(args) > len(vals):
+            raise TypeError(f"Segment takes at most {len(vals)} positional arguments")
+        vals[:len(args)] = args
+        for k, v in kw.items():
+            j = _SEG_INDEX.get(k)
+            if j is None:
+                raise TypeError(f"Segment got an unexpected keyword argument {k!r}")
+            vals[j] = v
+        if vals[0] is _MISSING:
+            raise TypeError("Segment needs a kind")
+        return _intern(cls, tuple(vals))
+
+    def __init__(self, *args, **kw):   # (all done in __new__)
+        pass
+
+    def __reduce__(self):
+        return (_seg_of, (self._k,))
+
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
 
     def __hash__(self):
-        h = self._h
-        if not h:
-            h = hash((self.kind, self.place, self.manner, self.voice, self.larynx, self.phonation, self.secondary,
-                      self.sibilant, self.height, self.back, self.round, self.nasal, self.length, self.tone, self.source2,
-                      self.tone2, self.register, self.retroflex, self.labiodental, self.lateral, self.double, self.prenasal)) or 1
-            object.__setattr__(self, "_h", h)
-        return h
+        return self._h
 
 
-AXES: tuple[str, ...] = tuple(f.name for f in fields(Segment) if f.name not in ("kind", "_h"))
+_MISSING = object()
+_SEG_NAMES: tuple[str, ...] = tuple(f.name for f in fields(Segment) if f.init)
+_SEG_DEFAULTS: tuple = tuple(_MISSING if f.name == "kind" else f.default for f in fields(Segment) if f.init)
+_SEG_INDEX: dict[str, int] = {n: i for i, n in enumerate(_SEG_NAMES)}
+_SEGS: dict = {}   # interning table: value -> the Segment
+
+
+def _intern(cls, vals: tuple):
+    key = vals
+    if not all(v.__class__ is int for v in vals[1:]):   # (a bool or float axis value is kept as given, apart from the
+        key = (vals, tuple(v.__class__ for v in vals))  # equal int one, so what is written out is unchanged)
+    seg = _SEGS.get(key)
+    if seg is None:
+        seg = object.__new__(cls)
+        for n, v in zip(_SEG_NAMES, vals):
+            object.__setattr__(seg, n, v)
+        object.__setattr__(seg, "_h", hash(vals) or 1)
+        object.__setattr__(seg, "_k", vals)
+        _SEGS[key] = seg
+    return seg
+
+
+def _seg_of(vals: tuple):
+    """Unpickling: the interned Segment of a value."""
+    return _intern(Segment, tuple(vals))
+
+
+def seg_replace(seg, **kw):
+    """dataclasses.replace for a Segment, without its per-call field walk (same checks: unknown or non-init names fail)."""
+    vals = list(seg._k)
+    for k, v in kw.items():
+        j = _SEG_INDEX.get(k)
+        if j is None:
+            raise TypeError(f"Segment got an unexpected keyword argument {k!r}")
+        vals[j] = v
+    return _intern(Segment, tuple(vals))
+
+
+def replace(obj, /, **kw):
+    """dataclasses.replace, with the fast path for a Segment (seg_replace)."""
+    if obj.__class__ is Segment:
+        return seg_replace(obj, **kw)
+    return _dc_replace(obj, **kw)
+
+
+AXES: tuple[str, ...] = tuple(f.name for f in fields(Segment) if f.name not in ("kind", "_h", "_k"))
 AXIS_RANGE: dict[str, tuple[int, int]] = {
     "place": (0, 8), "manner": (0, 9), "voice": (0, 1), "larynx": (0, 3), "phonation": (0, 4), "secondary": (0, 4),
     "sibilant": (0, 1), "height": (0, 6), "back": (0, 4), "round": (0, 1), "nasal": (0, 1), "length": (0, 1),

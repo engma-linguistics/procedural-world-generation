@@ -23,7 +23,10 @@ Per interval (never per generation; every per-generation hazard is batched over 
 Deterministic per seed: every draw comes from np.random.default_rng((seed, 986, crc32(<stable key>))), seed = meta.seed."""
 from __future__ import annotations
 
+import gc
+import io
 import math
+import pickle
 import time
 import zlib
 from pathlib import Path
@@ -197,11 +200,15 @@ class History:
 
     # ------------------------------------------------------------------ protos
     def make_proto(self, people: str, key: str, kyr: float, how: str) -> LC.Lect:
+        pid = f"p{self.proto_count}"
+        self.proto_count += 1
+        return self.add(self.build_proto(people, key, kyr, how, pid))
+
+    def build_proto(self, people: str, key: str, kyr: float, how: str, pid: str) -> LC.Lect:
+        """A new proto-language (not yet added): its own draws only (rng_for of its key), so any process can build it."""
         rng = rng_for(self.seed, "proto", key)
         prof = self.profile(people)
         inv = LC.draw_inventory(rng, prof)
-        pid = f"p{self.proto_count}"
-        self.proto_count += 1
         lex = LX.proto_lexicon(rng, inv, self.concepts, kyr, pid)
         gram = None
         GR = LC._gr_mod()
@@ -222,7 +229,7 @@ class History:
         p.died_kyr = float(kyr)
         p.end = "split"
         p.orth = RO.draw_style(self.seed, pid)   # (the family's book-spelling tradition, PW-1546: a hash, no history draw)
-        return self.add(p)
+        return p
 
     def daughter(self, parent: LC.Lect, deme: int, kyr: float, how: str, rng=None) -> LC.Lect:
         lid = f"d{deme}"
@@ -245,10 +252,20 @@ class History:
         for p, ov in sorted(R.generation_overrides.items()):
             self.say(START_KYR, f"generation length of {p}: {ov['stored_yr']} yr stored in the run, {ov['current_yr']} yr under the "
                                 f"current preset ({Path(ov['spec']).name if ov.get('spec') else '?'}); the current one is used")
-        for comp in R.start_components(PROTO_LINK):
-            people = R.people_of(comp[0])
-            k0 = R.kyr(0)
-            p = self.make_proto(people, f"start:{comp[0]}", k0, "proto")
+        comps = list(R.start_components(PROTO_LINK))
+        k0 = R.kyr(0)
+        jobs = [(R.people_of(c[0]), f"start:{c[0]}", k0, "proto", f"p{self.proto_count + j}") for j, c in enumerate(comps)]
+        global _H
+        _H = self
+        built = fork_map(_proto_remote, jobs) if WORKERS > 1 else [None] * len(jobs)   # (the start's protos, PW-1555)
+        for comp, job, p in zip(comps, jobs, built):
+            people = job[0]
+            if p is None:
+                p = self.make_proto(people, job[1], k0, "proto")
+            else:
+                p.profile = self.profile(p.profile_key)
+                self.proto_count += 1
+                self.add(p)
             for d in comp:
                 l = self.daughter(p, d, k0, "proto")
                 self.first_family[d] = p.id
@@ -500,15 +517,32 @@ class History:
         for t in tasks:  # (catalogues built once here, inherited by the workers)
             l = self.lects[t[0]]
             LC.catalogue_for(l.profile, l.profile_key)
-        order = sorted(tasks, key=lambda t: -t[2])  # (longest first)
-        with mp.get_context("fork").Pool(w) as pool:
-            res = pool.map(_work_remote, order, chunksize=max(1, len(order) // (4 * w)))
+        # (longest first: most generations, then the biggest lexicon. One task at a time, taken back as each finishes, so
+        # the parent reads the stepped lects while the workers are still busy; which worker steps a lect, and in what
+        # order they come back, changes nothing: every draw is the lect's own rng_for, PW-1555)
+        size = {t[0]: len(getattr(self.lects[t[0]].lexicon, "words", None) or ()) for t in tasks}
+        order = sorted(tasks, key=lambda t: (-t[2], -size[t[0]]))
         out = {}
-        for lid, (l, f) in res:
-            l.profile = self.profile(l.profile_key)
-            self.lects[lid] = l
-            out[lid] = f
-        return out
+        old = {t[0]: self.lects[t[0]] for t in tasks}   # (the lects as the workers forked them: a lect listed twice, as
+        # one deme's speech and another's minority speech, comes back twice, the same both times)
+        # (no garbage collection while the lects come back: the parent holds millions of objects, a collection walks all
+        # of them, and unpickling a stepped lect allocates enough to set one off every few lects. Frozen before the fork,
+        # the inherited heap is out of the workers' collections too. Collection never changes a result, PW-1555)
+        gc_on = gc.isenabled()
+        gc.freeze()   # (collected every COLLECT_EVERY intervals: collect_frozen)
+        try:
+            with mp.get_context("fork").Pool(w) as pool:
+                gc.disable()
+                for lid, blob in pool.imap_unordered(_work_remote, order, chunksize=1):
+                    l, f = _RefUnpickler(io.BytesIO(blob), _known_objects(old[lid])).load()
+                    l.profile = self.profile(l.profile_key)
+                    self.lects[lid] = l
+                    out[lid] = f
+        finally:
+            gc.freeze()   # (the stepped lects too: collect_frozen)
+            if gc_on:
+                gc.enable()
+        return {t[0]: out[t[0]] for t in order}
 
     def deme_speech(self, deme: int) -> list:
         """Every living lect spoken in a deme: the dominant one, then its minority speech."""
@@ -1171,12 +1205,55 @@ def _work(task):
     return lid, fired
 
 
+def _known_objects(l) -> dict:
+    """{id: object} for the parts of a lect's lexicon that are immutable and that the parent holds too (its Words, their
+    forms and etymology tuples): what a worker sends back by reference (PW-1555)."""
+    out = {}
+    lex = getattr(l, "lexicon", None)
+    if lex is not None:
+        for w in lex.words.values():
+            out[id(w)] = w
+            out[id(w.form)] = w.form
+            out[id(w.etym)] = w.etym
+    return out
+
+
+_NOT_KNOWN = object()
+
+
+class _RefPickler(pickle.Pickler):
+    """Pickles a stepped lect, writing each Word, form and etymology the lect already had before its step (`known`) as a
+    reference the parent resolves to its own copy of that same object (the worker is a fork: an object alive since the
+    fork has one address in both processes, and `known` keeps it alive). Most of a lect's words do not change in an
+    interval, and rebuilding them in the parent was most of the interval's serial time."""
+
+    def __init__(self, f, known: dict):
+        super().__init__(f, protocol=pickle.DEFAULT_PROTOCOL)
+        self.known = known
+
+    def persistent_id(self, obj):
+        k = self.known.get(id(obj), _NOT_KNOWN)
+        return id(obj) if k is obj else None
+
+
+class _RefUnpickler(pickle.Unpickler):
+    def __init__(self, f, known: dict):
+        super().__init__(f)
+        self.known = known
+
+    def persistent_load(self, pid):
+        return self.known[pid]
+
+
 def _work_remote(task):
+    known = _known_objects(_H.lects[task[0]])
     lid, fired = _work(task)
     l = _H.lects[lid]
     l.profile = None  # (restored from the parent's cache; profiles are shared)
     l._rw = None  # (the weighted catalogue cache holds closures; rebuilt on demand)
-    return lid, (l, fired)
+    buf = io.BytesIO()
+    _RefPickler(buf, known).dump((l, fired))
+    return lid, buf.getvalue()
 
 
 def LC_root(h: History, l: LC.Lect) -> str:
@@ -1241,6 +1318,67 @@ def calque(rng, old: LC.Lect, new: LC.Lect) -> list:
     return out
 
 
+def _proto_remote(job):
+    p = _H.build_proto(*job)
+    p.profile = None   # (restored from the parent's cache)
+    return p
+
+
+_FN = None
+_ITEMS: list = []
+
+
+def _call_fn(i: int):
+    return _FN(_ITEMS[i])
+
+
+def fork_map(fn, items: list) -> list:
+    """[fn(x) for x in items] over WORKERS forked processes that inherit this process's state (fn and the items are not
+    pickled; the results are). For work that reads the pass's state and changes nothing the parent keeps (PW-1555)."""
+    global _FN, _ITEMS
+    w = min(WORKERS, len(items))
+    if w <= 1:
+        return [fn(x) for x in items]
+    import multiprocessing as mp
+    _FN, _ITEMS = fn, items
+    gc_on = gc.isenabled()
+    was = gc.get_freeze_count() > 0   # (inside the history, where run_steps keeps the heap frozen)
+    gc.freeze()   # (as in run_steps: the inherited heap out of the workers' collections)
+    try:
+        with mp.get_context("fork").Pool(w) as pool:
+            gc.disable()
+            return pool.map(_call_fn, range(len(items)), chunksize=max(1, len(items) // (w * 8)))
+    finally:
+        _FN, _ITEMS = None, []
+        if was:
+            gc.freeze()
+        else:
+            gc.unfreeze()
+        if gc_on:
+            gc.enable()
+
+
+#: intervals between collections of the frozen heap (run_steps): the old grammars replaced each interval are cyclic, about
+#: 100k objects an interval; a collection walks the whole heap, some 5-10 s late in the pass (PW-1555)
+COLLECT_EVERY = 20
+
+
+def collect_frozen() -> None:
+    """Back to normal garbage collection: run_steps leaves the heap frozen (a full collection walks millions of objects,
+    and one followed every interval otherwise); one collection here frees what went cyclic meanwhile."""
+    gc.unfreeze()
+    gc.collect()
+
+
+def _spell_all(l) -> dict:
+    """Every word of a lect spelt raw in both registers (what the offence check reads): the Orthography's memo."""
+    from .output import orthography
+    orth = orthography(l)
+    for w in l.lexicon.words.values():
+        orth.offends(w.form)
+    return orth.spelt()
+
+
 def offense_pass(h: "History", R, last: int) -> None:
     """Renew the words of every living lect whose spelling reads as an English slur or obscenity (lexicon.offense_repair,
     romanize.blocklist), in up to LX.OFFENSE_ROUNDS rounds (a renewal re-ranks the book diacritics). Counts in
@@ -1249,7 +1387,13 @@ def offense_pass(h: "History", R, last: int) -> None:
     P = FT._plan(h)
     before = renewed = 0
     after = 0
-    for l in sorted((x for x in h.lects.values() if x.alive and x.lexicon is not None), key=lambda x: x.id):
+    todo = sorted((x for x in h.lects.values() if x.alive and x.lexicon is not None), key=lambda x: x.id)
+    # (the first round's spellings, worked out in parallel: a lect's words change only in its own turn below, so a
+    # worker forked now spells them as the turn would; PW-1555)
+    spelt = dict(zip((l.id for l in todo), fork_map(_spell_all, todo))) if WORKERS > 1 else {}
+    for l in todo:
+        if l.id in spelt:
+            orthography(l).remember(spelt.pop(l.id))
         cw = {}
         if l.deme is not None:
             cw = {y.id: y.lexicon for y in (h.lect_of(o) for o in sorted(R.contacts_of(l.deme, last, CONTACT_BORROW)))
@@ -1290,6 +1434,8 @@ def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse
     h.observe(0)
     for i in range(1, len(R.frames_kyr) if frames is None else frames):
         h.interval(i)
+        if WORKERS > 1 and i % COLLECT_EVERY == 0:
+            collect_frozen()
     # (adoptions decided in the last interval would land in the next one, which does not exist: they are dropped)
     h.timing["driver_s"] = round(time.perf_counter() - t, 1)
     last = len(R.frames_kyr) - 1
@@ -1305,7 +1451,10 @@ def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse
         lr = FT.learned_register(h, l)   # (the liturgy's sacred words beside the lect's own: faiths.py)
         if lr:
             l.lexicon.systems["learned"] = lr
+    t2 = time.perf_counter()
+    h.timing["registers_s"] = round(t2 - t - h.timing["driver_s"], 1)
     offense_pass(h, R, last)
+    h.timing["offense_s"] = round(time.perf_counter() - t2, 1)
     out = {"history": h, "run": R, "seed": h.seed, "lects": list(h.lects.values()), "shifts": h.shifts,
            "food_routes": [r for r in h.routes.values()], "log": h.log, "timing": h.timing}
     if analyse:
@@ -1313,11 +1462,19 @@ def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse
         core = sorted(c for c in LX.CORE100)
         out["families"] = FA.analyse(out["lects"], core, h.seed, people_sets=CK.HORIZON_PEOPLES)
         h.timing["families_s"] = round(time.perf_counter() - t2, 1)
+        t2 = time.perf_counter()
         living = [l for l in out["lects"] if l.alive and l.deme is not None]
         now = {(a, b): v for a, b, v in h.intel_now}
         last = len(R.frames_kyr) - 1
         out["continua"] = FA.continua(living, now, lambda a, b: R.contact(h.lects[a].deme, h.lects[b].deme, last) > 0,
                                       lambda l: l.family_true)
+        h.timing["continua_s"] = round(time.perf_counter() - t2, 1)
+        t2 = time.perf_counter()
         out["checks"] = CK.run_all(out)
+        h.timing["checks_s"] = round(time.perf_counter() - t2, 1)
+    if WORKERS > 1:
+        t2 = time.perf_counter()
+        collect_frozen()
+        h.timing["collect_s"] = round(time.perf_counter() - t2, 1)
     h.timing["total_s"] = round(time.perf_counter() - t, 1)
     return out
