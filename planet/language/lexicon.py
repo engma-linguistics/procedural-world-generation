@@ -2530,6 +2530,11 @@ def has_nucleus(form: Form) -> bool:
     return any(s.kind == "V" for s in form)
 
 
+def moras(form: Form) -> int:
+    """Segments, a long one counting twice: a rough mora count for the minimal name (faiths.finish_names)."""
+    return sum(2 if getattr(x, "length", 0) else 1 for x in form)
+
+
 def minimal_form(old: Form) -> Form:
     """What is left of a word a sound change would delete whole: its last vowel (the nucleus that held out), else its last
     segment. Words do not vanish; they wear down to a minimal form."""

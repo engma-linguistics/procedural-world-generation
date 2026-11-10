@@ -322,6 +322,7 @@ def families(doc, l, field: str, au: Audio) -> str:
     if not seen:
         return f"<p class='muted'>This languages file has no <code>{E(field)}</code> yet.</p>"
     R = doc.d.get("roots") or {}
+    own = {x["id"] for x in doc.line(l["id"])}
     if field == "roots":   # (a speaker feels a family only while the shared part can be heard in each member)
         for r, f in fam.items():
             f["main"] = SK.felt_members(doc, lex, r, f["main"])
@@ -345,6 +346,9 @@ def families(doc, l, field: str, au: Audio) -> str:
                           for ipa, cs in f["forms"][:8])
         more = f" <span class='muted'>+{len(f['forms']) - 8}</span>" if len(f["forms"]) > 8 else ""
         star = f" <span class='ipa'>*{E(info['ipa'])}</span>" if info.get("ipa") else ""
+        if info.get("lect") and info["lect"] not in own:   # (PW-1548: a root coined outside this language's line came
+            # in with a loan: its proto-form is the donor's, and the card says so)
+            star += f" <span class='muted'>(a loan: the root is {E(doc.label(info['lect'], True))}'s)</span>"
         out.append(f"<div class='fam'><b>{E(str(head))}</b>{star} <span class='muted'>· {len(f['forms'])} words</span>"
                    f"<br>{words}{more}</div>")
     if not big:
@@ -633,21 +637,29 @@ def _gform(g) -> str:
 
 
 def _gram_events(ser, since: float) -> list:
-    """[(kyr, kind, function, text)] from the snapshots' live grams after `since` kyr ago."""
+    """[(kyr, kind, function, text)] from the snapshots' live grams after `since` kyr ago. A form quoted as it was when
+    the event happened says 'then' and gives today's form when sound change has moved it since (PW-1548)."""
     ev = []
     seq = [t for t in ser if t[0] <= since + 1e-6]   # (from the window's first frame on: earlier changes are not part of
     # the change read, and dated by the first frame they piled up there)
+    now = {g[0]: g for g in (seq[-1][2].get("grams") or [])} if seq else {}
+
+    def then(fn, g) -> str:
+        cur = now.get(fn)
+        if cur is None or not g[1] or not cur[1] or cur[1] == g[1]:
+            return _gform(g)
+        return f"{_gform(g)} then (/{cur[1]}/ now)"
     for (k0, _a, s0), (k1, _b, s1) in zip(seq, seq[1:]):
         g0 = {g[0]: g for g in s0.get("grams") or []}
         g1 = {g[0]: g for g in s1.get("grams") or []}
         for fn in sorted(set(g0) | set(g1)):
             a, b = g0.get(fn), g1.get(fn)
             if a is None:
-                ev.append((k1, "+", fn, f"{_lab(fn)} recruited: {_gform(b)}"))
+                ev.append((k1, "+", fn, f"{_lab(fn)} recruited: {then(fn, b)}"))
             elif b is None:
                 ev.append((k1, "-", fn, f"{_lab(fn)} lost (was {_gform(a)})"))
             elif b[2] > a[2]:
-                ev.append((k1, "+", fn, f"{_lab(fn)} bound further: {_gform(a)} > {_gform(b)}"))
+                ev.append((k1, "+", fn, f"{_lab(fn)} bound further: {_gform(a)} > {then(fn, b)}"))
             elif b[2] < a[2]:
                 ev.append((k1, "-", fn, f"{_lab(fn)} came loose: {_gform(a)} > {_gform(b)}"))
             elif a[1] != b[1] and a[1] and b[1]:

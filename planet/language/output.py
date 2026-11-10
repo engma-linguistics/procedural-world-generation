@@ -278,7 +278,8 @@ def rules_table(lects, h) -> dict:
     return out
 
 
-def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1, phonology: dict | None = None) -> dict:
+def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1, phonology: dict | None = None,
+              snapshots: list | None = None) -> dict:
     sp = Speller(lect)
     inv = lect.inventory
     gj = grammar_json(lect, sp)
@@ -304,7 +305,7 @@ def lect_json(lect, full: bool, et: EtymTable, snap_every: int = 1, phonology: d
             "stats": _round_all(LX.stats(lect.lexicon)) if full and lect.lexicon is not None else None,
             **({"phonology": phonology if phonology is not None else PH.to_json(lect)} if full and lect.lexicon is not None
                else {}),   # (sound lane: live rules)
-            "snapshots": thin_snapshots(lect.snapshots, snap_every)}
+            "snapshots": thin_snapshots(lect.snapshots, snap_every) if snapshots is None else snapshots}
 
 
 def split_branches(lects_by_id: dict, mid: str, t: float, living: list) -> dict:
@@ -446,12 +447,15 @@ def document(result: dict, thin_dead: int = 1) -> dict:
     land = landscape_json(R)
     et = EtymTable()
     living_ids = {l.id for l in lects if l.alive and l.deme is not None}
-    full = [l for l in sorted(lects, key=_lect_order) if l.id in living_ids and l.lexicon is not None]
-    # (the living lects' phonology, worked examples and all, in parallel: it reads one lect and changes nothing, PW-1555)
-    phon = dict(zip((l.id for l in full), HI.fork_map(PH.to_json, full))) if HI.WORKERS > 1 else {}
+    order = sorted(lects, key=_lect_order)
+
+    def pre(l):   # (the parts of lect_json that read one lect and change nothing: in parallel, PW-1555)
+        ph = PH.to_json(l) if l.id in living_ids and l.lexicon is not None else None
+        return ph, thin_snapshots(l.snapshots, 1 if l.id in living_ids else thin_dead)
+    pr = dict(zip((l.id for l in order), HI.fork_map(pre, order))) if HI.WORKERS > 1 else {}
     lj = [lect_json(l, full=l.id in living_ids, et=et, snap_every=1 if l.id in living_ids else thin_dead,
-                    phonology=phon.get(l.id))
-          for l in sorted(lects, key=_lect_order)]
+                    phonology=pr[l.id][0] if pr else None, snapshots=pr[l.id][1] if pr else None)
+          for l in order]
     from . import sentences as SN
     last = len(R.frames_kyr) - 1
     for x in lj:   # (round 5: grammar notes and glossed sample sentences for the living lects)

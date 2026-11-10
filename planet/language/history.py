@@ -23,6 +23,7 @@ Per interval (never per generation; every per-generation hazard is batched over 
 Deterministic per seed: every draw comes from np.random.default_rng((seed, 986, crc32(<stable key>))), seed = meta.seed."""
 from __future__ import annotations
 
+import contextlib
 import gc
 import io
 import math
@@ -513,7 +514,6 @@ class History:
         w = min(WORKERS, len(tasks))
         if w <= 1:
             return dict(_work(t) for t in tasks)
-        import multiprocessing as mp
         for t in tasks:  # (catalogues built once here, inherited by the workers)
             l = self.lects[t[0]]
             LC.catalogue_for(l.profile, l.profile_key)
@@ -531,7 +531,7 @@ class History:
         gc_on = gc.isenabled()
         gc.freeze()   # (collected every COLLECT_EVERY intervals: collect_frozen)
         try:
-            with mp.get_context("fork").Pool(w) as pool:
+            with _pool(w) as pool:
                 gc.disable()
                 for lid, blob in pool.imap_unordered(_work_remote, order, chunksize=1):
                     l, f = _RefUnpickler(io.BytesIO(blob), _known_objects(old[lid])).load()
@@ -1324,6 +1324,25 @@ def _proto_remote(job):
     return p
 
 
+@contextlib.contextmanager
+def _pool(w: int):
+    """A Pool of w forked workers, closed and joined on the way out. (Pool's own `with` terminates it, and terminating
+    waits on the task queue's lock, which an idle worker holds while it waits for work: seconds a pool late in the
+    pass, every interval; PW-1555.)"""
+    import multiprocessing as mp
+    pool = mp.get_context("fork").Pool(w)
+    ok = False
+    try:
+        yield pool
+        ok = True
+    finally:
+        if ok:
+            pool.close()
+        else:
+            pool.terminate()
+        pool.join()
+
+
 _FN = None
 _ITEMS: list = []
 
@@ -1339,13 +1358,12 @@ def fork_map(fn, items: list) -> list:
     w = min(WORKERS, len(items))
     if w <= 1:
         return [fn(x) for x in items]
-    import multiprocessing as mp
     _FN, _ITEMS = fn, items
     gc_on = gc.isenabled()
     was = gc.get_freeze_count() > 0   # (inside the history, where run_steps keeps the heap frozen)
     gc.freeze()   # (as in run_steps: the inherited heap out of the workers' collections)
     try:
-        with mp.get_context("fork").Pool(w) as pool:
+        with _pool(w) as pool:
             gc.disable()
             return pool.map(_call_fn, range(len(items)), chunksize=max(1, len(items) // (w * 8)))
     finally:
@@ -1451,6 +1469,10 @@ def generate(run_dir, seed: int | None = None, run: I.Run | None = None, analyse
         lr = FT.learned_register(h, l)   # (the liturgy's sacred words beside the lect's own: faiths.py)
         if lr:
             l.lexicon.systems["learned"] = lr
+    gn = h.__dict__["god_names"] = FT.finish_names(h, last)   # (late holders named, worn names renewed: PW-1548)
+    if gn["named"] or gn["renewed"]:
+        h.say(R.kyr(last), f"god names: {gn['named']} named late (holders born after their faith's events), "
+                           f"{gn['renewed']} worn to one sound renewed")
     t2 = time.perf_counter()
     h.timing["registers_s"] = round(t2 - t - h.timing["driver_s"], 1)
     offense_pass(h, R, last)

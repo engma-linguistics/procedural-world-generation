@@ -1263,7 +1263,9 @@ def _root_family(doc: Doc, l: dict, lex: dict, field: str = "roots", head: tuple
     r = roots.get(rid) or _root_from_id(rid)
     out.append(f"The largest: **{r.get('gloss') or cname(r.get('concept', '?'))}** *{r.get('ipa') or '?'}* "
                f"({r.get('pos', '?')}, coined {kyr(r.get('kyr'))} in {doc.label(r.get('lect'), True)}); {n} words have it "
-               f"as their main root, {len(members)} contain it.")
+               f"as their main root, {len(members)} contain it."
+               + (" The root came in with a loan: it was coined outside this language's own line."
+                  if r.get("lect") and r["lect"] not in {x["id"] for x in doc.line(l["id"])} else ""))
     out += ["", "| meaning | IPA | spelling | roots (main first) | how it was built |", "| --- | --- | --- | --- | --- |"]
     for c in members[:14]:
         e = lex[c]
@@ -1561,8 +1563,9 @@ def personal_names(doc: Doc, l: dict) -> list[str]:
     deme's settlements (names.demes[d].settlements), with their etymologies."""
     x = (doc.names.get("personal") or {}).get(l["id"])
     dn = (doc.names.get("demes") or {}).get(str(l.get("deme"))) or {}
-    sts = dn.get("settlements") or []
-    if not x and not sts:
+    sts = [s for s in dn.get("settlements") or [] if s.get("kind") != "ruin"]
+    ruins = [s for s in dn.get("settlements") or [] if s.get("kind") == "ruin"]   # (PW-1604: named for old capitals)
+    if not x and not sts and not ruins:
         return []
     out = ["## Names of people and places", ""]
     if x:
@@ -1591,6 +1594,13 @@ def personal_names(doc: Doc, l: dict) -> list[str]:
     if sts:
         out += ["**Settlements.** " + "; ".join(f"**{s['roman']}** /{s['ipa']}/ ({s.get('tier')}, {s.get('pop') or 0:,}): "
                                                  f"{s['plain'].split(', ', 1)[-1]}" for s in sts) + ".", ""]
+    if ruins:
+        ruins = sorted(ruins, key=lambda s: (s.get("abandoned_kyr") or 0.0, s.get("site") or 0))
+        many = len(ruins) != 1
+        out += [f"**Ruins.** {len(ruins)} abandoned place{'s' if many else ''} keep{'' if many else 's'} the name this "
+                "language gave when it was left" + (" (the latest five)" if len(ruins) > 5 else "") + ": "
+                + "; ".join(f"**{s['roman']}** /{s['ipa']}/ (a {s.get('tier') or 'place'}, left {s.get('abandoned_kyr') or 0:g} "
+                            "kyr ago)" for s in ruins[:5]) + ".", ""]
     return out
 
 
