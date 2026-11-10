@@ -306,4 +306,62 @@ People-runs of land peoples under 1 Mkm2 (drow and troglodytes listed apart):
   on the same patch, and there they end at 0.58 (j2) and 1.63 (j4). The patch holds one founders' country (37 cells) but not 1
   Mkm2. Only the evidence arm, with the patch required to hold 1 Mkm2, lifts them (8.8 and 9.7). That arm uses D71's number as a
   founding rule, so it is a decision for Daniel: `issue-tracking/inbox/draft-d71-floor-at-founding.md`.
-- The full suite on G (main fdb11199 as the baseline) was started by lane 269c and handed over unfinished.
+- The full suite on G (main fdb11199 as the baseline) was started by lane 269c and finished by lane 269d (below).
+
+## Lane 269d: the full suite on main, G and the evidence arm A
+
+Baseline throughout: **main fdb11199**. Suite: af2677, arm now, 17 dnd runs (base s7/s10/s13, jitter j1-j4, portals, knob
+x0.5/x2) and 5 Seven Meals runs (s7/s10/s13, j1/j2), `tools/peoples_robust.py run --jobs 2 --threads 4` on a scratch data root.
+- **G** = 32e9fb19 (the branch as committed: a split's habitat patch must hold one founders' country, 37 cells at L6).
+- **A** = G plus side-branch commit 1d6a4c39 (`lane269d-armA`, not for merge): the patch must hold max(one founders' country,
+  `FOUNDING_FLOOR_MKM2` = 1 Mkm2), and a split that fails it arises at the nearest free country of that size (`_refuge_cell` is
+  given the same need; a stem's own hold-out is unchanged). No pinned jumps.
+
+### Land peoples under 1 Mkm2, per tree (min (run) / median / runs under 1; drow, troglodytes and the sea peoples apart)
+
+dnd (17 runs):
+
+| people | main fdb11199 | G | A |
+|---|---|---|---|
+| bugbear | 0.03 (j2) / 8.49 / 4 (j2 0.03; s10, sites1-s10, sites3-s10 0.45) | 0.50 (s10) / 4.10 / 3 (s10, sites1-s10, sites3-s10 0.50) | ARM_A |
+| goliath | 0.58 (j2) / 12.39 / 3 (j2 0.58, j1 0.60, j3 0.76) | 0.55 (j2) / 1.20 / 5 (j2 0.55, j4 0.55, sites1-s10 0.61, sites3-s10 0.62, s10 0.83) | ARM_A |
+| kobold | 6.04 (j3) / 19.72 / 0 | 0.50 (j1) / 11.76 / 1 (j1) | ARM_A |
+| gnome | 0.51 (sites1-s10) / 12.59 / 1 | 2.38 (sites1-s7) / 15.79 / 0 | ARM_A |
+| halfling | 0.05 (j4) / 7.67 / 1 | 4.74 (gnomex0.5-s7) / 5.01 / 0 | ARM_A |
+| hobgoblin | 0.14 (j2) / 46.83 / 1 | 34.47 (j3) / 43.59 / 0 | ARM_A |
+| leonin | 0.11 (j3) / 4.93 / 2 (j3, j4 0.11) | 9.35 (bugbearx2-s7) / 20.93 / 0 | ARM_A |
+| tabaxi | 0.10 (bugbearx0.5-s7) / 0.10 / **17** | 8.01 (j4) / 8.19 / 0 | ARM_A |
+| firbolg | 1.17 (j3) / 10.76 / 0 | 1.06 (j2) / 1.82 / 0 | ARM_A |
+| dwarf | 1.08 (sites3-s10) / 3.64 / 0 | 1.67 (j3) / 10.26 / 0 | ARM_A |
+| aarakocra | 1.08 (j3) / 3.96 / 0 | 1.02 (bugbearx2-s7) / 1.11 / 0 | ARM_A |
+| goblin | 2.13 (j2) / 3.87 / 0 | 1.71 (j3) / 2.40 / 0 | ARM_A |
+| **people-runs under 1 (land)** | **29** | **9** | ARM_A |
+| apart: drow / troglodyte | 17 / 17 | 17 / 17 | ARM_A |
+| apart: sea_elf / triton | 6 / 2 | 7 / 2 | ARM_A |
+
+Every other dnd land people stays above 1 in every run of every arm (dragonborn, elf, human, kenku, lizardfolk, orc, tortle).
+
+Seven Meals (5 runs): G differs from main in 2 of 5 runs (sm-j1, sm-j2); s7/s10/s13 are identical. Its people-runs under 1 are
+the same count (main 7: dwarf s13 0.40, elf s13 0.24 and s7 0.26, goliath j1 0.10 and s10 0.50, half_orc j1 0.00 (never founded),
+kobold s7 0.51; G 7: the same but goliath j1 0.83). A: ARM_A_SM.
+
+### Brittleness (`peoples_robust.py report`, worst swing within one world and one family, PW-1207)
+
+| arm | dnd brittle | dnd worst swing | Seven Meals brittle | Seven Meals worst swing | any-fail runs |
+|---|---|---|---|---|---|
+| main fdb11199 | 7 | 2,170x (hobgoblin) | 6 | 1,020x (half_orc) | 1 (sm-j1 half_orc never founded) |
+| G | 4 | 52x (drow) | 6 | 1,090x (half_orc) | 1 (the same) |
+| A | ARM_A | | | | |
+
+### How far founders and refuges go (the runs' own logs)
+
+- main: refuges 55, farthest 5,592 km (giantkin, dnd-sites3-s7); main logs no split founder picks.
+- G: refuges 12, farthest 1,595 km (fire_giant, dnd-sites3-s7); refuge/founder picks 117, farthest 7,251 km (goliath, dnd-s13),
+  inside the 8,000 km reach.
+- A: ARM_A.
+
+### The failing test
+
+`tests/test_lineages.py::test_demography_defaults_inheritance_and_numbers` asserts `f.population > 100 x g2.population`: main's
+g2 is stranded on the fake island. Under G it fails (4,821,793 against 100 x 889,509): g2 is founded off the island and grows.
+Under A: ARM_A. The assertion is left as it is, for Daniel.
