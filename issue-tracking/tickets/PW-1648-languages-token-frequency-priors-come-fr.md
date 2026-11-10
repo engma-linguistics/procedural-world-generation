@@ -1,8 +1,10 @@
 ---
+id: PW-1648
 title: "Languages: token-frequency priors come from a Eurasian sample; glottal stop, approximant r and taps fall back to presence"
 type: task
 status: todo
 parent: PW-767
+milestone: later
 subsystem: peoples
 effort: s
 impact: low
@@ -10,6 +12,8 @@ found_by: lang-lane14
 blocked_by: []
 relates: [PW-1623, PW-1641]
 refs: [planet/language/data/token_frequency.tsv, tools/language/token_priors.py, "planet/language/inventory.py::token_class", "planet/language/inventory.py::_lexical", tools/language/real_inventory.py]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -23,3 +27,6 @@ and the benchmark's texture term stays their main gap.
 Try: rebuild the table from a world sample (Lexibank / ASJP word lists; ASJP needs its code mapped to segments) with
 `tools/language/token_priors.py`, keep the 20-language floor; re-run `real_inventory.py --check`.
 - [ ] ʔ and ɹ classes in the table from a world sample; Hawaiian/Arabic ʔ token share within 2x real in the benchmark
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-token-priors-world-sample.md (found by lang-lane14).

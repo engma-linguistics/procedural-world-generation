@@ -1,8 +1,10 @@
 ---
+id: PW-1647
 title: "Languages: open-syllable (CV) languages are 5% of living lects, against about 12% in WALS"
 type: task
 status: todo
 parent: PW-767
+milestone: v4
 subsystem: peoples
 effort: s
 impact: med
@@ -10,6 +12,8 @@ found_by: lang-lane14b
 blocked_by: []
 relates: [PW-1642, PW-1641]
 refs: ["planet/language/lect.py::pattern_resist", "planet/language/lect.py::PATTERN_K", "planet/language/inventory.py::retemplate", "planet/language/lexicon.py::borrow"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -37,3 +41,6 @@ Try, one at a time, judged on a24559 + de1cc6 (scratch syl.py) and `real_invento
    way Polynesian did.
 - [ ] simple syllables 9-15% of living lects on a24559; moderate and complex stay near WALS (0.56, 0.31)
 - [ ] benchmark: no metric worse than the baseline
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-open-syllable-stable-state.md (found by lang-lane14b).

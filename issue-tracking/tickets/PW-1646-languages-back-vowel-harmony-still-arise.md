@@ -1,15 +1,19 @@
 ---
+id: PW-1646
 title: "Languages: back vowel harmony still arises in about half of all lines within 2,500 years"
 type: task
 status: todo
 parent: PW-767
+milestone: v4
 subsystem: peoples
 effort: xs
 impact: med
 found_by: lang-lane14
 blocked_by: []
 relates: [PW-1642, PW-1641]
-refs: ["planet/language/rules.py::_demo", "harmony.back", tools/language/real_inventory.py, tools/language/data/real_inventory_baseline.json, "planet/language/lect.py::LINE_FAMILY_SIGMA"]
+refs: ["planet/language/rules.py::_demo", harmony.back, tools/language/real_inventory.py, tools/language/data/real_inventory_baseline.json, "planet/language/lect.py::LINE_FAMILY_SIGMA"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -24,3 +28,6 @@ Try: naturalness 3 -> 2 for harmony.back (a judgement on the catalogue, like S12
 only for signature changes (lect.maybe_signature) so it marks branches; judge with `real_inventory.py --check`
 (the harm column) and a full a24559 pass.
 - [ ] harmony.back fires in under 25% of benchmark daughters; families with it keep it
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-back-harmony-too-common.md (found by lang-lane14).
