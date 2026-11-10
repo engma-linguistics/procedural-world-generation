@@ -317,33 +317,35 @@ x0.5/x2) and 5 Seven Meals runs (s7/s10/s13, j1/j2), `tools/peoples_robust.py ru
   `FOUNDING_FLOOR_MKM2` = 1 Mkm2), and a split that fails it arises at the nearest free country of that size (`_refuge_cell` is
   given the same need; a stem's own hold-out is unchanged). No pinned jumps.
 
+Harness note: A changed `_refuge_cell`'s signature (new `need` argument), which the measuring probe in `tools/peoples_robust.py` overrode without it, so the first A pass crashed all 22 runs. The probe was given `need=None` and passed it through, in the scratch copy only; the A suite above is the rerun. Nothing in `tools/` is changed on this branch.
+
 ### Land peoples under 1 Mkm2, per tree (min (run) / median / runs under 1; drow, troglodytes and the sea peoples apart)
 
 dnd (17 runs):
 
 | people | main fdb11199 | G | A |
 |---|---|---|---|
-| bugbear | 0.03 (j2) / 8.49 / 4 (j2 0.03; s10, sites1-s10, sites3-s10 0.45) | 0.50 (s10) / 4.10 / 3 (s10, sites1-s10, sites3-s10 0.50) | ARM_A |
-| goliath | 0.58 (j2) / 12.39 / 3 (j2 0.58, j1 0.60, j3 0.76) | 0.55 (j2) / 1.20 / 5 (j2 0.55, j4 0.55, sites1-s10 0.61, sites3-s10 0.62, s10 0.83) | ARM_A |
-| kobold | 6.04 (j3) / 19.72 / 0 | 0.50 (j1) / 11.76 / 1 (j1) | ARM_A |
-| gnome | 0.51 (sites1-s10) / 12.59 / 1 | 2.38 (sites1-s7) / 15.79 / 0 | ARM_A |
-| halfling | 0.05 (j4) / 7.67 / 1 | 4.74 (gnomex0.5-s7) / 5.01 / 0 | ARM_A |
-| hobgoblin | 0.14 (j2) / 46.83 / 1 | 34.47 (j3) / 43.59 / 0 | ARM_A |
-| leonin | 0.11 (j3) / 4.93 / 2 (j3, j4 0.11) | 9.35 (bugbearx2-s7) / 20.93 / 0 | ARM_A |
-| tabaxi | 0.10 (bugbearx0.5-s7) / 0.10 / **17** | 8.01 (j4) / 8.19 / 0 | ARM_A |
-| firbolg | 1.17 (j3) / 10.76 / 0 | 1.06 (j2) / 1.82 / 0 | ARM_A |
-| dwarf | 1.08 (sites3-s10) / 3.64 / 0 | 1.67 (j3) / 10.26 / 0 | ARM_A |
-| aarakocra | 1.08 (j3) / 3.96 / 0 | 1.02 (bugbearx2-s7) / 1.11 / 0 | ARM_A |
-| goblin | 2.13 (j2) / 3.87 / 0 | 1.71 (j3) / 2.40 / 0 | ARM_A |
-| **people-runs under 1 (land)** | **29** | **9** | ARM_A |
-| apart: drow / troglodyte | 17 / 17 | 17 / 17 | ARM_A |
-| apart: sea_elf / triton | 6 / 2 | 7 / 2 | ARM_A |
+| bugbear | 0.03 (j2) / 8.49 / 4 (j2 0.03; s10, sites1-s10, sites3-s10 0.45) | 0.50 (s10) / 4.10 / 3 (s10, sites1-s10, sites3-s10 0.50) | 0.37 (s10) / 7.10 / 3 (s10, sites1-s10, sites3-s10 0.37) |
+| goliath | 0.58 (j2) / 12.39 / 3 (j2 0.58, j1 0.60, j3 0.76) | 0.55 (j2) / 1.20 / 5 (j2 0.55, j4 0.55, sites1-s10 0.61, sites3-s10 0.62, s10 0.83) | 4.68 (sites1-s7) / 5.30 / 0 |
+| kobold | 6.04 (j3) / 19.72 / 0 | 0.50 (j1) / 11.76 / 1 (j1) | 0.98 (j1) / 11.69 / 1 (j1) |
+| gnome | 0.51 (sites1-s10) / 12.59 / 1 | 2.38 (sites1-s7) / 15.79 / 0 | 2.40 (sites1-s7) / 15.30 / 0 |
+| halfling | 0.05 (j4) / 7.67 / 1 | 4.74 (gnomex0.5-s7) / 5.01 / 0 | 4.69 (bugbearx2-s7) / 19.61 / 0 |
+| hobgoblin | 0.14 (j2) / 46.83 / 1 | 34.47 (j3) / 43.59 / 0 | 17.12 (s13) / 44.03 / 0 |
+| leonin | 0.11 (j3) / 4.93 / 2 (j3, j4 0.11) | 9.35 (bugbearx2-s7) / 20.93 / 0 | 9.29 (j2) / 19.04 / 0 |
+| tabaxi | 0.10 (bugbearx0.5-s7) / 0.10 / **17** | 8.01 (j4) / 8.19 / 0 | 7.84 (j1) / 8.01 / 0 |
+| firbolg | 1.17 (j3) / 10.76 / 0 | 1.06 (j2) / 1.82 / 0 | 1.49 (sites3-s7) / 2.19 / 0 |
+| dwarf | 1.08 (sites3-s10) / 3.64 / 0 | 1.67 (j3) / 10.26 / 0 | 5.84 (s13) / 7.57 / 0 |
+| aarakocra | 1.08 (j3) / 3.96 / 0 | 1.02 (bugbearx2-s7) / 1.11 / 0 | 0.95 (j1) / 1.05 / 4 (j1 0.95; gnomex0.5-s7, gnomex2-s7, s7 1.00 rounded, just under) |
+| goblin | 2.13 (j2) / 3.87 / 0 | 1.71 (j3) / 2.40 / 0 | 2.33 (s13) / 3.19 / 0 |
+| **people-runs under 1 (land)** | **29** | **9** | **8** |
+| apart: drow / troglodyte | 17 / 17 | 17 / 17 | 16 / 17 |
+| apart: sea_elf / triton | 6 / 2 | 7 / 2 | 7 / 2 |
 
 Every other dnd land people stays above 1 in every run of every arm (dragonborn, elf, human, kenku, lizardfolk, orc, tortle).
 
 Seven Meals (5 runs): G differs from main in 2 of 5 runs (sm-j1, sm-j2); s7/s10/s13 are identical. Its people-runs under 1 are
 the same count (main 7: dwarf s13 0.40, elf s13 0.24 and s7 0.26, goliath j1 0.10 and s10 0.50, half_orc j1 0.00 (never founded),
-kobold s7 0.51; G 7: the same but goliath j1 0.83). A: ARM_A_SM.
+kobold s7 0.51; G 7: the same but goliath j1 0.83). A differs from main in all 5 of 5 runs (G: 2 of 5). A's count under 1 is 6: dwarf in 4 runs (s7 0.58, s13 0.86, j1 and j2 0.97), goliath j2 0.98, half_orc s7 0.00 (never founded); kobold and elf are lifted (s13 elf 2.32, kobold min 16.57), but dwarf goes from 1 run under 1 to 4, and dragonborn's minimum falls from 8.23 to 2.69 and cervid_folk's from 34.5 to 24.9.
 
 ### Brittleness (`peoples_robust.py report`, worst swing within one world and one family, PW-1207)
 
@@ -351,17 +353,28 @@ kobold s7 0.51; G 7: the same but goliath j1 0.83). A: ARM_A_SM.
 |---|---|---|---|---|---|
 | main fdb11199 | 7 | 2,170x (hobgoblin) | 6 | 1,020x (half_orc) | 1 (sm-j1 half_orc never founded) |
 | G | 4 | 52x (drow) | 6 | 1,090x (half_orc) | 1 (the same) |
-| A | ARM_A | | | | |
+| A | 5 | 1,200x (half_orc) | 5 | 1,200x (half_orc) | 1 (sm-s7 half_orc never founded) |
 
 ### How far founders and refuges go (the runs' own logs)
 
 - main: refuges 55, farthest 5,592 km (giantkin, dnd-sites3-s7); main logs no split founder picks.
 - G: refuges 12, farthest 1,595 km (fire_giant, dnd-sites3-s7); refuge/founder picks 117, farthest 7,251 km (goliath, dnd-s13),
   inside the 8,000 km reach.
-- A: ARM_A.
+- A: refuges 12, farthest 1,595 km (fire_giant, dnd-sites3-s7); refuge/founder picks 180, farthest 6,930 km (giantkin, dnd-j4), inside the 8,000 km reach.
 
 ### The failing test
 
 `tests/test_lineages.py::test_demography_defaults_inheritance_and_numbers` asserts `f.population > 100 x g2.population`: main's
 g2 is stranded on the fake island. Under G it fails (4,821,793 against 100 x 889,509): g2 is founded off the island and grows.
-Under A: ARM_A. The assertion is left as it is, for Daniel.
+Under A it fails the same way, with the same numbers (4,821,793 against 100 x 889,509): the check is about g2 no longer stranded, and A keeps that. The assertion is left as it is, for Daniel.
+
+### What the three arms say (baseline main fdb11199)
+
+- A cures goliath (5 runs under 1 with G, 0 with A) but not the rest: bugbear stays at 3 runs (and its floor drops from 0.50 to
+  0.37), kobold j1 is 0.98, and aarakocra falls just under 1 in 4 runs (0.95-1.00). Land people-runs under 1 in dnd: main 29, G 9,
+  A 8. That is one run better than G for an extra rule.
+- A changes all 5 Seven Meals runs (G changes 2) and makes dwarf fragile there (1 run under 1 becomes 4). Founders travel up to
+  6,930 km, against 7,251 for G.
+- Every dnd land people is at 0.50 or above under G (bugbear 0.50, kobold 0.50, goliath 0.55); the Seven Meals ones under 0.5
+  (dwarf 0.40, elf 0.24) are the same as on main.
+- Lean: C (G as committed, bar at 0.5 Mkm2). A's numbers do not support the floor at founding.
