@@ -15,7 +15,7 @@
 ## Lanes running (11-10 ~11:50)
 
 As of 2026-11-10 evening. Running: 275b (Andes gate, fork queue then judge), 278 (states in the history: five pairs on fix 9306190c, then the flip), 280 (2 Myr time zoom, v1.0). Done today: 276 (v0.3.0 close-out, merged), 277b (everyone experiment, docs only on main).
-Next: tag v0.3.0 when suite_v030 passes. Waiting on Daniel: D73-D76 (supply), D77 (extinction).
+v0.3.0 tagged (suite 2033 passed); server restarted. Waiting on Daniel: D73-D76 (supply), D77 (extinction).
 
 ## Milestones (2026-11-09)
 | milestone | open | done |
