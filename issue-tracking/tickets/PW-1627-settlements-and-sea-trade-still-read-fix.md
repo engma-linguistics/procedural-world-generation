@@ -1,5 +1,6 @@
 ---
-title: "Settlements and sea trade still read fixed rings (town footprints, pits, mine exposure, coastal boat reach), so they shrink on L8"
+id: PW-1627
+title: Settlements and sea trade still read fixed rings (town footprints, pits, mine exposure, coastal boat reach), so they shrink on L8
 type: task
 status: todo
 parent: null
@@ -10,7 +11,9 @@ impact: med
 found_by: lane266-pw1584
 blocked_by: []
 relates: [PW-1584, PW-1265, PW-820]
-refs: ["planet/lineages/settlements.py::_ring_index", "planet/lineages/settlements.py::PIT_RINGS", "planet/lineages/settlements.py::MINE_EXPOSE_STEPS", "planet/lineages/trade_flow.py", "planet/lineages/seafood.py::_sea_to_coast", "planet/lineages/history/tags.py", "planet/lineages/history/dispersal.py"]
+refs: ["planet/lineages/settlements.py::_ring_index", "planet/lineages/settlements.py::PIT_RINGS", "planet/lineages/settlements.py::MINE_EXPOSE_STEPS", planet/lineages/trade_flow.py, "planet/lineages/seafood.py::_sea_to_coast", planet/lineages/history/tags.py, planet/lineages/history/dispersal.py]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -37,3 +40,6 @@ Found by grepping planet/lineages for ring loops and cell-count constants (lane 
 
 If never done: on the December L8 refine, towns and cities read half the country around them, pits are four times as dense
 and coastal boats reach half as far as on the same planet at L7, so the settled map changes with the grid, not the world.
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-settled-window-grid-rings.md (found by lane266-pw1584).

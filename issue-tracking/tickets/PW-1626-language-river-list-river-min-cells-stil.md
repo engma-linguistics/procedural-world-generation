@@ -1,4 +1,5 @@
 ---
+id: PW-1626
 title: "Language river list: RIVER_MIN_CELLS still counts cells, so an L8 refine names more, shorter rivers"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane266-pw1584
 blocked_by: []
 relates: [PW-1584, PW-820]
 refs: ["planet/language/inputs.py::RIVER_MIN_CELLS", "planet/language/inputs.py::RIVER_FLOW", "planet/hydrology.py::discharge", "planet/lineages/seafood.py::rings_for"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -32,3 +35,6 @@ owns it). What is left there:
 
 If never done: on the December L8 refine, each people's river vocabulary counts streams 90-180 km long that the same planet
 at L7 leaves out.
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-language-river-min-cells-in-km.md (found by lane266-pw1584).

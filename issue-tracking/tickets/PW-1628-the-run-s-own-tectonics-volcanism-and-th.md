@@ -1,4 +1,5 @@
 ---
+id: PW-1628
 title: The run's own tectonics, volcanism and the lineages still count every cell as the mean cell's area
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lane263
 blocked_by: []
 relates: [PW-1043]
-refs: [planet/grid.py::Grid.cell_area_km2, planet/tectonics/simulation.py::Simulation._configure, planet/tectonics/mantle.py, planet/tectonics/motion.py, planet/tectonics/volcanism.py, planet/tectonics/diag.py, planet/lineages/landuse.py, planet/lineages/history/model.py, planet/zoom/resources.py, planet/zoom/vegetation.py, planet/highlights.py]
+refs: ["planet/grid.py::Grid.cell_area_km2", "planet/tectonics/simulation.py::Simulation._configure", planet/tectonics/mantle.py, planet/tectonics/motion.py, planet/tectonics/volcanism.py, planet/tectonics/diag.py, planet/lineages/landuse.py, planet/lineages/history/model.py, planet/zoom/resources.py, planet/zoom/vegetation.py, planet/highlights.py]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Fix: read `grid.cell_area_km2` (per cell) wherever cells are added up into an ar
 keep the mean (`geo.cell_area_km2(n)`, now documented as the mean) only for per-cell scales. The tectonic ones move
 every run's history: goldens and a fork screen (`tools/fork_screen.py`).
 - [ ] no area or volume total in planet/ multiplies a cell count by the mean cell's area
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-tectonics-volcanism-true-cell-areas.md (found by lane263).
