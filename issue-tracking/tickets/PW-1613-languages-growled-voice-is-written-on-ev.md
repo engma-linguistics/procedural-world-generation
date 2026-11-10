@@ -2,7 +2,7 @@
 id: PW-1613
 title: "Languages: growled voice is written on every sound of a syllable (w‼ɔ‼j‼); mark it once per syllable on the page, or make it a syllable feature?"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: null
 subsystem: culture
@@ -11,7 +11,7 @@ impact: low
 found_by: language lane 9 (PW-1537 R6)
 blocked_by: []
 relates: [PW-1537]
-refs: [planet/language/percepts.py, "planet/language/percepts.py::word_ipa", "planet/language/percepts.py::from_ipa", planet/language/romanize.py, tools/language/demo_page.py, tools/language/sketch.py, docs/review/language/sketches/d48-blue-dragon.md, "run a24559"]
+refs: [planet/language/percepts.py, "planet/language/percepts.py::page_growl", "tools/language/sketch.py::render", "tools/language/demo_page.py::build", tests/test_language_percepts.py, "planet/language/percepts.py::word_ipa", "planet/language/percepts.py::from_ipa", planet/language/romanize.py, tools/language/demo_page.py, tools/language/sketch.py, docs/review/language/sketches/d48-blue-dragon.md, "run a24559"]
 created: 2026-11-09
 updated: 2026-11-09
 ---
@@ -41,4 +41,5 @@ behave as a register in sound change too.
 Coordinator call 2026-11-09: A (page-only, one mark per fully growled syllable); B only if a later lane wants the growl to act as a register in sound change.
 
 ## Updates
+- 2026-11-09: Status todo -> done. Lane 10 (lang-lane10): option A done. percepts.page_growl writes one ‼ after the vowel of a syllable whose voiced sounds are all growled (w‼ɔ‼j‼ -> wɔ‼j; sa‼n‼ -> sa‼n); partly growled syllables keep per-sound marks; applied to the whole demo page body (demo_page.build) and every sketch page (sketch.render); the mark keys say 'one ‼ after a vowel growls its whole syllable'. Data, word_ipa and from_ipa stay per sound; audio reads the data. d48/d116 sketches re-noted. Test: tests/test_language_percepts.py::test_page_growl_marks_a_fully_growled_syllable_once.
 - 2026-11-09: Created from inbox draft draft-language-growl-per-syllable.md (found by language lane 9 (PW-1537 R6)).

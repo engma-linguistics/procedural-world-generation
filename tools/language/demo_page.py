@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import sketch as SK  # noqa: E402
 
+from planet.language import percepts as P  # noqa: E402
 from planet.language import sentences as SN  # noqa: E402
 
 E = html.escape
@@ -392,7 +393,7 @@ def lineage(doc, l) -> str:
 
 
 #: marks for sounds no human makes, beyond the IPA (percepts.py, symbols.tsv): what each one means on the page
-HOUSE_MARKS = (("‼", "harsh, growled voice (the Voice Quality Symbols' mark)"),
+HOUSE_MARKS = (("‼", "harsh, growled voice (the Voice Quality Symbols' mark); one ‼ after a vowel growls its whole syllable"),
                ("ᵣ", "purred voice, about 25 pulses a second"),
                ("ᴖ", "a second voice sounding at once, as a bird's syrinx makes two notes (house mark); tone letters after it are the second voice's own tone (high ˦, low ˨, rising ˨˦, falling ˦˨), those before it the first voice's"),
                ("˯", "sub-bass register, below human hearing (house mark)"),
@@ -853,7 +854,7 @@ def build(src: str, run_json: str | None, n: int, backend: str, audio: bool, re_
             f"<p class='muted'>Very different living languages from a simulated world ({len(doc.living)} spoken now), each "
             f"grown by sound change, borrowing and grammaticalization from its people's history. Glosses follow the Leipzig "
             f"rules: - joins an affix, = a clitic, category labels in small caps. Press ▶ to hear a form. {E(voice)}</p>"
-            f"<nav>{''.join(nav)}</nav>{''.join(secs)}"
+            f"<nav>{''.join(nav)}</nav>{P.page_growl(''.join(secs))}"   # (PW-1613: one growl per growled syllable)
             "</main>"
             f"<script type='application/json' id='clips'>{clips}</script><script>{JS}</script></body></html>")
     return page, {"languages": [(l["id"], l["people"], h) for h, l, _w in picks], "clips": len(au.clips),

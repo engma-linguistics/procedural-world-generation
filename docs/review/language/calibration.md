@@ -1852,3 +1852,104 @@ change (it passed the second-voice check already).
 - **Nasal-less lects.** 43-45 living lects have no plain m or n, mostly dragons, kobolds and other non-human peoples
   with species inventories. Left as is (species design, not a draw slip).
 - **Growled voice per syllable** and **CLICS derivations** went to drafts (a notation call; a felt-family depth rule).
+
+## Lane 10 (2026-11-09, lang-lane10): growl per syllable on the pages (PW-1613), the second world (PW-1615), case prepositions (PW-1605)
+
+Measured with lane scripts over the living lects of lane 9's and this lane's pass outputs (`scratchpad/lane10/`:
+`seg.py` segment carriers by family and origin, `protos.py` and `draw*.py` proto draws, `pron.py`, `loanratio.py` and
+`cog.py` pronoun loans by route, `sis.py` sister pairs by kind and age, `bord.py` / `caseside.py` case clitics and WALS
+51A kinds, `casetrace.py` bound cases along living lects' ancestry from the snapshots; not kept). Harness:
+`caseharness.py` (N human protos on real lexicons, social context drawn from a24559's living human lects, the gram cycle
+alone or, with FULL=1, the whole `Lect.step` with sound change; not kept). Final passes after merging main 30b59ab1
+(8 workers, ~27 and ~21 min).
+
+### What changed
+
+| ticket | mechanism | where |
+| --- | --- | --- |
+| PW-1613 (option A) | pages write one ‼ after the vowel of a syllable whose voiced sounds are all growled (w‼ɔ‼j‼ -> wɔ‼j, sa‼n‼ -> sa‼n); partly growled syllables keep per-sound marks; data, `word_ipa` and `from_ipa` stay per sound; the mark keys say so | `percepts.page_growl`, `sketch.render`, `demo_page.build`, `HOUSE_MARKS`, `NONHUMAN_MARKS` |
+| PW-1605 | a case marker standing before its noun turns from word into clitic at x0.05 of the usual hazard | `grammar.PRE_CASE_CLITIC`, `step()` |
+
+### Case prepositions (PW-1605)
+
+Lane 9's 'borderline' 20% was not a counting slip: 70% of borderline lects had a single case clitic, and 118 of 184
+(a24559) or 110 of 137 (de1cc6) of their clitics were proclitics. Prepositions cliticised as fast as postpositions, then
+`PRE_FUSE` held them at the clitic level, so lects with case proclitics only were 13.6% (WALS 51A, Dryer 2013:
+prepositional case clitics in 17 of 1031 languages, 1.6%; postpositional 123, 11.9%; case prefixes 38, 3.7%).
+
+Harness, 800 human protos, 800 generations (bins none / borderline / 2-5 / 6+, then proclitic-only / prefix):
+
+| PRE_CASE_CLITIC | 300 generations | 800 generations | 1300 generations (seed 3) |
+| --- | --- | --- | --- |
+| 1 (main) | 39.6 / 14.0 / 12.2 / 34.1; 11.0 / 2.8 | 29.8 / 18.0 / 19.5 / 32.8; 14.8 / 6.1 | 27.8 / 23.5 / 20.4 / 28.4; 18.2 / 6.0 |
+| 0.3 | 43.1 / 10.4 / 12.2 / 34.2 | 32.1 / 17.2 / 17.1 / 33.5; 13.5 / 4.0 | |
+| 0.1 | 46.8 / 7.2 / 11.9 / 34.1 | 38.4 / 12.6 / 16.6 / 32.4; 8.8 / 2.6 | |
+| **0.05 (kept)** | 48.4 / 6.0 / 11.5 / 34.1 | 42.1 / 10.0 / 15.1 / 32.8; 6.4 / 1.5 | 42.6 / 12.6 / 16.5 / 28.2; 6.9 / 1.6 |
+| 0.03 | 49.4 / 5.0 / 11.8 / 33.9 | 44.6 / 7.8 / 15.2 / 32.4; 4.1 / 1.2 | |
+| 0.01 | 49.8 / 4.6 / 11.6 / 34.0 | 46.9 / 5.4 / 15.2 / 32.5; 1.6 / 1.2 | |
+
+On main the borderline bin grows with age (14 -> 18 -> 23.5%); at 0.05 it holds near 10-13%. 0.01 matches WALS's
+proclitic share but takes case prefixes to a third of WALS's; 0.05 keeps prefixes and proclitics together near WALS's
+5.3%.
+
+**Where 6+ goes.** The harness keeps 6+ at 32-35% for 800 generations, also with the whole `Lect.step` (sound change,
+lexicon, grammar: FULL=1, 400 protos: 35.5 / 33.5 / 34.0 / 35.0% at 100 / 300 / 500 / 800 generations). In the full
+history the living lects' ancestors lose big systems early: share with 5+ bound cases 42% at 20 kyr, 34% at 16, 25%
+at 14, 20-22% from 12 kyr on (a24559 lane 9, all living lects, snapshots); human lineages 47 -> 12% (99 lects from a
+handful of protos). So the drain is in something only the history has (contact and areal copying, shift and its L2
+history, koine, founder bursts); left as draft draft-language-case-big-systems-history.
+
+### The second world (PW-1615)
+
+| check (de1cc6) | lane 9 pass | lane 10 pass | reading |
+| --- | --- | --- | --- |
+| sisters (strict) | 0.488 | 0.478 | 229 of 294 (207 of 266) pairs are one family, p234, spread by shift; 180 of 294 pairs parted 1.5-2 kyr ago (a24559: 90 of 165); per age the strict share is 0.04-0.08 under a24559's (2 kyr: 0.36 vs 0.44, true share 0.44 vs 0.58); at a24559's age mix de1cc6 reads 0.53 |
+| overused | ⁿt 12.5%, ᵑk 11.1% | ⁿd 33.5%, ⁿt 12.9%, ᵑk 10.3% | p94 (a tabaxi proto now spoken by goblins and others) gives 21 of 66 ⁿt and 19 of 59 ᵑk; p234 gives 59 of 176 ⁿd; without p94, ⁿt 8.5%, ᵑk 7.5% (a24559: 6.2%, 4.1%) |
+| pronoun loans (rho) | 0.092 (0.397) | 0.085 (0.398) | the whole lexicon borrows more (median lect loan share 0.37 vs a24559 0.30); pronoun / all-meaning loan share 0.25, 0.23 (a24559 0.21, 0.24; WOLD 0.038 / 0.185 = 0.21) |
+| inventory sizes | fail (vowel median 6) | fail (no lect of 157 above PHOIBLE's consonant p95; the mark wants 0.3%) | at the edge both times |
+| horizon (human) | 6.5 kyr pass | 13 kyr fail | 16-31 human lects: the reading flips |
+
+Proto draws behind the prenasals (3000-4000 human protos on main): a prenasal series in 13.9% (PHOIBLE 12.9%) with 6.4
+members (5.7); the voiced trio right (P(member | series) 0.85-0.89 vs 0.84-0.91), every tail member ~2x (ⁿt 0.26 vs
+0.13, ᵑk 0.31 / 0.14, ᵐp 0.24 / 0.12, ⁿz 0.30 / 0.14, ᶮɟ 0.27 / 0.12); whole draw ⁿt 4.3%, ᵑk 4.6%, ᵐp 3.8% (PHOIBLE
+1.6-1.8%). Tried: economy keyed on prenasality too (ⁿt 3.7%), odds weights in the series fill (4.0%), both (3.2%);
+not kept (the excess is the free picks' 1/share boost). Draft draft-language-prenasal-tail.
+
+Pronoun loans by route (PW-1568), living non-minority lects, lane 10 passes:
+
+| | a24559 | de1cc6 |
+| --- | --- | --- |
+| pronoun loans: contact / paradigm repair / koine levelling | 152 / 67 / 0 | 155 / 33 / ~10 |
+| shift lects: pronoun loan share (ratio to their other words) | 0.144 (0.32) | 0.145 (0.30) |
+| protos and buds | 0.063-0.065 (0.22) | 0.058-0.080 (0.19-0.21) |
+| shift lects' share of living lects | 16% | 26% |
+| largest route: a shift lect borrowing from its own true family | 57 | 60 |
+
+Lane 9's de1cc6 pass: 42 of 2325 pronoun words were a sister's cognate borrowed back (same proto root as the
+borrower's own line), 1.8 points of the 9.2.
+
+### Full passes
+
+| measure | a24559 stored (lane 9) | a24559 lane 10 | de1cc6 lane 9 | de1cc6 lane 10 | anchor |
+| --- | --- | --- | --- | --- | --- |
+| living lects | 616 | 620 | 530 | 526 | |
+| checks failing | horizon | horizon | sisters, sizes, overused, WOLD | sisters, sizes, overused, WOLD, horizon | |
+| sisters (strict) | 0.572 | 0.573 | 0.488 | 0.478 | > 0.5 |
+| WOLD rho; pronoun loans | 0.41; 0.065 | 0.407; 0.076 | 0.397; 0.092 | 0.398; 0.085 | rho >= 0.3; cap 0.08 |
+| overused segments | pass (ɟ 2.6x) | pass (c 2.6x) | ⁿt, ᵑk | ⁿd, ⁿt, ᵑk | |
+| WALS 49A none / bord / 2 / 3 / 4 / 5 / 6-7 / 8-9 / 10+ | 28.1/20.1/9.6/6.0/5.8/6.8/10.9/6.5/6.2 | 35.2/10.5/9.2/7.9/5.0/6.0/12.7/6.9/6.6 | 26.6/18.1/12.5/10.9/7.7/5.3/8.9/5.8/4.2 | 42.4/8.9/9.5/7.6/6.3/7.6/9.9/4.2/3.6 | 38/9/9/3/3/5/14/9/9 |
+| none + borderline; 2-5; 6+; 8+ | 48.2; 28.2; 23.5; 12.7 | 45.6; 28.1; 26.3; 13.5 | 44.7; 36.4; 18.9; 10.0 | 51.3; 31.0; 17.7; 7.8 | 47; 20; 32; 18 |
+| WALS 51A-like: suffix / prefix / postclitic / proclitic / none | 43.5/5.8/6.0/13.6/28.1 | 50.2/4.0/7.1/3.4/35.2 | 49.6/3.4/4.0/13.8/26.6 | 47.0/1.5/6.3/2.5/42.4 | 43.8/3.7/11.9/1.6/34.5 |
+| demo fable warning (no audio) | none | none | | | |
+
+### Readings
+
+- **Borderline is fixed at its source.** Case proclitics 13.6 -> 3.4% (a24559) and 13.8 -> 2.5% (de1cc6); borderline
+  20.1 -> 10.5% and 18.1 -> 8.9% (WALS 9%); plain none 28 -> 35% and 27 -> 42% (38%). The 2-5 band did not move
+  (28%); 6+ moved by noise (23.5 -> 26.3% on a24559, 18.9 -> 17.7% on de1cc6). Both are the history's (above).
+- **de1cc6 is a world with one dominant family.** p234 is 16% of its living lects and three quarters of its sister
+  pairs; with p94 it carries the prenasals. Its history is shift-heavy, and the pronoun loans follow the world's
+  general borrowing at WOLD's ratio. A rerun moves each failing check by chaos, not out of failure (sisters 0.488 ->
+  0.478, pronoun loans 0.092 -> 0.085, ⁿd newly over by half a point). No check was loosened.
+- **Growl notation.** The blue dragon page reads wɔ‼j 'dog', jə‼d̪j‼ɨnhɨj‼ (only the fully growled first syllable
+  loses its marks); d48 and d116 re-noted with the same function the renderer now applies.

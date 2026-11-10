@@ -156,3 +156,15 @@ def test_prenasal_voiceless_stop_after_a_vowel_needs_no_dot():
         f = from_ipa(t)
         assert word_ipa(f) == t and "." not in word_ipa(f)
     assert from_ipa("sa˦ᵐp")[-1].prenasal == 1
+
+
+def test_page_growl_marks_a_fully_growled_syllable_once():
+    """PW-1613 A: pages write one ‼ after the vowel of a syllable whose voiced sounds are all growled; partly growled
+    syllables, lone segments and non-IPA text keep their marks; the data's per-sound IPA is unchanged."""
+    g = P.page_growl
+    assert g("w‼ɔ‼j‼") == "wɔ‼j" and g("/w‼ɔ‼ːj‼/ ‹woy›") == "/wɔ‼ːj/ ‹woy›"
+    assert g("sa‼n‼") == "sa‼n"                       # a voiceless onset does not stop the syllable counting as growled
+    assert g("w‼ɔ‼j") == "w‼ɔ‼j" and g("ma‼n‼a") == "ma‼n‼a"   # partly growled: per sound
+    assert g("ŋ‼") == "ŋ‼" and g("‼ harsh voice") == "‼ harsh voice"
+    assert g("<td class='ipa'>w‼ɔ‼j‼</td>") == "<td class='ipa'>wɔ‼j</td>"
+    assert P.word_ipa(from_ipa("w‼ɔ‼j‼")) == "w‼ɔ‼j‼"

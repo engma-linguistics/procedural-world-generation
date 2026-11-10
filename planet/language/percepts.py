@@ -518,6 +518,64 @@ def word_ipa(word: Iterable[Segment]) -> str:
     return "".join(out)
 
 
+# ---- page notation (PW-1613) ---------------------------------------------------------------------------------------------
+GROWL = "‼"
+# characters that end an IPA token on a page (HTML and Markdown punctuation, glossing marks); '.', ˈ and ˌ stay inside
+_PAGE_DELIMS = frozenset(" \t\n/[]()<>‹›*,;:=_|&#'\"→>+-—–?!`{}") - {"‼"}
+
+
+@lru_cache(maxsize=65536)
+def _growl_token(tok: str) -> str:
+    segs = from_ipa(tok)
+    growled = [i for i, s in enumerate(segs) if s.phonation == 3]
+    if len(growled) != tok.count(GROWL) or not growled:
+        return tok   # (not a plain IPA word: leave it as written)
+    drop: set[int] = set()
+    i = 0
+    for syl in syllabify(segs):
+        n = len(syl.segments)
+        idx = range(i, i + n)
+        voiced = [j for j in idx if segs[j].voice and segs[j].kind != "T"]
+        nuc = [j for j in range(i + len(syl.onset), i + len(syl.onset) + len(syl.nucleus)) if segs[j].kind != "T"]
+        if len(voiced) > 1 and nuc and all(segs[j].phonation == 3 for j in voiced):
+            drop |= {j for j in voiced if j not in nuc}
+        i += n
+    if not drop:
+        return tok
+    out, k = [], 0
+    for ch in tok:
+        if ch == GROWL:
+            if growled[k] in drop:
+                k += 1
+                continue
+            k += 1
+        out.append(ch)
+    return "".join(out)
+
+
+def page_growl(text: str) -> str:
+    """Pages only (the demo and the sketches; PW-1613 option A): in a syllable whose voiced sounds are all growled, write the
+    growl once, after its vowel (w‼ɔ‼j‼ -> wɔ‼j). A syllable with only some growled sounds keeps the per-sound marks. Voice
+    quality is a property of the syllable in the human languages that have it, and a reader takes a mark on every sound
+    for a bug. The stored data, word_ipa and the from_ipa round-trip stay per sound: never parse page text back."""
+    if GROWL not in text:
+        return text
+    out, tok = [], []
+    for ch in text:
+        if ch in _PAGE_DELIMS:
+            if tok:
+                t = "".join(tok)
+                out.append(_growl_token(t) if GROWL in t else t)
+                tok = []
+            out.append(ch)
+        else:
+            tok.append(ch)
+    if tok:
+        t = "".join(tok)
+        out.append(_growl_token(t) if GROWL in t else t)
+    return "".join(out)
+
+
 # ---- distance --------------------------------------------------------------------------------------------------------------
 
 KIND_PENALTY = 20.0

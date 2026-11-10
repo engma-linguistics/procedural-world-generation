@@ -109,7 +109,7 @@ Unrounded vowels come before the dot, rounded after it. Length: long vowels ɔː
 
 **Sounds outside the human voice** (house and VoQS symbols, `planet/language/data/symbols.tsv`):
 
-- **‼** (growled (harsh, ventricular) phonation): w‼, n‼, j‼, r‼, l‼, ə‼, a‼, i‼, e‼, u‼, ɔ‼, ɪ‼, ɔ‼ː, ɛ‼, a‼ː, i‼ː. Symbol table: harsh/growl phonation: VoQS ventricular V‼ as a segment suffix.
+- **‼** (growled (harsh, ventricular) phonation; in a word, one ‼ after a vowel growls its whole syllable): w‼, n‼, j‼, r‼, l‼, ə‼, a‼, i‼, e‼, u‼, ɔ‼, ɪ‼, ɔ‼ː, ɛ‼, a‼ː, i‼ː. Symbol table: harsh/growl phonation: VoQS ventricular V‼ as a segment suffix.
 - **˯** (sub-bass register): o˯, ʊ˯, oː˯. Symbol table: sub-bass register (˯ U+02EF): carried below ~20 Hz.
 
 ### Tone, syllables and stress
@@ -271,7 +271,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 
 ‘Do you hear the thunder?’ (sentence 4 below)
 
-| *hi‼tʃʰij‼* | *i‼l‼tʰi=nɛ‼ɭ=t̪ʰu‼* | *l‼e‼tʃi* |
+| *hi‼tʃʰij‼* | *i‼ltʰi=nɛ‼ɭ=t̪ʰu‼* | *le‼tʃi* |
 | --- | --- | --- |
 | what | child=CL1=ERG | bring |
 
@@ -287,7 +287,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 
 **Possession.** The possessor stands before the possessed noun, with no marker. Kin and body parts (inalienable) take no genitive marker. 'Having' is said with 'with' ('my mother is with a boat').
 
-| *nɛ‼ɭ=nɛ‼ɭ* | *te=w‼ɔ‼j‼* |
+| *nɛ‼ɭ=nɛ‼ɭ* | *te=wɔ‼j* |
 | --- | --- |
 | man=CL1 | CL4=dog |
 
@@ -351,7 +351,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 
 **Giving (two objects).** No dative: a serial construction, 'take the thing, give (it to) the person'.
 
-| *o˯=nɛ‼ɭ=t̪ʰu‼* | *te=jep* | *ra‼h* | *i‼l‼tʰi=nɛ‼ɭ* | *o˯* |
+| *o˯=nɛ‼ɭ=t̪ʰu‼* | *te=jep* | *ra‼h* | *i‼ltʰi=nɛ‼ɭ* | *o˯* |
 | --- | --- | --- | --- | --- |
 | woman=CL1=ERG | CL4=fish | take | child=CL1 | give |
 
@@ -359,13 +359,13 @@ Built from the typology and the live markers above (planet/language/sentences.py
 
 **Numerals.** Counting is restricted: a few number words, then hands and persons ('two hands' for ten), and 'many' past twenty. Twenty is nɛ‼ɭj‼ə‼d̪ and a hundred is ra‼n‼i.
 
-| *j‼ə‼d̪j‼ɨnhɨj‼* |
+| *jə‼d̪j‼ɨnhɨj‼* |
 | --- |
 | 6 |
 
 ‘6 = 5 + 1 ('five' and 'one')’
 
-| *j‼ə‼d̪j‼ɨnhɨ* |
+| *jə‼d̪j‼ɨnhɨ* |
 | --- |
 | 11 |
 
@@ -379,7 +379,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 
 **Linking clauses.** Complement clauses stand bare, with no complementizer.
 
-| *nɛ‼ɭ=nɛ‼ɭ* | *te=w‼ɔ‼j‼* | *urut̪ʰ* | *j‼eiho˯* |
+| *nɛ‼ɭ=nɛ‼ɭ* | *te=wɔ‼j* | *urut̪ʰ* | *j‼eiho˯* |
 | --- | --- | --- | --- |
 | man=CL1 | CL4=dog | sleep | say |
 
@@ -387,13 +387,13 @@ Built from the typology and the live markers above (planet/language/sentences.py
 
 **Demonstratives.** Demonstratives count two distances: 'this' u (near) and 'that' riʃɖiʃ (far).
 
-| *u* | *te=w‼ɔ‼j‼* |
+| *u* | *te=wɔ‼j* |
 | --- | --- |
 | this | CL4=dog |
 
 ‘this dog’
 
-| *riʃɖiʃ* | *te=w‼ɔ‼j‼* |
+| *riʃɖiʃ* | *te=wɔ‼j* |
 | --- | --- |
 | that | CL4=dog |
 
@@ -401,7 +401,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 
 **Comparison.** An 'exceed' comparison: 'A is big, exceeds B', with the verb for 'climb' (as Yoruba ju 'exceed', Thai kwaa 'cross over').
 
-| *nɛ‼ɭ=nɛ‼ɭ* | *nal* | *t̪ʰu‼* | *te=w‼ɔ‼j‼* | *i‼h* |
+| *nɛ‼ɭ=nɛ‼ɭ* | *nal* | *t̪ʰu‼* | *te=wɔ‼j* | *i‼h* |
 | --- | --- | --- | --- | --- |
 | man=CL1 | big | COP | CL4=dog | exceed |
 
@@ -413,7 +413,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 
 | meaning | IPA | spelling | origin | etymology (sound changes left out) |
 | --- | --- | --- | --- | --- |
-| I | ɔθ | oþ | inherited | \*ɔta‼n‼ 'i' (the blue dragon proto-language, 20 kyr) |
+| I | ɔθ | oþ | inherited | \*ɔta‼n 'i' (the blue dragon proto-language, 20 kyr) |
 | thou | ti‼ | tirh | inherited | \*di‼ʃ 'thou' (the blue dragon proto-language, 20 kyr) |
 | we | j‼a | yrha | inherited | \*j‼a 'we' (the blue dragon proto-language, 20 kyr) |
 | this | u | u | inherited | \*pu 'this' (the blue dragon proto-language, 20 kyr) |
@@ -423,7 +423,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 | not | hɛθ | heþ | inherited | \*ʃɛti‼ 'not' (the blue dragon proto-language, 20 kyr) |
 | all | j‼ɪ | yrhi | inherited | \*j‼ɪː 'all' (the blue dragon proto-language, 20 kyr) |
 | many | ˈra‼n‼i | rranrhi | inherited | \*ra‼n‼ki‼ʃ 'many' (the blue dragon proto-language, 20 kyr) |
-| one | j‼ə‼d̪ | yerhd | inherited | \*j‼ə‼d̪ej‼ 'one' (the blue dragon proto-language, 20 kyr) |
+| one | j‼ə‼d̪ | yerhd | inherited | \*jə‼d̪ej‼ 'one' (the blue dragon proto-language, 20 kyr) |
 | two | he‼ | herh | inherited | \*ke‼d 'two' (the blue dragon proto-language, 20 kyr) |
 | big | nal | nal | inherited | \*ɳaːlu 'big' (the blue dragon proto-language, 20 kyr) |
 | long | tɔ‼p | torhp | inherited | \*dɔ‼ːbe 'long' (the blue dragon proto-language, 20 kyr) |
@@ -433,7 +433,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 | person | nɛ‼ɭ | nerhl | inherited | \*nɛ‼ɭe‼ 'person' (the blue dragon proto-language, 20 kyr) |
 | fish | ep | ep | inherited | \*ebi‼ 'fish' (the blue dragon proto-language, 20 kyr) |
 | bird | hɛ | he | inherited | \*ʒɛːh 'bird' (the blue dragon proto-language, 20 kyr) |
-| dog | w‼ɔ‼j‼ | woyrh | inherited | \*w‼ɔ‼j‼ɪːn 'dog' (the blue dragon proto-language, 20 kyr) |
+| dog | wɔ‼j | woyrh | inherited | \*wɔ‼j‼ɪːn 'dog' (the blue dragon proto-language, 20 kyr) |
 | tree | ˈdʒaʃil | jashil | inherited, remade | \*jazrere‼ 'hit' (the blue dragon proto-language, 20 kyr) → HIT + 'thing' = 'stick' (16) → 'stick' > 'tree' (15.5) |
 | seed | ˈipi | ipi | borrowed | \*feple 'seed' (the elf proto-language, 20 kyr) → borrowed from elf 2 (7.5) → borrowed from halfling 41 (2) |
 | leaf | ɭɔ‼ | lorh | inherited | \*ɭɔ‼ː 'leaf' (the blue dragon proto-language, 20 kyr) |
@@ -467,7 +467,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 | belly | hip | hip | inherited, remade |
 | bite | ˈku‼hɨː | kurhhïï | inherited, remade |
 | black | hɪ‼θ | hirhþ | inherited, remade |
-| breast | n‼a‼ | narh | inherited |
+| breast | na‼ | narh | inherited |
 | burn | ˈwi‼hɛ | wirhhe | inherited, remade |
 | claw | ɛl‼ | elrh | inherited |
 | cloud | ka | ka | inherited, remade |
@@ -527,7 +527,7 @@ Built from the typology and the live markers above (planet/language/sentences.py
 
 | | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 20 | 100 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| IPA | j‼ə‼d̪ | he‼ | hal | he‼tʃi | nu‼j‼ə‼d̪ | j‼ə‼d̪j‼ɨnhɨj‼ | he‼tʃni‼j‼ə‼d̪ | halnu‼j‼ə‼d̪ | he‼tʃse‼tʃni‼hij‼ | nu‼hu | nɛ‼ɭj‼ə‼d̪ | ra‼n‼i |
+| IPA | j‼ə‼d̪ | he‼ | hal | he‼tʃi | nu‼j‼ə‼d̪ | jə‼d̪j‼ɨnhɨj‼ | he‼tʃni‼j‼ə‼d̪ | halnu‼j‼ə‼d̪ | he‼tʃse‼tʃni‼hij‼ | nu‼hu | nɛ‼ɭj‼ə‼d̪ | ra‼n‼i |
 | spelling | yerhd | herh | hal | herhchi | nuyerhd | yerhdyrhïnhïyrh | herhchniyerhd | halnuyerhd | herhchserhchnirhhiyrh | nurhhu | nerhlyerhd | rranrhi |
 
 Counting base: other. Several numerals began as other words: four = 'two two'; five = 'hand one'; six = 'one five'; seven = 'two five'; eight = 'three five'; nine = 'four five'; ten = 'hand two'; twenty = 'person one'.
@@ -577,14 +577,14 @@ The largest: **hand** *nu‼ːk* (N, coined 20 kyr ago in the blue dragon proto-
 | meaning | IPA | spelling | roots (main first) | how it was built |
 | --- | --- | --- | --- | --- |
 | eight | halnu‼j‼ə‼d̪ | halnuyerhd | hand, one, three | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + ONE = 'five' (20) → FIVE + THREE = 'eight' (3.5) |
-| eleven | j‼ə‼d̪j‼ɨnhɨ | yerhdyrhïnhï | hand, two, one | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + TWO = 'ten' (20) → TEN + ONE = 'eleven' (20) |
+| eleven | jə‼d̪j‼ɨnhɨ | yerhdyrhïnhï | hand, two, one | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + TWO = 'ten' (20) → TEN + ONE = 'eleven' (20) |
 | fifteen | lu‼j‼ə‼nhu | luyerhnhu | hand, two, one | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + TWO = 'ten' (20) → TEN + FIVE = 'fifteen' (20) |
 | finger | nu‼ | nurh | hand | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → 'hand' > 'finger' (1) |
 | five | nu‼j‼ə‼d̪ | nuyerhd | hand, one | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + ONE = 'five' (20) |
 | hand | nu‼ | nurh | hand | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) |
 | nine | he‼tʃse‼tʃni‼hij‼ | herhchserhchnirhhiyrh | hand, one, two | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + ONE = 'five' (20) → FIVE + FOUR = 'nine' (20) |
 | seven | he‼tʃni‼j‼ə‼d̪ | herhchniyerhd | hand, one, two | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + ONE = 'five' (20) → FIVE + TWO = 'seven' (20) |
-| six | j‼ə‼d̪j‼ɨnhɨj‼ | yerhdyrhïnhïyrh | hand, one | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + ONE = 'five' (20) → FIVE + ONE = 'six' (20) |
+| six | jə‼d̪j‼ɨnhɨj‼ | yerhdyrhïnhïyrh | hand, one | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + ONE = 'five' (20) → FIVE + ONE = 'six' (20) |
 | ten | nu‼hu | nurhhu | hand, two | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + TWO = 'ten' (20) |
 | twelve | he‼tʃni‼hi | herhchnirhhi | hand, two | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + TWO = 'ten' (20) → TEN + TWO = 'twelve' (20) |
 | with | nu‼l | nurhl | hand | \*nu‼ːk 'hand' (the blue dragon proto-language, 20 kyr) → HAND + 'do' = 'hold' (18.5) → 'hold' > 'with' (11) |
@@ -597,13 +597,13 @@ The largest: **hand** *nu‼ːk* (N, coined 20 kyr ago in the blue dragon proto-
 | name | IPA | meaning | | etymology |
 \|---\|---\|---\|---\|---\|
 | **Lrhïlrhlïlrhïlrhrrï** | /l‼ɨl‼lɨl‼ɨl‼rɨ/ | 'shine-light' | old | Lrhïlrhlïlrhïlrhrrï 'shine-light': lrhïlrhrrïlrhïl 'shine' + lrhïlrhrrïlrhïlrh 'light'; an old name, coined in d48 4.0 kyr ago as Lrhïlrhrrïlrhïlrhrrï |
-| **Rrirhhtenrree** | /r‼i‼htenrɛː/ | 'friend-mind' | old | Rrirhhtenrree 'friend-mind': rrirhhi 'friend' + tenlee 'mind'; an old name, coined in d48 4.0 kyr ago as Rrirhhitenlee |
-| **Tatshrrerh** | /tatsʰr‼ɛ‼/ | 'love-strong' | old | Tatshrrerh 'love-strong': tatsh 'love' + rrerh 'strong'; an old name, coined in d48 4.0 kyr ago as Tatshrrerh |
+| **Rrirhhtenrree** | /ri‼htenrɛː/ | 'friend-mind' | old | Rrirhhtenrree 'friend-mind': rrirhhi 'friend' + tenlee 'mind'; an old name, coined in d48 4.0 kyr ago as Rrirhhitenlee |
+| **Tatshrrerh** | /tatsʰrɛ‼/ | 'love-strong' | old | Tatshrrerh 'love-strong': tatsh 'love' + rrerh 'strong'; an old name, coined in d48 4.0 kyr ago as Tatshrrerh |
 | **Hukhal** | /hukʰaɻ/ | 'white-fighter' | new | Hukhal 'white-fighter': hu 'white' + khal 'fighter'; coined from today's words |
 | **Tilrhïlrhrrï** | /til‼ɨl‼rɨ/ | 'red-light' | new | Tilrhïlrhrrï 'red-light': ti 'red' + lrhïlrhrrïlrhïlrh 'light'; coined from today's words |
-| **Rrirhhlrhïlrhrrï** | /r‼i‼hl‼ɨl‼rɨ/ | 'friend-light' | new | Rrirhhlrhïlrhrrï 'friend-light': rrirhhi 'friend' + lrhïlrhrrïlrhïlrh 'light'; coined from today's words |
-| **Lrhïlrhlïlrhïlrhrrï Rrirhhteshi** | /l‼ɨl‼lɨl‼ɨl‼rɨ r‼i‼hteʃi/ | 'shine-light, son of friend-mind' | matronymic | the mother's name Rrirhhtenrree + shi 'son' (compounded: the language has no genitive marker) |
-| **Rrirhhtenrree Tatshrrerhtekh** | /r‼i‼htenrɛː tatsʰr‼ɛ‼tekʰ/ | 'friend-mind, daughter of love-strong' | matronymic | the mother's name Tatshrrerh + tekh 'daughter' (compounded: the language has no genitive marker) |
+| **Rrirhhlrhïlrhrrï** | /ri‼hl‼ɨl‼rɨ/ | 'friend-light' | new | Rrirhhlrhïlrhrrï 'friend-light': rrirhhi 'friend' + lrhïlrhrrïlrhïlrh 'light'; coined from today's words |
+| **Lrhïlrhlïlrhïlrhrrï Rrirhhteshi** | /l‼ɨl‼lɨl‼ɨl‼rɨ ri‼hteʃi/ | 'shine-light, son of friend-mind' | matronymic | the mother's name Rrirhhtenrree + shi 'son' (compounded: the language has no genitive marker) |
+| **Rrirhhtenrree Tatshrrerhtekh** | /ri‼htenrɛː tatsʰrɛ‼tekʰ/ | 'friend-mind, daughter of love-strong' | matronymic | the mother's name Tatshrrerh + tekh 'daughter' (compounded: the language has no genitive marker) |
 
 **Settlements.** **Ilrrili** /ilrili/ (town, 3,395): 'the black town'; named by the gnome (d509) who founded it 4.2 kyr ago, kept as heard; **Kikpitu** /kikpitu/ (village, 1,700): 'the big fence'; named by the halfling (d381.1) who founded it 1.7 kyr ago, kept as heard; **Huyti** /hujti/ (village, 1,678): 'the high field'; named by the halfling (d381.1) who founded it 1.7 kyr ago, kept as heard.
 
@@ -613,21 +613,21 @@ Built from this language's own words, word order, markers and agreement (planet/
 
 **(1)** ‘The woman sees the dog.’
 
-| *o˯=nɛ‼ɭ=t̪ʰu‼* | *te=w‼ɔ‼j‼* | *uhul‼* |
+| *o˯=nɛ‼ɭ=t̪ʰu‼* | *te=wɔ‼j* | *uhul‼* |
 | --- | --- | --- |
 | woman=CL1=ERG | CL4=dog | see |
 
-/o˯nɛ‼ɭt̪ʰu‼ tew‼ɔ‼j‼ uhul‼/ · ‹Omhnerhlthurh tewoyrh uhulrh.›
+/o˯nɛ‼ɭt̪ʰu‼ tewɔ‼j uhul‼/ · ‹Omhnerhlthurh tewoyrh uhulrh.›
 
 <sub>SOV order</sub>
 
 **(2)** ‘The big dog sleeps in the house.’
 
-| *te=w‼ɔ‼j‼* | *nal* | *te=dʒɨl‼ɨɻ* | *dʒe‼it* | *urut̪ʰ* |
+| *te=wɔ‼j* | *nal* | *te=dʒɨl‼ɨɻ* | *dʒe‼it* | *urut̪ʰ* |
 | --- | --- | --- | --- | --- |
 | CL4=dog | big | CL4=house | in | sleep |
 
-/tew‼ɔ‼j‼ nal tedʒl‼ɨɻ dʒe‼it urut̪ʰ/ · ‹Tewoyrh nal tejlrhïl jerhit urruth.›
+/tewɔ‼j nal tedʒl‼ɨɻ dʒe‼it urut̪ʰ/ · ‹Tewoyrh nal tejlrhïl jerhit urruth.›
 
 <sub>'in' as a postposition (there is no locative case); adjective after the noun</sub>
 
@@ -653,11 +653,11 @@ Built from this language's own words, word order, markers and agreement (planet/
 
 **(5)** ‘What does the child bring?’
 
-| *hi‼tʃʰij‼* | *i‼l‼tʰi=nɛ‼ɭ=t̪ʰu‼* | *l‼e‼tʃi* |
+| *hi‼tʃʰij‼* | *i‼ltʰi=nɛ‼ɭ=t̪ʰu‼* | *le‼tʃi* |
 | --- | --- | --- |
 | what | child=CL1=ERG | bring |
 
-/hi‼tʃʰij‼ i‼l‼tʰinɛ‼ɭt̪ʰu‼ l‼e‼tʃi/ · ‹Hirhchhiyrh ilrhthinerhlthurh lerhchi?›
+/hi‼tʃʰij‼ i‼ltʰinɛ‼ɭt̪ʰu‼ le‼tʃi/ · ‹Hirhchhiyrh ilrhthinerhlthurh lerhchi?›
 
 <sub>the question word moves to the front</sub>
 
@@ -713,11 +713,11 @@ Built from this language's own words, word order, markers and agreement (planet/
 
 **(11)** ‘The woman gives the child a fish.’
 
-| *o˯=nɛ‼ɭ=t̪ʰu‼* | *te=jep* | *ra‼h* | *i‼l‼tʰi=nɛ‼ɭ* | *o˯* |
+| *o˯=nɛ‼ɭ=t̪ʰu‼* | *te=jep* | *ra‼h* | *i‼ltʰi=nɛ‼ɭ* | *o˯* |
 | --- | --- | --- | --- | --- |
 | woman=CL1=ERG | CL4=fish | take | child=CL1 | give |
 
-/o˯nɛ‼ɭt̪ʰu‼ tejep ra‼h i‼l‼tʰinɛ‼ɭ o˯/ · ‹Omhnerhlthurh teyep rrarhh ilrhthinerhl omh.›
+/o˯nɛ‼ɭt̪ʰu‼ tejep ra‼h i‼ltʰinɛ‼ɭ o˯/ · ‹Omhnerhlthurh teyep rrarhh ilrhthinerhl omh.›
 
 <sub>no dative: a serial construction, 'take the thing, give (it to) the person'</sub>
 
@@ -753,21 +753,21 @@ Built from this language's own words, word order, markers and agreement (planet/
 
 **(15)** ‘The man says that the dog sleeps.’
 
-| *nɛ‼ɭ=nɛ‼ɭ* | *te=w‼ɔ‼j‼* | *urut̪ʰ* | *j‼eiho˯* |
+| *nɛ‼ɭ=nɛ‼ɭ* | *te=wɔ‼j* | *urut̪ʰ* | *j‼eiho˯* |
 | --- | --- | --- | --- |
 | man=CL1 | CL4=dog | sleep | say |
 
-/nɛ‼ɭnɛ‼ɭ tew‼ɔ‼j‼ urut̪ʰ j‼eiho˯/ · ‹Nerhlnerhl tewoyrh urruth yrheihomh.›
+/nɛ‼ɭnɛ‼ɭ tewɔ‼j urut̪ʰ j‼eiho˯/ · ‹Nerhlnerhl tewoyrh urruth yrheihomh.›
 
 <sub>no complementizer: the clause stands bare in the object's place</sub>
 
 **(16)** ‘The man is bigger than the dog.’
 
-| *nɛ‼ɭ=nɛ‼ɭ* | *nal* | *t̪ʰu‼* | *te=w‼ɔ‼j‼* | *i‼h* |
+| *nɛ‼ɭ=nɛ‼ɭ* | *nal* | *t̪ʰu‼* | *te=wɔ‼j* | *i‼h* |
 | --- | --- | --- | --- | --- |
 | man=CL1 | big | COP | CL4=dog | exceed |
 
-/nɛ‼ɭnɛ‼ɭ nal t̪ʰu‼ tew‼ɔ‼j‼ i‼h/ · ‹Nerhlnerhl nal thurh tewoyrh irhh.›
+/nɛ‼ɭnɛ‼ɭ nal t̪ʰu‼ tewɔ‼j i‼h/ · ‹Nerhlnerhl nal thurh tewoyrh irhh.›
 
 <sub>an 'exceed' comparison: 'A is big, exceeds B', with the verb for 'climb' (as Yoruba ju 'exceed', Thai kwaa 'cross over')</sub>
 
@@ -841,14 +841,14 @@ The same fable in its proto-language (the blue dragon proto-language, 20 kyr ago
 
 | **zheeh** | **nikeerh** | **otanrh** | **dirhsh** | **panrh** | **tshomhbirh** | **omhniin** | **yrhasi** | **erhlirhbiirh** |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| *ʒɛːh* | *nɪkɛ‼ː* | *ɔta‼n‼* | *di‼ʃ* | *pan‼* | *tsʰo˯bi‼* | *o˯niːn* | *j‼asi* | *e‼li‼=bi‼ː* |
+| *ʒɛːh* | *nɪkɛ‼ː* | *ɔta‼n* | *di‼ʃ* | *pan‼* | *tsʰo˯bi‼* | *o˯niːn* | *j‼asi* | *e‼li‼=bi‼ː* |
 | bird | come | 1SG | 2SG | seed | good | give | FUT | say=PST |
 
 ‘The bird said: “Come! I will give you a good seed.”’
 
 | **ebirh** | **otanrh** | **panrh** | **thiisiilirh** | **kyhakirh** | **dirhsh** | **otanrh** | **thiisiilirh** | **yrhasi** | **erhlirhbiirh** |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| *ebi‼* | *ɔta‼n‼* | *pan‼* | *tʰiːsiːli‼* | *cʰakɪ‼* | *di‼ʃ* | *ɔta‼n‼* | *tʰiːsiːli‼* | *j‼asi* | *e‼li‼=bi‼ː* |
+| *ebi‼* | *ɔta‼n* | *pan‼* | *tʰiːsiːli‼* | *cʰakɪ‼* | *di‼ʃ* | *ɔta‼n* | *tʰiːsiːli‼* | *j‼asi* | *e‼li‼=bi‼ː* |
 | fish | 1SG | seed | eat | NEG | 2SG | 1SG | eat | FUT | say=PST |
 
 ‘The fish said: “I do not eat seeds. You will eat me.”’
