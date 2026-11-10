@@ -226,6 +226,21 @@ def test_coda_liquids_are_allophones():
     assert _seg("ɹ") not in I.phonemic(forms + _forms("ɹa"), segs)
 
 
+def test_allophones_stay_allophones_in_word_building():
+    """Lane 14b: word building works on the phonemes (a coda ɹ that a suffix puts before a vowel is r again, Dutch maar
+    [maːɹ] / mare [maːrə]), and the allophone rule stays productive (a new coda r is said ɹ), so the pair keeps its
+    complementary distribution."""
+    forms = _forms("rapa", "kira", "paɹ", "taɹku", "ruki", "tama")
+    inv = I.Inventory(consonants=[_seg(x) for x in "rptkm"], vowels=[_seg(x) for x in "aiu"],
+                      shapes={"CV": 0.6, "CVC": 0.4}, max_coda=1)
+    ob = I.observed(inv, forms)
+    assert ob.allophones.get(_seg("ɹ")) == (_seg("r"), "coda")
+    assert I.allophonic(tuple(from_ipa("paɹa")), ob, underlying=True) == tuple(from_ipa("para"))
+    assert I.allophonic(tuple(from_ipa("paɹa")), ob) == tuple(from_ipa("paɹa"))   # (a sound change's stranding stays)
+    assert I.allophonic(tuple(from_ipa("kurta")), ob) == tuple(from_ipa("kuɹta"))
+    assert I.realize(tuple(from_ipa("paɹi")), ob) == tuple(from_ipa("pari"))
+
+
 def test_intervocalic_voicing_allophone():
     forms = _forms("tada", "pata", "tiku", "kadi", "tupa", "atu")
     segs = list(dict.fromkeys(s for f in forms for s in f))

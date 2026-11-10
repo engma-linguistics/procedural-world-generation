@@ -2,7 +2,7 @@
 id: PW-1642
 title: "Languages regress to the engine's middle: give each lineage persistent change tendencies and let a language's own pattern resist changes that break it"
 type: task
-status: todo
+status: in-progress
 parent: PW-767
 milestone: v4
 subsystem: culture
@@ -40,4 +40,5 @@ of one family visibly alike, different families visibly different; checks (siste
 If never done, every world's languages blur toward one sound over time, which is the opposite of what peoples need.
 
 ## Updates
+- 2026-11-10: Status todo -> in-progress. Lane 14/14b built lineage tendencies (OU walk, LINE_FAMILY_SIGMA 1.5), signature changes at splits and the word-shape anchor; 14b made allophones productive (word building on phonemes, allophone rules apply to new tokens), which cleared overused ɹ. Families read as families (families_apart: a24559 same-branch sound distance 2.16 -> 1.74, other family 5.23 -> 4.93; 25 of 50 branches carry a signature). Open: ʁ overused on a24559 (12.1% of living lects vs PHOIBLE 3.7%, bar 3x): r > ʁ fires less than on main but its product lasts (kept clusters and codas, fewer changes a kyr, r back beside ʁ in 77 of 115 lects). de1cc6 passes it.
 - 2026-11-10: Created from inbox draft draft-lineage-drift-tendencies.md (found by lang-coordinator).

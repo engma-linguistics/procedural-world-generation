@@ -1649,27 +1649,8 @@ def realize(word: tuple, inv: Inventory) -> tuple:
             word = w2
     if not inv.allophones or not word:
         return word
-    by_p: dict = {}
-    glottal = None
-    for x, (p, t) in inv.allophones.items():
-        if p is None:
-            glottal = x
-        else:
-            by_p.setdefault(p, []).append((x, t))
-    out = list(word)
-    if by_p:
-        for i, s in enumerate(word):
-            q = _strip_tone(s) if s.kind == "V" else s
-            alts = by_p.get(q)
-            if not alts:
-                continue
-            lp = word[i - 1] if i else None
-            left = "#" if lp is None else ("V" if lp.kind == "V" else "C")
-            right = _rkey(word[i + 1] if i + 1 < len(word) else None)
-            for x, t in alts:
-                if _env_ok(t, x, left, right):
-                    out[i] = replace(x, tone=s.tone) if s.kind == "V" else x
-                    break
+    glottal = next((x for x, (p, _t) in inv.allophones.items() if p is None), None)
+    out = list(allophonic(word, inv, underlying=True))
     if glottal is not None:
         g = []
         for i, s in enumerate(out):
@@ -1679,6 +1660,36 @@ def realize(word: tuple, inv: Inventory) -> tuple:
         out = g
     t = tuple(out)
     return t if t == word or legal(t, inv) else word
+
+
+def allophonic(word: tuple, inv: Inventory, underlying: bool = False) -> tuple:
+    """The lect's allophonic rules over a word (PW-1642 follow-up, lane 14b): each phoneme with an allophone takes it in
+    that allophone's environment. With `underlying` (word formation and loans, `realize`: morphology works on the
+    phonemes), an allophone standing outside its environment is first taken back to its phoneme, so a coda [ɹ] that a
+    suffix puts before a vowel is said [r] again (Dutch maar [maːɹ], mare [maːrə]) instead of making [ɹ] contrast with
+    [r]. The inserted ʔ (phoneme None) is left to `realize`. No legality check (the callers keep or refuse the result)."""
+    by_p: dict = {}
+    of: dict = {}
+    for x, (p, t) in inv.allophones.items():
+        if p is not None:
+            by_p.setdefault(p, []).append((x, t))
+            of[x] = (p, t)
+    if not by_p or not word:
+        return tuple(word)
+    out = list(word)
+    for i, s in enumerate(word):
+        q = _strip_tone(s) if s.kind == "V" else s
+        lp = word[i - 1] if i else None
+        left = "#" if lp is None else ("V" if lp.kind == "V" else "C")
+        right = _rkey(word[i + 1] if i + 1 < len(word) else None)
+        if underlying and q in of and not _env_ok(of[q][1], q, left, right):
+            q = of[q][0]
+            out[i] = replace(q, tone=s.tone) if s.kind == "V" else q
+        for x, t in by_p.get(q, ()):
+            if _env_ok(t, x, left, right):
+                out[i] = replace(x, tone=s.tone) if s.kind == "V" else x
+                break
+    return tuple(out)
 
 
 def allophones_json(inv: Inventory) -> list:

@@ -2,8 +2,8 @@
 
     uv run python -I tools/language/families_apart.py runs/a24559/languages.json [--json out.json]
 
-Over the living lects: the top-level families (family_true) and their major branches (the subtree under each child of
-the family's proto that still has two or more living lects), then three distances, each a mean over pairs:
+Over the living lects: the top-level families (family_true) and their major branches (the subtrees under the most
+recent common ancestor of the family's living lects), then three distances, each a mean over pairs:
 - sound: tools/language/find.py's distance between two lects (each read as the other's profile, as real_inventory.py's
   lect_gap does): inventory, syllable shape, word length, sound texture, stress and the main typology;
 - shape: the gap in word shape alone (words ending in a consonant, words with a cluster, syllables per word);
@@ -55,15 +55,24 @@ def main(argv=None) -> int:
             lid = by_id[lid].get("parent")
         return out[::-1]   # root first
 
-    branch, fam = {}, {}
+    branch, fam, chains = {}, {}, {}
     for l in living:
-        c = chain(l["id"])
+        c = chains[l["id"]] = chain(l["id"])
         fam[l["id"]] = l.get("family_true") or c[0]
-        branch[l["id"]] = c[1] if len(c) > 1 else c[0]
-    nb = Counter(branch.values())
     fams = defaultdict(list)
     for lid, f in fam.items():
         fams[f].append(lid)
+    # A family's major branches are the subtrees under its living members' most recent common ancestor (lane 14b; it was
+    # the child of the family's proto, but a proto's one child is usually the line's own continuation, so most families
+    # had one 'branch' and the cross-branch pairs came only from the few families whose proto split at once).
+    for f, members in fams.items():
+        cs = [chains[x] for x in members]
+        i = 0
+        while all(len(c) > i + 1 for c in cs) and len({c[i] for c in cs}) == 1 and len({c[i + 1] for c in cs}) == 1:
+            i += 1
+        for x, c in zip(members, cs):
+            branch[x] = c[i + 1] if len(cs) > 1 and len(c) > i + 1 else c[i]
+    nb = Counter(branch.values())
     rng = random.Random(1)
     ids = list(fam)
     kinds = {"same branch": [], "same family, other branch": [], "other family": []}
@@ -86,7 +95,7 @@ def main(argv=None) -> int:
         return by_id[lid].get("tendency")
 
     out = {"living": len(living), "families": len(fams), "families_3plus": sum(len(v) >= 3 for v in fams.values()),
-           "major_branches": sum(1 for b, n in nb.items() if n >= 2 and by_id[b].get("parent") is not None)}
+           "major_branches": sum(1 for b, n in nb.items() if n >= 2)}
     rows = {}
     for k, pairs in kinds.items():
         pairs = list(dict.fromkeys(pairs))[:PAIRS]

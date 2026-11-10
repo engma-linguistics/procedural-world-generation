@@ -1609,6 +1609,7 @@ def _sync_inventory(lect: Lect, kyr: float | None = None) -> None:
     ones on the vowels, and a ʔ that only prothesis put before initial vowels is left out (not a phoneme)."""
     tones = tone_hygiene(lect, kyr)
     voice2_hygiene(lect, kyr)
+    _allophony(lect, kyr)
     inv = _inv_mod().observed(lect.inventory, lect.all_forms(), lect.profile)
     inv = _inv_mod().retemplate(inv, lect.all_forms())
     if hasattr(inv, "tones"):
@@ -1621,6 +1622,21 @@ def _sync_inventory(lect: Lect, kyr: float | None = None) -> None:
         else:
             lect.glottal_phonetic = False  # (ʔ now stands elsewhere too: it has phonemicized)
     lect.inventory = inv
+
+
+def _allophony(lect: Lect, kyr: float | None = None) -> None:
+    """The lect's allophonic rules stay productive (lane 14b): a phoneme a sound change has newly put in one of its
+    allophones' environments takes the allophone (a new coda r in a lect that says coda r as [ɹ] is said [ɹ] too), so the
+    allophone keeps its complementary distribution instead of contrasting with the phoneme at the first new coda r. Only
+    this direction: an allophone a sound change strands outside its environment stays (environment loss phonologizes it,
+    as umlaut did when the i that caused it was lost). Recorded as an `allophony` sound step on the words it touches."""
+    inv = lect.inventory
+    if inv is None or lect.lexicon is None or not any(p is not None for p, _t in (inv.allophones or {}).values()):
+        return
+    INV = _inv_mod()
+    k = float(kyr if kyr is not None else lect.born_kyr)
+    if LX.apply_rule_to_lexicon(lect.lexicon, lambda f: INV.allophonic(f, inv), "allophony", k, lect.id):
+        lect.touch()
 
 
 def tone_hygiene(lect: Lect, kyr: float | None = None) -> list:

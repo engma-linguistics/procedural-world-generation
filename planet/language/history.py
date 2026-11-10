@@ -947,6 +947,7 @@ class History:
         GR = LC._gr_mod()
         if GR is not None and new.grammar is not None:
             GR.apply_rule_to_grammar(new.grammar, fn, f"accent:{old.id}", kyr)
+            GR.realise(new.grammar, new.lexicon)   # (a merger can fold two 'we's into one: re-read the typology)
         LC._sync_inventory(new, kyr)
         new.changes.append({"kyr": round(kyr, 3), "rule": f"accent:{old.id}", "cause": "substrate", "origin_lect": old.id})
         return pairs
@@ -992,6 +993,7 @@ class History:
         GR = LC._gr_mod()
         if GR is not None and new.grammar is not None:
             GR.apply_rule_to_grammar(new.grammar, fn, f"native:{new.people}", kyr)
+            GR.realise(new.grammar, new.lexicon)
         new.touch()
         LC._sync_inventory(new, kyr)
         new.changes.append({"kyr": round(kyr, 3), "rule": f"native:{new.people}", "cause": "substrate",

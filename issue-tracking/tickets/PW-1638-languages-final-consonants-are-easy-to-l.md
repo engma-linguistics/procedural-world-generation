@@ -2,7 +2,7 @@
 id: PW-1638
 title: "Languages: final consonants are easy to lose and hard to gain, so simple syllables drift to twice WALS's share"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: v4
 subsystem: peoples
@@ -41,5 +41,6 @@ refusal wait. Re-measure with tools/language/real_inventory.py and the WALS read
 - [ ] CV protos (Swahili, Hawaiian, Japanese in real_inventory.py) still under 10% closed after 2.5 kyr
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 14/14b: the word-shape anchor (lect.pattern_resist, PW-1642) stops coda languages wearing down. a24559 simple syllables 0.22 -> 0.05, complex 0.38 -> 0.33 (WALS 0.12/0.31); de1cc6 complex 0.51 -> 0.32. The undershoot of simple syllables now has its own draft (open-syllable stable state: no flow into CV, leaks out of CV lines through loans and coins).
 - 2026-11-10: Owner 11-10: the real-language experiment is a standing benchmark for the language model, like Earth for physics; its gaps are now-work, not later. Moved to v4; lane 14.
 - 2026-11-10: Created from inbox draft draft-language-coda-supply-one-way.md (found by lang-lane12).
