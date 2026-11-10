@@ -137,13 +137,14 @@ def signature_pair(doc, by_id):
         marks = []
         for b, mem in br.items():
             cnt = {}
-            for x in mem:
-                for sg in {q["rule"]: q for q in by_id[x].get("signatures") or []}.values():
+            own = {x: [q for q in by_id[x].get("signatures") or [] if q.get("lect") in cs[x][i + 1:]] for x in mem}
+            for x in mem:   # only marks taken at or under the branch, not ones inherited from above the split
+                for sg in {q["rule"]: q for q in own[x]}.values():
                     cnt[sg["rule"]] = cnt.get(sg["rule"], 0) + 1
             top = sorted(((c, r) for r, c in cnt.items() if c >= 0.5 * len(mem)), reverse=True)
             if top:
                 r = top[0][1]
-                rep = next(x for x in sorted(mem) if any(q["rule"] == r for q in by_id[x].get("signatures") or []))
+                rep = next(x for x in sorted(mem) if any(q["rule"] == r for q in own[x]))
                 marks.append((len(mem), b, r, rep))
         marks.sort(reverse=True)
         for j in range(len(marks)):
