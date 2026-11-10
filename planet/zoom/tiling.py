@@ -96,12 +96,14 @@ def choose_n(size_km: float, min_overlap_km: float, nmax: int = 24) -> int:
 
 
 def sections(world: dict | None = None, size_km: float = 4000.0, min_overlap_km: float = 190.0, n: int | None = None,
-             min_land_frac: float = 0.05) -> list[dict]:
+             min_land_frac: float = 0.05, keep_all: bool = False) -> list[dict]:
     """The sections of the tiling; with a world, only those whose home cell holds land: at least min_land_frac of a
-    cell's even share of the world's grid cells (0.05: a twentieth of a cell's area as land; 0 keeps any land cell).
+    cell's even share of the world's grid cells (0.05: a twentieth of a cell's area as land; 0 keeps any land cell);
+    keep_all lists every cell (GET /api/sections).
 
     Each is {id, face, i, j, lat, lon, up (unit vector, the section's +y), size_km, margin_km (least, greatest),
-    land_cells (world cells of land in the home cell, None without a world), neighbours (ids of the cells that share an
+    land_cells (world cells of land in the home cell, None without a world), world_cells (all the world's cells in the
+    home cell, None without a world), neighbours (ids of the cells that share an
     edge or corner, whether or not listed), overlap_km (least band shared with each neighbour: the sum of both margins)}.
     The section is built as RG.Frame(lat, lon, up=up) at size_km; it covers its home cell with margin_km[0] to spare.
     """
@@ -113,6 +115,9 @@ def sections(world: dict | None = None, size_km: float = 4000.0, min_overlap_km:
         f, i, j = locate(np.asarray(g.centers)[keep], n)
         land = np.zeros((6, n, n), int)
         np.add.at(land, (f, i, j), 1)
+        fa, ia, ja = locate(np.asarray(g.centers), n)
+        total = np.zeros((6, n, n), int)
+        np.add.at(total, (fa, ia, ja), 1)
     e = _edges(n)
     out, by_id = [], {}
     for f in range(6):
@@ -127,12 +132,13 @@ def sections(world: dict | None = None, size_km: float = 4000.0, min_overlap_km:
                 nb = sorted({f"{_NAMES[a]}.{b}.{d}" for a, b, d in zip(nf, ni, nj)} - {f"{_NAMES[f]}.{i}.{j}"})
                 s = dict(id=f"{_NAMES[f]}.{i}.{j}", face=_NAMES[f], i=i, j=j, lat=float(lat), lon=float(lon), up=_FV[f].copy(),
                          size_km=size_km, margin_km=(lo, hi), land_cells=None if land is None else int(land[f, i, j]),
+                         world_cells=None if land is None else int(total[f, i, j]),
                          neighbours=nb)
                 out.append(s)
                 by_id[s["id"]] = s
     for s in out:
         s["overlap_km"] = min(s["margin_km"][0] + by_id[k]["margin_km"][0] for k in s["neighbours"])
-    if land is not None:
+    if land is not None and not keep_all:
         even = len(g.centers) / (6 * n * n)
         out = [s for s in out if s["land_cells"] > 0 and s["land_cells"] >= min_land_frac * even]
     return out

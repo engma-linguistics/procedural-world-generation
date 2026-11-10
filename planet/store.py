@@ -1019,6 +1019,8 @@ def _zoom_item(p: Path) -> dict:
             "center": m["center"], "size_km": m["size_km"], "res_km": m["res_km"]}
     if m.get("parent_zoom"):  # a fine zoom (zoom.fine): the zoom it was made from
         item["parent_zoom"] = m["parent_zoom"]["id"]
+    if m.get("section"):  # a tiling section (zoom/tiling.py): its cell id, for GET /api/sections
+        item["section"] = m["section"]
     return item
 
 
