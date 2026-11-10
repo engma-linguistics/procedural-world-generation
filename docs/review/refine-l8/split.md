@@ -177,3 +177,69 @@ PW-1630. One suspect is a grid-independent bug found on the way: the ledger's ha
 (`draft-ledger-harbour-on-sea-cells.md`), so ports lean on whatever else favours the coast, and that may read
 differently at 30 km. The people today are 13% fewer on the split (humans 35%), against 8% (19%) in §4: still one draw
 each (PW-1631).
+
+## 7. Why the split has fewer people and fewer coastal towns (lane 272, PW-1631 / PW-1630)
+
+Code 2a2876cd (PW-1640's harbour fix in). Earth-like A, dnd tree, one try. L7 run 732ed6 on 899985 against split run f465d8
+on 9cf1c3 (a fresh L8 refine of 899985), same code; towns read on 9cf1c3 (`measure.py`, lane scratch), people per stored
+frame and by km to the sea read on 9cf1c3 too (`profile.py`). Scripts named below are in the lane's scratch (deleted after).
+
+| | L7 732ed6 | split f465d8 |
+|---|---|---|
+| villages / towns / cities | 22,493 / 6,209 / 286 | 57,634 / 5,245 / 245 |
+| towns and cities on the fine coast (7.5% of the fine land) | 7.6% | 4.4% |
+| ...within ~60 km of the fine sea (13.2%) | 15.2% | 9.1% |
+| ...on a navigable river; in the water | 34.4%; 1.06% | 34.5%; 0.0% |
+| islands (< 0.3 Mkm2) with a town | 22 | 11 |
+| people today (run.json, every line) | 1,042 M | 912 M (-12%) |
+| humans: people; held Mkm2; per km2 | 660 M; 85.0; 7.77 | 433 M; 81.4; 5.32 |
+
+**PW-1631, people.** Humans hold about the same land (-4%) at two-thirds the density; the other peoples' totals move both
+ways (dragonborn 2 M -> 81 M: they reached the plough on the split, fishers on L7; orcs -18 M). By way of life, over every
+line: irrigation 162 M -> 80 M, agro-pastoral 171 -> 147, plough 624 -> 627. The per-frame totals cross more than once
+(4 kyr ago 358 M vs 299 M; 1.5 kyr ago 673 vs 674; today 1,011 vs 890 summed on the fine cells), so part of any one
+gap is the draw, but three draws now point the same way (-8% §4, -13% §6, -12% here) and a static estimate finds the
+same size from the land alone. `ladder_static.py`: a farming, herding people at the medieval plough and Butzer's 150 BC
+irrigation over all land reads 16.81 /km2 on 899985 and 14.38 on 9cf1c3 (-14.5%). Two causes:
+- **The irrigated valley was a share of a cell** (ladder WATER_MAX 0.3 of a cell on the greatest rivers). An L8 river
+  cell is half as wide, so the watered strip was half as wide: 3.32 Mkm2 watered on L7, 1.81 on L8, for the same rivers
+  (cells with 500 m3/s or more: ~570,000 km of river on L7, ~604,000 on L8; the same peak discharge). Doubling the L8
+  share (the same 18 km valley) takes the static estimate to 15.33 (-8.8%). Fixed (below).
+- **Poorer farmland on the refine, from its soils** (lead 1, but not the slope). The fertile class falls 0.971 -> 0.868
+  (-11%) over the land. The slope term removes nothing on either grid (`slope_diag.py`: under 0.1% of the score; slopes
+  over 8 degrees on 0.02% and 1.2% of the land). `fert_diag.py` takes the score apart: with peat ignored the classes are
+  1.376 (L7) and 1.431 (L8); with the soil depth floored at 1 m, 1.06 and 1.075. So the refine's soils carry it: peat
+  over 0.5 m on 31.5% -> 40.1% of the land, soil depth mean 1.31 -> 0.99 m (25th percentile 0.56 -> 0.10 m).
+  soils.erosion_rate goes as the square of cell_slope (relief over the node spacing), steeper on the finer grid. That is
+  the refine's (surface), not the peoples' model: left as an inbox draft. It is the rest of the static gap (farm share
+  0.480 -> 0.434).
+
+Lead 2 (the spread's pressure decays per cell: `enter`, the sea factor and the crop front's `gap` are per cell while the
+passes are per km) is a real grid dependence but not what costs people here: the humans' held land is within 4%, and the
+split peoples more small islands, not fewer (`islands.py`: 297 of the fine world's 331 against 142 read through L7's
+cells; sedentary people on them 4.8 M against 4.1 M). Not changed; inbox draft.
+
+**PW-1630, coast.** Lead 3 holds, through time. By km to each run's own sea (`townband.py`), within ~60 km: L7 136 M
+sedentary (6.09 /km2), 986 towns and cities (15.2%), 72 per 10 M sedentary; split 106 M (4.39 /km2, -28% against
+-14% over all land), 500 (9.1%), 47 per 10 M. The town rule is not what shuns the coast: applied to the final frame
+(`bestsite.py`, read-only) it puts 11.8% (L7) and 11.0% (split) of the best town sites within ~60 km, and the site
+factor and the fishers barely move that. The gap is founded in the past (`townlife.py`): places ever a town or city in
+the band 1,384 (L7) against 724, with the same fates (most still towns). The same rule on the past frames
+(`bestsite2.py`): the band's share of the sedentary people 11.5% vs 7.7% 6 kyr ago, 13.9% vs 10.0% at 4 kyr, 14.8% vs 11.8%
+at 2 kyr, 15.9% vs 13.8% today; its share of the best sites 3.6% vs 0.6%, 6.9% vs 2.6%, 9.4% vs 6.6%, 11.8% vs 11.0%.
+Coastal towns follow the coastal farmers, and on L8 they came late. Three causes, the first two in the ladder:
+- **The rich-wild resistance read the shore cell alone** (PW-1385 A: farmers take up rich wild land slowly). The fish good
+  is 0.69 on L8's shore cells against 0.51 on L7's (the L7 cell averages the strip with the land behind it), so the L8
+  shore read richer and farmed less. `rich_static.py`, the farmed share of the farmable land within 60 km of the sea after
+  2 / 4 / 8 kyr of crops: L7 0.66 / 0.78 / 0.88, L8 0.55 / 0.71 / 0.86, L8 with the richness averaged over one ring 0.64 /
+  0.79 / 0.91. Its cases are densities over whole domains (Calusa ~0.8 /km2 over a domain), so it is read over ~60 km now.
+- the irrigated valleys above (river mouths and deltas are on the coast);
+- the refine's soils (the fertile good within 60 km of the sea 0.539 on L7, 0.439 on L8).
+
+Islands with a town (22 vs 11) are not short of people on the split (above); likely their size in cells (an L7 island
+cell counts 3,600 km2 of land, often more than the island), not checked further.
+
+**Fix** (3d21c18b): ladder.WATER_CELL_KM (the watered share is WATER_MAX of one L7 cell's width: x1 at L7, x2 on L8) and
+ladder.RICH_KM / domain_mean (the richness averaged over rings_for(g, 60 km) - 1 rings: none at L7, one on L8). L7 is
+unchanged by construction (the same arrays: tests/test_people_units.py). Not tuned toward L7: no threshold moved; the
+soils are left to their owner.
