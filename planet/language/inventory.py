@@ -1333,11 +1333,15 @@ def syllable_profile(forms, share: float = TEMPLATE_SHARE) -> tuple:
     return max(1, top(0)), top(1), sum(1 for x in sh if x[2]) >= share * n
 
 
-def new_violations(before, after, prof) -> float:
+def new_violations(before, after, prof, types_only: bool = False) -> float:
     """Share of the forms a change rewrites whose new shape breaks the phonotactics `prof` (syllable_profile) where the old
-    one did not: a longer onset or final coda than the words allow, or a medial coda in a lect without them."""
+    one did not: a longer onset or final coda than the words allow, or a medial coda in a lect without them. types_only:
+    count only a syllable type the lect has none of (an onset cluster where onsets are single, a final coda in an
+    open-syllable lect, a medial coda), not a larger cluster of a type it has (PW-1622)."""
     changed = bad = 0
     mo, mc, med = prof
+    if types_only:   # (one consonant more of a type the lect has is not a new type)
+        mo, mc = (mo if mo <= 1 else 99), (mc if mc == 0 else 99)
     for a, b in zip(before, after):
         if a == b:
             continue
