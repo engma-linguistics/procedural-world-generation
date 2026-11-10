@@ -1058,9 +1058,10 @@ needs = ["pack_animals"]
 env = ["grazing"]
 earliest_kyr = 5.5
 era = "bronze age"
-needs_any = ["animal_horse", "animal_great_elk", "animal_riding_lizard"]
+needs_any = ["animal_horse", "animal_great_elk", "animal_riding_lizard", "animal_camel", "animal_yak", "animal_reindeer"]
+earth_needs_any = ["animal_horse"]  # (Earth's readiness stays the horse's date: the other mounts do not move riding's calibrated lag, PW-1609)
 earth_origins = 2
-source = "Outram et al. 2009, Science 323:1332 (Botai horses, ~5.5 kyr); Librado et al. 2021, Nature 598:634 (the modern domestic horse spreads from ~4.2 kyr)"
+source = "Outram et al. 2009, Science 323:1332 (Botai horses, ~5.5 kyr); Librado et al. 2021, Nature 598:634 (the modern domestic horse spreads from ~4.2 kyr). PW-1609 (lane 264), the other ridden herd animals, Wikipedia pages fetched 2026-11-09: Camel train (Alashan Mongol caravans: 'every man was provided with a camel to ride'); Dromedary (prized 'for its capability to outrun horses in the deserts'); Reindeer herding (Evenki: 'Deer are used for riding and transporting loads'); Yak (captions only: 'Yaks in Manali ... saddled for riding', 'Yak rider near Tsomgo Lake'; weak: no text on ancient riding)"
 
 [[tech]]
 id = "sails"
@@ -3927,11 +3928,12 @@ id = "ox_traction"
 name = "ox traction and yoke"
 track = "food"
 domains = ["food", "move"]
-needs = ["herding", "cordage", "cultivation", "animal_cattle"]
+needs = ["herding", "cordage", "cultivation"]
+needs_any = ["animal_cattle", "animal_buffalo", "animal_yak"]
 earliest_kyr = 7
 era = "bronze age"
 earth_origins = 2
-source = "Sherratt 1981, Plough and pastoralism: secondary products (unverified)"
+source = "Sherratt 1981, Plough and pastoralism: secondary products (unverified). PW-1609 (lane 264), other draft animals, Wikipedia pages fetched 2026-11-09: Water buffalo ('the ideal animals for work in the deep mud of paddy fields'; 'the living tractor of the East'); Yak ('They also are used to draw ploughs')"
 
 [[tech]]
 id = "animal_horse"

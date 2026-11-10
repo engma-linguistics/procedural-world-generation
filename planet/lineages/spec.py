@@ -243,15 +243,37 @@ def demography(traits) -> dict:
 BODY_DEFAULT = {"sweet": True, "milk": False, "milks": True, "capsaicin": True, "bitter": "normal", "smell": "normal",
                 "diet": "omnivore", "raw_meat": False, "cellulose": False, "toxic": [],
                 "suction": "normal", "teeth": "grinding", "gut": "simple", "salt": "normal", "display": "none",
-                "shed": "none", "display_sex": "both", "hours": "diurnal", "thermo": "endo", "fire": True, "grain": "normal"}
+                "shed": "none", "display_sex": "both", "hours": "diurnal", "thermo": "endo", "fire": True, "grain": "normal",
+                "alcohol_flush": 0.0, "fit": {}}
 BODY_CHOICES = {"bitter": ("low", "normal", "high"), "smell": ("low", "normal", "keen"),
                 "diet": ("herbivore", "omnivore", "carnivore", "obligate_carnivore"),
                 "suction": ("none", "poor", "normal"), "teeth": ("grinding", "conical", "dental_pad", "beak"),
                 "gut": ("simple", "hindgut", "foregut"), "salt": ("normal", "craving"), "display": ("none", "horns", "antlers"),
                 "shed": ("none", "both", "males"), "display_sex": ("both", "males"), "hours": ("diurnal", "crepuscular", "nocturnal"), "thermo": ("endo", "ecto"),
                 "grain": ("normal", "moderate", "none")}
-TOXINS = ("alliums", "theobromine")
+# PW-1607 (lane 264): `alcohol_flush` is the share of the people who carry the ALDH2*2 flush (acetaldehyde builds up; about half of East
+# Asians, Wikipedia ALDH2, fetched 2026-11-09: "about 50% of East Asians are heterozygous", 36% in its lead; ~0 elsewhere). `fit` is a table
+# {food id (food_fit.FOODS): level | {level, why}} that wins over the fit worked out from the other keys, merged key by key down the tree.
+# `toxic = ["grapes"]` marks a canid body (grapes and raisins kill dogs' kidneys: Merck Veterinary Manual, Raisins and grapes), as
+# "alliums" and "theobromine" mark the feline and canine ones.
+TOXINS = ("alliums", "theobromine", "grapes")
 BODY_BOOLS = ("sweet", "milk", "capsaicin", "raw_meat", "cellulose")
+
+
+def parse_fit(v, lid: str = "") -> dict:
+    """Validate a body `fit` table: food id -> a level (thrives | tolerates | poor | harmful) or {level, why}."""
+    from .food_fit import FOODS, LEVELS
+    if not isinstance(v, dict):
+        raise ValueError(f"{lid}: body.fit must be a table of food id -> level")
+    out = {}
+    for f, x in v.items():
+        if f not in {k for k, _, _ in FOODS}:
+            raise ValueError(f"{lid}: body.fit: unknown food {f!r} (one of {[k for k, _, _ in FOODS]})")
+        lv, why = (x, None) if isinstance(x, str) else (x.get("level"), x.get("why")) if isinstance(x, dict) and set(x) <= {"level", "why"} else (None, None)
+        if lv not in LEVELS:
+            raise ValueError(f"{lid}: body.fit.{f} must be one of {list(LEVELS)} or a table {{level, why}}")
+        out[f] = lv if why is None else {"level": lv, "why": str(why)}
+    return out
 
 
 def parse_body(v, lid: str = "") -> dict:
@@ -272,6 +294,12 @@ def parse_body(v, lid: str = "") -> dict:
                 out[k] = float(x)
             else:
                 raise ValueError(f"{lid}: body.{k} must be true, false or a share between 0 and 1")
+        elif k == "alcohol_flush":
+            if isinstance(x, bool) or not isinstance(x, (int, float)) or not 0 <= x <= 1:
+                raise ValueError(f"{lid}: body.alcohol_flush must be a share between 0 and 1")
+            out[k] = float(x)
+        elif k == "fit":
+            out[k] = parse_fit(x, lid)
         elif k in ("fire", "milks"):
             if not isinstance(x, bool):
                 raise ValueError(f"{lid}: body.{k} must be true or false")
@@ -347,7 +375,11 @@ def body_notes(b: dict) -> list[str]:
             out[-1] += ", in males only"  # (which sexes carry the display: real species differ, PW-730)
     if b.get("fire") is False:
         out.append("cook without fire")
-    tox = [{"alliums": "alliums (onion, garlic)", "theobromine": "theobromine (chocolate)"}[t] for t in b["toxic"]]
+    if b.get("alcohol_flush"):
+        out.append(pct(b["alcohol_flush"]) + "flush on alcohol (ALDH2*2)")
+    if b.get("fit"):
+        out.append("food fit set by hand: " + ", ".join(f"{f} {x if isinstance(x, str) else x['level']}" for f, x in sorted(b["fit"].items())))
+    tox = [{"alliums": "alliums (onion, garlic)", "theobromine": "theobromine (chocolate)", "grapes": "grapes and raisins"}[t] for t in b["toxic"]]
     if tox:
         out.append("are poisoned by " + " and ".join(tox))
     return out
@@ -958,6 +990,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         bgiven = parse_body(r.get("body"), lid)
         body = {**base.body, **bgiven} if bases else {**BODY_DEFAULT, **bgiven}
         body["toxic"] = list(body["toxic"])
+        body["fit"] = {**((base.body.get("fit") or {}) if bases else {}), **(bgiven.get("fit") or {})}  # (merged key by key down the tree)
         vgiven = parse_voice(r.get("voice"), lid)
         voice = {**base.voice, **vgiven} if bases else dict(vgiven)
         wgiven = r.get("way")

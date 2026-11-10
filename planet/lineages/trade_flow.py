@@ -48,7 +48,7 @@ from numba import njit
 from ..geo import R_KM
 from . import trade as TR
 
-VERSION = 10  # (10: a bulk cargo's season at sea, SEASON, PW-1572; a need for dried fish, trade.py, PW-1573; lane 244; 9: boats follow the river's course, the hands on river hauls, herds and horses walk as droves, lane 226, step4c.md; 8: the hands, time and risk of a sea haul, HAND_KM, lane 225, step4b.md; 7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
+VERSION = 11  # (11: camel, llama, yak and reindeer herds count as pack animals, PW-1609, lane 264; 10: a bulk cargo's season at sea, SEASON, PW-1572; a need for dried fish, trade.py, PW-1573; lane 244; 9: boats follow the river's course, the hands on river hauls, herds and horses walk as droves, lane 226, step4c.md; 8: the hands, time and risk of a sea haul, HAND_KM, lane 225, step4b.md; 7: craft and luxury goods, PW-1522; a handling cost per port call, PW-1529; trading towns need the long-haul network,
 # PW-1530; lane 224, step4a.md. 2: routes, trading towns and merchant quarters, PW-1504; herders fetch grain, PW-1511 B; flyers carry wild foods, PW-1510;
 # 3: a route is judged per good against its carried volume, and last era's routes hold down to half the bar, PW-1515 and PW-1514;
 # 4: grain takers look on until a round finds no more, SEEK_GOODS, lane 216b; 5: market pools and worn ways, lane 218;
@@ -60,6 +60,23 @@ FORMAT = "procgen-trade-flows/1"
 # pack mule on the flat 0.213, in hills 0.452, porter 1.594 taels per 100 kg per 100 km.
 PACK = 1.0  # pack animal (`pack_animals`: donkey-, camel- or llama-like; the tech needs herding): ORBIS 0.028
 CART = 0.035 / 0.028  # cart on flat open ground (`wheel`), or road on the culture's own land (`roads`, any ground): ORBIS wagon 0.035
+# PW-1609 (lane 264): a people that keeps camels, llamas, yaks or reindeer has pack animals whether or not the `pack_animals` tech was
+# invented on its own: the same PACK cost, no new number. Sources (Wikipedia pages fetched 2026-11-09 unless said): camel trains carried
+# loads "rarely exceeding 270 pounds (122.5 kg)" 16-40 km a stage (Camel train), across the Sahara and Sahel, the Silk Road and Arabia; the
+# camel costs what ORBIS's donkey does (0.028, above), and Bulliet's camel cost about 20% under wagon transport in Diocletian's edict (1973
+# Aramco World article; secondary summary seen in a search), which is CART / PACK = 1.25 here, so no separate camel cost is needed; Andean
+# llama caravans: 15-20 km a day, 20-45 kg a head (ethnohistoric ranges compiled at mapaspects.org, Tripcevich's Llama Caravan project,
+# seen in a search; 25-30% of body weight, Wikipedia, Llama), "the only beasts of burden" of the Inca; yaks "transport goods across
+# mountain passes for local farmers and traders" (Yak); Evenki reindeer are "used for riding and transporting loads" (Reindeer herding).
+# A llama's load is a third to a quarter of a camel's, so PACK is generous to a llama people (JUDGEMENT: one pack cost for all).
+PACK_BEASTS = ("animal_camel", "animal_llama", "animal_yak", "animal_reindeer")
+
+
+def has_pack(know) -> bool:
+    """Whether a people with these known techs has pack animals: the tech, or a camel, llama, yak or reindeer herd (PW-1609)."""
+    return "pack_animals" in know or any(b in know for b in PACK_BEASTS)
+
+
 PORTER = 3.0  # on foot, always open. JUDGEMENT within Cheng's porter / mule 7.5 (hill roads included; hill-to-flat mule 2.1) and the loads,
 # forager women 20-30 kg against a donkey's 65-100 kg (R§2, R§6); ORBIS has no porter cost (design1.md step 2)
 HILL = 0.452 / 0.213  # porter and pack animal in hills against the flat (Cheng 2024); blended by the world's hills (and peaks) layer, 0..1
@@ -577,7 +594,7 @@ class _Frame:
         has = own >= 0
         tab = lambda f, dflt: np.array([f(info[c]) if c in info else dflt for c in range(len(C))])  # noqa: E731 (per culture id)
         attr = lambda f: tab(f, False).astype(bool)[oc] & has  # noqa: E731
-        pack = attr(lambda r: "pack_animals" in r["know"])
+        pack = attr(lambda r: has_pack(r["know"]))
         wheel = attr(lambda r: "wheel" in r["know"])
         roads = attr(lambda r: "roads" in r["know"])
         canoes = attr(lambda r: "canoes" in r["know"])

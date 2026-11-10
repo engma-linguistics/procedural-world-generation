@@ -323,7 +323,10 @@ def test_catalogue_ingested_with_domains_origins_and_honest_sources():
     assert "unverified" in T["techs"]["sling"]["source"]  # (the hunt looked and could not confirm it)
     assert T["techs"]["copper"]["earliest_kyr"] == 6.95  # (the hunt's verified date for an existing tech)
     # the food chains reach the history's own crops and herds
-    assert "crop_vine" in T["techs"]["wine"]["needs"] and "animal_cattle" in T["techs"]["ox_traction"]["needs"]
+    assert "crop_vine" in T["techs"]["wine"]["needs"] and "animal_cattle" in T["techs"]["ox_traction"]["needs_any"]
+    # PW-1609: the other ridden and draft herd animals open riding and the plough's traction
+    assert {"animal_camel", "animal_yak", "animal_reindeer"} <= set(T["techs"]["riding"]["needs_any"])
+    assert {"animal_buffalo", "animal_yak"} <= set(T["techs"]["ox_traction"]["needs_any"])
 
 
 def test_stock_techs_come_only_from_the_history():
@@ -352,7 +355,7 @@ def test_needs_any_one_of_them():
             tt = TT.build([line("x", at=12.0, track=_pop(1e7, 1.0, 12.0))], None, None, seed=s, T=T2)
             got += "riding" in tt["known"]["x"]
         assert (got >= 5) if ok else got == 0, (mount, got)
-    assert TT._earth_ready(T, "riding") == T["techs"]["animal_horse"]["earliest_kyr"]  # (Earth's: the horse, not a fantasy mount)
+    assert TT._earth_ready(T, "riding") == T["techs"]["animal_horse"]["earliest_kyr"]  # (Earth's: the horse, not a fantasy mount nor the later-added camel, yak, reindeer)
 
 
 def test_contact_is_a_front_at_the_neolithic_speed():

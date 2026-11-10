@@ -19,7 +19,7 @@
 # body (PW-694): senses and body for the future cuisine pass; only what differs from the human-like baseline, inherited key by
 # key from the first parent. Keys: sweet (tastes sweet), milk (digests milk as adults; true/false, or a share 0..1 of the people for the traits that are population frequencies; it decides only fresh or fermented dairy), milks (false: the people does not milk its animals at all; default true, PW-784), capsaicin (feels chili heat), bitter and
 # smell (low | normal | high or keen), diet (herbivore | omnivore | carnivore | obligate_carnivore), raw_meat (eats raw meat
-# safely), cellulose (digests it), toxic (alliums: onion and garlic; theobromine: chocolate). Real analogues: felines taste no
+# safely), cellulose (digests it), toxic (alliums: onion and garlic; theobromine: chocolate; grapes: grapes and raisins, a canid body), alcohol_flush (the share with the ALDH2*2 flush, 0..1), fit (a table food id -> thrives | tolerates | poor | harmful, or {level, why}: sets the food fit by hand, PW-1607). Real analogues: felines taste no
 # sweet, birds feel no capsaicin, herding peoples keep lactase.
 
 [meta]
@@ -352,7 +352,7 @@ rain_mm = [400, 2500]
 id = "feline"
 sapient = "2 Myr"  # PW-965 sapiens node; PW-978: 2 Myr, 0.8 Myr before the first split
 name = "feline stem"
-body = { sweet = false, diet = "obligate_carnivore", raw_meat = true, smell = "keen", toxic = ["alliums", "theobromine"], teeth = "conical", hours = "crepuscular" }  # cats: no sweet receptor, strict meat, onion/garlic and chocolate poison; cats: tearing teeth, active at dawn and dusk
+body = { sweet = false, diet = "obligate_carnivore", raw_meat = true, smell = "keen", toxic = ["alliums", "theobromine"], teeth = "conical", hours = "crepuscular", fit = { alcohol = { level = "poor", why = "owner canon (culinary-dnd master reference section 7): the cat peoples barely drink; they ferment for vinegar, export and guests, and their intoxicant is an inhaled herb (a scent course)" } } }  # cats: no sweet receptor, strict meat, onion/garlic and chocolate poison; cats: tearing teeth, active at dawn and dusk; PW-1607: the alcohol fit is the owner's canon, authored
 parents = ["mammalian"]
 at = "4 Myr"
 temp_c = [16, 30]

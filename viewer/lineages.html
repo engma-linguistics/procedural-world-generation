@@ -159,22 +159,25 @@ const MILK_SHARES = [0.1, 0.25, 0.5, 0.75];
 const PORTAL_LABELS = { off: 'at their best habitat', random: 'through portals at random', sites: 'through portals at interesting sites', wandering: 'through wandering thinnings (drift, open, close)' };
 const BREEDING_LABELS = { slow: 'slow (2x a generation)', mammal: 'mammal (3.5x)', brood: 'brood (7x)' };  // (lane 78: Rmax per generation, life_history.BREEDING)
 const GENERATION_LABELS = { schedule: 'from the schedule', schedule_mass: 'fecundity ~ size', line: 'the lines\' own' };  // (milk may also be the lactase share of the people)
-const TOXIN_LABELS = { alliums: 'alliums (onion, garlic)', theobromine: 'theobromine (chocolate)' };
+const TOXIN_LABELS = { alliums: 'alliums (onion, garlic)', theobromine: 'theobromine (chocolate)', grapes: 'grapes and raisins (a canid body)' };
+const FIT_LEVELS = ['thrives', 'tolerates', 'poor', 'harmful'];  // (food_fit.LEVELS; PW-1607: a `fit` table food -> level, set by hand as 'alcohol=poor, grapes=harmful')
+const fitText = (f) => Object.entries(f || {}).map(([k, v]) => `${k}=${typeof v === 'string' ? v : v.level}`).join(', ');
 async function loadSchema() {
   const r = await fetch('../api/lineage-schema');
   if (!r.ok) throw new Error(`lineage-schema: HTTP ${r.status}`);
   const d = SCHEMA = await r.json();
   TRAITS = d.traits; PLACES = d.places; WANTS = [...d.pair_wants, ...PLACES]; GOODS = d.goods; GROUPS = d.groups; BAND = d.band;
   DEMO_DEFAULT = d.demo_default; DEMOGRAPHY = d.demography; DEMO_KEYS = Object.keys(DEMO_DEFAULT); BODY_DEFAULT = d.body_default; DEFAULTS = d.defaults;
-  const keys = [...Object.keys(BODY_LABELS), ...Object.keys(BODY_DEFAULT).filter((k) => !(k in BODY_LABELS) && k !== 'toxic')].filter((k) => k in BODY_DEFAULT);
-  BODY_FIELDS = keys.map((k) => [k, BODY_LABELS[k] || k, d.body_choices[k] || (k === 'milk' ? [true, false, ...MILK_SHARES] : [true, false])]);
+  const keys = [...Object.keys(BODY_LABELS), ...Object.keys(BODY_DEFAULT).filter((k) => !(k in BODY_LABELS) && k !== 'toxic' && k !== 'fit')].filter((k) => k in BODY_DEFAULT);
+  BODY_FIELDS = keys.map((k) => [k, BODY_LABELS[k] || k, d.body_choices[k] || (k === 'milk' ? [true, false, ...MILK_SHARES] : k === 'alcohol_flush' ? [0, 0.1, 0.25, ...MILK_SHARES.slice(2)] : [true, false])]);
   TOXINS = d.toxins.map((t) => [t, TOXIN_LABELS[t] || t]);
 }
 function bodyOf(r, seen = new Set()) {  // the body a line runs with: its own keys over its first parent's (spec.parse)
   if (seen.has(r.id)) return { ...BODY_DEFAULT };
   seen.add(r.id);
   const p = parentsOf(r).map((x) => byId()[x]).filter(Boolean)[0];
-  return { ...(p ? bodyOf(p, seen) : BODY_DEFAULT), ...(r.body || {}) };
+  const up = p ? bodyOf(p, seen) : BODY_DEFAULT;
+  return { ...up, ...(r.body || {}), fit: { ...(up.fit || {}), ...(r.body?.fit || {}) } };  // (fit merges key by key, spec.parse)
 }
 const bodyInput = (r, k, opts) => {  // (opts: the choices; a flag may also be a share of the people, 0..1)
   const own = r.body?.[k], inh = bodyOf({ ...r, body: {} })[k], lab = (v) => (v === true ? 'yes' : v === false ? 'no' : typeof v === 'number' ? Math.round(100 * v) + '% of the people' : String(v).replace('_', ' '));
@@ -573,6 +576,7 @@ function drawSide() {
       ${field('traits', TRAITS.map((t) => `<label class="trait"><input type="checkbox" data-trait="${t}" ${(r.traits || []).includes(t) ? 'checked' : ''}> ${t}</label>`).join(''))}
       <h3>Senses and body <span class="muted" style="font-weight:normal">(for the future cuisine pass; the bracketed value is inherited)</span></h3>
       <div class="row">${BODY_FIELDS.map(([k, lab, opts]) => field(lab, bodyInput(r, k, opts))).join('')}</div>
+      ${field('food fit by hand (food=level, ...)', `<input type="text" data-bfit value="${fitText(r.body?.fit)}" placeholder="${fitText(bodyOf({ ...r, body: {} }).fit) || 'alcohol=poor, grapes=harmful'}">`)}
       ${field('toxic to it', TOXINS.map(([t, lab]) => `<label class="trait"><input type="checkbox" data-btox="${t}" ${bodyOf(r).toxic.includes(t) ? 'checked' : ''}> ${lab}</label>`).join(''))}
       <h3>Demography (grey: from traits or parent)</h3>
       <div class="row">${field('kind factor (density ladder)', demoInput(r, 'kind', 0.05))}${field('expansion km/yr', `<input type="number" step="0.1" data-k="speed_kmyr" value="${r.speed_kmyr ?? ''}" placeholder="${inherited(r, 'speed_kmyr') ?? 0.5}">`)}</div>
@@ -618,6 +622,14 @@ function editLine(r, el) {
   if (el.dataset.b) {  // a body field: empty = inherit
     const k = el.dataset.b, o = BODY_FIELDS.find((f) => f[0] === k)[2], b = { ...(r.body || {}) };
     if (el.value === '') delete b[k]; else b[k] = o.find((v) => String(v) === el.value);
+    if (Object.keys(b).length) r.body = b; else delete r.body;
+    return;
+  }
+  if (el.hasAttribute('data-bfit')) {  // 'alcohol=poor, grapes=harmful' -> the fit table; empty = inherit
+    const f = {};
+    for (const part of el.value.split(',')) { const [a, b] = part.split('=').map((x) => x.trim()); if (a && FIT_LEVELS.includes(b)) f[a] = b; }
+    const b = { ...(r.body || {}) };
+    if (Object.keys(f).length) b.fit = f; else delete b.fit;
     if (Object.keys(b).length) r.body = b; else delete r.body;
     return;
   }
