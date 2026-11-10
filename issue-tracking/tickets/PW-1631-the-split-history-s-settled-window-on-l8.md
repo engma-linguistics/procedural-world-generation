@@ -1,4 +1,5 @@
 ---
+id: PW-1631
 title: The split history's settled window on L8 ends with 8% fewer people than the same world all on L7 (one draw; signal or chaos?)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane267b-pw1265
 blocked_by: []
 relates: [PW-1265, PW-1627]
 refs: [docs/review/refine-l8/split.md, "planet/lineages/history/handover.py::hand_over", "planet/lineages/history/handover.py::heads_split", "planet/lineages/recent.py::finer", "run 025b98 (split, scratch root l266/root, may be gone)", "run ebd83a (L7 baseline, scratch)", "world 5d09cc (scratch)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -28,3 +31,6 @@ on 98.7% of cells; 227,424 against 233,563 land cells), so carrying capacity on 
 ladder's density remade on the fine land in the first step after the hand-over (handover.hand_over).
 - [ ] pass rates/totals over re-rolled draws before calling it signal
 - [ ] if signal: name the mechanism; do not rescale to match L7
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-l8-settled-window-fewer-people.md (found by lane267b-pw1265).

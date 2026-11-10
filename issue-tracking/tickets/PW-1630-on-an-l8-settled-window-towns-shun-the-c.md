@@ -1,4 +1,5 @@
 ---
+id: PW-1630
 title: On an L8 settled window, towns shun the coast, islands lose their towns and cities fall to a third (measured; evidence for PW-1627)
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane267b-pw1265
 blocked_by: []
 relates: [PW-1627, PW-1265, PW-1584]
-refs: [docs/review/refine-l8/split.md, docs/review/refine-l8/side-coast.png, docs/review/refine-l8/side-river.png, docs/review/refine-l8/side-pass.png, "planet/lineages/settlements.py::_ring_index", "planet/lineages/trade_flow.py", "planet/lineages/history/handover.py", "run 025b98 (split, scratch root l266/root, may be gone)", "run ebd83a (L7 baseline, scratch)", "world 5d09cc (899985 refined to L8, scratch)"]
+refs: [docs/review/refine-l8/split.md, docs/review/refine-l8/side-coast.png, docs/review/refine-l8/side-river.png, docs/review/refine-l8/side-pass.png, "planet/lineages/settlements.py::_ring_index", planet/lineages/trade_flow.py, planet/lineages/history/handover.py, "run 025b98 (split, scratch root l266/root, may be gone)", "run ebd83a (L7 baseline, scratch)", "world 5d09cc (899985 refined to L8, scratch)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -31,3 +34,6 @@ Likely cause: the fixed ring counts PW-1627 lists (a town's footprint and pits, 
 thresholds that read heads per cell, so a quarter-area cell rarely reaches city size. Not tuned here (no thresholds moved).
 - [ ] after PW-1627's km conversions, rerun the split on 5d09cc and compare coast share, islands with a town and cities to
       the L7 baseline (same code); explain what remains
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-l8-ledger-coast-cities.md (found by lane267b-pw1265).
