@@ -236,7 +236,7 @@ class LivePolities(StandIns):
         on a cell that is a coast at this time)."""
         land = np.asarray(self.h._env_now["land"], bool)
         coastal = land & (nbr_reduce(self.g, np.maximum, (~land)[self.idx].astype(np.int8)) > 0)
-        return self.SE._site_factor(self.W, coastal, self.SE.CONST)
+        return self.SE._site_factor(self.W, coastal, self.SE.CONST, self.SE.coast_harbour(self.g, self.W["harbour"], ~land, coastal))
 
     def _hin(self, v, r):
         """The sum of v over each cell's cells within r rings (the cell itself included): a town's or a city's hinterland."""
@@ -379,8 +379,9 @@ class LivePolities(StandIns):
         land, comp, coastal, dens, farm, ice = (inp[k] for k in ("land", "comp", "coastal", "dens", "farm", "ice"))
         lead, second = (np.where(comp[x] < 255, comp[x].astype(np.int64), -1) for x in ("mix_lead", "mix_second"))
         lead_sh, second_sh = comp["mix_lead_share"].astype(float), comp["mix_second_share"].astype(float)
-        q = self.SE._site_factor(self.W, coastal, C)
-        water = ((np.asarray(self.W["harbour"]) > 0) & coastal) | (np.asarray(self.W["river_nav"]) > 0)
+        hb = self.SE.coast_harbour(g, self.W["harbour"], ~land, coastal)  # (PW-1640: the harbour water beside the coast's land cells)
+        q = self.SE._site_factor(self.W, coastal, C, hb)
+        water = (hb > 0) | (np.asarray(self.W["river_nav"]) > 0)
         al_x, stage_x = np.zeros(nl + 1, np.int64), np.zeros(nl + 1, np.int64)  # (by line; the last row, index -1, is none)
         hold_x = np.zeros(nl + 1, bool)  # (a mining people that knows 'mines': its halls)
         for k in np.unique(np.concatenate([lead, second, st["holder"].ravel()])).tolist():

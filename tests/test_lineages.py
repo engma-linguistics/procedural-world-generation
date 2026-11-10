@@ -3739,7 +3739,7 @@ def test_live_confederation_bands_a_peoples_villages_beside_a_foreign_state(fake
 
 def test_live_central_places_read_the_ledgers_site_factor(faketz, monkeypatch):
     """PW-1587 (lane 245): the history's central places are sized and chosen as the ledger's (settlements._site_factor): a harbour
-    on a cell that is a coast now makes its town bigger and the best of its ring on even ground; a harbour inland counts for nothing.
+    beside a cell that is a coast now makes its town bigger and the best of its ring on even ground; a harbour inland counts for nothing.
     Without a world every cell is an ordinary site (1)."""
     from planet.lineages import settlements as SE
     h, env, step, land = _live_setup(faketz, monkeypatch)
@@ -3751,7 +3751,8 @@ def test_live_central_places_read_the_ledgers_site_factor(faketz, monkeypatch):
              and lm[R.idx[R.off[c]:R.off[c + 1]]].sum() >= 3]
     inland = next(int(c) for c in np.flatnonzero(lm) if lm[R.idx[R.off[c]:R.off[c + 1]]].all() and deg[c] >= 5)
     c0 = coast[0]
-    R.W["harbour"][[c0, inland]] = 3.0
+    sea0 = next(int(x) for x in R.idx[R.off[c0]:R.off[c0 + 1]] if not lm[x])
+    R.W["harbour"][[sea0, inland]] = 3.0  # (PW-1640: the layer marks the harbour water; the shore beside it reads it)
     q = R._site()
     assert q[c0] == pytest.approx(1.0 + SE.CONST["SITE_HARBOUR"][3]) and q[inland] == 1.0
     sed = np.where(lm, 100.0, 0.0)
