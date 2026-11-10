@@ -153,9 +153,16 @@ class LivePolities(StandIns):
         return bool(x) and float(x[0]) >= ago - 1e-9
 
     # ------------------------------------------------------------ one polity step
-    def begin_step(self, step):
-        if step.epoch == "recent" and getattr(self.tech, "towns", None) is not None:  # (D52's town arms B, E: the live seats' towns, PW-1472)
+    def end_step(self, step):
+        """D52's town arms B, E (PW-1472): each people's town cells, counted at the end of the step on the state it ends with (the
+        state a frame stored at this step holds, as the ledger reads it); the tree reads them from the next step on (PW-1612 B).
+        On a step that stores a frame the tree also keeps the presence as stored, for its regions (LiveTech.at_frame, PW-1597)."""
+        if step.store and hasattr(self.tech, "at_frame"):
+            self.tech.at_frame()
+        if step.epoch == "recent" and getattr(self.tech, "towns", None) is not None:
             self.tech.note_towns(float(step.ago), self.town_cells(float(step.ago), fresh=step.store))
+
+    def begin_step(self, step):
         self.tech.step(step)  # (every step: the tree runs down to the history's time before anything reads it)
         if step.epoch != "recent":
             return
@@ -287,7 +294,7 @@ class LivePolities(StandIns):
     def town_cells(self, ago: float, fresh: bool = True) -> dict:
         """Each people's town cells now (PW-1472: the town footprint D52's arms B, E and S read, techtree.Calendar.towns), counted
         as the settlement ledger counts them (techspread.town_footprint): a cell counts for a people where it holds a *site* of town
-        size for its stage (settlements' TOWN_MIN). Call once per century step (begin_step does): the sites carry over.
+        size for its stage (settlements' TOWN_MIN). Call once per century step (end_step does): the sites carry over.
 
         PW-1608: the ledger's own rule (settlements.derive) on the ledger's own inputs, taken from the history now as a stored frame
         takes them: the land use's people and farmers per cell (landuse.frame_inputs, quantised as stored) and the cells'
@@ -306,8 +313,9 @@ class LivePolities(StandIns):
         blending of the frames on either side of a step.
 
         PW-1612: the ledger reads each step from the stored frame at or before it, held until the next (frames every 0.5 kyr); so
-        do these: `fresh` (begin_step: a step that stores a frame) takes the inputs from the history now, any other step keeps the
-        last ones taken. (The history takes them at the start of the frame's step, the frame at its end: one step, not kept.)
+        do these: `fresh` (end_step: a step that stores a frame) takes the inputs from the history now, any other step keeps the
+        last ones taken. PW-1612 B: end_step counts after the peoples move, so a frame's step takes the state that frame stores
+        (before, the start of its step: the state one century older).
         {people: cells}."""
         from ..settlements import CONST as C
         from .. import landuse as LU

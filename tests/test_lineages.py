@@ -4067,6 +4067,26 @@ def test_the_live_town_count_holds_a_frames_inputs_until_the_next(faketz, monkey
     assert out[0].get("folk", 0) > 0 and out[1] == out[0]
 
 
+def test_the_live_town_count_is_taken_at_the_end_of_a_step(faketz, monkeypatch):
+    """PW-1612 B: the live town count is taken at the end of a step, on the state the step ends with (what a frame stored at that
+    step holds, as the ledger reads it), not at its start; the tree reads it from the next step."""
+    import types
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    seen = []
+    R.tech = types.SimpleNamespace(known=R.tech.known, step=lambda s: None, secs=0.0, towns={"_cell_km2": 1.0},
+                                   note_towns=lambda ago, cells: seen.append((ago, cells)))
+    monkeypatch.setattr(R, "_step", lambda s: None)
+    monkeypatch.setattr(R, "_attitudes", lambda s: None)
+    monkeypatch.setattr(R, "town_cells", lambda ago, fresh=True: {"folk": int(h.p[h.idx["folk"]].sum() > 0), "fresh": fresh})
+    s = types.SimpleNamespace(epoch="recent", ago=1.0, dt=0.1, store=True)
+    R.begin_step(s)
+    assert seen == []  # (nothing counted at the start)
+    h.p[h.idx["folk"]] = 0.0  # (the peoples move during the step: folk gone)
+    R.end_step(s)
+    assert seen == [(1.0, {"folk": 0, "fresh": True})]
+
+
 def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
     """Lane 183: under one ruler, the hostile peoples living inside its land are co-subjects (no frontier); on unruled land the
     stand-in's frontier holds."""

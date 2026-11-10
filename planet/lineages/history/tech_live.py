@@ -38,6 +38,7 @@ class LiveTech:
         self.cal: TT.Calendar | None = None
         self._seen = None  # (the frames stored when the slow inputs were last read)
         self._G = None  # (the goods as cells over threshold: (names, deposit flags, goods x cells float32))
+        self._stored = None  # (the presence as the last stored frame holds it, at_frame; read once at the next feed)
         T = TT.load()
         self.T = T
         self.arms = TT.arms_of(T)
@@ -155,6 +156,11 @@ class LiveTech:
             out[l["id"]] = {g for g, x in zip(names, ok) if x}
         return out
 
+    def at_frame(self):
+        """At the end of a step that stores a frame (LivePolities.end_step): keeps the presence as that frame stores it, for the
+        regions the tree reads from the next step (the peoples may start or arrive before then: the frame is what it reads)."""
+        self._stored = self.h.presence_stored()
+
     def note_towns(self, ago: float, cells: dict):
         """Adds one step of each people's town cells ({people: cells}, LivePolities.town_cells) to the footprint the tree reads
         ({people: (agos oldest first, cells)}, techtree.town_cells_at); a people seen before and not now has none now."""
@@ -181,8 +187,13 @@ class LiveTech:
             seen = (len(h.contacts.agos) if h.contacts is not None else 0, sum(len(v) for v in h.tracks.values()))
             if seen != self._seen:  # (a frame was stored: the tracks, contacts and ranges moved)
                 self._seen = seen
-                cal.feed(lines or self.lines(), links=self._links(), have=self._have(),
-                         regions=cal.region_shares(h.p, h.cross.label))  # (its regions now, PW-1471: the range at the last stored frame)
+                # (its regions now, PW-1471: the range at the last stored frame, read as the frame stores it and the after-run tree
+                # reads it back, regions_through: the peoples as wholes on established cells. PW-1597 (lane 265, round22.md): the raw
+                # presence, every line's own and down to 0.05, gave a people a region learner on thin, unsettled fringes the frame
+                # does not hold, so the two trees split a people's pool differently from the deep past on)
+                P = self._stored if self._stored is not None else h.presence_stored()
+                self._stored = None
+                cal.feed(lines or self.lines(), links=self._links(), have=self._have(), regions=cal.region_shares(P, h.cross.label))
                 self._retime(float(step.ago))
             for l in cal.people:  # (starts and ends move on any step; a line not yet started waits)
                 lid = l["id"]
