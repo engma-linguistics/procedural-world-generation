@@ -3698,16 +3698,16 @@ def test_crops_cross_open_sea_only_with_colonists_or_ocean_ships():
     assert s.n_crossed == 1 and s.crossings[0]["craft"].startswith("canoe")
 
 
-def _live_setup(faketz, monkeypatch):
+def _live_setup(faketz, monkeypatch, places=True):
     """Lane 183 (PW-1434): the brake set-up with polities in the history switched on, every tech known (a lent calendar), a farming
-    people (folk) beside a small one it hates (the kobolds)."""
+    people (folk) beside a small one it hates (the kobolds). `places`: the ledger's places grown first (_grow_places, the seats)."""
     from planet.lineages.history import params as HP, polity_live as PL
     from planet.lineages import polities as PO
     monkeypatch.setattr(HP, "POLITIES_LIVE", True)
     h, env, step = _brake_setup(faketz)
     assert type(h.rule) is PL.LivePolities
     import types  # (a lent calendar in place of the tech tree inside the history, history.tech_live)
-    techs = ("chiefdoms", "proto_writing", "writing", "towns", "cities", "kingship", "law", "bronze", "iron")
+    techs = ("villages", "chiefdoms", "proto_writing", "writing", "towns", "cities", "kingship", "law", "bronze", "iron")
     h.rule.tech = types.SimpleNamespace(known={l.id: {t: [100.0, "test", None] for t in techs} for l in h.lines}, step=lambda s: None,
                                         secs=0.0)
     monkeypatch.setattr(PO, "WAR_P", 1.0)
@@ -3723,7 +3723,22 @@ def _live_setup(faketz, monkeypatch):
     h.p[fk][land[:300]] = 0.9
     h.p[kb][land[300:330]] = 0.9
     _sync_pm(h)
+    h._linger = np.zeros((len(h.lines), h.grid.n), bool)
+    from planet.lineages import landuse as LU  # (the land use's farmers, as a frame stores them: everyone farms here, as _farm_share)
+    _fi = LU.frame_inputs
+    monkeypatch.setattr(LU, "frame_inputs", lambda *a, **k: {**_fi(*a, **k), "farm": np.full(h.grid.n, 100, np.uint8)})
+    if places:
+        _grow_places(h)
     return h, env, step, land
+
+
+def _grow_places(h):
+    """PW-1596 (lane 281b): the live seats are the settlement ledger's places (town_cells, which need 'villages' first), founded over
+    FOUND_STEPS and grown toward their size step by step: grow them from nothing on the peoples as they stand, 4 to 1.3 kyr ago."""
+    import types
+    h.rule._towns_st = None
+    for ago in np.round(np.arange(4.0, 1.25, -0.1), 3):
+        h.rule.end_step(types.SimpleNamespace(epoch="recent", ago=float(ago), dt=0.1, store=True))
 
 
 def test_polities_in_the_history_seat_claim_and_conquer_with_the_winners_tolerance(faketz, monkeypatch):
@@ -4008,7 +4023,7 @@ def test_live_polities_send_a_strong_rows_expedition_across_a_gap(faketz, monkey
     paths read; here 1 km and no radius term, too short, against 1e5 km), and the read-out says why not when it falls short."""
     import types
     from planet.lineages import invasions as IV, polities as PO
-    h, env, step, land = _live_setup(faketz, monkeypatch)
+    h, env, step, land = _live_setup(faketz, monkeypatch, places=False)
     R = h.rule
     g = h.grid
     fk, kb = h.idx["folk"], h.idx["kob"]
@@ -4034,9 +4049,12 @@ def test_live_polities_send_a_strong_rows_expedition_across_a_gap(faketz, monkey
         h.p[:] = p0
         _sync_pm(h)
         R.__init__(h)
-        R.tech = types.SimpleNamespace(known={l.id: {t: [100.0, "test", None] for t in ("chiefdoms", "proto_writing", "writing", "towns",
-                                                                                         "cities", "kingship", "law")} for l in h.lines},
-                                       step=lambda s: None, secs=0.0)
+        R.tech = types.SimpleNamespace(known={l.id: {t: [100.0, "test", None] for t in ("villages", "chiefdoms", "proto_writing", "writing",
+                                                                                         "towns", "cities", "kingship", "law")}
+                                              for l in h.lines}, step=lambda s: None, secs=0.0)
+        _grow_places(h)  # (the seats: the ledger's places on these peoples)
+        h.p[:] = p0
+        _sync_pm(h)
         R.inv_in, R.inv_rows, R.inv_log = rows, IV.hook_rows(rows, R, 0.1), [IV.new_log()]
         for ago in (1.2, 1.1, 1.0, 0.9, 0.8, 0.7):
             R.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
@@ -4080,7 +4098,7 @@ def test_the_live_tree_reads_the_live_seats_as_its_town_footprint(faketz, monkey
     from planet.lineages.history import tech_live as TL
     T0 = TT.load()
     monkeypatch.setattr(TT, "load", lambda path=None: {**T0, "defaults": {**T0["defaults"], "contact_arms": "E"}})
-    h, env, step, land = _live_setup(faketz, monkeypatch)
+    h, env, step, land = _live_setup(faketz, monkeypatch, places=False)
     R = h.rule
     for kn in R.tech.known.values():
         kn["villages"] = [100.0, "test", None]  # (the ledger's tiers: villages first, no towns without them)
@@ -4111,7 +4129,7 @@ def test_the_live_town_count_holds_a_frames_inputs_until_the_next(faketz, monkey
     step that stores a frame (fresh) and keeps them on the steps between, whatever the peoples do meanwhile."""
     out = []
     for gone in (False, True):
-        h, env, step, land = _live_setup(faketz, monkeypatch)
+        h, env, step, land = _live_setup(faketz, monkeypatch, places=False)
         R = h.rule
         for kn in R.tech.known.values():
             kn["villages"] = [100.0, "test", None]
