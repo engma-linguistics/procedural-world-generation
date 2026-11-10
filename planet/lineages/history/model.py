@@ -245,6 +245,7 @@ class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, O
             for l in order:
                 self._advance(l, step, env, tags, corr, mix, Ks)
             self._hunts(step)  # (the old enmities hunt each other where their lands meet: events only, history.hunts)
+            self.rule.end_step(step)  # (the live polities' town count, on the state the step ends with, PW-1612 B)
             if step.store or si == nsteps - 1:
                 frames.append(self._frame(step, env))
             if si % 25 == 0:

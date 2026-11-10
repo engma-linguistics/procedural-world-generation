@@ -512,17 +512,24 @@ def _series(line: dict, pops: dict) -> tuple | None:
     return None
 
 
+def _frame_of(a, ago: float) -> int:
+    """The index of a series' stored frame at or before a time (frames oldest first; the first before any). PW-1597 (lane 265,
+    round22.md): held until the next frame, as the tree inside the history reads it (it has no later frame yet); drawn straight
+    toward the next frame, the after-run tree read up to a frame gap of its future (0.5 kyr recent, up to 0.5 Myr deep)."""
+    return max(int(np.searchsorted(-np.asarray(a), -ago + 1e-9)) - 1, 0)
+
+
 def _at(ser, ago: float) -> tuple[float, float]:
-    """(population, density) of a series at a time (linear between frames; the nearest end outside them)."""
-    a, p, d = ser[:3]
-    return float(np.interp(-ago, -a, p)), float(np.interp(-ago, -a, d))
+    """(population, density) of a series at a time: the stored frame at or before it (_frame_of)."""
+    j = _frame_of(ser[0], ago)
+    return float(ser[1][j]), float(ser[2][j])
 
 
 def _area_at(ser, ago: float) -> float | None:
-    """The range, Mkm2, of a series at a time; None: not known."""
+    """The range, Mkm2, of a series at a time (the stored frame at or before it); None: not known."""
     if ser is None:
         return None
-    v = float(np.interp(-ago, -ser[0], ser[3]))
+    v = float(ser[3][_frame_of(ser[0], ago)])
     return v if v > 0 else None
 
 

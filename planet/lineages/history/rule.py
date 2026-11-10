@@ -51,6 +51,9 @@ class StandIns:
         """At the start of each step, before the presences are read (polities in the history run their step here: history.polity_live).
         The stand-ins have nothing to do."""
 
+    def end_step(self, step):
+        """At the end of each step, after the peoples have moved (the state a stored frame holds); the stand-ins have nothing to do."""
+
     def pacification(self, k, step) -> float:
         """G, 0..1: the share of line k's own violence a state leaves (1 stateless). Stand-in: 1 / (1 + STATE_Q x tech level x farm
         share), a farming people with the tech forms states (Gómez et al. 2016; Turchin 2009's -alpha S)."""

@@ -10,6 +10,22 @@ from .params import COMPOSITION_TWO_PCT, HYBRID_FROM_KYR, LEARNED_MIN
 
 
 class FrameMixin:
+    @staticmethod
+    def _presence(Pw) -> tuple:
+        """The presence table's rows of a frame (output.write_presence): (line, cell) where the whole people is established (EST),
+        sorted by line then cell, and its % of the cell's habitat."""
+        pl, pc = np.nonzero(Pw >= EST)
+        return pl.astype(np.uint16), pc.astype(np.uint32), np.round(np.clip(Pw[pl, pc], 0, 1) * 100).astype(np.uint8)
+
+    def presence_stored(self) -> np.ndarray:
+        """Each people's presence now as a frame stores it and the after-run read-outs read it back (lines x cells, 0..1): the
+        peoples as wholes (groups rolled in, overlays out but contact hybrids living on), established cells only, in whole %."""
+        natives = np.array([not l.overlay for l in self.lines])
+        pl, pc, ps = self._presence(self.rollup(np.where(natives[:, None] | self._linger, self.p, 0)))
+        out = np.zeros(self.p.shape, np.float32)
+        out[pl.astype(np.int64), pc.astype(np.int64)] = ps / 100.0
+        return out
+
     def _frame(self, step, env) -> dict:
         natives = np.array([not l.overlay for l in self.lines])
         own = natives[:, None] | self._linger  # (a contact hybrid living on as a people of its own counts there)
@@ -20,8 +36,7 @@ class FrameMixin:
         mixn = (Pw >= 0.25).sum(0).astype(np.uint8)
         # every people's presence (lane 109, PW-670): each whole people, megafauna and contact hybrids living on included, on every cell
         # where it is established (EST): (line, cell) sorted by line then cell, and its % of the cell's habitat (output.py: a sparse table)
-        pl, pc = np.nonzero(Pw >= EST)
-        presence = (pl.astype(np.uint16), pc.astype(np.uint32), np.round(np.clip(Pw[pl, pc], 0, 1) * 100).astype(np.uint8))
+        presence = self._presence(Pw)
         O = np.where(~own, self.p, 0)
         ov = np.where(O.max(0) >= EST, O.argmax(0), 255).astype(np.uint8)
         # the cell's composition (PW-689) and the body flags given as a share of a people (PW-701)
