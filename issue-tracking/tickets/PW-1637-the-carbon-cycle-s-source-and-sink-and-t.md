@@ -2,7 +2,7 @@
 id: PW-1637
 title: The carbon cycle's source and sink and the ice sheets' budgets still add up cells as if all were the mean cell
 type: task
-status: todo
+status: done
 parent: null
 milestone: later
 subsystem: climate
@@ -38,4 +38,5 @@ history: goldens, scorecard, and a fork screen against main's spread and the fp-
 - [ ] no carbon-cycle or ice-budget total in earth.py adds per-cell depths or rates without each cell's area
 
 ## Updates
+- 2026-11-10: Status todo -> done. Merged (lane 271): carbon source, sink and ice budgets on Grid.area_weight; same-state YARDSTICK shift mean -0.0015 (s.e. 0.036), no re-fit; fork screen 4 seeds no consistent sign; scorecard vs c06326de no hard failure, Earth identical.
 - 2026-11-10: Created from inbox draft draft-carbon-and-ice-budgets-true-cell-areas.md (found by lane268).

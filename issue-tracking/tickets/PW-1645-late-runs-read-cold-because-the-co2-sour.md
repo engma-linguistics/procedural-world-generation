@@ -1,7 +1,8 @@
 ---
+id: PW-1645
 title: "Late runs read cold because the CO2 source is ~92% arcs and its reference is learnt in the start's fast-plate years: rebalance the source or learn the reference later?"
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: later
 subsystem: tectonics
@@ -11,6 +12,8 @@ found_by: lane271
 blocked_by: []
 relates: [PW-1158, PW-969, PW-895, PW-830, PW-1224]
 refs: ["planet/tectonics/earth.py::global_temperature", "planet/tectonics/earth.py::references", "planet/tectonics/earth.py::YARDSTICK", "planet/tectonics/crust.py::arc_growth", "planet/tectonics/events.py::strength", "planet/tectonics/diag.py::Recorder.temperature", tools/ice_diag.py, tools/yardstick.py, docs/review/v1-cut/co2-crash-diagnosis.md, docs/review/tectonics/margin/note-arc-co2.md, docs/overview.md, "Marty & Tolstikhin 1998 (ridge and arc C fluxes)", "Brune et al. 2017 (continental rift CO2)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -75,3 +78,7 @@ the trench closures. Neither is a clamp; both need the paired judge on the two-t
 ~60-70%).
 - [ ] decision taken; if A or B, the share of the source from arcs over 300-1000 Myr on 6+ L6 seeds is <= ~60% and
       the frozen-over count on the paired judge does not rise
+
+## Updates
+- 2026-11-10: Status needs-decision -> todo. Coordinator call (owner delegates geophysics): option D first, learn the source's reference later or over a longer window, so the start's fast-plate years stop defining 'normal'. A (Earth-like ridge share) is the follow-up if D leaves the late cold tail; B (continental degassing) parked. Needs the paired judge and a YARDSTICK re-fit.
+- 2026-11-10: Created from inbox draft draft-late-source-arc-dominated.md (found by lane271).
