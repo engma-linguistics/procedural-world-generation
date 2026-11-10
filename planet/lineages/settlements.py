@@ -101,7 +101,7 @@ CONST = {
     "RIVER_LOW_M": 300.0,   # m: river sites below this are on a floodplain that can shift
     "HAND_KYR": 1.0,        # an abandonment within this of a change of hands is 'driven out'
     "JITTER": 0.35,         # a site's spot: up to this x the cell spacing from the cell's centre (seeded)
-    "SERIES_KEEP": 40,      # points of a site's population series kept
+    "SERIES_KEEP": 40,      # points of a site's population series kept (plus each turn of its size class, _tier_turns)
     "QUARTER_MIN_PCT": 2,   # a people under this % of a place is left out of its 'who lives here'
     "SECOND_MIN": 0.05,     # a cell's second people may found a place of its own where it is this share of the heads or more (PW-1105) ...
     "MINORITY_SHARE": 0.1,  # ... gathering this share of its settled heads (a minority clusters in one place, where a cell's chief place
@@ -182,6 +182,28 @@ NONE = 255
 def tier_of(pop: float, c: dict, stage: int = 4) -> int:
     """0 none, 1 village, 2 town, 3 city for `pop` people held by a people at `stage` (see CONST TOWN_MIN)."""
     return 3 if pop >= c["CITY_MIN"] else 2 if pop >= c["TOWN_MIN"][stage] else 1 if pop >= c["ABANDON"] else 0
+
+
+def _tier_turns(ser: list, bands: list) -> list[int]:
+    """The points of a site's full series (oldest first) where the size class it reads back as changes, and the point before each:
+    a village, town or city by its people against the size bands in force then (the readers' rule: polities._site_tables'
+    town_min, the viewer's TIER). PW-1597 (lane 278, round23.md): the series is thinned to SERIES_KEEP points and read back by
+    straight lines between them, so a place capped a person under a town until its people learned towns (999, then 1,097 two
+    steps on) read as a town a step early; the hobgoblins' first towns at L7 899985 seed 10 came a century before the ledger
+    itself made them, and their writing 443 years earlier than on the same history read step by step. Kept, every step reads
+    back on the right side of each threshold."""
+    if not bands:
+        return []
+    def cls(a, p):
+        b = [x for x in bands if x[0] >= a - 1e-6]
+        tm, cm = (b[-1][1], b[-1][2]) if b else (bands[0][1], bands[0][2])
+        return 3 if p >= cm else 2 if p >= tm else 1
+    k = [cls(a, p) for a, p in ser]
+    out = []
+    for i in range(1, len(k)):
+        if k[i] != k[i - 1]:
+            out += [i - 1, i]
+    return out
 
 
 def _tech_dates(m: dict, n_lines: int) -> np.ndarray:
@@ -976,7 +998,8 @@ def _document(sites, c, g, ids, rank, lms, steps, area, secs) -> dict:
         who = (s["_end_who"] if alive else s["_peak_who"]) or {}
         ser = s["series"]
         if len(ser) > c["SERIES_KEEP"]:
-            keep = np.unique(np.r_[np.linspace(0, len(ser) - 1, c["SERIES_KEEP"]).round().astype(int), int(np.argmax([p for _, p in ser]))])
+            keep = np.unique(np.r_[np.linspace(0, len(ser) - 1, c["SERIES_KEEP"]).round().astype(int), int(np.argmax([p for _, p in ser])),
+                                   np.asarray(_tier_turns(ser, s["bands"]), int)])
             ser = [ser[i] for i in keep]
         mine = s["kind"] in ("mine", "pit")  # (the two small-works kinds: no town sizes)
         rec = {"id": s["id"], "kind": s["kind"], "cell": s["cell"], "lat": s["lat"], "lon": s["lon"], "place": place,
