@@ -36,11 +36,12 @@ Found by grepping planet/lineages for ring loops and cell-count constants (lane 
 - history/dispersal.py: a front advances a ring of cells per hop (HOP_EVERY_KYR), so the deep history's spread speed in km
   per kyr halves on L8. Not a problem while the deep history stays on L7 (the agreed split), but it is if the whole history
   is ever run on a refined grid.
-- [ ] each in km with rings_for / cells_for, L7 counts unchanged (extend tests/test_people_units.py)
+- [x] each in km with rings_for / cells_for, L7 counts unchanged (extend tests/test_people_units.py)
 
 If never done: on the December L8 refine, towns and cities read half the country around them, pits are four times as dense
 and coastal boats reach half as far as on the same planet at L7, so the settled map changes with the grid, not the world.
 
 ## Updates
+- 2026-11-10: Lane 270 (5bd8e407): every ring on the list in km (settlements TOWN_KM/CITY_KM/PIT_KM, trade_flow COAST_BOAT_KM, polities HEMMED_KM with the live history's ring table, tags ISLAND_FLOOR_KM2), L7 counts unchanged (tests/test_people_units.py, goldens pass). seafood's one-ring sea reads left as adjacency; dispersal's hop left (deep history stays on L7; lane 269c owns that file). Split rerun: cities 119 -> 244 (L7 same code 283), the ledger's rings carrying it (split.md §6). Done for the conversions; the coast remainder is PW-1630.
 - 2026-11-10: Evidence from the first split run is PW-1630 (coast 7.0% -> 1.9%, cities to a third, islands lose towns on L8); take both together.
 - 2026-11-10: Created from inbox draft draft-settled-window-grid-rings.md (found by lane266-pw1584).

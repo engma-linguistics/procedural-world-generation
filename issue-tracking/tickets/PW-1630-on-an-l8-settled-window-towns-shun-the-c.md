@@ -36,4 +36,5 @@ thresholds that read heads per cell, so a quarter-area cell rarely reaches city 
       the L7 baseline (same code); explain what remains
 
 ## Updates
+- 2026-11-10: Lane 270 rerun after PW-1627 and the refine's detail on the prolonged frames (split 727c35 on 69958b vs L7 2e0a95, same code; split.md §6): cities 244 vs 283, islands with a town 11 vs 21, on the fine coast 4.2% vs 7.3% (within ~60 km of the sea 8.8% vs 14.8%, the land's share 13.2%), rivers 34.6% vs 34.4%, none in the water. Cities fixed by the km rings; the coast fix took the coast from 1.9% to ~4%. Still open: towns under-sit the L8 coast and small islands by ~40%. First suspect to rule out: the harbour bonus that never fires (inbox draft-ledger-harbour-on-sea-cells.md).
 - 2026-11-10: Created from inbox draft draft-l8-ledger-coast-cities.md (found by lane267b-pw1265).
