@@ -19,10 +19,9 @@
 - lane 269f: merge lane269b (D72 C, test rewrite).
 - lane 277: "everyone" preset extinction experiment (not for merge).
 - lane 278: states in the history (PW-1597/1625/1596), owner wants them on.
-- lane 279: logistics proposal (campaign reach, sieges, arcane provisioning).
 - lane 276: v0.3.0 close-out (PW-756 boxes, PW-785 re-check); coordinator tags v0.3.0 after.
 Parked: states switch PW-1596/1597; PW-1158/1645.
-Waiting on Daniel: nothing.
+Waiting on Daniel: D73-D76 (supply).
 
 ## Milestones (2026-11-09)
 | milestone | open | done |

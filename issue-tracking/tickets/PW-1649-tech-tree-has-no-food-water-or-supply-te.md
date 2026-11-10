@@ -1,7 +1,8 @@
 ---
+id: PW-1649
 title: Tech tree has no food, water or supply techs on the arcane side (and no field rations or depots)
 type: task
-status: todo
+status: needs-decision
 parent: PW-661
 milestone: null
 subsystem: culture
@@ -11,6 +12,8 @@ found_by: lane279
 blocked_by: []
 relates: [PW-1449, PW-1478, PW-1108]
 refs: [docs/review/culture/polities/logistics-proposal.md, planet/lineages/samples/techtree.toml, "planet/lineages/trade_flow.py::has_pack", planet/lineages/polities.py, planet/lineages/invasions.py]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -26,3 +29,6 @@ logistics scalar lands (sibling draft); they change no output.
 - [ ] nodes added with gate, tier, domains, fantasy mode and source text; tech tree builds without warnings
 - [ ] `uv run pytest -q` passes; showcase trees rebuilt
 - [ ] if never done: fantasy worlds look identical to mundane ones in war reach and siege
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-arcane-provisioning-techs.md (found by lane279).

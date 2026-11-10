@@ -1,5 +1,6 @@
 ---
-title: War reach ignores food and water: no logistics scalar, no supply-distance falloff, no siege length
+id: PW-1650
+title: "War reach ignores food and water: no logistics scalar, no supply-distance falloff, no siege length"
 type: story
 status: needs-decision
 parent: PW-661
@@ -11,6 +12,8 @@ found_by: lane279
 blocked_by: []
 relates: [PW-1449, PW-1478, PW-1479, PW-1108, PW-1457]
 refs: [docs/review/culture/polities/logistics-proposal.md, planet/lineages/polities.py, planet/lineages/invasions.py, planet/lineages/history/polity_live.py, docs/review/culture/polities/invasions_reach.md]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## In plain words
@@ -26,3 +29,6 @@ for Daniel are in section 5 of the proposal: magic strength against mundane (lea
 strong spells only), what LOG = 1 means (lean: D56 at iron-age tech), and partial conquest versus all-or-nothing war (lean: partial).
 - [ ] decisions 1-4 answered
 - [ ] measures in proposal section 4 pass on five re-rolled draws, same commit on/off
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-logistics-reach-and-siege.md (found by lane279).

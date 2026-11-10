@@ -92,6 +92,41 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <p class="sub">Pick an option or leave it alone: anything you don't touch keeps my lean. Notes save as you type, with or without a pick. I read them every refresh and reply on the card.</p>
 <p class="meter" id="meter">Loading your answers…</p>
 <p class="offline" id="offline" hidden>Answers can't be saved in this view (signed out or storage unavailable). You can still read everything; tell me in chat.</p>
+<p><b>About the four supply cards below (D73–D76):</b> the proposal is in <code>docs/review/culture/polities/logistics-proposal.md</code>. Each state gets one supply number from the techs its people know: what it can carry (pack animals, carts, ships), what it can store (drying, salting, granaries, depots) and how well it can organise (record-keeping, relays, roads). That number stretches how far it can campaign (D56's ~1,000 km is today's fixed figure), how long it can sit outside a town, and how much a front weakens the further it is from home or a supply depot (a held river or coast counts as a supply line). New techs: waterskins, field rations, army depots; on the magic side, purifying water, keeping charms, conjured food and water, storage bigger inside than out, and priests who provision. Sources: Engels (pack animals bind; an army carries about a week to ten days of food) and van Creveld (armies eat only while they move) are checked in outline; all multipliers are my judgement and marked so. Nothing is built yet.</p>
+<div class="card" id="d73"><div class="id">D73 · PW-1650 · how strong is magical supply?</div>
+<p><b>In plain words:</b> Conjured food and water could make an army nearly independent of supply lines, which would flatten the whole pattern you want (small early raids, then longer campaigns as supply grows).</p>
+<ul>
+<li><b>A.</b> Same scale as ordinary supply: another tech among many.</li>
+<li><b>B.</b> Strong: high magic transforms campaigning.</li>
+<li><b>C (lean).</b> Capped: magic adds at most about half again on top of the ordinary supply stack, so carts, roads and depots still matter.</li>
+</ul>
+<div class="ask" data-id="D73" data-opts="A:Same as ordinary|B:Strong|C:Capped at ~1.5x*"></div>
+</div>
+<div class="card" id="d74"><div class="id">D74 · PW-1649 · is magical supply limited by how many casters a people has?</div>
+<p><b>In plain words:</b> A people with few spellcasters shouldn't feed a huge army by spell.</p>
+<ul>
+<li><b>A.</b> No: knowing the tech is enough.</li>
+<li><b>B.</b> Yes, for all of it.</li>
+<li><b>C (lean).</b> Yes for the strong spells only (conjuring, pocket storage, priestly provisioning); purifying water and keeping charms are cheap and spread flat.</li>
+</ul>
+<div class="ask" data-id="D74" data-opts="A:No limit|B:Limited, all of it|C:Limited, strong spells only*"></div>
+</div>
+<div class="card" id="d75"><div class="id">D75 · PW-1650 · what does "normal" supply mean?</div>
+<p><b>In plain words:</b> The scale needs one anchor point.</p>
+<ul>
+<li><b>A (lean).</b> Today's ~1,000 km campaign reach (your D56) is what an iron-age state manages; earlier states reach less, later ones more.</li>
+<li><b>B.</b> Today's ~1,000 km is a ceiling everyone grows toward.</li>
+</ul>
+<div class="ask" data-id="D75" data-opts="A:Iron-age = today's reach*|B:Today's reach is the ceiling"></div>
+</div>
+<div class="card" id="d76"><div class="id">D76 · PW-1650 · can a neighbour take just the edges?</div>
+<p><b>In plain words:</b> Today a war is all-or-nothing: a polity is conquered whole or not at all. Your "nipped at by neighbouring powers" needs edges to be taken piecemeal.</p>
+<ul>
+<li><b>A (lean).</b> Partial conquest: a stronger neighbour takes only the land where it is locally stronger (thin, far-from-home edges first). The biggest step: it changes every history.</li>
+<li><b>B.</b> Keep all-or-nothing; over-extension shows only as faster collapse and breakaway provinces.</li>
+</ul>
+<div class="ask" data-id="D76" data-opts="A:Partial conquest*|B:All-or-nothing"></div>
+</div>
 <div class="card" id="general"><div class="id">ANYTHING ELSE</div>
 <p>Questions, requests, "look at X", priorities: anything that isn't a card.</p>
 <div class="ask" data-id="general"></div></div>
@@ -115,13 +150,12 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <tr><td>269f · stranded peoples: merging your D72 (C)</td><td>Bar now 0.5 Mkm²; merging the birth-room fix and rewriting the old test to compare people per km².</td></tr>
 <tr><td>277 · experiment: everyone at once</td><td>Your ask: a preset with every playable species I can come up with, on a believable family tree, with the "stranded peoples get moved" rescue switched off so peoples can die out under pressure. Run on several kinds of world (plus one run with the rescue on, to separate crowding from extinction). Not tuned, not merged: a write-up of who dies, who explodes and what breaks.</td></tr>
 <tr><td>278 · states inside the history</td><td>Back from the back of the line on your say-so. First: on the worst test world, find the very first point where the switch-on calendar parts from the switch-off one, and whether that's real history (states changing towns and contacts) or bookkeeping (the two calendars reading different inputs). If it's real, the switch-on calendar may simply be the right one, and I'll bring you that as a card. If it's bookkeeping, fix it and switch it on.</td></tr>
-<tr><td>279 · campaigns and supply (proposal)</td><td>A sourced write-up, before any code: how far an army can campaign and how long it can hold a siege, set by supply. That supply grows with food keeping, pack animals, carts, roads and ships, and on the magic side with new techs for purifying water, conjuring food and keeping supplies. The pattern to get: small early kingdoms raiding nearby, longer campaigns as supply grows, and stretched powers losing their edges to neighbours. Cards for you on the real choices.</td></tr>
 <tr><td>276 · closing v0.3.0</td><td>Last v0.3.0 items: three small pieces of scheduled events (a "resented" kind, direction in reputation text, the tree editor keeping event rows) and a re-check on today's code that Seven Meals still has its standing antelope-kin empire and fallen cervid-kin empire. Then I tag.</td></tr>
 <tr><td>274 · physics: L8 soils</td><td>An L8 refine of a world has thinner, boggier soil than the same world on L7 (mean depth 1.31 → 0.99 m, peat on 31% → 40% of the land), so its farmland is 11% poorer: erosion reads the slope over the cell spacing, and finer cells see steeper slopes. The zoom already corrects this for its pixels; the refine doesn't. Diagnosis first, then read the slope at a fixed scale.</td></tr>
 </table></div>
 
 <h2 id="settled">Settled since last night</h2>
-<ul><li><b>Cleared at 11:45 on 10 November</b>: you're caught up; new items start tonight.</li>
+<ul><li><b>Campaigns and supply: the proposal is written</b> (lane 279, merged; PW-1649, PW-1650). Four choices for you above (D73–D76); building starts once you've answered.</li>
 </ul>
 
 <footer>Desk v240 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
