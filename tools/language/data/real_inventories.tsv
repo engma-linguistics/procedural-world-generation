@@ -1,0 +1,244 @@
+# source: https://github.com/phoible/dev (data/phoible.csv); https://phoible.org
+# licence: CC-BY-SA 3.0 (PHOIBLE 2.0, Moran & McCloy eds. 2019); this extract shares that licence.
+# script: tools/language/real_inventory.py --extract; the inventories tools/language/real_inventory.py LANGS uses.
+inventory	language	dialect	source	phoneme	class	marginal
+43	Hawaiian	NA	spa	h	consonant	NA
+43	Hawaiian	NA	spa	k	consonant	NA
+43	Hawaiian	NA	spa	l	consonant	NA
+43	Hawaiian	NA	spa	m	consonant	NA
+43	Hawaiian	NA	spa	n	consonant	NA
+43	Hawaiian	NA	spa	p	consonant	NA
+43	Hawaiian	NA	spa	s	consonant	NA
+43	Hawaiian	NA	spa	w	consonant	NA
+43	Hawaiian	NA	spa	ʔ	consonant	NA
+43	Hawaiian	NA	spa	a	vowel	NA
+43	Hawaiian	NA	spa	aː	vowel	NA
+43	Hawaiian	NA	spa	eː	vowel	NA
+43	Hawaiian	NA	spa	i	vowel	NA
+43	Hawaiian	NA	spa	iː	vowel	NA
+43	Hawaiian	NA	spa	o	vowel	NA
+43	Hawaiian	NA	spa	oː	vowel	NA
+43	Hawaiian	NA	spa	u	vowel	NA
+43	Hawaiian	NA	spa	uː	vowel	NA
+43	Hawaiian	NA	spa	ɛ	vowel	NA
+823	Swahili	NA	aa	b	consonant	FALSE
+823	Swahili	NA	aa	d	consonant	FALSE
+823	Swahili	NA	aa	f	consonant	FALSE
+823	Swahili	NA	aa	h	consonant	FALSE
+823	Swahili	NA	aa	j	consonant	FALSE
+823	Swahili	NA	aa	k	consonant	FALSE
+823	Swahili	NA	aa	l	consonant	FALSE
+823	Swahili	NA	aa	m	consonant	FALSE
+823	Swahili	NA	aa	mb	consonant	FALSE
+823	Swahili	NA	aa	n	consonant	FALSE
+823	Swahili	NA	aa	nd	consonant	FALSE
+823	Swahili	NA	aa	nz	consonant	FALSE
+823	Swahili	NA	aa	n̠d̠ʒ	consonant	FALSE
+823	Swahili	NA	aa	p	consonant	FALSE
+823	Swahili	NA	aa	r	consonant	FALSE
+823	Swahili	NA	aa	s	consonant	FALSE
+823	Swahili	NA	aa	t	consonant	FALSE
+823	Swahili	NA	aa	t̠ʃ	consonant	FALSE
+823	Swahili	NA	aa	v	consonant	FALSE
+823	Swahili	NA	aa	w	consonant	FALSE
+823	Swahili	NA	aa	x	consonant	TRUE
+823	Swahili	NA	aa	z	consonant	FALSE
+823	Swahili	NA	aa	ð	consonant	TRUE
+823	Swahili	NA	aa	ŋ	consonant	FALSE
+823	Swahili	NA	aa	ŋɡ	consonant	FALSE
+823	Swahili	NA	aa	ɟ	consonant	FALSE
+823	Swahili	NA	aa	ɡ	consonant	FALSE
+823	Swahili	NA	aa	ɣ	consonant	TRUE
+823	Swahili	NA	aa	ɱv	consonant	FALSE
+823	Swahili	NA	aa	ɲ	consonant	FALSE
+823	Swahili	NA	aa	ʃ	consonant	FALSE
+823	Swahili	NA	aa	θ	consonant	TRUE
+823	Swahili	NA	aa	a	vowel	FALSE
+823	Swahili	NA	aa	i	vowel	FALSE
+823	Swahili	NA	aa	u	vowel	FALSE
+823	Swahili	NA	aa	ɔ	vowel	FALSE
+823	Swahili	NA	aa	ɛ	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	f	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	j	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	k	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	kʰ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	l	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	m	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	n	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	p	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	pʰ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	s	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	t	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ts	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	tsʰ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	tɕ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	tɕʰ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	tʰ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	t̠ʃ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	t̠ʃ̺ʰ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	w	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	x	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ŋ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ɕ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ɹ	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ʃ̺	consonant	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	˦	tone	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	˦˨	tone	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	˧˦	tone	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	˧˨˧	tone	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	a	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ai	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	au	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ei	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	i	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ia	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	iau	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ie	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	iou	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	iu	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ou	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	u	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ua	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	uai	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	uei	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	uo	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	uə	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	y	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ye	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ə	vowel	FALSE
+1047	Standard Chinese; Mandarin	Beijing	ph	ɤ	vowel	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	b	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	d̙ˤ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	d̪	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	d̪ʒ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	f	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	h	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	j	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	kʰ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	l	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	lˤ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	m	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	n̪	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	q	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	r	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	s	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	s̙ˤ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	t̪ʰ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	t̪̙ˤ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	w	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	xʀ̥	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	z	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	ð̪	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	ð̪̙ˤ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	ħ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	ɣ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	ʃ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	ʔ	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	ʕ̙	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	θ̪	consonant	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	a	vowel	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	ai	vowel	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	au	vowel	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	aː	vowel	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	i	vowel	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	ii̯	vowel	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	u	vowel	FALSE
+2157	Arabic	Safad, Beirut, Damascus, Kuwait	ph	uu̯	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	b	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	d	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	d̠ʒ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	f	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	h	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	j	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	kʰ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	l	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	m	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	n	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	pʰ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	s	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	tʰ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	t̠ʃ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	v	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	w	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	z	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ð	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ŋ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ɡ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ɹ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ʃ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ʒ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	θ	consonant	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	aɪ	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	aʊ	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	eɪ̯	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	iɪ	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	oʊ	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	uː	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	æ	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ɑ	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ɔɪ	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ə	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ɚː	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ɛ	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ɪ	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ʊ	vowel	FALSE
+2175	English (American)	Western and Mid-Western US; Southern California	ph	ʌ	vowel	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	b	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	d	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	d̠	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	h	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	j	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	k	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	m	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	n	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	p	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	s	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	t	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	ts	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	w	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	z	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	ɡ	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	ɴ	consonant	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	a	vowel	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	e	vowel	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	i	vowel	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	o	vowel	FALSE
+2196	Japanese	Japanese (Tokyo or other areas with similar pitch accent systems)	ph	u	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	b	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	d̻	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	f	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	l	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	m	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	n	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	p	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	r	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	s	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	t̠ʃ	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	t̻	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	x	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	ɟʝ	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	ɡ	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	ɲ	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	ɾ	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	ʎ	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	θ	consonant	FALSE
+2210	Spanish	Castilian Spanish	ph	a	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	ai̯	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	au̯	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	e	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	ei̯	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	eu̯	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	i	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	ia	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	ie	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	io	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	iu	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	o	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	oi̯	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	ou̯	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	u	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	ua	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	ue	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	uei̯	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	ui	vowel	FALSE
+2210	Spanish	Castilian Spanish	ph	u̯o	vowel	FALSE
