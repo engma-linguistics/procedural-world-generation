@@ -4047,6 +4047,26 @@ def test_the_live_tree_reads_the_live_seats_as_its_town_footprint(faketz, monkey
     assert TL.LiveTech(h).towns is None
 
 
+def test_the_live_town_count_holds_a_frames_inputs_until_the_next(faketz, monkeypatch):
+    """PW-1612: the ledger reads each step from the stored frame at or before it; the live count likewise takes its inputs only on a
+    step that stores a frame (fresh) and keeps them on the steps between, whatever the peoples do meanwhile."""
+    out = []
+    for gone in (False, True):
+        h, env, step, land = _live_setup(faketz, monkeypatch)
+        R = h.rule
+        for kn in R.tech.known.values():
+            kn["villages"] = [100.0, "test", None]
+        h._linger = np.zeros(h.p.shape, bool)
+        h._lu_sh = np.array([[1.0, 0.0, 0.0]] * len(h.lines))
+        R.town_cells(2.0)
+        if gone:
+            h.p = np.zeros_like(h.p)  # (everyone gone after the frame: the steps between still read the frame's people)
+        for ago in (1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1):
+            R.town_cells(ago, fresh=False)
+        out.append(R.town_cells(1.0, fresh=False))
+    assert out[0].get("folk", 0) > 0 and out[1] == out[0]
+
+
 def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
     """Lane 183: under one ruler, the hostile peoples living inside its land are co-subjects (no frontier); on unruled land the
     stand-in's frontier holds."""

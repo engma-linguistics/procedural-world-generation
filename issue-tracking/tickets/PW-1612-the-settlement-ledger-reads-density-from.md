@@ -2,7 +2,7 @@
 id: PW-1612
 title: The settlement ledger reads density from the next stored frame, so its first towns (and the after-run calendar) come 0.2-0.5 kyr early
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -11,7 +11,7 @@ impact: med
 found_by: lane258
 blocked_by: []
 relates: [PW-1597, PW-1596, PW-1608]
-refs: ["planet/lineages/settlements.py::derive", "planet/lineages/history/polity_live.py::LivePolities.town_cells", "planet/lineages/history/polity_live.py::LivePolities.begin_step", "planet/lineages/techspread.py::town_footprint", "planet/lineages/techtree.py::Calendar.settled", docs/review/culture/polities/round20.md, docs/review/culture/polities/round20/rebuild_live_foot.py, docs/review/culture/polities/round19/footprint.py, docs/review/culture/polities/round19/live_run.py, "world 4360a3", "world 899985"]
+refs: [docs/review/culture/polities/round21/firsts.py, docs/review/culture/polities/round21.md, "planet/lineages/settlements.py::derive", "planet/lineages/history/polity_live.py::LivePolities.town_cells", "planet/lineages/history/polity_live.py::LivePolities.begin_step", "planet/lineages/techspread.py::town_footprint", "planet/lineages/techtree.py::Calendar.settled", docs/review/culture/polities/round20.md, docs/review/culture/polities/round20/rebuild_live_foot.py, docs/review/culture/polities/round19/footprint.py, docs/review/culture/polities/round19/live_run.py, "world 4360a3", "world 899985"]
 created: 2026-11-09
 updated: 2026-11-09
 ---
@@ -38,5 +38,6 @@ cannot pass, so the switch cannot be flipped (PW-1596): the two calendars stay o
 the read-out's, not the history's.
 
 ## Updates
+- 2026-11-09: Lane 262 (061c6eca, round21.md): option A done. settlements.derive reads each step from the stored frame at or before it, as it stands (density, farm, herd, rain, land, ice, composition, colonies, raiders); LivePolities.town_cells takes its inputs only on a step that stores a frame and holds them until the next. Default (switch off), main 6f230c7f against 061c6eca on L6 4360a3 seeds 7/3/10 and L7 899985 seeds 7/10: first towns of the 12 largest 0-400 years later (L7 seed 7 elves 900; a few 100-300 earlier), median founding of all places 0-300 later (L6 seed 7 3,700 -> 3,500 ya; seed 3 5,100 -> 4,900; seed 10 4,100 -> 3,900; L7 seed 7 3,700 -> 3,400; seed 10 1,900 equal), places founded 3-8% fewer; first state moved on L6 seed 3 (6,600 -> 6,300) and L7 seed 7 (3,600 -> 3,500), 100 earlier on L7 seed 10 (4,300 -> 4,400); writing median moved on L6 seed 3 only (5,843 -> 5,536). Not kept: the history takes a frame's inputs at the start of its step, the frame stands for the end (option B's part).
 - 2026-11-09: Coordinator 11-09: option A (no look-ahead in the ledger): same principle as PW-1597, a read-out must not see the future; default calendar and founding dates move later.
 - 2026-11-09: Created from inbox draft draft-ledger-reads-next-frame.md (found by lane258).
