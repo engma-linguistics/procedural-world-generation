@@ -2,7 +2,7 @@
 id: PW-1684
 title: Scorecard reads land above 4 km, ice, dry land and NPP from one 1000-Myr moment; report late-window medians too
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1.0
 subsystem: infra
@@ -34,4 +34,5 @@ Finer steps (every 20 Myr) would cost nothing measurable if the track is recorde
 - [ ] docs/overview.md / coordination.md say which to compare
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 288 merged (52148d49): late-window medians/means over the last 40% (600-1000 Myr), late_track kept; final row unchanged.
 - 2026-11-10: Created from inbox draft draft-scorecard-late-window-medians.md (found by lane 286).

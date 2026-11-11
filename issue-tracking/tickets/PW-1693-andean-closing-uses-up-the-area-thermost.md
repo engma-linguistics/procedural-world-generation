@@ -1,4 +1,5 @@
 ---
+id: PW-1693
 title: Andean closing uses up the area thermostat's only lever; on L7 seeds 1 and 2 continents end 1.4-2.5 km thicker and land above 3-4 km up to 2x Earth
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 288
 blocked_by: []
 relates: [PW-1683, PW-1497, PW-1680, PW-046]
 refs: [docs/review/tectonics/l7-high-ground.md, docs/review/tectonics/andes-late.md, docs/review/tectonics/mountains/area_books.py, docs/review/tectonics/mountains/l7_high_ground.py, "planet/tectonics/crust.py::thermostats", "planet/tectonics/crust.py::andean_contraction", "planet/tectonics/crust.py::subduction_erosion", "planet/tectonics/crust.py::flow_and_orogeny", "planet/tectonics/crust.py::coherence", "runs 2e1bc2 6286ce 213321 28d710 (scratch lane288, kept)", "Dewey 1988 (extensional collapse of orogens)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -38,3 +41,6 @@ What to try, in order of soundness (not built; each needs a screen and then the 
 - C. A lower floor for subduction erosion (x0.2 -> x0.05): a clamp move, not a mechanism; listed only to reject.
 - [ ] A built and screened on L7 seed 2 (on arm 2e1bc2's numbers: > 3 km median 600-1000 4.33%, thermostat x0.20)
 - [ ] the paired judge, 0 hard failures, before any default change
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-andean-area-sink-exhausts-thermostat.md (found by lane 288).

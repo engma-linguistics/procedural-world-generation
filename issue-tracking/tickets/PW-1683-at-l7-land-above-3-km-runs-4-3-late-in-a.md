@@ -2,7 +2,7 @@
 id: PW-1683
 title: At L7 land above 3 km runs ~4.3% late in a 1 Gyr run (Earth 2.5% on the L7 grid); L7 continents ~2 km thicker than L6's
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1.0
 subsystem: tectonics
@@ -36,4 +36,5 @@ L7, the height cap) rather than at the mountains.
 - [ ] cause named (PW-1497's, or L7's own), with a fix or a reason it is within bounds
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 288 merged (2435ce58): cause is the Andean area sink pinning the area thermostat at its x0.2 floor, not the L7 grid (off: L7 2.77% vs L6 2.67% above 3 km). L7 seed 2 on/off 4.33/2.77%, seed 1 5.62/3.90% (>4 km 3.42/1.11%). Fix ticketed PW-1693 (collapse that gives area back). Baseline runs kept in /data/personal/scratch/lane288.
 - 2026-11-10: Created from inbox draft draft-l7-land-above-3km.md (found by lane 286).
