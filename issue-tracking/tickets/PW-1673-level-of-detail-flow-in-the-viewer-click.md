@@ -44,5 +44,6 @@ free a rung's buffers when leaving it.
 - [ ] globe + 2 km section + both rungs under ~1.5 GB renderer memory (target; confirm on first measurement)
 
 ## Updates
+- 2026-11-10: Lane 289: owner 11-10 ruling (Google-Earth scroll zoom, everything on demand) supersedes this ticket's click/double-click flow. New plan: docs/review/zoom/lod-plan-v2.md (tile pyramid per tiling cell: 4 km section, then 500 px tiles at 1 km / 250 m / 25 m on one lattice per level; on-demand queue; globe draws tiles). Measured: 4 km section 100 s / 5.7 GB; 500 px fine tiles 13-17 s / ~3.5 GB. planet/zoom/lod.py (tile addressing) added. Steps as inbox drafts draft-lod2-*; questions Q1-Q3 in the plan.
 - 2026-11-10: Status todo -> needs-decision. Desk D78 (section sharpness, lean 2 km/px) and D79 (fixed sections vs centred, lean fixed). PW-1674/1675 proceed meanwhile: the API takes res_km as a parameter.
 - 2026-11-10: Created from inbox draft draft-lod-1-viewer-globe-to-finest.md (found by lane282).
