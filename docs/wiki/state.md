@@ -14,7 +14,7 @@
 
 ## Lanes running (11-10 ~11:50)
 
-As of 2026-11-11. Running: 296 (PW-1703 thermostat floor, attempt 2), 297 (PW-1705 level 2 at cell edges, PW-1698 falls, PW-1707), 299 (PW-1696 ground camera tilt, overlays). States in the history ON by default. Merged 11-10/11: 276, 277b (docs), 278, 280, 281b-e, 283-295, 298, 275b. Next LOD: PW-1696 (ground camera), step 5 (to 25 m, layers), step 6 (judge). Scratch lane288 and lane292 await deletion (agents denied rm).
+As of 2026-11-11. Running: 296 (PW-1703 thermostat floor, attempt 2), 300 (PW-1708 cell edges levels 3-4 + corners, PW-1709 falls), 299 (PW-1696 ground camera tilt, overlays). States in the history ON by default. Merged 11-10/11: 276, 277b (docs), 278, 280, 281b-e, 283-298, 275b. Next LOD: PW-1696 (ground camera), step 5 (to 25 m, layers), step 6 (judge). Scratch lane288 and lane292 await deletion (agents denied rm).
 v0.3.0 tagged (suite 2033 passed); server restarted. Waiting on Daniel: nothing (D73-D79 answered).
 
 ## Milestones (2026-11-09)
