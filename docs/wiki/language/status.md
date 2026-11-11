@@ -69,6 +69,7 @@ The **real-language benchmark** (PW-1641) is outside `checks.py`. Run `tools/lan
     - PW-1743: names on demand.
     - PW-1744: viewer catch-up (PW-1644 folded in).
     - PW-1745: late things arrive as loans (animals gated by range and herd spread, wild fauna and flora by biome, kitchen and everyday-item words; owner 11-11). Pair it with PW-1738 in one borrowing lane.
+    - PW-1757: animal words also spread by contact with herders. Follow-ups in `later`: PW-1758 (more calques) and PW-1759 (gate pig, ox and hen when unstocked). Trade goods as Wanderwörter are noted on PW-1549.
   - Moved under it:
     - PW-1685 (PW-1547 merged in), PW-1656, PW-1655, PW-1639, PW-1632, PW-1633;
     - PW-1647 (step 2 failed in lane 17; next try a coda-loss conspiracy);
