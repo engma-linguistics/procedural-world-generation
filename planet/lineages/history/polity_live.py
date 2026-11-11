@@ -104,6 +104,16 @@ def ring_pairs(off, idx, r: int):
     return seen // n, seen % n
 
 
+class _Rings:
+    """Each cell's cells within some rings, from ring_pairs' (cell, other) pairs sorted by cell (the cell itself included): rings[c]."""
+
+    def __init__(self, a, b, off):
+        self.b, self.off = b, off
+
+    def __getitem__(self, c):
+        return self.b[self.off[c]:self.off[c + 1]]
+
+
 class LivePolities(StandIns):
     """StandIns with live polities: begin_step runs one polity step; pacification, frontier and circumscribed read its owners."""
 
@@ -126,6 +136,7 @@ class LivePolities(StandIns):
         self.r2a, self.r2b = ring_pairs(self.off, self.idx, rings_for(g, PO.HEMMED_KM))
         self.r2off = np.searchsorted(self.r2a, np.arange(g.n + 1))  # (pairs are sorted by cell: each cell's ring, r2b[r2off[c]:r2off[c+1]])
         self._pairs: dict[int, tuple] = {}
+        self._ring_of = _Rings(self.r2a, self.r2b, self.r2off)  # (each cell's cells within HEMMED_KM, as polities._rings: a dragon realm's core)
         L = h.lines
         self.ppl = np.array([i for i, l in enumerate(L) if not (l.overlay or l.megafauna or l.marine)], np.int64)  # (peoples that may hold towns)
         self.dragons = [i for i, l in enumerate(L) if is_dragon(l)]
@@ -534,24 +545,25 @@ class LivePolities(StandIns):
         # a second people's place under the lead's: on L7 899985 seed 7 about half the read-out's confederations, round25.md)
         if PO.CONFED and self.owner is not None:
             seats = self._confederations(seats, *self._ledger_places(), ago, k_, peopled, edz, sea, ice, city_min)
-        # 2. dragon realms: one per dragon people's range (each connected piece), at its core
+        # 2. dragon realms: one per dragon people (the read-out's one per dragon culture; the history has no cultures, and a dragon
+        # kind is one culture for now), at the core of its range by the read-out's rule (polities._core: the most of its cells within
+        # two rings). Lane 281c (round26.md): one per connected piece of the range, as before, seated 290-310 realms on L6 4360a3
+        # seed 7 against the read-out's 22-25 on the same history (a dragon people's range is hundreds of scattered pieces), and its
+        # key moved with the piece's densest cell every step
         for k in self.dragons:
             l = L[k]
             if not h.active.get(l.id) or not self.knows(l.id, "hoards", ago):
                 continue
-            held = h.p[k] >= EST
-            if not held.any():
+            cells = np.flatnonzero(h.p[k] >= EST)
+            if not len(cells):
                 continue
-            lab, n = g.components(held)
-            for j in range(n):
-                cells = np.flatnonzero(held & (lab == j))
-                core = int(cells[np.argmax(h.p[k][cells])])
-                key = f"d{l.id}:{core}"
-                if self.cool.get(key, -1) >= k_:
-                    continue
-                self.founded.setdefault(key, ago)
-                seats.append({"key": key, "cell": core, "people": l.id, "line": k, "uid": None, "pop": 0.0, "tier": "dragon realm", "cls": 1,
-                              "rank": len(cells) * (PO.INCUMBENT if key in self.prev_cap else 1.0), "own": cells})
+            core = PO._core(cells, self._ring_of)
+            key = f"d{l.id}"
+            if self.cool.get(key, -1) >= k_:
+                continue
+            self.founded.setdefault(key, ago)
+            seats.append({"key": key, "cell": core, "people": l.id, "line": k, "uid": None, "pop": 0.0, "tier": "dragon realm", "cls": 1,
+                          "rank": len(cells) * (PO.INCUMBENT if key in self.prev_cap else 1.0), "own": cells})
         if IV.WAR_BAND and self.inv_rows:  # (PW-1479, D50 C: a strong row whose invaders rule only chiefdoms seats a war band, as derive)
             PO._war_bands(self, seats, self.inv_rows, ago, self.prev_cap, self.open_, self.anc)
         by_key = {s["key"]: s for s in seats}

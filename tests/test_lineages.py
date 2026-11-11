@@ -4208,6 +4208,25 @@ def test_live_polities_know_the_dragons_as_the_read_out_does():
     assert live == readout and {"red_dragon", "gold_dragon"} <= live and "dragonborn" not in live
 
 
+def test_live_dragon_people_seats_one_realm_however_scattered_its_range(faketz, monkeypatch):
+    """Lane 281c (round26.md): a dragon people seats one realm in the history (the read-out's one per dragon culture; a dragon kind is
+    one culture for now), keyed by the people, however many pieces its range is in. Before, one per connected piece: 290-310 realms
+    on L6 4360a3 seed 7 against the read-out's 22-25."""
+    import types
+    h, env, step, land = _live_setup(faketz, monkeypatch)
+    R = h.rule
+    kb = h.idx["kob"]
+    R.dragons = [kb]  # (the kobolds stand in for a dragon people: scattered pieces, hoards known)
+    R.tech.known["kob"]["hoards"] = [100.0, "test", None]
+    h.p[kb][:] = 0.0
+    h.p[kb][land[300:330:3]] = 0.9  # (ten pieces, a cell apart or more)
+    _sync_pm(h)
+    for ago in (1.2, 1.1):
+        h.rule.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
+        _sync_pm(h)
+    assert [k for k in R.founded if k.startswith("d")] == ["dkob"]
+
+
 def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
     """Lane 183: under one ruler, the hostile peoples living inside its land are co-subjects (no frontier); on unruled land the
     stand-in's frontier holds."""
