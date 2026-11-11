@@ -385,6 +385,12 @@ function ribbonMat(color, opacity, width, vertexColors = false) {
   return RIBBON_MATS.get(key);
 }
 // pts: segment end points (x, y, z, x, y, z per segment); cols: a colour (r, g, b) per end point
+// A river ribbon (the globe's cell-centre chords) hidden where a level-2 or finer detail tile is drawn: those tiles mark
+// stencil bit 2 and draw their own rivers (lodtiles.js, PW-1711). On the (shared) material; the draped copies clone it.
+export function riverUnderTiles(o) {
+  Object.assign(o.material, { stencilWrite: true, stencilWriteMask: 0, stencilRef: 2, stencilFuncMask: 2, stencilFunc: THREE.NotEqualStencilFunc });
+  return o;
+}
 export function ribbonObj(pts, color, opacity = 1, width = 1.5, cols = null) {
   const g = new LineSegmentsGeometry();
   if (pts.length) { g.setPositions(pts); if (cols) g.setColors(cols); }

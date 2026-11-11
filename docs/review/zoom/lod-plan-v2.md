@@ -677,3 +677,52 @@ Test: `test_a_built_section_is_looked_up_not_scanned`.
   `draft-lod-globe-river-ribbons-vs-tile-rivers.md`); double-click still starts a regional zoom (inbox
   `draft-globe-double-click-starts-a-zoom.md`). 1-pixel lines near the horizon break into dashes (thin cell outlines
   at grazing angles). Not tried on Daniel's own Chrome (PW-415). No heading (compass) turn: the tilt keeps north up.
+
+## State (step 5, lane 301, 11-11: levels 3-4, layers and rivers on tiles, hover, memory pool; PW-1710, PW-1711)
+
+- **Done.** `viewer/globe/lodtiles.js` walks the pyramid down to level 4 (`?lodmax=` default 4): 250 m and 25 m tiles
+  draw with the same fallback, dithered fade, skirts, cell clipping and stencil as levels 1-2 (the children grid is
+  80 a side so 8, 4 and 10 children split it evenly).
+  - **Layers on tiles** (`layers.js::tileLayer`): any globe layer whose colouring reads only its own values (a ramp, or
+    classes by id: elevation, temperature, rain, biome, vegetation, soils, climate, landforms, tree cover, ...) follows
+    onto the tiles: the tile fetches the zoom layer of that name (the seasonal one when a season is picked; world
+    `flow` = zoom `discharge`) and colours it with the globe's own colouring function, land and sea from the tile's
+    water mask, lakes in the fresh-lake colour; the legend is the globe's. Layers coloured from per-cell globe tables
+    (human use, resources, coasts, peoples, families, plant type) and tiles lacking the layer show the satellite view,
+    and one line under the legend says so (`legendNote`).
+  - **Hover** (`tileHit`, `tileHover`, used by `pick.js::updateHover`): the cursor's ray meets the drawn ground (a few
+    rounds of "meet the sphere at the ground found last time"); the info box starts with the tile's own reading there
+    ("Detail 25 m/px: land, 1,860 m · biome savanna (lat, lon; tile ...)"), then the globe cell holding that point.
+  - **Rivers (PW-1711).** A level-2 or finer tile draws its own rivers: its `discharge` at the globe's river threshold
+    (the river slider's), each pixel widened to 4.5 sqrt(Q) m (judgement; at least the pixel, at most 8 px), in the
+    ribbons' two colours. Those tiles write stencil bit 2, and the globe's river ribbons and navigable-river ribbons
+    (`geometry.js::riverUnderTiles`, the draped copies too) are not drawn there; over level 1 and the cells they show
+    as before.
+  - **Memory pool:** at most 120 tiles / 400 MB of tile data (GPU and JS copies), least recently drawn dropped first;
+    the colour and river textures' JS copies are let go once on the GPU (`gpuOnly`); old tile records forgotten.
+  - **PW-1710 (ruled A):** no double-click zoom on the globe and no hint for it; the info box says "click: copy and pick
+    for a regional zoom · scroll: dive · right-drag: tilt". The zoom tab and the picker still make regional zooms.
+- **Measured** (`tools/viewer_lod_dive.py 8801 dba204 OUT --view=... --cursor=0.5,0.5 --embed --wait=240 [--layer=]
+  [--flight=600]`, headless Chrome on the GPU, 1,600 x 1,000; own server on a scratch root, `--jobs 2 --threads 4`, under
+  `systemd-run --scope -p MemoryMax=24G`). Three spots in cell py.1.1 of dba204, all dived from orbit to 0.3 km over
+  25 m tiles, end to end: **mountain** 2.48, 75.346 (satellite; level 1 was built), **coast** 9.856, 86.185 (a delta;
+  elevation layer), **river plain** -7.956, 87.341 (biome layer). From scratch at the mountain: level-3 tiles drawn 74 s
+  after the stop, level 4 216 s (two builds at once, the level-3 parents and their neighbours first). Every moving frame
+  at the 60 fps cap in every dive (226-280 moving frames each way); a frame drawn back to back 0.13-0.41 ms. Largest
+  per-frame view turn 0.50 degrees on the way down (1.5 at the plain, at 172 km), 3.07 on the way out at the mountain
+  (at 0.3 km, a new tile arriving under the tilted camera moves its pivot). With the tilted view at 0.3 km, 40-60
+  tiles are wanted; 240 s at two builds at once was not enough to build them all (badge still on).
+  - **Renderer memory, 10-minute flight** (plain spot, biome layer: dive, pan low, out, pan across, repeated, sampled
+    every ~12 s, `plain_flight_report.json` "flight"): Chrome's renderer process 1,244 MB at the start (1,126 MB at orbit
+    before any tile: the world itself), 1,458-1,496 MB once the pool filled (from ~4.5 min, tiles dropped 12, 23, 34, 38
+    as it went), the GPU process 349-360 MB, the JS heap 708-771 MB, tile data 352-396 MB, 89-103 geometries. Under
+    ~1.5 GB, with little room: the world's own layers are most of it.
+  - Tile builds in the server: worker processes 4.7-4.9 GB resident between tiles (two workers), the scope at most
+    ~14 GB with the page cache.
+- Screenshots and reports: `docs/review/zoom/lod-dive-301/` (mountain at 250 m and 25 m and settled; the coast's
+  rivers on level 2 in the elevation layer and its settled ground; the plain in biome at 250 m and 25 m; after the
+  flight).
+- **Not done / next.** Layers coloured from per-cell tables don't follow onto tiles (inbox
+  `draft-lod-tiles-table-coloured-layers.md`). While a child builds, its parent's rivers are stretched: a 250 m or 1 km
+  pixel wide, so a small river shows as a wide band for those seconds. Salt lakes are drawn in the fresh-lake colour on
+  tiles. Levels 3-4 at cell edges are lane 297's draft. Not tried on Daniel's own Chrome (PW-415).

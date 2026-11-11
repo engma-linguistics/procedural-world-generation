@@ -472,7 +472,7 @@ export function updateLod(now) {
       t.mesh.visible = t.fade > 0 && !!u.uColor.value;
       u.uFade.value = t.fade; u.uEx.value = ex; u.uExM.value = ex * R_M;
       u.uRiverOn.value = rv && t.river && t.riverThr === rv.thr ? 1 : 0;
-      if (rv) { u.uRiverCol.value.setHex(rv.color); u.uRiverBig.value.setHex(rv.colorBig); }
+      if (rv) { u.uRiverCol.value.setHex(rv.color, THREE.LinearSRGBColorSpace); u.uRiverBig.value.setHex(rv.colorBig, THREE.LinearSRGBColorSpace); }  // (the hex as is: the tile's colours are sRGB bytes)
       if (t.mesh.visible) { drawn++; t.lastUsed = now; byLevel[t.k.level] = (byLevel[t.k.level] || 0) + 1; }
       bytes += t.bytes;
     }

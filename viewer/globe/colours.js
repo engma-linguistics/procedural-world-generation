@@ -3,7 +3,7 @@ import { esc, kyr } from '../planets.js';
 import { S, state } from './state.js';
 import { COAST_SCORES, HU_LAYERS, OBS_LAYERS, SEASONAL, UNITS, ramp, rampFns } from './layers.js';
 import { $ } from './scene.js';
-import { cellPositions, llMode, llPoint, llPos, llPosPt, paint, ribbonObj, unitVec } from './geometry.js';
+import { cellPositions, llMode, llPoint, llPos, llPosPt, paint, ribbonObj, riverUnderTiles, unitVec } from './geometry.js';
 import { buildOverlays } from './overlays.js';
 import { renderLayerButtons, renderLegend, renderRunSummary, renderSummary } from './panel.js';
 import { toast, updateHover } from './pick.js';
@@ -171,7 +171,7 @@ export function huOverlays(globe, wraps) {
       if (!globe && Math.abs(pos[3 * a] - pos[3 * b]) > 2) continue;
       by[cls].push(pos[3 * a], pos[3 * a + 1], pos[3 * a + 2], pos[3 * b], pos[3 * b + 1], pos[3 * b + 2]);
     }
-    for (let c = 1; c <= 3; c++) out['huRiv' + c] = ribbonObj(by[c], huCols('river_nav')[c], c === 1 ? 0.8 : 1, HU_RIVER_W[c]);
+    for (let c = 1; c <= 3; c++) out['huRiv' + c] = riverUnderTiles(ribbonObj(by[c], huCols('river_nav')[c], c === 1 ? 0.8 : 1, HU_RIVER_W[c]));  // (PW-1711)
   }
   const r0 = globe ? 1.012 : 1;
   const shape = (pts, la, lo, s, kind) => {

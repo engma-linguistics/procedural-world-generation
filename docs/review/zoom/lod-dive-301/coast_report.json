@@ -1,0 +1,5021 @@
+{
+ "world": "dba204",
+ "view": "9.856,86.185",
+ "slow_ms": 0,
+ "wait_s": 120.0,
+ "notches": [
+  {
+   "h_km": 15625.077,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 515,
+   "near": 1.0512676501632068,
+   "far": 5.452535300326414,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 1007.4,
+    "gpu": 295.6
+   }
+  },
+  {
+   "h_km": 13997.478,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 515.4,
+   "near": 0.9235326249154514,
+   "far": 5.197065249830903,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 1007.9,
+    "gpu": 295.6
+   }
+  },
+  {
+   "h_km": 12539.418,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 515.7,
+   "near": 0.8091032290255478,
+   "far": 4.968206458051096,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 1008.2,
+    "gpu": 295.6
+   }
+  },
+  {
+   "h_km": 11233.239,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 516,
+   "near": 0.7065934701060119,
+   "far": 4.763186940212024,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 1008.5,
+    "gpu": 295.6
+   }
+  },
+  {
+   "h_km": 10063.119,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 516.3,
+   "near": 0.6147617288648739,
+   "far": 4.5795234577297474,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 1008.7,
+    "gpu": 295.6
+   }
+  },
+  {
+   "h_km": 9014.885,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 516.5,
+   "near": 0.5324957203573448,
+   "far": 4.41499144071469,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 1008.9,
+    "gpu": 295.6
+   }
+  },
+  {
+   "h_km": 8075.842,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 516.8,
+   "near": 0.4587990217617053,
+   "far": 4.26759804352341,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 1009.2,
+    "gpu": 295.6
+   }
+  },
+  {
+   "h_km": 7234.615,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 517,
+   "near": 0.39277900350107164,
+   "far": 4.135558007002143,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 1009.4,
+    "gpu": 295.6
+   }
+  },
+  {
+   "h_km": 6481.015,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 517.2,
+   "near": 0.3336360175302959,
+   "far": 4.017272035060592,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 1009.7,
+    "gpu": 295.7
+   }
+  },
+  {
+   "h_km": 5805.915,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 517.6,
+   "near": 0.28065371183431154,
+   "far": 3.911307423668623,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 1010.0,
+    "gpu": 295.7
+   }
+  },
+  {
+   "h_km": 5201.136,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 503.2,
+   "near": 0.23319035382513298,
+   "far": 3.816380707650266,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.5,
+    "renderer": 1012.8,
+    "gpu": 295.7
+   }
+  },
+  {
+   "h_km": 4659.356,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 503.4,
+   "near": 0.1906710575447108,
+   "far": 3.7313421150894217,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.5,
+    "renderer": 1012.8,
+    "gpu": 295.7
+   }
+  },
+  {
+   "h_km": 4174.01,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 503.6,
+   "near": 0.15258082052792232,
+   "far": 3.6551616410558445,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.5,
+    "renderer": 1012.8,
+    "gpu": 295.7
+   }
+  },
+  {
+   "h_km": 3739.22,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 503.8,
+   "near": 0.11845828598674801,
+   "far": 3.586916571973496,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.5,
+    "renderer": 1012.8,
+    "gpu": 295.7
+   }
+  },
+  {
+   "h_km": 3349.721,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 1,
+   "wanted": 7,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 4.2,
+   "records": 446,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 518.9,
+   "near": 0.08789015476192863,
+   "far": 3.5257803095238573,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.5,
+    "renderer": 1070.1,
+    "gpu": 295.7
+   }
+  },
+  {
+   "h_km": 3000.795,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 4,
+   "wanted": 7,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 16.8,
+   "records": 446,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 556.2,
+   "near": 0.06050617935851177,
+   "far": 3.4710123587170236,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 545.0,
+    "renderer": 1122.6,
+    "gpu": 295.7
+   }
+  },
+  {
+   "h_km": 2688.214,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 8,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 48.8,
+   "records": 490,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 17,
+   "textures": 24,
+   "heap_mb": 573.5,
+   "near": 0.03597467943201038,
+   "far": 3.421949358864021,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 545.2,
+    "renderer": 1176.0,
+    "gpu": 342.2
+   }
+  },
+  {
+   "h_km": 2408.165,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 8,
+   "wanted": 8,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 65.7,
+   "records": 490,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 17,
+   "textures": 24,
+   "heap_mb": 608.6,
+   "near": 0.013998789189031968,
+   "far": 1.2543272746375254,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 539.2,
+    "renderer": 1228.2,
+    "gpu": 342.3
+   }
+  },
+  {
+   "h_km": 2157.317,
+   "drawn": 7,
+   "byLevel": {
+    "1": 7
+   },
+   "kept": 8,
+   "wanted": 8,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 89.7,
+   "records": 490,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 20,
+   "textures": 36,
+   "heap_mb": 604.1,
+   "near": 0.13544602214673482,
+   "far": 1.196131591719098,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 539.2,
+    "renderer": 1252.2,
+    "gpu": 342.8
+   }
+  },
+  {
+   "h_km": 1932.599,
+   "drawn": 9,
+   "byLevel": {
+    "1": 9
+   },
+   "kept": 9,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 109.9,
+   "records": 594,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 22,
+   "textures": 44,
+   "heap_mb": 616.3,
+   "near": 0.12133717012917514,
+   "far": 1.1421343535148516,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 539.2,
+    "renderer": 1273.1,
+    "gpu": 343.1
+   }
+  },
+  {
+   "h_km": 1731.294,
+   "drawn": 9,
+   "byLevel": {
+    "1": 9
+   },
+   "kept": 9,
+   "wanted": 9,
+   "queued": 1,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 109.9,
+   "records": 594,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 22,
+   "textures": 44,
+   "heap_mb": 619.7,
+   "near": 0.10869807411160544,
+   "far": 1.091957235984044,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 539.2,
+    "renderer": 1270.8,
+    "gpu": 343.1
+   }
+  },
+  {
+   "h_km": 1550.957,
+   "drawn": 9,
+   "byLevel": {
+    "1": 9
+   },
+   "kept": 9,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 109.9,
+   "records": 638,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 22,
+   "textures": 44,
+   "heap_mb": 604.8,
+   "near": 0.0973757322484369,
+   "far": 1.045263021674274,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 539.2,
+    "renderer": 1266.9,
+    "gpu": 343.1
+   }
+  },
+  {
+   "h_km": 1389.404,
+   "drawn": 9,
+   "byLevel": {
+    "1": 9
+   },
+   "kept": 9,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 109.9,
+   "records": 638,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 22,
+   "textures": 44,
+   "heap_mb": 607.8,
+   "near": 0.08723276564795511,
+   "far": 1.0017508850547867,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 539.2,
+    "renderer": 1269.7,
+    "gpu": 343.2
+   }
+  },
+  {
+   "h_km": 1244.679,
+   "drawn": 9,
+   "byLevel": {
+    "1": 9
+   },
+   "kept": 9,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 109.9,
+   "records": 638,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 22,
+   "textures": 44,
+   "heap_mb": 616.1,
+   "near": 0.07814632607016768,
+   "far": 0.9611519796886693,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1268.2,
+    "gpu": 343.4
+   }
+  },
+  {
+   "h_km": 1115.03,
+   "drawn": 9,
+   "byLevel": {
+    "1": 9
+   },
+   "kept": 9,
+   "wanted": 11,
+   "queued": 2,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 109.9,
+   "records": 682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 22,
+   "textures": 44,
+   "heap_mb": 601.5,
+   "near": 0.07000636164820744,
+   "far": 0.9232256395198776,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1265.4,
+    "gpu": 343.4
+   }
+  },
+  {
+   "h_km": 998.885,
+   "drawn": 9,
+   "byLevel": {
+    "1": 9
+   },
+   "kept": 9,
+   "wanted": 12,
+   "queued": 2,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 109.9,
+   "records": 742,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 22,
+   "textures": 44,
+   "heap_mb": 613.2,
+   "near": 0.0627142839631973,
+   "far": 0.8877560332472008,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1265.5,
+    "gpu": 343.4
+   }
+  },
+  {
+   "h_km": 894.838,
+   "drawn": 11,
+   "byLevel": {
+    "1": 9,
+    "2": 2
+   },
+   "kept": 13,
+   "wanted": 23,
+   "queued": 2,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 118.8,
+   "records": 894,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 24,
+   "textures": 50,
+   "heap_mb": 637.4,
+   "near": 0.056181773962571846,
+   "far": 0.8545492226725304,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.4,
+    "renderer": 1279.4,
+    "gpu": 343.8
+   }
+  },
+  {
+   "h_km": 801.606,
+   "drawn": 16,
+   "byLevel": {
+    "1": 9,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 26,
+   "queued": 2,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 133.6,
+   "records": 958,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 29,
+   "textures": 65,
+   "heap_mb": 644.5,
+   "near": 0.050328076589666454,
+   "far": 0.823431615044977,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1304.4,
+    "gpu": 344.9
+   }
+  },
+  {
+   "h_km": 718.111,
+   "drawn": 20,
+   "byLevel": {
+    "1": 9,
+    "2": 11
+   },
+   "kept": 21,
+   "wanted": 27,
+   "queued": 2,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 147,
+   "records": 974,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 33,
+   "textures": 78,
+   "heap_mb": 659.1,
+   "near": 0.045085905254371644,
+   "far": 0.7942444793813064,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1318.2,
+    "gpu": 345.8
+   }
+  },
+  {
+   "h_km": 643.312,
+   "drawn": 21,
+   "byLevel": {
+    "1": 9,
+    "2": 12
+   },
+   "kept": 21,
+   "wanted": 28,
+   "queued": 4,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 978,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 34,
+   "textures": 92,
+   "heap_mb": 632.9,
+   "near": 0.04038976211413985,
+   "far": 0.7668453070313046,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1297.5,
+    "gpu": 346.0
+   }
+  },
+  {
+   "h_km": 576.305,
+   "drawn": 21,
+   "byLevel": {
+    "1": 9,
+    "2": 12
+   },
+   "kept": 21,
+   "wanted": 28,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 994,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 34,
+   "textures": 92,
+   "heap_mb": 650,
+   "near": 0.03618277215139907,
+   "far": 0.7411049130890296,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1299.3,
+    "gpu": 346.1
+   }
+  },
+  {
+   "h_km": 516.277,
+   "drawn": 21,
+   "byLevel": {
+    "1": 9,
+    "2": 12
+   },
+   "kept": 21,
+   "wanted": 28,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 994,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 34,
+   "textures": 92,
+   "heap_mb": 652.8,
+   "near": 0.03241398455685714,
+   "far": 0.7169059172149443,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1300.0,
+    "gpu": 346.1
+   }
+  },
+  {
+   "h_km": 462.502,
+   "drawn": 21,
+   "byLevel": {
+    "1": 9,
+    "2": 12
+   },
+   "kept": 21,
+   "wanted": 27,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 994,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 34,
+   "textures": 92,
+   "heap_mb": 655.6,
+   "near": 0.02903775565000837,
+   "far": 0.6941414148571406,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1300.8,
+    "gpu": 346.1
+   }
+  },
+  {
+   "h_km": 414.328,
+   "drawn": 21,
+   "byLevel": {
+    "1": 9,
+    "2": 12
+   },
+   "kept": 21,
+   "wanted": 18,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 994,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 34,
+   "textures": 92,
+   "heap_mb": 658.1,
+   "near": 0.02601319607635526,
+   "far": 0.6727138150336953,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1301.4,
+    "gpu": 346.1
+   }
+  },
+  {
+   "h_km": 371.172,
+   "drawn": 20,
+   "byLevel": {
+    "1": 8,
+    "2": 12
+   },
+   "kept": 21,
+   "wanted": 18,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 994,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 34,
+   "textures": 92,
+   "heap_mb": 660.6,
+   "near": 0.023303675586084618,
+   "far": 0.6525338235719811,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1302.1,
+    "gpu": 346.1
+   }
+  },
+  {
+   "h_km": 332.511,
+   "drawn": 20,
+   "byLevel": {
+    "1": 8,
+    "2": 12
+   },
+   "kept": 21,
+   "wanted": 17,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 994,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 34,
+   "textures": 92,
+   "heap_mb": 663.1,
+   "near": 0.020876379396328738,
+   "far": 0.633519553188679,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1302.8,
+    "gpu": 346.1
+   }
+  },
+  {
+   "h_km": 297.877,
+   "drawn": 20,
+   "byLevel": {
+    "1": 8,
+    "2": 12
+   },
+   "kept": 21,
+   "wanted": 16,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 994,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 42,
+   "textures": 92,
+   "heap_mb": 634,
+   "near": 0.01870191076391068,
+   "far": 0.6155957440428212,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 1.5,
+    "msMax": 1.5,
+    "segs": 20,
+    "pieces": 226,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1297.2,
+    "gpu": 346.1
+   }
+  },
+  {
+   "h_km": 266.85,
+   "drawn": 15,
+   "byLevel": {
+    "1": 8,
+    "2": 7
+   },
+   "kept": 21,
+   "wanted": 14,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 994,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 42,
+   "textures": 92,
+   "heap_mb": 637.4,
+   "near": 0.016753934955146387,
+   "far": 0.5986930804135756,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 1.5,
+    "msMax": 1.5,
+    "segs": 20,
+    "pieces": 226,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1297.6,
+    "gpu": 346.1
+   }
+  },
+  {
+   "h_km": 239.055,
+   "drawn": 15,
+   "byLevel": {
+    "1": 8,
+    "2": 7
+   },
+   "kept": 21,
+   "wanted": 13,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 994,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 42,
+   "textures": 92,
+   "heap_mb": 640.7,
+   "near": 0.015008860300661554,
+   "far": 0.5827475909577404,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 1.5,
+    "msMax": 1.5,
+    "segs": 20,
+    "pieces": 226,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1301.7,
+    "gpu": 346.1
+   }
+  },
+  {
+   "h_km": 214.159,
+   "drawn": 17,
+   "byLevel": {
+    "1": 8,
+    "2": 7,
+    "3": 2
+   },
+   "kept": 25,
+   "wanted": 23,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 163.3,
+   "records": 1994,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 44,
+   "textures": 98,
+   "heap_mb": 659,
+   "near": 0.013445552472343981,
+   "far": 0.5677001216041557,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 1.1,
+    "msMax": 1.5,
+    "segs": 15,
+    "pieces": 232,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1313.8,
+    "gpu": 346.6
+   }
+  },
+  {
+   "h_km": 191.846,
+   "drawn": 20,
+   "byLevel": {
+    "1": 7,
+    "2": 6,
+    "3": 7
+   },
+   "kept": 29,
+   "wanted": 24,
+   "queued": 6,
+   "building": 2,
+   "badge": false,
+   "tiles_mb": 178.2,
+   "records": 2294,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 49,
+   "textures": 113,
+   "heap_mb": 698.1,
+   "near": 0.012045217201390734,
+   "far": 0.5534910208499958,
+   "tilt_deg": 0.64,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 1.1,
+    "msMax": 1.5,
+    "segs": 15,
+    "pieces": 232,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1330.4,
+    "gpu": 347.8
+   }
+  },
+  {
+   "h_km": 171.729,
+   "drawn": 22,
+   "byLevel": {
+    "1": 7,
+    "2": 5,
+    "3": 10
+   },
+   "kept": 31,
+   "wanted": 23,
+   "queued": 6,
+   "building": 2,
+   "badge": false,
+   "tiles_mb": 188.6,
+   "records": 2394,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 52,
+   "textures": 126,
+   "heap_mb": 708.8,
+   "near": 0.010781921454822997,
+   "far": 0.5399887423155364,
+   "tilt_deg": 2.32,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 1.1,
+    "msMax": 1.5,
+    "segs": 15,
+    "pieces": 232,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1350.4,
+    "gpu": 348.3
+   }
+  },
+  {
+   "h_km": 153.597,
+   "drawn": 23,
+   "byLevel": {
+    "1": 7,
+    "2": 5,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 25,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2494,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 704.7,
+   "near": 0.009643516869549007,
+   "far": 0.5271490519382863,
+   "tilt_deg": 4.01,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 3,
+    "ms": 3.8,
+    "msMax": 3.8,
+    "segs": 12,
+    "pieces": 249,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1362.4,
+    "gpu": 348.5
+   }
+  },
+  {
+   "h_km": 137.255,
+   "drawn": 22,
+   "byLevel": {
+    "1": 7,
+    "2": 4,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 26,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2594,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 717.8,
+   "near": 0.008617478632918464,
+   "far": 0.5149392916146296,
+   "tilt_deg": 5.7,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 3,
+    "ms": 3.8,
+    "msMax": 3.8,
+    "segs": 12,
+    "pieces": 249,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1356.9,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 122.552,
+   "drawn": 21,
+   "byLevel": {
+    "1": 6,
+    "2": 4,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 26,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 615.3,
+   "near": 0.007694353785927532,
+   "far": 0.50333113199448,
+   "tilt_deg": 7.38,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 5,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 12,
+    "pieces": 271,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.6,
+    "renderer": 1276.6,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 109.331,
+   "drawn": 21,
+   "byLevel": {
+    "1": 6,
+    "2": 4,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 25,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 621.2,
+   "near": 0.006864286246858687,
+   "far": 0.49229756654989454,
+   "tilt_deg": 9.07,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 5,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 12,
+    "pieces": 271,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.6,
+    "renderer": 1277.7,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 97.448,
+   "drawn": 21,
+   "byLevel": {
+    "1": 6,
+    "2": 4,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 24,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 622.5,
+   "near": 0.006118219145753745,
+   "far": 0.4818128086667642,
+   "tilt_deg": 10.75,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 5,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 12,
+    "pieces": 271,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1279.1,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 86.777,
+   "drawn": 22,
+   "byLevel": {
+    "1": 6,
+    "2": 5,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 26,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 629.6,
+   "near": 0.005448222692111049,
+   "far": 0.47185220424495294,
+   "tilt_deg": 12.44,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 6,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 9,
+    "pieces": 296,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1280.3,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 77.203,
+   "drawn": 22,
+   "byLevel": {
+    "1": 6,
+    "2": 5,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 25,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 635.3,
+   "near": 0.004847169838423416,
+   "far": 0.4623921570525071,
+   "tilt_deg": 14.13,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 6,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 9,
+    "pieces": 296,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1281.3,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 68.623,
+   "drawn": 23,
+   "byLevel": {
+    "1": 6,
+    "2": 6,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 26,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 607.7,
+   "near": 0.0043084651444776694,
+   "far": 0.45341006443476267,
+   "tilt_deg": 15.81,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 6,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 9,
+    "pieces": 296,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1277.2,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 60.939,
+   "drawn": 23,
+   "byLevel": {
+    "1": 6,
+    "2": 6,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 26,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 613.1,
+   "near": 0.0038260519074332145,
+   "far": 0.44488426149269905,
+   "tilt_deg": 17.5,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 6,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 9,
+    "pieces": 296,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1277.8,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 54.065,
+   "drawn": 24,
+   "byLevel": {
+    "1": 6,
+    "2": 7,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 26,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 618.6,
+   "near": 0.003394421565326944,
+   "far": 0.4367939722092706,
+   "tilt_deg": 19.18,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 7,
+    "ms": 0.3,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 177,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1278.9,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 47.918,
+   "drawn": 25,
+   "byLevel": {
+    "1": 6,
+    "2": 8,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 27,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 624,
+   "near": 0.003008504858090877,
+   "far": 0.42911926102266473,
+   "tilt_deg": 20.87,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 7,
+    "ms": 0.3,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 177,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1280.0,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 42.427,
+   "drawn": 26,
+   "byLevel": {
+    "1": 6,
+    "2": 9,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 28,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 629.4,
+   "near": 0.00266376194181186,
+   "far": 0.4218410225139931,
+   "tilt_deg": 22.56,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 7,
+    "ms": 0.3,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 177,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1281.0,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 37.527,
+   "drawn": 26,
+   "byLevel": {
+    "1": 6,
+    "2": 9,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 27,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 634.7,
+   "near": 0.0023560866189657583,
+   "far": 0.4149409555417429,
+   "tilt_deg": 24.24,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 7,
+    "ms": 0.3,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 177,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1282.0,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 33.157,
+   "drawn": 24,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 27,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 624.6,
+   "near": 0.002081730353954292,
+   "far": 0.40840144948192963,
+   "tilt_deg": 25.93,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 9,
+    "ms": 0.4,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 234,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1279.9,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 29.265,
+   "drawn": 24,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 27,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 629.9,
+   "near": 0.0018373605491109224,
+   "far": 0.40220560539852235,
+   "tilt_deg": 27.61,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 9,
+    "ms": 0.4,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 234,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1280.9,
+    "gpu": 348.6
+   }
+  },
+  {
+   "h_km": 25.801,
+   "drawn": 24,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 27,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 635.2,
+   "near": 0.0016198920561051545,
+   "far": 0.396337208930678,
+   "tilt_deg": 29.3,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 9,
+    "ms": 0.4,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 234,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1281.9,
+    "gpu": 348.7
+   }
+  },
+  {
+   "h_km": 22.721,
+   "drawn": 26,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 2
+   },
+   "kept": 36,
+   "wanted": 36,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 204.1,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 55,
+   "textures": 142,
+   "heap_mb": 634.8,
+   "near": 0.0014265705550502439,
+   "far": 0.3907807048661399,
+   "tilt_deg": 30.99,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 10,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 279,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1292.2,
+    "gpu": 349.1
+   }
+  },
+  {
+   "h_km": 19.985,
+   "drawn": 31,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 7
+   },
+   "kept": 40,
+   "wanted": 38,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 219.5,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 60,
+   "textures": 158,
+   "heap_mb": 650.4,
+   "near": 0.001254779057201283,
+   "far": 0.3855210935483447,
+   "tilt_deg": 32.67,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 10,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 279,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1311.1,
+    "gpu": 350.2
+   }
+  },
+  {
+   "h_km": 17.559,
+   "drawn": 34,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 10
+   },
+   "kept": 43,
+   "wanted": 41,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 233.1,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 63,
+   "textures": 175,
+   "heap_mb": 700.9,
+   "near": 0.0011024447684487627,
+   "far": 0.3805441478381804,
+   "tilt_deg": 34.36,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 11,
+    "ms": 0.3,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 348,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1333.7,
+    "gpu": 350.9
+   }
+  },
+  {
+   "h_km": 15.408,
+   "drawn": 36,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 12
+   },
+   "kept": 44,
+   "wanted": 43,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 239.8,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 65,
+   "textures": 184,
+   "heap_mb": 685.7,
+   "near": 0.0009673680577654942,
+   "far": 0.3758361469239454,
+   "tilt_deg": 36.04,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 11,
+    "ms": 0.3,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 348,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1337.1,
+    "gpu": 351.4
+   }
+  },
+  {
+   "h_km": 13.502,
+   "drawn": 36,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 12
+   },
+   "kept": 44,
+   "wanted": 43,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 239.8,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 65,
+   "textures": 184,
+   "heap_mb": 692.5,
+   "near": 0.0008476965361050581,
+   "far": 0.371383941867823,
+   "tilt_deg": 37.73,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 11,
+    "ms": 0.3,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 348,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1338.8,
+    "gpu": 351.4
+   }
+  },
+  {
+   "h_km": 11.814,
+   "drawn": 36,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 12
+   },
+   "kept": 44,
+   "wanted": 42,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 239.8,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 65,
+   "textures": 184,
+   "heap_mb": 699.7,
+   "near": 0.0007417669754714141,
+   "far": 0.36717493228430254,
+   "tilt_deg": 39.42,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 12,
+    "ms": 0.4,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 483,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1340.5,
+    "gpu": 351.4
+   }
+  },
+  {
+   "h_km": 10.324,
+   "drawn": 36,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 12
+   },
+   "kept": 44,
+   "wanted": 44,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 239.8,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 65,
+   "textures": 184,
+   "heap_mb": 637.2,
+   "near": 0.0006482149139990234,
+   "far": 0.3631970463786162,
+   "tilt_deg": 41.1,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 483,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1297.9,
+    "gpu": 351.4
+   }
+  },
+  {
+   "h_km": 9.007,
+   "drawn": 37,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 13
+   },
+   "kept": 45,
+   "wanted": 47,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 243.6,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 66,
+   "textures": 188,
+   "heap_mb": 654.6,
+   "near": 0.0005654720992237294,
+   "far": 0.3594387214438457,
+   "tilt_deg": 42.79,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 14,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 602,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1303.7,
+    "gpu": 351.6
+   }
+  },
+  {
+   "h_km": 7.847,
+   "drawn": 37,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 13
+   },
+   "kept": 45,
+   "wanted": 46,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 243.6,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 66,
+   "textures": 188,
+   "heap_mb": 660.4,
+   "near": 0.0004926642478963573,
+   "far": 0.35588888473609515,
+   "tilt_deg": 44.48,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 14,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 602,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1305.1,
+    "gpu": 351.6
+   }
+  },
+  {
+   "h_km": 6.823,
+   "drawn": 37,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 13
+   },
+   "kept": 45,
+   "wanted": 46,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 243.6,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 66,
+   "textures": 188,
+   "heap_mb": 666.1,
+   "near": 0.00042837665539909866,
+   "far": 0.3525369346545069,
+   "tilt_deg": 46.16,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 14,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 602,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1306.5,
+    "gpu": 351.6
+   }
+  },
+  {
+   "h_km": 5.92,
+   "drawn": 38,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 14
+   },
+   "kept": 46,
+   "wanted": 47,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 247.3,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 67,
+   "textures": 192,
+   "heap_mb": 648.5,
+   "near": 0.00037168532804550126,
+   "far": 0.34937272215326615,
+   "tilt_deg": 47.85,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 14,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 602,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1307.5,
+    "gpu": 351.9
+   }
+  },
+  {
+   "h_km": 5.128,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 48,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 250.5,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 195,
+   "heap_mb": 666.2,
+   "near": 0.0003219857266063109,
+   "far": 0.3463865323096946,
+   "tilt_deg": 49.53,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 15,
+    "ms": 0.9,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 933,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1315.5,
+    "gpu": 352.1
+   }
+  },
+  {
+   "h_km": 4.434,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 47,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 251,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 196,
+   "heap_mb": 673.1,
+   "near": 0.0002783567593205305,
+   "far": 0.3435690659628557,
+   "tilt_deg": 51.22,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 15,
+    "ms": 0.9,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 933,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1317.2,
+    "gpu": 352.2
+   }
+  },
+  {
+   "h_km": 3.824,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 47,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 251,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 196,
+   "heap_mb": 680,
+   "near": 0.00024010669043237343,
+   "far": 0.34091142132136915,
+   "tilt_deg": 52.91,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 15,
+    "ms": 0.9,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 933,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1319.0,
+    "gpu": 352.2
+   }
+  },
+  {
+   "h_km": 3.291,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 47,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 251,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 196,
+   "heap_mb": 652.2,
+   "near": 0.00020661819158371842,
+   "far": 0.33840507541413617,
+   "tilt_deg": 54.59,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 16,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1312.4,
+    "gpu": 352.2
+   }
+  },
+  {
+   "h_km": 2.825,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 48,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 251,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 196,
+   "heap_mb": 659.1,
+   "near": 0.00017734041834529537,
+   "far": 0.33604186522229285,
+   "tilt_deg": 56.28,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 16,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1314.2,
+    "gpu": 352.2
+   }
+  },
+  {
+   "h_km": 2.42,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 47,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 251,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 196,
+   "heap_mb": 664.8,
+   "near": 0.00015196479636250262,
+   "far": 0.3338139682777302,
+   "tilt_deg": 57.96,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 16,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1315.7,
+    "gpu": 352.2
+   }
+  },
+  {
+   "h_km": 2.066,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 47,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 251,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 196,
+   "heap_mb": 651.7,
+   "near": 0.0001296885290008376,
+   "far": 0.33171388244061023,
+   "tilt_deg": 59.65,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 17,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1312.6,
+    "gpu": 352.2
+   }
+  },
+  {
+   "h_km": 1.757,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 45,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 251,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 196,
+   "heap_mb": 658.2,
+   "near": 0.00011030408070613618,
+   "far": 0.32973440445925295,
+   "tilt_deg": 61.34,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 18,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1314.1,
+    "gpu": 352.2
+   }
+  },
+  {
+   "h_km": 1.489,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 45,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 251,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 196,
+   "heap_mb": 663.8,
+   "near": 9.346588148160251e-05,
+   "far": 0.32786860675823665,
+   "tilt_deg": 63.02,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 18,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1315.6,
+    "gpu": 352.2
+   }
+  },
+  {
+   "h_km": 1.256,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 45,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 251,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 196,
+   "heap_mb": 669.4,
+   "near": 7.886412884143823e-05,
+   "far": 0.32610981166578823,
+   "tilt_deg": 64.71,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 18,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1317.1,
+    "gpu": 352.2
+   }
+  },
+  {
+   "h_km": 1.055,
+   "drawn": 40,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 12,
+    "4": 15
+   },
+   "kept": 48,
+   "wanted": 46,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 254.2,
+   "records": 2826,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 69,
+   "textures": 199,
+   "heap_mb": 661.5,
+   "near": 6.622568822978181e-05,
+   "far": 0.32445156193329516,
+   "tilt_deg": 66.4,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 19,
+    "ms": 1,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1316.4,
+    "gpu": 352.4
+   }
+  },
+  {
+   "h_km": 0.881,
+   "drawn": 39,
+   "byLevel": {
+    "1": 3,
+    "2": 9,
+    "3": 12,
+    "4": 15
+   },
+   "kept": 48,
+   "wanted": 45,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 254.7,
+   "records": 2826,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 69,
+   "textures": 200,
+   "heap_mb": 660.7,
+   "near": 5.533164271964708e-05,
+   "far": 0.32288758584271643,
+   "tilt_deg": 68.08,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 20,
+    "ms": 0.7,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1317.5,
+    "gpu": 352.4
+   }
+  },
+  {
+   "h_km": 0.732,
+   "drawn": 39,
+   "byLevel": {
+    "1": 3,
+    "2": 9,
+    "3": 12,
+    "4": 15
+   },
+   "kept": 48,
+   "wanted": 45,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 254.7,
+   "records": 2826,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 69,
+   "textures": 200,
+   "heap_mb": 669.5,
+   "near": 4.593231447866942e-05,
+   "far": 0.32141175430770624,
+   "tilt_deg": 69.77,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 22,
+    "ms": 0.9,
+    "msMax": 3.8,
+    "segs": 9,
+    "pieces": 1307,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1319.4,
+    "gpu": 352.4
+   }
+  },
+  {
+   "h_km": 0.603,
+   "drawn": 39,
+   "byLevel": {
+    "1": 3,
+    "2": 9,
+    "3": 12,
+    "4": 15
+   },
+   "kept": 48,
+   "wanted": 45,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 254.7,
+   "records": 2826,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 69,
+   "textures": 200,
+   "heap_mb": 676.5,
+   "near": 3.7870590269850625e-05,
+   "far": 0.3200180259054405,
+   "tilt_deg": 71.45,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 22,
+    "ms": 0.9,
+    "msMax": 3.8,
+    "segs": 9,
+    "pieces": 1307,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1321.2,
+    "gpu": 352.4
+   }
+  },
+  {
+   "h_km": 0.493,
+   "drawn": 39,
+   "byLevel": {
+    "1": 3,
+    "2": 9,
+    "3": 12,
+    "4": 15
+   },
+   "kept": 48,
+   "wanted": 44,
+   "queued": 5,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 254.7,
+   "records": 2826,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 69,
+   "textures": 200,
+   "heap_mb": 683.4,
+   "near": 3.0954521906334524e-05,
+   "far": 0.31870037326866163,
+   "tilt_deg": 73.14,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 22,
+    "ms": 0.9,
+    "msMax": 3.8,
+    "segs": 9,
+    "pieces": 1307,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1323.0,
+    "gpu": 352.4
+   }
+  },
+  {
+   "h_km": 0.399,
+   "drawn": 38,
+   "byLevel": {
+    "1": 3,
+    "2": 8,
+    "3": 12,
+    "4": 15
+   },
+   "kept": 48,
+   "wanted": 44,
+   "queued": 5,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 254.7,
+   "records": 2826,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 69,
+   "textures": 200,
+   "heap_mb": 655.5,
+   "near": 2.503561781539432e-05,
+   "far": 0.3174526798065768,
+   "tilt_deg": 74.83,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 23,
+    "ms": 0.7,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 1091,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1316.6,
+    "gpu": 352.5
+   }
+  },
+  {
+   "h_km": 0.353,
+   "drawn": 38,
+   "byLevel": {
+    "1": 3,
+    "2": 8,
+    "3": 12,
+    "4": 15
+   },
+   "kept": 48,
+   "wanted": 44,
+   "queued": 5,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 254.7,
+   "records": 2826,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 69,
+   "textures": 200,
+   "heap_mb": 680.4,
+   "near": 2.2191360521350845e-05,
+   "far": 0.31679846413208945,
+   "tilt_deg": 75,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 23,
+    "ms": 0.7,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 1091,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.8,
+    "renderer": 1321.9,
+    "gpu": 352.5
+   }
+  },
+  {
+   "h_km": 0.317,
+   "drawn": 38,
+   "byLevel": {
+    "1": 3,
+    "2": 8,
+    "3": 12,
+    "4": 15
+   },
+   "kept": 48,
+   "wanted": 44,
+   "queued": 5,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 254.7,
+   "records": 2826,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 69,
+   "textures": 200,
+   "heap_mb": 686.1,
+   "near": 1.9890907276476357e-05,
+   "far": 0.31623871129515235,
+   "tilt_deg": 75,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 23,
+    "ms": 0.7,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 1091,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.8,
+    "renderer": 1322.8,
+    "gpu": 352.5
+   }
+  }
+ ],
+ "shots": [
+  {
+   "file": "00_orbit.png",
+   "note": "the whole planet: cells, as today",
+   "h_km": 15625.077,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 492.9,
+   "near": 1.0512676501632068,
+   "far": 5.452535300326414,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 535.2,
+    "renderer": 997.6,
+    "gpu": 294.5
+   },
+   "frame_ms": 0.26,
+   "fps_uncapped": 3896,
+   "hover": "cell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 holds 242 mm \u00b7 6 kg C/m\u00b2 \u00b7 moderate drained\nnavigable\nsea-going\nhazards\nbogs and mir",
+   "float_km": {
+    "region_km": 8160.9,
+    "built": {
+     "n": 4625,
+     "median": 19.1446,
+     "p90": 76.4934,
+     "max": 95.4066
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "01_level1_appears.png",
+   "note": "below 6000 km",
+   "h_km": 5805.915,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 493.8,
+   "near": 0.28065371183431154,
+   "far": 3.911307423668623,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.5,
+    "renderer": 1012.5,
+    "gpu": 295.6
+   },
+   "frame_ms": 0.14,
+   "fps_uncapped": 7229,
+   "hover": "cell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 holds 242 mm \u00b7 6 kg C/m\u00b2 \u00b7 moderate drained\nnavigable\nsea-going\nhazards\nbogs and mir",
+   "float_km": {
+    "region_km": 6525.1,
+    "built": {
+     "n": 3723,
+     "median": 19.1406,
+     "p90": 76.4847,
+     "max": 95.4066
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "02_level1.png",
+   "note": "below 1500 km",
+   "h_km": 1389.404,
+   "drawn": 9,
+   "byLevel": {
+    "1": 9
+   },
+   "kept": 9,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 109.9,
+   "records": 638,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 22,
+   "textures": 44,
+   "heap_mb": 606,
+   "near": 0.08723276564795511,
+   "far": 1.0017508850547867,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.7,
+    "renderer": 1268.6,
+    "gpu": 343.1
+   },
+   "frame_ms": 0.2,
+   "fps_uncapped": 5042,
+   "hover": "Detail 4 km/px: land, 2 m (9.856, 86.185; tile py.1.1/1/0/0)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 ho",
+   "float_km": {
+    "region_km": 1013.7,
+    "built": {
+     "n": 185,
+     "median": 13.9827,
+     "p90": 14.7187,
+     "max": 16.4494
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "03_level1_arrived.png",
+   "note": "the first level-1 tile drawn, 0 s after the stop",
+   "h_km": 1389.404,
+   "drawn": 9,
+   "byLevel": {
+    "1": 9
+   },
+   "kept": 9,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 109.9,
+   "records": 638,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 22,
+   "textures": 44,
+   "heap_mb": 608,
+   "near": 0.08723276564795511,
+   "far": 1.0017508850547867,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.7,
+    "renderer": 1268.8,
+    "gpu": 343.2
+   },
+   "frame_ms": 0.18,
+   "fps_uncapped": 5660,
+   "hover": "Detail 4 km/px: land, 2 m (9.856, 86.185; tile py.1.1/1/0/0)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 ho",
+   "float_km": {
+    "region_km": 1013.7,
+    "built": {
+     "n": 185,
+     "median": 13.9827,
+     "p90": 14.7187,
+     "max": 16.4494
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "04_level2_arriving.png",
+   "note": "below 700 km",
+   "h_km": 643.312,
+   "drawn": 21,
+   "byLevel": {
+    "1": 9,
+    "2": 12
+   },
+   "kept": 21,
+   "wanted": 28,
+   "queued": 5,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 978,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 34,
+   "textures": 92,
+   "heap_mb": 639.8,
+   "near": 0.04038976211413985,
+   "far": 0.7668453070313046,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1298.8,
+    "gpu": 346.1
+   },
+   "frame_ms": 0.32,
+   "fps_uncapped": 3109,
+   "hover": "Detail 1 km/px: land, 2 m (9.856, 86.185; tile py.1.1/2/3/1)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 ho",
+   "float_km": {
+    "region_km": 453.2,
+    "built": {
+     "n": 57,
+     "median": 7.1908,
+     "p90": 7.3196,
+     "max": 7.5528
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "05_level2_arrived.png",
+   "note": "the first level-2 tile drawn, 0 s after the stop",
+   "h_km": 643.312,
+   "drawn": 21,
+   "byLevel": {
+    "1": 9,
+    "2": 12
+   },
+   "kept": 21,
+   "wanted": 28,
+   "queued": 5,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 154.5,
+   "records": 978,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 34,
+   "textures": 92,
+   "heap_mb": 634.5,
+   "near": 0.04038976211413985,
+   "far": 0.7668453070313046,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 537.5,
+    "renderer": 1296.7,
+    "gpu": 346.1
+   },
+   "frame_ms": 0.29,
+   "fps_uncapped": 3488,
+   "hover": "Detail 1 km/px: land, 2 m (9.856, 86.185; tile py.1.1/2/3/1)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 ho",
+   "float_km": {
+    "region_km": 453.2,
+    "built": {
+     "n": 57,
+     "median": 7.1908,
+     "p90": 7.3196,
+     "max": 7.5528
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "06_level2.png",
+   "note": "below 150 km",
+   "h_km": 137.255,
+   "drawn": 21,
+   "byLevel": {
+    "1": 6,
+    "2": 4,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 26,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2594,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 614.5,
+   "near": 0.008617478632918464,
+   "far": 0.5149392916146296,
+   "tilt_deg": 5.7,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 5,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 12,
+    "pieces": 271,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.6,
+    "renderer": 1277.4,
+    "gpu": 348.6
+   },
+   "frame_ms": 0.25,
+   "fps_uncapped": 4027,
+   "hover": "Detail 250 m/px: land, 4 m (9.856, 86.185; tile py.1.1/3/12/7)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 ",
+   "float_km": {
+    "region_km": 106.8,
+    "built": {
+     "n": 11,
+     "median": 1.8442,
+     "p90": 1.8744,
+     "max": 1.8744
+    },
+    "draped": {
+     "n": 307,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "07_level3_arriving.png",
+   "note": "below 110 km",
+   "h_km": 109.331,
+   "drawn": 21,
+   "byLevel": {
+    "1": 6,
+    "2": 4,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 25,
+   "queued": 3,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 630.9,
+   "near": 0.006864286246858687,
+   "far": 0.49229756654989454,
+   "tilt_deg": 9.07,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 5,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 12,
+    "pieces": 271,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1280.2,
+    "gpu": 348.6
+   },
+   "frame_ms": 0.19,
+   "fps_uncapped": 5172,
+   "hover": "Detail 250 m/px: land, 4 m (9.856, 86.185; tile py.1.1/3/12/7)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 ",
+   "float_km": {
+    "region_km": 91.8,
+    "built": {
+     "n": 7,
+     "median": 1.5122,
+     "p90": 1.5197,
+     "max": 1.5197
+    },
+    "draped": {
+     "n": 175,
+     "median": 0.0001,
+     "p90": 0.0001,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "08_level3_arrived.png",
+   "note": "the first level-3 tile drawn, 0 s after the stop",
+   "h_km": 109.331,
+   "drawn": 21,
+   "byLevel": {
+    "1": 6,
+    "2": 4,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 25,
+   "queued": 3,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 629,
+   "near": 0.006864286246858687,
+   "far": 0.49229756654989454,
+   "tilt_deg": 9.07,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 5,
+    "ms": 0.5,
+    "msMax": 3.8,
+    "segs": 12,
+    "pieces": 271,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.0,
+    "renderer": 1280.1,
+    "gpu": 348.7
+   },
+   "frame_ms": 0.26,
+   "fps_uncapped": 3822,
+   "hover": "Detail 250 m/px: land, 4 m (9.856, 86.185; tile py.1.1/3/12/7)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 ",
+   "float_km": {
+    "region_km": 91.8,
+    "built": {
+     "n": 7,
+     "median": 1.5122,
+     "p90": 1.5197,
+     "max": 1.5197
+    },
+    "draped": {
+     "n": 175,
+     "median": 0.0001,
+     "p90": 0.0001,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "09_level3.png",
+   "note": "below 40 km",
+   "h_km": 37.527,
+   "drawn": 24,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11
+   },
+   "kept": 32,
+   "wanted": 27,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 195.3,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 53,
+   "textures": 136,
+   "heap_mb": 633.9,
+   "near": 0.0023560866189657583,
+   "far": 0.4149409555417429,
+   "tilt_deg": 24.24,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 9,
+    "ms": 0.4,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 234,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1282.0,
+    "gpu": 348.6
+   },
+   "frame_ms": 0.28,
+   "fps_uncapped": 3571,
+   "hover": "Detail 250 m/px: land, 4 m (9.856, 86.185; tile py.1.1/3/12/7)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 ",
+   "float_km": {
+    "region_km": 46.5,
+    "built": {
+     "n": 2,
+     "median": 0.7617,
+     "p90": 0.7617,
+     "max": 0.7617
+    },
+    "draped": {
+     "n": 282,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "10_level4_arriving.png",
+   "note": "below 12 km",
+   "h_km": 11.814,
+   "drawn": 36,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 12
+   },
+   "kept": 44,
+   "wanted": 42,
+   "queued": 5,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 239.8,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 65,
+   "textures": 184,
+   "heap_mb": 663.4,
+   "near": 0.0007417669754714141,
+   "far": 0.36717493228430254,
+   "tilt_deg": 39.42,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 483,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 537.9,
+    "renderer": 1304.6,
+    "gpu": 351.4
+   },
+   "frame_ms": 0.35,
+   "fps_uncapped": 2885,
+   "hover": "Detail 25 m/px: land, 4 m (9.856, 86.185; tile py.1.1/4/126/72)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7",
+   "float_km": {
+    "region_km": 23.7,
+    "built": {
+     "n": 2,
+     "median": 0.762,
+     "p90": 0.762,
+     "max": 0.762
+    },
+    "draped": {
+     "n": 380,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "11_level4_arrived.png",
+   "note": "the first level-4 tile drawn, 0 s after the stop",
+   "h_km": 11.814,
+   "drawn": 36,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 12
+   },
+   "kept": 44,
+   "wanted": 42,
+   "queued": 4,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 239.8,
+   "records": 2694,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 65,
+   "textures": 184,
+   "heap_mb": 646.1,
+   "near": 0.0007417669754714141,
+   "far": 0.36717493228430254,
+   "tilt_deg": 39.42,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 483,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.1,
+    "renderer": 1300.4,
+    "gpu": 351.4
+   },
+   "frame_ms": 0.37,
+   "fps_uncapped": 2691,
+   "hover": "Detail 25 m/px: land, 4 m (9.856, 86.185; tile py.1.1/4/126/72)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7",
+   "float_km": {
+    "region_km": 23.7,
+    "built": {
+     "n": 2,
+     "median": 0.762,
+     "p90": 0.762,
+     "max": 0.762
+    },
+    "draped": {
+     "n": 380,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "12_level4.png",
+   "note": "below 2.5 km",
+   "h_km": 2.42,
+   "drawn": 39,
+   "byLevel": {
+    "1": 4,
+    "2": 9,
+    "3": 11,
+    "4": 15
+   },
+   "kept": 47,
+   "wanted": 47,
+   "queued": 6,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 251,
+   "records": 2726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 68,
+   "textures": 196,
+   "heap_mb": 662.7,
+   "near": 0.00015196479636250262,
+   "far": 0.3338139682777302,
+   "tilt_deg": 57.96,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 17,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 539.1,
+    "renderer": 1315.4,
+    "gpu": 352.2
+   },
+   "frame_ms": 0.28,
+   "fps_uncapped": 3529,
+   "hover": "Detail 25 m/px: land, 4 m (9.856, 86.185; tile py.1.1/4/126/72)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7",
+   "float_km": {
+    "region_km": 13,
+    "built": {
+     "n": 2,
+     "median": 0.762,
+     "p90": 0.762,
+     "max": 0.762
+    },
+    "draped": {
+     "n": 462,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "13_ground_300m.png",
+   "note": "below 0.4 km",
+   "h_km": 0.399,
+   "drawn": 38,
+   "byLevel": {
+    "1": 3,
+    "2": 8,
+    "3": 12,
+    "4": 15
+   },
+   "kept": 48,
+   "wanted": 44,
+   "queued": 5,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 254.7,
+   "records": 2826,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 69,
+   "textures": 200,
+   "heap_mb": 663.6,
+   "near": 2.503561781539432e-05,
+   "far": 0.3174526798065768,
+   "tilt_deg": 74.83,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 23,
+    "ms": 0.7,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 1091,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1316.5,
+    "gpu": 352.5
+   },
+   "frame_ms": 0.37,
+   "fps_uncapped": 2740,
+   "hover": "Detail 25 m/px: land, 4 m (9.856, 86.185; tile py.1.1/4/126/72)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7",
+   "float_km": {
+    "region_km": 96.9,
+    "built": {
+     "n": 5,
+     "median": 0.7637,
+     "p90": 0.7641,
+     "max": 0.7641
+    },
+    "draped": {
+     "n": 2149,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "14_ground_settled.png",
+   "note": "the ground once the tiles in view were built (50 s)",
+   "h_km": 0.317,
+   "drawn": 44,
+   "byLevel": {
+    "1": 3,
+    "2": 8,
+    "3": 12,
+    "4": 21
+   },
+   "kept": 54,
+   "wanted": 44,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 277,
+   "records": 1758,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 75,
+   "textures": 224,
+   "heap_mb": 703.8,
+   "near": 1.9890907276476357e-05,
+   "far": 0.31623871129515235,
+   "tilt_deg": 75,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 34,
+    "ms": 0.6,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 1091,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 540.1,
+    "renderer": 1339.9,
+    "gpu": 353.3
+   },
+   "frame_ms": 0.36,
+   "fps_uncapped": 2817,
+   "hover": "Detail 25 m/px: land, 4 m (9.856, 86.185; tile py.1.1/4/126/72)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7",
+   "float_km": {
+    "region_km": 89.2,
+    "built": {
+     "n": 5,
+     "median": 0.7637,
+     "p90": 0.7641,
+     "max": 0.7641
+    },
+    "draped": {
+     "n": 2131,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "15_tilted_back.png",
+   "note": "a right-drag down: back toward straight down",
+   "h_km": 1.218,
+   "drawn": 35,
+   "byLevel": {
+    "1": 3,
+    "2": 4,
+    "3": 7,
+    "4": 21
+   },
+   "kept": 55,
+   "wanted": 37,
+   "queued": 0,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 280.7,
+   "records": 1858,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 76,
+   "textures": 228,
+   "heap_mb": 669.2,
+   "near": 7.644182794619425e-05,
+   "far": 0.32581501651955913,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 38,
+    "ms": 0.7,
+    "msMax": 3.8,
+    "segs": 2,
+    "pieces": 1024,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 540.2,
+    "renderer": 1321.7,
+    "gpu": 353.5
+   },
+   "frame_ms": 0.34,
+   "fps_uncapped": 2970,
+   "hover": "Detail 25 m/px: land, 4 m (9.856, 86.185; tile py.1.1/4/126/72)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7",
+   "float_km": {
+    "region_km": 0.8,
+    "built": {
+     "n": 2,
+     "median": 0.762,
+     "p90": 0.762,
+     "max": 0.762
+    },
+    "draped": {
+     "n": 30,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "16_tilted_up.png",
+   "note": "a right-drag up: toward the horizon",
+   "h_km": 0.317,
+   "drawn": 44,
+   "byLevel": {
+    "1": 3,
+    "2": 8,
+    "3": 12,
+    "4": 21
+   },
+   "kept": 55,
+   "wanted": 44,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 280.7,
+   "records": 1806,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 76,
+   "textures": 228,
+   "heap_mb": 658.8,
+   "near": 1.9890907276476357e-05,
+   "far": 0.31623871129515235,
+   "tilt_deg": 75,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 44,
+    "ms": 0.8,
+    "msMax": 3.8,
+    "segs": 3,
+    "pieces": 1091,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 540.1,
+    "renderer": 1316.8,
+    "gpu": 353.5
+   },
+   "frame_ms": 0.4,
+   "fps_uncapped": 2500,
+   "hover": "Detail 25 m/px: land, 4 m (9.856, 86.185; tile py.1.1/4/126/72)\nthe globe cell here:\ncell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7",
+   "float_km": {
+    "region_km": 89.2,
+    "built": {
+     "n": 5,
+     "median": 0.7637,
+     "p90": 0.7641,
+     "max": 0.7641
+    },
+    "draped": {
+     "n": 2131,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "17_back_at_orbit.png",
+   "note": "scrolled back out: the cells again",
+   "h_km": 15625.299,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 56,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 284.4,
+   "records": 2826,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 69,
+   "textures": 232,
+   "heap_mb": 689.5,
+   "near": 1.0512850382172927,
+   "far": 5.4525700764345855,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 78,
+    "ms": 0.3,
+    "msMax": 3.8,
+    "segs": 17,
+    "pieces": 234,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 540.6,
+    "renderer": 1331.2,
+    "gpu": 353.9
+   },
+   "frame_ms": 0.15,
+   "fps_uncapped": 6818,
+   "hover": "cell 37309 lat 9.9, lon 86.2\nelevation\n1 m\nvegetation\ntropical monsoon (semi-evergreen) forest\ntrees\n65%\nNPP\n561 g C/m\u00b2/yr\nsoil\nriver-laid alluvium (Fluvisol / Entisol (fluvent)), silt \u00b7 2.1 m deep \u00b7 fertility 0.4 \u00b7 holds 242 mm \u00b7 6 kg C/m\u00b2 \u00b7 moderate drained\nnavigable\nsea-going\nhazards\nbogs and mir",
+   "float_km": {
+    "region_km": 8160.9,
+    "built": {
+     "n": 4625,
+     "median": 19.1446,
+     "p90": 76.4934,
+     "max": 95.4066
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  }
+ ],
+ "waits": [
+  {
+   "level": 1,
+   "seconds": 0.0,
+   "badge_seen": true,
+   "arrived": true
+  },
+  {
+   "level": 2,
+   "seconds": 0.0,
+   "badge_seen": true,
+   "arrived": true
+  },
+  {
+   "level": 3,
+   "seconds": 0.0,
+   "badge_seen": true,
+   "arrived": true
+  },
+  {
+   "level": 4,
+   "seconds": 0.0,
+   "badge_seen": true,
+   "arrived": true
+  }
+ ],
+ "ground_settle_s": 50.1,
+ "drape_log": [
+  [
+   297.87,
+   1.5,
+   20,
+   226,
+   356
+  ],
+  [
+   214.16,
+   1.1,
+   15,
+   232,
+   255
+  ],
+  [
+   153.71,
+   3.8,
+   12,
+   249,
+   190
+  ],
+  [
+   137.25,
+   0.4,
+   12,
+   271,
+   175
+  ],
+  [
+   137.25,
+   0.5,
+   12,
+   271,
+   175
+  ],
+  [
+   87,
+   0.5,
+   9,
+   296,
+   121
+  ],
+  [
+   54.44,
+   0.3,
+   3,
+   177,
+   85
+  ],
+  [
+   37.53,
+   0.2,
+   3,
+   234,
+   70
+  ],
+  [
+   37.53,
+   0.4,
+   3,
+   234,
+   70
+  ],
+  [
+   23,
+   0.5,
+   2,
+   279,
+   50
+  ],
+  [
+   17.6,
+   0.3,
+   2,
+   348,
+   44
+  ],
+  [
+   11.93,
+   0.4,
+   2,
+   483,
+   35
+  ],
+  [
+   11.81,
+   0.6,
+   2,
+   483,
+   36
+  ],
+  [
+   9.03,
+   0.5,
+   2,
+   602,
+   31
+  ],
+  [
+   5.25,
+   0.9,
+   2,
+   933,
+   23
+  ],
+  [
+   3.35,
+   0.6,
+   2,
+   1024,
+   20
+  ],
+  [
+   2.42,
+   0.6,
+   2,
+   1024,
+   20
+  ],
+  [
+   1.82,
+   0.6,
+   2,
+   1024,
+   20
+  ],
+  [
+   1.1,
+   1,
+   2,
+   1024,
+   23
+  ],
+  [
+   0.91,
+   0.7,
+   2,
+   1024,
+   36
+  ],
+  [
+   0.77,
+   0.7,
+   3,
+   1091,
+   62
+  ],
+  [
+   0.76,
+   0.9,
+   9,
+   1307,
+   124
+  ],
+  [
+   0.43,
+   0.7,
+   3,
+   1091,
+   100
+  ],
+  [
+   0.32,
+   1,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   0.8,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   0.7,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   0.6,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   1.5,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   1.3,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   0.7,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   1.5,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   0.7,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   1.3,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   0.6,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.55,
+   0.6,
+   2,
+   1024,
+   20
+  ],
+  [
+   0.95,
+   0.8,
+   2,
+   1024,
+   20
+  ],
+  [
+   1.22,
+   0.4,
+   2,
+   1024,
+   20
+  ],
+  [
+   1.22,
+   0.7,
+   2,
+   1024,
+   20
+  ],
+  [
+   1.15,
+   0.7,
+   2,
+   1024,
+   20
+  ],
+  [
+   0.74,
+   0.6,
+   2,
+   1024,
+   20
+  ],
+  [
+   0.39,
+   0.9,
+   3,
+   1091,
+   96
+  ],
+  [
+   0.39,
+   0.6,
+   3,
+   1091,
+   96
+  ],
+  [
+   0.32,
+   1,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.32,
+   0.8,
+   3,
+   1091,
+   89
+  ],
+  [
+   0.35,
+   0.6,
+   3,
+   1091,
+   93
+  ],
+  [
+   0.35,
+   0.8,
+   3,
+   1091,
+   93
+  ],
+  [
+   0.4,
+   0.9,
+   3,
+   1091,
+   97
+  ],
+  [
+   0.4,
+   0.7,
+   3,
+   1091,
+   97
+  ],
+  [
+   0.4,
+   0.9,
+   3,
+   1091,
+   97
+  ],
+  [
+   0.4,
+   0.5,
+   3,
+   1091,
+   97
+  ],
+  [
+   0.4,
+   0.8,
+   3,
+   1091,
+   97
+  ],
+  [
+   0.46,
+   0.5,
+   4,
+   1129,
+   102
+  ],
+  [
+   0.47,
+   0.5,
+   5,
+   1167,
+   103
+  ],
+  [
+   0.49,
+   0.8,
+   5,
+   1167,
+   104
+  ],
+  [
+   0.49,
+   0.7,
+   6,
+   1203,
+   105
+  ],
+  [
+   0.57,
+   0.9,
+   7,
+   1238,
+   111
+  ],
+  [
+   0.58,
+   0.6,
+   8,
+   1272,
+   112
+  ],
+  [
+   0.6,
+   1.1,
+   8,
+   1272,
+   113
+  ],
+  [
+   0.6,
+   1.2,
+   8,
+   1272,
+   113
+  ],
+  [
+   0.6,
+   0.6,
+   8,
+   1272,
+   113
+  ],
+  [
+   0.69,
+   0.6,
+   9,
+   1307,
+   119
+  ],
+  [
+   0.71,
+   1.1,
+   9,
+   1307,
+   121
+  ],
+  [
+   0.73,
+   0.8,
+   9,
+   1307,
+   122
+  ],
+  [
+   0.73,
+   0.8,
+   9,
+   1307,
+   122
+  ],
+  [
+   0.73,
+   0.7,
+   9,
+   1307,
+   122
+  ],
+  [
+   0.84,
+   1.2,
+   9,
+   1307,
+   129
+  ],
+  [
+   1.43,
+   0.7,
+   2,
+   1024,
+   24
+  ],
+  [
+   2.34,
+   0.7,
+   2,
+   1024,
+   21
+  ],
+  [
+   3.76,
+   0.5,
+   2,
+   1024,
+   22
+  ],
+  [
+   6.68,
+   0.3,
+   2,
+   749,
+   28
+  ],
+  [
+   10.32,
+   0.3,
+   2,
+   539,
+   33
+  ],
+  [
+   17.31,
+   0.3,
+   2,
+   348,
+   45
+  ],
+  [
+   25.8,
+   0.2,
+   2,
+   250,
+   56
+  ],
+  [
+   42.06,
+   0.2,
+   3,
+   214,
+   77
+  ],
+  [
+   60.94,
+   0.2,
+   5,
+   230,
+   94
+  ],
+  [
+   97.45,
+   0.4,
+   9,
+   276,
+   134
+  ],
+  [
+   153.56,
+   0.2,
+   13,
+   265,
+   192
+  ],
+  [
+   239.06,
+   0.3,
+   17,
+   234,
+   285
+  ]
+ ],
+ "dive": {
+  "moving_frames": 231,
+  "fps_median": 59.9,
+  "fps_p10_frame": 59.9,
+  "max_turn_deg": 0.0146,
+  "max_view_turn_deg": 0.999,
+  "view_turns_top": [
+   [
+    0.999,
+    20.138
+   ],
+   [
+    0.504,
+    3.346
+   ],
+   [
+    0.504,
+    171.753
+   ],
+   [
+    0.504,
+    29.572
+   ],
+   [
+    0.504,
+    1.083
+   ]
+  ],
+  "max_height_ratio": 1.149
+ },
+ "out": {
+  "moving_frames": 232,
+  "fps_median": 59.9,
+  "fps_p10_frame": 59.9,
+  "max_turn_deg": 0.0146,
+  "max_view_turn_deg": 0.504,
+  "view_turns_top": [
+   [
+    0.504,
+    4.319
+   ],
+   [
+    0.504,
+    1.479
+   ],
+   [
+    0.504,
+    7.686
+   ],
+   [
+    0.504,
+    47.534
+   ],
+   [
+    0.504,
+    11.612
+   ]
+  ],
+  "max_height_ratio": 1.152
+ }
+}

@@ -3,7 +3,7 @@ import { S, state } from './state.js';
 import { canvasSprite } from './draw.js';
 import { $, DIAG, group } from './scene.js';
 import { huOverlays, techOverlays, techTree } from './colours.js';
-import { cellPos, cellPositions, disposeObj, lineObj, llMode, llPoint, llPos, llPosPt, plateVelocity, reliefScale, ribbonObj, select, toThree, unitVec } from './geometry.js';
+import { cellPos, cellPositions, disposeObj, lineObj, llMode, llPoint, llPos, llPosPt, plateVelocity, reliefScale, ribbonObj, riverUnderTiles, select, toThree, unitVec } from './geometry.js';
 import { buildAxis, buildLandmassNames } from './axis.js';
 import { projOverlaysChanged, windKey } from './map2d.js';
 import { buildHighlightMarks } from './highlights.js';
@@ -176,9 +176,9 @@ export function buildOverlays() {
     const sat = state.layer === 'satellite';  // (river water in the satellite view: dark)
     S.overlays.rivers = ribbonObj(small, sat ? 0x2a4d63 : 0x4fb3ff, sat ? 0.7 : 1, 1.5);
     S.overlays.riversBig = ribbonObj(large, sat ? 0x24485e : 0xa8e1ff, 1, 2.5);
-    // (PW-1711: hidden where a level-2 or finer tile is drawn, which marks stencil bit 2 and draws its own rivers from
-    // its discharge at this threshold and colour: lodtiles.js; the draped copies clone these materials)
-    for (const o of [S.overlays.rivers, S.overlays.riversBig]) Object.assign(o.material, { stencilWrite: true, stencilWriteMask: 0, stencilRef: 2, stencilFuncMask: 2, stencilFunc: THREE.NotEqualStencilFunc });
+    // (PW-1711: hidden where a level-2 or finer tile is drawn; it draws its own rivers from its discharge at this
+    // threshold and in these colours: lodtiles.js)
+    riverUnderTiles(S.overlays.rivers); riverUnderTiles(S.overlays.riversBig);
     S.riverTiles = { thr, color: sat ? 0x2a4d63 : 0x4fb3ff, colorBig: sat ? 0x24485e : 0xa8e1ff, big };
   } else S.riverTiles = null;
   if (S.V.humanUse?.river_nav) Object.assign(S.overlays, huOverlays(globe, wraps));
