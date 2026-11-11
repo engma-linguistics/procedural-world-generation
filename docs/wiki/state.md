@@ -14,7 +14,7 @@
 
 ## Lanes running (11-10 ~11:50)
 
-As of 2026-11-11. Running: 292 (PW-1693 collapse adds area + PW-1287 A arm), 295 (PW-1699 LOD step 3, then PW-1701, PW-1698), 281f (coordinator flipping POLITIES_LIVE, PW-1700). Merged 11-10/11: 276, 277b (docs), 278, 280, 281b-e, 283-291, 293, 294, 275b. Next LOD: PW-1702 (tiles flood zoom index), PW-1696 (ground camera), step 5, step 6.
+As of 2026-11-11. Running: 296 (PW-1703 thermostat floor, attempt 2), 297 (PW-1705 level 2 at cell edges, PW-1698 falls), 298 (PW-1702 tiles out of zoom index, PW-1704). States in the history ON by default. Merged 11-10/11: 276, 277b (docs), 278, 280, 281b-e, 283-295, 275b. Next LOD: PW-1696 (ground camera), step 5 (to 25 m, layers), step 6 (judge). Scratch lane288 and lane292 await deletion (agents denied rm).
 v0.3.0 tagged (suite 2033 passed); server restarted. Waiting on Daniel: nothing (D73-D79 answered).
 
 ## Milestones (2026-11-09)
