@@ -7,20 +7,25 @@ discharge, so tiles built at different times, in any order, meet at their edges.
 (regional.zoom(section=...)), built matched (zoom/match.py) to whichever neighbouring cells' level 1 is already built:
 the neighbours' ground where they own it, exact at the owner line (the cell edge), blended over match.RAMP_KM inside
 (lod-plan-v2.md 2.3, step 3; PW-1699). Level-1 builds of one world queue one at a time, so each sees every one before.
-A level-2 tile near its cell's edge also fades, over its ramp, to ground carved once along that edge on blocks keyed by
-place on the lattice of the cell whose level 1 the other matched (line_owner): both cells' tiles compute the same
-ground there, one on its own pixels, the other resampled (PW-1705).
+A tile (levels 2-4) near its cell's edge also fades, over its ramp, to ground carved once along that edge on blocks
+keyed by place on the lattice of the cell whose level 1 the other matched (line_owner), from that cell's tiles of the
+parent level (built first if they aren't: build_line_parents): both cells' tiles compute the same ground there, one on
+its own pixels, the other resampled (PW-1705, PW-1708). Within ~2 ramps of a corner where three or four cells meet,
+every one of them blends to one ground carved round the corner on its owner's lattice (owner_of, corner_block).
 
     build(world, key, sources, seed)       the tile (a zoom dict, as fine.build)
     edge_surface(world, key, sources, seed) the ground at its edges, carved on blocks keyed by place (PW-1694)
     line_surface(world, key, lines, seed)   the ground along its cell's edges and how far it fades to it (PW-1705)
-    near_lines(key), line_owner(...)       the cell edges a level-2 tile fades to, and whose lattice carves them
+    near_lines(key), line_owner(...)       the cell edges a tile fades to, and whose lattice carves them
+    near_corners(key), owner_of(...)       the cell corners it blends at, and whose lattice carves them
+    load_lines / build_line_parents         the owners' parent tiles those are carved from: loaded / built
     save(z, world_id, key, pmeta, seed)    an ordinary zoom directory under zooms/<lod.tile_id>, with a `tile` block
     find(world_id, key, seed)              the saved tile's (or level-1 section's) directory, or None
     load_sources(world_id, key, seed)      the parent tiles its build reads (lod.parent_sources), loaded
     built_neighbours(world_id, cell, seed) the ids of the neighbouring cells' level-1 sections already built
     build_level1(world_ref, cell, seed)    find or build-and-save a cell's level 1, matched to them
-    tile(world_ref, key, seed)             find or build-and-save one tile whose parent tiles are built
+    tile(world_ref, key, seed)             find or build-and-save one tile whose parent tiles are built (and the
+                                           owners' tiles along its cell's edges, built here if they aren't)
 Seam diagnostics: edge_steps (siblings), cell_line, line_seam, resampled, line_rivers (two cells' level 1 at their edge).
 """
 from __future__ import annotations
@@ -41,7 +46,8 @@ from . import tiling as ZT
 
 STRIP_PX = 32  # px: an edge block's half width (a strip centred on a tile's edge; its carving clear of its own edge)
 LINE_PER_EDGE = 4000  # points along a cell's edge for its line (1 km apart on a 4,000 km cell)
-LINE_LEVEL = 2  # the level whose tiles fade to their cell's edges (finer ones fade to their parents, PW-1705)
+LINE_LEVEL = 2  # the first level whose tiles fade to their cell's edges (PW-1705; levels 3-4 too, PW-1708)
+CORNER_X = 1.5  # a corner's inner radius in line fades (ramp + 2 px): beyond it a point on one edge is clear of the others
 
 
 def ramp_px(level: int) -> int:
@@ -154,8 +160,8 @@ def _built_xy(key: L.Key) -> tuple[np.ndarray, np.ndarray, int]:
 
 
 def near_lines(key: L.Key) -> list[str]:
-    """The cells whose shared edge with key's cell comes within the line's fade of the tile's built area (level 2)."""
-    if key.level != LINE_LEVEL:
+    """The cells whose shared edge with key's cell comes within the line's fade of the tile's built area (levels 2-4)."""
+    if key.level < LINE_LEVEL:
         return []
     x0, x1, y0, y1 = L.rect(key)
     res = L.res_km(key.level)
@@ -166,6 +172,66 @@ def near_lines(key: L.Key) -> list[str]:
         if ((x > x0 - m) & (x < x1 + m) & (y > y0 - m) & (y < y1 + m)).any():
             out.append(b)
     return out
+
+
+@lru_cache(maxsize=None)
+def cell_corners(cell: str) -> tuple[tuple[tuple[str, ...], tuple[float, float, float]], ...]:
+    """The corners of a cell where three or four cells meet: ((the cells, sorted), the point as a unit vector). The
+    point is the corner of the first of those cells by name (ZT._boundary's vertex), so every one of them names the
+    same floats."""
+    n = ZT.choose_n(L.SQUARE_KM, 190.0)
+    out = []
+    for P in ZT._boundary(*_fij(cell), n, per_edge=1):
+        t1 = np.cross(P, [0.0, 0.0, 1.0] if abs(P[2]) < 0.9 else [1.0, 0.0, 0.0])
+        t1 /= np.linalg.norm(t1)
+        t2 = np.cross(P, t1)
+        ang = np.linspace(0.0, 2 * np.pi, 24, endpoint=False)
+        Q = P + 2e-4 * (np.cos(ang)[:, None] * t1 + np.sin(ang)[:, None] * t2)  # (~1.3 km round it)
+        cells = tuple(sorted(set(_cells_of(Q).tolist())))
+        if len(cells) < 3:
+            continue
+        first = ZT._boundary(*_fij(cells[0]), n, per_edge=1)
+        out.append((cells, tuple(float(v) for v in first[np.argmax(first @ P)])))
+    return tuple(out)
+
+
+def _fij(cell: str) -> tuple[int, int, int]:
+    s = ZT.section(cell, L.SQUARE_KM)
+    return list(ZT.FACES).index(s["face"]), s["i"], s["j"]
+
+
+def _corner_px(level: int) -> tuple[float, float]:
+    """(inner, outer) radius in the level's px of a corner's ground round a corner: every cell meeting there blends to
+    it alone within the inner (far enough out that a point on one edge is beyond the line's fade of the others), to
+    nothing at the outer."""
+    r0 = CORNER_X * (ramp_px(level) + 2.0)
+    return r0, r0 + ramp_px(level) + 2.0
+
+
+def near_corners(key: L.Key) -> list[tuple[str, ...]]:
+    """The corners of key's cell (cell_corners) whose ground reaches the tile's built area (levels 2-4)."""
+    if key.level < LINE_LEVEL:
+        return []
+    x0, x1, y0, y1 = L.rect(key)
+    res = L.res_km(key.level)
+    m = (ZF._halo_px(L.res_km(key.level - 1), res) + _corner_px(key.level)[1] + 2) * res
+    out = []
+    for cells, P in cell_corners(key.cell):
+        x, y = L.frame(key.cell).to_plane(np.array([P]))
+        if x0 - m < x[0] < x1 + m and y0 - m < y[0] < y1 + m:
+            out.append(cells)
+    return out
+
+
+def corner_block(owner: str, cells: tuple[str, ...], level: int) -> tuple[int, int, int, int]:
+    """The block a corner's ground is carved on: a square on owner's lattice of a level round the corner's pixel,
+    reaching the corner's outer radius and STRIP_PX past it (a function of the corner and the owner only)."""
+    P = dict(cell_corners(cells[0]))[cells]
+    res = L.res_km(level)
+    x, y = L.frame(owner).to_plane(np.array([P]))
+    c, r = int(np.floor((x[0] + L.HALF) / res)), int(np.floor((L.HALF - y[0]) / res))
+    h = int(np.ceil(_corner_px(level)[1])) + STRIP_PX + 4
+    return c - h, c + h + 1, r - h, r + h + 1
 
 
 def _polyline_dist(px: np.ndarray, py: np.ndarray, x: np.ndarray, y: np.ndarray, reach: float) -> np.ndarray:
@@ -204,83 +270,152 @@ def line_blocks(owner: str, other: str, level: int) -> tuple[bool, int, list[tup
     return rows, n, out
 
 
-def line_surface(world: dict, key: L.Key, lines: dict, seed: int = 1, log=print) -> tuple | None:
-    """The ground a level-2 tile fades to along its cell's edges, and how far: (surface, weight) over its built area
-    (flat, as fine.build's `line`), or None if no edge is near. lines: {other cell: (owner cell, owner's level-1
-    {Key: (meta, layers)})}. Each edge's ground is carved on line_blocks of the owner's lattice from the owner's
-    level 1 (carve_block), blended between blocks over the ramp, and read here at the tile's pixels (bilinear; on
-    the owner's own pixels, exact); the weight is 1 within a pixel and a half of the edge (both sides) and 0 a ramp
-    away. Both cells' tiles meet that ground at the edge (docs/review/zoom/lod-plan-v2.md 2.3; PW-1705)."""
+def _owner_px(key: L.Key, owner: str, X: np.ndarray, Y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Plane points (km) of key's cell as fractional (column, row) on owner's lattice of key's level (pixel centres at
+    integers; on key's own cell, exactly its pixels' indices)."""
+    res = L.res_km(key.level)
+    if owner != key.cell:
+        X, Y = L.frame(owner).to_plane(L.frame(key.cell).to_sphere(X, Y))
+    return (X + L.HALF) / res - 0.5, (L.HALF - Y) / res - 0.5
+
+
+def _bilinear(hw: np.ndarray, b: tuple, ck: np.ndarray, rk: np.ndarray, what: str) -> np.ndarray:
+    """A carved block hw (on lattice rectangle b) read at owner-lattice (column, row) points."""
+    fr, fc = rk - b[2], ck - b[0]
+    if fr.min() < 0 or fc.min() < 0 or fr.max() > hw.shape[0] - 1 or fc.max() > hw.shape[1] - 1:
+        raise ValueError(f"{what}: the block doesn't cover the tile's ramp")
+    r0 = np.minimum(np.floor(fr).astype(int), hw.shape[0] - 2)
+    c0 = np.minimum(np.floor(fc).astype(int), hw.shape[1] - 2)
+    tr, tc = fr - r0, fc - c0
+    return (hw[r0, c0] * (1 - tr) * (1 - tc) + hw[r0, c0 + 1] * (1 - tr) * tc + hw[r0 + 1, c0] * tr * (1 - tc)
+            + hw[r0 + 1, c0 + 1] * tr * tc)
+
+
+def _line_plan(key: L.Key, other: str, owner: str) -> tuple | None:
+    """Where a tile fades to the ground along its cell's edge with `other` (carved on owner's lattice): (the built
+    area's pixels within the fade, their fade weight, their (column, row) on owner's lattice, [(block, its weight
+    along the line at those pixels)] of line_blocks it reads), or None if the edge's fade misses the tile."""
+    res, r_ = L.res_km(key.level), ramp_px(key.level)
+    X, Y, _ = _built_xy(key)
+    lx, ly = L.frame(key.cell).to_plane(_line(key.cell, other))
+    d = _polyline_dist(X, Y, lx, ly, (_line_px(key) + 2) * res)
+    a = 1.0 - ZF.smoothstep(1.5 * res, (r_ + 1.5) * res, d)
+    sel = np.flatnonzero(a > 0)
+    if not len(sel):
+        return None
+    ck, rk = _owner_px(key, owner, X[sel], Y[sel])
+    rows, n, blocks = line_blocks(owner, other if owner == key.cell else key.cell, key.level)
+    along = rk if rows else ck
+    bz = r_ + 2.0
+    out = []
+    for i, (j, b) in enumerate(blocks):
+        up = 1.0 if i == 0 else ZF.smoothstep(j * n - 0.5 - bz, j * n - 0.5 + bz, along)
+        down = 0.0 if i == len(blocks) - 1 else ZF.smoothstep((j + 1) * n - 0.5 - bz, (j + 1) * n - 0.5 + bz, along)
+        w = up * (1.0 - down)
+        if (w > 0).any():
+            out.append((b, w))
+    return sel, a[sel], ck, rk, out
+
+
+def _corner_plan(key: L.Key, cells: tuple[str, ...], owner: str) -> tuple | None:
+    """Where a tile blends to a corner's ground (carved on owner's lattice, corner_block): (the built area's pixels
+    within the corner's outer radius, their weight, their (column, row) on owner's lattice, the block), or None."""
+    res = L.res_km(key.level)
+    X, Y, _ = _built_xy(key)
+    x, y = L.frame(key.cell).to_plane(np.array([dict(cell_corners(cells[0]))[cells]]))
+    r0, r1 = _corner_px(key.level)
+    wc = 1.0 - ZF.smoothstep(r0 * res, r1 * res, np.hypot(X - x[0], Y - y[0]))
+    sel = np.flatnonzero(wc > 0)
+    if not len(sel):
+        return None
+    ck, rk = _owner_px(key, owner, X[sel], Y[sel])
+    return sel, wc[sel], ck, rk, corner_block(owner, cells, key.level)
+
+
+def _okey(owner: str, level: int, osrc: dict) -> L.Key:
+    """A tile of owner's level whose parent is among the sources (parent_mosaic's key for a block: only its level and
+    cell count once the window is given)."""
+    k = min(osrc)
+    if k.level == min(L.LEVELS):
+        return L.Key(owner, level, 0, 0)
+    br = L.branching(k.level)
+    return L.Key(owner, level, k.tx * br, k.ty * br)
+
+
+def line_surface(world: dict, key: L.Key, lines: dict, seed: int = 1, log=print, corners: dict | None = None
+                 ) -> tuple | None:
+    """The ground a tile (levels 2-4) fades to along its cell's edges, and how far: (surface, weight) over its built
+    area (flat, as fine.build's `line`), or None if no edge is near. lines: {other cell: (owner cell, owner's parent-
+    level {Key: (meta, layers)} under the blocks)}; corners: {cells meeting at a corner: (owner, its sources)}. Each
+    edge's ground is carved on line_blocks of the owner's lattice from the owner's parent level (carve_block), blended
+    between blocks over the ramp, and read here at the tile's pixels (bilinear; on the owner's own pixels, exact); the
+    weight is 1 within a pixel and a half of the edge (both sides) and 0 a ramp away. Near a corner every cell meeting
+    there blends to one ground carved round the corner on its owner's lattice (corner_block): alone within the inner
+    radius (_corner_px), where a point on one edge is clear of the others' fades, so every cell's surface is the same
+    function of the place there. Both cells' tiles meet that ground at the edge (lod-plan-v2.md 2.3; PW-1705/1708)."""
     if not lines:
         return None
-    res = L.res_km(key.level)
-    r_ = ramp_px(key.level)
-    X, Y, nb = _built_xy(key)
+    _, _, nb = _built_xy(key)
     num, den, wmax = np.zeros(nb * nb), np.zeros(nb * nb), np.zeros(nb * nb)
     for other, (owner, osrc) in sorted(lines.items()):
-        lx, ly = L.frame(key.cell).to_plane(_line(key.cell, other))
-        d = _polyline_dist(X, Y, lx, ly, (_line_px(key) + 2) * res)
-        a = 1.0 - ZF.smoothstep(1.5 * res, (r_ + 1.5) * res, d)
-        sel = np.flatnonzero(a > 0)
-        if not len(sel):
+        plan = _line_plan(key, other, owner)
+        if plan is None:
             continue
-        if owner == key.cell:  # (its own lattice: the pixels' indices, exact)
-            ck = (X[sel] + L.HALF) / res - 0.5
-            rk = (L.HALF - Y[sel]) / res - 0.5
-        else:
-            xk, yk = L.frame(owner).to_plane(L.frame(key.cell).to_sphere(X[sel], Y[sel]))
-            ck, rk = (xk + L.HALF) / res - 0.5, (L.HALF - yk) / res - 0.5
-        rows, n, blocks = line_blocks(owner, other if owner == key.cell else key.cell, key.level)
-        along = rk if rows else ck
-        bz = r_ + 2.0
-        used = []
-        val = np.zeros(len(sel))
-        okey = L.Key(owner, key.level, 0, 0)
+        sel, a, ck, rk, blocks = plan
+        okey = _okey(owner, key.level, osrc)
         t0 = time.time()
-        for i, (j, b) in enumerate(blocks):
-            up = 1.0 if i == 0 else ZF.smoothstep(j * n - 0.5 - bz, j * n - 0.5 + bz, along)
-            down = 0.0 if i == len(blocks) - 1 else ZF.smoothstep((j + 1) * n - 0.5 - bz, (j + 1) * n - 0.5 + bz, along)
-            w = up * (1.0 - down)
+        val = np.zeros(len(sel))
+        for b, w in blocks:
             use = w > 0
-            if not use.any():
-                continue
             hw = carve_block(world, okey, osrc, b, seed)
-            used.append(j)
-            fr, fc = rk[use] - b[2], ck[use] - b[0]
-            if fr.min() < 0 or fc.min() < 0 or fr.max() > hw.shape[0] - 1 or fc.max() > hw.shape[1] - 1:
-                raise ValueError(f"cell line {key.cell}|{other}: block {j} doesn't cover the tile's ramp")
-            r0 = np.minimum(np.floor(fr).astype(int), hw.shape[0] - 2)
-            c0 = np.minimum(np.floor(fc).astype(int), hw.shape[1] - 2)
-            tr, tc = fr - r0, fc - c0
-            v = (hw[r0, c0] * (1 - tr) * (1 - tc) + hw[r0, c0 + 1] * (1 - tr) * tc + hw[r0 + 1, c0] * tr * (1 - tc)
-                 + hw[r0 + 1, c0 + 1] * tr * tc)
-            val[use] += w[use] * v
-        log(f"  cell line {key.cell}|{other} on {owner}'s lattice: {len(sel)} px, blocks {used} [{time.time() - t0:.1f}s]")
-        num[sel] += a[sel] * val
-        den[sel] += a[sel]
-        wmax[sel] = np.maximum(wmax[sel], a[sel])
+            val[use] += w[use] * _bilinear(hw, b, ck[use], rk[use], f"cell line {key.cell}|{other}")
+        log(f"  cell line {key.cell}|{other} on {owner}'s lattice: {len(sel)} px, {len(blocks)} blocks "
+            f"[{time.time() - t0:.1f}s]")
+        num[sel] += a * val
+        den[sel] += a
+        wmax[sel] = np.maximum(wmax[sel], a)
     if not (wmax > 0).any():
         return None
-    return np.where(den > 0, num / np.maximum(den, 1e-12), np.nan), wmax
+    surf = np.where(den > 0, num / np.maximum(den, 1e-12), np.nan)
+    for cells, (owner, osrc) in sorted((corners or {}).items()):
+        plan = _corner_plan(key, cells, owner)
+        if plan is None:
+            continue
+        sel, wc, ck, rk, b = plan
+        keep = wmax[sel] > 0  # (only where the tile fades to the line at all)
+        if not keep.any():
+            continue
+        sel, wc, ck, rk = sel[keep], wc[keep], ck[keep], rk[keep]
+        t0 = time.time()
+        g = _bilinear(carve_block(world, _okey(owner, key.level, osrc), osrc, b, seed), b, ck, rk,
+                      f"corner {'+'.join(cells)}")
+        s_ = surf[sel]
+        surf[sel] = np.where(np.isnan(s_), g, wc * g + (1.0 - wc) * s_)
+        log(f"  corner {'+'.join(cells)} on {owner}'s lattice: {len(sel)} px [{time.time() - t0:.1f}s]")
+    return surf, wmax
+
+
+def owner_of(world_id: str, cells, seed: int = 1) -> str:
+    """Whose lattice and level 1 carve the ground cells meet on (an edge, or a corner): the earliest built of them,
+    i.e. a built one whose level 1 was matched to none of the others (the later ones were matched to it); the first by
+    name if several were built alone. The same answer from any of them once the earliest is built."""
+    dirs = {c: _section_dir(world_id, c, seed) for c in sorted(set(cells))}
+    built = {c: d for c, d in dirs.items() if d is not None}
+    if not built:
+        raise ValueError(f"none of {', '.join(sorted(dirs))} has its level 1 built")
+    ids = {d.name for d in built.values()}
+
+    def matched(d):
+        return set(json.loads((d / "zoom.json").read_text()).get("matched_to") or [])
+    roots = [c for c, d in built.items() if not (matched(d) & (ids - {d.name}))]
+    return min(roots or built)
 
 
 def line_owner(world_id: str, a: str, b: str, seed: int = 1) -> str:
     """Whose lattice and level 1 carve the ground along cells a and b's shared edge: the one the other's level 1 was
     matched to (the earlier); if only one is built, that one (the other will be matched to it); if both were built
-    alone, the first by name. The same answer from either cell once the earlier is built."""
-    da, db = _section_dir(world_id, a, seed), _section_dir(world_id, b, seed)
-    if da is None or db is None:
-        if da is None and db is None:
-            raise ValueError(f"neither {a} nor {b} has its level 1 built")
-        return a if db is None else b
-
-    def matched(d):
-        return set(json.loads((d / "zoom.json").read_text()).get("matched_to") or [])
-    if da.name in matched(db):
-        return a
-    if db.name in matched(da):
-        return b
-    return min(a, b)
+    alone, the first by name (owner_of)."""
+    return owner_of(world_id, (a, b), seed)
 
 
 def _with_phase(sources: dict, seed: int) -> dict:
@@ -292,29 +427,79 @@ def _with_phase(sources: dict, seed: int) -> dict:
     return out
 
 
-def load_lines(world_id: str, key: L.Key, sources: dict, seed: int = 1) -> dict:
-    """{other cell: (owner, owner's level-1 sources)} of the cell edges a level-2 tile fades to (near_lines); the
-    tile's own section (from `sources`) where its cell is the owner."""
-    out = {}
+def _block_parents(owner: str, level: int, b: tuple) -> list[L.Key]:
+    """owner's parent-level tiles a block of a level is carved from (lod.parent_mosaic's window round it)."""
+    if level - 1 == min(L.LEVELS):
+        return [L.Key(owner, level - 1, 0, 0)]
+    rp = L.res_km(level - 1)
+    c0, c1, r0, r1 = L._window_px(L.Key(owner, level, 0, 0), _block_rect(level, b))
+    return L.covering(owner, level - 1, (-L.HALF + c0 * rp, -L.HALF + c1 * rp, L.HALF - r1 * rp, L.HALF - r0 * rp))
+
+
+def _cell_edge_parents(world_id: str, key: L.Key, seed: int = 1) -> tuple[dict, dict]:
+    """({other cell: (owner, [parent-level keys])}, {corner cells: (owner, [keys])}): the owners' tiles of key's parent
+    level the ground along its cell's edges and corners is carved from."""
+    lines, corners = {}, {}
     for b in near_lines(key):
         owner = line_owner(world_id, key.cell, b, seed)
-        if owner == key.cell:
-            out[b] = (owner, {k: v for k, v in sources.items() if k.level == min(L.LEVELS)})
-        else:
-            k1 = L.Key(owner, min(L.LEVELS), 0, 0)
-            out[b] = (owner, {k1: Z.load(find(world_id, k1, seed), decode=True)})
-    return out
+        plan = _line_plan(key, b, owner)
+        if plan is not None:
+            lines[b] = (owner, sorted({k for bl, _ in plan[4] for k in _block_parents(owner, key.level, bl)}))
+    if lines:
+        for cells in near_corners(key):
+            owner = owner_of(world_id, cells, seed)
+            plan = _corner_plan(key, cells, owner)
+            if plan is not None:
+                corners[cells] = (owner, _block_parents(owner, key.level, plan[4]))
+    return lines, corners
 
 
-def build(world: dict, key: L.Key, sources: dict, seed: int = 1, log=print, lines: dict | None = None) -> dict:
+def build_line_parents(world_ref: str, key: L.Key, seed: int = 1, log=print) -> list[L.Key]:
+    """Builds (tile) the owners' parent-level tiles the ground along a tile's cell edges and corners is carved from that
+    aren't built yet (levels 3-4: the other cell's tiles along the line need not have been wanted). Returns them."""
+    wid = Z.find_world(world_ref).stem
+    lines, corners = _cell_edge_parents(wid, key, seed)
+    need = sorted({k for _, ks in (*lines.values(), *corners.values()) for k in ks if find(wid, k, seed) is None})
+    for k in need:
+        log(f"  {key} needs {k} along its cell's edge: building it")
+        tile(world_ref, k, seed, log=log)
+    return need
+
+
+def load_lines(world_id: str, key: L.Key, sources: dict, seed: int = 1) -> tuple[dict, dict]:
+    """({other cell: (owner, owner's parent-level sources under the blocks)}, {corner cells: (owner, sources)}) of the
+    cell edges and corners a tile (levels 2-4) fades to; reused from `sources` where they are the tile's own. The
+    owners' tiles must be built (build_line_parents)."""
+    cache = dict(sources)
+
+    def load(keys):
+        out = {}
+        for k in keys:
+            if k not in cache:
+                d = find(world_id, k, seed)
+                if d is None:
+                    raise ValueError(f"tile {key} needs {k} along its cell's edge, which is not built")
+                cache[k] = Z.load(d, decode=True)
+            out[k] = cache[k]
+        return out
+    lines, corners = _cell_edge_parents(world_id, key, seed)
+    return ({b: (o, load(ks)) for b, (o, ks) in lines.items()}, {c: (o, load(ks)) for c, (o, ks) in corners.items()})
+
+
+def build(world: dict, key: L.Key, sources: dict, seed: int = 1, log=print, lines: dict | None = None,
+          corners: dict | None = None) -> dict:
     """The tile `key` from its parent tiles `sources` ({Key: (meta, decoded layers)}, load_sources), faded at its
-    cell's edges to the ground along them (`lines`, load_lines; level 2). Deterministic: the same sources give the
-    same arrays."""
+    cell's edges and corners to the ground along them (`lines`, `corners`: load_lines). Deterministic: the same
+    sources give the same arrays."""
     if key.level == min(L.LEVELS):
         raise ValueError("level 1 is the cell's section: regional.zoom(section=...)")
     # (a section has no river_phase: its whole network's, so every level-2 tile of the cell reads the same)
     sources = _with_phase(sources, seed)
-    lines = {b: (o, sources if o == key.cell else _with_phase(s, seed)) for b, (o, s) in (lines or {}).items()}
+
+    def phased(o, s):
+        return sources if o == key.cell and key.level == LINE_LEVEL else _with_phase(s, seed)
+    lines = {b: (o, phased(o, s)) for b, (o, s) in (lines or {}).items()}
+    corners = {c: (o, phased(o, s)) for c, (o, s) in (corners or {}).items()}
     pm = L.parent_mosaic(key, sources)
     fr = L.tile_frame(key)
     lat, lon = Z._latlon(fr.c)
@@ -322,13 +507,14 @@ def build(world: dict, key: L.Key, sources: dict, seed: int = 1, log=print, line
     edge = edge_surface(world, key, sources, seed)
     log(f"  edge blocks carved [{time.time() - t0:.1f}s]")
     t0 = time.time()
-    line = line_surface(world, key, lines, seed, log=log)
+    line = line_surface(world, key, lines, seed, log=log, corners=corners)
     if line is not None:
         log(f"  cell edges carved [{time.time() - t0:.1f}s]")
     z = ZF.build(pm, world, lat, lon, L.tile_km(key.level), L.res_km(key.level), seed, log=log, frame=fr, seam=True,
                  edge=edge, line=line)
     z["parent_meta"] = pm[0]  # (what save() records the tile was built from)
-    z["cell_lines"] = {b: o for b, (o, _) in sorted(lines.items())}
+    z["cell_lines"] = {**{b: o for b, (o, _) in sorted(lines.items())},
+                       **{"+".join(c): o for c, (o, _) in sorted(corners.items())}}
     return z
 
 
@@ -459,10 +645,11 @@ def tile(world_ref: str, key: L.Key | str, seed: int = 1, log=print) -> Path:
     if not L.exists(key):
         raise ValueError(f"tile {key} is not part of cell {key.cell}'s pyramid")
     t0 = time.time()
+    build_line_parents(str(wpath), key, seed, log=log)  # (first: nothing of this tile's is loaded meanwhile)
     src = load_sources(wid, key, seed)
-    lines = load_lines(wid, key, src, seed)
+    lines, corners = load_lines(wid, key, src, seed)
     world = W.load(wpath)
-    z = build(world, key, src, seed, log=log, lines=lines)
+    z = build(world, key, src, seed, log=log, lines=lines, corners=corners)
     with S.lock(S.zooms_dir(), L.tile_id(wid, key, seed)):
         out = save(z, wid, key, seed)
     # (its parent's deposits that lie inside it, at their place: each deposit in the one tile holding its point, the
