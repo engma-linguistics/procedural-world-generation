@@ -1,4 +1,5 @@
 ---
+id: PW-1713
 title: "LOD tiles: big rivers cross a cell edge 1-4 km apart on the two sides at levels 3-4"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane300
 blocked_by: []
 relates: [PW-1708, PW-1705, PW-1355, PW-1302]
 refs: ["planet/zoom/lod_build.py::line_rivers", "planet/zoom/lod_build.py::line_surface", "planet/zoom/fine.py::_courses", "planet/zoom/fine.py::build", "planet/zoom/lod.py::parent_mosaic", tests/test_zoom_lod_cells.py, docs/review/zoom/lod-plan-v2.md, "world dba204", "cells py.1.1, py.0.1", "tiles py.1.1/3/0/15-16, py.0.1/3/28/15-16"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -32,3 +35,6 @@ What to try: lay a parent river's course near the line once, by place, on the ow
 into the earlier stays the earlier's own estimate, PW-1355).
 - [ ] dba204 py.1.1 | py.0.1 at level 3, both orders: every river >= 100 m3/s crossing the line finds the other
       side's within 2 px, within 20% of its discharge (or the later->earlier estimate, PW-1355)
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-rivers-jog-at-cell-edges-levels-3-4.md (found by lane300).

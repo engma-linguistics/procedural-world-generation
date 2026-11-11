@@ -2,7 +2,7 @@
 id: PW-1708
 title: "LOD tiles: cell edges at levels 3-4, and where three or four cells meet"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -38,4 +38,5 @@ What to try:
 - [ ] a tile at a 3- or 4-cell corner of dba204: |A - B| along each edge within 10 km of the corner against the floor
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 300 (fa3f4026): levels 3-4 and corners at the floor, both orders; river jog is PW-1713.
 - 2026-11-11: Created from inbox draft draft-lod-cell-edges-below-level-2.md (found by lane297).
