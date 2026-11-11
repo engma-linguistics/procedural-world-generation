@@ -4,7 +4,7 @@ title: "Whole-planet land zoom, the sweep: every land region at 4000 km sections
 type: story
 status: todo
 parent: PW-1299
-milestone: later
+milestone: v1.0
 subsystem: zoom
 effort: l
 impact: high

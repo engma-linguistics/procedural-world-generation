@@ -2,7 +2,7 @@
 id: PW-1673
 title: "Level-of-detail flow in the viewer: click the globe, fly down into a 4,000 km section, double-click down the rungs to 25 m, fly back out"
 type: story
-status: needs-decision
+status: todo
 parent: PW-1198
 milestone: v1.0
 subsystem: viewer
@@ -44,5 +44,6 @@ free a rung's buffers when leaving it.
 - [ ] globe + 2 km section + both rungs under ~1.5 GB renderer memory (target; confirm on first measurement)
 
 ## Updates
+- 2026-11-10: Status needs-decision -> todo. Owner 11-10 (D78/D79 + chat): Google Earth, not sections. Scroll-zoom the globe continuously; below some height, detail tiles replace cells for what's on screen and sharpen further as you go down. No fixed-section clicks, no double-click rungs. Everything on demand: nothing pre-built; an area shows the blurry globe until its tile builds, then sharpens and is kept. Re-plan: lane 289.
 - 2026-11-10: Status todo -> needs-decision. Desk D78 (section sharpness, lean 2 km/px) and D79 (fixed sections vs centred, lean fixed). PW-1674/1675 proceed meanwhile: the API takes res_km as a parameter.
 - 2026-11-10: Created from inbox draft draft-lod-1-viewer-globe-to-finest.md (found by lane282).

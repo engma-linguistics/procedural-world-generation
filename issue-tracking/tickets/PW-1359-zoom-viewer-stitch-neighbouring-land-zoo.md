@@ -4,7 +4,7 @@ title: "Zoom viewer: stitch neighbouring land zoom sections into one pannable vi
 type: task
 status: todo
 parent: PW-1299
-milestone: later
+milestone: v1.0
 subsystem: viewer
 effort: s
 impact: med

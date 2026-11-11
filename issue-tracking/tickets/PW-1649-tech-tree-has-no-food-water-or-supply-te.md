@@ -2,7 +2,7 @@
 id: PW-1649
 title: Tech tree has no food, water or supply techs on the arcane side (and no field rations or depots)
 type: task
-status: needs-decision
+status: todo
 parent: PW-661
 milestone: v4
 subsystem: culture
@@ -31,4 +31,5 @@ logistics scalar lands (sibling draft); they change no output.
 - [ ] if never done: fantasy worlds look identical to mundane ones in war reach and siege
 
 ## Updates
+- 2026-11-10: Owner 11-10 D74 C (casters limit only strong spells) plus a world dial for how magical the world is (none to high fantasy) that sets how many strong casters a people has, like generals in an army. D73 C: magical supply needs magical/alchemical resources and trade goods.
 - 2026-11-10: Created from inbox draft draft-arcane-provisioning-techs.md (found by lane279).

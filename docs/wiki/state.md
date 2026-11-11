@@ -14,8 +14,8 @@
 
 ## Lanes running (11-10 ~11:50)
 
-As of 2026-11-10 evening. Running: 288 (PW-1684 scorecard medians, PW-1683 L7 3 km), 275b (Andes gate, fork queue then judge), 281c (states: confederations, five pairs, flip), 280 merged; its split measurement chain is still running in /data/personal/scratch/lane280 (fill in two-myr.md, then clean up). Done today: 276 (v0.3.0 close-out, merged), 277b (everyone experiment, docs only on main).
-v0.3.0 tagged (suite 2033 passed); server restarted. Waiting on Daniel: D73-D76 (supply), D77 (extinction).
+As of 2026-11-10 night. Running: 289 (Google Earth zoom plan), 288 (PW-1684 scorecard medians, PW-1683 L7 3 km), 275b (Andes gate, fork queue then judge), 281c (states: confederations, five pairs, flip), 280 merged; its split measurement chain is still running in /data/personal/scratch/lane280 (fill in two-myr.md, then clean up). Done today: 276 (v0.3.0 close-out, merged), 277b (everyone experiment, docs only on main).
+v0.3.0 tagged (suite 2033 passed); server restarted. Waiting on Daniel: nothing (D73-D79 answered).
 
 ## Milestones (2026-11-09)
 | milestone | open | done |

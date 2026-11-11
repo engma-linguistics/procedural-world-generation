@@ -92,68 +92,6 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <p class="sub">Pick an option or leave it alone: anything you don't touch keeps my lean. Notes save as you type, with or without a pick. I read them every refresh and reply on the card.</p>
 <p class="meter" id="meter">Loading your answers…</p>
 <p class="offline" id="offline" hidden>Answers can't be saved in this view (signed out or storage unavailable). You can still read everything; tell me in chat.</p>
-<p><b>About the four supply cards below (D73–D76):</b> the proposal is in <code>docs/review/culture/polities/logistics-proposal.md</code>. Each state gets one supply number from the techs its people know: what it can carry (pack animals, carts, ships), what it can store (drying, salting, granaries, depots) and how well it can organise (record-keeping, relays, roads). That number stretches how far it can campaign (D56's ~1,000 km is today's fixed figure), how long it can sit outside a town, and how much a front weakens the further it is from home or a supply depot (a held river or coast counts as a supply line). New techs: waterskins, field rations, army depots; on the magic side, purifying water, keeping charms, conjured food and water, storage bigger inside than out, and priests who provision. Sources: Engels (pack animals bind; an army carries about a week to ten days of food) and van Creveld (armies eat only while they move) are checked in outline; all multipliers are my judgement and marked so. Nothing is built yet.</p>
-<div class="card" id="d73"><div class="id">D73 · PW-1650 · how strong is magical supply?</div>
-<p><b>In plain words:</b> Conjured food and water could make an army nearly independent of supply lines, which would flatten the whole pattern you want (small early raids, then longer campaigns as supply grows).</p>
-<ul>
-<li><b>A.</b> Same scale as ordinary supply: another tech among many.</li>
-<li><b>B.</b> Strong: high magic transforms campaigning.</li>
-<li><b>C (lean).</b> Capped: magic adds at most about half again on top of the ordinary supply stack, so carts, roads and depots still matter.</li>
-</ul>
-<div class="ask" data-id="D73" data-opts="A:Same as ordinary|B:Strong|C:Capped at ~1.5x*"></div>
-</div>
-<div class="card" id="d74"><div class="id">D74 · PW-1649 · is magical supply limited by how many casters a people has?</div>
-<p><b>In plain words:</b> A people with few spellcasters shouldn't feed a huge army by spell.</p>
-<ul>
-<li><b>A.</b> No: knowing the tech is enough.</li>
-<li><b>B.</b> Yes, for all of it.</li>
-<li><b>C (lean).</b> Yes for the strong spells only (conjuring, pocket storage, priestly provisioning); purifying water and keeping charms are cheap and spread flat.</li>
-</ul>
-<div class="ask" data-id="D74" data-opts="A:No limit|B:Limited, all of it|C:Limited, strong spells only*"></div>
-</div>
-<div class="card" id="d75"><div class="id">D75 · PW-1650 · what does "normal" supply mean?</div>
-<p><b>In plain words:</b> The scale needs one anchor point.</p>
-<ul>
-<li><b>A (lean).</b> Today's ~1,000 km campaign reach (your D56) is what an iron-age state manages; earlier states reach less, later ones more.</li>
-<li><b>B.</b> Today's ~1,000 km is a ceiling everyone grows toward.</li>
-</ul>
-<div class="ask" data-id="D75" data-opts="A:Iron-age = today's reach*|B:Today's reach is the ceiling"></div>
-</div>
-<div class="card" id="d76"><div class="id">D76 · PW-1650 · can a neighbour take just the edges?</div>
-<p><b>In plain words:</b> Today a war is all-or-nothing: a polity is conquered whole or not at all. Your "nipped at by neighbouring powers" needs edges to be taken piecemeal.</p>
-<ul>
-<li><b>A (lean).</b> Partial conquest: a stronger neighbour takes only the land where it is locally stronger (thin, far-from-home edges first). The biggest step: it changes every history.</li>
-<li><b>B.</b> Keep all-or-nothing; over-extension shows only as faster collapse and breakaway provinces.</li>
-</ul>
-<div class="ask" data-id="D76" data-opts="A:Partial conquest*|B:All-or-nothing"></div>
-</div>
-<div class="card" id="d77"><div class="id">D77 · PW-1667 · should a people be allowed to die out in your normal runs?</div>
-<p><b>In plain words:</b> On main no people can die out: five safety floors keep every people your tree asks for alive, however small. The everyone experiment showed what that hides: 11 green dragons, 142 silver dragons and 822 white dragons were each listed as a living people with their own culture, gods and brief, with nothing to say they are nearly gone. With the floors off, those die out and the land goes to their neighbours.</p>
-<ul>
-<li><b>A.</b> Keep the floors; mark a people below a viable number as "relict: a few hundred left" in the brief, cultures and viewer.</li>
-<li><b>B (lean).</b> A: mark relicts, and also give each family tree an "allow extinction" setting, off by default. Your D&amp;D and Seven Meals worlds keep every people you ask for; a tree can opt in to "the world may not keep it". The setting already exists on the experiment branch, so it is small to bring over.</li>
-<li><b>C.</b> Extinction on by default: a tree asks for a people, the world decides. Some of your playable peoples will be missing from some worlds.</li>
-</ul>
-<div class="ask" data-id="D77" data-opts="A:Keep floors, mark relicts|B:Mark relicts + per-tree extinction setting*|C:Extinction on by default"></div>
-</div>
-<p><b>About the two zoom cards below (D78–D79):</b> the plan for your v1.0 globe-to-finest zooming is in <code>docs/review/zoom/lod-plan.md</code>. In short: click a spot on the globe, the camera flies down into the ~4,000 km section holding it (built the first time, a few minutes; instant after), double-click to fly down to a ~500 km piece at 0.5 km per pixel, then to a ~30 km piece at 25 m per pixel; a breadcrumb flies you back out. Clicks with smooth flights rather than tiles streaming in as you move: streaming needs a new tile store and globe renderer (already placed at v3) and still couldn't hide that unbuilt ground takes minutes. Most pieces exist (nested fine zooms that agree with their parent to 0.4 m on average at the seams). About 6 lane-days.</p>
-<div class="card" id="d78"><div class="id">D78 · PW-1673 · how sharp is the 4,000 km section?</div>
-<p><b>In plain words:</b> the section is the big middle level between the globe and the close-ups. Sharper costs more time and memory the first time a section is opened (estimates from past zoom costs, not yet measured for this flow).</p>
-<ul>
-<li><b>A.</b> 4 km per pixel: ~3–4 min, 6–8 GB to build; soft-looking.</li>
-<li><b>B (lean).</b> 2 km per pixel: ~4–5 min, 23 GB; about 0.5 GB on disk each.</li>
-<li><b>C.</b> 1 km per pixel ("4K across"): 16–30 min and 86–110 GB per section, so overnight only; ~2 GB on disk and 3–4 GB in the browser each.</li>
-</ul>
-<div class="ask" data-id="D78" data-opts="A:4 km|B:2 km*|C:1 km, overnight"></div>
-</div>
-<div class="card" id="d79"><div class="id">D79 · PW-1673 · where does a section sit when you click?</div>
-<p><b>In plain words:</b> the planet is already cut into 54 fixed sections. Clicking can either open the fixed one holding that spot, or build a new one centred on it.</p>
-<ul>
-<li><b>A (lean).</b> The fixed section: built once and reused, lines up with its neighbours, your spot is always at least ~100 km from the edge.</li>
-<li><b>B.</b> Centred on your click: a fresh 4–5 minute build every time, and sections never line up with each other.</li>
-</ul>
-<div class="ask" data-id="D79" data-opts="A:Fixed sections*|B:Centred on click"></div>
-</div>
 <div class="card" id="general"><div class="id">ANYTHING ELSE</div>
 <p>Questions, requests, "look at X", priorities: anything that isn't a card.</p>
 <div class="ask" data-id="general"></div></div>
@@ -173,6 +111,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <div class="tbl"><table>
 <tr><th>Lane</th><th>What</th></tr>
 
+<tr><td>289 · zooming like Google Earth: the new plan</td><td>Your ruling: scroll into the globe and it sharpens wherever you look, everything made on demand. This lane designs the tile scheme (levels from today's cells down to 25 m), how tiles built at different times match at their edges, the on-demand queue, and the viewer side, with an honest estimate against 1 December; any real trade-off comes back to you. Then it starts building the first piece.</td></tr>
 <tr><td>288 · physics: the scorecard and L7 high ground</td><td>First, the scorecard learns to report the late part of a run as a median rather than one moment (one moment is what caused the false alarm below). Then: L7 worlds have 4.3% of land above 3 km against Earth's 2.5%, and L7 continents run ~2 km thicker than L6 on the same seed; this lane works out whether that's the new mountains or the L7 grid itself, before changing anything.</td></tr>
 <tr><td>281c · states inside the history: last steps</td><td>Lane 281b merged its fix (states now found from the same towns the settlement rules use, mining halls included) and found a second bug: dragon realms had <b>never</b> been founded inside the history, because the check for flying peoples looked up a setting that doesn't exist (on one L7 world: 0 realms against 17–23 in the after-run read). Fixed. With the same seed run twice, it gives the same history. States still run a few percent fewer than with the switch off (3–8%, averaged over five steps), partly a one-step lag that can't be removed, partly confederations still counting the wrong towns. This lane fixes the confederations, measures all five worlds, and switches states on if they agree.</td></tr>
 
@@ -183,7 +122,8 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 </table></div>
 
 <h2 id="settled">Settled since last night</h2>
-<ul><li><b>L8's missing people: half found</b> (PW-1631, PW-1630 part, lanes 272b, 272c, merged). Irrigated valleys were a share of a map cell, so on L8 they were half as wide; and the wild-food richness that delays farming read only the shore cell, which is richer on L8. Both now work in km. Same world, L7 against the L8 split, before → after: people today −12.4% → −5.6%, humans 433 → 461 M (L7 660 M), coast towns 4.4% → 5.2% (L7 7.6%), islands with a town 11 → 13 (L7 22). L7 byte-identical. These runs predate the L8 soil fix (lane 274, merged), which should close more of it; the remaining coast-town gap is ticketed.</li>
+<ul><li><b>Your answers today, in</b> (D73–D79). Supply: magical supply capped at ~1.5× and drawing on magical or alchemical resources and trade goods, stronger as the tech tree climbs (D73); casters limit only strong spells, with a world dial for how magical the world is (D74); the iron age matches today's ~1,000 km reach (D75); small states fall whole, big ones lose edges piecemeal and see breakaways (D76). These wait for states to be on inside the history. Extinction: relicts get marked, and each family tree gets an "allow extinction" setting, off by default (D77). Zooming: Google Earth, everything on demand (D78–D79 and chat); the section-and-double-click plan is dropped and being redone (lane 289). Nothing was built the wrong way: the server-side pieces already merged carry over.</li>
+<li><b>L8's missing people: half found</b> (PW-1631, PW-1630 part, lanes 272b, 272c, merged). Irrigated valleys were a share of a map cell, so on L8 they were half as wide; and the wild-food richness that delays farming read only the shore cell, which is richer on L8. Both now work in km. Same world, L7 against the L8 split, before → after: people today −12.4% → −5.6%, humans 433 → 461 M (L7 660 M), coast towns 4.4% → 5.2% (L7 7.6%), islands with a town 11 → 13 (L7 22). L7 byte-identical. These runs predate the L8 soil fix (lane 274, merged), which should close more of it; the remaining coast-town gap is ticketed.</li>
 <li><b>Everyone at once: three worlds (experiment, your ask)</b> (lanes 277, 277b, not merged; write-up <code>docs/review/peoples/everyone-experiment.md</code>). 98 peoples on one family tree (dnd plus ~55 more: cat-, dog-, deer-, rabbit-, mouse-, mole-, hedgehog-, frog-, snake-, fish-, plant-, spore-, mantis-folk, astral peoples, constructs as splits off their makers), with the "move a stranded people" rescue and four other life-support floors switched off. Every death was a neighbour taking the land, never climate alone.
 <ul>
 <li><b>L6, ten landmasses:</b> 14 of 88 die out. With the floors on, all live, including 11 green dragons. The rabbits win: hare-folk 53 M → 179 M (floors on → off), humans 190 M → 67 M. On a first cut where ancestor stems could die too, the mammal root died a million years in: no humans, dwarves, orcs or halflings were ever born, only cats and dogs, and the world belonged to mantis-folk, flower-folk, kenku and elves.</li>

@@ -2,7 +2,7 @@
 id: PW-1667
 title: The survival floors keep "zombie" peoples (11 green dragons) on the books as living, and hide stillborn splits
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: later
 subsystem: peoples
@@ -36,4 +36,5 @@ in the outputs; or let lines under it die out in a normal run, as lane 277's `HO
 "given as living" peoples, for example "a tree asks for a people; the world may not keep it".
 
 ## Updates
+- 2026-11-10: Owner 11-10 D77 B: mark relicts (below viable number) in brief/cultures/viewer, and a per-tree 'allow extinction' setting, off by default (lane 277's switch is the starting point, branch worktree-agent-a7c46b5a720cb2320).
 - 2026-11-10: Created from inbox draft draft-zombie-peoples-under-the-floors.md (found by lane 277 (worktree-agent-a7c46b5a720cb2320)).
