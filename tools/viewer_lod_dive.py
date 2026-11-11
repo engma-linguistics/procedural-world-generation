@@ -1,14 +1,17 @@
 """A scripted dive on the globe from orbit to ~1 km over the ground and back out, in headless Chrome (PW-1688).
 
-    uv run --with playwright python tools/viewer_lod_dive.py PORT WORLD_ID OUT_DIR [--view=lat,lon] [--cursor=fx,fy] [--slow=ms] [--embed] [--sw] [--video]
+    uv run --with playwright python tools/viewer_lod_dive.py PORT WORLD_ID OUT_DIR [--view=lat,lon] [--cursor=fx,fy] [--slow=ms] [--wait=s] [--embed] [--sw] [--video]
 
-Needs `planet serve --port PORT --no-open` already running (never the owner's port) on a data root where WORLD_ID has
-section zooms (the stand-in tile source serves them as level-1 and level-2 tiles, planet/tiles_standin.py).
+Needs `planet serve --port PORT --no-open` already running (never the owner's port) on a data root with WORLD_ID. The
+server builds the tiles in view on demand (planet/tiles.py, PW-1690): with --wait=S, on a world with nothing built,
+the dive stops where level 1 and then level 2 are first wanted, shoots the view while they build (the globe, then the
+parent stretched, and the "sharpening" badge), waits up to S seconds for the first tile of that level to be drawn,
+shoots it arriving, and goes on.
 Scrolls the wheel over a point a little off the screen's centre, notch by notch, and writes to OUT_DIR:
   *.webm               with --video: the screen recording (Playwright's video; needs `playwright install ffmpeg`)
   NN_<what>.png        screenshots: orbit, each level appearing, a parent showing while its child loads (--slow delays
                        each tile by that many ms), the ground at ~1 km, back at orbit
-  report.json          per notch: height over the ground (km), the drawn tiles per level; per frame while moving: the
+  report.json          waits: per level, the seconds from the stop to the first tile drawn and the badge seen; per notch: height over the ground (km), the drawn tiles per level; per frame while moving: the
                        camera's step (largest single-frame turn and height ratio: a jump shows as an outlier), fps while
                        moving, renderer memory (geometries, textures, the tiles' bytes, the JS heap)
 """
@@ -28,7 +31,8 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     gpu = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] if "--sw" in sys.argv else ["--use-gl=angle", "--use-angle=gl", "--enable-gpu"]
     W, H = 1600, 1000
-    rep = {"world": world, "view": view, "slow_ms": slow, "notches": [], "shots": []}
+    wait = float(opt.get("wait", "0"))
+    rep = {"world": world, "view": view, "slow_ms": slow, "wait_s": wait, "notches": [], "shots": [], "waits": []}
     with sync_playwright() as p:
         b = p.chromium.launch(executable_path=os.environ.get("CHROME", "/usr/bin/google-chrome"), headless=True,
                               args=["--headless=new", "--ignore-gpu-blocklist", "--enable-precise-memory-info", *gpu])
@@ -52,7 +56,9 @@ def main():
 
         def state():
             return pg.evaluate("""() => { const L = window.planetViewer.lod, m = window.__scene, info = m.renderer.info;
+              const bd = document.getElementById('lod-badge');
               return { h_km: +L.hgKm.toFixed(3), drawn: L.stats.drawn, byLevel: L.stats.byLevel, kept: L.stats.kept, wanted: L.stats.wanted,
+                       queued: L.stats.queued, building: L.stats.building, badge: !!bd && bd.style.opacity === '1',
                        tiles_mb: +(L.stats.bytes / 1e6).toFixed(1), geometries: info.memory.geometries, textures: info.memory.textures,
                        heap_mb: performance.memory ? +(performance.memory.usedJSHeapSize / 1e6).toFixed(1) : null,
                        near: m.camera.near, far: m.camera.far }; }""")
@@ -86,6 +92,27 @@ def main():
                     shot("level2_fading_in", "the first children arriving, fading in over the parent")
                     time.sleep(2.0)
                     shot("level2_arrived", "children in")
+                if wait and marks[0][1] in ("level1", "level2_arriving"):
+                    lv = 1 if marks[0][1] == "level1" else 2
+                    w0, badge = time.time(), False
+                    while time.time() - w0 < wait:
+                        s2 = state()
+                        badge |= s2["badge"]
+                        if (s2["byLevel"] or {}).get(str(lv), 0) > 0:
+                            break
+                        if not badge or time.time() - w0 < 3:
+                            time.sleep(1.0)
+                            if time.time() - w0 >= 2 and not any(x["file"].endswith(f"level{lv}_building.png") for x in rep["shots"]):
+                                shot(f"level{lv}_building", f"level {lv} wanted and building: " +
+                                     ("the globe's cells" if lv == 1 else "the level-1 parent stretched") + ", the badge on")
+                            continue
+                        time.sleep(2.0)
+                    got = time.time() - w0
+                    rep["waits"].append({"level": lv, "seconds": round(got, 1), "badge_seen": badge,
+                                         "arrived": (state()["byLevel"] or {}).get(str(lv), 0) > 0})
+                    time.sleep(1.0)  # (the fade-in)
+                    shot(f"level{lv}_arrived", f"the first level-{lv} tile drawn, {got:.0f} s after the stop")
+                    t0 += got
                 marks.pop(0)
             if s["h_km"] <= 0.35 or time.time() - t0 > 300:
                 break

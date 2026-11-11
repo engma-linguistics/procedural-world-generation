@@ -450,3 +450,57 @@ the edge ramp (ponds only where the ramp is done), so the edge is the carved blo
 5/4 19, none in both). Test: `test_a_volcano_on_an_edge_is_drawn_by_both_tiles`, `test_no_cliff_over_a_volcano_on_an_edge`.
 
 **Next:** falls across edges (draft); step 2 can serve tiles with `lod_build.tile`.
+
+## State (step 2, lane 294, 11-10/11: PW-1690, the tile service)
+
+- **Done.** `planet/tiles.py` replaces the stand-in (`planet/tiles_standin.py` deleted): the server builds the tiles the
+  globe wants, on demand, as server jobs (api.Jobs worker processes), and keeps them.
+  - `POST /api/tiles/want {world, gen, tiles}` replaces the world's queue (the cancel-on-pan); a build already running
+    finishes and is kept, one still waiting for a job worker is cancelled. The tiles a build reads
+    (`lod.parent_sources`, recursively down to the level-1 section) go in ahead of it; order: coarser level, then the
+    viewer's order (nearest the screen centre first). A tile starts only when every tile it reads is built.
+  - Level 1 is the API's section job (`{world, section, res_km: 4}`), one at a time and not beside another
+    section-sized zoom, budget 8.3 GB (lane 290); levels 2-4 are a new job type `tile` (`api.tile_job` ->
+    `lod_build.tile`), 3.2 GB each; at most 3 tile builds at once in all (one of the server's 4 workers stays free); a
+    build starts only while free memory covers its peak + `ZOOM_RAM_SPARE_GB` + the peaks of the tile builds already
+    started (counted again: on the safe side). A failed tile is not retried for 5 min (30 s if refused for memory);
+    the tiles under it show as "blocked".
+  - `GET /api/tiles/status?world=`: per wanted or queued tile built / queued (pos) / building (progress) / failed /
+    blocked, counts, a note (waiting for memory or for another section). `GET /api/tiles/index?world=`: all 54 cells
+    with outlines and what is built. Tile files as before (`view.bin` PWT1, `satellite.png`, `layer/<name>.bin`);
+    `view.bin` is written into the tile's zoom directory when its build ends.
+  - Disk: tiles are the zoom directories `lod_build` saves (level 1: the section zoom); an index per world at
+    `<data root>/.tiles/<world>.json` (bytes, built, last used; a served file counts as use). Past the cap (60 GB,
+    `$PLANET_TILE_CACHE_GB`) the least recently used tiles of levels 2-4 are deleted down to 95% of the cap (a tile's
+    use is the latest of its own and its descendants', so children go first); never level 1, a tile being built or
+    one a queued build reads.
+  - Viewer: `viewer/globe/tilesource.js` (`TileSource`): `has()` is `lodmath.exists` (ported from `lod.exists`, checked
+    against it in `tests/test_viewer_lod.py`) for every cell; `ready()` is "built"; `want()` posts the unbuilt tiles
+    when the list changes (after 250 ms settled, at least every 2 s while it keeps changing); the status is polled
+    every 1 s while anything is queued or building. `lodtiles.js` fetches only built tiles and shows a small
+    "sharpening…" note at the bottom centre while tiles in view are building (its tooltip: counts and the note).
+- **Measured** (world dba204, a private server on a scratch root, `--jobs 4 --threads 2`, i.e. 2 numba threads a
+  build, 8 cores at most; machine shared, load ~22-27 of 48; raw logs in `lod-tiles-294/`):
+  - Scripted client (`client.json`): want the section py.1.1 and the 3 x 3 level-2 tiles round 4/4, nearest the centre
+    first. The section built in 355 s (lane 290: 123 s with 8 threads); then 4/4 (the centre) and 3/4 started
+    together, 4/3 6 s later (not logged why: most likely the memory guard), the rest as slots freed. Level-2 tiles
+    took 11.7-23.4 s each, three at once. A pan at 373 s to the 3 x 3 round 1/6 dropped the six A tiles not yet
+    started; the three building finished and were kept; B's first tile started 11 s after the pan (when a slot
+    freed). One B tile failed in the build (`py.1.1/2/1/5`, every time: inbox `draft-lod-tile-build-crashes-in-vegetation-is-land.md`).
+    Second visit: 26 file GETs (view.bin and satellite.png of 13 tiles) took 0.4-11.8 ms each (the slowest the
+    section's 1.3 MB satellite.png); view.bin 0.4-2.8 ms.
+  - `tools/viewer_lod_dive.py 8794 dba204 OUT --view=-4.04,93.15 --embed --wait=900` on the same root with nothing
+    built (new `--wait`: stop where a level is first wanted, shoot it building, wait for its first tile): at 1,390 km
+    the view wanted 10 sections (py.1.1, the centre, first); the badge showed; py.1.1 was drawn 341 s after the stop.
+    At 643 km, 26 tiles wanted: the level-1 parent shown stretched with the badge (`06_level2_building.png`), the
+    first level-2 tiles drawn 13 s after the stop (`07_level2_arrived.png`). Back at orbit the list was empty and the
+    server's queue with it (queued 0, building 0, badge off). 98 of 98 moving frames at the 60 fps cap, largest
+    turn 0.61 degrees.
+- **Tests:** `tests/test_tiles.py` (fake job queue: parents first, coarse first then the viewer's order, a new list
+  replaces the queue and keeps a running build, a failed parent blocks its children, the RAM guard, one section at a
+  time, the cache cap's order and protections, the tile files and the index, the want route) and
+  `tests/test_viewer_lod.py::test_lodmath_exists_matches_lod_py`.
+- **Not done / next.** Every tile is an ordinary zoom: each save rereads every zoom.json and the tiles flood the zoom
+  lists (inbox `draft-lod-tiles-flood-the-zoom-index.md`). With 2 threads a section takes ~6 min, so the first
+  sharpening over a new big square waits that long on the shared machine; the owner's server (4 jobs, threads shared
+  out, at most 8) should be nearer lane 290's 2 min. The viewer still stops at level 2 (`?lodmax`, step 5).

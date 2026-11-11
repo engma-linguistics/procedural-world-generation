@@ -12,7 +12,8 @@
 //     temperature, precipitation, biome); any other layer shows the satellite view on tiles.
 //   - Tiles are placed relative to their own centre (float32 stays exact near the camera).
 //   - At most MAX_TILES tiles / MAX_BYTES are kept; the least recently drawn go first.
-// The tiles come through a tile source (tilesource.js; today the STAND-IN over built section zooms, PW-1690 next).
+// The tiles come through a tile source (tilesource.js): the server builds the wanted tiles on demand (planet/tiles.py,
+// PW-1690); until a tile is built its parent shows there, stretched, and a small "sharpening…" note shows (badge()).
 // URL: ?lod=0 off, ?lodpx=1.5 refine threshold, ?lodmax=2 finest level, ?lodslow=<ms> delay each tile (to see fallback).
 import * as THREE from 'three';
 import * as M from '../lodmath.js';
@@ -22,7 +23,7 @@ import { camera, group, renderer } from './scene.js';
 import { nearestCellU, reliefScale } from './geometry.js';
 import { rampFns } from './layers.js';
 import { OCEAN } from './colours.js';
-import { StandinTileSource } from './tilesource.js';
+import { NotBuilt, TileSource } from './tilesource.js';
 
 const P = new URLSearchParams(location.search);
 const R_M = 6371000;
@@ -31,7 +32,7 @@ const EASE_HI_KM = 2000, EASE_LO_KM = 50;
 export const LOD = {
   on: P.get('lod') !== '0', refinePx: +P.get('lodpx') || 1.5, maxLevel: Math.min(+P.get('lodmax') || 2, 2), slowMs: +P.get('lodslow') || 0,
   src: null, world: null, cells: [], tiles: new Map(), queue: [], inflight: 0, dirty: false, ex: 0, relK: { value: 1 }, hgKm: Infinity,
-  stats: { drawn: 0, kept: 0, bytes: 0, fetched: 0, failed: 0, wanted: 0, byLevel: {} }, note: '',
+  stats: { drawn: 0, kept: 0, bytes: 0, fetched: 0, failed: 0, wanted: 0, byLevel: {}, queued: 0, building: 0 }, note: '',
 };
 const three = (p) => new THREE.Vector3(p[0], p[2], -p[1]);  // planet (x, y, z) -> three.js axes (geometry.toThree)
 const planet = (v) => [v.x, -v.z, v.y];
@@ -82,11 +83,13 @@ void main() {
 // ---- the source, the cells ------------------------------------------------------------------------------------------
 function reset() {
   for (const t of LOD.tiles.values()) dropTile(t);
+  LOD.src?.close();
   LOD.tiles.clear(); LOD.queue = []; LOD.cells = []; LOD.src = null; LOD.note = '';
 }
 async function openWorld(id) {
   reset(); LOD.world = id;
-  const src = new StandinTileSource(id);
+  const src = new TileSource(id);
+  src.onBuilt = () => { LOD.dirty = true; };
   try {
     const { cells } = await src.open();
     if (LOD.world !== id) return;
@@ -197,7 +200,7 @@ async function load(t, spec) {
     t.bytes = 2 * (t.elev.n ** 2 * 2) + 2 * (t.elev.n ** 2 * 4) + 3 * 4 * G * G;
     LOD.stats.fetched++; LOD.dirty = true;
   } catch (e) {
-    t.failed = true; LOD.stats.failed++; console.warn('[lod]', t.k.id, e.message);
+    if (!(e instanceof NotBuilt)) { t.failed = true; LOD.stats.failed++; console.warn('[lod]', t.k.id, e.message); }
   } finally { t.loading = false; LOD.inflight--; pump(); }
 }
 function pump() {
@@ -270,7 +273,7 @@ export function updateLod(now) {
   LOD.ex = ex; LOD.relK.value = globe && g > 0 ? ex / g : 1;
   const active = globe && !!LOD.src;
   patchCells(active);
-  if (!active) { for (const t of LOD.tiles.values()) if (t.mesh) t.mesh.visible = false; return; }
+  if (!active) { for (const t of LOD.tiles.values()) if (t.mesh) t.mesh.visible = false; badge(false); return; }
 
   // which tiles the view wants: walk each visible cell's pyramid down while the next level's pixel covers > refinePx
   camera.updateMatrixWorld(); group.updateMatrixWorld();
@@ -294,11 +297,16 @@ export function updateLod(now) {
   for (const c of LOD.cells) visit(M.key(c.id, 1, 0, 0), c);
   LOD.stats.wanted = want.size;
 
-  // fetch what is wanted and missing (coarse first, then nearest the screen's centre); the rest of the queue is dropped
+  // what is wanted and missing (coarse first, then nearest the screen's centre) goes to the server, which builds the
+  // unbuilt ones (a new list replaces its queue); the built ones are fetched; the rest of the fetch queue is dropped
   order.sort((a, b) => a.want - b.want);
-  LOD.queue = order.filter((t) => !t.loading && !t.failed && t.colId !== spec.id);
-  LOD.src.want(LOD.queue.map((t) => t.k));
+  const missing = order.filter((t) => !t.loading && !t.failed && t.colId !== spec.id);
+  LOD.src.want(missing.map((t) => t.k));
+  LOD.queue = missing.filter((t) => LOD.src.ready(t.k));
   pump();
+  const b = LOD.src.building;
+  LOD.stats.queued = b.queued; LOD.stats.building = b.building;
+  badge(b.queued + b.building > 0 && missing.length > LOD.queue.length, b);
 
   // fade in what is wanted and ready, out the rest; a drawn tile's children take their share of its fragments
   let drawn = 0, bytes = 0; const byLevel = {};
@@ -335,6 +343,22 @@ export function updateLod(now) {
     let n = LOD.stats.kept, b = bytes;
     for (const t of old) { if (n <= MAX_TILES * 0.9 && b <= MAX_BYTES * 0.9) break; n--; b -= t.bytes; dropTile(t); }
   }
+}
+// the "sharpening…" note: tiles in view are being built (unobtrusive: bottom centre, no clicks)
+let badgeEl = null;
+function badge(on, b) {
+  if (!badgeEl) {
+    if (!on) return;
+    badgeEl = document.createElement('div');
+    badgeEl.id = 'lod-badge';
+    Object.assign(badgeEl.style, { position: 'fixed', left: '50%', bottom: '14px', transform: 'translateX(-50%)', padding: '3px 10px',
+      borderRadius: '10px', background: 'rgba(0, 0, 0, 0.45)', color: '#e8e8e8', font: '12px system-ui, sans-serif',
+      pointerEvents: 'none', zIndex: 20, transition: 'opacity 0.4s', opacity: '0' });
+    badgeEl.textContent = 'sharpening…';
+    document.body.appendChild(badgeEl);
+  }
+  badgeEl.style.opacity = on ? '1' : '0';
+  if (on && b) badgeEl.title = `building detail: ${b.building} building, ${b.queued} queued${b.note ? ` (${b.note})` : ''}`;
 }
 const _s = new THREE.Vector3();
 function screenOffset(w) { _s.copy(w).project(camera); return [_s.x, _s.y]; }
