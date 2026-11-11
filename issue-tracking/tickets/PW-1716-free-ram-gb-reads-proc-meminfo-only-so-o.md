@@ -2,7 +2,7 @@
 id: PW-1716
 title: free_ram_gb reads /proc/meminfo only, so on macOS every RAM guard (zooms, tiles, refine) is silently off
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1.0
 subsystem: infra
@@ -27,4 +27,5 @@ Fix: on macOS, read `sysctl hw.memsize` plus `vm_stat` (free + inactive + purgea
 - [ ] Where it can't read memory, heavy jobs refuse with a message instead of running unguarded; there is a test for the None path
 
 ## Updates
+- 2026-11-11: Status todo -> done. merged (lanes 304/306)
 - 2026-11-11: Created from inbox draft draft-free-ram-macos.md (found by plan-v1-lane).

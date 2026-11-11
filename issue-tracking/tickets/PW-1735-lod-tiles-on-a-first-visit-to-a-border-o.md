@@ -1,16 +1,19 @@
 ---
+id: PW-1735
 title: "LOD tiles: on a first visit to a border or corner, the cells' level 1 are built one after another, so half the screen stays globe hexagons for minutes"
 type: task
 status: todo
 parent: PW-1673
 milestone: v1.0
-subsystem: server
+subsystem: zoom
 effort: m
-impact: medium
+impact: med
 found_by: lane306
 blocked_by: []
 relates: [PW-1690, PW-1699]
-refs: [planet/tiles.py, "planet/zoom/lod_build.py::build_level1", docs/review/zoom/lod-judge-306.md, "docs/review/zoom/lod-judge-306/border_08_1km_tilted.png", "docs/review/zoom/lod-judge-306/corner_10_250m_south_cells_waiting.png"]
+refs: [planet/tiles.py, "planet/zoom/lod_build.py::build_level1", docs/review/zoom/lod-judge-306.md, docs/review/zoom/lod-judge-306/border_08_1km_tilted.png, docs/review/zoom/lod-judge-306/corner_10_250m_south_cells_waiting.png]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -27,3 +30,6 @@ cells' colours smoothly instead of hexagons.
 
 **Done when.** On a cold dba204 border dive (`tools/viewer_lod_dive.py --wait`) both cells show level-1 detail within
 the time of one level-1 build plus a minute, and the line still meets at the floor (`line_seam` against `resampled`).
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-cold-border-waits-for-level1-in-turn.md (found by lane306).

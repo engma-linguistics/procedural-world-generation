@@ -1,4 +1,5 @@
 ---
+id: PW-1730
 title: Decide where installer releases come from before curl | sh can work
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane304
 blocked_by: []
 relates: []
 refs: [install.sh, docs/review/plan/installer.md, docs/review/plan/milestones-to-v1.md]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -26,3 +29,6 @@ fails at `git ls-remote` with an auth prompt, and the plan's headline "one comma
 - Whether release tags stay `v*` (update takes the newest `v*` tag by `sort -V`).
 - Whether data, config and root paths in the plan (`~/procgen-world-data`, `~/.config/procgen-world`,
   `~/.local/share/procgen-world`) are the ones Daniel wants.
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-installer-release-channel.md (found by lane304).

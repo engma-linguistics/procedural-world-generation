@@ -1,16 +1,19 @@
 ---
+id: PW-1733
 title: "LOD tiles: settled at 300 m over a four-cell corner, the ground at the screen's centre is the 1 km level"
-type: bug
+type: task
 status: todo
 parent: PW-1673
 milestone: v1.0
 subsystem: viewer
 effort: s
-impact: medium
+impact: med
 found_by: lane306
 blocked_by: []
 relates: [PW-1708, PW-1710]
-refs: [viewer/globe/lodtiles.js, viewer/lodmath.js, docs/review/zoom/lod-judge-306.md, "docs/review/zoom/lod-judge-306/corner_19_ground_300m.png", "docs/review/zoom/lod-judge-306/corner_report.json", "world dba204, -16.3, 72.95 (py.0.0 / py.0.1 / py.1.0 / py.1.1)"]
+refs: [viewer/globe/lodtiles.js, viewer/lodmath.js, docs/review/zoom/lod-judge-306.md, docs/review/zoom/lod-judge-306/corner_19_ground_300m.png, docs/review/zoom/lod-judge-306/corner_report.json, "world dba204, -16.3, 72.95 (py.0.0 / py.0.1 / py.1.0 / py.1.1)"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -23,3 +26,6 @@ hover's `tileUnder` (nearest cell centre, not the cell holding the point) picks 
 
 **Done when.** The cause is found; settled at 300 m over that corner, the ground at the centre is level 4 and the hover
 says so; a test pins it (`tests/test_viewer_lod.py`).
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-corner-ground-stays-at-1km.md (found by lane306).
