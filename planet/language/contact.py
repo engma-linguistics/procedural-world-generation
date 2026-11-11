@@ -12,10 +12,10 @@ rulings D2.1 B and D2.2 B): which words a lect borrows depends on who it borrows
   borrowing is unchanged and only its spread moves; crops stay at x1 under trade (the food routes already carry them:
   wheat is a loan in 76% of a24559's lects). lexicon.step multiplies the loan source by the donors' pull-weighted mean
   multiplier and draws the donor by pull x multiplier: the ruler supplies the law word, the trader the market word.
-- **Trade numerals: off.** Thomason & Kaufman's trade layers bring the high numerals first (Swahili mia, elfu; the
-  Sino-Japanese and Sino-Korean sets), but the owner's desk card p.numerals is still open. `TRADE_NUMERALS` is the hook:
-  give it {concept: multiplier} (e.g. HUNDRED and THOUSAND x3) and the trade profile applies it to those closed-class
-  numerals; empty, numerals keep x1 like every closed-class word.
+- **Trade numerals: hundred and up.** Thomason & Kaufman's trade layers bring the high numerals first (Swahili mia, elfu;
+  the Sino-Japanese and Sino-Korean sets). Owner ruling 2026-11-11 (desk card p.numerals, A): trade raises HUNDRED and
+  THOUSAND x3 (`TRADE_NUMERALS`, {concept: multiplier}, applied by the trade profile to those closed-class numerals);
+  six to nine and whole second numeral sets come later. Every other closed-class word keeps x1.
 - **Doublets (P2).** When a lect is borrowing concept k from an elite donor (or, for products only, a trade or city donor),
   the loan can come in beside the native word instead of replacing it (`doublet`):
   - a **meaning split** (data/splits.tsv): k is an animal or an ingredient, and the donor's word for k is kept for its
@@ -52,7 +52,7 @@ RAW = {
     "flat": {},
 }
 CAP = {"trade": {"crop": 1.0}}   # (fixed multipliers, outside the normalisation: crops under trade stay x1)
-TRADE_NUMERALS: dict = {}   # hook for desk card p.numerals: {"HUNDRED": 3.0, "THOUSAND": 3.0} switches trade numerals on
+TRADE_NUMERALS: dict = {"HUNDRED": 3.0, "THOUSAND": 3.0}   # owner 2026-11-11, desk card p.numerals A: hundred and up only
 # doublets: chance a loan drawn from a donor of this kind comes in beside the native word (meaning split; register split)
 # ("table" = the animals and ingredients of data/splits.tsv: a ruler's word for the ox comes to the table, and at
 # DOUBLET_P 0.7 most of those extra loans become the meat word, not the animal's)

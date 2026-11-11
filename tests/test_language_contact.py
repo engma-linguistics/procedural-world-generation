@@ -24,8 +24,9 @@ def test_profiles_mean_normalised(concepts):
     open_ = [c.id for c in concepts if c.pos != "NAME" and CT.field_group(c.id) != "closed"]
     for kind in CT.RAW:
         assert abs(np.mean([CT.mult(kind, k) for k in open_]) - 1.0) < 1e-6, kind
-        for k in ("I", "THOU", "WHO", "THIS", "ONE", "HUNDRED"):
+        for k in ("I", "THOU", "WHO", "THIS", "ONE"):
             assert CT.mult(kind, k) == 1.0
+        assert CT.mult(kind, "HUNDRED") == (3.0 if kind == "trade" else 1.0)   # p.numerals A (owner 2026-11-11)
     assert CT.mult("trade", "crop:wheat") <= 1.0
     assert CT.mult("elite", "LAW") > 2 and CT.mult("elite", "HAND") < 1 and CT.mult("elite", "meat:cattle") > 2
     assert CT.mult("trade", "MARKET") > 2 and CT.mult("trade", "LAW") < CT.mult("elite", "LAW")
