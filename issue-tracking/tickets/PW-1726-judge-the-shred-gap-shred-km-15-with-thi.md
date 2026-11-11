@@ -2,7 +2,7 @@
 id: PW-1726
 title: Judge the shred gap (shred_km=15 with thin-margin dynamics) at L6 before flipping it on, with and without the thin-margin area fix
 type: task
-status: todo
+status: in-progress
 parent: null
 milestone: null
 subsystem: tectonics
@@ -42,4 +42,5 @@ If never done: the flicker stays on main (small: ~13% of shreds come back within
 - [ ] flip the default only if no hard failure and the soft pass level holds
 
 ## Updates
+- 2026-11-11: Status todo -> in-progress. 10 pairs (roll 0.0005, l6fix/l6c_0/l6c_m): flicker cured 10/10, no hard failures, climate unmoved, crust -1.15 km; pass 10/10 off vs 9/10 on (one discordant). Verdict needs more: running the 26 remaining pairs (lane 310c)
 - 2026-11-11: Created from inbox draft draft-judge-the-shred-gap-for-a-default-flip.md (found by lane-302).
