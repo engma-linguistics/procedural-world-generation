@@ -68,6 +68,11 @@ def test_split_history_hands_over_at_the_first_farming_and_keeps_the_coarse_past
     assert cut is not None and abs(ho["cut_kyr"] - cut) < 1e-9 and ho["step_ago"] <= cut + 1e-9
     assert abs(ho["people_after"] - ho["people_before"]) <= 1e-9 * max(ho["people_before"], 1.0)
     assert hs.grid.n == ps4.grid.n and rs["present"].shape == (len(hs.lines), ps4.grid.n)
+    dc = getattr(hs.rule, "dcul", None)  # (the live rule's grid objects are the fine grid's: a coarse one crashed the L8 split, lane 307)
+    if dc is not None:
+        assert dc.g.n == ps4.grid.n and all(v.shape == (ps4.grid.n,) for v in [*dc.lab.values(), *dc.since.values()])
+    if hasattr(hs.rule, "_ring_of"):
+        assert len(hs.rule._ring_of.off) == ps4.grid.n + 1
     Rg = HO.Regrid(ps3.grid, ps4.grid)
     pre = [f for f in rc["frames"] if f["ago"] > ho["step_ago"] + 1e-9]
     assert pre and len(rs["frames"]) == len(rc["frames"])

@@ -215,11 +215,16 @@ def hand_over(h, ps, goods, si: int) -> None:
                 t["landmass"] = lab.get(t["landmass"], t["landmass"])
     # -- the brakes' seam (and polities in the history, PW-1434): made again on the fine grid; what is not per cell carried
     old = h.rule
-    grid_made = {"h", "g", "off", "idx", "src", "ekm", "cell_km2", "dist", "touched", "claimed", "r2a", "r2b", "r2off", "W", "_Fc"}
+    grid_made = {"h", "g", "off", "idx", "src", "ekm", "cell_km2", "dist", "touched", "claimed", "r2a", "r2b", "r2off", "W", "_Fc",
+                 "_ring_of", "dcul"}  # (_ring_of and dcul are objects on the grid's rings: auto would carry them coarse)
     h.rule = type(old)(h)
     for k, v in vars(old).items():
         if k not in grid_made:
             setattr(h.rule, k, R.auto(v))
+    dc_old, dc_new = getattr(old, "dcul", None), getattr(h.rule, "dcul", None)
+    if dc_old is not None and dc_new is not None:  # (PW-1687's dragon cultures: the fine grid's own rings, the coarse labels carried
+        for k in ("lab", "since", "info", "n_cul", "touch", "coh"):  # by their kind: a label from the first parent, a date the mean)
+            setattr(dc_new, k, R.auto(getattr(dc_old, k)))
     tech = getattr(h.rule, "tech", None)
     if tech is not None:
         tech.h = h
