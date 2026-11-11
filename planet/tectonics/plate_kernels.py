@@ -247,14 +247,15 @@ def resolve(alive, idx, owned, age, cont, thick, rock, cover, extra, rec, lith, 
 
 
 @njit(cache=True)
-def crust_flow(t, ea, eb, k0, n_sub, mult):
-    """Thick crust spreads to its neighbours, faster the thicker it is (mult: per edge, x k0)."""
+def crust_flow(t, ea, eb, k0, n_sub, mult, ref):
+    """Thick crust spreads to its neighbours, faster the thicker it is (mult: per edge, x k0), where the thicker side
+    is over ref km (per edge; 40 inland, crust.flow_and_orogeny)."""
     t = t.copy()
     flux = np.empty(len(ea))
     for _ in range(n_sub):
         for e in range(len(ea)):
             a, b = ea[e], eb[e]
-            x = max(max(t[a], t[b]) - 40.0, 0.0) / 10.0
+            x = max(max(t[a], t[b]) - ref[e], 0.0) / 10.0
             flux[e] = min(k0 * mult[e] * (x + x * x * x), 0.15) * (t[b] - t[a])
         for e in range(len(ea)):
             t[ea[e]] += flux[e]

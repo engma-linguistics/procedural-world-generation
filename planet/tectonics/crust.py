@@ -359,6 +359,7 @@ def arc_rock(sim, col, growth):
 
 
 SQUEEZED = 0.05  # km/Myr of collision stacking that makes a cell part of a squeezed belt (flow_and_orogeny)
+FLOW_KM = 40.0  # km: crust flows only where the thicker side of an edge is thicker than this (flow_and_orogeny)
 
 
 def stretch(sim, col, rate, plume, newc, stack_add=None):
@@ -571,9 +572,13 @@ def flow_and_orogeny(sim, col, edges, stack_add, trench=None):
         out = margin_edges(sim, col, dead, trench)
         ea, eb = np.concatenate([ea, out[0]]), np.concatenate([eb, out[1]])
         mult = np.concatenate([mult, np.full(len(out[0]), p.collapse_margin * (1.0 + p.collapse))])
+    # (crust flows where the thicker side is over 40 km; seaward collapse runs down to collapse_margin_km, PW-1703)
+    ref = np.full(len(ea), FLOW_KM)
+    if out is not None:
+        ref[len(edges[0]):] = p.collapse_margin_km
     # (a hotter planet's crust is softer: mountains and plateaus can't stand as high)
     t = crust_flow(col.t, ea, eb, p.crust_flow * sim.heat() ** 2 * dt / 3,
-                   int(round(3 * sim.scale**2 * sim.heat() ** 2)), mult)
+                   int(round(3 * sim.scale**2 * sim.heat() ** 2)), mult, ref)
     t = col.t = np.minimum(t, max_km(cont, col.cover, col.x))  # (PW-1446: the cap is on the column's height)
     sim.book("flow+cap", t0, t, cont)
     if out is not None:

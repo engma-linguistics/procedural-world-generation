@@ -347,3 +347,124 @@ Books at 1 Gyr: `collapse.margin` +9.2e3 / +9.0e3 against `andean.closed` -5.6e4
   `draft-water-loaded-isostasy-deepens-shelves.md` (needs-decision: keep A off until PW-950's margin work).
 - Scratch runs (lane 288's four baselines and lane 292's six) are still under /data/personal/scratch/lane288 and lane292: deleting them was denied by the permission system, so the coordinator deletes them (no symlinks inside); the per-checkpoint tables
   are in logs/measure_*.txt there.
+
+# Lane 296 (PW-1703): option A, seaward collapse down to 35 km
+
+Lane 296, 2026-11-11. Base: main f692572b. Parameter commit 46a94092. Scratch /data/personal/scratch/lane296.
+Attempt 2 on the area-thermostat floor (attempt 1: lane 292's `collapse_margin`, section 7).
+
+## 8. Diagnosis (written before the screen)
+
+### 8.1 Where seaward collapse stops today
+
+- `flow_and_orogeny` (`planet/tectonics/crust.py:547-592`) adds the margin edges from `margin_edges`
+  (`crust.py:594-605`) to the inland edges and runs one kernel over both, `plate_kernels.crust_flow`
+  (`plate_kernels.py:250-263`). Its rate is `k0 x mult x (x + x^3)` with `x = (max(t_a, t_b) - 40) / 10`
+  (`plate_kernels.py:258` before this lane): a margin edge moves crust only while its belt cell is over 40 km.
+- A filled ocean cell becomes continent at `BECOMES_CONT_KM` = 20 km (`margin_spread`, `crust.py:608-627`), so the
+  new edge cell is itself well under 40 km and spreads no further; the front moves on only when inland flow (40 km
+  stop) refills the old edge cell. Every belt edge cell therefore keeps 40 km and the 0-5 km between normal crust
+  (`isostasy.CONT_KM` = 35 km, `isostasy.py:37`) and 40 km is never given to the sea.
+
+### 8.2 Why 35 km is defensible
+
+Rey, Vanderhaeghe & Teyssier 2001 (Tectonophysics 342:435-449, doi:10.1016/S0040-1951(01)00174-3; abstract read
+this lane on the repository.geologyscience.ru record 123456789/26833): collapse is the relaxation of a lateral
+contrast in gravitational potential energy once the forces that held it up weaken; in the divergent regime "an
+excess in gravitational potential energy drives crustal material away from the deformed lithosphere", and with a
+fixed boundary the orogen "grows laterally at the expense of its surroundings". The excess is measured against the
+undeformed lithosphere, so collapse runs until the thickened crust is back to the region's normal thickness, not to
+a fixed 40 km. In the model, normal continental crust is `CONT_KM` = 35 km (the thickness the volume thermostat
+aims at, `crust.py:54-79`, and that stands at 250 m, `isostasy.py:261`), so 35 km is the model's own
+"undeformed" reference, not a new number.
+
+What is not sourced: (a) the rate (the same kernel and `collapse_margin` x (1 + collapse) as lane 292's arm);
+(b) that the 40 km inland stop is kept, so inland belts still stand at ~40 km (the inland stop is the kernel's
+"thick crust is weak" threshold, PW-1497, and is not this lane's to move); (c) with the margin stop at 35 km, any
+dead coast cell of 35-40 km of the same plate (not only an orogen's) creeps seaward. `dead` is true for a cell
+never folded (`record.T_FOLD` = NEVER, `record.py:73`), so this widens the mechanism from belts to every thick
+passive coast. That is the soft point: a 37 km craton coast is not an orogen with excess potential energy, it is
+only 2 km thicker than the model's normal; on Earth such margins are held by lithospheric strength. Its size is
+small either way (8.3).
+
+### 8.3 Expected give-back
+
+Measured on lane 292's seed 1 arm (4635ef, `collapse_margin=1`, 600-1000 Myr checkpoints; script
+/data/personal/scratch/lane296/estimate.py, not kept): of ~4,600-5,900 coast cells on margin edges (same plate,
+no trench), the median is 23 km thick (rifted margins), only 3-6% are over 40 km and 7-11% over 35 km. The crust
+standing above the stop in those cells is 1.9-4.3x (median ~2.1x) larger with a 35 km stop than with 40.
+
+So the expected give-back is about twice lane 292's: `collapse.margin` ~1.5-2.0e4 km x L5 cells by 1 Gyr
+(lane 292: 9.2e3) against `andean.closed` ~-5.5e4, i.e. from ~1/4-1/3 of the closed area to ~1/2-2/3 (margin cells
+are laid at 20 km, closed cells held ~35-40 km). The area books (2.3) need roughly +0.5-0.6 points of area per
+100 Myr more for the thermostat to leave its floor on seed 2 (area 38.2% against 40% with lane 292's arm) and more
+on seed 1 (38.5%). Expectation: seed 2 may leave the floor for part of the window; seed 1 probably not. Land above
+3 km should fall a little (thinner coasts), not to the off-arm level unless the thermostat lifts.
+
+### 8.4 The change
+
+`collapse_margin_km` (params, default 40.0 = today, off): `flow_and_orogeny` passes a per-edge stop to
+`crust_flow` (`ref`, new argument), `FLOW_KM` = 40 on inland edges (`crust.py:362`) and `collapse_margin_km` on the
+margin edges. Only acts with `collapse_margin` > 0 (also default off). Test:
+`tests/test_crust_belts.py::test_seaward_collapse_runs_down_to_collapse_margin_km`.
+
+## 9. Screen (L7 seeds 1 and 2, 1 Gyr, medians over 600-1000 Myr)
+
+All `planet simulate --seed S --level 7 --myr 1000 --checkpoint-every 20 --threads 4 --set collapse_margin=1
+collapse_margin_km=K` on commit 46a94092 (this lane's parameter; main f692572b otherwise), both arms on the same
+commit, scratch /data/personal/scratch/lane296/data, measured with `l7_high_ground.py`. **Baseline: the off arm is
+`collapse_margin=1, collapse_margin_km=40`** (lane 292's arm, rerun here); it reproduces lane 292's 4635ef / d4f6be
+to the digit (> 3 km 4.96 / 3.45, books `collapse.margin` 9.25e3 / 9.21e3), so the run code is unchanged since
+bb30e268. Main's on arms (no collapse_margin, lane 288's 213321 / 2e1bc2 on 5411930b) and the no-Andes arms
+(28d710 / 6286ce) are quoted for scale from section 2, not rerun.
+
+| seed | arm (run) | > 3 km | > 4 km | area thermostat median (mean) | cont. area % | mean cont. crust km | Andes share of > 3 km | shelf % of ocean | submerged median m | land % |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | main on, no collapse_margin (213321, 5411930b) | 5.62 | 3.42 | 0.20 | 37.6 | 37.7 | 24.7 | 1.03 | -1140 | 32.8 |
+| 1 | off: margin stop 40 km (783fb3) | 4.96 | 1.74 | 0.20 (0.20) | 38.5 | 37.8 | 23.5 | 1.00 | -982 | 33.8 |
+| 1 | **A: margin stop 35 km (ed0b66)** | **3.92** | 1.33 | **0.20 (0.205)** | 39.3 | 37.2 | 18.6 | 1.47 | -937 | 33.9 |
+| 1 | no Andes (28d710, 5411930b) | 3.90 | 1.11 | 0.33 | 40.5 | 35.2 | 8.9 | 1.34 | -878 | - |
+| 2 | main on, no collapse_margin (2e1bc2, 5411930b) | 4.33 | 1.29 | 0.20 | 39.7 | 36.7 | 19.2 | 1.28 | -1050 | 34.0 |
+| 2 | off: margin stop 40 km (5967e0) | 3.45 | 1.45 | 0.20 (0.20) | 38.2 | 37.4 | 20.4 | 0.81 | -1000 | 34.4 |
+| 2 | **A: margin stop 35 km (285ffc)** | **3.30** | 1.35 | **0.209 (0.216)** | 40.2 | 36.0 | 27.0 | 1.25 | -978 | 34.3 |
+| 2 | no Andes (6286ce, 5411930b) | 2.77 | 0.82 | 0.37 | 41.0 | 35.5 | 12.3 | 1.70 | -1030 | - |
+
+Earth on the L7 grid (ETOPO1): > 3 km 2.5%, > 4 km 1.6%.
+
+Books at 1 Gyr (km x L5 cells): `collapse.margin` +1.37e4 / +1.38e4 with A against +9.25e3 / +9.21e3 off (x1.48 /
+x1.50); `andean.closed` -5.86e4 / -5.76e4 (off -5.44e4 / -5.82e4). In area (margin cells laid at 20 km, closed
+cells ~37 km): A gives back ~0.43 of the area Andean closing takes, against ~0.30 off.
+
+Thermostat through the window (subduction erosion x, 20-Myr checkpoints): seed 1 at 0.20-0.21 to 900 Myr, then
+0.21-0.23; seed 2 0.20-0.21 to 740 Myr, 0.22-0.25 over 760-880 Myr, back to 0.20 from 900 Myr. Off arms: 0.20 at
+every checkpoint.
+
+- **Fails the bar.** The area thermostat does not leave its floor on either seed: medians 0.20 and 0.21, brief lifts
+  to 0.23-0.25 only. The give-back rose x1.5, below the x2 expected in 8.3 (supply to the edge is still inland flow
+  with its 40 km stop).
+- What it did do: area closer to target (39.3 / 40.2% against 38.5 / 38.2%) and continents thinner (37.2 / 36.0 km
+  against 37.8 / 37.4). On seed 2 the area reaches its target, but the thermostat stays at the floor: the floor is
+  its integral term at its clip (`sim.thermo` at -`THERMO_MAX`, exp(4 x -0.4) = 0.20, `crust.py:37-38, 75-79`),
+  wound there by the long deficit, and an area 0.2 points over target unwinds it by only ~1e-4 per Myr. So area on
+  target with erosion still at x0.2 says the balance needs the floor rate: the slack is not restored.
+- Land above 3 km falls on both seeds (4.96 -> 3.92, 3.45 -> 3.30; Earth 2.5%), seed 1 to its no-Andes level. But
+  seed 1's fall comes with the Andes share falling (23.5 -> 18.6%) while seed 2's rises (20.4 -> 27.0%), and the
+  > 3 km series moves by 3-6 points within 100 Myr in every arm (e.g. 860-1000 Myr); two seeds cannot tell a high-ground gain
+  from run history (as in 6.1-6.3).
+- Shelves: a little larger on both seeds (1.00 -> 1.47, 0.81 -> 1.25% of the ocean), submerged median a little
+  shallower (-982 -> -937, -1000 -> -978 m): A widens margins at 20-35 km, the right direction for PW-950 but small.
+
+## 10. Verdict (lane 296) and option C
+
+- **Option A does not get the thermostat off its floor** (x0.20 / x0.21 medians on L7 seeds 1 and 2). By the
+  brief's rule this lane stops: no third mechanism, no judge, no default change. `collapse_margin_km` stays 40
+  (off), `collapse_margin` stays 0.
+- **Option C, accept the floor, means:** with `andean_shortening` on (default 0.1) the L7 area thermostat runs at
+  its x0.2 floor for most of a run on some planets (2 of 2 L7 seeds, 1 of 3 L6), area ends 0-2.5 points under its
+  40% target, continents stand ~1.2-2.5 km thicker and ~200-250 m higher than without the Andes, and L7 land above
+  3 km sits at about 4-5.6% (main: 4.33 / 5.62% on seeds 2 / 1) against Earth's 2.5% on the same grid; above 4 km
+  1.3-3.4% (Earth 1.6%). That is ~1.7-2.2x Earth above 3 km on the worst seeds, a plausible high planet on seed 2
+  and a floor-pinned one on seed 1. The thermostat then has no slack for any further area sink, so any new
+  mechanism that takes continental area will show as thicker continents straight away.
+- Options for the decision (draft `draft-accept-l7-area-thermostat-floor.md`): C1 accept; C2 `andean_shortening`
+  off at L7 only; C3 Andean belts wider instead of taller (lane 292's B). Lean C1 (reasons in the draft).

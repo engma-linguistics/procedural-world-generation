@@ -129,6 +129,23 @@ def test_a_dead_belt_at_the_coast_spreads_seaward_and_widens_the_continent():
     assert out["on"][0] > 0, out
 
 
+def test_seaward_collapse_runs_down_to_collapse_margin_km():
+    """PW-1703: across a margin edge crust flows while the belt side is over collapse_margin_km (40 by default, as
+    inland). A 38-km coast stays put at 40 and spreads seaward at 35 (volume kept); inland edges keep 40 km."""
+    n = build_grid(5).n
+    moved = {}
+    for km in (40.0, 35.0):
+        sim = Simulation(build_grid(5), 1, Params(collapse_margin=1.0, collapse_margin_km=km), 2.0)
+        sim.dt_now = 5.0
+        col, coast, sea = _coastal_belt(sim)
+        col.t[col.t == 70.0] = 38.0
+        t_sea, v0 = col.t[sea].copy(), col.t.sum()
+        crust.flow_and_orogeny(sim, col, crust.inner_edges(sim, col.cont), np.zeros(n), np.zeros(n, bool))
+        assert abs(col.t.sum() - v0) < 1e-6 * v0
+        moved[km] = float((col.t[sea] - t_sea).sum())
+    assert moved[40.0] == 0.0 and moved[35.0] > 0.0, moved
+
+
 def test_drowned_continent_floats_water_loaded():
     """PW-1287 A: with wet = WET (water_loaded 1), continental crust below the sea stands rho_m / (rho_m - rho_w)
     times its air-loaded depth (its hollow holds water); land and ocean floor are unchanged, and the two meet at
