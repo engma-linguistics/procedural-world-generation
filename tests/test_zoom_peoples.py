@@ -61,7 +61,7 @@ def test_land_use_follows_the_run_where_the_ground_allows(plain, settled):
     crop = lu == ZP.CROP
     assert 0.05 < crop[land].mean() < 0.30, "cropland: some of the 30% the run asks for (ground that can't be ploughed is spared)"
     # fields lie on the better and flatter ground than the land's average
-    assert L["fertile_score"][crop].mean() > L["fertile_score"][land].mean() + 2  # (percent)
+    assert L["fertile_score"][crop].mean() > L["fertile_score"][land].mean() + 0.02
     gy, gx = np.gradient(np.where(L["water"] == 0, L["elevation"], 0.0), 3000.0)  # (the ground, ice-covered too, as the code reads it)
     assert np.hypot(gx, gy)[crop].max() < ZP.SLOPE_CROP + 1e-9
     # villages are a few of the pixels, nearer rivers than the land is
@@ -108,3 +108,24 @@ def test_rank_selection_takes_the_share_per_cell():
     pick = ZP._select(score, ok, own, np.full(1000, 0.2), np.full(1000, 250.0))
     assert [int(pick[own == c].sum()) for c in range(4)] == [50] * 4
     assert score[pick].min() > np.sort(score[own == 0])[-60]  # the best-scoring ones
+
+
+def test_no_zoom_layer_saturates_its_encoding(plain):
+    """PW-1682: every scaled byte/short layer must fit its dtype at scale; a value stored in the wrong unit (fertile_score
+    as a percent at 0.01 scale) clips at the dtype's top for most pixels."""
+    from planet import store as S
+    bad = {}
+    for k, v in plain["layers"].items():
+        enc = zoom.LAYER_DOC[k][2:]
+        if not enc or enc[0].get("scale", 1) == 1:
+            continue
+        spec = enc[0]
+        info = np.iinfo(np.dtype(spec["dtype"]))
+        raw = S.encode(v, {**spec})
+        share = float(((raw == info.max) | (raw == info.min)).mean())
+        # a legitimately high-valued layer may touch its ceiling on a few pixels; a unit mismatch hits most of them
+        if share > 0.02 and (np.asarray(v) / spec["scale"] > info.max).mean() > 0.02:
+            bad[k] = round(share, 3)
+    assert not bad, f"layers saturating their encoding: {bad}"
+    assert "fertile_score" in plain["layers"]
+    assert np.asarray(plain["layers"]["fertile_score"]).max() <= 1.0

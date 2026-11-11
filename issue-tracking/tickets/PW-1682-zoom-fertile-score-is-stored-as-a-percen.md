@@ -2,7 +2,7 @@
 id: PW-1682
 title: Zoom fertile_score is stored as a percent into a 0.01-scale byte, so it saturates at 2.55 (57% of section 2a4463's pixels)
 type: task
-status: todo
+status: done
 parent: PW-1198
 milestone: v1.0
 subsystem: zoom
@@ -32,5 +32,14 @@ peoples test comment, and re-run `planet humanuse`-style recompute for existing 
 - [ ] decoded fertile_score spans 0 to 1 (or 0 to 100 by one stated convention) on a zoom, with no ceiling pile-up
 - [ ] every reader agrees
 
+## Fixed (lane 287, PW-1682)
+`humanuse.world_layers` and `zoom_layers` now store `fertile_score` as a 0..1 fraction rounded to 0.01 (the store's encode
+divides by the 0.01 scale; the world layer had the same bug, so the settlement site score read a 2.55 ceiling too). Readers that
+divided by 100 (export.py, peoples.py, viewer/globe/describe.js) now read the fraction; viewer/zoom.html already showed it raw.
+Tests: `test_no_zoom_layer_saturates_its_encoding` (tests/test_zoom_peoples.py, every scaled layer of a built zoom) and
+`test_human_use_layers_fit_their_encoding` (tests/test_humanuse.py, world). No other saturating layer found. Zooms and worlds
+made before this fix show a wrong fertile_score (clipped at 2.55); no code path was kept for them, delete or rebuild.
+
 ## Updates
 - 2026-11-10: Created from inbox draft draft-zoom-fertile-score-saturates.md (found by lane285).
+- 2026-11-10: Fixed by lane 287 (6e47b7fa), merged.

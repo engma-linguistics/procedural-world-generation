@@ -588,7 +588,7 @@ def analyse_world(grid, L: dict) -> tuple[dict, dict]:
         score, fc = fertile(np.asarray(L["soil_fertility"], float), np.asarray(L["soil_depth"], float), moist, grow,
                             slope_deg_net(net, el), land, ice, np.asarray(L.get("permafrost", np.zeros(n))),
                             np.asarray(L.get("peat_depth", np.zeros(n)), float), np.asarray(L.get("flooded", np.zeros(n)), float))
-        out["fertile"], out["fertile_score"] = fc, np.round(100 * score).astype(int)
+        out["fertile"], out["fertile_score"] = fc, np.round(score, 2)
     # fresh water
     if _has(L, "runoff"):
         fresh_lake = lake & (np.asarray(L.get("lake_kind", np.ones(n))) == 1)
@@ -680,7 +680,7 @@ def analyse_zoom(L: dict, res_km: float, falls_px=(), parts=ZOOM_PARTS) -> tuple
         sl = np.degrees(np.arctan(np.hypot(*np.gradient(el, res_km * 1000.0)))).ravel()
         score, fc = fertile(g("soil_fertility"), g("soil_depth"), moist, grow, sl, land, ice, g("permafrost"),
                             g("peat_depth"), 100.0 * (g("wetland") == 2))
-        out["fertile"], out["fertile_score"] = fc.reshape(ny, nx), np.round(100 * score).astype(int).reshape(ny, nx)
+        out["fertile"], out["fertile_score"] = fc.reshape(ny, nx), np.round(score, 2).reshape(ny, nx)
     tab["net"] = net
     if "fresh" not in parts:
         return out, tab

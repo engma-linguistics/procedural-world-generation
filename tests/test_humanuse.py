@@ -190,3 +190,14 @@ def test_finished_world_carries_the_layers_and_they_are_what_the_export_recomput
     assert not L["harbour"][land].any() and not L["fertile"][~land].any()  # (harbours are at sea, farms on land)
     assert L["pass_height"][L["pass"] > 0].min() > 0 and not L["pass"][~land].any()
     assert (L["fresh_km"] >= 0).all() and (L["fresh_water"][L["fresh_km"] == 0] == 3).all()
+
+
+def test_human_use_layers_fit_their_encoding():
+    """PW-1682: fertile_score is a 0..1 fraction at 0.01 scale; none of the layers clips at its dtype's top."""
+    from planet import store as S
+    from planet import world as W
+    L = W.generate("plates", seed=2, level=4)["layers"]
+    assert 0 <= L["fertile_score"].min() and L["fertile_score"].max() <= 1.0 and L["fertile_score"].max() > 0
+    for k, (dt, sc, _, _) in HU.LAYER_SPECS.items():
+        raw = S.encode(L[k], {"dtype": dt, "scale": sc})
+        assert (raw == np.iinfo(np.dtype(dt)).max).mean() < 0.02, k
