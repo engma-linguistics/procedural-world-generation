@@ -2,7 +2,7 @@
 id: PW-1717
 title: "Installer first run: numba warm-up, starter world (generate L6 by default, download optional), optional voice and Earth data"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1.0
 subsystem: infra
@@ -30,4 +30,5 @@ numba is JIT-compiled with cache=True at 190 sites, so the first run of each ker
 - [ ] The viewer shows first-run progress (Daniel uses the viewer, not the CLI)
 
 ## Updates
+- 2026-11-11: Status todo -> done. merged (lanes 304/306)
 - 2026-11-11: Created from inbox draft draft-installer-first-run.md (found by plan-v1-lane).

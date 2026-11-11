@@ -2,7 +2,7 @@
 id: PW-983
 title: "Experiment: first-principles phonology at deme level - production with coarticulation, perception with confusion, biased learning, contact mixing - from the first language on"
 type: story
-status: todo
+status: wontdo
 parent: PW-767
 milestone: later
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-981, PW-982, PW-965]
 refs: []
 created: 2026-10-28
-updated: 2026-11-09
+updated: 2026-11-11
 ---
 
 ## Description
@@ -27,3 +27,4 @@ Validation (all unforced): inventory sizes and segment frequencies PHOIBLE-ish; 
 ## Updates
 - 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-10-28: Created.
+- 2026-11-11: Dropped per the 11-11 assessment (owner agreed): an xl experiment cutting across the finished architecture; the engine's percept space, voice profiles and catalogue cover its aim for this project.

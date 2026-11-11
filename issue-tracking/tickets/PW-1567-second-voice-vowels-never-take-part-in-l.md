@@ -2,7 +2,7 @@
 id: PW-1567
 title: Second-voice vowels never take part in literal vowel changes (e > i leaves eᴖ alone)
 type: task
-status: todo
+status: wontdo
 parent: null
 milestone: later
 subsystem: peoples
@@ -13,7 +13,7 @@ blocked_by: []
 relates: []
 refs: ["planet/language/rules.py::_tonekey", "planet/language/rules.py::lit", docs/review/language/syrinx.md]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-11
 ---
 
 ## Description
@@ -36,3 +36,4 @@ still treat second-voice vowels as their own quality where they should. Golden o
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-second-voice-vowels-skip-vowel-shifts.md (found by lang-syrinx).
+- 2026-11-11: Dropped per the 11-11 assessment: a tiny edge case nobody will see; reopen if a syrinx language shows it.

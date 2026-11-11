@@ -14,7 +14,7 @@
 
 ## Lanes running (11-10 ~11:50)
 
-As of 2026-11-11 midday. Running: 304 (installer PW-1719/1717/1718/1716), 305 (PW-1691 2 Myr L8 split memory), 306 (LOD step 6 judge), 307 (world catalogue + L8 readiness), 309 (cuisine through time PW-1714, PW-1727, PW-1728), 310 (PW-1726 shred_km judge). Proposed milestones: v0.4.0 Sun 15 Nov, v0.5.0 Fri 20 Nov, v0.6.0 Wed 25 Nov (freeze), v1.0.0 Tue 1 Dec (D80). Every lane process under systemd-run MemoryMax; 8765 server is unit planet-serve-8765 (48G). Scratch lane288/lane292 await Daniel.
+As of 2026-11-11 evening. Running: 305 (PW-1691 2 Myr L8 split memory), 307 (world catalogue + L8 readiness), 309 (cuisine through time PW-1714, PW-1727, PW-1728), 310 (PW-1726 shred_km judge). Milestones (D80): v0.4.0 Sun 15 Nov, v0.5.0 Fri 20 Nov, v0.6.0 Wed 25 Nov (freeze), v1.0.0 Tue 1 Dec. Installer merged; web install waits on D83 (push v* tags). Every lane process under systemd-run MemoryMax; 8765 server is unit planet-serve-8765 (48G). New lane worktrees go in ~/personal/repos/pwg-worktrees/ (not .claude/, which prompts Daniel). Scratch lane288/lane292 await Daniel.
 v0.3.0 tagged (suite 2033 passed); server restarted. Waiting on Daniel: nothing (D73-D79 answered).
 
 ## Milestones (2026-11-09)

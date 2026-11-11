@@ -2,7 +2,7 @@
 id: PW-1718
 title: "Installer: update to the newest tag with rollback, an 'update available' note in the viewer, and an uninstall that asks about the data"
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1.0
 subsystem: infra
@@ -30,4 +30,5 @@ If it is never done, every new tag means a manual reinstall, and a bad update ha
 - [ ] Update, rollback and uninstall each work on a test install, with the data folder byte-identical before and after
 
 ## Updates
+- 2026-11-11: Status todo -> done. merged (lanes 304/306)
 - 2026-11-11: Created from inbox draft draft-installer-update-uninstall.md (found by plan-v1-lane).

@@ -1,7 +1,7 @@
 """A scripted dive on the globe from orbit to the ground (25 m tiles) and back out, in headless Chrome (PW-1688, PW-1673).
 
     uv run --with playwright python tools/viewer_lod_dive.py PORT WORLD_ID OUT_DIR [--view=lat,lon] [--cursor=fx,fy] [--slow=ms] [--wait=s]
-        [--layer=satellite] [--flight=s] [--q=&k=v...] [--embed] [--sw] [--video]
+        [--layer=satellite] [--flight=s] [--settle=s] [--nadir] [--q=&k=v...] [--embed] [--sw] [--video]
 
 Needs `planet serve --port PORT --no-open` already running (never the owner's port) on a data root with WORLD_ID. The
 server builds the tiles in view on demand (planet/tiles.py, PW-1690): with --wait=S, on a world with nothing built,
@@ -10,6 +10,9 @@ stretched, and the "sharpening" badge), waits up to S seconds for the first tile
 arriving, and goes on. --layer: the colour layer (it follows onto the tiles where it has a fine twin). Each shot also
 records the hover readout at the screen's centre (the tile's own reading there). --flight=S: after the dive, S seconds
 of flying (down, panning low, out, panning across, again), sampling renderer memory every 10 s (report "flight").
+--settle=S: at the level-2, -3 and -4 marks (1 km, 250 m, 25 m tiles), wait up to S s for every tile in view to be built
+before the shot (report "settles"). --nadir: there, also shoot the same place straight down (the tilt taken off, then
+put back; NN_levelK_nadir.png).
 Scrolls the wheel over a point a little off the screen's centre, notch by notch, and writes to OUT_DIR:
   *.webm               with --video: the screen recording (Playwright's video; needs `playwright install ffmpeg`)
   NN_<what>.png        screenshots: orbit, each level appearing, a parent showing while its child loads (--slow delays
@@ -67,7 +70,10 @@ def main():
     gpu = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] if "--sw" in sys.argv else ["--use-gl=angle", "--use-angle=gl", "--enable-gpu"]
     W, H = 1600, 1000
     wait = float(opt.get("wait", "0"))
-    rep = {"world": world, "view": view, "slow_ms": slow, "wait_s": wait, "notches": [], "shots": [], "waits": []}
+    settle = float(opt.get("settle", "0"))
+    nadir = "--nadir" in sys.argv
+    rep = {"world": world, "view": view, "slow_ms": slow, "wait_s": wait, "settle_s": settle, "notches": [], "shots": [], "waits": [],
+           "settles": []}
     with sync_playwright() as p:
         b = p.chromium.launch(executable_path=os.environ.get("CHROME", "/usr/bin/google-chrome"), headless=True,
                               args=["--headless=new", "--ignore-gpu-blocklist", "--enable-precise-memory-info", *gpu])
@@ -135,7 +141,23 @@ def main():
             rep["notches"].append(s)
             if marks and s["h_km"] < marks[0][0]:
                 time.sleep(0.15 if slow else 1.0)
+                if settle and marks[0][1] in ("level2", "level3", "level4"):  # (the level's view once its tiles are built)
+                    w0 = time.time()
+                    while time.time() - w0 < settle:
+                        s2 = state()
+                        if not s2["queued"] and not s2["building"] and not s2["badge"]:
+                            break
+                        time.sleep(2.0)
+                    rep["settles"].append({"mark": marks[0][1], "seconds": round(time.time() - w0, 1), "done": time.time() - w0 < settle})
+                    time.sleep(1.0)
+                    t0 += time.time() - w0
                 shot(marks[0][1], f"below {marks[0][0]} km")
+                if nadir and marks[0][1] in ("level2", "level3", "level4"):  # (the same place straight down, then the tilt back)
+                    pg.evaluate("window.planetViewer.cam.user = -Math.PI / 2")
+                    time.sleep(3.2)
+                    shot(marks[0][1] + "_nadir", f"below {marks[0][0]} km, straight down")
+                    pg.evaluate("window.planetViewer.cam.user = 0")
+                    time.sleep(3.2)
                 if slow and marks[0][1] == "level2_arriving":  # (the parent stretched while its children load, then their fade-in)
                     time.sleep(slow / 1000 + 0.15)
                     shot("level2_fading_in", "the first children arriving, fading in over the parent")
