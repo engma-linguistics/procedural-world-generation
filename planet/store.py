@@ -45,6 +45,7 @@ vocabulary of layer names shared by runs, time zooms, worlds and the viewer.
 from __future__ import annotations
 
 import contextlib
+import contextvars
 import copy
 import gzip
 import json
@@ -99,8 +100,35 @@ def worlds_dir() -> Path:
     return root() / "worlds"
 
 
+_tile_store: contextvars.ContextVar[Path | None] = contextvars.ContextVar("tile_store", default=None)
+
+
+def tiles_dir() -> Path:
+    """The level-of-detail tile store (planet/tiles.py): <data root>/.tiles. Not a zoom list: nothing in it is indexed."""
+    return root() / ".tiles"
+
+
+def tile_zooms_dir(world_id: str) -> Path:
+    """Where a world's LOD tiles (levels 1-4, matched level-1 sections included) are saved as zoom directories."""
+    return tiles_dir() / world_id / "zooms"
+
+
+@contextlib.contextmanager
+def tile_store(world_id: str):
+    """Inside it zooms_dir() is the world's tile store, so everything that saves, finds or loads zooms by id (zoom/
+    lod_build.py) works on the tiles, and update_index("zoom") does nothing (tiles are listed by the tile service's own
+    index, never in zooms/index.json and so never in the viewer's zoom lists). Per thread."""
+    d = tile_zooms_dir(world_id)
+    d.mkdir(parents=True, exist_ok=True)
+    tok = _tile_store.set(d)
+    try:
+        yield d
+    finally:
+        _tile_store.reset(tok)
+
+
 def zooms_dir() -> Path:
-    return root() / "zooms"
+    return _tile_store.get() or root() / "zooms"
 
 
 def grids_dir() -> Path:
@@ -935,6 +963,13 @@ def delete(kind: str, item_id: str) -> list[Path]:
         for z in zooms_of(item_id):
             shutil.rmtree(z)
             gone.append(z)
+        for q in (tile_zooms_dir(item_id).parent, tiles_dir() / f"{item_id}.json"):  # (its LOD tiles and their index)
+            if q.is_dir() and not q.is_symlink():
+                shutil.rmtree(q)
+                gone.append(q)
+            elif q.is_file() and not q.is_symlink():
+                q.unlink()
+                gone.append(q)
     else:
         if kind == "zoom":
             for z in descendants_of(item_id):
@@ -1042,6 +1077,8 @@ def items(kind: str) -> list[tuple[Path, dict]]:
 
 def update_index(kind: str) -> list[dict]:
     """Rewrites <kind>s/index.json (what the viewer lists) and returns it."""
+    if kind == "zoom" and _tile_store.get() is not None:  # (inside tile_store(): tiles are not listed, so no scan)
+        return []
     d = {"run": runs_dir, "world": worlds_dir, "zoom": zooms_dir}[kind]()
     d.mkdir(parents=True, exist_ok=True)
     with lock(d, "index"):  # (the last writer has listed last: no new item is left out)

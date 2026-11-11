@@ -205,8 +205,9 @@ not building the whole planet up front.
   (progress) / failed (message). Built tiles are fetched as `GET /api/tiles/<world>/<cell>/<level>/<tx>/<ty>/<file>`: `view.bin`
   (elevation as float16 and a water mask, ~2-3 MB, gzip on the wire), `satellite.png`, and any layer by name (the zoom layer
   files, so the existing layer code serves them).
-- **The cache on disk.** Tiles are ordinary zoom directories (so `zoom.load`, the zoom page and the tests work on them) under
-  `zooms/`, with a `tile` block in `zoom.json` and an index per world (`lod.tile_id`). Size (1.3): 33 MB per tile; a dive ~1 GB
+- **The cache on disk.** Tiles are zoom directories (so `zoom.load` and the tests work on them) in their own store,
+  `<data root>/.tiles/<world>/zooms/`, not in `zooms/` (State, lane 298), with a `tile` block in `zoom.json` and an index per
+  world (`lod.tile_id`). Size (1.3): 33 MB per tile; a dive ~1 GB
   (*estimate*); Daniel exploring 50 places ~50 GB. A cap (default 60 GB, a setting) drops least-recently-viewed tiles of levels 2-4 when
   passed; level 1 is never dropped (matched builds depend on order; ~127 MB per cell at 4 km, ~6 GB for a world's 47 land
   cells). Deleting a world deletes its tiles (`planet delete`).
@@ -546,3 +547,31 @@ API's section route still builds unmatched (inbox `draft-lod-level1-job-ram-and-
 **PW-1701.** `vegetation.classify` takes the caller's `land`; the zoom's vegetation passes its own land pixels
 (a depression below the sea among them, which `geo.is_land` could not place on a sphere grid). dba204's
 py.1.1/2/1/5 builds (24 s, 3.3 GB). Test `test_classify_takes_the_callers_land_mask`.
+
+## State (lane 298, 11-11: PW-1702 tiles out of the zoom store; PW-1704)
+
+**Where tiles live now.** `<data root>/.tiles/<world>/zooms/<id>/` (levels 1-4 alike; level 1 is the cell's *matched*
+section), with the tile service's index at `<data root>/.tiles/<world>.json`. `store.tile_store(world)` is a per-thread
+context in which `zooms_dir()` is that directory, so `lod_build` (find, load_sources, save, `Z.zoom(section=, match=)`
+and the fine pass's own saves, all by `S.path_of`/`zooms_dir`) works unchanged on it, and `update_index("zoom")` does
+nothing there. `api.tile_job` runs inside it. Consequences: nothing a tile build saves touches `zooms/index.json` (no
+rescan of any ordinary zoom), tiles never reach `/api/planets`, a world's zoom list, the navigator or `planet list`,
+and `planet delete` of a world removes its `.tiles/<world>/` and index. `tiles.py` finds a tile by the index (level 1,
+named by the job that built it) or by its deterministic id (levels 2-4); `_scan_sections` (old sections in the zoom
+listing) is gone. Old tile zooms in `zooms/` are not read any more: delete them.
+
+**PW-1704, the rule.** (1) `api.TILE_PEAK_GB` is a dict by level (`{1: 8.3, 2-4: 3.2}`, `tiles.PEAK_GB` is the same
+object): a level-1 tile job checks 8.3 GB + the spare. (2) The globe uses only level-1 sections built by the tile service
+(matched to the built neighbours, `build_level1`), kept in the tile store. A section made by `POST /api/zoom {section}`
+is an ordinary zoom for the zoom page (built alone, listed, deleted like any zoom): it is in `zooms/`, the globe never
+looks there, so it cannot shadow or replace a matched one and cannot bring back the step at a border. (A hand-made
+4 km section is not reused as a level 1: the matched build is the only one that agrees with its neighbours, and building
+it twice costs one more 3-4 min build, once per cell.)
+
+**Measured** (`measure.py`, scratch root, 50 ordinary zooms of 73 layer specs each, 20 tiles added one by one; the part of
+a tile save that scales, `update_index("zoom")`, and `lod_build._section_dir`): tiles as ordinary zooms 3.4-7.2 ms an
+index rewrite (it rereads every zoom.json, so it grows with ordinary zooms and tiles) and 2.7-6.4 ms a section find; in the
+tile store 0.00 ms an index (flat, no scan) and a section find of 0.11 ms (1 tile) to 1.10 ms (20 tiles), which grows with
+the tiles of that world only (~0.05 ms a tile), never with ordinary zooms. A real build's other costs are unchanged.
+**Not a lookup yet:** `lod_build._section_dir` still globs the world's tile store (planet/zoom was lane 297's); inbox
+`draft-lod-build-find-sections-by-index.md`.
