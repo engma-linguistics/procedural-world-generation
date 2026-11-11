@@ -2091,3 +2091,38 @@ is not in this branch.
   Polynesian change, not a single law.
 - **de1cc6 sisters** are still just under the bar (0.480, main 0.476). The rate change did not move them.
 - **The a24559 horizon** (17 kyr against 6-10) is unchanged by this lane (main 17.0).
+
+## Lane 18 (PW-1737): judged on many worlds, honest checks
+
+**The matrix.** Every language change is now run on 4 worlds x 2 seeds at once (a24559, 3e0eb4 and 0141d1 with D&D
+peoples, de1cc6 with Seven Meals), in about 30 minutes. One table shows every check per draw and how often it passes:
+`docs/review/language/matrix/baseline-2026-11-11.md`. A lane shows main against its branch with `matrix.py --compare`.
+
+| check (8 draws) | passes |
+|---|---|
+| sisters recognisable | 7 |
+| hubs simpler | 7 |
+| living inventory sizes | 6 |
+| pronoun loans (WOLD) | 6 (both Seven Meals draws borrow "I" and "we" too often) |
+| overused segments | **5** (a different sound each time: ɖ, dʒʱ, ɒ and ᵑk) |
+| everything else | 8 |
+
+**Your call:** a pass mark. I propose: each check passes on 6 of 8 draws, the three invariants on all 8, and no lane may
+make any check fail on more draws than main does. Overused segments is under that mark today. It belongs to the living
+inventories ticket (PW-1740), so I did not loosen it.
+
+**What changed in the checks**
+- **Horizon:** read from the steady curve fit, not the two-window count (that one read 3.8 kyr on one a24559 draw, the fit
+  13.7). Your ruling of 11-08 stands: 11 kyr and more is close enough, so only a horizon under 6 kyr fails. Today it
+  reads 12.7-20.6 kyr.
+- **Six checks are now labelled "guards":** proto inventories, long generations, hubs, WOLD loans, contact kind and
+  doublets. They show the wiring works, not that the output is realistic. The doublet bar went up from 0.2 to 0.5, near
+  the ~0.7 every draw gives, so a break would show.
+- **Areal check** now fails when there are no near or no far pairs (it used to pass by default).
+- **`--workers`** does not change the output (a test, and 3 vs 4 workers gave identical tables on de1cc6).
+- **Real-language benchmark** re-recorded, with two fixed bars: back harmony in under 25% of daughters (16%, ok), and 4 of
+  7 languages keep their character (3, missed: Spanish, Mandarin and Arabic drift too far in 2.5 kyr).
+
+**de1cc6 sisters: not a regression any more.** The dip came with lane 16, and lane 17 took most of it back. On the same two
+seeds: lane 15 0.530 / 0.579, main now 0.520 / 0.567. The 0.01 left is a fifth of the swing between two seeds of the same
+world. Turning lexical diffusion off did not move it (0.513 / 0.571), so that is not the cause. Nothing to fix.

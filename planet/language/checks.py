@@ -1,6 +1,12 @@
 """The checks of the language pass (PW-986, architecture section 10): the six of the slice, then the living-lect realism
 checks (inventory sizes and segment frequencies vs PHOIBLE, 2026-11-04). Each returns {"name", "value", "target", "pass",
-"note"}; `run_all(result)` takes history.generate's result."""
+"note", "kind"}; `run_all(result)` takes history.generate's result.
+
+`kind` (PW-1737, assessment 11-11): "realism" checks measure something the engine was not told to produce (evidence the
+output looks like real languages); "guard" checks confirm a mechanism is wired (its outcome is near-built-in: the proto draw
+follows PHOIBLE, rates scale with generation, WOLD scores weight borrowing, elite contact multiplies prestige loans), so a
+failure means something broke and a pass proves little; "invariant" checks must always hold. A lane is judged on the
+multi-world matrix (tools/language/matrix.py), not on one draw."""
 from __future__ import annotations
 
 import functools
@@ -18,7 +24,11 @@ HORIZON_GROUPS = {"long_lived": lambda l: (getattr(l, "gen_yr", 0.0) or 0.0) >= 
                   "dwarves": lambda l: l.people in DWARVES,
                   "elves": lambda l: l.people in ELVES,
                   "dragons": lambda l: l.people.endswith("_dragon")}
-HORIZON_RANGE = (6.0, 10.0)
+HORIZON_RANGE = (6.0, 10.0)   # the comparative method's horizon in the literature (shown; the check reads HORIZON_MIN)
+# Owner 11-08 (decisions.md): a reading of about 11 kyr or more is close enough, so the check bars only the short side:
+# the stable reading (families.logistic_horizon, else the smoothed window read) must be at least HORIZON_MIN. The two-window
+# read swings 4.5-19 kyr between seeds of one world and is shown, not judged (PW-1737).
+HORIZON_MIN = HORIZON_RANGE[0]
 SIBLING_MIN, CROSS_MAX = 0.5, 0.15
 LONG_GEN_YR = 100.0  # generation length above which a people counts as long-lived for check 5
 TOP20_MIN = 10  # top-20 segment overlap with PHOIBLE
@@ -29,6 +39,9 @@ HUMAN_VOICED = frozenset({"human", "halfling", "dwarf", "orc", "goliath", "firbo
 
 def _row(name, value, target, ok, note) -> dict:
     return {"name": name, "value": value, "target": target, "pass": bool(ok), "note": note}
+
+
+GUARD, REALISM, INVARIANT = "guard", "realism", "invariant"
 
 
 def proto_inventories(lects: list) -> dict:
@@ -133,23 +146,36 @@ def horizon(result: dict) -> dict:
         h = old
     lg = groups.get("long_lived") or {}
     lh = lg.get("horizon_kyr")
-    long_ok = lh is not None and h is not None and (lh > h or bool(lg.get("censored")))
-    ok = h is not None and HORIZON_RANGE[0] <= h <= HORIZON_RANGE[1] and long_ok
     hum = groups.get("human") or {}
+    stable = _stable(hum) if hum else h
+    stable_long = _stable(lg) if lg else lh
+    long_ok = stable_long is not None and stable is not None and (stable_long > stable or bool(lg.get("censored")))
+    ok = stable is not None and stable >= HORIZON_MIN and long_ok
     return _row("scholars' horizon (human lects)",
-                {"human": h, "human_smoothed": hum.get("smoothed_kyr"), "human_single_window": hum.get("single_window_kyr"),
+                {"human_judged": stable, "long_lived_judged": stable_long,
+                 "human": h, "human_smoothed": hum.get("smoothed_kyr"), "human_single_window": hum.get("single_window_kyr"),
                  "human_logistic": hum.get("logistic_kyr"),
                  "long_lived": lh, "long_lived_censored": lg.get("censored"), "long_lived_smoothed": lg.get("smoothed_kyr"),
                  "all": (groups.get("all") or {}).get("horizon_kyr"), "by_group": groups,
                  "old_pair_measure": old, "old_all": fam.get("horizon_kyr"), "recovery_by_bin": rec, "strict_shares": strict},
-                f"human {HORIZON_RANGE[0]:.0f}-{HORIZON_RANGE[1]:.0f} kyr; long-lived peoples (generation >= {LONG_LIVED_YR:.0f} yr) "
-                "longer than the humans' (or still recovering where their splits end)", ok,
-                "the scholars' UPGMA tree (strict cognates: aligned distance under the threshold and recurring correspondences) over "
+                f"human stable reading (logistic, else smoothed) >= {HORIZON_MIN:.0f} kyr (literature {HORIZON_RANGE[0]:.0f}-"
+                f"{HORIZON_RANGE[1]:.0f} kyr; owner 11-08: ~11 kyr and more close enough); long-lived peoples (generation >= "
+                f"{LONG_LIVED_YR:.0f} yr) longer than the humans' (or still recovering where their splits end)", ok,
+                "judged: the logistic fit of recovered on split age (families.logistic_horizon), the smoothed read where the fit "
+                "fails; the scholars' UPGMA tree (strict cognates: aligned distance under the threshold and recurring correspondences) over "
                 "each group's living lects; the horizon is the start of the first two consecutive 2-kyr windows (stepped by 1 kyr, "
                 f"each with >= {_fm().MIN_SPLITS} splits) where fewer than half of the true splits are recovered, read from the "
                 "present; smoothed: the first crossing of a split-weighted 3-window moving average; single_window: the former "
                 "one-window rule; censored: never under half, the value is a lower bound; old_pair_measure: the former per-pair "
                 "edit-distance measure")
+
+
+def _stable(g: dict) -> float | None:
+    """A horizon group's stable reading: the logistic fit, else the smoothed window read, else the two-window read."""
+    for k in ("logistic_kyr", "smoothed_kyr", "horizon_kyr"):
+        if g.get(k) is not None:
+            return float(g[k])
+    return None
 
 
 def shifts(result: dict) -> dict:
@@ -437,7 +463,8 @@ def borrowability(result: dict) -> dict:
 
 ELITE_PRESTIGE_X = 1.5   # elite loans' prestige-field share over the neighbour loans' (PW-1636)
 ELITE_RULE_KYR = 2.0   # lects under elite rule this long ...
-ELITE_SPLIT_MIN = 0.2   # ... at least this share of them with a meat or product split
+ELITE_SPLIT_MIN = 0.5   # ... at least this share of them with a meat or product split (a guard: 0.2 sat far under
+#                        the ~0.7 passes give; PW-1737 raised it near the output, so a broken doublet path fails it)
 
 
 def _last_loan(w):
@@ -531,7 +558,8 @@ def areal(result: dict) -> dict:
     living = sorted((l for l in result["lects"] if l.alive and l.deme is not None and not getattr(l, "minority", False)),
                     key=lambda l: l.id)
     if len(living) < 3:
-        return _row("areal signal", None, "", True, "too few lects")
+        return _row("areal signal (cross-family, near vs far)", None, f"typology near - far >= {AREAL_MIN}", False,
+                    "too few lects: no areal signal can be shown")
     lat = np.radians([float(R.demes[l.deme]["lat"]) for l in living])
     lon = np.radians([float(R.demes[l.deme]["lon"]) for l in living])
     fam = np.array([l.family_true or l.id for l in living])
@@ -559,7 +587,8 @@ def areal(result: dict) -> dict:
         f_ = cross & (dk > AREAL_FAR_KM)
         near_t += ag[n_].tolist(); far_t += ag[f_].tolist(); near_i += ji[n_].tolist(); far_i += ji[f_].tolist()
     if not near_t or not far_t:
-        return _row("areal signal", None, "", True, "no near or no far cross-family pairs")
+        return _row("areal signal (cross-family, near vs far)", {"pairs_near": len(near_t), "pairs_far": len(far_t)},
+                    f"typology near - far >= {AREAL_MIN}", False, "no near or no far cross-family pairs: no areal signal shown")
     dt = float(np.mean(near_t) - np.mean(far_t))
     di = float(np.mean(near_i) - np.mean(far_i))
     return _row("areal signal (cross-family, near vs far)",
@@ -709,9 +738,19 @@ def run_all(result: dict) -> list[dict]:
                     (word_starts, result)):
         t = time.perf_counter()
         try:
-            out.append(fn(arg))
+            row = fn(arg)
         except Exception as e:  # (a check that cannot run says so; it never stops the pass)
-            out.append(_row(fn.__name__, None, "", False, f"check failed: {type(e).__name__}: {e}"))
+            row = _row(fn.__name__, None, "", False, f"check failed: {type(e).__name__}: {e}")
+        row["kind"] = KIND.get(fn.__name__, REALISM)
+        out.append(row)
         if isinstance(result.get("timing"), dict):
             result["timing"]["check_" + fn.__name__ + "_s"] = round(time.perf_counter() - t, 1)
     return out
+
+
+# what each check is evidence of (the module docstring; assessment 11-11, "Engineering slice")
+KIND = {"proto_inventories": GUARD, "long_generations": GUARD, "complexity": GUARD, "borrowability": GUARD,
+        "contact_profiles": GUARD, "doublets": GUARD, "shifts": GUARD,
+        "typology_consistency": INVARIANT, "possible_segments": INVARIANT, "second_voice": INVARIANT,
+        "sister_distant": REALISM, "horizon": REALISM, "living_sizes": REALISM, "living_segments": REALISM,
+        "living_overuse": REALISM, "areal": REALISM, "word_starts": REALISM}

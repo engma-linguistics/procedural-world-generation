@@ -724,6 +724,10 @@ UNIVERSAL_SHARE = 0.8  # a change fired in this share of all full-toolkit daught
 CHECK_METRICS = {"birth": (-1, 0.15), "aged": (-1, 0.15), "growth": (-1, 0.15), "closed_shift": (-1, 0.04),
                  "final_c_shift": (-1, 0.04), "harmony": (-1, 0.15)}
 AGG_METRICS = {"near": (+1, 1.0), "spread_ratio": (+1, 0.05), "universal": (-1, 1.0), "mean_growth": (-1, 0.1)}
+# Absolute bars (PW-1737): the baseline bands above only catch a change for the worse, so a stale or poor baseline passes
+# forever. These hold whatever the baseline says (the two bars of PW-1737). metric -> (direction, bar, label).
+ABS_BARS = {"back_harmony": (-1, 0.25, "full-toolkit daughters that fired harmony.back < 25%"),
+            "near": (+1, 4.0, "languages that kept their character >= 4 of 7")}
 
 
 def _mse(xs: list[float]) -> tuple[float, float]:
@@ -797,6 +801,8 @@ def check_metrics(results: list[dict]) -> dict:
     cnt = Counter(b for r in full for b in {LC.base_id(c) for c in r["changes"]})
     sig = sorted(((c, round(v / n, 2)) for c, v in cnt.items() if v / n >= UNIVERSAL_SHARE), key=lambda t: -t[1])
     out["universal"] = {"mean": float(len(sig)), "se": 0.0}
+    out["back_harmony"] = {"mean": round(sum("harmony.back" in {LC.base_id(c) for c in r["changes"]} for r in full) / max(n, 1), 3),
+                           "se": 0.0}
     out["signatures"] = sig
     out["changes_per_daughter"] = round(st.mean(len(r["changes"]) for r in full), 1)
     ctl = [r for r in results if r["tier"] == CONTROL]
@@ -861,8 +867,17 @@ def check_report(m: dict, base: dict | None, args) -> tuple[str, int]:
     p("signatures: " + (", ".join(f"{c} {s:.0%}" for c, s in m["signatures"]) or "none"))
     p(f"distinct changes per daughter: full toolkit {m['changes_per_daughter']}, control {m['control_changes_per_daughter']}")
     p("")
+    p("absolute bars (PW-1737; hold whatever the baseline):")
+    miss = 0
+    for k, (bt, bar, label) in ABS_BARS.items():
+        v = m[k]["mean"]
+        ok = v >= bar if bt > 0 else (v <= bar if bar == 0 else v < bar)
+        miss += not ok
+        p(f"  {label:70s} {v:6g}  {'ok' if ok else 'MISSED'}")
+    p("")
     p(f"{worse} metric(s) WORSE than the baseline" if bl else "no baseline to compare with")
-    return "\n".join(L), worse
+    p(f"{miss} of {len(ABS_BARS)} absolute bar(s) missed")
+    return "\n".join(L), worse + miss
 
 
 def main(argv=None) -> int:
@@ -876,7 +891,7 @@ def main(argv=None) -> int:
     ap.add_argument("--html", help="write the page here")
     ap.add_argument("--extra-html", help="an HTML fragment: an overview part, then <!--GAPS-->, then the gaps section")
     ap.add_argument("--check", action="store_true", help="the standing check (PW-1641): print the benchmark table "
-                    "against the stored baseline; exit 1 if a number is worse than its band")
+                    "against the stored baseline; exit 1 if a number is worse than its band or misses an absolute bar")
     ap.add_argument("--record", metavar="LABEL", help="with --check: store this run as the baseline, labelled LABEL")
     a = ap.parse_args(argv)
     if a.seeds is None:

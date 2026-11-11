@@ -18,6 +18,7 @@ def test_generation_override_from_current_preset():
     assert set(ov) == {"aarakocra"}
     a = ov["aarakocra"]
     assert a["stored_yr"] == 5.82 and abs(a["current_yr"] - cur["aarakocra"]) < 0.01
+    assert a["spec"] == "planet/lineages/samples/dnd.toml"  # (not the checkout's absolute path: PW-1737)
     assert 0.8 < a["current_yr"] / cur["kenku"] < 1.25  # (adult 12, lifespan 60, like kenku: owner 11-04)
     # a tree file that is not a preset of this checkout: no overrides, the stored lengths stand
     assert I.generation_overrides({"tree_file": "/nowhere/custom.toml"}, lines) == {}

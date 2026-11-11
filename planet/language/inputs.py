@@ -118,8 +118,20 @@ def generation_overrides(meta: dict, lines: dict, tree=None) -> dict:
             continue
         cur = line_generation_yr(tree, sl)
         if abs(cur - float(stored)) > GEN_TOL:
-            out[lid] = {"stored_yr": round(float(stored), 2), "current_yr": round(cur, 2), "spec": tree.source}
+            out[lid] = {"stored_yr": round(float(stored), 2), "current_yr": round(cur, 2), "spec": _spec_name(tree.source)}
     return out
+
+
+def _spec_name(path) -> str | None:
+    """The preset file relative to the repository (planet/lineages/samples/dnd.toml), not the checkout's absolute path, so
+    the output does not depend on where the code was run from (PW-1737); a file outside the repository: its name."""
+    if not path:
+        return path
+    p = Path(path)
+    try:
+        return p.resolve().relative_to(Path(__file__).resolve().parents[2]).as_posix()
+    except ValueError:
+        return p.name
 
 
 def _people_of_line(lines_by_id: dict, lid: str) -> str | None:
