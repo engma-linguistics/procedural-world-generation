@@ -1,6 +1,7 @@
-// The globe's level-of-detail tiles (PW-1688, step 4 of docs/review/zoom/lod-plan-v2.md): as the camera comes down, the
-// 4,000 km cells' tiles replace the globe's own cells (level 0): level 1 (4 km pixels, the whole cell) and level 2
-// (1 km pixels, 500 km tiles), each where its pixel would cover more than ~1.5 screen pixels (?lodpx=).
+// The globe's level-of-detail tiles (PW-1688 step 4, PW-1673 step 5 of docs/review/zoom/lod-plan-v2.md): as the camera
+// comes down, the 4,000 km cells' tiles replace the globe's own cells (level 0): level 1 (4 km pixels, the whole cell),
+// level 2 (1 km pixels, 500 km tiles), level 3 (250 m, 125 km) and level 4 (25 m, 12.5 km), each where its pixel would
+// cover more than ~1.5 screen pixels (?lodpx=).
 //
 //   - A tile shows when it has arrived; until then its parent shows there, stretched (the parent drops, by dithering,
 //     exactly the fragments its drawn children keep: their fade-in over FADE_S is the parent's fade-out; no sorting).
@@ -8,31 +9,38 @@
 //   - The globe's cells are hidden by the stencil wherever a tile is drawn (tiles draw first and mark it).
 //   - Heights: the globe's exaggeration, easing to 1x between 2,000 km and 50 km above the ground (the cells too, so
 //     cells and tiles stand at one height; easeEx).
-//   - Only the active layer's colours are fetched per tile: satellite, or a layer with a zoom twin (elevation,
-//     temperature, precipitation, biome); any other layer shows the satellite view on tiles.
+//   - Only the active layer's colours are fetched per tile: satellite, or any globe layer whose colouring reads only its
+//     own values and has a zoom twin (layers.js::tileLayer: elevation, temperature, rain, biome, vegetation, soils,
+//     climate, ...), coloured by the globe's own colouring and legend; any other layer shows the satellite view on tiles
+//     (a note under the legend says so). The hover readout reads the tile's value under the cursor (tileHover).
+//   - Rivers (PW-1711): a level-2 or finer tile draws its own rivers (its discharge at the globe's river threshold, as
+//     wide as the river at its pixel size, in the ribbons' colours) and marks stencil bit 2, which hides the globe's
+//     river ribbons there (overlays.js); over level 1 and the cells the ribbons show as before.
 //   - Tiles are placed relative to their own centre (float32 stays exact near the camera).
-//   - At most MAX_TILES tiles / MAX_BYTES are kept; the least recently drawn go first.
+//   - The memory pool: at most MAX_TILES tiles / MAX_BYTES (GPU and JS copies) are kept, the least recently drawn
+//     dropped first; records of tiles not seen for FORGET_MS are forgotten.
 // The tiles come through a tile source (tilesource.js): the server builds the wanted tiles on demand (planet/tiles.py,
 // PW-1690); until a tile is built its parent shows there, stretched, and a small "sharpening…" note shows (badge()).
-// URL: ?lod=0 off, ?lodpx=1.5 refine threshold, ?lodmax=2 finest level, ?lodslow=<ms> delay each tile (to see fallback).
+// URL: ?lod=0 off, ?lodpx=1.5 refine threshold, ?lodmax=4 finest level, ?lodslow=<ms> delay each tile (to see fallback).
 import * as THREE from 'three';
 import * as M from '../lodmath.js';
 import { aeFrame } from '../zoom3d_place.js';
 import { S, state } from './state.js';
 import { camera, group, renderer } from './scene.js';
 import { nearestCellU, reliefScale } from './geometry.js';
-import { rampFns } from './layers.js';
-import { OCEAN } from './colours.js';
+import { tileLayer, tileValueText } from './layers.js';
 import { NotBuilt, TileSource } from './tilesource.js';
 
 const P = new URLSearchParams(location.search);
 const R_M = 6371000;
-const FADE_S = 0.4, MAX_TILES = 300, MAX_BYTES = 1.2e9, FETCHES = 4, MASK_PX = 2048, KIDS_PX = 64, GN = 129;
+const FADE_S = 0.4, MAX_TILES = 120, MAX_BYTES = 0.4e9, FORGET_MS = 60000, FETCHES = 4, MASK_PX = 2048, GN = 129;
+const KIDS_PX = 80;  // (a tile's children grid: 8, 4 and 10 a side divide it)
+const RIVER_W = 4.5, RIVER_MAX_PX = 8;  // river width m = RIVER_W sqrt(Q m3/s) (judgement), at most RIVER_MAX_PX pixels across
 const EASE_HI_KM = 2000, EASE_LO_KM = 50;
 export const LOD = {
-  on: P.get('lod') !== '0', refinePx: +P.get('lodpx') || 1.5, maxLevel: Math.min(+P.get('lodmax') || 2, 2), slowMs: +P.get('lodslow') || 0,
+  on: P.get('lod') !== '0', refinePx: +P.get('lodpx') || 1.5, maxLevel: Math.min(+P.get('lodmax') || M.FINEST, M.FINEST), slowMs: +P.get('lodslow') || 0,
   src: null, world: null, cells: [], tiles: new Map(), queue: [], inflight: 0, dirty: false, ex: 0, relK: { value: 1 }, hgKm: Infinity,
-  stats: { drawn: 0, kept: 0, bytes: 0, fetched: 0, failed: 0, wanted: 0, byLevel: {}, queued: 0, building: 0 }, note: '',
+  stats: { drawn: 0, kept: 0, bytes: 0, fetched: 0, failed: 0, wanted: 0, byLevel: {}, queued: 0, building: 0, records: 0, dropped: 0, satOnly: 0 }, note: '',
 };
 const three = (p) => new THREE.Vector3(p[0], p[2], -p[1]);  // planet (x, y, z) -> three.js axes (geometry.toThree)
 const planet = (v) => [v.x, -v.z, v.y];
@@ -62,7 +70,8 @@ void main() {
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }`;
 const FRAG = `
-uniform sampler2D uElev; uniform sampler2D uColor; uniform sampler2D uMask; uniform sampler2D uKids;
+uniform sampler2D uElev; uniform sampler2D uColor; uniform sampler2D uMask; uniform sampler2D uKids; uniform sampler2D uRiver;
+uniform float uRiverOn; uniform vec3 uRiverCol; uniform vec3 uRiverBig;
 uniform vec3 uRect; uniform float uFade; uniform float uExM; uniform float uTexel; uniform float uResM;
 varying vec2 vUv;
 float ign(vec2 p) { return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
@@ -77,7 +86,10 @@ void main() {
   float gy = (hAt(vUv - vec2(0.0, uTexel)) - hAt(vUv + vec2(0.0, uTexel))) * uExM / (2.0 * uResM);
   vec3 nrm = normalize(vec3(-gx, -gy, 1.0)), L = normalize(vec3(-1.0, 1.0, 1.2));
   float sh = clamp(dot(nrm, L) / L.z, 0.35, 1.45);
-  gl_FragColor = vec4(texture2D(uColor, vUv).rgb * mix(1.0, sh, 0.85), 1.0);
+  vec3 col = texture2D(uColor, vUv).rgb * mix(1.0, sh, 0.85);
+  vec2 rv = texture2D(uRiver, vUv).rg;
+  col = mix(col, rv.g > 0.5 ? uRiverBig : uRiverCol, uRiverOn * smoothstep(0.25, 0.6, rv.r));
+  gl_FragColor = vec4(col, 1.0);
 }`;
 
 // ---- the source, the cells ------------------------------------------------------------------------------------------
@@ -120,14 +132,15 @@ function tileRec(k, cell) {
   if (t) return t;
   const [cx, cy] = M.centreXY(k), half = M.tileKm(k.level) / 2;
   t = { k, cell, centre: three(cell.fr.toSphere(cx, cy)), radius: Math.SQRT2 * half / M.R_KM, elev: null, colId: null, mesh: null,
-        fade: 0, target: 0, lastUsed: 0, loading: false, failed: false, bytes: 0, kids: null, kidTex: null, want: 0 };
+        fade: 0, target: 0, lastUsed: 0, seen: 0, loading: false, failed: false, bytes: 0, kids: null, kidTex: null, want: 0,
+        vals: null, valsLayer: null, river: null, riverThr: null, riverLoading: false };
   LOD.tiles.set(k.id, t);
   return t;
 }
 function dropTile(t) {
   if (t.mesh) { group.remove(t.mesh); t.mesh.geometry.dispose(); const u = t.mesh.material.uniforms; u.uElev.value.dispose(); u.uColor.value?.dispose(); t.mesh.material.dispose(); }
-  t.kidTex?.dispose();
-  t.mesh = null; t.elev = null; t.vh = null; t.colId = null; t.kidTex = null; t.bytes = 0;
+  t.kidTex?.dispose(); t.river?.dispose();
+  t.mesh = null; t.elev = null; t.vh = null; t.colId = null; t.kidTex = null; t.bytes = 0; t.vals = null; t.river = null; t.riverThr = null;
 }
 function buildMesh(t) {
   const { k, cell } = t, [x0, , , y1] = M.rect(k), T = M.tileKm(k.level), pos = new Float32Array(3 * G * G), c = t.centre;
@@ -146,34 +159,68 @@ function buildMesh(t) {
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT, fragmentShader: FRAG, side: THREE.DoubleSide,
     uniforms: { uElev: { value: et }, uColor: { value: null }, uMask: { value: cell.mask }, uKids: { value: t.kidTex }, uCentre: { value: c.clone() },
+                uRiver: { value: NO_RIVER }, uRiverOn: { value: 0 }, uRiverCol: { value: new THREE.Color() }, uRiverBig: { value: new THREE.Color() },
                 uEx: { value: 0 }, uExM: { value: 1 }, uSkirt: { value: 3 * M.resKm(k.level) / M.R_KM }, uRect: { value: new THREE.Vector3(x0, y1, T) },
                 uFade: { value: 0 }, uTexel: { value: 1 / n }, uResM: { value: M.resKm(k.level) * 1000 } },
-    stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp,
+    // (stencil bit 1: hides the globe's cells; bit 2, level 2 and finer: hides the globe's river ribbons, PW-1711)
+    stencilWrite: true, stencilRef: k.level >= 2 ? 3 : 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp,
   });
   t.mesh = new THREE.Mesh(geo, mat);
   Object.assign(t.mesh, { frustumCulled: false, renderOrder: -1, visible: false });
   t.mesh.position.copy(c);
   t.mesh.userData.lodTile = k.id;
   group.add(t.mesh);
-  t.bytes = 2 * (n * n * 2) + pos.byteLength + KIDS_PX * KIDS_PX;
+  sizeTile(t);
 }
+// a tile's bytes, JS and GPU copies: elevation (float16, twice: the JS copy stays for the ground and the hover), colours
+// and the river mask (on the GPU only: their JS copies are let go once uploaded, gpuOnly), the values kept for the hover,
+// positions, the children grid
+function sizeTile(t) {
+  const n = t.elev?.n || 0;
+  t.bytes = 2 * (n * n * 2) + (t.colId ? n * n * 4 : 0) + (t.vals ? t.vals.byteLength : 0) + (t.river ? 2 * n * n : 0)
+    + 3 * 4 * G * G + KIDS_PX * KIDS_PX;
+}
+// let a texture's JS copy go once it is on the GPU (an ImageBitmap closed, a data array dropped); never uploaded again
+function gpuOnly(tex) {
+  tex.onUpdate = () => {
+    tex.onUpdate = null;
+    const im = tex.image;
+    if (im?.close) im.close();
+    else if (im?.data) tex.image = { width: im.width, height: im.height, data: null };
+  };
+  return tex;
+}
+const NO_RIVER = (() => { const t = new THREE.DataTexture(new Uint8Array(2), 1, 1, THREE.RGFormat, THREE.UnsignedByteType); t.needsUpdate = true; return t; })();
 
-// the active layer's colours for tiles: {id, name, fn(v, c)} or satellite
+// the active layer's colours for tiles: layers.js::tileLayer (cached per layer and season), or the satellite view
+let specCache = null;
 function colourSpec() {
-  const l = state.layer;
-  if (l === 'biome' && S.V?.biomeColors) return { id: 'biome', name: 'biome', fn: (v, c) => c.set(S.V.biomeColors[v] ?? '#000') };
-  if (['elevation', 'temperature', 'precipitation'].includes(l) && rampFns[l]) return { id: l, name: l, fn: rampFns[l], sea: l !== 'elevation' };
-  return { id: 'satellite' };
-}
-function valuesTexture(vals, n, spec, half) {
-  const rgba = new Uint8Array(4 * n * n), c = new THREE.Color();
-  for (let i = 0; i < n * n; i++) {
-    if (spec.sea && M.halfToFloat(half[i]) <= 0) c.copy(OCEAN); else spec.fn(vals[i], c);
-    const h = c.getHex(); rgba[4 * i] = h >> 16; rgba[4 * i + 1] = (h >> 8) & 255; rgba[4 * i + 2] = h & 255; rgba[4 * i + 3] = 255;
+  const key = `${state.layer}|${state.season}|${state.obs}`;
+  if (specCache?.key !== key) {
+    let tl = null;
+    try { tl = S.V ? tileLayer(state.layer) : null; } catch { tl = null; }
+    specCache = { key, spec: tl || { id: 'satellite' } };
   }
-  const t = new THREE.DataTexture(rgba, n, n, THREE.RGBAFormat, THREE.UnsignedByteType);
-  Object.assign(t, { flipY: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, needsUpdate: true });
-  return t;
+  return specCache.spec;
+}
+// the layer's colours over a tile's pixels: the globe's own colouring (tileLayer.color) on the tile's arrays; land and
+// sea from the tile's water mask (a land depression below the sea stays land); lakes in the globe's lake colours for
+// the layers that draw lakes. null when the colouring can't take the tile's values (the satellite view instead).
+const LAKE_COL = new THREE.Color('#38c8f0');  // (colours.js LAKE_KINDS' fresh lake; not imported: a module cycle)
+function valuesTexture(spec, L, t) {
+  const { n, half, water } = t.elev, N = n * n, el = new Float32Array(N), rgba = new Uint8Array(4 * N), c = new THREE.Color();
+  for (let i = 0; i < N; i++) { const e = M.halfToFloat(half[i]); el[i] = water[i] === 1 ? Math.min(e, -1) : Math.max(e, 0.5); }
+  const main = L[spec.names[spec.main]], lakes = spec.layer !== 'satellite' && ['elevation', 'biome', 'vegetation', 'soils'].includes(spec.layer);
+  let fn;
+  try { fn = spec.color({ L, elev: el, sv: main }); fn(0, c); } catch { return null; }
+  for (let i = 0; i < N; i++) {
+    if (lakes && water[i] === 2) c.copy(LAKE_COL);
+    else fn(i, c);
+    const h = c.getHex(); rgba[4 * i] = h >> 16; rgba[4 * i + 1] = (h >> 8) & 255; rgba[4 * i + 2] = h & 255; rgba[4 * i + 3] = 255;  // (sRGB, as the satellite's)
+  }
+  const tex = gpuOnly(new THREE.DataTexture(rgba, n, n, THREE.RGBAFormat, THREE.UnsignedByteType));
+  Object.assign(tex, { flipY: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, needsUpdate: true });
+  return tex;
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function load(t, spec) {
@@ -184,31 +231,66 @@ async function load(t, spec) {
       t.elev = await LOD.src.elevation(t.k);
       buildMesh(t);
     }
-    let tex;
-    if (spec.id === 'satellite') {
+    let tex = null, vals = null;
+    if (spec.id !== 'satellite') {  // (the layer's value layer, then the extras its colouring reads; the tile may lack any)
+      const main = await LOD.src.layer(t.k, spec.main);
+      if (main) {
+        const L = { [spec.names[spec.main]]: main, [spec.layer]: main };
+        for (const zn of Object.keys(spec.names)) if (zn !== spec.main) { const a = await LOD.src.layer(t.k, zn).catch(() => null); if (a) L[spec.names[zn]] = a; }
+        tex = valuesTexture(spec, L, t);
+        if (tex) vals = main;
+      }
+    }
+    t.sat = !tex;
+    if (!tex) {
       const bmp = await LOD.src.satellite(t.k);
-      tex = new THREE.Texture(bmp);
+      tex = gpuOnly(new THREE.Texture(bmp));
       Object.assign(tex, { flipY: false, minFilter: THREE.LinearFilter, generateMipmaps: false, needsUpdate: true });
-    } else {
-      const vals = await LOD.src.layer(t.k, spec.name);
-      tex = vals ? valuesTexture(vals, t.elev.n, spec, t.elev.half) : null;
-      if (!tex) { LOD.inflight--; try { return await load(t, { id: 'satellite' }); } finally { LOD.inflight++; } }
     }
     if (!t.mesh) { tex.dispose(); return; }  // (dropped meanwhile)
     const u = t.mesh.material.uniforms;
-    u.uColor.value?.dispose(); u.uColor.value = tex; t.colId = spec.id;
-    t.bytes = 2 * (t.elev.n ** 2 * 2) + 2 * (t.elev.n ** 2 * 4) + 3 * 4 * G * G;
+    u.uColor.value?.dispose(); u.uColor.value = tex; t.colId = spec.id; t.vals = vals; t.valsLayer = vals ? spec.layer : null;
+    sizeTile(t);
     LOD.stats.fetched++; LOD.dirty = true;
   } catch (e) {
     if (!(e instanceof NotBuilt)) { t.failed = true; LOD.stats.failed++; console.warn('[lod]', t.k.id, e.message); }
   } finally { t.loading = false; LOD.inflight--; pump(); }
 }
 function pump() {
-  const spec = colourSpec();
+  const spec = colourSpec(), rv = S.riverTiles;
   while (LOD.inflight < FETCHES && LOD.queue.length) {
     const t = LOD.queue.shift();
     if (!t.loading && !t.failed && (t.colId !== spec.id)) load(t, spec);
+    else if (rv && t.mesh && t.k.level >= 2 && t.riverThr !== rv.thr && !t.riverLoading) loadRiver(t, rv);
   }
+}
+// a level-2+ tile's rivers (PW-1711): its discharge at the globe's threshold, each river pixel widened to the river's
+// width (RIVER_W sqrt(Q), at least the pixel, at most RIVER_MAX_PX across); R: coverage, G: one of the biggest rivers
+async function loadRiver(t, rv) {
+  t.riverLoading = true; LOD.inflight++;
+  try {
+    const q = await LOD.src.layer(t.k, 'discharge');
+    if (!t.mesh) return;
+    const n = t.elev.n, rg = new Uint8Array(2 * n * n), resM = M.resKm(t.k.level) * 1000;
+    if (q) for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const v = q[j * n + i];
+      if (!(v >= rv.thr) || t.elev.water[j * n + i] === 1) continue;
+      const r = Math.min(RIVER_MAX_PX / 2, Math.max(0.5, RIVER_W * Math.sqrt(v) / 2 / resM)), ri = Math.ceil(r - 0.5), big = v >= rv.big ? 255 : 0;
+      for (let dj = -ri; dj <= ri; dj++) for (let di = -ri; di <= ri; di++) {
+        const x = i + di, y = j + dj;
+        if (x < 0 || y < 0 || x >= n || y >= n || di * di + dj * dj > (r + 0.25) ** 2) continue;
+        const o = 2 * (y * n + x); rg[o] = 255; if (big) rg[o + 1] = 255;
+      }
+    }
+    const tex = gpuOnly(new THREE.DataTexture(rg, n, n, THREE.RGFormat, THREE.UnsignedByteType));
+    Object.assign(tex, { flipY: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false, needsUpdate: true });
+    t.river?.dispose(); t.river = tex; t.riverThr = rv.thr;
+    t.mesh.material.uniforms.uRiver.value = tex;
+    sizeTile(t); LOD.dirty = true;
+  } catch (e) {
+    if (!(e instanceof NotBuilt)) console.warn('[lod] rivers', t.k.id, e.message);
+    t.riverThr = rv.thr;  // (not asked again at this threshold)
+  } finally { t.riverLoading = false; LOD.inflight--; pump(); }
 }
 
 // ---- heights --------------------------------------------------------------------------------------------------------
@@ -226,20 +308,54 @@ export function easeEx(hKm) {
 // overlays laid on the ground (drape.js) all stand on it.
 const _v = new THREE.Vector3();
 export function groundRadius(dir) {
-  const u = _v.copy(dir).normalize();
+  const u = _v.copy(dir).normalize(), h = tileUnder(u);
+  return h ? 1 + LOD.ex * meshHeight(h.t, h.tu, h.tv) : cellsRadius(u);
+}
+// the finest drawn tile along a unit direction (group space) and where in it: {t, tu, tv}, or null
+export function tileUnder(u) {
   let best = null, bd = -2;
   for (const c of LOD.cells) { const d = u.dot(c.centre); if (d > bd) { bd = d; best = c; } }
-  if (best && LOD.src) {
-    const [x, y] = best.fr.toPlane(planet(u));
-    for (let lv = LOD.maxLevel; lv >= 1; lv--) {
-      if (Math.abs(x) >= M.HALF || Math.abs(y) >= M.HALF) break;
-      const t = LOD.tiles.get(M.tileAt(best.id, lv, x, y).id);
-      if (!t?.elev || !(t.fade > 0) || !t.mesh?.visible) continue;
-      const [tu, tv] = M.tileUV(t.k, x, y);
-      return 1 + LOD.ex * meshHeight(t, tu, tv);
-    }
+  if (!best || !LOD.src) return null;
+  const [x, y] = best.fr.toPlane(planet(u));
+  for (let lv = LOD.maxLevel; lv >= 1; lv--) {
+    if (Math.abs(x) >= M.HALF || Math.abs(y) >= M.HALF) break;
+    const t = LOD.tiles.get(M.tileAt(best.id, lv, x, y).id);
+    if (!t?.elev || !(t.fade > 0) || !t.mesh?.visible) continue;
+    const [tu, tv] = M.tileUV(t.k, x, y);
+    return { t, tu, tv };
   }
-  return cellsRadius(u);
+  return null;
+}
+// The hover on tiles: where a ray (world space) meets the drawn ground (a few rounds of "meet the sphere through the
+// ground found last time"), and the tile there. {dir: unit vector in group space, t, tu, tv} or null (no tile drawn there).
+const _o = new THREE.Vector3(), _d = new THREE.Vector3(), _p = new THREE.Vector3(), _inv = new THREE.Matrix4();
+export function tileHit(ray) {
+  if (!LOD.src || !LOD.stats.drawn) return null;
+  _inv.copy(group.matrixWorld).invert();
+  _o.copy(ray.origin).applyMatrix4(_inv); _d.copy(ray.direction).transformDirection(_inv);
+  let r = groundRadius(_o), tt = null;
+  for (let k = 0; k < 8; k++) {
+    const b = _o.dot(_d), disc = b * b - (_o.lengthSq() - r * r);
+    if (disc < 0) return null;
+    tt = -b - Math.sqrt(disc);
+    if (tt < 0) return null;
+    _p.copy(_d).multiplyScalar(tt).add(_o);
+    const r2 = groundRadius(_p);
+    if (Math.abs(r2 - r) < 1e-10) break;
+    r = r2;
+  }
+  const u = _p.clone().normalize(), h = tileUnder(u);
+  return h && { dir: u, ...h };
+}
+// the hover readout of a tile hit: the tile, its pixel size, the ground height, the active layer's value there
+export function tileHover(hit) {
+  const { t, tu, tv } = hit, n = t.elev.n, i = Math.min(n - 1, Math.max(0, Math.floor(tu * n))), j = Math.min(n - 1, Math.max(0, Math.floor(tv * n)));
+  const e = M.halfToFloat(t.elev.half[j * n + i]), w = t.elev.water[j * n + i], res = M.resKm(t.k.level);
+  const [px, py, pz] = planet(hit.dir), lat = Math.asin(Math.max(-1, Math.min(1, pz))) * 180 / Math.PI, lon = Math.atan2(py, px) * 180 / Math.PI;
+  const parts = [`${w === 1 ? 'sea' : w === 2 ? 'lake' : 'land'}, ${Math.round(e).toLocaleString()} m`];
+  if (t.vals && t.valsLayer === state.layer && t.valsLayer !== 'elevation') parts.push(`${state.layer} ${tileValueText(state.layer, t.vals[j * n + i])}`);
+  else if (t.sat && state.layer !== 'satellite') parts.push(`(no fine ${state.layer}: satellite view)`);
+  return { id: t.k.id, lat, lon, text: parts.join(' · '), res: res >= 1 ? `${res} km` : `${res * 1000} m` };
 }
 // the tile mesh's height (m) at (u, v) (lodmath.js: the grid's heights as the vertex shader samples them, its
 // triangles between)
@@ -288,7 +404,7 @@ function patchCells(active) {
       m.customProgramCacheKey = () => 'lodRelK';
       m.needsUpdate = true;
     }
-    if (m.stencilWrite !== active) Object.assign(m, { stencilWrite: active, stencilRef: 1, stencilFunc: THREE.NotEqualStencilFunc, stencilFail: THREE.KeepStencilOp, stencilZFail: THREE.KeepStencilOp, stencilZPass: THREE.KeepStencilOp });
+    if (m.stencilWrite !== active) Object.assign(m, { stencilWrite: active, stencilRef: 1, stencilFuncMask: 1, stencilWriteMask: 0, stencilFunc: THREE.NotEqualStencilFunc, stencilFail: THREE.KeepStencilOp, stencilZFail: THREE.KeepStencilOp, stencilZPass: THREE.KeepStencilOp });
   }
 }
 
@@ -318,6 +434,7 @@ export function updateLod(now) {
   const visit = (k, cell) => {
     if (!LOD.src.has(k)) return;
     const t = tileRec(k, cell);
+    t.seen = now;
     const ang = Math.acos(Math.min(1, Math.max(-1, cdir.dot(t.centre)))) - t.radius;
     if (ang > horizon) return;
     wc.copy(t.centre); group.localToWorld(wc);
@@ -336,7 +453,9 @@ export function updateLod(now) {
   order.sort((a, b) => a.want - b.want);
   const missing = order.filter((t) => !t.loading && !t.failed && t.colId !== spec.id);
   LOD.src.want(missing.map((t) => t.k));
+  const rv = S.riverTiles;
   LOD.queue = missing.filter((t) => LOD.src.ready(t.k));
+  if (rv) LOD.queue.push(...order.filter((t) => t.mesh && t.colId && t.k.level >= 2 && t.riverThr !== rv.thr && !t.riverLoading));
   pump();
   const b = LOD.src.building;
   LOD.stats.queued = b.queued; LOD.stats.building = b.building;
@@ -352,6 +471,8 @@ export function updateLod(now) {
       const u = t.mesh.material.uniforms;
       t.mesh.visible = t.fade > 0 && !!u.uColor.value;
       u.uFade.value = t.fade; u.uEx.value = ex; u.uExM.value = ex * R_M;
+      u.uRiverOn.value = rv && t.river && t.riverThr === rv.thr ? 1 : 0;
+      if (rv) { u.uRiverCol.value.setHex(rv.color); u.uRiverBig.value.setHex(rv.colorBig); }
       if (t.mesh.visible) { drawn++; t.lastUsed = now; byLevel[t.k.level] = (byLevel[t.k.level] || 0) + 1; }
       bytes += t.bytes;
     }
@@ -369,14 +490,31 @@ export function updateLod(now) {
     for (let i = 0; i < kids.length && same; i++) same = kids[i] === t.kids[i];
     if (!same) { t.kids.set(kids); t.kidTex.needsUpdate = true; LOD.dirty = true; }
   }
-  Object.assign(LOD.stats, { drawn, kept: [...LOD.tiles.values()].filter((t) => t.mesh).length, bytes, byLevel });
+  const satOnly = spec.id === 'satellite' ? 0 : [...want].filter((t) => t.mesh?.visible && t.sat).length;
+  Object.assign(LOD.stats, { drawn, kept: [...LOD.tiles.values()].filter((t) => t.mesh).length, bytes, byLevel, records: LOD.tiles.size, satOnly });
+  legendNote(drawn > 0 && state.layer !== 'satellite' && (spec.id === 'satellite' || satOnly > 0)
+    ? `Detail tiles: ${spec.id === 'satellite' ? 'this layer has no fine version; they show the satellite view' : `${satOnly} drawn without this layer show the satellite view`}.` : '');
 
-  // keep at most MAX_TILES / MAX_BYTES: drop the least recently drawn
+  // the memory pool: keep at most MAX_TILES / MAX_BYTES, dropping the least recently drawn; forget old records
   if (LOD.stats.kept > MAX_TILES || bytes > MAX_BYTES) {
-    const old = [...LOD.tiles.values()].filter((t) => t.mesh && !t.mesh.visible && !t.loading).sort((a, b) => a.lastUsed - b.lastUsed);
+    const old = [...LOD.tiles.values()].filter((t) => t.mesh && !t.mesh.visible && !t.loading && !t.riverLoading).sort((a, b) => a.lastUsed - b.lastUsed);
     let n = LOD.stats.kept, b = bytes;
-    for (const t of old) { if (n <= MAX_TILES * 0.9 && b <= MAX_BYTES * 0.9) break; n--; b -= t.bytes; dropTile(t); }
+    for (const t of old) { if (n <= MAX_TILES * 0.9 && b <= MAX_BYTES * 0.9) break; n--; b -= t.bytes; dropTile(t); LOD.stats.dropped++; }
   }
+  if (LOD.tiles.size > 4 * MAX_TILES) for (const [id, t] of LOD.tiles) if (!t.mesh && !t.loading && now - t.seen > FORGET_MS) LOD.tiles.delete(id);
+}
+// one line under the legend while tiles are drawn and the layer can't follow onto some of them
+let noteEl = null;
+function legendNote(text) {
+  if (!noteEl) {
+    if (!text) return;
+    const lg = document.getElementById('legend');
+    if (!lg) return;
+    noteEl = document.createElement('div');
+    noteEl.id = 'lod-legend-note'; noteEl.className = 'muted'; noteEl.style.fontSize = '11px';
+    lg.insertAdjacentElement('afterend', noteEl);
+  }
+  if (noteEl.textContent !== text) { noteEl.textContent = text; noteEl.style.display = text ? '' : 'none'; }
 }
 // the "sharpening…" note: tiles in view are being built (unobtrusive: bottom centre, no clicks)
 let badgeEl = null;
