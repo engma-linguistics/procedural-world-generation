@@ -59,6 +59,10 @@ class Params:
     # plate's neighbouring ocean cells (not at a trench), at collapse_margin x its collapsed rate; a cell filled to
     # BECOMES_CONT_KM becomes thin extended continent, so collapse gives back area shortening took. 0: off.
     collapse_margin: float = 0.0
+    # PW-1703 (lane 296, l7-high-ground.md section 8): the thickness that seaward collapse (collapse_margin) runs down
+    # to: crust flows across a margin edge where the belt side is over this many km (40: as inland, crust_flow's
+    # stop; 35: normal continental crust, isostasy.CONT_KM, where the belt's excess potential energy is gone).
+    collapse_margin_km: float = 40.0
     # PW-1287 A (lane 292): continental crust below the sea floats water-loaded (isostasy.elevation's wet): 0 air-loaded
     # (as before), 1 water-loaded (drowned continent 1.46x its air-loaded depth). Simulation.wet.
     water_loaded: float = 0.0
