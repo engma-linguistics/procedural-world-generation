@@ -25,6 +25,11 @@ points (18/20), crust 1.9 km thinner (19/20), land -0.8 points, end T +1.9 C med
 seeds). The thinner crust and lower land are PW-1314's area-thermostat swing (the thermostat counts the kept thin
 margin as continental area).
 
+L7 check (1 Gyr, seed 1, one pair, off as baseline; pw1295-note.md section 6): quick shreds 203.6 -> 0.8, quick births
+174.9 -> 0.1; end T 17.0 -> 14.2 C, late dT +2.99 -> -0.33; land 33.3 -> 35.8 %; continental crust 38.7 -> 42.1 %;
+thickness 37.6 -> 34.5 km; plates 15 -> 17; no envelope failure. The flicker cure holds at L7; the land swing there
+is up, not down, so the L6 judge should not assume its sign.
+
 If never done: the flicker stays on main (small: ~13% of shreds come back within 10 Myr) and the sea-floor creep
 (PW-1315) can't come back without its ~6x flicker at L6.
 

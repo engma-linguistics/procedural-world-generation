@@ -442,6 +442,26 @@ the number of seeds where on > off.
 | mean continental thickness (km) | 33.12 | 31.64 | -1.87 | 1 / 20 |
 | plates at 400 Myr | 15 | 15 | -1.0 | 9 / 20 (no sign) |
 
+**L7, 1 Gyr, seed 1 (one pair on the same frozen code; flickdiag window 100-1000 Myr, counts in L5-equivalent cells; off is the baseline):**
+
+| measure | off (baseline) | on (`shred_km=15`) |
+|---|---|---|
+| quick shreds / quick births | 203.6 / 174.9 | 0.8 / 0.1 |
+| all shreds / births | 1967.9 / 2052.6 | 349.2 / 1140.6 |
+| out of band (abs(T - 14.5) > 10) | no | no |
+| end T (C) | 17.0 | 14.2 |
+| late dT (last quarter mean) | +2.99 | -0.33 |
+| end pCO2 (ppm) | 468 | 373 |
+| land % (end / late mean) | 33.3 / 33.2 | 35.8 / 34.3 |
+| continental crust % | 38.7 | 42.1 |
+| mean continental thickness (km) | 37.6 | 34.5 |
+| plates at 1 Gyr | 15 | 17 |
+
+One seed, so no sign test. The flicker is cured at L7 too (quick shreds 204 -> 0.8, quick births 175 -> 0.1), and the
+direction of the L5 side effects holds for area and thickness (continental crust +3.4 points, 2.1 km thinner, land
++2.5 points here, against -0.8 at L5) but not for temperature: end T is 2.8 C cooler with the bound on (pCO2 373
+against 468), the opposite of the L5 median, within seed-to-seed spread. Plates 17 against 15.
+
 With the creep (seeds 1-6, `neck_km=200 rise=1 slope_k=1000`, against creep alone): quick shreds 289 -> 15.5,
 quick births 222 -> 0; end T +2.7 C median (-1.3 to +8.3), land -1.2 points median.
 
