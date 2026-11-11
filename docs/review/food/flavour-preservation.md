@@ -191,3 +191,17 @@ editor has a "keeping leanings" field. The D&D preset sets, from culinary-dnd's 
 - dragonborn: smoking 0 ("straw and crop-residue fire, fast and hot; steaming and wok cooking").
 
 Seven Meals is frozen and does not set it.
+
+On a fresh D&D run with these leanings (run 12face, world dba204, one try, made under lane 309; scratch, since deleted), at the present,
+the mean over the living cultures of each kind, with the leaning and with it removed (same land, same everything else):
+
+| kind | cultures | kept share | cellaring (share of all food) | smoking (share of all food) | cultures that smoke |
+|---|---|---|---|---|---|
+| elves | 9 | 0.358 (0.286 without) | 0.048 (0.03) | 0.041 (0.04) | 9 (9) |
+| halflings | 1 | 0.15 (0.25) | 0 (0) | 0.009 (0.014) | 1 (1) |
+| dragonborn | 25 | 0.427 (0.427) | 0.024 (0.023) | 0 (0.016) | 0 (23) |
+| humans (no leaning) | 36 | 0.424 | 0.012 | 0.022 | 36 |
+
+Elves keep more and ferment and cellar more; the one living halfling culture keeps 15% of its food, not 25%; no dragonborn culture
+smokes ("never done by this kind" in its not-yet list). Elves still smoke: their notes say wood is "abundant, indifferently used", so no
+leaning was set there. Halflings are one culture on this run, so their row is a single case.
