@@ -364,3 +364,95 @@ Verdict: PW-1317's hypothesis is not confirmed; step 2 (thin continental crust s
 envelope seed 2 failure stays what section 4 said: chaos in which run trips the frozen references (PW-1316), made a
 little likelier by a ~8% weaker spin-up source, which comes from fewer plates, which comes from the kept margins'
 weight in the mantle and force model.
+
+## 6. Round 3 (lane 302, 11-11): diagnosis on current main, then the gap with thin-margin dynamics
+
+### Does the flicker still happen? Yes with the creep; small without it
+
+Harness: [flickdiag.py](flickdiag.py), envdraw.py's world (the test_envelopes fixture, `Params(run_end=END)`, dt 2,
+its chunks) at any level, with tracediag.py's tags (section 1): every birth, weld and shred tagged on the plate's own
+grid. Main = ea9dca61 (a frozen copy), which has `andean_shortening=0.1` and `collapse=30` on (lane 275b) and
+`collapse_margin`, `water_loaded` off. Creep = `neck_km=200 rise=1 slope_k=1000` (still off by default,
+params.py `neck_km`, `rise`, `slope_k`). Window: 100-400 Myr at L5, 200-600 Myr at L6; cells / scale^2.
+"Quick" = within 10 Myr of an event of the other way on the same crust.
+
+| arm | seeds | shreds | quick shreds | births | quick births | mean km of the quick shreds | end T (C) | land % |
+|---|---|---|---|---|---|---|---|---|
+| main, L5 400 Myr | 1-6 (median) | 828 | 109 (13%) | 273 | 31 (11%) | 18.2 | 15.2 | 30.3 |
+| main + creep, L5 400 Myr | 1-6 | 1388 | 289 (21%) | 700 | 222 (32%) | 19.0 | 14.6 | 28.2 |
+| main, L6 600 Myr | 1 / 3 | 945 / 908 | 105 / 112 (11-12%) | 603 / 724 | 55 / 64 | 18.2 / 18.3 | 19.9 / 16.8 | 32.6 / 33.3 |
+| main + creep, L6 600 Myr | 1 / 3 | 2086 / 2655 | 670 / 786 (30-32%) | 1540 / 1682 | 523 / 630 | 19.3 / 19.4 | 15.7 / 14.1 | 30.5 / 30.4 |
+
+Reading: nothing since 11-02 has changed the picture. With the creep the margin's outer cells still cross the shared
+20 km bound both ways in small steps (quick shreds 6.5x main's at L6, quick births ~10x, at 19.3 km); L5 shows it
+weaker (2.7x; coarser cells hold more cover). Without the creep, main's own flicker is ~110 quick shreds per
+400 Myr, 11-13% of its shreds, as lane 115 found (141 / 159 at 600-1000 Myr). So the flicker is not gone, but on
+main's defaults it is small; it is large only with the creep, which is parked (PW-1315).
+
+### Mechanism (file:line on ea9dca61)
+
+- One bound both ways: `crust.coherence` shreds a thin continental cell with <= 2 continental neighbours below
+  `BECOMES_CONT_KM` (crust.py:682), and `crust.birth_and_cratons` makes ocean crust continental at the same
+  `BECOMES_CONT_KM` (crust.py:751; isostasy.py:38, 20 km), both every step (simulation.py:358-359). A shred keeps
+  its thickness, so a cell at 19.x km needs only a step's sediment to be born again, and a born cell at 20.x km
+  only a step's erosion or creep to be shredded.
+- What brings margin cells onto the bound: necking (crust.py:413 `necking`, `neck_km`) lays rift floor as thick
+  as the edge and thins the continent behind; the creep (surface.py:241 `_creep`, `slope_k`) strips cover off the
+  margin onto the ocean floor and the rise (`rise`) piles it at the slope's foot. Without them the margin's outer
+  cells sit lower and further from 20 km, hence main's small flicker.
+- Lane 115's cure (a 15 km shred bound, the gap) ended the flicker (section 2) but was reverted: the kept 15-20 km
+  margin counts as continent in the plate dynamics, the keel's drag (motion.py:157, mantle.py:304) and the mantle's
+  insulating lid (mantle.py:220-221), which left the young planet ~17% fewer plates and a weaker spin-up CO2 source
+  (section 5), and that made the frozen-reference trip on envelope seed 2 likelier.
+
+### Candidates
+
+1. **The gap plus thin-margin dynamics** (one switch): shred only below `shred_km` (15), and with it on, the keel
+   drag, the traction's keel weight and the mantle's lid read only crust >= BECOMES_CONT_KM as continent. That is
+   lane 115's cure with lane 119's screen (`JAM_THICK_DYN=1`, which took most of the plate deficit away) made a
+   model term. Stateless, no new number beyond the 15 km lane 115 already chose by mechanism.
+2. A 25 km re-birth bound (R25): needs per-plate state and only cuts the churn by a third (section 2). Rejected.
+3. The gap plus the area thermostat counting only >= 20 km crust (PW-1314 A): treats the land swing (-1.3 points at
+   L6), not the plates. Kept as a follow-up arm if the land swing shows; it is a needs-decision ticket.
+4. Stop the creep from thinning the margin onto the bound: the creep is parked (PW-1315), and the bound is the
+   defect either way.
+
+**Trying 1 first**: it is the only candidate shown to cure the flicker, and the only shown side effect of that cure
+(fewer plates) has a screened mechanism-level answer. The 15 km bound stays the number (lane 115: a 15-20 km margin
+cell is thinned continental crust; rifted margins thin well below 15 km before they break). Parameter
+`shred_km` (params.py, 0 = off), `mantle.keel` (the dynamics' continent mask).
+
+### Screen: `shred_km=15` against off, same commit (test_envelopes' world, L5, 400 Myr, seeds 1-20)
+
+Both arms on one frozen copy of this branch's code; off is bit-identical to main (seed 1: every number equal to
+the ea9dca61 run above). flickdiag.py, window 100-400 Myr. Medians over 20 seeds; paired = median of on - off and
+the number of seeds where on > off.
+
+| measure | off (= main) | on (`shred_km=15`) | paired on - off | on > off |
+|---|---|---|---|---|
+| quick shreds (flicker) | 105 | 1 | -104 | 0 / 20 |
+| quick births (flicker) | 35.5 | 0 | | 0 / 20 |
+| all shreds / births | 835 / 304 | 185 / 94.5 | -662 / -197 | 0 / 20 |
+| out of band (abs(T - 14.5) > 10) | 0 / 20 | 0 / 20 | | |
+| end T (C) | 14.55 | 17.2 | +1.9 | 14 / 20 |
+| late dT (300-400 Myr mean) | 2.09 | 3.40 | +0.75 | 12 / 20 |
+| end pCO2 (ppm) | 289 | 389 | +76 | 14 / 20 |
+| land % (end / 300-400 mean) | 30.66 / 30.3 | 29.45 / 29.8 | -0.81 / -0.73 | 6 / 20, 5 / 20 |
+| continental crust % | 40.15 | 42.28 | +2.31 | 18 / 20 |
+| mean continental thickness (km) | 33.12 | 31.64 | -1.87 | 1 / 20 |
+| plates at 400 Myr | 15 | 15 | -1.0 | 9 / 20 (no sign) |
+
+With the creep (seeds 1-6, `neck_km=200 rise=1 slope_k=1000`, against creep alone): quick shreds 289 -> 15.5,
+quick births 222 -> 0; end T +2.7 C median (-1.3 to +8.3), land -1.2 points median.
+
+Reading:
+- **The flicker is cured**: quick shreds and births fall to 0-3 per seed from ~100 (and from ~290 with the creep),
+  on every seed. The churn of shreds and re-births falls by three quarters, as in lane 115's screens.
+- **No envelope failure** (0 / 20 in both arms, where lane 115's bare 15 km bound had 1 / 20), and the plate
+  count is no longer lower (9 / 20, against 8 / 8 fewer with the bare bound, section 5; only the end count is
+  traced here, not the 100-300 Myr spin-up).
+- **What moves**: the kept 15-20 km margin raises the continental area 2.3 points at 400 Myr (18 / 20) and the area
+  thermostat answers with thinner crust (-1.9 km, 19 / 20 thinner) and a little less land (-0.8). That is PW-1314's
+  swing, larger at L5 / 400 Myr than the -1.3 land points lane 115 judged at L6 / 1 Gyr. End T is warmer by +1.9 C
+  median, 14 / 20 (sign test p ~0.12), late dT +0.75 (12 / 20): not a clear signal at 20 seeds, but its direction
+  agrees with more pCO2 on 14 / 20.

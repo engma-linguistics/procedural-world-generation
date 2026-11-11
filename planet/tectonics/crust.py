@@ -679,7 +679,7 @@ def coherence(sim, col, trench=None):
     s_t = np.add.reduceat(np.where(ok, col.t[g.nbr_idx], 0.0), g.nbr_off[:-1])
     weld &= s_t >= BECOMES_CONT_KM * np.maximum(n_cont, 1)
     weld[weld] = _inlet_on_plate(sim, np.flatnonzero(weld))
-    shred = ring & col.cont & (n_cont <= 2) & (col.t < BECOMES_CONT_KM)
+    shred = ring & col.cont & (n_cont <= 2) & (col.t < (sim.params.shred_km or BECOMES_CONT_KM))
     if weld.any() or shred.any():
         v0 = col.t * col.cont
         col.cont = col.cont.copy()

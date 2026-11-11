@@ -41,6 +41,12 @@ class Params:
     mantle_eddies: float = 0.3  # rms of the smaller, unresolved convection (random; changes over mantle_timescale)
     velocity_timescale: float = 15.0  # Myr: smoothing on velocity changes (plate inertia, in effect)
     continental_keel: float = 1.5  # extra drag per continental cell
+    # PW-1295 (lane 302, pw1295-note.md section 6): a gap between the bounds. Thin continental crust is cut off as a
+    # shred of margin (crust.coherence) only below shred_km, not below the 20 km birth bound, so a margin cell on the
+    # bound can't flicker between continent and ocean floor in small steps. The kept 15-20 km margin has no keel and
+    # no insulating lid: with the gap on, the plates' keel drag and traction and the mantle's insulation read only
+    # crust of at least BECOMES_CONT_KM as continent (mantle.keel; PW-1318). 0: off (shreds below BECOMES_CONT_KM).
+    shred_km: float = 0.0
     mobility: float = 0.008
     max_speed: float = 18.0  # cm/yr
     # crust: arcs add new crust above subducting slabs (km/Myr per cm/yr of

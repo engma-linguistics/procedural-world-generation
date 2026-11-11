@@ -41,6 +41,7 @@ import numpy as np
 from numba import njit, prange
 
 from ..geo import R_KM
+from .isostasy import BECOMES_CONT_KM
 
 LMAX = 8  # highest spherical-harmonic degree kept (wavelength ~4500 km)
 EDDY_DEGREES = (3, 8)  # the unresolved smaller convection (mantle_eddies)
@@ -173,13 +174,24 @@ def smooth(sim, f: np.ndarray, scale_km: float) -> np.ndarray:
     return Y @ ((Y.T @ f) * np.exp(-deg * (deg + 1) * s * s / 2))
 
 
+def keel(sim) -> np.ndarray:
+    """The continental crust the plate dynamics feel: the keel's extra drag (motion.forces, traction) and the lid
+    that insulates the mantle (update). All of it (sim.w_cont), or with the shred gap on (params.shred_km, PW-1295)
+    only crust at least BECOMES_CONT_KM thick: a 15-20 km thinned margin kept as continental crust has neither a
+    thick lithospheric keel nor a continent's insulating lid (PW-1318; kept as full continent, it left the young
+    planet ~17% fewer plates, pw1295-note.md section 5)."""
+    if sim.params.shred_km > 0:
+        return sim.w_cont & (sim.w_thick >= BECOMES_CONT_KM)
+    return sim.w_cont
+
+
 def init(sim):
     """The starting mantle: the starting continents have sat where they are
     for a while (a supercontinent start begins over warm mantle, so its
     story starts with rifting). The eddies start at a random state of
     their own (default_rng([seed, 11]), so the rest of the start is as it was)."""
     p = sim.params
-    sim.mantle_lid = sim.w_cont.astype(float)
+    sim.mantle_lid = keel(sim).astype(float)
     sim.mantle = p.insulation * 60.0 * smooth(sim, sim.mantle_lid, p.mantle_scale_km)
     Y, deg = basis(sim.grid)
     sim.mantle_eddies = np.random.default_rng([sim.seed, 11]).normal(size=len(deg)) * _eddy_scale(sim, deg)
@@ -217,8 +229,9 @@ def update(sim, bd):
     if p.mantle_memory <= 0:
         return
     # how long continent has covered each patch of mantle (~100 Myr memory)
-    sim.mantle_lid += (1 - np.exp(-dt / 100.0)) * (sim.w_cont - sim.mantle_lid)
-    warm = p.insulation * sim.w_cont * sim.mantle_lid
+    lid = keel(sim)
+    sim.mantle_lid += (1 - np.exp(-dt / 100.0)) * (lid - sim.mantle_lid)
+    warm = p.insulation * lid * sim.mantle_lid
     # slabs: per trench edge, convergence (cm/yr / 5) x slab age (/80 Myr),
     # per unit length (level-independent: x edge length / cell area; the mean cell's area, not each cell's: smooth's
     # basis weighs the cells equally, so a cell's total over the mean area puts the whole slab into the field, PW-1628)
@@ -301,7 +314,7 @@ def traction(sim) -> np.ndarray:
     p = sim.params
     if p.mantle_drag <= 0:
         return np.zeros((sim.grid.n, 3))
-    w = sim.cell_sr * (1 + p.continental_keel * sim.w_cont)
+    w = sim.cell_sr * (1 + p.continental_keel * keel(sim))
     return -p.mantle_drag * gradient(sim, sim.mantle + eddies(sim)) * w[:, None]
 
 
