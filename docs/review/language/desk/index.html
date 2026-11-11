@@ -81,11 +81,12 @@ a { color: var(--accent); }
   <div class="status">
     <span class="label">Under way now (no action needed)</span>
     <ul>
-      <li><b>One card below:</b> the pass mark for the new multi-world check.</li>
+      <li><b>Two cards below:</b> the pass mark for the new multi-world check, and how often numerals may be borrowed.</li>
       <li><b>Assessment (11-11), which you agreed with:</b> <a href="https://claude.ai/artifact/Foz8PcmxBDSu1U3DUeLjXz" target="_blank" rel="noopener">the language subsystem graded</a>. The finish line is epic PW-1736, about two weeks of lanes, and then language is done.</li>
       <li><b>Lane 17, in main:</b> sound changes fire at their real-world frequency (no more hand-set weights), and back vowel harmony is rarer (51% → 16% of daughters on the benchmark). a24559 rebuilt: 623 living languages, sisters 0.61, borrowed pronouns 5.9%.</li>
-      <li><b>Lane 18, merging:</b> every language change is now judged on 4 worlds × 2 seeds (8 passes, ~30 min) instead of one draw of a24559. The horizon is judged as you ruled (~11 kyr and up is fine). The de1cc6 sister dip turned out to be seed noise once lane 17 was in.</li>
-      <li><b>Next:</b> output slips (garbled place names, "rr", unnamed families, more given names), borrowing in the right places (core words less, horse and other late arrivals more, a bigger everyday vocabulary), then sound systems, isolating languages, the names lane, and the viewer (isolates, names on demand).</li>
+      <li><b>Lane 18, in main:</b> every language change is now judged on 4 worlds × 2 seeds (8 passes, ~30 min) instead of one draw of a24559. The horizon is judged as you ruled (~11 kyr and up is fine). The de1cc6 sister dip turned out to be seed noise once lane 17 was in.</li>
+      <li><b>Lanes 19-20 (11-11):</b> name and spelling slips fixed (no more "the the" or numbered towns; "rr" only with a tap; families named; ~18 given names per language). Core words rarely borrowed now, and late-met animals, wild beasts and new tools arrive as loans or coinages: the horse is a loan or coinage in most languages, about 4 kyr ago. Dragons and giants no longer taboo bears.</li>
+      <li><b>Next:</b> sound systems that drift into odd shapes (PW-1740), isolating languages back (PW-1741), then the names lane (names that wear down, feature names) and the viewer (isolates, names on demand, map labels, settlement view).</li>
       <li>Demo: <a href="https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs" target="_blank" rel="noopener">10 languages from a24559</a>; viewer <span class="mono">planet langserve a24559</span> on port 8790; wiki <span class="mono">docs/wiki/language/</span>.</li>
     </ul>
   </div>
@@ -99,6 +100,9 @@ const SECTIONS = [
     { id: "m.bar", tag: "pass mark · judgement", q: "What should a language lane have to clear to merge?",
       body: "A: every realism check passes in at least 6 of 8 passes, the three can't-happen checks (impossible sounds and the like) in all 8, the horizon is shown but not barred, and no lane may make any check worse by more than one pass compared with main. B: the same, but 5 of 8. C: A, plus an upper limit on the horizon (say 16 kyr), since a scholars' tree reaching nearly 20 kyr back is deeper than real historical linguistics gets (~8-10 kyr).",
       opts: [["A", "6 of 8, no check worse by more than one pass", true], ["B", "5 of 8: looser"], ["C", "A, plus an upper horizon limit (~16 kyr)"]] },
+    { id: "n.numcap", tag: "borrowed numerals · linguist's judgement", q: "How often may 'two' and 'three' be borrowed?",
+      body: "Lane 20 cut core-word borrowing hard: 'I' from 10% of languages to at most 3.5%, mother and father from about 20% to at most 4%, one to three from 16-22% to 1-8%. The new check caps each core word at 5% of languages, and it passes on only 4 of 8 worlds; every miss is a numeral (three at 6% on two worlds, two at 10% on one Seven Meals world). WOLD rates two and three as fairly borrowable (0.23 and 0.22, against about 0.1 for pronouns), and real numeral borrowing is not rare (Japanese, Korean, Thai, Swahili, many Austronesian and Amazonian languages took whole sets). A: keep 5% for pronouns and parent words, 10% for numerals. B: 5% for everything; tune the numerals down further. C: drop per-item caps for numerals, keep only the overall basic-vocabulary loan share.",
+      opts: [["A", "Pronouns and parents 5%, numerals 10%", true], ["B", "5% for everything"], ["C", "No per-item cap on numerals"]] },
   ]}
 ];
 

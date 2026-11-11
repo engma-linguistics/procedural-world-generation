@@ -2,7 +2,7 @@
 id: PW-1659
 title: "Viewer: a settlement view (click a town) with its names, peoples, goods made and bought, rule, faith and history"
 type: story
-status: todo
+status: done
 parent: PW-856
 milestone: v4
 subsystem: viewer
@@ -26,5 +26,6 @@ In plain words: owner 2026-11-10: clicking a settlement opens a view (popup or t
 Show what is there now, hide empty sections; grows as the other systems land.
 
 ## Updates
+- 2026-11-11: Status todo -> done. lane 312 merged
 - 2026-11-10: Created from inbox draft draft-settlement-view.md (found by coordinator).
 - 2026-11-11: Relates to the language finish line PW-1736: the settlement view is where names, isolates and on-demand names (PW-1742, PW-1743) show.

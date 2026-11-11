@@ -13,6 +13,7 @@
   DELETE /api/jobs/<id>               cancel a queued or running job (api.Jobs.cancel)
   GET    /api/planets                 runs, time zooms, worlds and zooms grouped by provenance (family.py)
   GET    /api/thumb?kind=run|world&id=<id>   a small PNG preview (thumbs.py; &proj=equal-earth|equirect &w=192|512|1024)
+  GET    /api/machine                 the machine presets and each gate's state (machine.py, PW-1720); POST {gate, state} overrides one
   GET    /api/make/options, /api/make/estimate?seed=&preset=&level=...   the New planet form (make.py)
   GET    /api/sections?world=<id>     the 54 tiling sections of a world: centre, up, corners, land share, built zooms
   GET    /api/tiles/index?world=<id>, /api/tiles/status?world=<id>, /api/tiles/<world>/<cell>/<level>/<tx>/<ty>/<file>
@@ -77,6 +78,8 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
 from . import api, family, favourites, make, thumbs
+from . import appconfig as AC
+from . import machine as MC
 from . import tiles as T
 from .zoom import fine as ZF
 from . import parallel as P
@@ -791,6 +794,9 @@ def trade(query: str) -> tuple[dict, int]:
         if not meta.get("eraq") or not meta.get("world"):
             raise ValueError("this run has no land-use window or no world (made before PW-742): no goods ledger")
         doc = trade_doc(d)
+        if q.get("good"):  # (PW-1508: one good's spare and lacking per cell at the land-use frame nearest ago, the globe's Trade goods layer)
+            from .lineages import settlement_view as SV
+            return SV.good_view(d, q["good"], max(0.0, float(q.get("ago") or 0.0))), 200
         if q.get("routes"):  # (step 3, PW-1504: the routes and trading towns of the frame nearest ago, for the globe's Trade routes overlay)
             from .lineages import trade_routes as RT
             return RT.frame_view(trade_flow_doc(d), float(q.get("ago") or 0.0)), 200
@@ -987,10 +993,15 @@ def accepts_gzip(header: str | None) -> bool:
 def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
     """POST /api/zoom, /api/timezoom or /api/finish: checks the request now
     (so a bad one fails at once), then queues it."""
+    warn: list[str] = []
     try:
         req = json.loads(body or b"{}")
         if path == "/api/make":
-            req = make.parse_make_request(req)
+            req = make.parse_make_request(MC.fill_defaults(req))
+            gate = MC.check(MC.make_gates(req))  # (the machine presets, PW-1720)
+            if gate["refuse"]:
+                return {"error": "not started: " + "; ".join(gate["refuse"]), "machine": gate}, 409
+            warn = gate["warn"]
         elif path == "/api/zoom":
             req = api.parse_zoom_request(req)  # (normalised: the same zoom asked two ways is one job)
             if not api.existing_zoom(req):  # (a zoom already built costs nothing: no guard)
@@ -1016,7 +1027,25 @@ def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
         return {"error": str(e)}, 400
     except SystemExit as e:  # no such run
         return {"error": str(e)}, 404
-    return {"job": jobs.submit(req)}, 200
+    return {"job": jobs.submit(req), **({"warn": warn} if warn else {})}, 200
+
+
+def machine_get() -> tuple[dict, int]:
+    """GET /api/machine: the machine presets and each gate's state (machine.report)."""
+    return MC.report(), 200
+
+
+def machine_set(raw: bytes) -> tuple[dict, int]:
+    """POST /api/machine {gate, state: allow|warn|off|auto}: an override, saved in the install's config ([overrides]).
+    Tile gates take effect at the next server start (the tile service reads them once)."""
+    try:
+        body = json.loads(raw or b"{}")
+        if AC.path() is None:
+            return {"error": "no install config ($PLANET_CONFIG): overrides are saved only in an install"}, 409
+        MC.set_override(str(body.get("gate")), body.get("state"), AC.path())
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    return MC.report(), 200
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -1029,7 +1058,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         """The tile service (serve() starts it; made here when a test drives the handler without serve())."""
         with Handler._tiles_lock:
             if Handler.tiles is None:
-                Handler.tiles = T.TileService(self.jobs)
+                Handler.tiles = T.TileService(self.jobs, **MC.tile_settings())
                 Handler.tiles.start()
             return Handler.tiles
 
@@ -1187,6 +1216,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*techspread(url.query))
         if url.path == "/api/trade":
             return self.send_json(*trade(url.query))
+        if url.path == "/api/settlement":  # (PW-1659: the settlement view, lineages/settlement_view.py)
+            from .lineages import settlement_view as SV
+            return self.send_json(*SV.api(url.query))
         if url.path == "/api/tongues":
             return self.send_json(*tongues(url.query))
         if url.path == "/api/faithmap":
@@ -1224,8 +1256,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*sections_list(url.query))
         if url.path == "/api/planets":
             return self.send_json({"planets": family.planets()})
+        if url.path == "/api/machine":
+            return self.send_json(*machine_get())
         if url.path == "/api/make/options":
-            return self.send_json(make.options())
+            opt = make.options()  # (an install's machine presets set the form's default level and time zoom, PW-1720)
+            return self.send_json({**opt, "defaults": {**opt["defaults"], **{k: v for k, v in MC.fill_defaults({}).items()}}})
         if url.path == "/api/make/estimate":
             return self.send_json(*make_estimate(url.query))
         if url.path == "/api/refine/estimate":
@@ -1293,7 +1328,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         req = api.parse_lineages_request(body)
                     except api.BadRequest as e:
                         return self.send_json({"error": str(e)}, 400) or True
-                    self.send_json({"job": self.jobs.submit(req)})
+                    gate = MC.check(MC.lineages_gates(req))  # (the machine presets, PW-1720)
+                    if gate["refuse"]:
+                        return self.send_json({"error": "not started: " + "; ".join(gate["refuse"]), "machine": gate}, 409) or True
+                    self.send_json({"job": self.jobs.submit(req), **({"warn": gate["warn"]} if gate["warn"] else {})})
             else:
                 self.send_error(404)
         except (ValueError, KeyError) as e:
@@ -1326,6 +1364,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*rename_landmass(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path == "/api/authored":
             return self.send_json(*authored_set(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
+        if self.path == "/api/machine":
+            return self.send_json(*machine_set(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path == "/api/tiles/want":
             return self.send_json(*self.tile_service().post(self.path, self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make", "/api/highlight-zooms",
@@ -1363,7 +1403,7 @@ def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads
         # job state survives a restart (per checkout and port: worktrees share the data folders)
         Handler.jobs = api.Jobs(pool.caller(api.any_job), S.REPO / ".jobs" / f"{port}.json", workers=jobs,
                                 contexts=True)
-        Handler.tiles = T.TileService(Handler.jobs)
+        Handler.tiles = T.TileService(Handler.jobs, **MC.tile_settings())  # (machine presets of an install, PW-1720)
         Handler.tiles.start()
         http.server.ThreadingHTTPServer.allow_reuse_address = True
         http.server.ThreadingHTTPServer.daemon_threads = True

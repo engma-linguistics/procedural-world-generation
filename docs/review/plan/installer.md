@@ -107,7 +107,8 @@ of a version are not carried across an update).
 **The presets hook (for the machine-aware presets ticket).** `planet/appconfig.py` reads the config only when
 `$PLANET_CONFIG` is set (the launcher sets it; a checkout run with `uv run` never does, so a dev checkout ignores an
 install). `planet serve` takes `port`, `jobs` and `threads` from `[serve]` when no flag is given;
-`appconfig.presets()` returns the `[presets]` table for the server and `planet make` to read once the probe writes it.
+`appconfig.presets()` returns the `[presets]` table, which the machine probe now writes (`planet/machine.py`; see
+`machine-presets.md`).
 
 **Offline viewer.** three.js r160 (`build/three.module.js`, OrbitControls, LineSegments2, LineSegmentsGeometry,
 LineMaterial and the MIT LICENSE; 1.4 MB) is vendored under `viewer/vendor/three-r160/`, and the import maps of

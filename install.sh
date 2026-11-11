@@ -6,7 +6,7 @@
 #   sh install.sh --source /path/to/repo --ref v1.0.0    install a tag (or branch) of a local git repo
 #
 # After install, the `planet` launcher manages it:
-#   planet self open | first-run | update | rollback | uninstall | status
+#   planet self open | first-run | probe | update | rollback | uninstall | status
 #
 # Layout (the install root, default ~/.local/share/procgen-world):
 #   uv/uv               a pinned uv, private to this install
@@ -112,7 +112,7 @@ usage() {
     sed -n '2,/^set -eu/p' "$0" 2>/dev/null | sed '$d; s/^# \{0,1\}//' || true
     cat <<EOF
 
-Commands: install (default), update, rollback, uninstall, status, first-run, open
+Commands: install (default), update, rollback, uninstall, status, first-run, probe, open
 Options:
   --root DIR        install root (default \$XDG_DATA_HOME/$APP, now $ROOT)
   --data DIR        data folder, PLANET_DATA (default ~/procgen-world-data)
@@ -133,7 +133,7 @@ EOF
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        install | update | rollback | uninstall | status | first-run | open) CMD=$1 ;;
+        install | update | rollback | uninstall | status | first-run | probe | open) CMD=$1 ;;
         --root) ROOT=$2; shift ;;
         --data) DATA=$2; shift ;;
         --source) SOURCE=$2; shift ;;
@@ -366,7 +366,7 @@ write_config() {
         echo "port = $PORT    # the first port tried; the next free one is used if it is taken"
         if [ -n "$JOBS" ]; then echo "jobs = $JOBS"; else echo "# jobs = 4"; fi
         echo
-        echo "# [presets]  machine-aware defaults (planned): the installer's machine probe will write them here"
+        echo "# [presets]  machine-aware defaults: \`planet self probe\` (run by first-run) writes them here"
     } >"$CONFIG"
 }
 
@@ -457,9 +457,19 @@ cmd_install() {
     say "Manage it with: planet self update | rollback | uninstall | status"
 }
 
+cmd_probe() {
+    _planet=$ROOT/bin/planet
+    [ -x "$_planet" ] || die "not installed in $ROOT"
+    step "Sizing the app to this machine (cores, memory, disk, graphics)"
+    if [ "$DRY_RUN" = 1 ]; then say "  [dry-run] planet machine probe --write"; return; fi
+    "$_planet" machine probe --write 2>&1 | sed 's/^/    /' || warn "the machine probe failed: the presets are not written (nothing is gated)"
+    say "    change any of it in the viewer's Machine panel, or: planet machine set GATE allow|warn|off|auto"
+}
+
 cmd_first_run() {
     _planet=$ROOT/bin/planet
     [ -x "$_planet" ] || die "not installed in $ROOT"
+    cmd_probe
     step "First run: compiling the simulation (numba) on a tiny level-4 planet"
     say "    this happens once per version; later runs start straight away"
     _warm=$ROOT/warmup
@@ -524,7 +534,17 @@ cmd_status() {
     say "config   $CONFIG"
 }
 
+# the presets' memory cap (planet machine probe) for the server and its jobs: a systemd user scope on Linux, if one can be
+# made; otherwise the server runs uncapped (its RAM guards and the gates still apply)
+mem_cap() { sed -n 's/^mem_cap_gb *= *\([0-9][0-9]*\).*/\1/p' "$CONFIG" 2>/dev/null | head -n 1; }
+
 cmd_open() {
+    _cap=$(mem_cap)
+    if [ -n "$_cap" ] && [ "${PLANET_NO_CAP:-}" != 1 ] && command -v systemd-run >/dev/null 2>&1 &&
+        systemd-run --user --scope --quiet -p MemoryMax=1G true >/dev/null 2>&1; then
+        say "(capped at ${_cap} GB of memory, the machine presets' mem_cap_gb; PLANET_NO_CAP=1 to run without)"
+        exec systemd-run --user --scope --quiet -p MemoryMax="${_cap}G" -p MemorySwapMax=0 "$ROOT/bin/planet" serve
+    fi
     exec "$ROOT/bin/planet" serve
 }
 
@@ -567,5 +587,6 @@ case "$CMD" in
     uninstall) cmd_uninstall ;;
     status) cmd_status ;;
     first-run) FIRST_RUN=1; cmd_first_run ;;
+    probe) cmd_probe ;;
     open) cmd_open ;;
 esac
