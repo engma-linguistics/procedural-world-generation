@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Language Subsystem Assessment</title>
+<style>
+:root{
+  --bg:#f7f6f2; --fg:#1d1d1b; --muted:#5d5c57; --line:#d9d6cd; --card:#ffffff;
+  --accent:#2a5d8f; --ok:#2f7d4f; --warn:#a8650e; --bad:#a93c33; --soft:#eeece5;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15161a; --fg:#e6e4dd; --muted:#a19e95; --line:#34363d; --card:#1d1f25;
+    --accent:#7fb0e0; --ok:#6fbf8a; --warn:#d9a24a; --bad:#e07a70; --soft:#23252c;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15161a; --fg:#e6e4dd; --muted:#a19e95; --line:#34363d; --card:#1d1f25;
+  --accent:#7fb0e0; --ok:#6fbf8a; --warn:#d9a24a; --bad:#e07a70; --soft:#23252c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 16px 64px}
+main{max-width:980px;margin:0 auto}
+h1{font-size:1.6rem;margin:0 0 4px}
+h2{font-size:1.2rem;margin:36px 0 10px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:1rem;margin:22px 0 6px}
+p{margin:6px 0}
+.sub{color:var(--muted);font-size:.9rem;margin-bottom:18px}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:14px 16px;margin:18px 0}
+.verdict p{margin:4px 0}
+.verdict b{color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+.wrap{overflow-x:auto;margin:8px 0 14px}
+th,td{text-align:left;vertical-align:top;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted);font-size:.82rem;letter-spacing:.02em;text-transform:uppercase}
+td.g{font-weight:700;white-space:nowrap;font-family:var(--mono)}
+.A{color:var(--ok)} .B{color:var(--accent)} .C{color:var(--warn)} .D{color:var(--bad)}
+ol,ul{padding-left:22px;margin:6px 0}
+li{margin:4px 0}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px;vertical-align:middle;font-family:var(--mono)}
+.ta{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.tb{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.tc{background:var(--soft);color:var(--muted)}
+.why{color:var(--muted);font-size:.9rem}
+code,kbd{font-family:var(--mono);font-size:.85em;background:var(--soft);padding:1px 4px;border-radius:3px}
+details{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:16px 0}
+summary{cursor:pointer;font-weight:600}
+details h3{margin-top:18px}
+details h4{margin:14px 0 4px;font-size:.95rem}
+.ev p,.ev li{font-size:.92rem}
+.note{font-size:.85rem;color:var(--muted)}
+.cols{display:grid;grid-template-columns:1fr;gap:4px 24px}
+@media (min-width:720px){.cols{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>Language Subsystem Assessment</h1>
+<p class="sub">Independent read of <code>planet/language/</code> and run a24559 (621 living lects), with a fresh de1cc6 pass as the second world. 2026-11-11, main @ 02050888. Five slice reviews plus my own measurements; evidence at the bottom.</p>
+
+<div class="verdict">
+<p><b>As a set of mechanisms: yes, pretty much done.</b> Every piece a historical linguist would ask for exists, runs from real reference data, and most of the earlier gap reviews are now stale. Nothing structural is missing for this project's use.</p>
+<p><b>As output a linguist reads: not yet.</b> About ten cheap, visible defects sit on the first page: a pronoun borrowed in 10% of languages, "the land of the named after the the river", crows called "the yellow one", "rr" in a third of place names, no isolating language anywhere, living sound systems that drifted away from the natural ones they were drawn as.</p>
+<p><b>What it takes:</b> four short fix lanes (about a week of lane time) plus the names and viewer lanes already planned. A handful, not a long tail, provided the tail is parked on purpose.</p>
+<p><b>Main risk:</b> everything was calibrated on one world. de1cc6 fails 2–3 of the 17 checks on every draw, and 6 of the 17 measure the generator's own inputs.</p>
+</div>
+
+<h2>1. The pieces, graded</h2>
+<div class="wrap"><table>
+<tr><th>Piece</th><th>Grade</th><th>State</th><th>What a linguist notices</th></tr>
+<tr><td>Phonology and inventories</td><td class="g B">B−</td><td>Proto draw is well calibrated (PHOIBLE series, sizes in IQR). Voice profiles for 37 peoples are coherent (A−).</td><td>Living systems drift: aspirates 3% (PHOIBLE 19%), prenasals 46% (13%), trill 93% (47%), ŋ 35% (64%); 15% of human-voiced lects lack /m/, 13% lack a plain coronal stop. One vowel carries &gt;40% of vowel tokens in half the lects; /i/ is the modal vowel in 314 of 621.</td></tr>
+<tr><td>Sound change</td><td class="g B">B−</td><td>Catalogue of 245 cited rules with environments; chain shifts, umlaut, tonogenesis, metathesis, lexical diffusion. Correspondences are Neogrammarian-regular and read like real laws (B+).</td><td>Churn: re-fires in 4-kyr lockstep, w&gt;v&gt;b&gt;β&gt;v loops, 12–72 changes in a lect's first 500 years, harmony on 95% of lineages, outputs like <i>dbbe</i>, <i>li˦fh</i>. Partly in flight (PW-1692/1646/1647).</td></tr>
+<tr><td>Lexical replacement</td><td class="g A">A−</td><td>Swadesh-100 retention 0.874 at 1 kyr, 0.256 at 20 kyr with Pagel-style fat tail; pronouns and low numerals most stable.</td><td>14.7% of core words are fresh coinages, the lever holding the calibration. No variation phase; words replace instantly.</td></tr>
+<tr><td>Etymology and word formation</td><td class="g B">B</td><td>Chains are literate: SEA&lt;WATER+BIG, BEE&lt;FLY+HONEY, BLACK&lt;charcoal-like&lt;BURN-thing. Affixes productive; compound head order matches typology 97%.</td><td>Taboo paraphrases random (CROW 'the yellow one') and hit pigs, cattle and fish scales. 10-step random-walk chains. Only 9 derivational meanings; no -less/-ness/un-.</td></tr>
+<tr><td>Semantics and polysemy</td><td class="g B">B</td><td>Real colexification along CLICS; 13% of words in related same-form groups; side registers (high, learned, avoidance).</td><td>Everyday lexicon is strictly one word per concept. Shift paths undirected (STONE←MOUNTAIN 1778, reverse 636).</td></tr>
+<tr><td>Lexical systems (numerals, colour, kin)</td><td class="g A">A−</td><td>Numeral bases match WALS 131A within a few points; Berlin &amp; Kay stages; six kin systems near Murdock's shares; relic 'one hand' fives.</td><td>Quinary 12% vs ~2.5%. Stage VI colour over-represented.</td></tr>
+<tr><td>Grammar: typology and morphology</td><td class="g B">B</td><td>Word order, case counts, alignment, evidentials, reduplication all near WALS; Greenberg harmonies hold; real allomorphy from sound change through the cells; portmanteaus, inflection classes.</td><td>No isolating type (5 of 621 lects), 2% without person marking (WALS 22%); sex-gender 8% vs 33%; classifiers 2% vs 35%; gram homophony (<i>xe=</i> glossed M, F and PL in one lect); 286 zero-form "live" grams; no suppletion.</td></tr>
+<tr><td>Grammaticalization cycle</td><td class="g B">B+</td><td>The strongest grammar piece: Heine &amp; Kuteva paths, free word→clitic→affix→fused→lost, renewal, layering, degrammaticalization.</td><td>Source skew: PAST from YESTERDAY in 305/418, GEN from THAT in 201/251, NEG from NOTHING in all 446.</td></tr>
+<tr><td>Syntax and sentences</td><td class="g B">B</td><td>37 constructions; order and adposition side correct in 603/603 transitives; agreement, case, concord shown.</td><td>Fixed English template, not translation. Valence and complementizer markers misplaced as second-position clitics. No coordination or adverbial clauses.</td></tr>
+<tr><td>Texts (fable, recipes)</td><td class="g C">C+</td><td>Grammar really is applied in the fable; proto plus daughters shows drift as intended.</td><td>Recipes are 4–5 formulaic imperatives with no sequencing, quantity or "until". A NEG scope bug in one fable daughter.</td></tr>
+<tr><td>Contact and borrowing</td><td class="g B">B−</td><td>WOLD field ordering (ρ 0.48), donors are neighbours, loans nativised, contact kinds now varied, cow~beef doublets, food Wanderwörter.</td><td>Core too borrowable: "I" a loan in 10% of lects, ONE–THREE 16–22%, MOTHER/FATHER ~20%, mostly via paradigm-repair loans. No calques. 3.8% of words are A→B→A ping-pong loans.</td></tr>
+<tr><td>Shift and substrate</td><td class="g B">B</td><td>148 shifts; substrate keeps animals, names, agriculture, landscape; superstrates keep elite words; accent maps; grammar calques.</td><td>No pidgin, creole, lingua franca or diglossia (parked, PW-1554).</td></tr>
+<tr><td>Families and the comparative method</td><td class="g C">C</td><td>Sister sets have regular correspondences (s:h, p:f, ɔ:ɨ) a comparativist could reconstruct from.</td><td>175 isolates of 264 families; largest family 34 lects; scholars' tree lumps (44% of same-family pairs right) where real scholarship splits; horizon 14–17 kyr from a retention plateau; 549 of 579 "languages" are one lect, so no dialects.</td></tr>
+<tr><td>Continua and intelligibility</td><td class="g C">C−</td><td>Computed; 5 continua of 3 lects.</td><td>Linear in cognate share; unrelated pairs in contact score 0.08 (max 0.21) where they should be ~0.</td></tr>
+<tr><td>Names (ethnonym, place, river, personal, god)</td><td class="g B">B</td><td>Ethnonyms best (B+): relay names, 'the mutes', misattributed origins. Rivers opaque substrate. Six family naming habits; dithematic/phrase/patronymic traditions; god titles and taboo names.</td><td>Template bugs ("named after the the river" ×62, "Market The Black Sea", "Loyings 2", 530 numbered names); living families and languages unnamed ("fam0"); 203 peaks from 6 adjectives; names never age (PW-1685); 6 given names per lect; patronymics up to 61 letters.</td></tr>
+<tr><td>The Common in English</td><td class="g B">B−</td><td>Coherent Tolkien-style renderings (Coldton, Foxhurst, Micklegate).</td><td>The "The" and numbering bugs above; its holder is a seed-sensitive heuristic (PW-1652).</td></tr>
+<tr><td>Romanization and spelling</td><td class="g B">B</td><td>One spelling per phoneme per lect; 8 inherited styles; diacritics on 21% of names; slur guard works.</td><td>"rr" for every trill, tap or not (31% of place names look faux-Spanish); three romanizations of one lect across gram, sentence and paradigm; landmass endonyms unreadable.</td></tr>
+<tr><td>Audio</td><td class="g B">B+</td><td>eSpeak with 205 mappings, clicks/tone/growl added in numpy; 494 clips, 0 unsayable.</td><td>1 s word cap truncates long names; Piper substitutes English sounds.</td></tr>
+<tr><td>Viewer and pages</td><td class="g B">B−</td><td>Seven tabs, node-tested helpers, path-traversal safe, deterministic.</td><td>Lags the data: Common names, settlement histories, doublets, fable, liturgy and sisters exist only in one-off scratch HTML tools. Owner uses the viewer.</td></tr>
+<tr><td>Speed, robustness, determinism</td><td class="g B">B</td><td>9–10 min at 8 workers; byte-identical across passes; 0 romanization failures; sound per-event seeding.</td><td>Viewer-made peoples run the pass single-process (PW-1639); an absolute checkout path leaks into output; kenku mislabelled as a hybrid on de1cc6.</td></tr>
+<tr><td>Tests</td><td class="g B">B+</td><td>826 behavioural tests, 70 s, no goldens, no skips.</td><td>15 of 17 checks untested; no worker-count determinism test.</td></tr>
+<tr><td>Checks</td><td class="g C">C+</td><td>Thresholds never quietly widened; 7 of 17 are real emergent tests.</td><td>6 of 17 are tautological (WOLD in, WOLD out; elite ×3 in, ≥1.5 asked); horizon permanently red under a band the owner relaxed; doublets pass 0.755 vs 0.2; single-draw pass/fail flips on unrelated commits.</td></tr>
+</table></div>
+
+<h2>2. Ranked realism gaps</h2>
+<p class="note"><span class="tag ta">A</span>visible to a user of the world &nbsp; <span class="tag tb">B</span>visible to a specialist &nbsp; <span class="tag tc">C</span>invisible in the output</p>
+<ol>
+<li><span class="tag ta">A</span><b>Core vocabulary borrowed too often.</b> "I" is a loan in 10% of lects, ONE–THREE in 16–22%, MOTHER/FATHER in ~20%; 38 of 52 "I" loans come from the paradigm-repair step, which borrows before it derives and ignores borrowability. <span class="why">Why here: the etymology pane is the thing a reader opens first, and this is the first "that's wrong".</span></li>
+<li><span class="tag ta">A</span><b>Living sound systems are unnatural as systems.</b> No /m/ in 15%, no plain coronal stop in 13%, retroflex sonorants without obstruents in 11%; series shares far from PHOIBLE after 20 kyr although protos matched; half the lects run on one vowel for &gt;40% of vowel tokens (<i>fiɲaɲimi, xejɛxɛrɛ</i>), and /i/ not /a/ is the commonest vowel in half the world. <span class="why">Why here: every word and every sounds table; same on de1cc6, so structural not seed noise.</span></li>
+<li><span class="tag ta">A</span><b>No isolating languages, little gender, no classifiers.</b> 5 of 621 lects near-isolating; 2% lack person marking (WALS 22%); sex-gender 8% (33%); classifiers 2% (35%) because every classifier binds into a noun class within 1.5 kyr at FUSE 0.02. <span class="why">Why here: flavour range. No Mandarin-like, no Vietnamese-like, no Romance-gendered Elvish on offer.</span></li>
+<li><span class="tag ta">A</span><b>Taboo paraphrases are random and over-applied.</b> CROW 'the yellow one', DOG 'the red one', BEAR 'the long one'; the hazard also fires on pigs (114), cattle (69) and fish SCALE (126). <span class="why">Why here: hunting and herd words are culinary core. Slam dunk.</span></li>
+<li><span class="tag ta">A</span><b>String bugs in names and the Common.</b> "the land of the named after the the river" (62), "Market The Black Sea", "Loyings 2…5" (530 numbered names), "the A languages"; living families and languages unnamed ("true family p306", "fam0"). <span class="why">Why here: on the map labels and the Families tab. Slam dunk.</span></li>
+<li><span class="tag ta">A</span><b>Romanization quirks.</b> "rr" written for every trill even in the 501 lects with no tap; three spellings of one morpheme on one page (<i>khe/che/yrhaènrhè</i>); 61-letter patronymics; only 6 given names per lect and no way to ask for more. <span class="why">Why here: a DM needs names in bulk, and they all look faux-Spanish.</span></li>
+<li><span class="tag tb">B</span><b>Flat family structure and a lumping scholars' tree.</b> 175 isolates of 264 families (Earth: isolates are ~3% of languages); largest family 34 lects; scholars' families right for 44% of lumped pairs; horizon 14–17 kyr because cognate share plateaus at 0.12–0.25 from 7 to 15 kyr; 549/579 languages single-lect, so no dialect level; intelligibility 0.08 for unrelated pairs. <span class="why">Why here: the Families tab reads as a world of isolates. Partly the peoples simulation's doing (no expansions).</span></li>
+<li><span class="tag tb">B</span><b>Sound-change churn and saturation.</b> Re-fires are 43% of a lineage's events, 11% land exactly 4.0 kyr after the last (REFIRE_KYR); 37 rows fire on ≥80% of lineages; founding bursts of 12–72 changes. <span class="why">Why here: history lists look mechanical. Lane 17 owns the cause (PW-1692).</span></li>
+<li><span class="tag tb">B</span><b>Homophonous and zero grams glossed as distinct categories.</b> Median 4 homophonous gram pairs per lect; 31 of 260 class systems have identical class markers; 286 functions survive only as zero forms yet set the typology ("split" alignment with ERG = '').</li>
+<li><span class="tag tb">B</span><b>Names don't age and feature names are formulaic.</b> 232 of 233 own-line settlements read exactly as coined; 203 peaks from 6 adjectives; 46% of lands 'the land of the real people'. Already ticketed (PW-1685, 1656).</li>
+<li><span class="tag tc">C</span><b>Specialist-only tail.</b> Undirected semantic shift paths (10-step FIRE…MOUNTAIN→HIGH chains), no variation phase or synonymy, no calques, no suppletion, static stress, no pitch accent, no syllabic consonants, English sentences are a template not a translation. Nobody using the world will see these.</li>
+</ol>
+
+<h2>3. Missing whole mechanisms (not tuning)</h2>
+<div class="wrap"><table>
+<tr><th>Mechanism</th><th>Matters here?</th><th>Call</th></tr>
+<tr><td>On-demand name generator (20+ personal names, settlement names per lect, via API and viewer)</td><td>Yes: the single most used language output for a campaign</td><td>Do for v1.0</td></tr>
+<tr><td>Viewer catch-up (Common names, settlement histories, doublets, fable, liturgy, sisters in the viewer)</td><td>Yes: the owner uses the viewer, not scratch HTML</td><td>Do for v1.0 (one lane)</td></tr>
+<tr><td>Family expansion and a dialect level (one family spreads and replaces; LANG_SHARE continua)</td><td>Medium; mostly a peoples/polities question</td><td>Wait for PW-1549</td></tr>
+<tr><td>Pidgins, creoles, lingua francas, diglossia</td><td>Low until polities and trade languages exist</td><td>Parked, correct</td></tr>
+<tr><td>Stress diachrony, pitch accent, secondary stress</td><td>Faintly in audio only</td><td>Park</td></tr>
+<tr><td>Suppletion (be/go/have)</td><td>Flavour only</td><td>Park</td></tr>
+<tr><td>Directional semantic change, lexical calques, variation phase</td><td>Low; calques for food ('earth-apple') would be nice</td><td>Park</td></tr>
+<tr><td>Orthographic depth (spellings frozen while sounds move)</td><td>Low</td><td>Park</td></tr>
+<tr><td>Coordination, adverbial clauses, pragmatic word order</td><td>Only for richer recipes ("then", "until")</td><td>Small template addition, optional</td></tr>
+</table></div>
+
+<h2>4. Finish line for v1.0 (ranked)</h2>
+<ol>
+<li><b>Output slam dunks</b> (1 lane, ~1 day). Fix the "the the"/"The"/numbering strings (<code>names.py:359,622,804</code>, <code>placenames.py:259</code>); motivate taboo paraphrases per animal and restrict to wild/dangerous animals (<code>lexicon.py:548,1808</code>); "rr" only when the lect also has a tap (<code>romanize.py:142</code>); one romanization per page (<code>sentences.py:148,1026</code>); name living families and languages from the existing scholars() glossonyms; 20 given names per lect and a clipped patronymic; recipe templates with "then/until".</li>
+<li><b>Core borrowing and honest checks</b> (1 lane). Reorder <code>_renew_cell</code> (<code>lexicon.py:2481</code>) to derive before it borrows and scale the loan by intensity × borrowability; add a per-band check (Swadesh-100 cross-family loans in 3 kyr ≤ ~2%); judge the horizon on the smoothed/logistic reading against the band Daniel already ruled (~11+ kyr) so it stops being permanently red; label the six tautological checks as wiring guards; replace single-draw pass/fail with a 2-world × 2-seed pass-rate matrix (~40 min); re-record the benchmark baseline with 2–3 absolute bars (harmony &lt; 25%, near ≥ 4 of 7).</li>
+<li><b>Living inventories</b> (1 lane, after lane 17 lands). Source rows for aspiration, ts, ɾ and ŋ; fold guards (no obstruent→sonorant folds, never m→n); a core guarantee in the proto draw (<code>inventory.py:545-589</code>); a both-direction series check at ±2× of PHOIBLE; a vowel-token concentration check; BURST_X down (<code>lect.py:32</code>).</li>
+<li><b>Typological range</b> (1 lane, weights only). Let a low-synthesis attractor exist (L2_STRIP/FUSE/PRESSURE so ~10–15% of lects stay isolating); sex-gender draw weight toward WALS 31A; classifier binding hazard down; move Q out of the verb-morphology bin; demote YESTERDAY&gt;PAST and THAT&gt;GEN when a PERF or DEM source exists.</li>
+<li><b>Already planned, keep:</b> PW-1685 (+1547 folded in), PW-1656, PW-1655, PW-1659, PW-1639 (viewer-made peoples get the 8-worker pass), PW-1632, PW-1633, plus the viewer catch-up lane. In flight: PW-1692/1646/1647/1642.</li>
+</ol>
+<p>Estimate: items 1–4 are about one lane-week in total; with the planned names and viewer lanes, roughly two weeks of lane time. After that, call it done and stop.</p>
+
+<h2>5. Park or drop</h2>
+<ul>
+<li><b>Stop:</b> re-running the horizon; chasing single-check pass/fail on single draws; adding per-row <code>RULE_WEIGHT</code> patches (remove S148/S042/S073 once PW-1692 lands); new realism lanes nobody asked for.</li>
+<li><b>Park (`later`), correctly:</b> PW-1554, 1553, 1541, 1619, 1648, 1578 (likely closes with 1692), 1550, 1601, 1614, 1723, 1668, 1722 (grid), 1651, 1669.</li>
+<li><b>Merge:</b> PW-1547 into PW-1685 (same mechanism); PW-1605 into PW-1620 (two halves of WALS 49A); PW-1643 + 1561 + 1652 as one contact-inputs ticket under PW-1549.</li>
+<li><b>Rescope:</b> PW-1543, whose premise ("changes never spread word by word") is stale since lane 16; keep only the stress part.</li>
+<li><b>Close:</b> PW-1602 (owner answered "real"). <b>Drop:</b> PW-1567 (tiny edge case), PW-983 (an xl experiment cutting across the architecture). PW-767 stays as an epic only.</li>
+<li><b>Rulings that cost realism, noted not re-litigated:</b> horizon ~11 kyr accepted (the real cause is a retention plateau, see gap 7); heavier synthesis approved (it removed the isolating type, gap 3); "rr" as the one trill spelling.</li>
+</ul>
+
+<h2>6. Risks</h2>
+<ul>
+<li><b>Single-world calibration.</b> Every constant in <code>calibration.md</code> was set on a24559. A fresh de1cc6 pass fails sisters (0.493), horizon (14.0) and living sizes (no lect over 42 consonants). All 8 recorded de1cc6 passes fail at least one non-horizon check; overuse fails 6 of 8, pronoun loans 4 of 8. Making HUNDRED/THOUSAND 3× more borrowable flipped three checks.</li>
+<li><b>Likely lane-16 regression on de1cc6 sisters:</b> 0.476–0.513 in 4 of 5 draws since lane 16, against 0.53–0.55 before; status.md calls it "accepted".</li>
+<li><b>Stacked calibrated multipliers interact</b> (PULL_BOOST Q 3.0, FUSE 0.02, L2_STRIP cubic, PRE_FUSE 0.1 …): the Q fix overshot into verb morphology; the synthesis fix eliminated isolating languages; <code>_adopt</code> is a one-way ratchet toward more marking. Dragons (430-yr generations) run outside the calibrated range.</li>
+<li><b>Six tautological checks</b> make "16 of 17 pass" read stronger than it is; the areal check passes when there are no pairs; the doublet bar is far below the output.</li>
+<li><b>Catalogue sinks without sources</b> (aspiration, ts, ɾ, ŋ) are structural, so every world drifts the same way; de1cc6 is worse (prenasals 61%).</li>
+<li><b>Hand-written tables repeat motifs world-wide:</b> RAIN→water 2711 times, PERSON→man 2592, ROOF→house 2495; one fixed list of 10 English phrase-name templates; 6 peak adjectives.</li>
+<li><b>Engineering:</b> an absolute checkout path in <code>constants.generation_overrides.spec</code> breaks byte-identity across worktrees; no test that worker count leaves output unchanged; benchmark baseline is stale (pre-lane-14) so "0 WORSE" means little; <code>places_page.py</code> and <code>sisters_page.py</code> hardcode lane-15 text.</li>
+</ul>
+
+<details class="ev">
+<summary>Evidence: measurements and file references</summary>
+
+<h3>My own measurements (a24559, 621 living lects)</h3>
+<ul>
+<li>True family sizes: 175 singletons, 36 pairs, 13 triples; max 34. Scholars' families: 113 (25 singletons, max 41). Languages: 549 of 579 are single-lect.</li>
+<li>Vowel-token concentration per lect (combining marks stripped): modal vowel share median 0.40, p10 0.29, p75 0.47, p90 0.58; 20% of lects &gt; 0.50; worst d236 kenku /a/ 0.79, d772.1 dragonborn /ɛ/ 0.79, d486 orc /ɛ/ 0.75 with 15 nominal vowels. Modal vowel: i 314, a 183, ɛ 80, e 18. Natural 5–7 vowel systems: /a/ ≈ 30–40% of vowel tokens.</li>
+<li>Share of 3+-vowel words with a single vowel quality: median 0.10, p90 0.20.</li>
+<li>Lexicon by last process (mean over lects): borrow 0.284, derive 0.208, proto 0.194, compound 0.122, shift 0.112, coin 0.062. Homophone share (stats): median 0.179, p90 0.241 (mostly CLICS polysemy; accidental 4.5%).</li>
+<li>Contact layers: trade 7125, elite 1425; no city/conquest layers on lects.</li>
+<li>Sampled lect d686.1 (human, born 7 kyr, 117 changes, 87 rules): words <i>pijsɛlbɛhɛln</i> 'steam', <i>ɲ̟ĩɲ̟ɛmfjɛf</i> 'berry', <i>jifj</i> 'tree', <i>hikm</i> 'bird' (coda sonority violations); 35 grams with plausible sources (NOTHING&gt;NEG, THAT&gt;DEF, GO&gt;FUT, SIT&gt;PROG, BECOME&gt;PASS, PERSON&gt;AGENT, CHILD&gt;DIM, STAND&gt;COP, GEN&gt;ERG); sentences obey SOV, ERG, class concord. Sentence <code>roman</code> is book spelling; lexicon <code>roman</code> is the accented house style.</li>
+<li>Timing: steps 304 s, wave 43 s, observe 33 s, document 69 s, total 580 s.</li>
+</ul>
+
+<h3>Phonology slice</h3>
+<ul>
+<li>Living human-voiced (315 lects): consonants median 21, IQR 18–25 (PHOIBLE 21, 17–27); vowel phonemes median 9. Series: aspirated 3.2% (protos 16%, PHOIBLE 19%), prenasal 46% (16%, 13%), retroflex 45% (29%, 28%), ŋ 35% (64%, 64%), trill 93% (57%, 47%), f 78%, ɾ 7% (30%, 25%), ts 6% (26%, 22%). de1cc6: prenasal 61%, ŋ 20%, aspirates 6%.</li>
+<li>Nothing in <code>sound_changes.tsv</code> creates aspiration (S186, S093 only remove it). Draw is one segment at a time weighted by frequency: <code>inventory.py:545-589</code>, <code>A_FREQ</code> :32, series boost ×12 :430; no core guarantee. No /m/ 15.2% (PHOIBLE 3.4%); no plain coronal stop 13%; marked consonant with no plain partner 44%; ə in 0% of protos (PHOIBLE 22%).</li>
+<li>Sample inventories: d811 goblin /b bv h j k l m n pf r s v z ɡ ʃ/; d669 gnome has k͡p but no k, ɡ, p; d217 goliath no m, five prenasals; d632 human carries ⁿʔ̬; d351 goliath vowels /e i u/.</li>
+<li>Syllable types in actual words: simple 4.8%, moderate 58.7%, complex 36.5% (WALS 12A 12.5/56.5/30.9). <code>MAX_ONSET = MAX_CODA = 2</code> at <code>inventory.py:50-51</code>. Core-100 median 4.6 segments. Odd outputs ~1–2% of words (<i>mɔnɛvm, ɲitbn, ɡbbi, hpu˨va˦</i>).</li>
+<li>Lineage d560: ROOT <i>flo &gt; hlo &gt; hro &gt; ro &gt; ru</i>; EAT <i>enkal &gt; jeŋkal &gt; jinkal &gt; ʒiᵑɡal &gt; ʒiᵑɡaw &gt; ʒiᵑɡav &gt; ʃiᵑɡab</i>; GOOD <i>hɔwas &gt; wewah &gt; bewah &gt; beva &gt; beba &gt; beβa &gt; biva</i>. S035/S039/S041/S045/S081b re-fire at 19.5, 15.5, 11.5, 7.5 kyr (<code>REFIRE_KYR = 4</code>, <code>lect.py:134</code>). Re-fires median 43% of events; 11% exactly 4.0 kyr apart. Rate median 14.2 events/kyr (p10 5.3, p90 28.6). Founding burst median 12 (max 72). 37 rows fire on ≥80% of lineages: harmony.back 95%, S175 97%, S134 87%, S097 80%, S091 82%. Folds d&gt;n 189, b&gt;m 123, β&gt;m 102, m&gt;n 447.</li>
+<li>Tone: 18% of human-voiced lects tonal (de1cc6 28%; WALS 13A 42%, PHOIBLE 23%); 12 gained tone, 20 lost it; every vowel in a tonal lect bears tone. Stress a positional label (<code>inventory.py:37</code>, weight rule <code>rules.py:335</code>), not stored, never shifts. Allophones listed in 47% of lects, median 0. Live-rule layer <code>phonology.py:1-60</code>, median 8 rules. Voice profiles: 30 tables, labials ~5 for humans vs 1.3–2.2 for lipless peoples.</li>
+<li>Per-row weight edits aimed at PHOIBLE shares logged in <code>sound_changes.tsv</code> line 2 (S142, S221, S152, S086, S097, S068, S241, S073); <code>RULE_WEIGHT</code> at <code>history.py:132</code>.</li>
+</ul>
+
+<h3>Lexicon slice</h3>
+<ul>
+<li>Swadesh-100 retention (573 dominant lects, from last lexical step): 1 kyr 0.874, 5 kyr 0.579, 10 kyr 0.402, 20 kyr 0.256. Class 1 keeps 0.69 at 5 kyr vs class 5 0.39; ONE 0.91, I 0.89, WHAT 0.86; WALK 0.26. Body parts 0.587 vs 0.542 (not distinct). de1cc6 0.859 / 0.208. Fresh roots (<code>KEEP_COIN=1.0</code>, <code>lexicon.py:80</code>) 14.7% of current core.</li>
+<li>Taboo: random quality <code>lexicon.py:1808</code>; flag <code>lexicon.py:548</code>; SCALE 126, pig 114, dog 114, cattle 69, ox 28, claw 36. Loan ping-pong 3.8% of words; 7.9% through ≥3 borrowings.</li>
+<li>Formation: last step borrow 28.5%, derive 20.7%, proto 18.9%, compound 12.2%, shift 11.2%, coin 6.2%. Transparent (≤3 kyr) 17.7% of list, 11% of core. Affix meanings 9 (<code>lexicon.py:182</code>); median words per affix: thing 38, like 25, do 22, little 22. Head order agrees 6960/7192. 61% of lects have two affix meanings sharing a form.</li>
+<li>Polysemy: 13% of words in same-form groups (BROWN=YELLOW 236, LOOK=SEE 154, NECK=THROAT 149); accidental homophones median 4.5%; 692 forms for 767 concepts. Shift paths undirected (<code>lexicon.py:1310,1842</code>): STONE←MOUNTAIN 1778, reverse 636; HUSBAND→father 1936. Registers: high mean 2 (31% of lects), learned 8.8 (51%), avoidance 5 (26%).</li>
+<li>Systems: numerals decimal 57/hybrid 13/vigesimal 10/restricted 9/quinary+other 12 (WALS 131A 64/11/10/10/~2.5); colour VI 37, IV 18, V 16, off-path 15, III 11, II 3, I 1; kin Iroquois 29, Hawaiian 29, Omaha 15, Eskimo 10, Crow 9, Sudanese 8. MOTHER nasal 54%, FATHER 27%.</li>
+<li>Borrowing: loan share median 26.3% (p10 9.8, p90 45.6); WOLD-meaning mean 0.284 vs WOLD 0.189; cross-family 17.2%; Swadesh cross-family loans in 3 kyr 5.0% vs all words 7.2% (ratio 0.7; WOLD several times lower). Core items: I 0.10, THEY 0.087, ONE 0.16, TWO 0.18, THREE 0.22, MOTHER 0.195, FATHER 0.20, BLOOD 0.19. <code>_renew_cell</code> (<code>lexicon.py:2481-2537</code>) borrows before deriving, unscaled: 38/52 "I" loans, 42/109 FATHER loans. Field ordering crop 0.73 … kin 0.14, closed 0.12; ρ 0.48. Loans flat 44.9k, trade 52.7k, elite 18.2k, city 7. Doublets: meat 176, product 158, register 922 (2262/2865 meat words are compounds). Calques: none (grep).</li>
+<li>Shifts 148: takeover 94, swamp 46, elite 2, trade 3. Substrate 102, superstrate 46; kept words median 21 (animals 627, names 373, agriculture 320, landscape 246, food 171); accent map median 14 substitutions; 1–2 grammar calques.</li>
+<li>Food: ~123 of 814 concepts (36 crops, 12 herd animals, 13 meats, 9 cooking verbs, dishes, 7 tastes); 224 food routes; crop words 73% loans; herder elaboration splits in 234 lects. Missing: chop/peel/slice/slaughter, spoon/ladle/plate/sieve, oil/spice/stew/broth/sauce, meals by time, texture words.</li>
+<li>Pronoun cap: a24559 0.063 vs ≤0.08; de1cc6 0.085 (older build). Doublet check 0.755 vs 0.2 target.</li>
+</ul>
+
+<h3>Grammar slice</h3>
+<ul>
+<li>Word order SOV 45/SVO 28/VSO 14/free 9/VOS 3/OVS 1 (WALS 81A 41/35/7/14/2/&lt;1). Case bins none 39 (38), 10+ 10 (9), 8–9 10 (9), 6–7 8 (14). Alignment neutral 55/nom-acc 27/erg+split 18 (52/27/~19). Evidentials 58/27/15 (43/40/17). Reduplication 77% (75%). SOV&amp;Po 88%, SOV&amp;GN 86%, SVO&amp;NG 61%.</li>
+<li>Off: VSO 14 vs 7; AN 11% vs ~28%; SVO&amp;Po 30% vs ~8%; VO&amp;RelN ~10% vs ~1%; polar Q verb morphology 51% vs 17%, particles 24% vs 61% (<code>PULL_BOOST</code>, <code>grammar.py:62</code>); 'have' possession 51% vs ~26%; no subject marking 2% vs 22%; sex gender 8% vs ~33%, non-sex 31% vs ~11%; classifiers 2% vs ~35% (<code>_class_state</code>, <code>grammar.py:1494</code>).</li>
+<li>Grams: live per lect p10 19, median 27, p90 38; bound median 14; ≤2 bound in 5 lects. Bound verb categories 0–1 4%, 2–3 24%, 4–5 38%, 6–8 34%. Paths <code>grammar.py:496ff</code>, 79 TSV rows; <code>step</code> at :3088; layering in 85 lects. PAST from YESTERDAY 305/418 (X14), GEN from THAT 201/251 (X32), NEG from NOTHING 446/446, X29 LOOK&gt;IMP "a guess".</li>
+<li>Paradigms: allomorphy share median 0.33, 16 stem alternations per lect; portmanteaus in 115 lects, inflection classes in 303 (membership by crc32, <code>grammar.py:1897</code>); "irregular" = any non-concatenative cell (34%), <code>grammar.py:1918</code>. d69 bronze dragon <i>ha‼h</i> → PAST <i>hwi-ra‼h</i>; d447 gnome <i>nɛ̠sä</i> → ALL <i>näsu-bäj</i>. d149 SEE collapse: 2PL, 1PL.INCL, 3PL.O, PERF all <i>u˥raː˦˨</i>. Gram homophony median 4 pairs; d0 <i>xe</i> = CLASS:1, CLASS:2, CLASS:3, PL, DIST; 31/260 class systems homophonous. 286 zero-form live grams. No suppletion (grep). Same 8 exemplars every lect, no BE/HAVE.</li>
+<li>Class semantics (195 systems, 14 nouns): 38% in their own semantic class (persons 78%, animals 39%, plants 19%, abstract 26%); fallback order <code>grammar.py:2087</code>. Page renumbers classes (<code>sentences.py:148 cl_num</code>) while JSON keeps engine numbers.</li>
+<li>Sentences: 37 constructions, 15 universal; order correct 603/603; adposition side matches. Misplaced second-position clitics: d811 <i>ʃjə˨-ro˦-i˦=ju˨</i> 'fish-CL1-DEF=PASS'; d802 <i>s̪i˨=ka˦n-ha˨</i> 'COMP=sleep-3SG'. Note/gloss mismatches 3/2697 (3SG), 3/50 (ERG). Typology check holds by construction: <code>realise()</code> <code>grammar.py:1649</code> overwrites clashes; <code>checks.py:364</code>; <code>shown_equals_aim</code> 0.754. Areal typology signal 0.516 vs 0.502.</li>
+<li>Texts: fable <code>texts.py:121</code> (6 lines); NEG scope bug in daughter Dinrrewrriwpe line 4; recipes <code>texts.py:507</code> from fixed WAYS templates; <code>texts.fable(lj)</code> returns nothing on raw JSON records.</li>
+</ul>
+
+<h3>Families, names, spelling, audio slice</h3>
+<ul>
+<li>Family = proto at 20 kyr (<code>families.py:454</code>), 320 protos. Scholars' cut at loose share &gt; chance floor 0.0127 (<code>families.py:474</code>); strict_matrix used only for the horizon. 80 of 113 scholars' families mix true families; pair precision 44% (2445 lumped vs 1900 right), recall 94%. Cognate share by split depth: 5 kyr 0.19 (0.19 expected), 7 kyr 0.12 (0.10), 10 kyr 0.165 (0.04), 14 kyr 0.25 (0.013). Intelligibility <code>families.py:171</code>, linear; unrelated-in-contact mean 0.077, max 0.21; 7–20 kyr splits 0.08–0.23. <code>LANG_SHARE 0.7</code> (<code>families.py:25</code>). Living families/languages unnamed: <code>langview.js:183-185</code>; only dead families named <code>names.py:1051</code>.</li>
+<li>Sister sets: human 1.5 kyr s:h, p:f, dʒ:ʒ, final -n loss; triton 4.5 kyr ɔ:ɨ, p:b; gnome 7.5 kyr 12/50 cognate; aarakocra 12 kyr r:ɹ; elves 3.5 kyr ~90% identical.</li>
+<li>Ethnonyms: E2 12, E1 6, E6 6; exonyms X1 379, X7 250, X8 155, X4 65, X9 58, X3 53; changes P1 32, P5 28. Gold dragons call 31/34 peoples 'the mutes'; 12 reject it with the same story. Bugs: <code>names.py:622</code> "named after the {gloss}" with gloss starting "the"; <code>names.py:804</code> → "the land of the named after the the river" ×62; <code>names.py:359</code> "The" on seas → "Market The Black Sea"; <code>placenames.py:259</code> numbering "Loyings 2…5"; 530 such names.</li>
+<li>Places: rivers all named at 20 kyr (P2), 29/284 contain today's 'river', 28 'river river'. Six naming habits; -t'iheuweu &gt; -t'ibeuweu wear; median 8–9 letters. PEAK_MODS 6 for 203 peaks (<code>names.py:94</code>), seas 5 for 118 (:791); 262/573 lands 'the real people'; ruins "X's (town)" 858, "X's descendants" 836; 3 settlements per deme (<code>personal.py:74</code>); 232/233 own-line settlements unchanged since coining.</li>
+<li>Personal: given dithematic 299/single 200/phrase 122; byname patronymic 201/epithet 195/clan 151/matronymic 74; 23% opaque; 6 given + 2 full names per lect; one list of 10 phrase templates (<code>personal.py:52</code>); no GEN gram in any living lect so patronymics are bare SON+name; full name median 16 letters, p90 26, max 61.</li>
+<li>Gods: 116 faiths × 4 gods, 1515 names, 142 glosses ('the lord' 123, 'the holy one' 72); 97 faiths with a frozen liturgy, not rendered in the viewer. Common: holder "most mixed cities" d381.1 halfling; ending by site hash (<code>placenames.py:197</code>).</li>
+<li>Spelling: one spelling per phoneme per lect (268 lects with ʃ, 0 inconsistent); 8 inherited styles; diacritics 21.5% of names, ≥2 5.8%; "rr" for trill always (<code>romanization.tsv:62</code>, MERGES <code>romanize.py:142</code>), 31% of place names; "rh" 12.8%, apostrophe 8.2%, macron-below 84 names. Landmass endonym "Ndschemhttjjitschkukzzirr".</li>
+<li>Audio: eSpeak 'hi' table, 205 rows; 494 clips; <code>MAX_WORD_S = 1.0</code> (<code>speak.py:47</code>); no round-trip check (<code>audio.md:110</code>).</li>
+</ul>
+
+<h3>Engineering slice</h3>
+<ul>
+<li>Checks: thresholds unchanged since introduction (git log -S on HORIZON_RANGE, SIBLING_MIN, CLOSED_LOAN_MAX, AREAL_MIN, OVERUSE_*). Re-targeting happened in what is measured: proto check 70%→35–75% inside IQR (<code>checks.py:58-61</code>); horizon pairs→splits; sisters loose→strict; overuse exemptions (62e85b8e, <code>checks.py:319-331</code>). Emergent (7): sisters, horizon, living sizes, living segments, overuse, areal, word starts. Tautological/wiring (6): proto inventories, long generations, hubs (<code>checks.py:206</code>), WOLD (<code>lexicon.py:769-792</code>), contact kind (elite ×3–4 vs ≥1.5), doublets (0.7 vs ≥0.2). Invariants (3): typology, impossible segments, second voice. Trivial: shifts &gt; 0. Areal passes with no pairs (<code>checks.py:534,562</code>); TAIL_SHARE 0.3% (<code>checks.py:227</code>) hinges on one lect &gt; 42 consonants. <code>AREAL_K</code> ×10 after a negative reading (<code>history.py:118-122</code>), margin 0.014 vs 0.01. RATE_SCALE 220 "calibrated by the horizon check" (<code>lect.py:23</code>). Horizon band 6–10 vs owner's ~11 (<code>decisions.md:72</code>); viewer band <code>langview.js:377</code>.</li>
+<li>Benchmark: 32 s, deterministic; 3 of 7 real languages keep character (growth ≤0.5), Spanish +0.95, Arabic +1.02, mean 0.62; back harmony in 55–85% of daughters within 2.5 kyr; "simplification" in 95%; baseline stale (main 80d89894); <code>--record</code> writes into tools/language/data.</li>
+<li>Tests: 826 passed, 0 skipped, 70 s at -n 4, RSS 370 MB; 456 functions in 25 files; one slow test; ~35 statistical tests with nudged bars (homophones 0.24→0.25, replacement 2.5→2.2×, for-daniel.md:457, 1081); only overuse and typology checks unit-tested.</li>
+<li>Speed: a24559 580 s/1183 lects; de1cc6 518 s/938 lects, 9:15 wall, RSS 6.4 GB; steps 52%, document 67–69 s single-thread, sisters check 24 s. <code>WORKERS</code> default 1 from the viewer (<code>history.py:74</code>, PW-1639). Seeding <code>rng_for(seed, 986, crc32(key))</code> (<code>history.py:146-147</code>); stale-object refetch :459, :562. Byte-identical across passes except <code>constants.generation_overrides.spec</code> absolute path. de1cc6 <code>peoples_without_lects</code> lists kenku under "hybrids".</li>
+<li>Viewer: 7 tabs, ~1780 lines JS, hash routing, node-tested <code>langcore.js</code>, traversal-safe langserve; settlements only counted (<code>langmore.js:118</code>); defaults to a24559 (<code>langview.js:324</code>). <code>places_page.py</code> no argparse, humans only; <code>sisters_page.py:283-293</code> hardcodes lane-15 text.</li>
+<li>de1cc6 on current main: fails sisters 0.493, horizon 14.0, living sizes (0 lects &gt; 42 C, p95 36). lane17/before (minus 24dd520f) fails sisters 0.476 and overuse pf 12.4%, horizon 6.5 passes. 8 recorded de1cc6 passes: overuse fails 6/8 (ɖ, pf, ʁ), pronoun loans 4/8 (0.075–0.115). Sisters since lane 16: 0.476, 0.513, 0.476, 0.493 vs 0.53–0.55 before.</li>
+<li>Scripts: <code>scratchpad/assess/phon/</code> (m1–m21), <code>lex/</code> (a2–a21, lex.pkl), <code>gram/</code> (t3–t10), names scripts in <code>assess/</code>, de1cc6 output at <code>assess/de1cc6/de1cc6/languages.json</code>. Note: an <code>inspect.py</code> in <code>assess/</code> shadows the stdlib module for scripts run from that folder.</li>
+</ul>
+</details>
+</main>
+</body>
+</html>

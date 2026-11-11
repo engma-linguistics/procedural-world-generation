@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1011, PW-1549]
 refs: [viewer/globe/settlements.js, viewer/globe/select.js]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -27,3 +27,4 @@ Show what is there now, hide empty sections; grows as the other systems land.
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-settlement-view.md (found by coordinator).
+- 2026-11-11: Relates to the language finish line PW-1736: the settlement view is where names, isolates and on-demand names (PW-1742, PW-1743) show.

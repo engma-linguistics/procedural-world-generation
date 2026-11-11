@@ -3,7 +3,7 @@ id: PW-1685
 title: Place names are built from the founders' words as they are today, not as they were at the founding
 type: task
 status: todo
-parent: PW-767
+parent: PW-1736
 milestone: v4
 subsystem: peoples
 effort: m
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1658, PW-1654, PW-1656]
 refs: ["run a24559", "planet/language/personal.py::Personal.founding", "planet/language/personal.py::Personal._founder_lect", "planet/language/personal.py::Personal.settlement", "planet/language/names.py::Names.inherits", tools/language/places_page.py, runs/a24559/languages-snapshots.json]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -41,3 +41,5 @@ worn-down names that make old lands feel old, and the page misleads about whose 
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-place-names-coined-from-todays-words.md (found by coordinator (owner question, 2026-11-10)).
+- 2026-11-11: Moved under the language finish-line epic PW-1736 (assessment docs/review/language/assessment-2026-11-11.html; owner agreed 11-11).
+- 2026-11-11: PW-1547 merged in (same mechanism: names coined at their own date and aged through each language's sound changes since; covers river, peak and old personal names too). Assessment: 232 of 233 own-line settlements read exactly as coined.

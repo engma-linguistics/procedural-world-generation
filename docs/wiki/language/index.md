@@ -27,7 +27,7 @@ A pass over a finished peoples run. It grows every people's languages over the l
 - `planet make` runs the language pass by default. It takes about 10 minutes on a24559.
 - That run has 621 living varieties, grouped into 579 languages and 264 true families.
 - 16 of 17 realism checks pass. The one that fails, how far back scholars can trace families, you accepted.
-- Next: the place-names lane (names that wear down over time, feature names), then map labels and the settlement view.
+- Next: a short finish line (epic PW-1736, about two weeks), then the language work is done. See [what's open](status.md).
 
 More: [how it works](how-it-works.md), [what's open](status.md).
 
