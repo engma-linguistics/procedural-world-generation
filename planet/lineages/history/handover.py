@@ -22,6 +22,8 @@ At equal levels nothing here runs.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+
 import numpy as np
 
 from ... import nest as NE
@@ -215,46 +217,127 @@ def hand_over(h, ps, goods, si: int) -> None:
                 t["landmass"] = lab.get(t["landmass"], t["landmass"])
     # -- the brakes' seam (and polities in the history, PW-1434): made again on the fine grid; what is not per cell carried
     old = h.rule
-    grid_made = {"h", "g", "off", "idx", "src", "ekm", "cell_km2", "dist", "touched", "claimed", "r2a", "r2b", "r2off", "W", "_Fc"}
+    grid_made = {"h", "g", "off", "idx", "src", "ekm", "cell_km2", "dist", "touched", "claimed", "r2a", "r2b", "r2off", "W", "_Fc",
+                 "r_town", "r_city", "_ring_of", "inv_rows"}  # (the live polities' ring counts, HEMMED_KM ring table and invasion places: the fine grid's)
     h.rule = type(old)(h)
     for k, v in vars(old).items():
-        if k not in grid_made:
+        if k not in grid_made and k not in ("dcul", "dregions"):
             setattr(h.rule, k, R.auto(v))
+    # (the dragon cultures, PW-1687: made on the fine grid by the new rule, their record carried; a cell's label and settling time
+    # from its first parent. Carried whole, the coarse labels met the fine ranges at the next stored frame and the run stopped)
+    od, nd = getattr(old, "dcul", None), getattr(h.rule, "dcul", None)
+    if od is not None and nd is not None:
+        for k in ("info", "n_cul", "touch"):
+            setattr(nd, k, getattr(od, k))
+        nd.lab = {k: R.keep(v) for k, v in od.lab.items()}
+        nd.since = {k: R.keep(v) for k, v in od.since.items()}
+    if hasattr(old, "dregions"):
+        def _fine_cells(c):
+            m = np.zeros(R.nc, bool)
+            m[c] = True
+            return np.flatnonzero(R.keep(m))
+        h.rule.dregions = {k: [(key, _fine_cells(c)) for key, c in v] for k, v in old.dregions.items()}
     tech = getattr(h.rule, "tech", None)
     if tech is not None:
         tech.h = h
+        tech._G = tech._lm = None  # (its goods and landmass maps: made again from the fine world at the next read)
+        if getattr(tech, "_stored", None) is not None:  # (the presence as the last stored frame holds it: its fine cells from their first parent)
+            tech._stored = R.keep(tech._stored)
         if tech.towns is not None:
             tech.towns["_cell_km2"] = float(h.cell_mkm2 * 1e6)
     h.handover["people_after"] = float((np.where(h.p >= EST, h.p, 0) * Df)[~ov].sum() * cell_area_km2(R.nf))
 
 
-def regrid_frames(frames: list, coarse, fine) -> list:
-    """The stored frames before the cut, on the fine grid: every cell layer from the fine cell's first parent (the coarse history's
-    picture, cell for cell); the sparse presence likewise."""
-    R = Regrid(coarse, fine)
-    p0 = R.keep(np.arange(R.nc))
-    order = np.argsort(p0, kind="stable")
-    starts = np.searchsorted(p0[order], np.arange(R.nc + 1))
-    out = []
-    def keep(x):
-        if R.is_cells(x):
-            return R.keep(x)
+class _FrameRegrid:
+    """A stored frame's fields put on the fine grid: every cell layer from the fine cell's first parent (the coarse history's picture,
+    cell for cell); the sparse presence likewise."""
+
+    def __init__(self, coarse, fine):
+        self.R = R = Regrid(coarse, fine)
+        p0 = R.keep(np.arange(R.nc))
+        self.order = np.argsort(p0, kind="stable")
+        self.starts = np.searchsorted(p0[self.order], np.arange(R.nc + 1))
+
+    def keep(self, x):
+        if self.R.is_cells(x):
+            return self.R.keep(x)
         if isinstance(x, dict):
-            return {k: keep(v) for k, v in x.items()}
+            return {k: self.keep(v) for k, v in x.items()}
         if isinstance(x, (list, tuple)):
-            return type(x)(keep(v) for v in x)
+            return type(x)(self.keep(v) for v in x)
         return x
 
-    for f in frames:
-        pres = f.get("presence")
-        f = {k: (v if k == "presence" else keep(v)) for k, v in f.items()}
-        if pres is not None:
-            pl, pc, pv = pres
-            cnt = starts[pc + 1] - starts[pc]
-            rep = np.repeat(np.arange(len(pc)), cnt)
-            first = np.repeat(np.cumsum(cnt) - cnt, cnt)
-            kids = order[starts[pc][rep] + np.arange(len(rep)) - first].astype(pc.dtype)
-            o = np.lexsort((kids, pl[rep]))
-            f["presence"] = (pl[rep][o], kids[o], pv[rep][o])
-        out.append(f)
-    return out
+    def presence(self, pres):
+        if pres is None:
+            return None
+        pl, pc, pv = pres
+        order, starts = self.order, self.starts
+        cnt = starts[pc + 1] - starts[pc]
+        rep = np.repeat(np.arange(len(pc)), cnt)
+        first = np.repeat(np.cumsum(cnt) - cnt, cnt)
+        kids = order[starts[pc][rep] + np.arange(len(rep)) - first].astype(pc.dtype)
+        o = np.lexsort((kids, pl[rep]))
+        return pl[rep][o], kids[o], pv[rep][o]
+
+    def field(self, k, v):
+        return self.presence(v) if k == "presence" else self.keep(v)
+
+    def frame(self, f: dict) -> dict:
+        return {k: self.field(k, v) for k, v in f.items()}
+
+
+class _FineView(Mapping):
+    """One coarse stored frame read on the fine grid, field by field as asked (nothing kept: PW-1691)."""
+    __slots__ = ("_f", "_rg")
+
+    def __init__(self, f: dict, rg: _FrameRegrid):
+        self._f, self._rg = f, rg
+
+    def __getitem__(self, k):
+        return self._rg.field(k, self._f[k])
+
+    def __iter__(self):
+        return iter(self._f)
+
+    def __len__(self):
+        return len(self._f)
+
+
+class FineFrames(Sequence):
+    """The run's stored frames after the hand-over (PW-1691, lane 305): those stored before it stay on the coarse grid and are read on
+    the fine grid field by field (regrid_frames' values, made when read and not kept), those stored after it are kept as stored.
+    Eagerly regridded, the frames before the cut held 4x their L7 size (on a 2 Myr time zoom ~500 glacial frames: 69 GB peak
+    against 35.5 for 1 Myr; docs/review/timezoom/two-myr.md section 4). append() adds a frame stored after the cut."""
+
+    def __init__(self, frames: list, coarse, fine):
+        self._rg = _FrameRegrid(coarse, fine)
+        self._old = list(frames)
+        self._new: list = []
+
+    def __len__(self):
+        return len(self._old) + len(self._new)
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return [self[j] for j in range(*i.indices(len(self)))]
+        n = len(self)
+        if i < 0:
+            i += n
+        if not 0 <= i < n:
+            raise IndexError("frame index out of range")
+        return _FineView(self._old[i], self._rg) if i < len(self._old) else self._new[i - len(self._old)]
+
+    def __iter__(self):
+        for f in self._old:
+            yield _FineView(f, self._rg)
+        yield from self._new
+
+    def append(self, f: dict) -> None:
+        self._new.append(f)
+
+
+def regrid_frames(frames: list, coarse, fine) -> list:
+    """The stored frames before the cut, on the fine grid, made now (FineFrames reads them so when asked): every cell layer from the
+    fine cell's first parent (the coarse history's picture, cell for cell); the sparse presence likewise."""
+    rg = _FrameRegrid(coarse, fine)
+    return [rg.frame(f) for f in frames]
