@@ -575,3 +575,44 @@ tile store 0.00 ms an index (flat, no scan) and a section find of 0.11 ms (1 til
 the tiles of that world only (~0.05 ms a tile), never with ordinary zooms. A real build's other costs are unchanged.
 **Not a lookup yet:** `lod_build._section_dir` still globs the world's tile store (planet/zoom was lane 297's); inbox
 `draft-lod-build-find-sections-by-index.md`.
+
+## State (lane 299, 11-11: PW-1696 camera tilt; overlays on the ground)
+
+- **Camera** (`viewer/globe/dive.js`). Below 200 km the camera tilts toward the horizon as it comes down, turning about
+  the ground point at the screen's centre: 0 at 200 km to 75 degrees at 1.5 km over the ground (linear in the log of the
+  height, `lodmath.js::autoTilt`), at most 30 degrees a second. Right-drag, middle-drag or Shift/Ctrl/Alt-drag tilts it
+  by hand (up: toward the horizon; down: straight down) within a cap of 80 degrees that closes to 0 between 200 and
+  1,000 km (`capTilt`), so scrolling out always ends at the straight-down orbit. How: OrbitControls keeps the
+  straight-down ("nadir") camera; the tilt is put on after `controls.update()` and taken off before the next, so
+  OrbitControls never sees it; anything else that moves the camera is taken as the new nadir. Wheel: toward the cursor
+  as before, through the tilted camera. The least height is 0.3 km over the ground under the camera itself (the pivot
+  distance grows by 1/cos(tilt), raised at most 5% a frame). Plain drag still pans; no clicks.
+- **Ground** (`lodtiles.js::groundRadius`): now the drawn surface itself: a tile's own mesh (its 129 x 129 grid heights
+  as the vertex shader samples them, the grid's triangles between: `lodmath.js::gridHeights`, `meshHeightAt`), else the
+  globe cells' fan triangles, eased as the cell shader eases them. Checked against a raycast of the cell mesh, 300 points
+  round dba204's py.1.1: median 0.07 m, max 0.32 m (exaggerated metres; before the neighbour fallback, max 902 m).
+- **Overlays** (`viewer/globe/drape.js`). Every line overlay (rivers, human-use rivers, settlements, trade, peoples'
+  rings, zoom outlines, cell outlines, highlights, volcanoes...) is eased by the cells' factor in its vertex shader (a
+  uniform) at every height. That alone leaves them off the ground low down: the lift eases but stays and they stand at
+  cell heights, not tile heights. Measured (`float_km`, the points in view, dba204 at -4.08, 88.52, cell outlines on):
+  eased built overlays median 0.81 km off the drawn ground at 137 km, 3.04 km at 18 km and at 1.5 km (the zoom
+  outline's 0.012 lift), 0.37 km at 0.3 km. So below 300 km the built ones are hidden and draped copies drawn: each
+  segment cut into pieces 1.5% of their distance from the camera long, each point on the drawn ground, the line pulled
+  toward the camera by 0.3% of its distance in the shader (depth only). Draped: max 0.2 m off the ground at every shot.
+  Only segments in view are draped (region from the screen corners; rebuilt when the view leaves it, the height changes
+  1.6x, the tiles drawn change (at most every 0.3 s) or the overlays are rebuilt); the exaggeration's ease between 300
+  and 50 km is a uniform (no rebuild). Labels, the clouds' shell and the spin axis are hidden below 300 km (can't
+  follow). URL `?drape=0`, `?drapekm=`. There are no border lines on a world (polities are a colour layer) and no
+  settlements on dba204 (a plain world); both are line overlays on a peoples run and drape the same way (untested).
+- **Measured** (`tools/viewer_lod_dive.py 8799 dba204 OUT --view=-4.08,88.518 --cursor=0.5,0.5 --embed --q=&outlines=1`,
+  headless Chrome on the GPU, 1,600 x 1,000; scratch root, `--jobs 2 --threads 4`): every moving frame at the 60 fps cap
+  (231 of 231 down, 231 of 231 out); the largest per-frame turn of the view direction 0.504 degrees both ways (the tilt's
+  rate; lane 291's dive 1.03 degrees), of the camera's position 0.015; height ratio per frame at most 1.152. A frame
+  drawn back to back 0.2-0.4 ms (2,300-5,100 fps uncapped). Draping rebuilds: at most 7.8 ms during the dive with cell
+  outlines on (one of 28.7 ms at 0.3 km), at most 2.4 ms with the default overlays (rivers). Screenshots and reports:
+  `docs/review/zoom/lod-dive-299/` (138 km, 18 km tilted 34 degrees, 1.5 km tilted 63, tilted back by right-drag, tilted
+  up to 75 at 0.3 km with the horizon, back at orbit; `05_low_20km_drape_off.png` the same view with `?drape=0`).
+- **Not done.** The globe's river ribbons are cell-centre chords that don't follow the tiles' own rivers (inbox
+  `draft-lod-globe-river-ribbons-vs-tile-rivers.md`); double-click still starts a regional zoom (inbox
+  `draft-globe-double-click-starts-a-zoom.md`). 1-pixel lines near the horizon break into dashes (thin cell outlines
+  at grazing angles). Not tried on Daniel's own Chrome (PW-415). No heading (compass) turn: the tilt keeps north up.

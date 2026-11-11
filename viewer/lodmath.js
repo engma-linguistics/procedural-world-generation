@@ -101,3 +101,31 @@ export function exists(k, outline) {
   if (inside(outline, cx, cy)) return true;
   return segRectDist(outline, r) <= PAD_PX * resKm(k.level);
 }
+
+// ---- the tile mesh's ground (globe/lodtiles.js::groundRadius, PW-1696): the gn x gn grid's heights as the vertex
+// shader samples them from the n x n elevation (linear filtering, clamped to the edge, below the sea 0), and the height
+// at (u, v) on the grid's triangles ((i,j)-(i,j+1)-(i+1,j) and (i+1,j)-(i,j+1)-(i+1,j+1), as lodtiles' index has them)
+export function gridHeights(half, n, gn) {
+  const vh = new Float32Array(gn * gn), c = (k) => Math.min(n - 1, Math.max(0, k));
+  const at = (i, j) => Math.max(0, halfToFloat(half[c(j) * n + c(i)]));
+  for (let j = 0; j < gn; j++) for (let i = 0; i < gn; i++) {
+    const fx = i / (gn - 1) * n - 0.5, fy = j / (gn - 1) * n - 0.5, x0 = Math.floor(fx), y0 = Math.floor(fy), ax = fx - x0, ay = fy - y0;
+    vh[j * gn + i] = (1 - ay) * ((1 - ax) * at(x0, y0) + ax * at(x0 + 1, y0)) + ay * ((1 - ax) * at(x0, y0 + 1) + ax * at(x0 + 1, y0 + 1));
+  }
+  return vh;
+}
+export function meshHeightAt(vh, gn, u, v) {
+  const gx = Math.min(gn - 1 - 1e-9, Math.max(0, u * (gn - 1))), gy = Math.min(gn - 1 - 1e-9, Math.max(0, v * (gn - 1)));
+  const i = Math.floor(gx), j = Math.floor(gy), fu = gx - i, fv = gy - j, a = j * gn + i;
+  if (fu + fv <= 1) return vh[a] + fu * (vh[a + 1] - vh[a]) + fv * (vh[a + gn] - vh[a]);
+  return vh[a + gn + 1] + (1 - fu) * (vh[a + gn] - vh[a + gn + 1]) + (1 - fv) * (vh[a + 1] - vh[a + gn + 1]);
+}
+
+// ---- the globe camera's tilt toward the horizon (globe/dive.js, PW-1696), radians, by the height (km) of the straight-
+// down camera over the ground: the automatic tilt grows from 0 at AUTO_HI_KM to AUTO_DEG at AUTO_LO_KM (linear in the
+// log of the height: the same step per wheel notch); the user may tilt within a cap of MAX_DEG below CAP_LO_KM, closing
+// to 0 at CAP_HI_KM (so scrolling out always ends straight down)
+export const TILT = { AUTO_DEG: 75, AUTO_HI_KM: 200, AUTO_LO_KM: 1.5, MAX_DEG: 80, CAP_LO_KM: 200, CAP_HI_KM: 1000 };
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+export const autoTilt = (hKm) => TILT.AUTO_DEG * Math.PI / 180 * clamp01(Math.log(TILT.AUTO_HI_KM / hKm) / Math.log(TILT.AUTO_HI_KM / TILT.AUTO_LO_KM));
+export const capTilt = (hKm) => TILT.MAX_DEG * Math.PI / 180 * clamp01(Math.log(TILT.CAP_HI_KM / hKm) / Math.log(TILT.CAP_HI_KM / TILT.CAP_LO_KM));
