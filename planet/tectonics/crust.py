@@ -544,11 +544,13 @@ def rifted_margin(sim, lost, col, newc):
         sim.book("margin", 0, col.t, laid)
 
 
-def flow_and_orogeny(sim, col, edges, stack_add):
+def flow_and_orogeny(sim, col, edges, stack_add, trench=None):
     """Crustal flow: very thick crust is hot and weak at depth and spreads
     sideways (Tibet is doing this now), within a continent on one plate
     and across a collision (inner_edges). Faster the thicker it is, which
-    is why crust >~70 km is so rare.
+    is why crust >~70 km is so rare. A collapsing belt at the continent's
+    edge also spreads seaward (collapse_margin, margin_spread; trench: the
+    cells on either side of a subducting edge, which it doesn't cross).
     A diffusion: per-cell rates scale with 1/spacing^2, so finer grids
     take more (equally stable) substeps.
     Then collision belts are folded, faulted and metamorphosed wherever the
@@ -564,16 +566,60 @@ def flow_and_orogeny(sim, col, edges, stack_add):
         # and spreads (Dewey 1988; the Variscan and Basin and Range plateaus): its flow is (1 + collapse) x faster
         dead = sim.t - col.rec[:, record.T_FOLD] > p.collapse_delay
         mult = np.where(dead[edges[0]] & dead[edges[1]], 1.0 + p.collapse, 1.0)
+    ea, eb, out = edges[0], edges[1], None
+    if p.collapse > 0 and p.collapse_margin > 0 and trench is not None:
+        out = margin_edges(sim, col, dead, trench)
+        ea, eb = np.concatenate([ea, out[0]]), np.concatenate([eb, out[1]])
+        mult = np.concatenate([mult, np.full(len(out[0]), p.collapse_margin * (1.0 + p.collapse))])
     # (a hotter planet's crust is softer: mountains and plateaus can't stand as high)
-    t = crust_flow(col.t, edges[0], edges[1], p.crust_flow * sim.heat() ** 2 * dt / 3,
+    t = crust_flow(col.t, ea, eb, p.crust_flow * sim.heat() ** 2 * dt / 3,
                    int(round(3 * sim.scale**2 * sim.heat() ** 2)), mult)
     t = col.t = np.minimum(t, max_km(cont, col.cover, col.x))  # (PW-1446: the cap is on the column's height)
     sim.book("flow+cap", t0, t, cont)
+    if out is not None:
+        margin_spread(sim, col, *out)
+        cont = col.cont
     squeezed = cont & (stack_add > SQUEEZED * dt)
     rock[squeezed & (rock != CRATON)] = OROGEN
     record.fold(col.rec, col.lith, squeezed, stack_add, col.cover, t, sim.t)
     rock[(t > 50) & cont & (rock != CRATON) & (rock != ARC)] = OROGEN
     return squeezed
+
+
+def margin_edges(sim, col, dead, trench):
+    """Edges (continental cell, ocean cell) along which a collapsing belt spreads seaward (PW-1693): from a dead
+    continental cell (not folded for collapse_delay) to a neighbouring ocean cell of the same plate, neither at a
+    trench (a live margin is held up by its slab; its forearc notch is subduction erosion's), the ocean cell not a
+    hotspot pile. Gravitational collapse spreads a thick belt onto its foreland (Rey, Vanderhaeghe & Teyssier
+    2001, Tectonophysics 342:435): at a continent's edge the foreland is the plate's own ocean side."""
+    g, own, cont = sim.grid, sim.owner, col.cont
+    a, b = g.edges[:, 0], g.edges[:, 1]
+    fa, fb = cont[a] & ~cont[b], cont[b] & ~cont[a]
+    c, o = np.concatenate([a[fa], b[fb]]), np.concatenate([b[fa], a[fb]])
+    ok = (own[c] == own[o]) & dead[c] & ~trench[c] & ~trench[o] & (col.rock[o] != HOTSPOT)
+    return c[ok], o[ok]
+
+
+def margin_spread(sim, col, c, o):
+    """The ocean cells o that the belts c spread into (margin_edges) and that are now BECOMES_CONT_KM thick become
+    continental: thin extended crust with the belt's basement rock and age, rifted now (as rifted_margin lays a
+    margin), its strata kept. Booked "collapse.margin". In place on col (and sim.w_age)."""
+    grown = np.zeros(sim.grid.n, bool)
+    grown[o] = True
+    grown &= ~col.cont & (col.t >= BECOMES_CONT_KM)
+    if not grown.any():
+        return
+    src = np.zeros(sim.grid.n, np.int64)
+    src[o] = c  # (one belt cell for each: the last edge's)
+    w = np.flatnonzero(grown)
+    col.cont = col.cont.copy()
+    col.cont[w] = True
+    col.rock[w] = col.rock[src[w]]
+    age = sim.w_age.copy()
+    age[w] = age[src[w]]
+    sim.w_age = age
+    col.rec[w, record.T_RIFT] = sim.t
+    sim.book("collapse.margin", 0, col.t, grown)
 
 
 def coherence(sim, col, trench=None):

@@ -181,3 +181,55 @@ Stopped at the diagnosis and screen (tool-call budget). Nothing in `planet/` cha
 run. Inbox draft `draft-andean-area-sink-exhausts-thermostat.md` carries candidate 1. The L7 runs 2e1bc2,
 6286ce (seed 2) and 213321, 28d710 (seed 1) are kept under /data/personal/scratch/lane288/data/runs for the
 lane that builds candidate 1 (its baselines); the L6 runs were deleted.
+
+# Lane 292 (PW-1693): collapse that gives area back
+
+Lane 292, 2026-11-10. Base: main bb30e268 (run code as 5411930b: lane 288's merge adds docs and the scorecard's
+`late` block only). Baselines: lane 288's L7 runs on 5411930b (section 2.1, 2.4): 2e1bc2 (seed 2 on), 6286ce (seed 2
+off), 213321 (seed 1 on), 28d710 (seed 1 off), kept under /data/personal/scratch/lane288/data/runs.
+
+## 4. Design note (written before coding)
+
+### 4.1 What collapse does today
+
+- `flow_and_orogeny` (`planet/tectonics/crust.py:547-576`) runs `plate_kernels.crust_flow` (`plate_kernels.py:250-262`)
+  on the edges `inner_edges` gives it (`crust.py:168-189`): continental cells of one plate, plus collision edges
+  between two continents. A cell not folded for `collapse_delay` (20 Myr, `record.T_FOLD`) on both ends of an edge
+  flows (1 + `collapse`) = 31 times faster (`crust.py:559-564`).
+- Flow on those edges only moves crust between continental cells: volume kept, and no cell changes from ocean to
+  continent, so collapse is area-neutral. A dead belt at a continent's edge can only spread inward; the crust that
+  Andean closing stacked behind the trench (`andean_contraction`, `crust.py:271-330`, whose closed cells became
+  ocean) never gets that area back. The area it took is answered only by subduction erosion's thermostat, which
+  sits at its x0.2 floor (`crust.py:77`) on L7 seeds 1 and 2 (sections 2.2-2.4).
+
+### 4.2 The change (`collapse_margin`, default 0 first)
+
+In `flow_and_orogeny`, beside the inner edges, the edges from a dead continental cell to a neighbouring ocean cell
+of the same plate also flow, at the dead belt's rate times `collapse_margin` (1: as fast as inland). Not at a trench
+(either side of a subducting edge: a live Andean margin is held up by the slab, and its forearc notch is
+subduction erosion's), not into a hotspot pile. The kernel is unchanged, so flow only runs where the thicker side
+is over 40 km (`crust_flow`'s x = (t - 40)/10): only thick dead belts spread out, a normal 35 km coast does not.
+An ocean cell filled to `BECOMES_CONT_KM` (20 km) becomes continental crust there and then: thin, extended crust
+(the belt's basement rock, its rift time set now, as `rifted_margin` lays one), booked as "collapse.margin". Crust
+in a cell not yet filled sits on the ocean floor until it fills (booked out with "flow+cap"). Volume is kept;
+area grows by the cells the spreading belt fills, so a run that loses area to shortening gets some back where
+the shortened crust collapses.
+
+### 4.3 Why it is physical
+
+Gravitational collapse is the decay of the lateral contrast in gravitational potential energy a thickened belt
+holds (Rey, Vanderhaeghe & Teyssier 2001, "Gravitational collapse of the continental crust: definition, regimes
+and modes", Tectonophysics 342(3-4):435-449, doi:10.1016/S0040-1951(01)00174-3; abstract read on the
+repository.geologyscience.ru record): in fixed-boundary divergent collapse the orogen grows laterally at the
+expense of its forelands (brittle gravitational sliding plus horizontal spreading of the lower crust); in
+free-boundary collapse the thick crust thins homogeneously. Either way the belt's crust ends up wider: the area
+shortening took is given back by extension (Dewey 1988, already the model's collapse source). A thick dead belt
+whose foreland is the ocean side of its own plate is the free side; its spreading moves the continent's edge
+seaward as thin extended crust, which is what the change lets the flow do. It is a feedback on thickness itself
+(only crust over 40 km spreads), not on a global area target, and it does not touch the thermostat's clamp.
+
+### 4.4 Screen bar
+
+L7 seeds 1 and 2 to 1 Gyr, `collapse_margin=1`, against the on arms 2e1bc2 / 213321, medians over 600-1000 Myr
+(`l7_high_ground.py`): the area thermostat off its floor; land above 3 and 4 km down toward the off arms (6286ce,
+28d710); the Andes share of land above 3 km kept (on arms 19.2% / 24.7%).

@@ -337,7 +337,9 @@ class Simulation:
         col.t = volcanism.volcanoes(self, growth, col.t, rng)
         self.book("volcano", t0, col.t, col.cont)
         crust.stretch(self, col, stretch, plume, newc, stack_add)
-        squeezed = crust.flow_and_orogeny(self, col, edges, stack_add)
+        trench = np.zeros(self.grid.n, bool)
+        trench[bd.sinking] = trench[bd.overriding] = True
+        squeezed = crust.flow_and_orogeny(self, col, edges, stack_add, trench)
 
         # weather, ice, rivers, erosion, sediment
         # (the climate's random drift has its own stream: changes to how many
@@ -353,8 +355,6 @@ class Simulation:
         earth.reefs(self, col, dep, chem)
         col.rec[self.ice > 0, record.T_ICE] = self.t
 
-        trench = np.zeros(self.grid.n, bool)
-        trench[bd.sinking] = trench[bd.overriding] = True
         crust.coherence(self, col, trench)
         born = crust.birth_and_cratons(self, col, arcky, squeezed)
         self._write_back(col, born)
