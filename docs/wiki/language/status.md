@@ -19,26 +19,26 @@
 
 ## For agents
 
-### Checks on a24559 (lane 16 rebuild, 2026-11-10)
+### Checks on a24559 (lane 17 rebuild, 2026-11-11; 623 living, 571 languages)
 | Check | Value | Target | Pass |
 |---|---|---|---|
 | proto inventories vs PHOIBLE | C 0.51 / V 0.54 in IQR | medians in PHOIBLE IQR, 35–75% inside | yes |
-| sisters recognisable, distant not | siblings 0.5605, cross-family 0.0003 | > 0.5 / < 0.15 | yes |
-| scholars' horizon | human 17.0 kyr (16.0 overall) | 6–10 kyr | **no** (accepted; swings 4.5–19 with seed) |
-| language shift happened | 148 shifts, 91 living off descent | > 0 | yes |
-| long generations change less | human 14.8 rules/kyr | long-lived < 1/3 | yes |
-| hubs simpler, isolated richer | 15.5 vs 19.1 | hubs < isolated | yes |
+| sisters recognisable, distant not | siblings 0.606, cross-family 0.0003 | > 0.5 / < 0.15 | yes |
+| scholars' horizon | human 13.5 kyr (logistic 14.9) | 6–10 kyr | **no** (accepted; swings 4.5–19 with seed) |
+| language shift happened | 145 shifts, 93 living off descent | > 0 | yes |
+| long generations change less | human 14.2 rules/kyr, ratio 4.1 | long-lived < 1/3 | yes |
+| hubs simpler, isolated richer | 16.0 vs 18.5 | hubs < isolated | yes |
 | living inventory sizes vs PHOIBLE | — | medians/quartiles within tolerance | yes |
 | living segment frequencies | top-20 overlap 16 | ≥ 12 | yes |
-| overused segments | none (worst ɖ 2.4x) | none > 10% and > 3x | yes |
+| overused segments | none (worst ɖ 3.0x) | none > 10% and > 3x | yes |
 | typology agrees with live grams | 0 clashes | 0 | yes |
-| loans follow WOLD borrowability | rho 0.48, pronoun loans 0.063 | rho ≥ 0.3, ≤ 0.08 | yes |
-| areal signal | near − far 0.014 | ≥ 0.01 | yes |
+| loans follow WOLD borrowability | rho 0.50, pronoun loans 0.059 | rho ≥ 0.3, ≤ 0.08 | yes |
+| areal signal | near − far 0.017 | ≥ 0.01 | yes |
 | no impossible segments | 0 | 0 | yes |
 | second voice only with a syrinx | 0 | 0 | yes |
 | loans follow contact kind | — | elite prestige ≥ 1.5x | yes |
 | doublets under elite rule | — | ≥ 0.2 | yes |
-| word starts vs NorthEuraLex | l 6.5 / h 6.2 / i 4.8 / m 4.1% | p10–p90 per class | yes |
+| word starts vs NorthEuraLex | labial median 18.6%, liquid 8.4% | p10–p90 per class | yes |
 
 The **real-language benchmark** (PW-1641) is outside `checks.py`. Run `tools/language/real_inventory.py --check`. It seeds protos with real inventories or toolkits and measures what comes out. Its gaps are now-work, per the owner's 11-10 ruling.
 

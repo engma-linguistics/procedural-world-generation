@@ -1,6 +1,6 @@
 # Languages
 
-*Last updated 2026-11-11 (after lane 16; lane 17 running). Each page here has a short part for Daniel on top and a longer part for agents below the line.*
+*Last updated 2026-11-11 (after lane 17). Each page here has a short part for Daniel on top and a longer part for agents below the line.*
 
 ## What it is
 
@@ -25,7 +25,7 @@ A pass over a finished peoples run. It grows every people's languages over the l
 ## Where it stands
 
 - `planet make` runs the language pass by default. It takes about 10 minutes on a24559.
-- That run has 621 living varieties, grouped into 579 languages and 264 true families.
+- That run has 623 living varieties, grouped into 571 languages.
 - 16 of 17 realism checks pass. The one that fails, how far back scholars can trace families, you accepted.
 - Next: a short finish line (epic PW-1736, about two weeks), then the language work is done. See [what's open](status.md).
 
