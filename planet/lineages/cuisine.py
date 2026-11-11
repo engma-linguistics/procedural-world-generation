@@ -248,7 +248,14 @@ def profile(ctx, i: int, era: float, c: int, mask: np.ndarray | None = None) -> 
             "crops": {k: v for k, v in crops_known.items() if k not in forbidden}, "staple_crops": [k for k in crops_known if cst.get(k, {}).get("weight", 0) > 0 and k not in forbidden],
             "herds": {k: v for k, v in herds_known.items() if k not in forbidden and k != "dog"}, "dairy": dairy, "fuel": _fuel_lead(ctx, i, era, land),
             "faith": _faith(ctx, c, era), "taboos": tab, "food_taboos": food_tab, "forbidden": sorted(forbidden), "cells": int(land.sum()),
-            "traits": C.get("traits") or {}, "off_ladder": off, "coastal": bool(set(line.get("traits") or []) & {"coastal", "swims", "seafaring"})}
+            "traits": C.get("traits") or {}, "off_ladder": off, "coastal": bool(set(line.get("traits") or []) & {"coastal", "swims", "seafaring"}),
+            "line_traits": list(line.get("traits") or []), "tree_techs": _tree_techs(ctx)}
+
+
+def _tree_techs(ctx) -> set | None:
+    """The tech ids of the run's tree (None on a run without one: then no keeping method is gated by a tech, keeping.py)."""
+    T = (ctx.meta.get("techtree") or {}).get("techs")
+    return {t.get("id") for t in T} if T else None
 
 
 # -- the five answers -------------------------------------------------------------------------------------------------------
@@ -516,7 +523,14 @@ def sheet(ctx, brief: dict, c: int, i: int, era: float) -> dict:
             "fuel": fuel(ctx, brief, p, bi), "staple": staple(ctx, brief, p, bi), "drink": drink(ctx, brief, p, bi),
             "who_eats_together": who_eats_together(ctx, brief, p, mask, era), "outsiders_get_wrong": outsiders(ctx, i, era, p, others),
             "wont_eat": wont_eat(p), "food_fit": food_fit(p), "goods": goods(ctx, c, i), "bought_in": bought_in(bi),
+            **keeping(brief, p),
             "basis": "rule-based from this run at this era (cuisine.py); every line is for the culinary side to overrule"}
+
+
+def keeping(brief: dict, p: dict) -> dict:
+    """How the culture keeps its food and how its kitchen tastes (keeping.py, PW-744, PW-1715): {"preservation", "flavour"}."""
+    from . import keeping as KP
+    return KP.of(brief, p)
 
 
 def bought_in(bi: dict | None) -> dict | None:
@@ -558,6 +572,19 @@ def markdown(s: dict, era: float) -> list[str]:
             t.append(f"  - {r['label']} ({r['scope']}; {r['origin']}: {r['why']})")
     else:
         t.append("- Won't eat: nothing forbidden")
+    if s.get("preservation"):
+        k = s["preservation"]
+        t.append(f"- Keeping food: {k['text']}")
+        for m in k["methods"][:6]:
+            t.append(f"  - {m['label']} ~{max(1, round(100 * m['share']))}% ({m['what']}): because " + "; ".join(m["reasons"]))
+        if k["absent"]:
+            t.append("  - not yet: " + "; ".join(f"{a['label']} ({a['why']})" for a in k["absent"]))
+    if s.get("flavour"):
+        fl = s["flavour"]
+        t.append(f"- Flavour: {fl['descriptor']}")
+        for a, v in fl["axes"].items():
+            if v["level"] != "none":
+                t.append(f"  - {a}: {v['level']} ({v['value']}): because " + "; ".join(v["reasons"]))
     if s.get("food_fit"):
         t.append(f"- Body and food ({cu['people_name']}): {s['food_fit']['text']}")
     t.append(f"- Ways of life: farm {w.get('farm')}, herd {w.get('herd')}, wild {w.get('forage')}" + (f" ({w['note']})" if w.get("note") else "")

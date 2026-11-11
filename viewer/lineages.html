@@ -287,7 +287,7 @@ const FOOT = {
     thousand years (sooner for a cohesive kind), or once their people has cities or written law and one state could hold both. Names are placeholders.
     The bar is the culture's life on a log time axis; "map" opens the globe there.`,
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
-  brief: 'The culinary brief of the run picked in Results: pick a people (its range for a cook) or one culture of it (its food sheet: fuel, staple, drink, who eats together, what outsiders get wrong, what it will not eat), and an era. With a culture picked, "Trade: goods" below the sheet lists what its land gives beyond its own need and what it lacks (the goods ledger, PW-1502), where each lacked good comes from and where each spare good goes, and its trading partners (the exchange, PW-1503).',
+  brief: 'The culinary brief of the run picked in Results: pick a people (its range for a cook) or one culture of it (its food sheet: fuel, staple, drink, who eats together, what outsiders get wrong, what it will not eat), and an era. With a culture picked, "Flavour" shows its kitchen on ten tastes and "Keeping food" how it preserves what it eats, each row with its reasons (hover, or the why column). With a culture picked, "Trade: goods" below the sheet lists what its land gives beyond its own need and what it lacks (the goods ledger, PW-1502), where each lacked good comes from and where each spare good goes, and its trading partners (the exchange, PW-1503).',
   religion: 'Gods, faiths and taboos of the run picked in Results (readouts: they never change the history).',  // (each view writes its own footer: religiontab.js)
   polities: 'Invasions you schedule and what came of them, beside the incursions the history found (invasiontab.js writes the rest).',
   results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
@@ -1195,9 +1195,10 @@ async function drawBrief() {
     <button id="brShow" class="primary">Show the brief</button><button id="brCopy">Copy text</button><button id="brJson">Download JSON</button>
     <span class="muted">run ${esc(result.id)}</span></div>
     <pre id="brText" style="white-space:pre-wrap;margin:0;font:12px/1.45 ui-monospace,monospace;max-width:1000px">${esc(briefUI.md || 'Press "Show the brief".')}</pre>
+    <div id="brKeep" style="margin-top:14px;max-width:1000px"></div>
     <div id="brTrade" style="margin-top:14px;max-width:1000px"></div>
     <div id="brTongues" style="margin-top:14px;max-width:1000px"></div>`;
-  drawTradeGoods();
+  drawTradeGoods(); drawKeeping();
   $('brPeople').onchange = (e) => { briefUI.people = e.target.value; briefUI.culture = ''; briefUI.md = ''; drawBrief(); };
   $('brCulture').onchange = (e) => { briefUI.culture = e.target.value; loadBrief(); };
   $('brEra').onchange = (e) => { briefUI.era = Math.max(0, +e.target.value || 0); briefUI.md = ''; drawBrief(); };
@@ -1220,7 +1221,28 @@ async function loadBrief() {
     briefUI.md = j.markdown; briefUI.json = j.brief; briefUI.era = Math.max(0, +$('brEra').value || 0);
     if ($('brText')) $('brText').textContent = j.markdown;
   } catch (err) { if ($('brText')) $('brText').textContent = 'Could not build the brief: ' + err.message; }
-  drawTradeGoods();
+  drawTradeGoods(); drawKeeping();
+}
+// ---- Flavour and keeping (the culture's cuisine sheet: planet/lineages/keeping.py, PW-1715, PW-744): each bar and row says why on hover
+const FLAVOUR_WORD = { salty: 'salty', sour: 'sour', umami: 'savoury (umami)', fatty: 'fatty', hot: 'hot and pungent', smoky: 'smoky', sweet: 'sweet', bitter: 'bitter', funk: 'funky (fermented)', herbal: 'herbal' };
+function drawKeeping() {
+  const el = $('brKeep');
+  if (!el) return;
+  const cz = briefUI.culture && briefUI.json?.cuisine;
+  if (!cz || !cz.flavour || !cz.preservation) { el.innerHTML = ''; return; }
+  const fl = cz.flavour, kp = cz.preservation;
+  const bar = (v, c) => `<span style="display:inline-block;width:${Math.round(120 * Math.min(1, v))}px;height:9px;background:${c};border-radius:2px;vertical-align:middle"></span>`;
+  const because = (rs) => (rs && rs.length ? 'because ' + rs.join('; ') : '');
+  const axes = Object.entries(fl.axes).map(([a, v]) => `<tr title="${esc(because(v.reasons))}"><td>${esc(FLAVOUR_WORD[a] || a)}</td><td>${esc(v.level)}</td><td>${bar(v.value, '#b0703c')}</td><td class="muted" style="font-size:11px">${esc(because(v.reasons))}</td></tr>`).join('');
+  const meth = kp.methods.map((m) => `<tr title="${esc(because(m.reasons))}"><td>${esc(m.label)}</td><td class="n">~${Math.max(1, Math.round(100 * m.share))}%</td><td>${bar(m.share / Math.max(0.01, kp.preserved_share), '#4f7fae')}</td><td class="muted" style="font-size:11px">${esc(m.what)}; ${esc(because(m.reasons))}</td></tr>`).join('');
+  const absent = kp.absent.length ? `<p class="muted" style="margin:4px 0 0;font-size:12px">Not yet: ${kp.absent.map((a) => `${esc(a.label)} (${esc(a.why)})`).join('; ')}</p>` : '';
+  el.innerHTML = `<h3 style="margin:0 0 4px">Flavour</h3>
+    <p style="margin:0 0 6px"><b>${esc(fl.descriptor)}</b></p>
+    <table class="t" style="min-width:420px"><tr><th>taste</th><th>level</th><th></th><th>why</th></tr>${axes}</table>
+    <h3 style="margin:12px 0 4px">Keeping food</h3>
+    <p style="margin:0 0 6px" title="${esc(kp.preserved_why)}">About ${Math.round(100 * kp.preserved_share)}% of what it eats is kept food (because ${esc(kp.preserved_why)}). Shares are of all its food, rough.</p>
+    <table class="t" style="min-width:420px"><tr><th>method</th><th class="n">share</th><th></th><th>what, and why</th></tr>${meth}</table>${absent}
+    <p class="muted" style="margin:4px 0 0;font-size:11px">${esc(fl.basis)}</p>`;
 }
 // ---- Trade: goods (GET /api/trade: planet/lineages/trade.py, the goods ledger, PW-1502) -----------------------------------------------
 const tradeUI = { key: '', doc: null, busy: false };
