@@ -610,9 +610,14 @@ def world_layers(grid, L: dict) -> dict:
 # ---------------------------------------------------------------------------
 # Zooms
 # ---------------------------------------------------------------------------
-def analyse_zoom(L: dict, res_km: float, falls_px=()) -> tuple[dict, dict]:
+ZOOM_PARTS = ("nav", "harbour", "pass", "fertile", "fresh")
+
+
+def analyse_zoom(L: dict, res_km: float, falls_px=(), parts=ZOOM_PARTS) -> tuple[dict, dict]:
     """(layers (ny, nx), tables) of a zoom from its decoded layers L (2-D arrays). falls_px: (row, col) of
-    waterfalls, native pixels. Subsets whose inputs are missing are left out."""
+    waterfalls, native pixels. Subsets whose inputs are missing are left out. parts: which of ZOOM_PARTS to
+    make (river_nav; harbour; pass and pass_height; fertile and fertile_score; fresh_water, fresh_km and spring):
+    the fine zooms make the pixel-scale ones at their pixels and the region-scale ones on a coarser grid."""
     out, tab = {}, {}
     el = np.asarray(L["elevation"], float)
     ny, nx = el.shape
@@ -626,7 +631,7 @@ def analyse_zoom(L: dict, res_km: float, falls_px=()) -> tuple[dict, dict]:
     tn = np.asarray(L.get("temperature_jan", L.get("temperature", 0 * el)), float).ravel()
     tw, tc = np.maximum(tj, tn), np.minimum(tj, tn)
     precip = np.asarray(L.get("precipitation", 600 + 0 * el), float).ravel()
-    if "receiver" in L:
+    if "receiver" in L and "nav" in parts:
         lake_z = ez + np.asarray(L.get("lake_depth", 0 * el), float).ravel()
         zs = np.where(water == 2, lake_z, ez)
         fmask = np.zeros(net.n, bool)
@@ -640,8 +645,9 @@ def analyse_zoom(L: dict, res_km: float, falls_px=()) -> tuple[dict, dict]:
         tab["nav"] = {"cls": cls, "q": q, "grad": grad, "open": openm, "conn": conn}
     sea = water == 1
     # (a harbour is reached from the open sea: not in a pit of sea cut off inside the zoom, PW-844)
-    near = _coast_nodes(net, land, 3) & open_sea(sea.reshape(ny, nx), res_km).ravel()
-    out["harbour"] = np.zeros((ny, nx), np.uint8)  # always present (all 0 for an inland zoom): the viewer indexes it unconditionally
+    near = (_coast_nodes(net, land, 3) & open_sea(sea.reshape(ny, nx), res_km).ravel()) if "harbour" in parts else np.zeros(net.n, bool)
+    if "harbour" in parts:
+        out["harbour"] = np.zeros((ny, nx), np.uint8)  # always present (all 0 for an inland zoom): the viewer indexes it unconditionally
     if near.any():
         pix = np.flatnonzero(near)
         fe, reach = fetch_raster(land.reshape(ny, nx), pix, res_km, HARBOUR_FETCH_KM)
@@ -654,7 +660,7 @@ def analyse_zoom(L: dict, res_km: float, falls_px=()) -> tuple[dict, dict]:
         out["harbour"] = hcls.reshape(ny, nx)
         tab["harbour"] = {"cls": hcls, "shelter": shelter, "fetch_km": full, "ice_months": ice_m, "q_mouth": qm, "depth": depth,
                           "reach_km": reach}
-    if "receiver" in L:
+    if "receiver" in L and "pass" in parts:
         ps = passes(net, ez, land, tw, tc, precip)
         pc, ph = np.zeros(net.n, np.uint8), np.zeros(net.n)
         for p in ps:
@@ -662,7 +668,7 @@ def analyse_zoom(L: dict, res_km: float, falls_px=()) -> tuple[dict, dict]:
             ph[p["node"]] = p["height"]
         out["pass"], out["pass_height"] = pc.reshape(ny, nx), np.round(ph).astype(int).reshape(ny, nx)
         tab["passes"] = ps
-    if "soil_fertility" in L:
+    if "soil_fertility" in L and "fertile" in parts:
         pet = holdridge_pet(tw, tc)
         arid_zone = precip < pet
         moist = np.clip(precip / np.maximum(pet, 1.0), 0, 1)
@@ -675,6 +681,9 @@ def analyse_zoom(L: dict, res_km: float, falls_px=()) -> tuple[dict, dict]:
         score, fc = fertile(g("soil_fertility"), g("soil_depth"), moist, grow, sl, land, ice, g("permafrost"),
                             g("peat_depth"), 100.0 * (g("wetland") == 2))
         out["fertile"], out["fertile_score"] = fc.reshape(ny, nx), np.round(100 * score).astype(int).reshape(ny, nx)
+    tab["net"] = net
+    if "fresh" not in parts:
+        return out, tab
     fresh_lake = (water == 2) & (np.asarray(L.get("lake_kind", np.ones_like(el))).ravel() != 2)
     arid = precip < ARID_MM
     river = land & ((q >= RIVER_PERENNIAL_Q["zoom"]) & (~arid | (q >= ARID_Q)))
@@ -701,8 +710,8 @@ def falls_pixels(falls, fr, nx: int, ny: int, res_km: float) -> list[tuple[int, 
     return out
 
 
-def zoom_layers(L: dict, res_km: float, falls_px=()) -> dict:
-    return analyse_zoom(L, res_km, falls_px)[0]
+def zoom_layers(L: dict, res_km: float, falls_px=(), parts=ZOOM_PARTS) -> dict:
+    return analyse_zoom(L, res_km, falls_px, parts)[0]
 
 
 def zoom_layer_doc() -> dict:
