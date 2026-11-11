@@ -183,3 +183,11 @@ def test_free_ram_on_a_mac(monkeypatch):
 @pytest.mark.skipif(not Path("/proc/meminfo").exists(), reason="not Linux")
 def test_free_ram_on_linux():
     assert api.free_ram_gb() > 0
+
+
+def test_cgroup_room_reads_the_cap_and_ignores_uncapped():
+    """PW-1731: inside a systemd-run MemoryMax scope the RAM guard sees the cap's room, not the host's free RAM."""
+    from planet import api
+    assert api.parse_cgroup_room("max\n", "123\n") is None
+    assert abs(api.parse_cgroup_room("24000000000\n", "4000000000\n") - 20.0) < 1e-9
+    assert api.parse_cgroup_room("1000\n", "5000\n") == 0.0
