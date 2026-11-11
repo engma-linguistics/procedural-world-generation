@@ -19,10 +19,10 @@ hazard and war_v0), and then:
   expedition across the gap (polities._expedition, invasions.campaign_budget), the same code as polities.derive.
 
 What the history lacks, and how this cut stands in (round7.md section 2):
-- towns: the settlement ledger is made after the run, so a seat is the history's own central place: the sedentary heads of a cell's
-  hinterland (farmers: heads x the people's farm share) x the ledger's SHARE x the ledger's site factor (a harbour on a coast that is
-  still a coast, a navigable river, fresh water, fertile ground, a pass: settlements._site_factor, PW-1587), at a cell that is the
-  best of its ring by the same score, as settlements.py sizes its towns and cities. A seat is a state where its place, of either tier,
+- towns: the settlement ledger is made after the run, so the history keeps the ledger's rule on its own inputs (town_cells, PW-1608:
+  the chief place and a second people's own place per cell, with the ledger's site factor, settlements._site_factor, PW-1587, its
+  halls and fishers); the seats (PW-1596, round24.md) and the confederations (PW-1671, round26.md) read those places as at the end
+  of the last step. A seat is a state where its place, of either tier,
   reaches a city's size less HEMMED_X x how hemmed in the seat is over its own two rings (polities._hemmed's reading), as derive tests
   a site's people; the ledger caps a town under a city's size, so a town passes only where it is hemmed in (PW-1594);
 - the tech calendar: the tech tree runs inside the history (history.tech_live, PW-1466, round8.md): each step it runs down to the
@@ -239,13 +239,6 @@ class LivePolities(StandIns):
             lead[m] = k
         return sed, lead, heads
 
-    def _site(self):
-        """Each cell's site factor now (settlements._site_factor, the ledger's own: 1 an ordinary inland cell; a harbour counts only
-        on a cell that is a coast at this time)."""
-        land = np.asarray(self.h._env_now["land"], bool)
-        coastal = land & (nbr_reduce(self.g, np.maximum, (~land)[self.idx].astype(np.int8)) > 0)
-        return self.SE._site_factor(self.W, coastal, self.SE.CONST, self.SE.coast_harbour(self.g, self.W["harbour"], ~land, coastal))
-
     def _hin(self, v, r):
         """The sum of v over each cell's cells within r rings (the cell itself included): a town's or a city's hinterland."""
         if r == 1:  # (the one-ring sum as it always was, so L7 is unchanged to the bit)
@@ -260,40 +253,6 @@ class LivePolities(StandIns):
         for _ in range(r):
             v = np.maximum(v, nbr_reduce(self.g, np.maximum, v[self.idx]))
         return v
-
-    def _places(self, sed, q):
-        """(the size of each cell's central place, town or city; the city size alone): settlements' SHARE on the hinterland's sedentary
-        heads (TOWN_KM for a town, CITY_KM for a city) x the cell's site factor q, at a cell that is the best of its ring by that score
-        (as the ledger), else 0."""
-        from ..settlements import CONST
-        g = self.g
-        tie = 1.0 + 1e-9 * (g.n - np.arange(g.n)) / g.n  # (equal hinterlands: the lower cell id is the best of its ring)
-        H1, H2 = self._hin(sed, self.r_town) * q * tie, self._hin(sed, self.r_city) * q * tie
-        mx1, mx2 = self._ringmax(H1, self.r_town), self._ringmax(H2, self.r_city)
-        town = np.where(H1 >= mx1, CONST["SHARE"][2] * H1, 0.0)
-        city = np.where(H2 >= mx2, CONST["SHARE"][3] * H2, 0.0)
-        return np.maximum(town, city), city
-
-    def _second_places(self, heads, lead, q):
-        """(each cell's second people's own place, as the settlement ledger sizes it: MINORITY_SHARE of its settled heads, saturating
-        toward MINORITY_MAX, x the cell's site factor q, where it is SECOND_MIN of the cell's heads or more and not the lead people's
-        own kin; that people, -1 none). No fishers or holds."""
-        from ..settlements import CONST
-        n = self.g.n
-        L = self.h.lines
-        tot = np.zeros(n)
-        for hk in heads.values():
-            tot += hk
-        best, second = np.zeros(n), np.full(n, -1, np.int64)
-        for k, hk in heads.items():
-            kin = np.array([j >= 0 and (L[j].id in self.anc.get(L[k].id, {L[k].id}) or L[k].id in self.anc.get(L[j].id, ())) for j in range(-1, len(L))])
-            m = (hk > best) & ~kin[lead + 1]
-            best[m], second[m] = hk[m], k
-        ok = (second >= 0) & (best >= CONST["SECOND_MIN"] * np.maximum(tot, 1e-12))
-        farm = np.array([0.0 if self.h._era[k] == "forager" else float(self.h._farm_share[k]) for k in range(len(L))] + [0.0])
-        own = np.where(ok, CONST["MINORITY_SHARE"] * best * farm[second], 0.0)
-        own = own * CONST["MINORITY_MAX"] / (own + CONST["MINORITY_MAX"]) * q
-        return own, np.where(ok, second, -1)
 
     def _hem_local(self, c, k, people, ago, land, ice, el) -> float:
         """How hemmed in the seat at cell c is, 0..1, as the read-out reads it (polities._hemmed): over the cells within HEMMED_KM of it,
@@ -534,11 +493,6 @@ class LivePolities(StandIns):
             n_fell += 1
         # 1. town seats: the history's central places (settlements' SHARE on the hinterland's sedentary heads, the best of its ring)
         from ..settlements import CONST
-        q = self._site()  # (PW-1587: the ledger's site factor; without it the history had about as many cities as a ledger without it)
-        size, _ = self._places(sed, q)
-        own, second = self._second_places(heads, lead, q)  # (PW-1583: a second people's own place, as the ledger's minority places)
-        m = own > size  # (the confederations' places, 1b: the bigger place per cell and its people)
-        size, hold = np.where(m, own, size), np.where(m, second, lead)
         city_min = float(CONST["CITY_MIN"])
         inc = np.zeros(g.n, bool)
         inc[np.array([int(k[1:]) for k in self.prev_cap if k.startswith("c")], np.int64)] = True
@@ -575,10 +529,11 @@ class LivePolities(StandIns):
             self.founded.setdefault(key, ago)
             seats.append({"key": key, "cell": c, "people": ppl, "line": k, "uid": None, "pop": float(seat_pop[c]), "tier": tier,
                           "cls": 0 if strong else (2 if tier == "state" else 3), "rank": float(seat_pop[c]) * (PO.INCUMBENT if key in self.prev_cap else 1.0)})
-        # 1b. confederations (polities' step 1b, Turchin 2009's mirror empires, PW-1583): the read-out's rule on the history's own places
+        # 1b. confederations (polities' step 1b, Turchin 2009's mirror empires, PW-1583): the read-out's rule on the ledger's places
+        # (PW-1671: town_cells' sites, as the seats; before, the history's own central places, without the ledger's halls, fishers or
+        # a second people's place under the lead's: on L7 899985 seed 7 about half the read-out's confederations, round25.md)
         if PO.CONFED and self.owner is not None:
-            place = np.where(peopled & land, np.maximum(CONST["SHARE"][1] * sed * q, size), 0.0)
-            seats = self._confederations(seats, place, hold, ago, k_, peopled, edz, sea, ice, city_min)
+            seats = self._confederations(seats, *self._ledger_places(), ago, k_, peopled, edz, sea, ice, city_min)
         # 2. dragon realms: one per dragon people's range (each connected piece), at its core
         for k in self.dragons:
             l = L[k]
@@ -757,13 +712,24 @@ class LivePolities(StandIns):
         self.prev_cap = cur
         self._Fc = None  # (the frontier reads the new owners)
 
-    def _confederations(self, seats, place, lead, ago, k_, peopled, edz, sea, ice, city_min) -> list:
+    def _ledger_places(self) -> tuple:
+        """(per slot and cell, shape (2, n): the people in town_cells' living place there, the chief place (0) and a second people's
+        own place (1), any size, 0 none; its holder line, -1 none): the ledger's places as at the end of the last step."""
+        n = self.g.n
+        st = getattr(self, "_towns_st", None)
+        if st is None:
+            return np.zeros((2, n)), np.full((2, n), -1, np.int64)
+        act = st["act"] & (st["holder"] >= 0)
+        return np.where(act, st["pop"], 0.0), np.where(act, st["holder"], -1)
+
+    def _confederations(self, seats, pop, holder, ago, k_, peopled, edz, sea, ice, city_min) -> list:
         """Step 1b (polities._confederations' rule, PW-1583): a people with a state's institutions (chiefdoms, kingship or law, and its
         own real writing, D49) but no city big enough seats a state at one of its places when its own people in its places within a
         state's reach of it number a city's worth (city_min x CONFED_HEADS_X) and a foreign state, empire or dragon realm
         (CONFED_AGAINST) held land within that reach last step; its own city-state within reach rules there instead. The places are
-        the history's: each cell's central place (a village: SHARE[1] of its own sedentary heads; a town or city where _places
-        seats one), held by the cell's lead people. Returns the seats with each confederation in place of any seat on its cell."""
+        the ledger's (PW-1671): `pop` and `holder`, shape (2, n), town_cells' chief place and second people's own place per cell, any
+        size (_ledger_places), each its holder line's; a line's heads on a cell are its places there summed, as the read-out sums a
+        people's sites. Returns the seats with each confederation in place of any seat on its cell."""
         g, L = self.g, self.h.lines
         by_pid = np.full(len(self.ruling) + 1, -1, np.int64)  # (cells a state, empire or dragon realm held last step: its seat's people, as a line index)
         for p, s in enumerate(self.ruling):
@@ -775,16 +741,19 @@ class LivePolities(StandIns):
         state_at = {s["cell"]: s for s in seats if s["tier"] == "state"}
         scratch = np.full(g.n, -1, np.int64)
         out = list(seats)
-        has = (lead >= 0) & (place > 0)
-        for k in sorted(set(lead[has].tolist()), key=lambda k: L[k].id):
+        has = (holder >= 0) & (pop > 0)
+        for k in sorted(set(holder[has].tolist()), key=lambda k: L[k].id):
             ppl = L[k].id
             if not (self.knows(ppl, "chiefdoms", ago) and (self.knows(ppl, "kingship", ago) or self.knows(ppl, "law", ago))
                     and self.knows(ppl, PO.STATE_WRITING, ago)):
                 continue
-            mine = sorted(np.flatnonzero(has & (lead == k)).tolist(), key=lambda c: (f"c{c}" not in self.prev_cap, -place[c], c))
+            here = np.where(has & (holder == k), pop, 0.0)
+            heads_at = here.sum(axis=0)  # (its places' people per cell, both slots)
+            sl, cl = np.nonzero(here)  # (its places, each a candidate seat as the read-out's sites; last step's seats first: no flicker)
+            mine = sorted(zip(cl.tolist(), sl.tolist()), key=lambda x: (f"c{x[0]}" not in self.prev_cap, -here[x[1], x[0]], x[0], x[1]))
             covered: set = set()
             tries = 0
-            for c in mine:
+            for c, sx_ in mine:
                 key = f"c{c}"
                 if tries >= PO.CONFED_TRY:
                     break
@@ -799,17 +768,18 @@ class LivePolities(StandIns):
                 covered.update(cells.tolist())
                 if any(int(x) in state_at and state_at[int(x)]["people"] == ppl for x in cells):
                     continue
-                heads = float(place[cells][lead[cells] == k].sum())
+                heads = float(heads_at[cells].sum())
                 if heads < city_min * PO.CONFED_HEADS_X * (PO.HOLD if self.prev_cap.get(key) in ("state", "empire") else 1.0):
                     continue
                 fr = foreign[cells]
                 if not np.any((fr >= 0) & (fr != k)):
                     continue
                 self.founded.setdefault(key, ago)
+                pc = float(here[sx_, c])
                 out = [s for s in out if s["cell"] != c]
-                out.append({"key": key, "cell": c, "people": ppl, "line": k, "uid": None, "pop": float(place[c]), "tier": "state",
+                out.append({"key": key, "cell": c, "people": ppl, "line": k, "uid": None, "pop": pc, "tier": "state",
                             "cls": 0 if self.knows(ppl, PO.STRONG_TECH, ago) else 2,
-                            "rank": float(place[c]) * (PO.INCUMBENT if key in self.prev_cap else 1.0), "confed": True, "heads": round(heads)})
+                            "rank": pc * (PO.INCUMBENT if key in self.prev_cap else 1.0), "confed": True, "heads": round(heads)})
         return out
 
     def _close(self, key, ago, how):

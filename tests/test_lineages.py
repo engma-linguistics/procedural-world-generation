@@ -3799,41 +3799,57 @@ def test_live_confederation_bands_a_peoples_villages_beside_a_foreign_state(fake
     city_min = 10000.0
     z = np.zeros(len(R.idx))
     args = (1.0, R.k, peopled, z, ~lm, np.zeros(g.n, bool), city_min)
-    place = np.where(lead == fk, 0.3 * city_min, 0.0)  # (four villages of 3,000: no city, 12,000 in all)
-    got = R._confederations([], place, lead, *args)
+    # (PW-1671: the ledger's places, town_cells' two slots per cell: four chief places of folk, villages of 3,000: no city, 12,000 in
+    # all; the kobolds' cells hold no place)
+    place = np.stack([np.where(lead == fk, 0.3 * city_min, 0.0), np.zeros(g.n)])
+    holder = np.stack([lead, np.full(g.n, -1, np.int64)])
+    got = R._confederations([], place, holder, *args)
     assert len(got) == 1 and got[0]["people"] == "folk" and got[0]["tier"] == "state" and got[0]["confed"] and got[0]["heads"] == 12000
     assert got[0]["key"] in {f"c{c}" for c in np.flatnonzero(lead == fk)}
     R.tier_of = ["chiefdom"]  # (no foreign state beside them: nothing to band together against)
-    assert R._confederations([], place, lead, *args) == []
+    assert R._confederations([], place, holder, *args) == []
     R.tier_of = ["state"]
-    assert R._confederations([], place * 0.8, lead, *args) == []  # (9,600: short of a city's worth)
+    assert R._confederations([], place * 0.8, holder, *args) == []  # (9,600: short of a city's worth)
+    # a people's places on a cell sum over both slots (as the read-out sums its sites): 9,600 in chief places + 2,400 in a second
+    # people's own place of folk on one of them is a city's worth again
+    holder2 = holder.copy()
+    holder2[1, c0] = fk
+    place2 = place * 0.8
+    place2[1, c0] = 0.24 * city_min
+    got = R._confederations([], place2, holder2, *args)
+    assert len(got) == 1 and got[0]["people"] == "folk" and got[0]["heads"] == 12000
 
 
 def test_live_central_places_read_the_ledgers_site_factor(faketz, monkeypatch):
     """PW-1587 (lane 245): the history's central places are sized and chosen as the ledger's (settlements._site_factor): a harbour
     beside a cell that is a coast now makes its town bigger and the best of its ring on even ground; a harbour inland counts for nothing.
-    Without a world every cell is an ordinary site (1)."""
+    Without a world every cell is an ordinary site (1). PW-1671 (lane 281c): the places are town_cells' (the ledger's rule on the
+    history's inputs, which the seats and the confederations read), grown from nothing over the same steps with and without the harbour."""
     from planet.lineages import settlements as SE
-    h, env, step, land = _live_setup(faketz, monkeypatch)
-    R, g = h.rule, h.rule.g
-    assert np.all(R._site() == 1.0)  # (the stand-in pass has no world: no site layers)
+    h, env, step, land = _live_setup(faketz, monkeypatch, places=False)
+    R = h.rule
+    assert all(not np.any(R.W[k]) for k in ("harbour", "river_nav", "fresh_water", "pass"))  # (the stand-in pass has no world: no site layers)
     lm = np.asarray(env["land"], bool)
     deg = np.diff(R.off)
-    coast = [int(c) for c in np.flatnonzero(lm) if (~lm[R.idx[R.off[c]:R.off[c + 1]]]).any()
-             and lm[R.idx[R.off[c]:R.off[c + 1]]].sum() >= 3]
-    inland = next(int(c) for c in np.flatnonzero(lm) if lm[R.idx[R.off[c]:R.off[c + 1]]].all() and deg[c] >= 5)
+    folk = h.p[h.idx["folk"]] > 0
+    coast = [int(c) for c in np.flatnonzero(lm & folk) if (~lm[R.idx[R.off[c]:R.off[c + 1]]]).any()
+             and (lm & folk)[R.idx[R.off[c]:R.off[c + 1]]].sum() >= 3]
+    inland = next(int(c) for c in np.flatnonzero(lm & folk) if lm[R.idx[R.off[c]:R.off[c + 1]]].all() and deg[c] >= 5)
     c0 = coast[0]
     sea0 = next(int(x) for x in R.idx[R.off[c0]:R.off[c0 + 1]] if not lm[x])
-    R.W["harbour"][[sea0, inland]] = 3.0  # (PW-1640: the layer marks the harbour water; the shore beside it reads it)
-    q = R._site()
-    assert q[c0] == pytest.approx(1.0 + SE.CONST["SITE_HARBOUR"][3]) and q[inland] == 1.0
-    sed = np.where(lm, 100.0, 0.0)
-    town1, _ = R._places(sed, np.ones(g.n))
-    town, _ = R._places(sed, q)
+
+    def grown():
+        _grow_places(h)
+        st = R._towns_st
+        return np.where(st["act"][0], st["pop"][0], 0.0)
+    base = grown()
+    R.W["harbour"][inland] = 3.0  # (PW-1640: the layer marks the harbour water; a harbour marked on land counts for nothing)
+    assert np.array_equal(grown(), base)
+    R.W["harbour"][sea0] = 3.0  # (the shore beside harbour water reads it)
+    pop = grown()
     ring = R.idx[R.off[c0]:R.off[c0 + 1]]
-    assert town[c0] > 0 and np.all(town[ring] == 0.0)  # (the harbour is the best of its ring)
-    H1 = sed[c0] + sed[ring].sum()
-    assert town[c0] >= SE.CONST["SHARE"][2] * H1 * q[c0] * (1 - 1e-6) and town[c0] > town1[c0]  # (x the site factor, as the ledger)
+    assert pop[c0] >= SE.CONST["TOWN_MIN"][0] and np.all(pop[ring] < pop[c0])  # (the harbour is a town, the best of its ring)
+    assert pop[c0] > base[c0] * (1 + 0.5 * SE.CONST["SITE_HARBOUR"][3])  # (x the site factor, as the ledger)
 
 
 def test_live_refugees_skip_land_their_people_has_already_left(faketz, monkeypatch):
