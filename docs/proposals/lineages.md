@@ -443,6 +443,21 @@ As built (measured on 1df1c3 and 3e9e7d, tries 0-3 as single tries, "empty" = PW
 
 ### Senses and bodies (PW-694)
 As built: every people has a `body` (`spec.BODY_DEFAULT`, resolved on `Lineage.body`, only what the spec gave on `Lineage.body_given`; a `body = {...}` table in the TOML/JSON). Keys: `sweet` (tastes sweet), `milk` (digests milk as an adult), `capsaicin` (feels chili heat), `bitter` and `smell` (low | normal | high or keen), `diet` (herbivore | omnivore | carnivore | obligate_carnivore), `raw_meat`, `cellulose`, `toxic` (a list of `alliums`: onion and garlic, `theobromine`: chocolate). Inherited key by key from the first parent (hybrids and templates too), so a stem's body reaches its children; validated in `spec.parse_body`. Nothing in the simulation reads it; it is for the cuisine pass (PW-692).
+
+Later keys (PW-1607, PW-1728): `fit` (food id -> thrives | tolerates | poor | harmful, or {level, why}) and `keeping`, a kind's own leanings
+in keeping food, read by `planet/lineages/keeping.py`:
+
+```toml
+body = { keeping = { kept = 0.6, cellaring = 0.6, salting = 0.7, why = "preserves for next week, not next year" } }
+```
+
+Each key of `keeping` is a keeping method (`drying`, `smoking`, `salting`, `pickling`, `ferment_dairy`, `ferment_grain`, `fish_sauce`,
+`ferment_veg`, `cellaring`, `rendering`) with a multiplier from 0 to 5 over the weight the land, foods, techs and other body keys give it;
+`kept` multiplies how much of all its food the kind keeps at all; `why` is the reason the cuisine sheet shows ("authored for this kind").
+0 means never: the method is listed as "never done by this kind". A leaning never opens a method whose tech the people does not know
+yet. Like `fit`, the table merges key by key down the tree (a child's `smoking = 1` overrides its parent's `smoking = 0` and keeps the
+rest), and the workbench's body editor shows it as "keeping leanings" (`cellaring=1.6, smoking=0`). The D&D preset sets it for elves
+(long ageing and cellars), halflings (a short horizon) and dragonborn (no smoking), from culinary-dnd's fact sheets.
 - **Editor** (`viewer/lineages.html`, People tab, "Senses and body"): a dropdown per field whose first entry is the inherited value in brackets, plus checkboxes for the toxicities.
 - **Preset** (real-world analogues): feline stem (so tabaxi, leonin): no sweet, obligate carnivores, raw meat, keen smell, alliums and theobromine toxic; avian stem (aarakocra, kenku): no sweet, no capsaicin, poor smell, faint bitter, raw meat, alliums and theobromine toxic; reptilian stem: keen smell, raw meat; lizardfolk carnivores; tortles herbivores that digest cellulose; goblinoids raw meat and low bitter; bugbears keen-nosed carnivores; orcs raw meat and keen smell; dwarves low bitter; elves high bitter and keen smell; tritons no capsaicin, raw fish. Lactase persistence (`milk`) on the herder groups: human herders, human nomads, steppe orcs (draft draft-lactase-body-trait-on-groups-or-peoples).
 - **Output:** `meta.lineages[].body`, and each living people's story ends with a sentence ("The tabaxi cannot taste sweet, have a keen sense of smell, ... and are poisoned by alliums (onion, garlic) and theobromine (chocolate).") in the stories and `run.txt`.

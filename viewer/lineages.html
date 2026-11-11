@@ -162,13 +162,15 @@ const GENERATION_LABELS = { schedule: 'from the schedule', schedule_mass: 'fecun
 const TOXIN_LABELS = { alliums: 'alliums (onion, garlic)', theobromine: 'theobromine (chocolate)', grapes: 'grapes and raisins (a canid body)' };
 const FIT_LEVELS = ['thrives', 'tolerates', 'poor', 'harmful'];  // (food_fit.LEVELS; PW-1607: a `fit` table food -> level, set by hand as 'alcohol=poor, grapes=harmful')
 const fitText = (f) => Object.entries(f || {}).map(([k, v]) => `${k}=${typeof v === 'string' ? v : v.level}`).join(', ');
+// PW-1728: a kind's keeping leanings (spec.parse_keeping): 'cellaring=1.6, smoking=0, kept=0.6' (method -> multiplier); the why is kept as it was
+const keepText = (f) => Object.entries(f || {}).filter(([k]) => k !== 'why').map(([k, v]) => `${k}=${v}`).join(', ');
 async function loadSchema() {
   const r = await fetch('../api/lineage-schema');
   if (!r.ok) throw new Error(`lineage-schema: HTTP ${r.status}`);
   const d = SCHEMA = await r.json();
   TRAITS = d.traits; PLACES = d.places; WANTS = [...d.pair_wants, ...PLACES]; GOODS = d.goods; GROUPS = d.groups; BAND = d.band;
   DEMO_DEFAULT = d.demo_default; DEMOGRAPHY = d.demography; DEMO_KEYS = Object.keys(DEMO_DEFAULT); BODY_DEFAULT = d.body_default; DEFAULTS = d.defaults;
-  const keys = [...Object.keys(BODY_LABELS), ...Object.keys(BODY_DEFAULT).filter((k) => !(k in BODY_LABELS) && k !== 'toxic' && k !== 'fit')].filter((k) => k in BODY_DEFAULT);
+  const keys = [...Object.keys(BODY_LABELS), ...Object.keys(BODY_DEFAULT).filter((k) => !(k in BODY_LABELS) && k !== 'toxic' && k !== 'fit' && k !== 'keeping')].filter((k) => k in BODY_DEFAULT);
   BODY_FIELDS = keys.map((k) => [k, BODY_LABELS[k] || k, d.body_choices[k] || (k === 'milk' ? [true, false, ...MILK_SHARES] : k === 'alcohol_flush' ? [0, 0.1, 0.25, ...MILK_SHARES.slice(2)] : [true, false])]);
   TOXINS = d.toxins.map((t) => [t, TOXIN_LABELS[t] || t]);
 }
@@ -177,7 +179,7 @@ function bodyOf(r, seen = new Set()) {  // the body a line runs with: its own ke
   seen.add(r.id);
   const p = parentsOf(r).map((x) => byId()[x]).filter(Boolean)[0];
   const up = p ? bodyOf(p, seen) : BODY_DEFAULT;
-  return { ...up, ...(r.body || {}), fit: { ...(up.fit || {}), ...(r.body?.fit || {}) } };  // (fit merges key by key, spec.parse)
+  return { ...up, ...(r.body || {}), fit: { ...(up.fit || {}), ...(r.body?.fit || {}) }, keeping: { ...(up.keeping || {}), ...(r.body?.keeping || {}) } };  // (fit and keeping merge key by key, spec.parse)
 }
 const bodyInput = (r, k, opts) => {  // (opts: the choices; a flag may also be a share of the people, 0..1)
   const own = r.body?.[k], inh = bodyOf({ ...r, body: {} })[k], lab = (v) => (v === true ? 'yes' : v === false ? 'no' : typeof v === 'number' ? Math.round(100 * v) + '% of the people' : String(v).replace('_', ' '));
@@ -287,7 +289,7 @@ const FOOT = {
     thousand years (sooner for a cohesive kind), or once their people has cities or written law and one state could hold both. Names are placeholders.
     The bar is the culture's life on a log time axis; "map" opens the globe there.`,
   tech: `The technology tree (planet/lineages/samples/techtree.toml): which people knew what, and since when, on the run picked in Results.`,  // (each view writes its own footer: techtab.js)
-  brief: 'The culinary brief of the run picked in Results: pick a people (its range for a cook) or one culture of it (its food sheet: fuel, staple, drink, who eats together, what outsiders get wrong, what it will not eat), and an era. With a culture picked, "Flavour" shows its kitchen on ten tastes and "Keeping food" how it preserves what it eats, each row with its reasons (hover, or the why column). With a culture picked, "Trade: goods" below the sheet lists what its land gives beyond its own need and what it lacks (the goods ledger, PW-1502), where each lacked good comes from and where each spare good goes, and its trading partners (the exchange, PW-1503).',
+  brief: 'The culinary brief of the run picked in Results: pick a people (its range for a cook) or one culture of it (its food sheet: fuel, staple, drink, who eats together, what outsiders get wrong, what it will not eat), and an era. With a culture picked, "Flavour" shows its kitchen on ten tastes and "Keeping food" how it preserves what it eats, each row with its reasons (hover, or the why column). "Kitchen through time" lists what entered and left its diet from its founding to that era (crops and herds on its land, keeping methods its people learnt, food bought in, its leading tastes), with a small flavour grid frame by frame. With a culture picked, "Trade: goods" below the sheet lists what its land gives beyond its own need and what it lacks (the goods ledger, PW-1502), where each lacked good comes from and where each spare good goes, and its trading partners (the exchange, PW-1503).',
   religion: 'Gods, faiths and taboos of the run picked in Results (readouts: they never change the history).',  // (each view writes its own footer: religiontab.js)
   polities: 'Invasions you schedule and what came of them, beside the incursions the history found (invasiontab.js writes the rest).',
   results: 'The peoples at the run\'s present. Numbers are presence × density × area: rough, for a game, not a census.',
@@ -577,6 +579,7 @@ function drawSide() {
       <h3>Senses and body <span class="muted" style="font-weight:normal">(for the future cuisine pass; the bracketed value is inherited)</span></h3>
       <div class="row">${BODY_FIELDS.map(([k, lab, opts]) => field(lab, bodyInput(r, k, opts))).join('')}</div>
       ${field('food fit by hand (food=level, ...)', `<input type="text" data-bfit value="${fitText(r.body?.fit)}" placeholder="${fitText(bodyOf({ ...r, body: {} }).fit) || 'alcohol=poor, grapes=harmful'}">`)}
+      ${field('keeping leanings (method=multiplier, ...: drying, smoking, salting, pickling, ferment_dairy, ferment_grain, fish_sauce, ferment_veg, cellaring, rendering; kept = how much is kept at all; 0 = never)', `<input type="text" class="wide" data-bkeep value="${esc(keepText(r.body?.keeping))}" placeholder="${esc(keepText(bodyOf({ ...r, body: {} }).keeping) || 'cellaring=1.6, smoking=0, kept=0.6')}" title="${esc((r.body?.keeping?.why) || bodyOf({ ...r, body: {} }).keeping?.why || 'PW-1728: laid over the keeping the land, foods and techs give; a leaning never teaches a tech. The why is kept from the tree file.')}">`)}
       ${field('toxic to it', TOXINS.map(([t, lab]) => `<label class="trait"><input type="checkbox" data-btox="${t}" ${bodyOf(r).toxic.includes(t) ? 'checked' : ''}> ${lab}</label>`).join(''))}
       <h3>Demography (grey: from traits or parent)</h3>
       <div class="row">${field('kind factor (density ladder)', demoInput(r, 'kind', 0.05))}${field('expansion km/yr', `<input type="number" step="0.1" data-k="speed_kmyr" value="${r.speed_kmyr ?? ''}" placeholder="${inherited(r, 'speed_kmyr') ?? 0.5}">`)}</div>
@@ -631,6 +634,14 @@ function editLine(r, el) {
     for (const part of el.value.split(',')) { const [a, b] = part.split('=').map((x) => x.trim()); if (a && FIT_LEVELS.includes(b)) f[a] = b; }
     const b = { ...(r.body || {}) };
     if (Object.keys(f).length) b.fit = f; else delete b.fit;
+    if (Object.keys(b).length) r.body = b; else delete r.body;
+    return;
+  }
+  if (el.hasAttribute('data-bkeep')) {  // 'cellaring=1.6, smoking=0' -> the keeping table (its why kept); empty = inherit
+    const f = {};
+    for (const part of el.value.split(',')) { const [a, b] = part.split('=').map((x) => x.trim()); if (a && b !== undefined && b !== '' && isFinite(+b) && +b >= 0 && +b <= 5) f[a] = +b; }
+    const b = { ...(r.body || {}) };
+    if (Object.keys(f).length) b.keeping = { ...f, ...(r.body?.keeping?.why ? { why: r.body.keeping.why } : {}) }; else delete b.keeping;
     if (Object.keys(b).length) r.body = b; else delete r.body;
     return;
   }
@@ -1242,7 +1253,24 @@ function drawKeeping() {
     <h3 style="margin:12px 0 4px">Keeping food</h3>
     <p style="margin:0 0 6px" title="${esc(kp.preserved_why)}">About ${Math.round(100 * kp.preserved_share)}% of what it eats is kept food (because ${esc(kp.preserved_why)}). Shares are of all its food, rough.</p>
     <table class="t" style="min-width:420px"><tr><th>method</th><th class="n">share</th><th></th><th>what, and why</th></tr>${meth}</table>${absent}
-    <p class="muted" style="margin:4px 0 0;font-size:11px">${esc(fl.basis)}</p>`;
+    <p class="muted" style="margin:4px 0 0;font-size:11px">${esc(fl.basis)}</p>${kitchenTimeHtml(cz.through_time)}`;
+}
+// ---- Kitchen through time (kitchen_time.py, PW-1714): what entered and left the culture's diet and when, and its flavour frame by frame
+function kitchenTimeHtml(tt) {
+  if (!tt || !tt.lines || !tt.lines.length) return '';
+  const rows = tt.lines.map((r) => `<tr><td style="white-space:nowrap;vertical-align:top">${r.ago_kyr > 0 ? '~' : ''}${esc(r.when)}</td><td>${esc(r.text)}</td></tr>`).join('');
+  const ep = tt.epochs || [], ax = tt.flavour_axes || Object.keys(FLAVOUR_WORD);
+  let grid = '';
+  if (ep.length > 1) {  // (a small heat grid: a row per taste, a column per frame read, oldest left; darker = stronger; hover for the frame)
+    const w = Math.max(4, Math.min(14, Math.floor(560 / ep.length)));
+    const cell = (v, e, a) => `<span title="${esc(ago(e.ago_kyr))}: ${esc(FLAVOUR_WORD[a] || a)} ${v} (${esc(e.descriptor)})" style="display:inline-block;width:${w}px;height:10px;background:rgba(176,112,60,${Math.min(1, v).toFixed(2)})"></span>`;
+    grid = `<div style="margin-top:8px"><div class="muted" style="font-size:12px;margin-bottom:2px">Flavour frame by frame, ${esc(ago(ep[0].ago_kyr))} (left) to ${esc(ago(ep[ep.length - 1].ago_kyr))} (right); darker is stronger</div>
+      <table style="border-collapse:collapse;font-size:11px">${ax.map((a) => `<tr><td class="muted" style="padding:0 6px 0 0;white-space:nowrap">${esc(FLAVOUR_WORD[a] || a)}</td><td style="padding:0;line-height:0;white-space:nowrap">${ep.map((e) => cell(e.flavour[a] || 0, e, a)).join('')}</td></tr>`).join('')}</table></div>`;
+  }
+  return `<h3 style="margin:12px 0 4px">Kitchen through time</h3>
+    <p class="muted" style="margin:0 0 6px;font-size:12px">What entered and left its diet, from its founding to this era: crops and herds on its land, ways of life, the ways of keeping food its people learnt (dated by the tech), what it bought in, and shifts in its two leading tastes.</p>
+    <table class="t" style="min-width:420px"><tr><th>when</th><th>what changed</th></tr>${rows}</table>${grid}
+    <p class="muted" style="margin:4px 0 0;font-size:11px">${esc(tt.basis)}</p>`;
 }
 // ---- Trade: goods (GET /api/trade: planet/lineages/trade.py, the goods ledger, PW-1502) -----------------------------------------------
 const tradeUI = { key: '', doc: null, busy: false };

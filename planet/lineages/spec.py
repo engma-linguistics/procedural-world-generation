@@ -244,7 +244,7 @@ BODY_DEFAULT = {"sweet": True, "milk": False, "milks": True, "capsaicin": True, 
                 "diet": "omnivore", "raw_meat": False, "cellulose": False, "toxic": [],
                 "suction": "normal", "teeth": "grinding", "gut": "simple", "salt": "normal", "display": "none",
                 "shed": "none", "display_sex": "both", "hours": "diurnal", "thermo": "endo", "fire": True, "grain": "normal",
-                "alcohol_flush": 0.0, "fit": {}}
+                "alcohol_flush": 0.0, "fit": {}, "keeping": {}}
 BODY_CHOICES = {"bitter": ("low", "normal", "high"), "smell": ("low", "normal", "keen"),
                 "diet": ("herbivore", "omnivore", "carnivore", "obligate_carnivore"),
                 "suction": ("none", "poor", "normal"), "teeth": ("grinding", "conical", "dental_pad", "beak"),
@@ -256,7 +256,12 @@ BODY_CHOICES = {"bitter": ("low", "normal", "high"), "smell": ("low", "normal", 
 # {food id (food_fit.FOODS): level | {level, why}} that wins over the fit worked out from the other keys, merged key by key down the tree.
 # `toxic = ["grapes"]` marks a canid body (grapes and raisins kill dogs' kidneys: Merck Veterinary Manual, Raisins and grapes), as
 # "alliums" and "theobromine" mark the feline and canine ones.
+# PW-1728 (lane 309): `keeping` is a kind's own leanings in keeping food, a table {method id (keeping.METHODS): multiplier, kept: multiplier,
+# why: "..."} laid over the keeping keeping.py works out from the land, foods, techs and the other body keys: `cellaring = 1.6` ages and
+# cellars more, `smoking = 0` never smokes, `kept = 0.6` keeps less of its food at all (a short horizon). Multipliers 0..5; a method the
+# people does not know yet stays closed (a leaning never teaches a tech). Merged key by key down the tree, as `fit`.
 TOXINS = ("alliums", "theobromine", "grapes")
+KEEPING_MAX = 5.0
 BODY_BOOLS = ("sweet", "milk", "capsaicin", "raw_meat", "cellulose")
 
 
@@ -273,6 +278,25 @@ def parse_fit(v, lid: str = "") -> dict:
         if lv not in LEVELS:
             raise ValueError(f"{lid}: body.fit.{f} must be one of {list(LEVELS)} or a table {{level, why}}")
         out[f] = lv if why is None else {"level": lv, "why": str(why)}
+    return out
+
+
+def parse_keeping(v, lid: str = "") -> dict:
+    """Validate a body `keeping` table: method id (keeping.METHODS) or `kept` -> a multiplier 0..KEEPING_MAX, and an optional `why`."""
+    from .keeping import METHODS
+    ids = [m[0] for m in METHODS] + ["kept"]
+    if not isinstance(v, dict):
+        raise ValueError(f"{lid}: body.keeping must be a table of keeping method -> multiplier (methods: {ids})")
+    out: dict = {}
+    for k, x in v.items():
+        if k == "why":
+            out[k] = str(x)
+            continue
+        if k not in ids:
+            raise ValueError(f"{lid}: body.keeping: unknown method {k!r} (one of {ids}, or why)")
+        if isinstance(x, bool) or not isinstance(x, (int, float)) or not 0 <= x <= KEEPING_MAX:
+            raise ValueError(f"{lid}: body.keeping.{k} must be a multiplier between 0 and {KEEPING_MAX:g}")
+        out[k] = float(x)
     return out
 
 
@@ -300,6 +324,8 @@ def parse_body(v, lid: str = "") -> dict:
             out[k] = float(x)
         elif k == "fit":
             out[k] = parse_fit(x, lid)
+        elif k == "keeping":
+            out[k] = parse_keeping(x, lid)
         elif k in ("fire", "milks"):
             if not isinstance(x, bool):
                 raise ValueError(f"{lid}: body.{k} must be true or false")
@@ -379,6 +405,8 @@ def body_notes(b: dict) -> list[str]:
         out.append(pct(b["alcohol_flush"]) + "flush on alcohol (ALDH2*2)")
     if b.get("fit"):
         out.append("food fit set by hand: " + ", ".join(f"{f} {x if isinstance(x, str) else x['level']}" for f, x in sorted(b["fit"].items())))
+    if b.get("keeping"):
+        out.append("keep food their own way: " + ", ".join(f"{k} x{x:g}" for k, x in sorted(b["keeping"].items()) if k != "why"))
     tox = [{"alliums": "alliums (onion, garlic)", "theobromine": "theobromine (chocolate)", "grapes": "grapes and raisins"}[t] for t in b["toxic"]]
     if tox:
         out.append("are poisoned by " + " and ".join(tox))
@@ -991,6 +1019,7 @@ def parse(raw: dict, mode: str | None = None) -> Tree:
         body = {**base.body, **bgiven} if bases else {**BODY_DEFAULT, **bgiven}
         body["toxic"] = list(body["toxic"])
         body["fit"] = {**((base.body.get("fit") or {}) if bases else {}), **(bgiven.get("fit") or {})}  # (merged key by key down the tree)
+        body["keeping"] = {**((base.body.get("keeping") or {}) if bases else {}), **(bgiven.get("keeping") or {})}  # (PW-1728: as fit)
         vgiven = parse_voice(r.get("voice"), lid)
         voice = {**base.voice, **vgiven} if bases else dict(vgiven)
         wgiven = r.get("way")
