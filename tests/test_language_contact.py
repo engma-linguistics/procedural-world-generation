@@ -9,8 +9,8 @@ from planet.language import lexicon as L
 
 
 @pytest.fixture(scope="module")
-def concepts():
-    return L.concepts()
+def concepts():   # (the herd animals and their meat as a people that has met them: PW-1745 gates them by range)
+    return [L.replace(c, proto=True) if c.domain == "animal" or c.id.startswith(L.MEAT_OF) else c for c in L.concepts()]
 
 
 def _proto(seed, concepts, lect):

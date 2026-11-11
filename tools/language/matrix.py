@@ -40,7 +40,8 @@ SHORT = {"proto inventories vs PHOIBLE": "proto inventories", "sisters recognisa
          "areal signal (cross-family, near vs far)": "areal", "no impossible segments (all lects)": "impossible segs",
          "second voice only where there is a syrinx; second-voice tone shares": "second voice",
          "loans follow the contact kind": "contact kind", "doublets under elite rule": "doublets",
-         "word starts vs NorthEuraLex": "word starts"}
+         "word starts vs NorthEuraLex": "word starts", "core words rarely borrowed": "core loans",
+         "late things arrive as loans": "late loans"}
 NUMBERS = ("living", "sisters", "pronoun_loans", "horizon_judged", "horizon_2win", "word_starts_off", "simple_syll",
            "back_harmony", "uvular_R")
 
@@ -96,7 +97,12 @@ def summarise(doc: dict) -> dict:
             "word_starts_off": off,
             "simple_syll": share(simple), "back_harmony": share(back_harmony),
             "uvular_R": share(lambda l: "ʁ" in ((l.get("inventory") or {}).get("consonants") or [])),
-            "overused": sorted((by.get("overused segments (all living lects)") or {}).get("overused") or {})}
+            "overused": sorted((by.get("overused segments (all living lects)") or {}).get("overused") or {}),
+            # (lane 20, PW-1738/1745: core loans per item, cross-family Swadesh-100 loans, late words, the horse)
+            "core_items": (by.get("core words rarely borrowed") or {}).get("items"),
+            "sw100_xfam": (by.get("core words rarely borrowed") or {}).get("sw100_xfam_3kyr"),
+            "late_loan_share": (by.get("late things arrive as loans") or {}).get("loan_calque_share"),
+            "horse": (by.get("late things arrive as loans") or {}).get("horse")}
     return {"seed": doc.get("seed"), "checks": checks, "numbers": nums}
 
 

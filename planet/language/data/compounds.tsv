@@ -310,3 +310,55 @@ meat:camel	MEAT	animal:camel	3	'camel meat' (as sheep meat)
 meat:llama	MEAT	animal:llama	3	'llama meat' (as sheep meat)
 meat:horse	MEAT	animal:horse	3	'horse meat': German Pferdefleisch, Kazakh jylqy eti
 meat:riding_lizard	MEAT	animal:riding_lizard	3	'lizard meat' (as cow meat)
+fauna:big_cat	ANIMAL	CLAW	1	'claw animal' (PW-1745: newly met animals named by a trait; Brown 1999)
+fauna:big_cat	DOG	BIG	1	'big dog' (an introduced or newly met predator named after a native one; Brown 1999)
+fauna:ape	PERSON	FOREST	2	'forest person': Malay orang hutan
+fauna:ape	ANIMAL	SELF	1	generic + specific
+fauna:crocodile	SNAKE	WATER	1	'water snake' (Brown 1999: named after a native kind)
+fauna:crocodile	ANIMAL	RIVER	1	'river animal'
+fauna:big_snake	SNAKE	BIG	2	'big snake'
+fauna:big_snake	SNAKE	SELF	1	generic + specific
+fauna:seal	DOG	SEA	2	'sea dog': Dutch zeehond, German Seehund
+fauna:seal	ANIMAL	SEA	1	'sea animal'
+fauna:whale	FISH	BIG	2	'big fish': German Walfisch, Mandarin jingyu 'whale-fish'
+fauna:whale	FISH	SELF	1	generic + specific
+fauna:camel	ANIMAL	DESERT	1	'desert animal'
+fauna:camel	ANIMAL	BIG	1	'big animal'
+fauna:elephant	ANIMAL	NOSE	1	'nose animal' (Brown 1999: named by a trait)
+fauna:elephant	ANIMAL	BIG	2	'big animal'
+fauna:antelope	DEER	PLAIN	1	'plain deer'
+fauna:antelope	DEER	SELF	1	generic + specific
+fauna:parrot	BIRD	SPEAK	1	'talking bird'
+fauna:parrot	BIRD	GREEN	1	'green bird'
+fauna:parrot	BIRD	SELF	1	generic + specific: Thai nok-X
+flora:palm	TREE	LEAF	1	'leaf tree' (fan leaves)
+flora:palm	TREE	SELF	2	generic + specific: Thai ton-X, Malay pohon X
+flora:bamboo	GRASS	BIG	1	'big grass'
+flora:bamboo	TREE	SELF	1	generic + specific
+flora:cactus	TREE	DESERT	1	'desert tree'
+flora:cactus	GRASS	SHARP	1	'sharp plant'
+flora:conifer	TREE	NEEDLE	2	'needle tree': German Nadelbaum
+flora:conifer	TREE	SELF	1	generic + specific: Mandarin song-shu 'pine-tree'
+flora:mangrove	TREE	SEA	1	'sea tree'
+flora:reed	GRASS	WATER	2	'water grass'
+flora:reed	GRASS	SELF	1	generic + specific
+flora:lichen	GRASS	STONE	1	'stone grass'
+JAR	POT	BIG	1	'big pot'
+PLATE	BOWL	FLAT	1	'flat bowl'
+LADLE	SPOON	BIG	2	'big spoon'
+STEW	MEAT	BOIL	1	'boiled meat'
+BROTH	WATER	MEAT	2	'meat water': Mandarin rou-tang 'meat soup'
+SAUCE	WATER	SALT	1	'salt water'
+SPICE	LEAF	SMELL (PERCEIVE)	1	'smell leaf'
+PLOUGH	KNIFE	EARTH (SOIL)	1	'earth knife'
+LOOM	WOOD	WEAVE	1	'weaving wood'
+CANOE	BOAT	TREE	2	'tree boat' (a dugout)
+SHIP	BOAT	BIG	2	'big boat'
+OAR	STICK	BOAT	1	'boat stick'
+SADDLE	SEAT	animal:horse	2	'horse seat'
+BRIDLE	ROPE	HEAD	1	'head rope'
+STIRRUP	ROPE	FOOT	1	'foot rope'
+STEEL	good:iron	HARD	1	'hard iron'
+MORNING MEAL	MEAL	MORNING	3	'morning meal': German Fruehstueck, Mandarin zaofan 'morning rice'
+MIDDAY MEAL	MEAL	DAY (NOT NIGHT)	2	'day meal': Mandarin wufan 'noon rice'
+EVENING MEAL	MEAL	EVENING	3	'evening meal': German Abendessen, Mandarin wanfan

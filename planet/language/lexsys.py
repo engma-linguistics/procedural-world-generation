@@ -465,7 +465,7 @@ def avoidance(rng, lex, inv, kyr: float, lect_id: str, contact_words: dict | Non
             w = LX.borrow(contact_words[d][k], d, lex, profile, inv, kyr, "avoidance register", store=False)
             how = f"loan from {d}"
         if w is None:
-            w = LX.taboo_word(rng, lex, k, inv, kyr, lect_id)
+            w = LX.taboo_word(rng, lex, k, inv, kyr, lect_id, generic=True)   # ('the <quality> one': PW-1739)
             how = "paraphrase" if w is not None else None
         if w is None:
             w = LX.derive(rng, lex, k, inv, kyr, lect_id)

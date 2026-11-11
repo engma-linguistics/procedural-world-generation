@@ -729,13 +729,129 @@ def word_starts(result: dict) -> dict:
                 f"i-initial", not why, "Eurasian reference (107 languages)" + (f"; off: {', '.join(why)}" if why else ""))
 
 
+# --- borrowing in the right places (PW-1738, PW-1745: language lane 20) ------------------------------------------------
+CORE_ITEMS = ("I", "WE", "ONE", "TWO", "THREE", "MOTHER", "FATHER")
+CORE_ITEM_MAX = 0.05   # each: the share of living lects whose word is a loan (WOLD: pronouns, low numerals, parent terms
+#                        are borrowed in a few percent of languages at most; a24559 had 10-22% before lane 20)
+SW100_XFAM_MAX = 0.02   # Swadesh-100 words borrowed across families in the last 3 kyr, share of all (living lect, word)
+XFAM_KYR = 3.0
+LATE_KYR = 6.0   # a late concept: its word in the lect was first made (or taken) in the last LATE_KYR kyr
+LATE_LOAN_MIN = 0.5   # of late words for new things (animals met, biome kinds, tech items, crops), loans + calques
+
+
+def _making_steps(w):
+    return [s for s in w.etym if not s.process.startswith(("sound_change:", "accent:", "koine:", "wear"))]
+
+
+def core_loans(result: dict) -> dict:
+    """Core words are almost never borrowed (PW-1738): per-item loan shares of the living lects for I, WE, ONE-THREE,
+    MOTHER, FATHER; Swadesh-100 words borrowed from another family in the last XFAM_KYR kyr; and ping-pong loans (a
+    word borrowed back into a lect it had passed through)."""
+    from . import lexicon as LX
+    living = [l for l in result["lects"] if l.alive and l.deme is not None and not getattr(l, "minority", False)]
+    by_id = {l.id: l for l in result["lects"]}
+    items, how = {}, {}
+    for k in CORE_ITEMS:
+        ws = [l.lexicon.words[k] for l in living if k in l.lexicon.words]
+        items[k] = round(float(np.mean([_is_loan(w) for w in ws])), 3) if ws else 0.0
+        for w in ws:   # (where the item loans come from: the loan step's note, first clause)
+            st = _last_loan(w)
+            if st is not None:
+                key = (st.note or "?").split(";")[0].split(" in city")[0][:40]
+                how[key] = how.get(key, 0) + 1
+    sw = [c.id for c in LX.concept_index().values() if "SW100" in c.lists]
+    n = xf = pp = nw = 0
+    for l in living:
+        for k in sw:
+            w = l.lexicon.words.get(k)
+            if w is None:
+                continue
+            n += 1
+            st = _last_loan(w) if _is_loan(w) else None
+            if st is not None and float(st.kyr) <= XFAM_KYR:
+                d = by_id.get(st.process.split(":", 1)[1])
+                if d is not None and d.family_true != l.family_true:
+                    xf += 1
+        for w in l.lexicon.words.values():
+            if w.pos == "NAME":
+                continue
+            nw += 1
+            bs = [s for s in w.etym if s.process.startswith("borrow:")]
+            if len(bs) >= 2:   # (A > B > A: a borrowing into a lect that an earlier borrowing took the word from)
+                pp += any(s.lect in {x.process.split(":", 1)[1] for x in bs[:j]} for j, s in enumerate(bs))
+    share = xf / max(n, 1)
+    worst = max(items.values()) if items else 0.0
+    return _row("core words rarely borrowed", {"items": items, "item_loan_sources": dict(sorted(how.items(), key=lambda x: -x[1])[:8]),
+                                               "sw100_xfam_3kyr": round(share, 4),
+                                               "pingpong": round(pp / max(nw, 1), 4)},
+                f"each of {', '.join(CORE_ITEMS)} <= {CORE_ITEM_MAX}; Swadesh-100 cross-family loans in the last "
+                f"{XFAM_KYR:g} kyr <= {SW100_XFAM_MAX}", worst <= CORE_ITEM_MAX and share <= SW100_XFAM_MAX,
+                "loan = the word's latest word-making step is a borrowing; WOLD/Tadmor 2009 for the core's low borrowability")
+
+
+def _origin(w, gloss: str) -> tuple[str, float, str | None]:
+    """(native | loan | calque | coined, kyr, lect) of a word for the concept glossed `gloss`, read from the steps made
+    for that concept (a compound's chain starts with its head's steps, a shift's with the source word's): loan or calque
+    when one of them borrowed or translated it (kyr: the first such step, the arrival); else native when the first is a
+    proto root, coined otherwise (kyr: that first step)."""
+    ms = [s for s in _making_steps(w) if s.gloss == gloss]
+    if not ms:
+        return "coined", float(w.etym[-1].kyr) if w.etym else 99.0, None
+    for s in ms:
+        if s.process.startswith("calque:"):
+            return "calque", float(s.kyr), str(s.lect)
+        if s.process.startswith(("borrow:", "substrate:")):
+            return "loan", float(s.kyr), str(s.lect)
+    return ("native" if ms[0].process == "proto" else "coined"), float(ms[0].kyr), str(ms[0].lect)
+
+
+def late_things(result: dict) -> dict:
+    """Things a people met late arrive as loans (PW-1745): over the living lects' words for animals, biome fauna and
+    flora, crops and tech items first made or taken in the last LATE_KYR kyr, the share that are loans or calques; the
+    horse's words (native / loan / calque / coined and their median date); and no proto-language with a native word for
+    an animal its people never met (history.proto_met)."""
+    from . import lexicon as LX
+    h = result.get("history")
+    living = [l for l in result["lects"] if l.alive and l.deme is not None and not getattr(l, "minority", False)]
+    gated = {c.id for c in (h.concepts if h is not None else LX.concepts()) if not c.proto}
+    late = {"loan": 0, "calque": 0, "coined": 0, "native": 0}
+    horse = {"native": 0, "loan": 0, "calque": 0, "coined": 0}
+    hk: list = []
+    bad = 0
+    met = getattr(h, "proto_met", {}) if h is not None else {}
+    for l in living:
+        for k, w in l.lexicon.words.items():
+            if k not in gated:
+                continue
+            o, kyr, p = _origin(w, LX.concept_info(k).gloss)
+            if o != "native" and kyr <= LATE_KYR:
+                late[o] += 1
+            if o == "native" and (k.startswith(("animal:", "fauna:", "flora:")) or k.startswith(LX.MEAT_OF)):
+                if p in met and k not in met[p]:
+                    bad += 1
+            if k == "animal:horse":
+                horse[o] += 1
+                if o != "native":
+                    hk.append(kyr)
+    nl = sum(late.values()) - late["native"]
+    share = (late["loan"] + late["calque"]) / max(nl, 1)
+    hv = {**horse, "lects_with_word": round(sum(horse.values()) / max(len(living), 1), 3),
+          "median_arrival_kyr": round(float(np.median(hk)), 2) if hk else None}
+    return _row("late things arrive as loans", {"late_words": nl, "loan_calque_share": round(share, 3), "by": late,
+                                                 "horse": hv, "native_unmet": bad},
+                f"loans + calques >= {LATE_LOAN_MIN:.0%} of late words; 0 native words for an animal never met",
+                share >= LATE_LOAN_MIN and bad == 0,
+                f"late = first made or taken in the last {LATE_KYR:g} kyr; Brown 1999 (lexical acculturation): new things "
+                f"are mostly borrowed or calqued, some named by native compounds ('big dog')")
+
+
 def run_all(result: dict) -> list[dict]:
     out = []
     for fn, arg in ((proto_inventories, result["lects"]), (sister_distant, result), (horizon, result), (shifts, result),
                     (long_generations, result), (complexity, result), (living_sizes, result), (living_segments, result),
                     (living_overuse, result), (typology_consistency, result), (borrowability, result), (areal, result),
                     (possible_segments, result), (second_voice, result), (contact_profiles, result), (doublets, result),
-                    (word_starts, result)):
+                    (word_starts, result), (core_loans, result), (late_things, result)):
         t = time.perf_counter()
         try:
             row = fn(arg)
@@ -750,7 +866,7 @@ def run_all(result: dict) -> list[dict]:
 
 # what each check is evidence of (the module docstring; assessment 11-11, "Engineering slice")
 KIND = {"proto_inventories": GUARD, "long_generations": GUARD, "complexity": GUARD, "borrowability": GUARD,
-        "contact_profiles": GUARD, "doublets": GUARD, "shifts": GUARD,
+        "contact_profiles": GUARD, "doublets": GUARD, "shifts": GUARD, "late_things": GUARD,
         "typology_consistency": INVARIANT, "possible_segments": INVARIANT, "second_voice": INVARIANT,
         "sister_distant": REALISM, "horizon": REALISM, "living_sizes": REALISM, "living_segments": REALISM,
         "living_overuse": REALISM, "areal": REALISM, "word_starts": REALISM}

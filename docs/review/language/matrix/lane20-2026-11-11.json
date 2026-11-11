@@ -1,0 +1,1071 @@
+{
+ "meta": {
+  "code": "9a960503 Lane 20: THEN and UNTIL as function-word concepts (that + time,",
+  "date": "2026-11-11 15:03",
+  "runs": [
+   "a24559",
+   "de1cc6",
+   "0141d1",
+   "3e0eb4"
+  ],
+  "seeds": [
+   "own",
+   "7919"
+  ],
+  "workers": 4
+ },
+ "cells": [
+  {
+   "run": "a24559",
+   "seed_arg": "own",
+   "cell": "a24559-sown",
+   "seed": 12,
+   "checks": {
+    "proto inventories vs PHOIBLE": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "sisters recognisable, distant not": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "scholars' horizon (human lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "language shift happened": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "long generations change less": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "hubs simpler, isolated richer": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "living inventory sizes vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "living segment frequencies vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "overused segments (all living lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "typology agrees with the live grams": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow borrowability (WOLD)": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "areal signal (cross-family, near vs far)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "no impossible segments (all lects)": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "second voice only where there is a syrinx; second-voice tone shares": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow the contact kind": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "doublets under elite rule": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "word starts vs NorthEuraLex": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "core words rarely borrowed": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "late things arrive as loans": {
+     "pass": false,
+     "kind": "guard"
+    }
+   },
+   "numbers": {
+    "living": 624,
+    "sisters": 0.5788,
+    "pronoun_loans": 0.004,
+    "horizon_judged": 15.0,
+    "horizon_2win": 16.6,
+    "horizon_logistic": 15.0,
+    "horizon_smoothed": 16.25,
+    "word_starts_off": 0,
+    "simple_syll": 0.059,
+    "back_harmony": 0.295,
+    "uvular_R": 0.12,
+    "overused": [],
+    "core_items": {
+     "I": 0.003,
+     "WE": 0.003,
+     "ONE": 0.016,
+     "TWO": 0.023,
+     "THREE": 0.04,
+     "MOTHER": 0.019,
+     "FATHER": 0.038
+    },
+    "sw100_xfam": 0.0244,
+    "late_loan_share": 0.418,
+    "horse": {
+     "native": 96,
+     "loan": 240,
+     "calque": 0,
+     "coined": 181,
+     "lects_with_word": 0.902,
+     "median_arrival_kyr": 4.0
+    }
+   }
+  },
+  {
+   "run": "a24559",
+   "seed_arg": "7919",
+   "cell": "a24559-s7919",
+   "seed": 7919,
+   "checks": {
+    "proto inventories vs PHOIBLE": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "sisters recognisable, distant not": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "scholars' horizon (human lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "language shift happened": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "long generations change less": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "hubs simpler, isolated richer": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "living inventory sizes vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "living segment frequencies vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "overused segments (all living lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "typology agrees with the live grams": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow borrowability (WOLD)": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "areal signal (cross-family, near vs far)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "no impossible segments (all lects)": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "second voice only where there is a syrinx; second-voice tone shares": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow the contact kind": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "doublets under elite rule": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "word starts vs NorthEuraLex": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "core words rarely borrowed": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "late things arrive as loans": {
+     "pass": false,
+     "kind": "guard"
+    }
+   },
+   "numbers": {
+    "living": 625,
+    "sisters": 0.5749,
+    "pronoun_loans": 0.008,
+    "horizon_judged": 10.94,
+    "horizon_2win": 14.25,
+    "horizon_logistic": 10.94,
+    "horizon_smoothed": 4.87,
+    "word_starts_off": 0,
+    "simple_syll": 0.078,
+    "back_harmony": 0.317,
+    "uvular_R": 0.088,
+    "overused": [],
+    "core_items": {
+     "I": 0.005,
+     "WE": 0.0,
+     "ONE": 0.012,
+     "TWO": 0.016,
+     "THREE": 0.023,
+     "MOTHER": 0.017,
+     "FATHER": 0.005
+    },
+    "sw100_xfam": 0.0237,
+    "late_loan_share": 0.412,
+    "horse": {
+     "native": 92,
+     "loan": 228,
+     "calque": 0,
+     "coined": 197,
+     "lects_with_word": 0.902,
+     "median_arrival_kyr": 4.0
+    }
+   }
+  },
+  {
+   "run": "de1cc6",
+   "seed_arg": "own",
+   "cell": "de1cc6-sown",
+   "seed": 528065,
+   "checks": {
+    "proto inventories vs PHOIBLE": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "sisters recognisable, distant not": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "scholars' horizon (human lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "language shift happened": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "long generations change less": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "hubs simpler, isolated richer": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "living inventory sizes vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "living segment frequencies vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "overused segments (all living lects)": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "typology agrees with the live grams": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow borrowability (WOLD)": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "areal signal (cross-family, near vs far)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "no impossible segments (all lects)": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "second voice only where there is a syrinx; second-voice tone shares": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow the contact kind": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "doublets under elite rule": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "word starts vs NorthEuraLex": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "core words rarely borrowed": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "late things arrive as loans": {
+     "pass": true,
+     "kind": "guard"
+    }
+   },
+   "numbers": {
+    "living": 530,
+    "sisters": 0.5445,
+    "pronoun_loans": 0.009,
+    "horizon_judged": 12.44,
+    "horizon_2win": 13.0,
+    "horizon_logistic": 12.44,
+    "horizon_smoothed": 13.0,
+    "word_starts_off": 1,
+    "simple_syll": 0.072,
+    "back_harmony": 0.292,
+    "uvular_R": 0.083,
+    "overused": [
+     "ɖ",
+     "ɽ"
+    ],
+    "core_items": {
+     "I": 0.006,
+     "WE": 0.026,
+     "ONE": 0.013,
+     "TWO": 0.017,
+     "THREE": 0.041,
+     "MOTHER": 0.015,
+     "FATHER": 0.019
+    },
+    "sw100_xfam": 0.0303,
+    "late_loan_share": 0.507,
+    "horse": {
+     "native": 86,
+     "loan": 184,
+     "calque": 0,
+     "coined": 147,
+     "lects_with_word": 0.897,
+     "median_arrival_kyr": 5.0
+    }
+   }
+  },
+  {
+   "run": "de1cc6",
+   "seed_arg": "7919",
+   "cell": "de1cc6-s7919",
+   "seed": 7919,
+   "checks": {
+    "proto inventories vs PHOIBLE": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "sisters recognisable, distant not": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "scholars' horizon (human lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "language shift happened": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "long generations change less": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "hubs simpler, isolated richer": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "living inventory sizes vs PHOIBLE": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "living segment frequencies vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "overused segments (all living lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "typology agrees with the live grams": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow borrowability (WOLD)": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "areal signal (cross-family, near vs far)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "no impossible segments (all lects)": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "second voice only where there is a syrinx; second-voice tone shares": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow the contact kind": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "doublets under elite rule": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "word starts vs NorthEuraLex": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "core words rarely borrowed": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "late things arrive as loans": {
+     "pass": true,
+     "kind": "guard"
+    }
+   },
+   "numbers": {
+    "living": 529,
+    "sisters": 0.4935,
+    "pronoun_loans": 0.004,
+    "horizon_judged": 20.94,
+    "horizon_2win": 6.5,
+    "horizon_logistic": 20.94,
+    "horizon_smoothed": 6.78,
+    "word_starts_off": 0,
+    "simple_syll": 0.043,
+    "back_harmony": 0.287,
+    "uvular_R": 0.095,
+    "overused": [],
+    "core_items": {
+     "I": 0.002,
+     "WE": 0.009,
+     "ONE": 0.028,
+     "TWO": 0.049,
+     "THREE": 0.062,
+     "MOTHER": 0.022,
+     "FATHER": 0.015
+    },
+    "sw100_xfam": 0.0304,
+    "late_loan_share": 0.5,
+    "horse": {
+     "native": 53,
+     "loan": 202,
+     "calque": 2,
+     "coined": 161,
+     "lects_with_word": 0.899,
+     "median_arrival_kyr": 5.5
+    }
+   }
+  },
+  {
+   "run": "0141d1",
+   "seed_arg": "own",
+   "cell": "0141d1-sown",
+   "seed": 11,
+   "checks": {
+    "proto inventories vs PHOIBLE": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "sisters recognisable, distant not": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "scholars' horizon (human lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "language shift happened": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "long generations change less": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "hubs simpler, isolated richer": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "living inventory sizes vs PHOIBLE": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "living segment frequencies vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "overused segments (all living lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "typology agrees with the live grams": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow borrowability (WOLD)": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "areal signal (cross-family, near vs far)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "no impossible segments (all lects)": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "second voice only where there is a syrinx; second-voice tone shares": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow the contact kind": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "doublets under elite rule": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "word starts vs NorthEuraLex": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "core words rarely borrowed": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "late things arrive as loans": {
+     "pass": false,
+     "kind": "guard"
+    }
+   },
+   "numbers": {
+    "living": 604,
+    "sisters": 0.4409,
+    "pronoun_loans": 0.002,
+    "horizon_judged": 23.48,
+    "horizon_2win": 22.0,
+    "horizon_logistic": 23.48,
+    "horizon_smoothed": 22.0,
+    "word_starts_off": 0,
+    "simple_syll": 0.063,
+    "back_harmony": 0.3,
+    "uvular_R": 0.076,
+    "overused": [],
+    "core_items": {
+     "I": 0.0,
+     "WE": 0.0,
+     "ONE": 0.019,
+     "TWO": 0.019,
+     "THREE": 0.034,
+     "MOTHER": 0.019,
+     "FATHER": 0.019
+    },
+    "sw100_xfam": 0.0254,
+    "late_loan_share": 0.476,
+    "horse": {
+     "native": 66,
+     "loan": 224,
+     "calque": 0,
+     "coined": 171,
+     "lects_with_word": 0.871,
+     "median_arrival_kyr": 4.0
+    }
+   }
+  },
+  {
+   "run": "0141d1",
+   "seed_arg": "7919",
+   "cell": "0141d1-s7919",
+   "seed": 7919,
+   "checks": {
+    "proto inventories vs PHOIBLE": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "sisters recognisable, distant not": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "scholars' horizon (human lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "language shift happened": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "long generations change less": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "hubs simpler, isolated richer": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "living inventory sizes vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "living segment frequencies vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "overused segments (all living lects)": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "typology agrees with the live grams": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow borrowability (WOLD)": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "areal signal (cross-family, near vs far)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "no impossible segments (all lects)": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "second voice only where there is a syrinx; second-voice tone shares": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow the contact kind": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "doublets under elite rule": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "word starts vs NorthEuraLex": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "core words rarely borrowed": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "late things arrive as loans": {
+     "pass": false,
+     "kind": "guard"
+    }
+   },
+   "numbers": {
+    "living": 605,
+    "sisters": 0.5253,
+    "pronoun_loans": 0.006,
+    "horizon_judged": 15.51,
+    "horizon_2win": 15.62,
+    "horizon_logistic": 15.51,
+    "horizon_smoothed": 14.88,
+    "word_starts_off": 0,
+    "simple_syll": 0.053,
+    "back_harmony": 0.334,
+    "uvular_R": 0.106,
+    "overused": [
+     "ɲ̟"
+    ],
+    "core_items": {
+     "I": 0.004,
+     "WE": 0.004,
+     "ONE": 0.017,
+     "TWO": 0.049,
+     "THREE": 0.078,
+     "MOTHER": 0.03,
+     "FATHER": 0.043
+    },
+    "sw100_xfam": 0.0248,
+    "late_loan_share": 0.474,
+    "horse": {
+     "native": 94,
+     "loan": 211,
+     "calque": 0,
+     "coined": 156,
+     "lects_with_word": 0.871,
+     "median_arrival_kyr": 4.5
+    }
+   }
+  },
+  {
+   "run": "3e0eb4",
+   "seed_arg": "own",
+   "cell": "3e0eb4-sown",
+   "seed": 12,
+   "checks": {
+    "proto inventories vs PHOIBLE": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "sisters recognisable, distant not": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "scholars' horizon (human lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "language shift happened": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "long generations change less": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "hubs simpler, isolated richer": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "living inventory sizes vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "living segment frequencies vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "overused segments (all living lects)": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "typology agrees with the live grams": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow borrowability (WOLD)": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "areal signal (cross-family, near vs far)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "no impossible segments (all lects)": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "second voice only where there is a syrinx; second-voice tone shares": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow the contact kind": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "doublets under elite rule": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "word starts vs NorthEuraLex": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "core words rarely borrowed": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "late things arrive as loans": {
+     "pass": false,
+     "kind": "guard"
+    }
+   },
+   "numbers": {
+    "living": 592,
+    "sisters": 0.591,
+    "pronoun_loans": 0.017,
+    "horizon_judged": 17.77,
+    "horizon_2win": 16.5,
+    "horizon_logistic": 17.77,
+    "horizon_smoothed": 16.62,
+    "word_starts_off": 0,
+    "simple_syll": 0.106,
+    "back_harmony": 0.285,
+    "uvular_R": 0.1,
+    "overused": [
+     "ɒ",
+     "ᵑk"
+    ],
+    "core_items": {
+     "I": 0.035,
+     "WE": 0.015,
+     "ONE": 0.027,
+     "TWO": 0.072,
+     "THREE": 0.044,
+     "MOTHER": 0.019,
+     "FATHER": 0.023
+    },
+    "sw100_xfam": 0.0229,
+    "late_loan_share": 0.448,
+    "horse": {
+     "native": 107,
+     "loan": 163,
+     "calque": 0,
+     "coined": 166,
+     "lects_with_word": 0.843,
+     "median_arrival_kyr": 4.5
+    }
+   }
+  },
+  {
+   "run": "3e0eb4",
+   "seed_arg": "7919",
+   "cell": "3e0eb4-s7919",
+   "seed": 7919,
+   "checks": {
+    "proto inventories vs PHOIBLE": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "sisters recognisable, distant not": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "scholars' horizon (human lects)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "language shift happened": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "long generations change less": {
+     "pass": false,
+     "kind": "guard"
+    },
+    "hubs simpler, isolated richer": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "living inventory sizes vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "living segment frequencies vs PHOIBLE": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "overused segments (all living lects)": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "typology agrees with the live grams": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow borrowability (WOLD)": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "areal signal (cross-family, near vs far)": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "no impossible segments (all lects)": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "second voice only where there is a syrinx; second-voice tone shares": {
+     "pass": true,
+     "kind": "invariant"
+    },
+    "loans follow the contact kind": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "doublets under elite rule": {
+     "pass": true,
+     "kind": "guard"
+    },
+    "word starts vs NorthEuraLex": {
+     "pass": true,
+     "kind": "realism"
+    },
+    "core words rarely borrowed": {
+     "pass": false,
+     "kind": "realism"
+    },
+    "late things arrive as loans": {
+     "pass": false,
+     "kind": "guard"
+    }
+   },
+   "numbers": {
+    "living": 591,
+    "sisters": 0.573,
+    "pronoun_loans": 0.01,
+    "horizon_judged": 16.86,
+    "horizon_2win": 16.5,
+    "horizon_logistic": 16.86,
+    "horizon_smoothed": 16.45,
+    "word_starts_off": 0,
+    "simple_syll": 0.113,
+    "back_harmony": 0.301,
+    "uvular_R": 0.095,
+    "overused": [
+     "ɖ"
+    ],
+    "core_items": {
+     "I": 0.023,
+     "WE": 0.008,
+     "ONE": 0.046,
+     "TWO": 0.068,
+     "THREE": 0.048,
+     "MOTHER": 0.004,
+     "FATHER": 0.014
+    },
+    "sw100_xfam": 0.0234,
+    "late_loan_share": 0.453,
+    "horse": {
+     "native": 100,
+     "loan": 193,
+     "calque": 1,
+     "coined": 142,
+     "lects_with_word": 0.843,
+     "median_arrival_kyr": 5.5
+    }
+   }
+  }
+ ],
+ "rates": {
+  "proto inventories vs PHOIBLE": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "guard"
+  },
+  "sisters recognisable, distant not": {
+   "rate": 0.75,
+   "cells": 8,
+   "kind": "realism"
+  },
+  "scholars' horizon (human lects)": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "realism"
+  },
+  "language shift happened": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "guard"
+  },
+  "long generations change less": {
+   "rate": 0.875,
+   "cells": 8,
+   "kind": "guard"
+  },
+  "hubs simpler, isolated richer": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "guard"
+  },
+  "living inventory sizes vs PHOIBLE": {
+   "rate": 0.75,
+   "cells": 8,
+   "kind": "realism"
+  },
+  "living segment frequencies vs PHOIBLE": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "realism"
+  },
+  "overused segments (all living lects)": {
+   "rate": 0.5,
+   "cells": 8,
+   "kind": "realism"
+  },
+  "typology agrees with the live grams": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "invariant"
+  },
+  "loans follow borrowability (WOLD)": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "guard"
+  },
+  "areal signal (cross-family, near vs far)": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "realism"
+  },
+  "no impossible segments (all lects)": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "invariant"
+  },
+  "second voice only where there is a syrinx; second-voice tone shares": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "invariant"
+  },
+  "loans follow the contact kind": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "guard"
+  },
+  "doublets under elite rule": {
+   "rate": 1.0,
+   "cells": 8,
+   "kind": "guard"
+  },
+  "word starts vs NorthEuraLex": {
+   "rate": 0.875,
+   "cells": 8,
+   "kind": "realism"
+  },
+  "core words rarely borrowed": {
+   "rate": 0.0,
+   "cells": 8,
+   "kind": "realism"
+  },
+  "late things arrive as loans": {
+   "rate": 0.25,
+   "cells": 8,
+   "kind": "guard"
+  }
+ },
+ "verdict": {
+  "bar": 0.7,
+  "pass": false,
+  "below_bar": [
+   "overuse",
+   "core loans",
+   "late loans"
+  ]
+ }
+}

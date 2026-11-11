@@ -25,6 +25,7 @@ from ..grid import shared_grid
 
 START_KYR = 20.0
 STEP_KYR = 0.5
+WILD_SHARE = 0.1   # a deme knows a wild animal or biome kind living on this share of its cells (PW-1745)
 NONE = 65535
 R_KM = 6371.0
 
@@ -932,6 +933,89 @@ class Run:
     def known_at_start(self) -> list[tuple[int, str]]:
         """(deme, concept) for the crops and animals the start demes know already (coined at their proto time)."""
         return [(d, c) for d, c, *_ in self._arrivals[0]]
+
+    # ------------------------------------------------------------------ wild animals and biome kinds (PW-1745)
+    @cached_property
+    def wild_kinds(self) -> list[tuple[str, tuple]]:
+        """[(concept, source)]: the stocked animals but the dog (source ("animal", bit) in the run's animal_wild layer)
+        and the biome kinds of lexicon.BIOME_KINDS (source ("biome", habitat)), as the run's stocks leave them."""
+        from . import lexicon as LX
+        out = []
+        for c, st in sorted(self.stocks.items()):
+            if st["layer"] == "animal_known" and LX.resolve(c) == c:
+                out.append((c, ("animal", int(st["bit"]))))
+        stocked = {c.split(":", 1)[1] for c, st in self.stocks.items() if st["layer"] == "animal_known"}
+        for k, (_g, _f, _t, hab) in LX.BIOME_KINDS.items():
+            if LX._FAUNA_STOCK.get(k) not in stocked:
+                out.append((k, ("biome", hab)))
+        return out
+
+    @cached_property
+    def _wild_layers(self) -> dict:
+        want = ("animal_wild", "temperature", "precipitation", "tree_cover")
+        specs = (getattr(self, "run", None) or {}).get("layers") or {}
+        return S.read_layers(self.dir, specs, [n for n in want if n in specs]) if self.dir is not None and specs else {}
+
+    @cached_property
+    def _coast_cells(self) -> np.ndarray | None:
+        w = self.world
+        return (np.asarray(w["coast_type"]) > 0) if w and "coast_type" in w else None
+
+    def _wild_bits(self, i: int) -> np.ndarray:
+        """Per cell at local frame i: bit j set when wild_kinds[j] lives there (cached for the last few frames)."""
+        cache = self.__dict__.setdefault("_wild_cache", {})
+        if i in cache:
+            return cache[i]
+        L = self._wild_layers
+        bits = np.zeros(self.n, np.uint32)
+        if not L:   # (a run without the layers, a test run: nothing wild is known)
+            return bits
+        rf = self.run_frame[i]
+        env = {}
+        for k, name in (("t", "temperature"), ("p", "precipitation"), ("tc", "tree_cover")):
+            if name in L:
+                env[k] = np.asarray(L[name][rf], np.float32)
+        aw = np.asarray(L["animal_wild"][rf]).astype(np.uint32) if "animal_wild" in L else None
+        for j, (_c, src) in enumerate(self.wild_kinds):
+            if src[0] == "animal":
+                if aw is None:
+                    continue
+                m = (aw >> np.uint32(src[1])) & np.uint32(1)
+            else:
+                ok = np.ones(self.n, bool)
+                for k, (lo, hi) in ((k, v) for k, v in src[1].items() if k != "coast"):
+                    if k not in env:
+                        ok[:] = False
+                        break
+                    ok &= (env[k] >= lo) & (env[k] <= hi)
+                if src[1].get("coast"):
+                    ok &= self._coast_cells if self._coast_cells is not None else False
+                m = ok.astype(np.uint32)
+            bits |= m << np.uint32(j)
+        if len(cache) > 2:
+            cache.pop(min(cache))
+        cache[i] = bits
+        return bits
+
+    def wild_met(self, deme: int, i: int) -> frozenset:
+        """The wild animals and biome kinds (wild_kinds) that live on at least WILD_SHARE of the deme's cells at frame i."""
+        cells, _ = self.deme_cells(deme, i)
+        kinds = self.wild_kinds
+        if not len(cells) or not kinds:
+            return frozenset()
+        b = self._wild_bits(i)[cells]
+        share = ((b[:, None] >> np.arange(len(kinds), dtype=np.uint32)) & np.uint32(1)).mean(0)
+        return frozenset(kinds[j][0] for j in np.flatnonzero(share >= WILD_SHARE))
+
+    def kept_now(self, deme: int, i: int) -> frozenset:
+        """The stocked animals known (kept) in any of the deme's cells at frame i."""
+        if not hasattr(self, "_lead") or not self.stocks:
+            return frozenset()
+        cells, _ = self.deme_cells(deme, i)
+        if not len(cells):
+            return frozenset()
+        k = int(np.bitwise_or.reduce(self._known_bits(i, "animal_known")[cells]))
+        return frozenset(c for c, st in self.stocks.items() if st["layer"] == "animal_known" and k >> st["bit"] & 1)
 
     # ------------------------------------------------------------------ landscape
     @property

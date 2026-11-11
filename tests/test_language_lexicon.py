@@ -25,6 +25,31 @@ def _proto(seed, concepts, lect="L", size_hint=None):
     return rng, inv, L.proto_lexicon(rng, inv, concepts, 20.0, lect)
 
 
+def test_dragons_never_taboo_a_predator():
+    """Owner 11-11: danger is relative to the speakers. A dragon voice (register -2, voice_profiles.toml) never avoids a
+    predator's name; giant-kin (-1) only the biggest beasts; humans and small folk all of them."""
+    import dataclasses
+    from planet.language import profiles as PR
+    data = PR.load_profiles()
+    assert data["chromatic_dragon"]["register"] == -2 and data["metallic_dragon"]["register"] == -2
+    dragon = dataclasses.replace(PR.HUMAN, register=-2)
+    giant = dataclasses.replace(PR.HUMAN, register=-1)
+    small = dataclasses.replace(PR.HUMAN, register=1)
+    preds = [k for k in L.TABOO_DANGER if k not in ("LOUSE", "WORM", "FOX", "DEER")]
+    assert not any(L.taboo_fits(k, dragon) for k in L.TABOO_DANGER)
+    assert [k for k in preds if L.taboo_fits(k, giant)] == [k for k in preds if L.TABOO_DANGER[k] == 3]
+    assert all(L.taboo_fits(k, small) and L.taboo_fits(k, None) for k in L.TABOO_DANGER)
+    assert L.taboo_fits("DIE", dragon)
+    concepts = L.concepts()
+    for seed in range(6):   # (and in the lexicon step itself: no taboo event for an animal under a dragon voice)
+        rng = np.random.default_rng(40 + seed)
+        inv = I.draw_inventory(rng)
+        lex = L.proto_lexicon(rng, inv, concepts, 20.0, f"D{seed}")
+        for t in range(8):
+            ev = L.step(rng, lex, 400.0, inv, kyr=20.0 - t, profile=dragon)
+            assert not [k for k, p in ev if p == "taboo" and k in L.TABOO_DANGER], ev
+
+
 def test_concept_list(concepts):
     ids = [c.id for c in concepts]
     assert len(ids) == len(set(ids))
@@ -46,7 +71,8 @@ def test_concept_list(concepts):
     by = {c.id: c for c in concepts}
     assert all(1 <= c.freq_class <= 5 for c in concepts)
     assert by["SIX"].freq_class <= 2 and by["crop:wheat"].freq_class in (3, 4) and by["FLOOD"].freq_class == 3
-    assert not by["crop:wheat"].proto and by["animal:horse"].taboo and by["RIVER"].local
+    assert not by["crop:wheat"].proto and not by["animal:horse"].proto and by["BEAR"].taboo and by["RIVER"].local
+    assert not by["animal:horse"].taboo and not by["PIG"].taboo and not by["SCALE"].taboo   # (PW-1739: wild/dangerous only)
 
 
 def test_concepts_limited_by_run_meta():
