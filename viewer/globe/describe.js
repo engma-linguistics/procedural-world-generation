@@ -222,7 +222,7 @@ function cellInfo(i) {
     if (L.river_nav && land && L.river_nav[i]) R('water', 'navigable', nm('river_nav'), { sep: ': ', ess: true });
     if (L.harbour && !land && L.harbour[i]) R('water', 'harbour', nm('harbour'), { sep: ': ', ess: true });
     if (L.pass && L.pass[i]) R('place', 'mountain pass', `${Math.round(L.pass_height[i])} m, ${nm('pass')}`, { sep: ': ', ess: true });
-    if (L.fertile && land) R('soil', 'farmland', `${nm('fertile')} (score ${(L.fertile_score[i] / 100).toFixed(2)})`, { sep: ': ' });
+    if (L.fertile && land) R('soil', 'farmland', `${nm('fertile')} (score ${L.fertile_score[i].toFixed(2)})`, { sep: ': ' });
     if (L.fresh_water && land) R('water', 'fresh water', `${nm('fresh_water')}${L.fresh_km[i] > 0 ? `, ${Math.round(L.fresh_km[i])} km away` : ''}${L.spring && L.spring[i] ? ', springs here' : ''}`, { sep: ': ' });
   };
   if (S.V.kind === 'world') {

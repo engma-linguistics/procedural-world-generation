@@ -28,3 +28,11 @@ the readers that divide by 100 (export.py:717, peoples.py:144, viewer/zoom.html:
 peoples test comment, and re-run `planet humanuse`-style recompute for existing zooms (old zooms may be deleted).
 - [ ] decoded fertile_score spans 0 to 1 (or 0 to 100 by one stated convention) on a zoom, with no ceiling pile-up
 - [ ] every reader agrees
+
+## Fixed (lane 287, PW-1682)
+`humanuse.world_layers` and `zoom_layers` now store `fertile_score` as a 0..1 fraction rounded to 0.01 (the store's encode
+divides by the 0.01 scale; the world layer had the same bug, so the settlement site score read a 2.55 ceiling too). Readers that
+divided by 100 (export.py, peoples.py, viewer/globe/describe.js) now read the fraction; viewer/zoom.html already showed it raw.
+Tests: `test_no_zoom_layer_saturates_its_encoding` (tests/test_zoom_peoples.py, every scaled layer of a built zoom) and
+`test_human_use_layers_fit_their_encoding` (tests/test_humanuse.py, world). No other saturating layer found. Zooms and worlds
+made before this fix show a wrong fertile_score (clipped at 2.55); no code path was kept for them, delete or rebuild.

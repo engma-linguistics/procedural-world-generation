@@ -141,7 +141,7 @@ def apply(world: dict, fr, nx: int, ny: int, res: float, size_km: float, A: dict
     gy, gx = np.gradient(np.where(water == 0, h, 0.0).reshape(ny, nx), res * 1000.0)
     slope = np.hypot(gx, gy).ravel()
     flat = np.clip(1 - slope / 0.12, 0, 1)
-    fert = np.asarray(lay["fertile_score"], float) / 100.0  # (stored as a percent, humanuse.py)
+    fert = np.asarray(lay["fertile_score"], float)  # 0..1 (humanuse.py)
     rd = np.minimum(np.asarray(lay["river_dist"], float), 255) * res
     river = np.exp(-rd / 6.0)
     Pk = np.ascontiguousarray(P * R_KM)

@@ -714,7 +714,7 @@ def _human_use_features(feats: Features, tab: dict, node_ll, kind: str, min_km: 
             feats.point("spring", float(ll[i, 0]), float(ll[i, 1]))
     if kind == "world" and grid is not None and L is not None and "fertile" in L:
         comp, n = grid.components(np.asarray(L["fertile"]) >= 3)
-        score = np.asarray(L["fertile_score"], float) / 100
+        score = np.asarray(L["fertile_score"], float)
         area = grid.cell_area_km2
         for k in range(n):
             cells = np.flatnonzero(comp == k)
