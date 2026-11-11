@@ -2,7 +2,7 @@
 id: PW-1141
 title: "Tech tree: single-origin Pleistocene techs (bread, wild cereals, fermentation) are first found ~5 kyr after Earth's date"
 type: task
-status: todo
+status: done
 parent: PW-675
 milestone: v1.0
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1138]
 refs: [planet/lineages/techtree.py, planet/lineages/samples/techtree.toml]
 created: 2026-10-30
-updated: 2026-10-30
+updated: 2026-11-11
 ---
 
 ## Description
@@ -32,4 +32,5 @@ storage, the Natufian package), then the soft-anchor rule applies above the floo
 source hunt finds them (pass 2).
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 308: keeping methods per culture.
 - 2026-10-30: Created from inbox draft draft-techtree-single-origin-floored-late.md (found by fun-lane-70).

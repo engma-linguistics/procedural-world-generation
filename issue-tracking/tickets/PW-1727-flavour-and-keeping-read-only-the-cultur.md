@@ -1,4 +1,5 @@
 ---
+id: PW-1727
 title: "Flavour and keeping read only the culture's own land: bought-in salt, spice and sugar never reach the profile"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane308
 blocked_by: []
 relates: []
-refs: [planet/lineages/keeping.py::inputs, planet/lineages/keeping.py::flavour, planet/lineages/bought_in.py, planet/lineages/cuisine.py::sheet, planet/lineages/brief.py::_salt, docs/review/food/flavour-preservation.md, "runs a2b637, de1cc6 (copies in a scratch dir, since deleted)"]
+refs: ["planet/lineages/keeping.py::inputs", "planet/lineages/keeping.py::flavour", planet/lineages/bought_in.py, "planet/lineages/cuisine.py::sheet", "planet/lineages/brief.py::_salt", docs/review/food/flavour-preservation.md, "runs a2b637, de1cc6 (copies in a scratch dir, since deleted)"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -23,3 +26,6 @@ the "Bought in" line two rows above it on the same sheet.
 Try: in keeping.inputs, raise salt reach by the bought-in salt (with a "bought in from X" reason), and add bought-in spice, sugar and oil to
 the hot, sweet and fatty axes at a lower weight than home-grown, inside the exchange's window (the last ~12.5 kyr).
 - [ ] a culture whose "Bought in" line lists salt or spice shows it in the flavour reasons
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-flavour-ignores-bought-in-salt-and-spice.md (found by lane308).

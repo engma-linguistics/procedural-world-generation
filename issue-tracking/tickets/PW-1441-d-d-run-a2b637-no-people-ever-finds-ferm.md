@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1141, PW-1391, PW-744]
 refs: ["planet/lineages/samples/techtree.toml (id fermentation: needs cooking, containers; earliest 13 kyr; rate 0.02)", "planet/lineages/cuisine.py::drink", "run a2b637 (meta.techtree.known)", "run 3c1caf (Seven Meals: humans know fermentation 10.2 kyr ago)", docs/review/food/cuisine-sheet/round1.md]
 created: 2026-11-03
-updated: 2026-11-03
+updated: 2026-11-11
 ---
 
 ## Description
@@ -28,4 +28,5 @@ current code); PW-1141 says single-origin Pleistocene techs come late, and here 
 - [ ] fermentation known by most farming peoples at the present on two or three D&D runs, or a stated reason why not
 
 ## Updates
+- 2026-11-11: Lane 308: does not reproduce on a2b637 with today's code (only dragon cultures lack beer/wine); needs the 2-3 D&D runs the ticket asks for before closing.
 - 2026-11-03: Created from inbox draft draft-dnd-run-never-finds-fermentation.md (found by lane164).

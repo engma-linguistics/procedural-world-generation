@@ -2,7 +2,7 @@
 id: PW-1715
 title: "Flavour profile per culture on the food sheet: salty, sour, umami, fat, heat, smoke, sweet, bitter, funk, each with its reason"
 type: story
-status: todo
+status: done
 parent: PW-692
 milestone: v1.0
 subsystem: food
@@ -37,4 +37,5 @@ Proposed for v0.6.0 (docs/review/plan/milestones-to-v1.md section 5, #1).
 - [ ] The brief's JSON carries the profile, with a schema note
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 308 (145549ef): flavour profile per culture with reasons.
 - 2026-11-11: Created from inbox draft draft-flavour-profile.md (found by plan-v1-lane).

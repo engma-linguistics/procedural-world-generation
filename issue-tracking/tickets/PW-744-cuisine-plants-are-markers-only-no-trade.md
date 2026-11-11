@@ -2,7 +2,7 @@
 id: PW-744
 title: "Cuisine plants are markers only: no trade goods, no ferments, crude wild ranges for tea, spice and capsicum"
 type: task
-status: todo
+status: done
 parent: PW-692
 milestone: v1.0
 subsystem: food
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-738, PW-721, PW-719]
 refs: [planet/lineages/crop_defs.py, planet/lineages/crops.py]
 created: 2026-10-24
-updated: 2026-11-03
+updated: 2026-11-11
 ---
 
 ## Description
@@ -27,6 +27,7 @@ tea and coffee, greens, alliums) with weight 0 and small `k`. What is left:
 - [ ] wild ranges checked against the world's own soils and shade; trade and ferment hooks
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 308: food keeping per culture (keeping.py).
 - 2026-11-03: Triage 11-03: v2 -> later: culinary follow-up of low weight; the core brief and cuisine tickets stay in v2
 - 2026-10-26: Milestone v3 -> v2. (PW-900 backlog reorg).
 - 2026-10-24: Created from inbox draft draft-cuisine-plants-effects-and-trade.md (found by fun9).

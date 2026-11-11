@@ -1,4 +1,5 @@
 ---
+id: PW-1728
 title: "Food keeping and flavour: let a preset author a kind's keeping leanings (elves' long ageing, halflings' short horizon)"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane308
 blocked_by: []
 relates: []
-refs: [planet/lineages/keeping.py, planet/lineages/spec.py::BODY_DEFAULT, planet/lineages/spec.py::parse_body, planet/lineages/samples/dnd.toml, viewer/lineages.html, docs/review/food/flavour-preservation.md, "../culinary-dnd/docs/01-fact-sheets-west-of-the-spine.md:73 (elves: ageing on scales nobody else can attempt)", "../culinary-dnd/docs/01-fact-sheets-west-of-the-spine.md:155 (halflings: preserve for next week, not next year)", "../culinary-dnd/docs/02-fact-sheets-east-and-south.md:118 (dragonborn: straw fuel, wok-logic, no smoking)", "runs a2b637, de1cc6"]
+refs: [planet/lineages/keeping.py, "planet/lineages/spec.py::BODY_DEFAULT", "planet/lineages/spec.py::parse_body", planet/lineages/samples/dnd.toml, viewer/lineages.html, docs/review/food/flavour-preservation.md, "../culinary-dnd/docs/01-fact-sheets-west-of-the-spine.md:73 (elves: ageing on scales nobody else can attempt)", "../culinary-dnd/docs/01-fact-sheets-west-of-the-spine.md:155 (halflings: preserve for next week, not next year)", "../culinary-dnd/docs/02-fact-sheets-east-and-south.md:118 (dragonborn: straw fuel, wok-logic, no smoking)", "runs a2b637, de1cc6"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Try: an optional inherited body key `keeping = { cellaring = 1.5, smoking = 0.3,
 only (Seven Meals is frozen), with the viewer's body editor showing it.
 - [ ] a preset can author per-method leanings; each shows as an authored reason on the sheet
 - [ ] the D&D preset's elves, halflings and dragonborn read as the notes say on a fresh D&D run
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-keeping-leanings-authored-per-kind.md (found by lane308).
