@@ -315,7 +315,13 @@ export function renderLayerButtons() {
   document.querySelectorAll('.worldOnly').forEach((e) => (e.style.display = S.V.kind === 'world' ? '' : 'none'));
   document.querySelectorAll('.runOnly').forEach((e) => (e.style.display = S.V.kind === 'run' ? '' : 'none'));
   S.V.peopleTracks = S.V.run?.kind === 'peoples' ? S.V.run.meta.lineages : null;
-  document.querySelectorAll('[data-needs-volc]').forEach((e) => (e.style.display = S.V[e.dataset.needsVolc]?.length ? '' : 'none'));
+  showOverlayNeeds();
+}
+
+// The overlays shown only when the item has their data (settlements, volcanoes...): again once loadSettlements has the ledger,
+// which arrives after the buttons are drawn (the checkbox stayed hidden on peoples runs, 11-11)
+export function showOverlayNeeds() {
+  document.querySelectorAll('[data-needs-volc]').forEach((e) => (e.style.display = S.V?.[e.dataset.needsVolc]?.length ? '' : 'none'));
 }
 
 // Renaming a landmass (PW-886): click its name here, type, Enter; "reset" gives the generated name back. Saved by POST /api/names to the file

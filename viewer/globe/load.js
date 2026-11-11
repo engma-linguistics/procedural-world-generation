@@ -3,7 +3,7 @@ import { SEASONAL, layerNeeds } from './layers.js';
 import { $, DIAG } from './scene.js';
 import { loadDemes, techTellParent, worldAnthroLoad } from './colours.js';
 import { buildTopology, paint, prepareGrid } from './geometry.js';
-import { renderLayerButtons, renderRunSummary, renderSummary } from './panel.js';
+import { renderLayerButtons, renderRunSummary, renderSummary, showOverlayNeeds } from './panel.js';
 import { timeLabel } from './timezoom.js';
 import { drawAxis, timeAxis } from './timeaxis.js';
 import { drawMarks, drawTint } from './provenance.js';
@@ -264,6 +264,7 @@ export async function loadRun(dir, wantT) {
   await loadDemes();
   await loadSettlements();  // (the settlement ledger, PW-1011)
   if (stale(tok)) return;
+  showOverlayNeeds();  // (its checkbox: the buttons were drawn before the ledger came)
   await loadNeeded();
   if (stale(tok)) return;
   applyPalette(S.V);  // (family hues, neighbours told apart, PW-1032)
