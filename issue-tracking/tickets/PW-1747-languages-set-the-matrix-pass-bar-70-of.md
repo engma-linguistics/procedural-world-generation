@@ -2,7 +2,7 @@
 id: PW-1747
 title: "Languages: set the matrix pass bar (70% of cells per check, invariants always, no check down more than one cell)"
 type: task
-status: needs-decision
+status: done
 parent: PW-1736
 milestone: v4
 subsystem: culture
@@ -38,3 +38,4 @@ Decision needed (owner): accept the bar above, or name another (e.g. 5 of 8).
 ## Updates
 - 2026-11-11: Created from inbox draft draft-language-matrix-pass-bar.md (found by lane18).
 - 2026-11-11: Put on the Language Desk as card m.bar (A 6 of 8 lean; B 5 of 8; C A plus an upper horizon limit ~16 kyr).
+- 2026-11-11: RULING (owner, 2026-11-11, Language Desk m.bar A): realism and guard checks pass in >= 70% of cells (6 of 8), invariants in all, horizon shown not barred, and no check down more than one cell against main. In tools/language/matrix.py (PASS_BAR, MAX_DROP_CELLS; --compare prints the lane verdict), 13f0bba6.
