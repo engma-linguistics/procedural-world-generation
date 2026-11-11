@@ -256,13 +256,20 @@ def parent_margin_px() -> int:
     return max(int(np.ceil(ZF.EDGE_PX + ZF.HALO_PARENT_PX)) + 2, int(np.ceil(ZF.HALO_PARENT_PX)) + 1 + ZF.TILE_REACH_PX)
 
 
+def edge_block_px(level: int) -> int:
+    """Pixels of a tile's level its edge blocks (lod_build.edge_blocks: the ground at its edges carved on blocks keyed
+    by place) reach beyond its square: their strips' half width and a corner block's further reach."""
+    from . import lod_build as LB
+    return LB.STRIP_PX + 2 * LB.ramp_px(level) + 4
+
+
 def parent_window(key: Key) -> tuple[float, float, float, float]:
-    """The parent level's rectangle a tile's build reads (its square plus parent_margin_px parent pixels round it),
-    clipped to the square."""
+    """The parent level's rectangle a tile's build reads (its square and its edge blocks, plus parent_margin_px parent
+    pixels round them), clipped to the square."""
     p = parent(key)
     if p is None:
         raise ValueError("level 1 is built from the world")
-    m = parent_margin_px() * res_km(p.level)
+    m = parent_margin_px() * res_km(p.level) + edge_block_px(key.level) * res_km(key.level)
     x0, x1, y0, y1 = rect(key)
     return max(x0 - m, -HALF), min(x1 + m, HALF), max(y0 - m, -HALF), min(y1 + m, HALF)
 
@@ -276,14 +283,14 @@ def parent_sources(key: Key) -> list[Key]:
     return covering(key.cell, p.level, parent_window(key))
 
 
-def _window_px(key: Key) -> tuple[int, int, int, int]:
+def _window_px(key: Key, r: tuple[float, float, float, float] | None = None) -> tuple[int, int, int, int]:
     """(c0, c1, r0, r1): the parent level's lattice columns and rows (from the square's west and north edges; may run
-    past the square) of a tile's stitched parent window, unclipped."""
+    past the square) of a tile's stitched parent window (or of the rectangle r of its level), unclipped."""
     p = parent(key)
     rp, m = res_km(p.level), parent_margin_px()
-    x0, x1, y0, y1 = rect(key)
-    return (int(round((x0 + HALF) / rp)) - m, int(round((x1 + HALF) / rp)) + m,
-            int(round((HALF - y1) / rp)) - m, int(round((HALF - y0) / rp)) + m)
+    x0, x1, y0, y1 = rect(key) if r is None else r
+    return (int(np.floor((x0 + HALF) / rp + 1e-9)) - m, int(np.ceil((x1 + HALF) / rp - 1e-9)) + m,
+            int(np.floor((HALF - y1) / rp + 1e-9)) - m, int(np.ceil((HALF - y0) / rp - 1e-9)) + m)
 
 
 def _origin_px(k: Key) -> tuple[int, int]:
@@ -316,29 +323,41 @@ def _edge_fill(filled: np.ndarray) -> np.ndarray:
     return near.ravel()
 
 
-def parent_mosaic(key: Key, sources: dict) -> tuple[dict, dict]:
+def parent_mosaic(key: Key, sources: dict, r: tuple[float, float, float, float] | None = None) -> tuple[dict, dict]:
     """A tile's parent as one zoom (meta, decoded layers), as fine.build reads it: the window of its parent level round
     the tile (parent_margin_px, unclipped), cut from `sources` ({parent-level Key: (meta, layers)}: parent_sources(key);
     for level 2 the cell's level-1 section), on that level's lattice: two tiles reading a parent pixel read the same
     values. Beyond the sources (past the square, or where a parent tile doesn't exist: more than PAD_PX of its pixels
     outside the cell) the window is edge-filled (the nearest pixel's values, no rivers). Where two parent tiles meet, a
     pixel whose water left its tile goes on to its lowest neighbour. The meta's falls are moved into the window's pixels,
-    the volcanoes given their lat, lon (once each); id, params and lineage are the tile's parent's."""
+    the volcanoes given their lat, lon (once each); id, params and lineage are the tile's parent's.
+
+    With r (a rectangle of the tile's level, km: an edge block, lod_build.edge_blocks): the window round r instead,
+    read only from the sources it overlaps, its meta from the first of them: the same whichever tile cuts it."""
     p = parent(key)
     if p is None:
         raise ValueError("level 1 is built from the world")
     if p not in sources:
         raise ValueError(f"tile {key}'s parent {p} is not built")
-    c0, c1, r0, r1 = _window_px(key)
+    c0, c1, r0, r1 = _window_px(key, r)
     nx, ny = c1 - c0, r1 - r0
     rp = res_km(p.level)
+
+    def _overlaps(sk, meta):
+        sc, sr = (0, 0) if sk.level == min(LEVELS) else _origin_px(sk)
+        return max(c0, sc) < min(c1, sc + int(meta["nx"])) and max(r0, sr) < min(r1, sr + int(meta["ny"]))
+
+    sources = {sk: v for sk, v in sources.items() if _overlaps(sk, v[0])}  # (only those it reads)
+    if r is not None:
+        if not sources:
+            raise ValueError(f"no parent tile under the rectangle {r}")
     names = None
     for _, L in sources.values():
         names = set(L) if names is None else names & set(L)
     out = {}
     filled = np.zeros((ny, nx), bool)
     seam = np.zeros((ny, nx), bool)  # (pixels on the edge of the source they came from)
-    pmeta = sources[p][0]
+    pmeta = sources[p][0] if r is None else sources[min(sources)][0]
     falls, vols, seen = [], [], set()
     for sk in sorted(sources):
         meta, L = sources[sk]

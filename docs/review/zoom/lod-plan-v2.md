@@ -406,3 +406,47 @@ level-1 peak is above lane 289's 5.7 GB (same command; machine state differs), s
   so they float over the eased ground when low. Tiles are lit by their own hillshade, the cells by the scene's lights: the
   colours shift a little at the level-1 switch. Not tried on Daniel's own Chrome (PW-415's shimmer); the dithered fade and
   the stencil need no transparency or logarithmic depth.
+
+## State (lane 293, 11-10: edges carved by place, PW-1694; features by place, PW-1695 mostly)
+
+**PW-1694, the edge carved.** `fine.EDGE_TEXTURE` is gone. A tile now fades over its edge ramp (8-10 px) to ground
+carved by the same landscape pass on blocks keyed by place (`lod_build.edge_blocks`: a strip 2 x `STRIP_PX` 32 px
+centred on each edge, a square centred on each corner; `carve_block` builds each from its own parent window,
+`lod.parent_mosaic(key, sources, r)`, with `fine.build(..., shape=, carve=True)`, which returns the pass's ground before
+the edge fade; `edge_surface` puts them together, blended strip -> corner by the distance to the corner). Both
+neighbours compute the same blocks, so the edge pixels are carved ground on both sides. `fine.build` grew `shape`
+(rectangles, up to the landscape pass) and `edge` (seam=True needs it). The tile's own carving and the blocks' correlate
+0.86-0.99 over the ramp; the mix keeps the rms with that correlation. `lod.parent_window` (what `parent_sources`
+lists) now also covers the edge blocks (`lod.edge_block_px`); keys, ids, lattices and `parent_margin_px` unchanged.
+
+Seams, dba204, cell py.1.1, level 2, land off the imposed rivers, the inside 16-48 px on the same lines (lane 293's
+probe; lane 290's filter differed, so its table isn't comparable line for line), ratio median / p90:
+
+| Edge | Before (main, texture) | After (edge blocks) | Same line, no seam (one block over both) |
+|---|---|---|---|
+| 4/4 : 5/4 | 0.92 / 1.09 | 0.89 / 1.00 | 0.90 / 1.00 |
+| 4/4 : 4/5 | 0.87 / 0.97 | 1.07 / 1.08 | 1.06 / 1.08 |
+| 5/4 : 5/5 | 1.08 / 1.40 | 1.07 / 1.32 | 1.07 / 1.37 |
+| 4/5 : 5/5 | 0.95 / 1.28 | 1.22 / 1.03 | 1.21 / 1.00 |
+
+The edges now score what the same line scores with no seam at all (within 0.01-0.05). Lines inside single tiles
+score 0.4-1.4 (median) and 0.6-1.9 (p90) on the same rule, so 0.9-1.1 against the inside band can't be met by any
+construction: `test_edge_steps_like_the_inside` now holds the edge within 10% of the seamless line's ratio (passes, no
+xfail); inbox `draft-lod-edge-criterion.md` (needs-decision) asks to confirm that reference. Rivers: 7/11, 32/35,
+17/20, 38/38 crossing course pixels carry the same discharge (the rest confluences on the edge, as lane 290). Rebuilds
+of 4/4 and 5/5 bit-identical. Time, in one process after the first tile (numba warm), `NUMBA_NUM_THREADS=8`: 7.8-13.7 s
+per tile, of which the edge blocks 1.3-2.9 s (main's code, same probe: 8.7-10.7 s); two tiles saved with deposits in one
+process 26.3 s wall, peak 2.86 GB (`/usr/bin/time -v`). Neighbours carve the same blocks twice (a cache by place would
+save ~2 s a tile).
+
+**PW-1695, features.** Volcanoes (seam=True): drawn by every tile whose built area the cone's reach touches, in an order
+keyed by place; the summit's toning-down, shift and summit pixel found on the whole hold disc on the lattice
+(`surf_at`, `form` in `fine.build`), not the tile's pixels; listed in every drawing tile's stats with `owner` (the tile
+whose region holds the vent; `vent_px`/`summit_px` may lie off the tile). Falls: the relief scale is the planet's,
+the gorge's rock is the median along its path, the tier draw is seeded by the lip's place; a fall near an edge is still
+skipped (inbox `draft-lod-falls-across-tile-edges.md`). Karst/dune overlays and the reef flats' changes fade to zero over
+the edge ramp (ponds only where the ramp is done), so the edge is the carved blocks' ground on both sides. Deposits:
+`lod_build.tile` calls `regional.add_deposits` (each parent deposit in the one tile holding its point; dba204 4/4 127,
+5/4 19, none in both). Test: `test_a_volcano_on_an_edge_is_drawn_by_both_tiles`, `test_no_cliff_over_a_volcano_on_an_edge`.
+
+**Next:** falls across edges (draft); step 2 can serve tiles with `lod_build.tile`.

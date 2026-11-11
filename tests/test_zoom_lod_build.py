@@ -157,14 +157,76 @@ def test_no_cliff_along_the_shared_edge(siblings):
     assert np.percentile(across, 90) < 1.5 * np.percentile(inside, 90)
 
 
-@pytest.mark.xfail(reason="lod-plan-v2.md 2.2 done-when not met yet: the edge fades to the parent's ground plus a "
-                          "place-keyed texture (fine.EDGE_TEXTURE), which is smoother than the carved ground here "
-                          "(0.5x its steps) and within 0.8-1.1x on world dba204: a place-keyed carving at the edges is "
-                          "the fix (State section)", strict=False)
-def test_edge_steps_like_the_inside(siblings):
+def test_edge_steps_like_the_inside(siblings, section, world):
+    """The edge is carved like the inside (PW-1694): the steps across the shared edge are those the same line has
+    with no seam at all (one block carved over both tiles, lod_build.carve_block), within 10% (median and p90). The
+    inside band 16-48 px away is not the reference: on single lines inside dba204 tiles (no seam) its ratio to the
+    band ran 0.4-1.4 (median) and 0.6-1.9 (p90)
+    (lod-plan-v2.md State, lane 293)."""
+    a, b, za, zb, _ = siblings
     across, inside = _steps(siblings)
-    r_med = np.median(across) / np.median(inside)
-    r_90 = np.percentile(across, 90) / np.percentile(inside, 90)
-    # no smooth stripe either (lod-plan-v2.md 2.1 item 2): the step distribution within 10% of the inside's
+    cell, _, meta, layers = section
+    src = {L.Key(cell, 1, 0, 0): (meta, layers)}
+    n, m = L.tile_px(2), 40
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(L, "LEVELS", LEVELS)
+        hw = LB.carve_block(world, a, src, (a.tx * n - m, (b.tx + 1) * n + m, a.ty * n, (a.ty + 1) * n))
+    off = ~(np.isfinite(za["layers"]["river_phase"][:, -1]) | np.isfinite(zb["layers"]["river_phase"][:, 0]))
+    ref, ref_in = LB.edge_steps(hw[:, :m + n], hw[:, m + n:], 1, band=(16, 48))
+    ref = ref[off]
+    r_med = (np.median(across) / np.median(inside)) / (np.median(ref) / np.median(ref_in))
+    r_90 = (np.percentile(across, 90) / np.percentile(inside, 90)) / (np.percentile(ref, 90) / np.percentile(ref_in, 90))
     assert 0.9 <= r_med <= 1.1, (r_med, r_90)
     assert 0.9 <= r_90 <= 1.1, (r_med, r_90)
+
+
+@pytest.fixture(scope="module")
+def volcano_siblings(section, world):
+    """The siblings with a volcano on their shared edge (PW-1695): a cone 1500 m high on the section, its vent on the
+    lattice line between them, 20 km north of the valley."""
+    mp = pytest.MonkeyPatch()
+    mp.setattr(L, "LEVELS", LEVELS)
+    cell, (x0, y0), meta, layers = section
+    a = L.tile_at(cell, 2, x0 - 1.0, y0)
+    b = L.Key(cell, 2, a.tx + 1, a.ty)
+    xv, yv = L.rect(a)[1], y0 + 20.0
+    n, r = 1000, 4.0
+    k = np.arange(n) + 0.5
+    X, Y = np.meshgrid(-2000 + k * r, 2000 - k * r)
+    h = layers["elevation"] + (1500.0 * np.exp(-((X - xv) ** 2 + (Y - yv) ** 2) / (2 * 16.0 ** 2))).astype(np.float32)
+    lat, lon = Z._latlon(L.frame(cell).to_sphere(np.array([xv]), np.array([yv]))[0])
+    ic, ir = int((xv + 2000) / r), int((2000 - yv) / r)
+    top = float(h[ir - 2:ir + 3, ic - 2:ic + 3].max()) + 50.0
+    vol = {"lat": lat, "lon": lon, "top_m": top, "height_m": 1500.0, "kind": "arc", "status": "active"}
+    m2 = {**meta, "id": "sec002", "stats": {"falls": [], "volcanoes": [vol]}}
+    src = {L.Key(cell, 1, 0, 0): (m2, {**layers, "elevation": h})}
+    za = LB.build(world, a, src, log=lambda *_: None)
+    zb = LB.build(world, b, src, log=lambda *_: None)
+    mp.undo()
+    return a, za, zb
+
+
+def test_a_volcano_on_an_edge_is_drawn_by_both_tiles(volcano_siblings):
+    a, za, zb = volcano_siblings
+    va, vb = za["stats"]["volcanoes"], zb["stats"]["volcanoes"]
+    assert len(va) == 1 and len(vb) == 1  # (listed by both: finer levels find it whichever parent they read)
+    assert va[0]["owner"] + vb[0]["owner"] == 1  # (owned by the tile whose pixels hold its vent)
+    assert va[0]["vent_px"][0] == vb[0]["vent_px"][0] and va[0]["vent_px"][1] - vb[0]["vent_px"][1] == L.tile_px(2)
+    ha, hb = za["layers"]["elevation"].astype(float), zb["layers"]["elevation"].astype(float)
+    row = va[0]["vent_px"][0]
+    rows = slice(max(row - 12, 0), row + 13)
+    # the cone stands on both sides of the edge (not cut off at it)
+    assert np.median(ha[rows, -3:]) > np.median(ha[rows, -40]) + 300
+    assert np.median(hb[rows, :3]) > np.median(hb[rows, 40]) + 300
+
+
+def test_no_cliff_over_a_volcano_on_an_edge(volcano_siblings):
+    a, za, zb = volcano_siblings
+    ha, hb = za["layers"]["elevation"].astype(float), zb["layers"]["elevation"].astype(float)
+    row = za["stats"]["volcanoes"][0]["vent_px"][0]
+    rows = slice(max(row - 12, 0), row + 13)
+    across = np.abs(hb[rows, 0] - ha[rows, -1])
+    inside = np.concatenate([np.abs(np.diff(ha[rows, -24:], axis=1)).ravel(),
+                             np.abs(np.diff(hb[rows, :24], axis=1)).ravel()])
+    assert across.max() <= inside.max()
+    assert np.median(across) <= 1.5 * np.median(inside)
