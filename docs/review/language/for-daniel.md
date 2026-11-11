@@ -2175,8 +2175,15 @@ a trait. A bear is "honey-eat" (like Slavic *medvěd*), "the brown one" (like Ge
 scales are never avoided any more.
 
 **Not yet at my own bars.** Two new checks are just under the marks I set. Swadesh-100 words borrowed across families in the
-last 3 kyr are at 2.4-3.0%, against a bar of 2%. New things are named by a loan or calque 41-51% of the time, against a bar
-of 50%; the rest are the people's own compounds. The next step is a stronger core damping (0.35 to about 0.25) and fewer
+last 3 kyr are at 2.3-3.0%, against a bar of 2%, and "two" or "three" still reach 6-8% on two worlds. New things are
+named by a loan or calque 41-51% of the time, against a bar of 50%; the rest are the people's own compounds. The next step is a stronger core damping (0.35 to about 0.25) and fewer
 coinages when a neighbour already has a word. **Cost:** the pass takes 630 s at 8 workers on a24559 (main: 589 s on a
 quieter machine). languages.json is 67.0 MB (+2.4%) and the etymology file 65.9 MB (+5.8%). The memory peak rose from
-21.6 GB to 25.3 GB, so the matrix ran with a 30 GB cap (draft ticket).
+21.6 GB to 25.3 GB, so the matrix ran with a 30 GB cap (draft ticket). "Then" and "until" are now words of their own
+("that + time", "arrive + time") for the recipes' steps.
+
+**Matrix (8 draws, against main's baseline).** Pronoun loans now pass everywhere: the median fell from 0.066 to 0.007,
+and the WOLD check went from 6 to 8 draws. Hubs went from 7 to 8. Four checks lost one draw each: sisters 7 to 6, long
+generations 8 to 7, overused segments 5 to 4 and word starts 8 to 7. That is inside the proposed bar of at most one draw
+worse. It looks like reshuffled chance (every proto lexicon is drawn afresh), not a pattern. The two new checks fail as
+described above. Tables: `docs/review/language/matrix/lane20-2026-11-11.md`.

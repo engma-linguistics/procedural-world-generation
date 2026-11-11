@@ -15,12 +15,13 @@ refs: ["planet/language/checks.py::core_loans", "planet/language/checks.py::late
 ## Description
 In plain words: lane 20 cut core-word borrowing from 10-22% to under 4% per item and gated late animals, but two of the
 new checks it added fail narrowly on the matrix, so they count as failing realism checks until tuned.
-- `core words rarely borrowed`: every item (I, WE, ONE-THREE, MOTHER, FATHER) is under 0.05 in all cells, but
-  Swadesh-100 words borrowed across families in the last 3 kyr are 2.4% (a24559) and 3.0% (de1cc6) against 2%. Lever:
+- `core words rarely borrowed` (0 of 8 cells): I, WE, MOTHER and FATHER are under 0.05 everywhere; TWO and THREE reach
+  0.06-0.08 in 4 cells (0141d1, 3e0eb4, de1cc6 s7919); Swadesh-100 words borrowed across families in the last 3 kyr
+  are 2.3-3.0% in every cell against 2%. Matrix tables: docs/review/language/matrix/lane20-2026-11-11.md. Lever:
   `lexicon.CORE_LOAN_DAMP` 0.35 -> ~0.25 (the replacement calibration `KEEP_COMPENSATION` may then need re-solving:
   test_replacement_rate_matches_calibration).
 - `late things arrive as loans`: words for late things (animals met, biome kinds, tech items, crops) first made or taken
-  in the last 6 kyr are loans or calques 41-42% (a24559), 51% (de1cc6) against 50%. Most coinages are crop and herd
+  in the last 6 kyr are loans or calques 41-51% (2 of 8 cells pass) against 50%. Most coinages are crop and herd
   origins ("tamed here", legitimate) and `tech_step` / `wild_step` coinages when a neighbour already had a word. Levers:
   `WILD_LOAN` 0.6 -> 0.7, and in `tech_step` borrow from any contact lect that has the word more often; or exclude route
   origins (a taming deme coins by definition) from the share.
