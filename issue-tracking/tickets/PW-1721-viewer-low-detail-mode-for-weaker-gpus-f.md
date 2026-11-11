@@ -28,3 +28,4 @@ The viewer was tuned on Daniel's machine (60 fps in testing, PW-1696). If this i
 
 ## Updates
 - 2026-11-11: Created from inbox draft draft-viewer-low-detail-mode.md (found by plan-v1-lane).
+- 2026-11-11: Lane 313: low-detail mode (viewer/machinecore.js, viewer/globe/machine.js): auto from the GPU and the probe, or chosen by hand; fewer tiles kept and fetched, coarser refine, finest level 3, 1x pixels. Budgets are judgement: the integrated-GPU frame-time measurement is not done.

@@ -19,7 +19,7 @@
 //     wide as the river at its pixel size, in the ribbons' colours) and marks stencil bit 2, which hides the globe's
 //     river ribbons there (overlays.js); over level 1 and the cells the ribbons show as before.
 //   - Tiles are placed relative to their own centre (float32 stays exact near the camera).
-//   - The memory pool: at most MAX_TILES tiles / MAX_BYTES (GPU and JS copies) are kept, the least recently drawn
+//   - The memory pool: at most LOD.maxTiles tiles / LOD.maxBytes (GPU and JS copies) are kept, the least recently drawn
 //     dropped first; records of tiles not seen for FORGET_MS are forgotten.
 // The tiles come through a tile source (tilesource.js): the server builds the wanted tiles on demand (planet/tiles.py,
 // PW-1690); until a tile is built its parent shows there, stretched, and a small "sharpening…" note shows (badge()).
@@ -35,12 +35,14 @@ import { NotBuilt, TileSource } from './tilesource.js';
 
 const P = new URLSearchParams(location.search);
 const R_M = 6371000;
-const FADE_S = 0.4, MAX_TILES = 120, MAX_BYTES = 0.4e9, FORGET_MS = 60000, FETCHES = 4, GN = 129;
+const FADE_S = 0.4, FORGET_MS = 60000, GN = 129;
 const KIDS_PX = 80;  // (a tile's children grid: 8, 4 and 10 a side divide it)
 const RIVER_W = 4.5, RIVER_MAX_PX = 8;  // river width m = RIVER_W sqrt(Q m3/s) (judgement), at most RIVER_MAX_PX pixels across
 const EASE_HI_KM = 2000, EASE_LO_KM = 50;
 export const LOD = {
   on: P.get('lod') !== '0', refinePx: +P.get('lodpx') || 1.5, maxLevel: Math.min(+P.get('lodmax') || M.FINEST, M.FINEST), slowMs: +P.get('lodslow') || 0,
+  // the memory pool and fetches in flight: full detail; low detail (machine.js, PW-1721) lowers them
+  maxTiles: 120, maxBytes: 0.4e9, fetches: 4,
   src: null, world: null, cells: [], tiles: new Map(), queue: [], inflight: 0, dirty: false, ex: 0, relK: { value: 1 }, hgKm: Infinity,
   stats: { drawn: 0, kept: 0, bytes: 0, fetched: 0, failed: 0, wanted: 0, byLevel: {}, queued: 0, building: 0, records: 0, dropped: 0, satOnly: 0 }, note: '',
 };
@@ -256,7 +258,7 @@ async function load(t, spec) {
 }
 function pump() {
   const spec = colourSpec(), rv = S.riverTiles;
-  while (LOD.inflight < FETCHES && LOD.queue.length) {
+  while (LOD.inflight < LOD.fetches && LOD.queue.length) {
     const t = LOD.queue.shift();
     if (!t.loading && !t.failed && (t.colId !== spec.id)) load(t, spec);
     else if (rv && t.mesh && t.k.level >= 2 && t.riverThr !== rv.thr && !t.riverLoading) loadRiver(t, rv);
@@ -494,6 +496,7 @@ export function updateLod(now) {
     ? `Detail tiles: ${spec.id === 'satellite' ? 'this layer has no fine version; they show the satellite view' : `${satOnly} drawn without this layer show the satellite view`}.` : '');
 
   // the memory pool: keep at most MAX_TILES / MAX_BYTES, dropping the least recently drawn; forget old records
+  const MAX_TILES = LOD.maxTiles, MAX_BYTES = LOD.maxBytes;
   if (LOD.stats.kept > MAX_TILES || bytes > MAX_BYTES) {
     const old = [...LOD.tiles.values()].filter((t) => t.mesh && !t.mesh.visible && !t.loading && !t.riverLoading).sort((a, b) => a.lastUsed - b.lastUsed);
     let n = LOD.stats.kept, b = bytes;

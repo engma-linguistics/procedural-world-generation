@@ -10,7 +10,13 @@ settings. The file is TOML:
     port = 8765                            # the first port tried; the next free one is used if taken
     jobs = 4
 
-    [presets]                              # machine-aware presets (planned): the server's defaults per feature
+    [presets]                              # machine-aware presets: `planet machine probe --write` (planet/machine.py)
+    jobs = 2                               # ... level, jobs, tile cache and builds, memory cap, low detail
+    [presets.gates]                        # each heavy feature: allow | warn | off
+    split_2myr = "off"
+
+    [overrides]                            # the user's own choices over [presets.gates] (the Machine panel)
+    split_2myr = "warn"
 """
 from __future__ import annotations
 
@@ -45,7 +51,7 @@ def serve_defaults(cfg: dict | None = None) -> dict:
 
 
 def presets(cfg: dict | None = None) -> dict:
-    """The [presets] table (the hook for machine-aware presets; empty until the installer probes the machine)."""
+    """The [presets] table (machine.py writes it; empty until the installer probes the machine)."""
     return dict((load() if cfg is None else cfg).get("presets") or {})
 
 

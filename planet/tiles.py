@@ -115,10 +115,11 @@ class TileService:
     anything with submit, get, cancel, active_where); free_ram: GB free now (api.free_ram_gb)."""
 
     def __init__(self, jobs, cap_gb: float | None = None, at_once: int = AT_ONCE, free_ram=api.free_ram_gb,
-                 clock=time.time):
+                 clock=time.time, levels=(1, 2, 3, 4)):
         self.jobs = jobs
         self.cap_gb = float(cap_gb if cap_gb is not None else os.environ.get("PLANET_TILE_CACHE_GB", CAP_GB))
         self.at_once = at_once
+        self.levels = frozenset(levels)  # the levels built here (the machine presets may switch some off, PW-1720)
         self.free_ram = free_ram
         self.clock = clock
         self.lock = threading.RLock()
@@ -300,6 +301,10 @@ class TileService:
                         stop = True
                         break
                     if (wid, k) in self.inflight or self._failed(wid, k):
+                        continue
+                    if k.level not in self.levels:
+                        self.note = (f"level {k.level} tiles are off on this machine (the Machine panel's presets)"
+                                     if self.levels else "detail tiles are off on this machine (the Machine panel's presets)")
                         continue
                     if any(self.built(wid, s) is None for s in L.parent_sources(k)):
                         continue  # (parents first)

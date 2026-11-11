@@ -60,6 +60,7 @@ import { paletteReport } from './palettes.js';
 import { fadeSettlements } from './settlements.js';
 import { applyUrlOptions, init, navBarHide, urlp } from './select.js';
 import { LOD, lodDirty, updateLod } from './lodtiles.js';
+import './machine.js';  // (the Machine panel and low-detail mode, PW-1720 / PW-1721)
 import { CAM, afterControls, updateDive } from './dive.js';
 import { DRAPE, drapeFloat, updateDrape } from './drape.js';
 // ------------------------------------------------------------ boot

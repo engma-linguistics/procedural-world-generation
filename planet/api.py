@@ -919,6 +919,10 @@ def refine_estimate(req: dict, busy: str | None = None) -> dict:
                       "(it is memory on this machine)")
     if disk is not None and disk < 2 * c["file_gb"]:
         refuse.append(f"not enough disk for the new world: {disk:.1f} GB free, it needs about {2 * c['file_gb']:.1f} GB")
+    from . import machine as MC  # (the machine presets of an install, PW-1720)
+    gate = MC.check(MC.refine_gates(r["level"]))
+    refuse += gate["refuse"]
+    warn += gate["warn"]
     if c["minutes"] > REFINE_LONG_MIN:
         warn.append(f"about {c['minutes']:.0f} minutes: start it before bed and leave the server running")
     opens = r["level"] <= VIEWER_MAX_LEVEL
