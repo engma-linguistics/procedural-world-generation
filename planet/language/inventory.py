@@ -970,6 +970,40 @@ def token_priors() -> dict:
     return out
 
 
+# Word-initial position has its own profile (PW-1686). Across NorthEuraLex's 107 languages a word's first sound is p, h,
+# k, m (x2.1, x2.0, x1.5, x1.3 their share of all tokens) far more often than l, n, r, ŋ (x0.61, x0.55, x0.28, x0 there):
+# word starts favour obstruents and labials, and liquids and ŋ shun them (Altaic, Korean and Dravidian ban initial r
+# outright). Before PW-1686 a word's first sound was drawn by the same weights as any other, so the protos' starts were
+# the in-word profile: l and n as common as p and m. The `initial` column of data/token_frequency.tsv
+# (tools/language/token_priors.py) is the median ratio; the first sound of a drawn word (its onset, or its vowel when it
+# has none) is weighted by it. Floored at INITIAL_FLOOR: ŋ- is common word-initially in South-East Asia, Oceania and
+# Australia, outside the Eurasian sample, so it stays possible, only rare.
+INITIAL_FLOOR = 0.15
+
+
+@functools.lru_cache(maxsize=1)
+def initial_priors() -> dict:
+    """token class -> how much busier it is word-initially than in words overall (the `initial` column; empty without)."""
+    if not TOKEN_TSV.exists():
+        return {}
+    out = {}
+    for line in TOKEN_TSV.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.startswith("#") or line.startswith("class\t"):
+            continue
+        p = line.split("\t")
+        if len(p) >= 4:
+            out[p[0]] = max(INITIAL_FLOOR, float(p[3]))
+    return out
+
+
+def initial_weights(inv: "Inventory", segs: list) -> np.ndarray:
+    """`_weights` for a word's first sound: times the class's word-initial factor (`initial_priors`; 1 for a class the
+    table lacks)."""
+    ip = initial_priors()
+    w = _weights(inv, segs) * np.array([ip.get(token_class(s), 1.0) for s in segs], float)
+    return w / w.sum() if w.sum() > 0 else _weights(inv, segs)
+
+
 def _lexical(s: Segment, presence: float) -> float:
     """A phoneme's draw weight before its make cost: its token class's busyness, or the presence weight it had before
     PW-1623 for a class the table lacks."""
@@ -1057,6 +1091,7 @@ def draw_word(rng, inv: Inventory, n_syll: int | None = None, syllables: int | N
     """A legal word of `n_syll` syllables (default 1-3, mostly 2) by the inventory's templates and segment weights."""
     n = n_syll or syllables or int(rng.choice([1, 2, 3], p=[0.3, 0.5, 0.2]))
     cw, vw = _weights(inv, inv.consonants), _weights(inv, inv.vowels)
+    cw0, vw0 = initial_weights(inv, inv.consonants), initial_weights(inv, inv.vowels)   # (the word's first sound)
     kw = coda_weights(inv, inv.consonants)
     names = list(inv.shapes)
     sw = np.array([inv.shapes[k] for k in names], float)
@@ -1074,8 +1109,8 @@ def draw_word(rng, inv: Inventory, n_syll: int | None = None, syllables: int | N
                 on = 1   # syllable contact: after a coda the next onset is one consonant (no -lp.n- runs of three or four)
             prev_coda = co if inv.max_coda else 0
             if on:
-                out.extend(_onset_cluster(rng, inv, min(on, inv.max_onset, MAX_ONSET), cw))
-            out.append(_toned(rng, inv, _pick_seg(rng, inv.vowels, vw)))
+                out.extend(_onset_cluster(rng, inv, min(on, inv.max_onset, MAX_ONSET), cw0 if i == 0 else cw))
+            out.append(_toned(rng, inv, _pick_seg(rng, inv.vowels, vw0 if i == 0 and not on else vw)))
             if co and inv.max_coda:
                 out.extend(_coda_cluster(rng, inv, min(co, inv.max_coda, MAX_CODA), kw))
         w = tuple(out)
@@ -1448,10 +1483,21 @@ def new_violations(before, after, prof, types_only: bool = False) -> float:
     return bad / changed if changed else 0.0
 
 
-def retemplate(inv: Inventory, forms) -> Inventory:
+def retemplate(inv: Inventory, forms, held: tuple | None = None) -> Inventory:
     """The phonotactics re-check: the lect's templates (max_onset, max_coda, shapes) re-read from its words after sound
-    change, so coinages and loans follow the syllables the language has now, not the proto's. Unchanged when they agree."""
+    change, so coinages and loans follow the syllables the language has now, not the proto's. Unchanged when they agree.
+    `held`: the line's word-shape anchor (pattern_of; lect.Lect.hold_pattern). While the line holds open syllables (under
+    TEMPLATE_SHARE of its words with a final or a medial coda) the template stays open, and while it holds single onsets
+    (under TEMPLATE_SHARE with a cluster) onsets stay single, whatever a few loans or shifted words brought in: loans are
+    then repaired to the pattern, as Japanese and Hawaiian repair theirs by epenthesis (PW-1647). Before, 3% of words
+    with a coda (often loans from coda-language neighbours) opened the template, and coins and later loan repairs then
+    used CVC, so the open-syllable lines leaked."""
     mo, mc, med = syllable_profile(forms)
+    if held is not None:
+        if held[0] < TEMPLATE_SHARE and held[1] < TEMPLATE_SHARE:
+            mc, med = 0, False
+        if held[2] < TEMPLATE_SHARE:
+            mo = 1
     mo, mc = min(mo, MAX_ONSET), min(max(mc, 1 if med else 0), MAX_CODA)
     if (mo, mc) == (inv.max_onset, inv.max_coda):
         return inv

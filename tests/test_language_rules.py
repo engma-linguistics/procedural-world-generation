@@ -542,3 +542,31 @@ def test_no_rule_voices_or_prenasalises_an_ejective():
             assert not any(RU.impossible(x) for x in RU.apply(r, w)), (r.id, _t(w[1]))
     voicing = next(r for r in RU.DEMO_RULES if r.id == "lenition.intervocalic_voicing")
     assert "".join(_t(x) for x in RU.apply(voicing, _f("aka"))) == "aɡa"
+
+
+def test_dissimilation_diffuses_and_rare_rows_stay_regular():
+    """PW-1686: dissimilation and metathesis are lexical (diffusing scope) and reach about DIFFUSE_REACH of the words they
+    fit; the rarest rows are regular laws (Hawaiian t > k, uvular r) unless a row says otherwise."""
+    from planet.language import lect as LC
+    from planet.language import lexicon as L
+    rules, _ = R.load_tsv()
+    by = {q.id: q for q in rules}
+    assert by["S094"].scope == "diffusing" and by["S091"].scope == "diffusing"
+    assert by["S218"].scope == "regular" and by["S148"].scope == "regular"
+    reach = LC.diffusion_reach("d1", "S091", 3.0)
+    share = sum(reach(f"C{k}") for k in range(4000)) / 4000
+    assert abs(share - R.DIFFUSE_REACH) < 0.03
+    lex = L.Lexicon("L")
+    for k in range(200):
+        lex.words[f"C{k}"] = L.Word(f"C{k}", w("rara"), "N", 3, (), 3.0)
+    n = L.apply_rule_to_lexicon(lex, lambda f: R.apply(by["S091"], f), "S091", 2.5, "L", reach=reach)
+    assert 0.15 * 200 < n < 0.45 * 200
+    assert sum(1 for x in lex.words.values() if ipa(x.form) == "lara") == n
+
+
+def test_prothetic_glides_before_initial_vowels():
+    """PW-1686: the Slavic prothesis rows give initial front vowels a j and rounded back vowels a w."""
+    rules, _ = R.load_tsv()
+    by = {q.id: q for q in rules}
+    assert [ipa(R.apply(by["S242"], w(x))) for x in ("ida", "esa", "uta", "kita")] == ["jida", "jesa", "uta", "kita"]
+    assert [ipa(R.apply(by["S243"], w(x))) for x in ("uta", "ota", "ida")] == ["wuta", "wota", "ida"]

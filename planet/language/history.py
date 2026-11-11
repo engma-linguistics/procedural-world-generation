@@ -130,7 +130,12 @@ AREAL_WEIGHT = {"word_order": 1.0, "adposition": 1.0, "genitive": 1.5, "adjectiv
 # ʔ-prothesis is rare; tonogenesis (which needs the conditioning coda/onset contrast lost) and vowel reduction are not drawn in
 # every lect; the onset-voicing split, never vetoed (it merges nothing), was the tone source of nearly every lect at 0.3
 RULE_WEIGHT = {"S042": 0.15, "family:tone": 0.5, "tone.onset_voicing_split": 0.05, "family:reduction": 0.5,
-               "S073": 0.3}  # (u > y: with y > i after it, the u of every lect drained into i)
+               "S073": 0.3,  # (u > y: with y > i after it, the u of every lect drained into i)
+               "S148": 0.3}  # (r > ʁ: see below)
+# (PW-1642: uvular r. Europe's ʁ is one innovation spread by contact (Trudgill 1974; the Paris r carried to German,
+# Danish, Dutch, Portuguese and Hebrew), not one that lines make again and again; PHOIBLE has ʁ in 3.7% of languages.
+# At naturalness 1 r > ʁ still fired 126 times on its own in a24559's 1,185 lects (plus 75 adoptions by wave), and ʁ stood
+# in 14% of living lects. 0.3 keeps the change and its spread by contact, three times rarer as a fresh innovation.)
 # (lane 7, PW-1579, on the log-scale draw: tone 0.3 -> 0.5, tonal living lects 31% against WALS 13A's 42%; S073
 # 0.1 -> 0.3, y in 2.9% against PHOIBLE's 5.1% (4.9% after); S042 0.15 kept, ʔ in 67% against 38%; the voicing split
 # 0.05 and reduction 0.5 kept)

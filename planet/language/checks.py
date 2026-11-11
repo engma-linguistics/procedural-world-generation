@@ -3,6 +3,7 @@ checks (inventory sizes and segment frequencies vs PHOIBLE, 2026-11-04). Each re
 "note"}; `run_all(result)` takes history.generate's result."""
 from __future__ import annotations
 
+import functools
 import math
 import time
 
@@ -618,12 +619,94 @@ def second_voice(result: dict) -> dict:
                 not bad, note)
 
 
+# Word starts (PW-1686). Real word lists begin with a labial a quarter of the time and with a liquid, h or i rarely;
+# sound change on a24559 had piled word starts onto l, h and i (s > h, ʃ > x > h, then h > ∅ before i; n > l and r > l
+# dissimilations run as laws), and no check measured it. Each START_GROUPS group's share of a living human-voiced
+# lect's words that begin with it; the median lect must sit within the reference's p10-p90 over NorthEuraLex's 107
+# languages (data/word_initial.tsv, tools/language/token_priors.py), and no more than START_I_TAIL of the lects may have
+# over START_I_MAX of their words begin with i (Zulu's noun-class i- prefixes give 46%; nothing in NorthEuraLex passes
+# 16%). Human-voiced only: a lipless people's words cannot start with a labial.
+START_GROUPS = ("labial", "liquid", "h", "vowel", "i")
+START_I_MAX, START_I_TAIL = 0.20, 0.03
+
+
+def start_groups(s) -> list[str]:
+    """The word-start groups a word's first sound belongs to: labial (any consonant at the lips), liquid (a lateral or
+    rhotic: l r ɾ ɹ ʀ ʁ...), h (a glottal fricative), vowel, i (a high front unrounded vowel)."""
+    if s.kind == "V":
+        return ["vowel"] + (["i"] if s.height >= 5 and s.back <= 1 and not s.round else [])
+    if s.kind != "C":
+        return []
+    out = []
+    if s.place == 0:
+        out.append("labial")
+    if s.manner in (5, 6, 7) or (s.manner == 4 and (s.lateral or s.place in (1, 2, 3))) or \
+            (s.manner == 2 and s.place == 6 and s.voice):   # (ʁ, the French and German r)
+        out.append("liquid")
+    if s.manner == 2 and s.place == 8:
+        out.append("h")
+    return out
+
+
+@functools.cache
+def start_reference() -> dict:
+    """group -> {p5, p10, p25, p50, p75, p90, p95} (data/word_initial.tsv; empty without the file)."""
+    from .inventory import DATA
+    p = DATA / "word_initial.tsv"
+    if not p.exists():
+        return {}
+    rows = [ln.split("\t") for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip() and not ln.startswith("#")]
+    head = rows[0][1:]
+    return {r[0]: dict(zip(head, map(float, r[1:]))) for r in rows[1:]}
+
+
+def lect_starts(forms) -> dict:
+    """{group: share of the forms that begin with it} over non-empty forms."""
+    n, c = 0, {g: 0 for g in START_GROUPS}
+    for f in forms:
+        segs = [x for x in f if x.kind in ("C", "V")]
+        if not segs:
+            continue
+        n += 1
+        for g in start_groups(segs[0]):
+            c[g] += 1
+    return {g: c[g] / n for g in START_GROUPS} if n else {}
+
+
+def word_starts(result: dict) -> dict:
+    """Living human-voiced lects' word starts vs NorthEuraLex: each group's median lect share within the reference's
+    p10-p90, and few lects with START_I_MAX of their words i-initial (bars above)."""
+    ref = start_reference()
+    ls = _living_human(result)
+    if not ref or len(ls) < 10:
+        return _row("word starts vs NorthEuraLex", None, "", False,
+                    "no data/word_initial.tsv" if not ref else f"only {len(ls)} living human-voiced lects")
+    per = [lect_starts(w.form for w in l.lexicon.words.values()) for l in ls if l.lexicon is not None]
+    per = [p for p in per if p]
+    val, why = {"lects": len(per)}, []
+    for g in START_GROUPS:
+        med = float(np.median([p[g] for p in per]))
+        lo, hi = ref[g]["p10"], ref[g]["p90"]
+        val[g] = {"median": round(med, 3), "ref_p10_p50_p90": [round(lo, 3), round(ref[g]["p50"], 3), round(hi, 3)]}
+        if not lo <= med <= hi:
+            why.append(g)
+    tail = float(np.mean([p["i"] > START_I_MAX for p in per]))
+    val["i_over_20pct"] = round(tail, 3)
+    if tail > START_I_TAIL:
+        why.append("i tail")
+    return _row("word starts vs NorthEuraLex", val,
+                f"living human-voiced lects: the median lect's share of words starting with a labial, a liquid, h, a vowel "
+                f"and i each within NorthEuraLex's p10-p90; at most {START_I_TAIL:.0%} of lects over {START_I_MAX:.0%} "
+                f"i-initial", not why, "Eurasian reference (107 languages)" + (f"; off: {', '.join(why)}" if why else ""))
+
+
 def run_all(result: dict) -> list[dict]:
     out = []
     for fn, arg in ((proto_inventories, result["lects"]), (sister_distant, result), (horizon, result), (shifts, result),
                     (long_generations, result), (complexity, result), (living_sizes, result), (living_segments, result),
                     (living_overuse, result), (typology_consistency, result), (borrowability, result), (areal, result),
-                    (possible_segments, result), (second_voice, result), (contact_profiles, result), (doublets, result)):
+                    (possible_segments, result), (second_voice, result), (contact_profiles, result), (doublets, result),
+                    (word_starts, result)):
         t = time.perf_counter()
         try:
             out.append(fn(arg))

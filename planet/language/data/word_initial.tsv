@@ -1,0 +1,9 @@
+# Word-start groups (PW-1686, checks.word_starts): each group's share of a language's words that begin with it,
+# quantiles p5, p10, p25, p50, p75, p90, p95 over NorthEuraLex 0.9's 107 languages (Dellert et
+# al. 2020, CC-BY 4.0). Built by tools/language/token_priors.py. Eurasian sample.
+group	p5	p10	p25	p50	p75	p90	p95
+labial	0.1152	0.1280	0.1652	0.2329	0.2852	0.3081	0.3169
+liquid	0.0041	0.0072	0.0305	0.0658	0.0862	0.1024	0.1110
+h	0.0000	0.0000	0.0000	0.0047	0.0475	0.0669	0.0804
+vowel	0.0612	0.0836	0.1103	0.1497	0.2184	0.2661	0.3264
+i	0.0000	0.0000	0.0083	0.0179	0.0326	0.0454	0.0571

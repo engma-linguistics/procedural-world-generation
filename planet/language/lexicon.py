@@ -2748,17 +2748,20 @@ def _sound_step(w: Word, form: Form, rule_id: str, kyr: float, lect_id: str, not
 
 
 def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], rule_id: str, kyr: float,
-                          lect_id: str | None = None) -> int:
+                          lect_id: str | None = None, reach: Callable[[str], bool] | None = None) -> int:
     """Run a sound change (`rule_apply_fn(form) -> form`) over every word and the derivational affixes. Only words that
     changed get a `sound_change:<id>` step; successive changes at the same kyr in the same lect collapse into one step
     (ids joined by '+', '+…n' past four), and so does anything past a run of MAX_SOUND_RUN sound-change steps. Returns
     the number of words changed. A word the rule would delete whole keeps a minimal form (`minimal_form`, noted 'kept
     minimal'), and one it would leave without a vowel is passed by (`has_nucleus`: the minimal word); a derivational affix worn to nothing is lost (an empty entry, noted in `lex.notes`) until `step` renews
-    it."""
+    it. `reach` (a lexically diffusing change): only the words (concept ids) and affixes ("affix:<meaning>") it passes
+    change."""
     lect_id = lect_id or lex.lect
     n = 0
     cache: dict[Form, Form] = {}
     for k, w in list(lex.words.items()):
+        if reach is not None and not reach(k):
+            continue
         f = cache.get(w.form)
         if f is None:
             f = cache[w.form] = tuple(rule_apply_fn(w.form))
@@ -2772,7 +2775,7 @@ def apply_rule_to_lexicon(lex: Lexicon, rule_apply_fn: Callable[[Form], Form], r
             lex.words[k] = _sound_step(w, f, rule_id, kyr, lect_id, note)
             n += 1
     for m, (af, suf) in list(lex.affixes.items()):
-        if not af:
+        if not af or (reach is not None and not reach(f"affix:{m}")):
             continue
         f = tuple(rule_apply_fn(af))
         if not f:
