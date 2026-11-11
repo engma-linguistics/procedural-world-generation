@@ -2,7 +2,7 @@
 id: PW-1760
 title: One-command install from GitHub on Windows (native), macOS and Ubuntu, bootstrapping everything (no Python assumed), proven by a 3-OS GitHub Actions smoke test
 type: story
-status: todo
+status: in-progress
 parent: null
 milestone: v1.0
 subsystem: infra
@@ -31,6 +31,7 @@ To do:
 **Self-contained option (stretch):** a fully offline single-download bundle per OS (e.g. PyInstaller), which would be large because of numba/llvmlite. The uv route is self-bootstrapping and much smaller, so prefer it unless Daniel wants offline installs.
 
 ## Updates
+- 2026-11-11: Status todo -> in-progress. lane 315 merged. Actions run 43116330508 on ci/install-smoke: ubuntu passes end to end; macos and windows install and status pass but the tiny make fails at the zoom step. macOS: the zoom RAM guard's fixed 8 GB spare refuses a 2 GB zoom on a 7 GB runner. Windows: Errno 22 writing zooms/<id>/layers/barrier_island.bin (likely rewriting a memory-mapped file, PW-1768). Lane 316 fixes.
 - 2026-11-11: Merged inbox draft draft-native-windows-linux-only-spots.md ("Native Windows: Linux-only spots in planet/ (os.kill(pid, 0) ends a live run, no file locks, no free-RAM reading)", found by lane313).
   In plain words: the installer is to target native Windows (owner, 2026-11-11). A few places in planet/ assume Linux or
   macOS, and one of them, on Windows, kills the run it is meant to check on.

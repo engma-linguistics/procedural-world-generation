@@ -1,4 +1,5 @@
 ---
+id: PW-1768
 title: "Native Windows: check rewriting a file the server has open or memory-mapped (layers, tiles, run.json) during a job"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane315
 blocked_by: []
 relates: [PW-1760]
 refs: [planet/osutil.py, "planet/osutil.py::replace", "planet/store.py::write_atomic", "planet/store.py::atomic_path", "planet/store.py::read_layer", planet/tiles.py, planet/server.py, planet/api.py, planet/thumbs.py, .github/workflows/install-smoke.yml]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -28,3 +31,6 @@ process`, and a job is lost. Other `os.replace` calls (`server.py` gzip cache, `
 To do: a Windows CI test that opens a world through the server, then re-slices or refines it, and deletes it with
 `planet delete`. Fix what fails: release the maps first (copy small layers instead of mapping them on Windows), or write
 new versions under new names.
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-windows-replace-open-files.md (found by lane315).

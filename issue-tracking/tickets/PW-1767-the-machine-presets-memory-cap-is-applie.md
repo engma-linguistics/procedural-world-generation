@@ -1,4 +1,5 @@
 ---
+id: PW-1767
 title: The machine presets' memory cap is applied on Linux only; Windows and macOS run the server uncapped
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane315
 blocked_by: []
 relates: [PW-1760, PW-1720]
 refs: [install.sh, install.ps1, "install.sh::cmd_open", "install.ps1::Cmd-Open", planet/machine.py, planet/api.py, docs/review/plan/machine-presets.md, docs/review/plan/installer.md]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -27,3 +30,6 @@ Options: Windows: start the server inside a Job Object with `JOBOBJECT_EXTENDED_
 (ctypes, in the launcher or in `planet serve` itself; worker processes inherit the job). macOS: no per-process-tree
 cap exists without root; a watchdog in `planet serve` that cancels the newest job when the tree's RSS passes the cap is
 the portable fallback (and would also cover Windows).
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-windows-mac-memory-cap.md (found by lane315).

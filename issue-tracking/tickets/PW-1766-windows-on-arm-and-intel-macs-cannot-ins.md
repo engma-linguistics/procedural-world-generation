@@ -1,4 +1,5 @@
 ---
+id: PW-1766
 title: Windows on ARM and Intel Macs cannot install (piper-tts, numba and onnxruntime wheels)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane315
 blocked_by: []
 relates: [PW-1760]
 refs: [uv.lock, pyproject.toml, install.ps1, "install.ps1::Get-Target", "install.sh::platform", planet/language/speak.py, docs/review/plan/installer.md]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -26,3 +29,6 @@ Options: A, make `piper-tts`, `onnx` and `espeakng-loader` an optional extra (`u
 installer adds only where wheels exist, so Windows on ARM installs everything but speech. B, for Intel Macs, wait for
 numba/llvmlite x86-64 macOS wheels for 3.14, or pin Python 3.13 there if the code allows it. Lean: A now (small), B
 only if someone asks.
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-windows-arm-and-intel-mac.md (found by lane315).
