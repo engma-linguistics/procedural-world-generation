@@ -128,11 +128,14 @@ def _exit_with_parent(parent: int, every: float = 1.0):
     """Watchdog: this worker exits once its parent is gone (PW-543: a killed
     parent left idle workers behind, reparented to init). Polls getppid
     rather than PR_SET_PDEATHSIG, which fires when the parent's *thread*
-    that spawned the worker ends (workers are spawned from server threads)."""
+    that spawned the worker ends (workers are spawned from server threads).
+    Windows never reparents, so there it asks whether the parent's pid still
+    runs (osutil.parent_gone, PW-1760)."""
     import time
+    from . import osutil as OS
 
     def watch():
-        while os.getppid() == parent:
+        while not OS.parent_gone(parent):
             time.sleep(every)
         os._exit(1)
 

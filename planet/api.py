@@ -805,7 +805,7 @@ def _run_text(cmd: list[str]) -> str | None:
 def free_ram_gb() -> float | None:
     """Memory available to a new process, GB, or None where it can't be read (the RAM guards then let jobs through).
     Linux: /proc/meminfo's MemAvailable. macOS: vm_stat (free + inactive + speculative pages); if that fails,
-    a conservative quarter of `sysctl hw.memsize`, with a warning (PW-1716)."""
+    a conservative quarter of `sysctl hw.memsize`, with a warning (PW-1716). Windows: GlobalMemoryStatusEx (PW-1760)."""
     try:
         gb = parse_meminfo(Path("/proc/meminfo").read_text())
     except (OSError, ValueError, IndexError):
@@ -825,6 +825,11 @@ def free_ram_gb() -> float | None:
             _warn_ram_once(f"vm_stat could not be read: taking {MAC_FALLBACK_SHARE:.0%} of the RAM as free "
                            "for the RAM guards")
             return int(total.strip()) * MAC_FALLBACK_SHARE / 1e9
+    if sys.platform == "win32":  # (GlobalMemoryStatusEx's ullAvailPhys, PW-1760)
+        from . import machine as MC
+        gb = MC.windows_free_ram_gb()
+        if gb is not None:
+            return gb
     _warn_ram_once("free RAM cannot be read on this system: the RAM guards are off")
     return None
 
@@ -915,8 +920,12 @@ def refine_estimate(req: dict, busy: str | None = None) -> dict:
         refuse.append(f"not enough free memory: {ram:.0f} GB free, it needs about {c['peak_gb']:.0f} GB "
                       f"plus {REFINE_RAM_SPARE_GB:.0f} GB to spare. Close something or wait for other jobs")
     if tmp is not None and tmp < REFINE_TMP_MIN_GB:
-        refuse.append(f"/tmp is nearly full: {tmp:.0f} GB free, keep at least {REFINE_TMP_MIN_GB:.0f} GB "
-                      "(it is memory on this machine)")
+        if sys.platform.startswith("linux"):
+            refuse.append(f"/tmp is nearly full: {tmp:.0f} GB free, keep at least {REFINE_TMP_MIN_GB:.0f} GB "
+                          "(it is memory on this machine)")
+        else:  # (macOS and Windows: the temp folder is on disk, PW-1760)
+            refuse.append(f"the temp folder ({tempfile.gettempdir()}) is nearly full: {tmp:.0f} GB free, "
+                          f"keep at least {REFINE_TMP_MIN_GB:.0f} GB")
     if disk is not None and disk < 2 * c["file_gb"]:
         refuse.append(f"not enough disk for the new world: {disk:.1f} GB free, it needs about {2 * c['file_gb']:.1f} GB")
     from . import machine as MC  # (the machine presets of an install, PW-1720)
