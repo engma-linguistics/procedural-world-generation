@@ -106,6 +106,9 @@ MINORITY_PULL = 1.0
 # against 1,552 trade triggers; now other peoples only, 1 kyr)
 TRADE_PARTNER_KYR = 1.0
 TECH_LOAN = 0.7  # chance a technology's word comes with it from the teaching people's lect in contact (history.tech_step)
+WILD_LOAN = 0.6  # chance a wild animal or plant met in a new land is named after the locals (history.wild_step, PW-1745;
+#                  Brown 1999: introduced and newly met species are named by loans or by 'X-like' native compounds)
+WILD_CALQUE = 0.3  # of those, the share taken as a loan translation when the locals' word is a compound
 # Substrate on shift (contact-gaps.md rec. 2): each local word (landscape, plants, animals) survives with a chance drawn
 # per shift from SUBSTRATE_KEEP (a handful plus the names, like Celtic in English, not 18% of the lexicon); names always.
 # The accent replaces ACCENT_P of the sounds the old lect lacked, and the stress system carries over. Calques come from
@@ -172,6 +175,7 @@ class History:
         self._prest: dict = {}
         self._n_shift: dict[int, int] = {}
         self.proto_count = 0
+        self.proto_met: dict = {}   # proto id -> the late concepts its people had met (PW-1745; checks.late_things)
         self.intel: dict = {}  # (lect a, lect b) a < b -> {frame: intelligibility}
         self.intel_now: list = []
         self._root: dict = {}
@@ -220,17 +224,32 @@ class History:
         return l
 
     # ------------------------------------------------------------------ protos
-    def make_proto(self, people: str, key: str, kyr: float, how: str) -> LC.Lect:
+    def make_proto(self, people: str, key: str, kyr: float, how: str, met: frozenset = frozenset()) -> LC.Lect:
         pid = f"p{self.proto_count}"
         self.proto_count += 1
-        return self.add(self.build_proto(people, key, kyr, how, pid))
+        self.proto_met[pid] = met
+        return self.add(self.build_proto(people, key, kyr, how, pid, met))
 
-    def build_proto(self, people: str, key: str, kyr: float, how: str, pid: str) -> LC.Lect:
-        """A new proto-language (not yet added): its own draws only (rng_for of its key), so any process can build it."""
+    def met_concepts(self, demes, i: int) -> frozenset:
+        """The animals and biome kinds the demes have met at local frame i (wild there or kept: inputs.Run.wild_met,
+        kept_now), with the animals' companions (their meat, PIG, OX ...): a proto-language's native words for them."""
+        R = self.R
+        out: set = set()
+        for d in demes:
+            out |= R.wild_met(d, i) | R.kept_now(d, i)
+        ids = self._concept_ids
+        for c in list(out):
+            out.update(LX.companions(c, ids))
+        return frozenset(c for c in out if c in ids)
+
+    def build_proto(self, people: str, key: str, kyr: float, how: str, pid: str, met: frozenset = frozenset()) -> LC.Lect:
+        """A new proto-language (not yet added): its own draws only (rng_for of its key), so any process can build it.
+        `met`: the late concepts (animals, biome kinds) its people has met, which it names natively (PW-1745)."""
         rng = rng_for(self.seed, "proto", key)
         prof = self.profile(people)
         inv = LC.draw_inventory(rng, prof)
-        lex = LX.proto_lexicon(rng, inv, self.concepts, kyr, pid)
+        cs = [LX.replace(c, proto=True) if c.id in met and not c.proto else c for c in self.concepts] if met else self.concepts
+        lex = LX.proto_lexicon(rng, inv, cs, kyr, pid)
         gram = None
         GR = LC._gr_mod()
         if GR is not None and hasattr(GR, "proto_grammar"):
@@ -277,17 +296,19 @@ class History:
                                 f"current preset ({Path(ov['spec']).name if ov.get('spec') else '?'}); the current one is used")
         comps = list(R.start_components(PROTO_LINK))
         k0 = R.kyr(0)
-        jobs = [(R.people_of(c[0]), f"start:{c[0]}", k0, "proto", f"p{self.proto_count + j}") for j, c in enumerate(comps)]
+        jobs = [(R.people_of(c[0]), f"start:{c[0]}", k0, "proto", f"p{self.proto_count + j}", self.met_concepts(c, 0))
+                for j, c in enumerate(comps)]
         global _H
         _H = self
         built = fork_map(_proto_remote, jobs) if WORKERS > 1 else [None] * len(jobs)   # (the start's protos, PW-1555)
         for comp, job, p in zip(comps, jobs, built):
             people = job[0]
             if p is None:
-                p = self.make_proto(people, job[1], k0, "proto")
+                p = self.make_proto(people, job[1], k0, "proto", job[5])
             else:
                 p.profile = self.profile(p.profile_key)
                 self.proto_count += 1
+                self.proto_met[p.id] = job[5]
                 self.add(p)
             for d in comp:
                 l = self.daughter(p, d, k0, "proto")
@@ -325,7 +346,7 @@ class History:
             return
         people = self.R.people_of(deme)
         how = "arrival" if self.R.is_arrival(people) else "proto"
-        p = self.make_proto(people, f"birth:{deme}", kyr, how)
+        p = self.make_proto(people, f"birth:{deme}", kyr, how, self.met_concepts((deme,), i))
         self.daughter(p, deme, kyr, how)
         self.first_family[deme] = p.id
         self.say(kyr, f"{self.deme_label(deme)} ({people}) speaks a new language {p.id} ({how})")
@@ -438,6 +459,9 @@ class History:
         tm = time.perf_counter()
         self.tech_step(i, contacts)
         self.timing["tech"] = self.timing.get("tech", 0.0) + time.perf_counter() - tm
+        tm = time.perf_counter()
+        self.wild_step(i, contacts)
+        self.timing["wild"] = self.timing.get("wild", 0.0) + time.perf_counter() - tm
         for absorbed, host in ev["fusions"]:
             l = self.lect_of(absorbed)
             self.end_minorities(absorbed, t1, "fused")
@@ -1041,6 +1065,56 @@ class History:
                     self.partners[(d, donor)] = t1
             else:
                 self.coin_food(l, concept, t1, d, origin=origin)
+            for cc in LX.companions(concept, self._concept_ids):   # (its meat, PIG, OX ...: from the same donor, PW-1745)
+                if cc in l.lexicon:
+                    continue
+                if dl is not None and dl.alive and dl.id != l.id and cc in dl.lexicon:
+                    LX.borrow(dl.lexicon[cc], dl.id, l.lexicon, l.profile, l.inventory, t1,
+                              note=f"with the {LX.concept_info(concept).gloss.lower()} from {self.deme_label(donor)}")
+                else:
+                    LX.coin(rng_for(self.seed, "coin", l.id, cc), l.lexicon, cc, l.inventory, t1, l.id)
+            l.touch()
+
+    def wild_step(self, i: int, contacts: dict) -> None:
+        """Wild animals and biome kinds a deme meets for the first time (it moved into their range; inputs.Run.wild_met,
+        PW-1745): the word comes from a lect in contact that has one (the locals), with chance WILD_LOAN, as a loan or,
+        when the locals' word is a compound, with chance WILD_CALQUE as a loan translation; else the lect makes its own
+        (a compound recipe such as 'sea dog' or 'big dog', a derivation, a fresh root). The donor is noted."""
+        R = self.R
+        t1 = R.kyr(i)
+        ids = self._concept_ids
+        for d in sorted(R.demes_alive(i)):
+            l = self.lect_of(d)
+            if l is None or not l.alive or l.deme != d:
+                continue
+            new = sorted(c for c in R.wild_met(d, i) if c in ids and c not in l.lexicon)
+            if not new:
+                continue
+            cw = self.loan_weights(l, contacts.get(d) or R.contacts_of(d, i, CONTACT_MIN), i)
+            for concept in new:
+                rng = rng_for(self.seed, "wild", l.id, concept)
+                have = [x for x in sorted(cw) if x in self.lects and concept in self.lects[x].lexicon
+                        and self.lects[x].id != l.id]
+                dl = self.lects[max(have, key=lambda x: (cw[x], x))] if have else None
+                where = self.deme_label(dl.deme) if dl is not None and dl.deme is not None else (dl.id if dl else "")
+                if dl is not None and rng.random() < WILD_LOAN:
+                    src = dl.lexicon[concept]
+                    w = LX.calque(rng, l.lexicon, src, l.inventory, t1, l.id, f"after {where}") \
+                        if rng.random() < WILD_CALQUE else None
+                    if w is not None:
+                        l.lexicon.set(w)
+                    else:
+                        LX.borrow(src, dl.id, l.lexicon, l.profile, l.inventory, t1, note=f"met in the wild, from {where}")
+                    if dl.deme is not None and dl.people != l.people:
+                        self.partners[(d, dl.deme)] = t1
+                else:
+                    LX.coin(rng, l.lexicon, concept, l.inventory, t1, l.id)
+                for cc in LX.companions(concept, ids):
+                    if cc not in l.lexicon:
+                        if dl is not None and cc in dl.lexicon and rng.random() < WILD_LOAN:
+                            LX.borrow(dl.lexicon[cc], dl.id, l.lexicon, l.profile, l.inventory, t1, note=f"from {where}")
+                        else:
+                            LX.coin(rng, l.lexicon, cc, l.inventory, t1, l.id)
             l.touch()
 
     def tech_step(self, i: int, contacts: dict) -> None:

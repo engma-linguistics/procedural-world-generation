@@ -67,7 +67,9 @@ SWADESH_RETENTION_1KYR = 0.86
 # 0.158 at x1.2, so x1.08.
 # (2026-11-08, lexcon pass 2: x1.08 -> x1.0: with KEEP_COIN the frequent meanings no longer fall to keep, and the full
 # a24559 pass replaced 16.0% of the human core per 1 kyr at x1.08 (retention 0.840); x1.0 brings it to ~0.85)
-KEEP_COMPENSATION = 1.0
+# (2026-11-11, lane 20, PW-1738/1739: core loans damped and taboo paraphrases only for wild or dangerous things, so more
+# draws for a core word find no source: the harness replaced 12.1% per kyr at x1.0; x1.12 restores the calibration)
+KEEP_COMPENSATION = 1.12
 # (2026-11-08, lexcon pass 2) A replacement draw for a frequent open-class meaning (frequency class <= KEEP_COIN_FREQ)
 # that no source could fill is a fresh root (a word of unknown origin) with chance KEEP_COIN, else the old word is kept.
 # Without it a frequent meaning with no derivation, compound or shift (EGG, STAR, LEAF, FISH ...) is renewed only by
@@ -437,6 +439,31 @@ _EXTRA = [
         ("ACCOUNT", "N", 5, ("COUNT", "WORD")), ("LAW", "N", 4, ("RULE", "WORD")), ("JUDGE", "N", 4, ("RULE", "PERSON")),
         ("TAX", "N", 5, ("GIVE", "KING")), ("COURT", "N", 5, ("RULE", "HOUSE")), ("NOBLE", "N", 4, ("CHIEF", "PERSON")),
     ]],
+    # the culinary core the 11-11 assessment found missing (PW-1745, lane 20; PW-692): kitchen acts, a spoon, textures
+    # and the meals of the day, which every people has from the start ...
+    *[(g, p_, f, "food", c, True, False, False, b) for g, p_, f, c, b in [
+        ("CHOP", "V", 4, None, ("CUT", "STRIKE OR BEAT")), ("PEEL", "V", 4, "PEEL", ("SKIN", "CUT")),
+        ("SLICE", "V", 4, None, ("CUT", "FLAT")), ("SLAUGHTER", "V", 4, None, ("KILL", "CUT")),
+        ("SPOON", "N", 4, "SPOON", ("EAT", "WOOD")), ("CRISP", "A", 5, None, ("DRY", "HARD")),
+        ("TENDER", "A", 4, None, ("SOFT",)), ("STICKY", "A", 4, None, ("WET", "HOLD")), ("CHEWY", "A", 5, None, ("HARD", "BITE")),
+        ("MORNING MEAL", "N", 4, None, ("MORNING", "MEAL")), ("MIDDAY MEAL", "N", 4, None, ("DAY (NOT NIGHT)", "MEAL")),
+        ("EVENING MEAL", "N", 4, None, ("EVENING", "MEAL")),
+    ]],
+    # ... and the vessels, dishes and everyday things that come with a technology (TECH_CONCEPT), so a late one is often a
+    # loan from the people that taught it (Wanderwörter: copper, wine, saddle)
+    *[(g, "N", f, d, c, False, False, False, b) for g, f, d, c, b in [
+        ("JAR", 4, "good", None, ("POT", "WATER")), ("PLATE", 4, "good", "PLATE", ("BOWL", "FLAT")),
+        ("LADLE", 5, "good", None, ("SPOON", "BIG")), ("SIEVE", 5, "good", "SIEVE", ("BASKET", "WATER")),
+        ("STEW", 4, "food", None, ("MEAT", "POT")), ("BROTH", 4, "food", None, ("MEAT", "WATER")),
+        ("SAUCE", 4, "food", None, ("SALT", "WATER")), ("SPICE", 4, "food", None, ("SMELL (PERCEIVE)", "LEAF")),
+        ("PLOUGH", 4, "good", "PLOUGH", ("EARTH (SOIL)", "CUT")), ("LOOM", 5, "good", None, ("WEAVE", "WOOD")),
+        ("CLOTH", 3, "good", "CLOTH", ("WEAVE", "THREAD")), ("LINEN", 5, "good", None, ("CLOTH", "GRASS")),
+        ("SILK", 5, "good", "SILK", ("CLOTH", "WORM")), ("FELT", 5, "good", None, ("WOOL", "STRIKE OR BEAT")),
+        ("BRONZE", 4, "good", None, ("STONE", "YELLOW")), ("STEEL", 5, "good", None, ("STONE", "HARD")),
+        ("CANOE", 4, "good", None, ("BOAT", "TREE")), ("OAR", 4, "good", "OAR", ("WOOD", "HAND")),
+        ("SHIP", 4, "good", "SHIP", ("BOAT", "BIG")), ("SADDLE", 5, "good", "SADDLE", ("SEAT", "BACK")),
+        ("BRIDLE", 5, "good", None, ("ROPE", "HEAD")), ("STIRRUP", 5, "good", None, ("FOOT", "ROPE")),
+    ]],
 ]
 # the meat of each herd animal and of the deer (PW-1636, P3): sibling concepts of the animals, so a loan for the animal
 # can be kept for its meat beside the native word (beef beside cow: contact.doublet, data/splits.tsv). A proto-language
@@ -460,6 +487,72 @@ TECH_CONCEPT = {
     "WEIGH": ("balance_scale", "weights_measures"), "MEASURE": ("weights_measures",), "PROFIT": ("markets", "trade"),
     "ACCOUNT": ("bullae", "proto_writing", "census", "abacus"), "LAW": ("law",), "JUDGE": ("law",), "TAX": ("taxation",),
     "COURT": ("law", "kingship"), "NOBLE": ("kingship", "chiefdoms"),
+    # (PW-1745, lane 20) the kitchen and everyday things that come with a technology, so late tech brings Wanderwörter;
+    # WHEEL, CART and SAIL are core concepts gated only when the run has a techtree (`concepts`)
+    "JAR": ("pottery", "containers"), "PLATE": ("pottery", "potters_wheel"), "LADLE": ("boiling_pots", "pottery"),
+    "SIEVE": ("winnowing", "basketry"), "STEW": ("boiling_pots", "pottery"), "BROTH": ("boiling_pots", "paunch_boiling"),
+    "SAUCE": ("fermentation", "fish_sauce", "soy_ferment"), "SPICE": ("crop_spice_tree", "crop_chili", "trade"),
+    "PLOUGH": ("plough", "moldboard_plough", "ox_traction"), "LOOM": ("warp_weighted_loom", "treadle_loom", "weaving"),
+    "CLOTH": ("weaving", "spinning"), "LINEN": ("flax_linen",), "SILK": ("silk",), "FELT": ("felt",),
+    "good:copper": ("native_copper", "copper", "arsenical_copper"), "BRONZE": ("bronze",), "good:tin": ("bronze",),
+    "good:iron": ("meteoric_iron", "iron", "bloomery"), "good:gold": ("gold_silver",), "STEEL": ("steel", "carburised_steel"),
+    "CANOE": ("canoes", "bark_canoes", "double_hulled_canoes", "outriggers"), "OAR": ("oars", "paddles"),
+    "SHIP": ("plank_boats", "galleys", "keels", "clinker_hulls", "carvel_hulls"), "SADDLE": ("saddles", "pack_saddle"),
+    "BRIDLE": ("bit_and_bridle",), "STIRRUP": ("stirrup", "stirrups"),
+    "WHEEL": ("wheel", "potters_wheel", "iron_tyred_wheel"), "CART": ("wheel", "equid_wagons", "war_chariot"),
+    "SAIL": ("sails", "sail_cloth", "crab_claw_sail", "lateen_sail", "square_rig", "lug_and_batten_sail"),
+}
+TECH_GATED_CORE = frozenset({"WHEEL", "CART", "SAIL"})   # core concepts that arrive with their tech when the run has one
+
+# Things met late (PW-1745, language lane 20). A people names the animals it has met: a stocked animal (animal_defs) is
+# native only to a proto-language whose homeland overlaps the animal's wild range (the run's animal_wild layer) or keeps
+# it; otherwise the word arrives with the herd (food routes) or when the people moves into the wild range (history
+# wild_step), as a loan from the locals, a calque of their compound, or a compound of its own ('big dog'). The core
+# words for some herd animals' kinds go with them when the run stocks the animal.
+ANIMAL_COMPANIONS = {"pig": ("PIG",), "caprine": ("SHEEP",), "cattle": ("OX", "BULL"), "fowl": ("HEN", "ROOSTER")}
+# Wild fauna and flora by biome (no fauna is simulated, PW-184: derived from the land like animal_defs.wild_*): generic
+# kinds, never Earth species. id -> (gloss, freq class, taboo, habitat); habitat: annual mean temperature t (C), annual
+# precipitation p (mm), tree cover tc (%), each (lo, hi), and coast (a coast cell). A deme knows a kind when it covers
+# at least inputs.WILD_SHARE of its cells. Their compound recipes are in data/compounds.tsv (sea dog, river horse ...).
+BIOME_KINDS = {
+    "fauna:big_cat": ("big cat", 4, True, {"t": (12, 35), "p": (300, 9000)}),
+    "fauna:ape": ("ape or monkey", 4, False, {"t": (18, 40), "p": (1000, 9000), "tc": (30, 100)}),
+    "fauna:crocodile": ("crocodile-kind", 4, True, {"t": (21, 40), "p": (600, 9000)}),
+    "fauna:big_snake": ("big snake", 4, True, {"t": (19, 40), "p": (900, 9000)}),
+    "fauna:seal": ("seal", 4, False, {"t": (-30, 12), "coast": True}),
+    "fauna:whale": ("whale", 4, False, {"t": (-30, 40), "coast": True}),
+    "fauna:camel": ("camel-kind", 4, False, {"t": (8, 35), "p": (0, 300)}),
+    "fauna:elephant": ("elephant-kind", 4, False, {"t": (20, 40), "p": (350, 3000)}),
+    "fauna:antelope": ("antelope", 4, False, {"t": (14, 40), "p": (250, 1400), "tc": (0, 45)}),
+    "fauna:parrot": ("parrot", 4, False, {"t": (20, 40), "p": (1000, 9000)}),
+    "flora:palm": ("palm", 4, False, {"t": (19, 40), "p": (150, 9000)}),
+    "flora:bamboo": ("bamboo", 4, False, {"t": (14, 40), "p": (1000, 9000)}),
+    "flora:cactus": ("cactus", 4, False, {"t": (10, 40), "p": (0, 400)}),
+    "flora:conifer": ("conifer", 4, False, {"t": (-12, 14), "tc": (15, 100)}),
+    "flora:mangrove": ("mangrove", 4, False, {"t": (22, 40), "p": (900, 9000), "coast": True}),
+    "flora:reed": ("reed", 4, False, {"t": (-5, 40), "p": (500, 9000)}),
+    "flora:lichen": ("lichen", 4, False, {"t": (-30, 1)}),
+}
+_FAUNA_STOCK = {"fauna:camel": "camel"}   # (a biome kind the run already has as a stocked animal: left out)
+
+# Taboo paraphrases motivated by a trait (PW-1739, language lane 20): only for wild or dangerous animals and the
+# dangerous things of _TABOO_CORE, never a herd animal or a fish scale (real taboo replacement is mostly bears, wolves,
+# snakes and game: Slavic medvěd 'honey-eater', Germanic *beron 'the brown one', Irish 'the good calf' for a bear;
+# Siberian 'grandfather', 'old man'; Sanskrit/Hindi 'the long one' for a snake). concept -> traits: (quality,) = 'the X
+# one' (the quality + the 'agent' affix; 'do' for a verb), (modifier, head) = a compound ('honey-eat', 'forest dog').
+TABOO_TRAITS = {
+    "BEAR": (("HONEY", "EAT"), ("BROWN",), ("OLD", "MAN")),
+    "WOLF": (("FOREST", "DOG"), ("TOOTH",), ("NIGHT",)),
+    "SNAKE": (("LONG",), ("GRASS", "ROPE"), ("EARTH (SOIL)",)),
+    "DEER": (("HORN (ANATOMY)",), ("RUN",), ("FOREST", "ANIMAL")),
+    "FOX": (("RED",), ("TAIL",)),
+    "LOUSE": (("BITE",), ("SMALL",)),
+    "WORM": (("EARTH (SOIL)",), ("LONG",)),
+    "fauna:big_cat": (("CLAW",), ("FOREST", "CHIEF"), ("NIGHT",)),
+    "fauna:crocodile": (("OLD", "MAN"), ("TOOTH",), ("RIVER", "CHIEF")),
+    "fauna:big_snake": (("LONG",), ("TREE", "ROPE")),
+    "DIE": (("SLEEP",), ("GO",)), "DEATH": (("SLEEP",), ("NIGHT",)), "KILL": (("STRIKE OR BEAT",),),
+    "BLOOD": (("RED",),), "STORM": (("BIG", "WIND"),), "FLOOD": (("BIG", "WATER"),), "ENEMY": (("STRANGER",),),
 }
 
 
@@ -545,7 +638,7 @@ def _core_concepts() -> tuple[Concept, ...]:
         sc = int(r["stability_class"] or 0) or 3
         pos = r.get("pos") or ("V" if g in _VERBS else "A" if g in _ADJS else "FUNC" if g in _FUNC else "N")
         local = r["semantic_field"] in _LOCAL_FIELDS or g in _LOCAL_CORE
-        taboo = r["semantic_field"] == "Animals" or g in _TABOO_CORE
+        taboo = g in TABOO_TRAITS   # (PW-1739: wild or dangerous things only; it was the whole Animals field)
         dom = "god" if g in GOD_DOMAIN_CONCEPT.values() else "core"
         out.append(Concept(_i(g), g.lower(), pos, sc, dom, lists, g, True, taboo, local, _CORE_BASE.get(g, ()),
                            r["semantic_field"]))
@@ -568,18 +661,22 @@ def _all_concepts() -> tuple[Concept, ...]:
     if "DOG" not in have:  # the dog is on the Swadesh list; keep the alias honest if it ever drops out
         ALIASES.pop("animal:dog", None)
     for g, pos, f, dom, cl, proto, taboo, local, base in _EXTRA:
-        add(Concept(_i(g), g.lower(), pos, f, dom, frozenset(), cl, proto, taboo, local, base))
+        add(Concept(_i(g), g.lower(), pos, f, dom, frozenset(), cl, proto, g in TABOO_TRAITS, local, base))
     for a in crop_defs.TABLE:
         cl, base = _CROP.get(a.id, (None, ("SEED",)))
         add(Concept(_i(f"crop:{a.id}"), a.label, "N", 4, "crop", frozenset(), cl, False, False, True, base))
-    for a in animal_defs.TABLE:
-        cid = resolve(f"animal:{a.id}")
+    for a in animal_defs.TABLE:   # (PW-1745: met, not proto: a proto-language has the word only where its people met the
+        cid = resolve(f"animal:{a.id}")   # animal, history.build_proto `met`; the dog stays the core DOG)
         cl, base = _ANIMAL.get(a.id, (None, ("ANIMAL",)))
-        add(Concept(_i(cid), a.label, "N", 3, "animal", frozenset(), cl, True, True, True, base))
+        add(Concept(_i(cid), a.label, "N", 3, "animal", frozenset(), cl, cid in ALIASES.values(), cid in TABOO_TRAITS,
+                    True, base))
     for a in animal_defs.TABLE:
         if a.id not in _NO_MEAT:
-            add(Concept(_i(f"{MEAT_OF}{a.id}"), f"{a.label} meat", "N", 4, "food", frozenset(), None, True, False, False,
+            add(Concept(_i(f"{MEAT_OF}{a.id}"), f"{a.label} meat", "N", 4, "food", frozenset(), None, False, False, False,
                         ("MEAT", resolve(f"animal:{a.id}"))))
+    for k, (gl, f, tb, _h) in BIOME_KINDS.items():
+        add(Concept(_i(k), gl, "N", f, k.split(":")[0], frozenset(), None, False, tb, True,
+                    ("ANIMAL",) if k.startswith("fauna:") else ("TREE",)))
     add(Concept(_i(f"{MEAT_OF}deer"), "venison (deer meat)", "N", 4, "food", frozenset(), None, True, False, False,
                 ("MEAT", "DEER")))
     for fu in fuels.FUELS:
@@ -612,7 +709,38 @@ def concepts(run_meta: dict | None = None) -> list[Concept]:
 
     def dom(c):
         return "meat" if c.id.startswith(MEAT_OF) else c.domain
-    return [c for c in allc if dom(c) not in keep or c.id in keep[dom(c)] or c.id in ALIASES.values()]
+    out = [c for c in allc if dom(c) not in keep or c.id in keep[dom(c)] or c.id in ALIASES.values()]
+    stocks = set(((run_meta.get("animals") or {}).get("stocks") or {}))
+    gate = {x for a in stocks for x in ANIMAL_COMPANIONS.get(a, ())}   # (PIG, OX ... go with the stocked herd animal)
+    if (run_meta.get("techtree") or {}).get("known"):
+        gate |= TECH_GATED_CORE
+    return [replace(c, proto=False) if c.id in gate else c for c in out
+            if not (c.id in _FAUNA_STOCK and _FAUNA_STOCK[c.id] in stocks)]
+
+
+def companions(concept: str, concepts_ids=None) -> tuple:
+    """The concepts that come with a met animal (PW-1745): its meat and the core words for its kinds (PIG, OX, HEN ...)."""
+    if not concept.startswith("animal:"):
+        return ()
+    a = concept.split(":", 1)[1]
+    out = ((f"{MEAT_OF}{a}",) if a not in _NO_MEAT else ()) + ANIMAL_COMPANIONS.get(a, ())
+    return tuple(x for x in out if concepts_ids is None or x in concepts_ids)
+
+
+def calque(rng, lex: "Lexicon", donor_word: "Word", inv, kyr: float, lect_id: str, note: str = "") -> "Word | None":
+    """A loan translation (PW-1745): when the donor's word is a transparent compound (its latest word-making step is
+    'compound:H+M'), the receiver builds the same compound from its own words for H and M ('river horse'). None when the
+    donor's word is no compound or a part is missing."""
+    st = next((s for s in reversed(donor_word.etym) if not s.process.startswith(("sound_change:", "accent:", "koine:"))),
+              None)
+    if st is None or not st.process.startswith("compound:"):
+        return None
+    h, _, m = st.process[len("compound:"):].partition("+")
+    h, m = resolve(h), resolve(m)
+    if h not in lex.words or m not in lex.words or h == donor_word.concept or m == donor_word.concept:
+        return None
+    return compound(rng, lex, donor_word.concept, inv, kyr, lect_id, head=h, modifier=m, process=f"calque:{h}+{m}",
+                    note=f"{h} + {m}: a loan translation{'; ' + note if note else ''}")
 
 
 @functools.cache
@@ -784,11 +912,45 @@ def borrowability(cid: str) -> float:
 BORROW_REF = 0.19   # the mean WOLD score over the concept list (0.19 over the 635 meanings WOLD has, 2026-11-08)
 
 
+# Core damping (PW-1738, language lane 20): WOLD's borrowed scores for 'mother', 'father', 'two' and 'three' (0.19-0.25)
+# sit at the all-meanings mean, because WOLD counts nursery words (mama, papa) and whole borrowed numeral sets (Japanese,
+# Thai) as loans; with them as the only brake, 10-22% of a24559's living lects had borrowed I, ONE-THREE, MOTHER or FATHER.
+# Cross-family loans of the basic vocabulary are several times rarer than of the lexicon at large (Tadmor 2009: the
+# Leipzig-Jakarta list's mean borrowed score is about a third of the rest; Swadesh-100 loans across families ~ 2%, the
+# hard core of pronouns, low numerals and parent terms ~ 1%). So a Swadesh-100 / Leipzig-Jakarta meaning's loan factor
+# is x CORE_LOAN_DAMP and the hard core's x HARD_CORE_LOAN_DAMP, and both stay on the low-intensity curve (gamma 1.5): even
+# intense contact does not make 'I' an ordinary word to borrow (English 'they' stays possible, at a few percent).
+CORE_LOAN_DAMP = 0.35
+HARD_CORE_LOAN_DAMP = 0.08
+HARD_CORE = frozenset({"I", "THOU", "WE", "WE (INCLUSIVE)", "YOU", "THEY", "ONE", "TWO", "THREE", "MOTHER", "FATHER"})
+_CORE_LOAN_LISTS = frozenset({"SW100", "LJ100"})
+
+
+@functools.cache
+def core_loan_damp(cid: str) -> float:
+    """The core damping of `cid`'s loan factor: HARD_CORE_LOAN_DAMP, CORE_LOAN_DAMP (a Swadesh-100 or Leipzig-Jakarta
+    meaning), else 1."""
+    if cid in HARD_CORE:
+        return HARD_CORE_LOAN_DAMP
+    try:
+        c = concept_info(cid)
+    except Exception:   # noqa: BLE001 - a name or an invented concept
+        return 1.0
+    return CORE_LOAN_DAMP if c.lists & _CORE_LOAN_LISTS else 1.0
+
+
 def loan_factor(cid: str, intensity: float) -> float:
-    """(b / BORROW_REF) ** gamma(I), capped: how much likelier than an average meaning `cid` is to be borrowed at contact
-    intensity I."""
-    g = LOAN_GAMMA_LOW + (LOAN_GAMMA_HIGH - LOAN_GAMMA_LOW) * min(1.0, max(0.0, intensity))
-    return min(LOAN_FACTOR_CAP, (max(borrowability(cid), 0.005) / BORROW_REF) ** g)
+    """(b / BORROW_REF) ** gamma(I), capped, x the core damping (`core_loan_damp`): how much likelier than an average
+    meaning `cid` is to be borrowed at contact intensity I."""
+    damp = core_loan_damp(cid)
+    g = LOAN_GAMMA_LOW if damp < 1.0 else LOAN_GAMMA_LOW + (LOAN_GAMMA_HIGH - LOAN_GAMMA_LOW) * min(1.0, max(0.0, intensity))
+    return min(LOAN_FACTOR_CAP, (max(borrowability(cid), 0.005) / BORROW_REF) ** g) * damp
+
+
+def back_loan(word: "Word", lect_id: str) -> bool:
+    """Would borrowing `word` into `lect_id` be a ping-pong loan: has the word already passed through this lect (A > B > A,
+    PW-1738: 3.8% of a24559's words)? A lect does not take back, as a loan, its own word for the same meaning."""
+    return any(s.lect == lect_id for s in word.etym)
 
 
 def closed_class(cid: str) -> bool:
@@ -1795,17 +1957,28 @@ def coin(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None =
     return w
 
 
-def taboo_word(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None = None) -> Word | None:
-    """A taboo paraphrase: a quality plus 'one who' / 'thing' ('the brown one', 'the long thing')."""
+def taboo_word(rng, lex: Lexicon, concept: str, inv, kyr: float, lect_id: str | None = None,
+               generic: bool = False) -> Word | None:
+    """A taboo paraphrase motivated by a trait of the thing (TABOO_TRAITS, PW-1739): a quality plus 'one who' ('the
+    brown one', 'the long one') or a compound ('honey-eat', 'forest dog'). None for a concept with no traits (only wild or
+    dangerous things are avoided) or when the lect lacks the trait's words. `generic` (an avoidance register's everyday
+    words, lexsys.avoidance; never an animal): a concept without traits takes any quality, 'the <quality> one'."""
     c = concept_info(concept)
-    meaning = "agent" if c.domain in ("animal", "fauna") or c.taboo and c.pos == "N" else "thing"
-    if c.pos == "V":
-        meaning = "do"
-    af, _ = lex.affixes.get(meaning, ((), True))
-    qual = [q for q in _QUALITY if q in lex.words and not (c.pos == "V" and q in COLOURS)]
-    if not qual or not af:
+    traits = [t for t in TABOO_TRAITS.get(c.id, ()) if all(x in lex.words and x != c.id for x in t)]
+    if not traits and generic and c.domain not in ("animal", "fauna") and c.field != "Animals":
+        traits = [(q,) for q in _QUALITY if q in lex.words and not (c.pos == "V" and q in COLOURS)]
+    if not traits:
         return None
-    q = qual[int(rng.integers(len(qual)))]
+    t = traits[int(rng.integers(len(traits)))]
+    if len(t) == 2:
+        m, h = t
+        return compound(rng, lex, c.id, inv, kyr, lect_id, head=h, modifier=m, process="taboo",
+                        note=f"'{m.lower()}-{h.lower()}', said to avoid the name")
+    meaning = "do" if c.pos == "V" else "agent"
+    af, _ = lex.affixes.get(meaning, ((), True))
+    if not af:
+        return None
+    q = t[0]
     b = lex.words[q]
     bf, _ = _fit_base(b.form, af, inv)
     form = _cap(_inv.repair(_attach(lex, bf, meaning), inv), limits(inv)[0], inv)
@@ -2152,9 +2325,10 @@ def _replace_word(rng, lex: Lexicon, k: str, c: Concept, src: str, opts: dict, i
     if repair and "renew" in opts and "renew" not in order:   # (a homonymic clash is repaired by the word's own
         order.append("renew")                                  # diminutive too: Latin apis > apicula > French abeille)
     if have and "borrow" not in order and not closed_class(k):
-        pf = min(1.0, BORROW_FALLBACK * intensity * loan_factor(k, intensity) * loan_mult)
-        if repair:   # (a homonymic clash is repaired by a neighbour's word as readily as before the intensity scaling)
-            pf = max(pf, REPAIR_FALLBACK)
+        lf = loan_factor(k, intensity)
+        pf = min(1.0, BORROW_FALLBACK * intensity * lf * loan_mult)
+        if repair:   # (a homonymic clash is repaired by a neighbour's word as readily as before the intensity scaling,
+            pf = max(pf, REPAIR_FALLBACK * min(1.0, lf))   # by its borrowability since PW-1738)
         if rng.random() < pf:
             order.append("borrow")
     for s in order:
@@ -2311,7 +2485,8 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
             grp = LS.colour_group(lex, k)
             if len(grp) > 1 and grp[0] != k:   # (a colour or kin category changes its word only through its focus)
                 continue
-            have = [d for d in donors if k in contact_words[d] and weights[d] > 0]
+            have = [d for d in donors if k in contact_words[d] and weights[d] > 0
+                    and not back_loan(contact_words[d][k], lect_id)]   # (no A > B > A ping-pong: PW-1738)
             opts = dict(SOURCES)
             if not have:
                 opts.pop("borrow")
@@ -2482,8 +2657,9 @@ def _renew_cell(rng, lex: "Lexicon", k: str, partners: set, taken: set, inv, kyr
                 contact_words=None, contact_weights=None, profile=None) -> tuple["Word | None", str]:
     """A new word for `k`, which has fallen together with `partners`, avoiding the forms in `taken` (its paradigm mates'),
     by, in order: its counting recipe (a composite numeral), a reinforcement row of data/derivations.tsv ('we others',
-    'not one'), a loan from a contact lect, a derivation, a compound recipe (an open-class word), and only last a fresh root.
-    Returns (word, how) or (None, "")."""
+    'not one'), a loan from a contact lect with chance min(1, I x loan_factor) (I the contact intensity; PW-1738: the loan
+    came before the lect's own material whatever its borrowability, and 38 of a24559's 52 borrowed 'I's came from here),
+    a derivation, a compound recipe (an open-class word), and only last a fresh root. Returns (word, how) or (None, "")."""
     from . import lexsys as LS
 
     def ok(w):
@@ -2507,8 +2683,10 @@ def _renew_cell(rng, lex: "Lexicon", k: str, partners: set, taken: set, inv, kyr
             return w, "reinforce"
     if contact_words:
         have = sorted(d for d in contact_words if k in contact_words[d]
-                      and (contact_weights is None or contact_weights.get(d, 0.0) > 0))
-        if have:
+                      and (contact_weights is None or contact_weights.get(d, 0.0) > 0)
+                      and not back_loan(contact_words[d][k], lect_id))
+        inten = min(1.0, sum((contact_weights or {}).get(d, CONTACT_DEFAULT) for d in have)) if have else 0.0
+        if have and rng.random() < min(1.0, inten * loan_factor(k, inten)):
             wd = np.array([max((contact_weights or {}).get(d, CONTACT_DEFAULT), 1e-9) for d in have])
             d = have[int(rng.choice(len(have), p=wd / wd.sum()))]
             w = borrow(contact_words[d][k], d, lex, profile, inv, kyr, "contact (paradigm repair)", store=False)

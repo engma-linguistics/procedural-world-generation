@@ -46,7 +46,8 @@ def test_concept_list(concepts):
     by = {c.id: c for c in concepts}
     assert all(1 <= c.freq_class <= 5 for c in concepts)
     assert by["SIX"].freq_class <= 2 and by["crop:wheat"].freq_class in (3, 4) and by["FLOOD"].freq_class == 3
-    assert not by["crop:wheat"].proto and by["animal:horse"].taboo and by["RIVER"].local
+    assert not by["crop:wheat"].proto and not by["animal:horse"].proto and by["BEAR"].taboo and by["RIVER"].local
+    assert not by["animal:horse"].taboo and not by["PIG"].taboo and not by["SCALE"].taboo   # (PW-1739: wild/dangerous only)
 
 
 def test_concepts_limited_by_run_meta():
