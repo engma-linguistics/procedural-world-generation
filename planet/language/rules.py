@@ -2099,7 +2099,7 @@ def _build_demo() -> tuple[Rule, ...]:
         _demo("dental.theta_f", "θ > f", "perception", "tongue_tip, lips", 3, "Cockney think [fɪŋk]"),
         _demo("cluster.simplification", "CCC > CC", "effort", "timing", 3, "English Christmas [ˈkɹɪsməs] (t lost)",
               "diffusing"),
-        _demo("harmony.back", "", "coarticulation", "tongue_body", 3,
+        _demo("harmony.back", "", "coarticulation", "tongue_body", 2,
               "Turkish ev-ler 'houses' vs at-lar 'horses' (suffix vowels agree in backness with the root)",
               target=V, change=Change("assimilate", axes=("back", "round"), source="first_vowel"),
               text="V > [αback] of the root's first vowel; [αround] for a high vowel; going back, e and ɛ open to ɑ (-ler/-lar) "

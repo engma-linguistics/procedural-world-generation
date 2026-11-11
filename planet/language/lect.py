@@ -141,6 +141,21 @@ REFIRE_GEN_YR = 28.0  # the wait is REFIRE_KYR x (generation / REFIRE_GEN_YR) fr
 # lane: with the single draw a human line is bound by its inputs and its wait, a dragon line by its draws, and a wait in
 # years let long-lived lines re-fire their common rows 15x as often per generation: own changes per kyr, dragons 1.7 ->
 # 3.4 against humans 14.5 -> 15.2, failing "long generations change less")
+# PW-1692 (lane 17): the wait scales with the row's weight. With one flat wait every row of naturalness 3 or more was
+# drawn many times within it (about 880 draws a kyr against a catalogue mass of about 580: a weight-9 row is drawn every
+# 0.08 kyr, a weight-1 row every 0.7 kyr, a weight-0.11 row every 6.7 kyr), so they all fired once a wait, whatever their
+# grade, and only the rarest still fired in proportion to their weight: on a24559 rare rows fired 10-35 times as often
+# per unit weight as common ones (S148 r > ʁ 1,809 firings per unit weight, h > ∅ 134). A row of draw weight w now waits
+# REFIRE_W_KYR / w after it fires; with draws at D per kyr against mass M a row then fires at w / (REFIRE_W_KYR + M / D)
+# per kyr while its input is there: in proportion to its weight, whatever the draw rate. REFIRE_KYR (the flat wait)
+# stays for what is not a row's own re-firing: a refused new type (`refused`), the insert-delete ping-pong
+# (`alternates`) and the persistent hiatus repair.
+# Draws and wait were set together (history.RATE_SCALE 220 -> 60, this 2.0): in the isolated-lect harness (64 control
+# protos, 10 kyr; scratchpad lane17/opp.py) firings per kyr of opportunity (the row would change a word) per unit of draw
+# weight now stay within about 2x from weight 0.01 to 3 and 3x to 27 (main: 0.43 at the bottom, 0.035 at 9-27, 12x),
+# the catalogue grades 1-3 fire alike per unit weight (main 0.28, 0.19, 0.15), and a full a24559 pass keeps its human
+# changes per kyr (14.8 -> 14.7).
+REFIRE_W_KYR = float(__import__("os").environ.get("LANG_REFIRE_W", "2.0"))
 MAX_FIRES = 2  # ... and fires at most this many times in a lect's life, counting its ancestors' (daughters inherit the memory)
 HARMONY_MAX = 1  # harmony rules (family "harmony") at most once per lect line
 LIFETIME_CAP_FAMILIES = frozenset({"epenthesis", "harmony", "tone"})  # families under the lifetime cap (the rest only wait
@@ -268,6 +283,20 @@ def catalogue_for(profile, key: str) -> list:
     if key not in _CATALOGUES:
         _CATALOGUES[key] = RU.catalogue(profile)
     return _CATALOGUES[key]
+
+
+_CAT_WEIGHTS: dict = {}
+
+
+def catalogue_weight(rule, lect) -> float:
+    """The catalogue weight of `rule`'s row (by base id) for the lect's voice, before any lect-specific factor; 1 for a
+    rule the catalogue does not hold (a dispersion push, a parsed test rule)."""
+    m = _CAT_WEIGHTS.get(lect.profile_key)
+    if m is None:
+        m = _CAT_WEIGHTS[lect.profile_key] = {}
+        for r in catalogue_for(lect.profile, lect.profile_key):
+            m.setdefault(base_id(r.id), r.weight)
+    return m.get(base_id(rule.id), 1.0)
 
 
 def filtered_apply(rule, stress, segments, inventory=None):
@@ -628,14 +657,17 @@ class Lect:
         self.burst_until = None
         return True
 
-    def refire_kyr(self) -> float:
-        """The re-fire wait in kyr: REFIRE_KYR, counted in generations from REFIRE_GEN_YR up (rates are per generation)."""
-        return REFIRE_KYR * max(1.0, self.gen_yr / REFIRE_GEN_YR) if REFIRE_GEN_YR else REFIRE_KYR
+    def refire_kyr(self, weight: float | None = None) -> float:
+        """The re-fire wait in kyr: REFIRE_KYR (or, for a row of draw weight `weight`, REFIRE_W_KYR / weight: PW-1692),
+        counted in generations from REFIRE_GEN_YR up (rates are per generation)."""
+        base = REFIRE_KYR if weight is None else (REFIRE_W_KYR / weight if weight > 0 else math.inf)
+        return base * max(1.0, self.gen_yr / REFIRE_GEN_YR) if REFIRE_GEN_YR else base
 
-    def may_fire(self, rule, kyr: float) -> bool:
-        """The re-fire memory: a rule fired in the last REFIRE_KYR, or already MAX_FIRES times in the lect's line (HARMONY_MAX
-        for harmony, ONE_OFF_MAX for a one-off row: one_off), is not drawn or adopted again;
-        nor is one the lect's phonotactics turned down within the wait (`refused`, PW-1622)."""
+    def may_fire(self, rule, kyr: float, weight: float | None = None) -> bool:
+        """The re-fire memory: a rule fired within its wait (refire_kyr of its draw weight, `weight`, default the rule's
+        own: PW-1692), or already MAX_FIRES times in the lect's line (HARMONY_MAX for harmony, ONE_OFF_MAX for a one-off
+        row: one_off), is not drawn or adopted again;
+        nor is one the lect's phonotactics turned down within the flat wait (`refused`, PW-1622)."""
         b = base_id(rule.id)
         rf = self.refused.get(b)
         if rf is not None and rf - kyr < self.refire_kyr() - 1e-9:
@@ -649,7 +681,7 @@ class Lect:
             return False
         if rule.family in LIFETIME_CAP_FAMILIES and len(h) >= (HARMONY_MAX if rule.family == "harmony" else MAX_FIRES):
             return False
-        return h[-1] - kyr >= self.refire_kyr() - 1e-9
+        return h[-1] - kyr >= self.refire_kyr(rule.weight if weight is None else weight) - 1e-9
 
     def alternates(self, rule, segs, kyr: float) -> bool:
         """PW-1537 R9: would this rule insert a segment the line lost, or lose one it inserted, within its re-fire wait?
@@ -1027,7 +1059,8 @@ class Lect:
         cands, ws = [], []
         for r in self.weighted_rules(catalogue_for(self.profile, self.profile_key)):
             b = base_id(r.id)
-            if r.weight <= 0 or r.family in SIGNATURE_SKIP or one_off(r) or b in have or not self.may_fire(r, kyr):
+            if r.weight <= 0 or r.family in SIGNATURE_SKIP or one_off(r) or b in have \
+                    or not self.may_fire(r, kyr, r.weight * self.line_pref(r)):
                 continue
             outs = RU.apply_all(r, forms, stress)
             if sum(1 for a, o in zip(forms, outs) if tuple(a) != tuple(o)) < SIGNATURE_MIN * max(1, len(forms)):
@@ -1154,7 +1187,7 @@ class Lect:
             w = weight_override(weights, r)
             w = self.line_pref(r) * (1.0 if w is None else w)
             mass += r.weight * w
-            if not self.may_fire(r, kyr):
+            if not self.may_fire(r, kyr, r.weight * w):
                 continue
             r = replace(r, weight=r.weight * w)
             v = reduction_variant(epenthesis_variant(r, self.inventory), self.inventory)

@@ -283,11 +283,18 @@ def test_hiatus_is_repaired_after_a_change():
     assert abs(math.log(walk)) < 6 * LC.LINE_FAMILY_SIGMA * math.sqrt(1 - rho * rho) + 1e-9
     assert len({round(LC.Lect(id=f"q{k}", deme=None, people="human", parent=None, how="first", born_kyr=1.0, rate=1.0,
                               inventory=None, lexicon=None).line_pref(r), 6) for k in range(5)}) == 5
-    # a one-off row (a whole-class coda change) fires once a line; an ordinary row (a chain shift too) again after REFIRE_KYR
+    # a one-off row (a whole-class coda change) fires once a line; an ordinary row (a chain shift too) again after its
+    # wait, REFIRE_W_KYR / its draw weight (PW-1692: a rarer row waits longer, a commoner one less)
     coda = cat["S099"]
     assert LC.one_off(coda) and not LC.one_off(r) and not LC.one_off(cat["S177"])
     d.fired = {coda.id: [9.0], r.id: [9.0]}
-    assert not d.may_fire(coda, 0.0) and d.may_fire(r, 9.0 - LC.REFIRE_KYR)
+    wait = d.refire_kyr(r.weight)
+    assert wait == pytest.approx(LC.REFIRE_W_KYR / r.weight * max(1.0, d.gen_yr / LC.REFIRE_GEN_YR))
+    assert not d.may_fire(coda, 0.0) and d.may_fire(r, 9.0 - wait) and not d.may_fire(r, 9.0 - 0.9 * wait)
+    assert d.refire_kyr(9.0) < d.refire_kyr(1.0) < d.refire_kyr(0.11)
+    # contact spreads a rare change as reluctantly as it arises (history.interval): by its catalogue weight, up to 1
+    assert LC.catalogue_weight(cat["S148"], d) == pytest.approx(cat["S148"].weight) and cat["S148"].weight < 1.0
+    assert LC.catalogue_weight(RU.Rule(id="dispersion.push.e", target=None, change=None, cause="dispersion"), d) == 1.0
 
 
 def test_normalize_simplifies_initial_geminates():
@@ -369,7 +376,7 @@ _NOT_RULES = ("simplification", "koine", "koine.level")
 
 
 def test_rules_do_not_refire(result):
-    """The re-fire memory: no rule more than MAX_FIRES times in a lect's line (harmony once), never twice within REFIRE_KYR.
+    """The re-fire memory: no rule more than MAX_FIRES times in a lect's line (harmony once), never twice in one step.
     Hiatus repairs (family "hiatus", fired after a change that leaves hiatus: lect.resolve_hiatus) are outside it."""
     from planet.language import lect as LC
     res, _, _ = result
@@ -387,12 +394,15 @@ def test_rules_do_not_refire(result):
                 continue
             line.setdefault(LC.base_id(rid), []).append(c["kyr"])
         for b, ks in line.items():
-            cap = LC.HARMONY_MAX if b in cat and cat[b].family == "harmony" else LC.MAX_FIRES
+            fam = cat[b].family if b in cat else None
+            cap = LC.HARMONY_MAX if fam == "harmony" else LC.MAX_FIRES if fam in LC.LIFETIME_CAP_FAMILIES else None
             if b in cat and LC.one_off(cat[b]):
                 cap = LC.ONE_OFF_MAX
-            assert len(ks) <= cap, (l.id, b, ks)
-            assert all(a - c >= LC.REFIRE_KYR - 1e-9 for a, c in zip(ks, ks[1:])), (l.id, b, ks)
-        assert all(len(v) <= LC.MAX_FIRES for v in l.fired.values())
+            assert cap is None or len(ks) <= cap, (l.id, b, ks)   # (other rows only wait: PW-1692)
+            assert all(a - c > 1e-9 for a, c in zip(ks, ks[1:])), (l.id, b, ks)   # (never twice in one step; the
+            # wait itself, REFIRE_W_KYR / the row's draw weight at the time (PW-1692), is tested on its own above)
+        assert all(len(v) <= LC.MAX_FIRES for b, v in l.fired.items()
+                   if b in cat and cat[b].family in LC.LIFETIME_CAP_FAMILIES)
 
 
 def test_epenthesis_uses_own_vowel():
