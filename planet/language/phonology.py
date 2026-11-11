@@ -89,8 +89,8 @@ def eligible(rule) -> bool:
     (staged rows aside), not a driver's bookkeeping (folds, tone hygiene, dispersion pushes)."""
     if rule is None or rule.then or rule.id.startswith(_SKIP_PREFIX):
         return False
-    if rule.change.kind in ("metathesis", "rewrite"):
-        return False   # (cluster rewrites and metathesis are lexical, word-by-word in the record: not productive rules)
+    if rule.change.kind in ("metathesis", "rewrite") or getattr(rule, "scope", "regular") == "diffusing":
+        return False   # (cluster rewrites, metathesis and any diffusing change are lexical, word by word: not productive)
     return _conditioned(rule)
 
 

@@ -1866,7 +1866,7 @@ def _parse(src, **meta) -> Rule:
             needs.add(x)
     weight = float(row.get("naturalness") or row.get("weight") or 3)
     family = (row.get("family") or "").strip()
-    scope = row.get("scope") or ("diffusing" if family in DIFFUSING_FAMILIES or weight <= 1 else "regular")
+    scope = row.get("scope") or ("diffusing" if family in DIFFUSING_FAMILIES else "regular")
     return Rule(id=rid, target=target, change=change, env=env, cause=cause, needs=frozenset(needs), weight=weight,
                 scope=scope, example=(row.get("example") or "").strip(), span=span, family=family,
                 notation=(row.get("rule") or "").strip() + (f"  [{'; '.join(notes)}]" if notes else ""))
@@ -1891,8 +1891,14 @@ def _parallel_clusters(row: dict, rid: str, in_items: list, out_items: list, env
 
 
 # Lexical diffusion is the minority: metathesis and dissimilation spread word by word in the record (Wang 1969; Hock
-# 1991 ch. 9), as do the rarest (weight 1) changes.
+# 1991 ch. 9: Latin peregrinus > pellegrino and arborem > árbol, but most r...r and n...n words kept both). A diffusing
+# change reaches about DIFFUSE_REACH of the words it fits (lect.Lect._apply_rule; PW-1686). Until PW-1686 the scope was
+# set but never read, so a dissimilation ran as a regular law: n > l before a later nasal (S094) and r > l before a later
+# r (S091) turned every such word, and were a third of the l- that made l the commonest word start on a24559. (The rare
+# rows, weight 1, were diffusing by default too; their examples are regular laws, Hawaiian t > k and k > ʔ, uvular r, so
+# they stay regular.)
 DIFFUSING_FAMILIES = frozenset({"metathesis", "dissimilation"})
+DIFFUSE_REACH = 0.3
 
 
 # ----------------------------------------------------------------------------------------------------------- describe

@@ -436,6 +436,19 @@ def word_root(lect, concept: str):
 
 
 # ---------------------------------------------------------------------------------------------- the lect
+
+def diffusion_reach(lect_id: str, rule_id: str, kyr: float):
+    """The words a lexically diffusing change reaches (RU.DIFFUSE_REACH of them, PW-1686): a hash of the lect, the change,
+    its date and the word, so a run is reproducible and a later firing reaches other words."""
+    import zlib
+    key = f"{lect_id}|{base_id(rule_id)}|{float(kyr):.3f}|"
+    lim = int(RU.DIFFUSE_REACH * 0xFFFFFFFF)
+
+    def reach(k: str) -> bool:
+        return zlib.crc32((key + k).encode("utf-8")) <= lim
+    return reach
+
+
 @dataclass
 class Lect:
     id: str
@@ -1097,10 +1110,11 @@ class Lect:
         stress = stress_of(self.inventory)
         fn = filtered_apply(rule, stress, segs0, self.inventory)
         self.touch()
-        n = LX.apply_rule_to_lexicon(self.lexicon, fn, rule.id, kyr, self.id)
+        reach = diffusion_reach(self.id, rule.id, kyr) if rule.scope == "diffusing" else None
+        n = LX.apply_rule_to_lexicon(self.lexicon, fn, rule.id, kyr, self.id, reach=reach)
         GR = _gr_mod()
         had_glottal = base_id(rule.id) == "S042" and glottal() in self.segments()
-        if GR is not None and self.grammar is not None:
+        if GR is not None and self.grammar is not None and reach is None:   # (a diffusing change: words, not grams)
             g = GR.apply_rule_to_grammar(self.grammar, fn, rule.id, kyr)
             n += g if isinstance(g, int) else len(g or ())
         self.touch()
@@ -1611,7 +1625,7 @@ def _sync_inventory(lect: Lect, kyr: float | None = None) -> None:
     voice2_hygiene(lect, kyr)
     _allophony(lect, kyr)
     inv = _inv_mod().observed(lect.inventory, lect.all_forms(), lect.profile)
-    inv = _inv_mod().retemplate(inv, lect.all_forms())
+    inv = _inv_mod().retemplate(inv, lect.all_forms(), lect.pattern[1] if lect.pattern else None)
     if hasattr(inv, "tones"):
         inv = replace(inv, tones=tones)
     if lect.glottal_phonetic:

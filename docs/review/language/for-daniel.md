@@ -1838,3 +1838,113 @@ regenerated sisters page are in the lane report.
   biggest map labels do not yet show the family difference.
 - 'Not' is renewed as 'not one' in about 40% of lects; real reinforcers vary (a step, a thing, a crumb, a second negator).
 - No contact layer: a ruling or trading people's generics never enter the local habit (no Danelaw -by).
+
+## Lane 16 (lang-lane16, 2026-11-10): how words begin, uvular r, open syllables
+
+In plain words: you were right that too many words began with i, h and l and too few with m and p. Almost none of it was in
+the proto-languages. At birth, a24559's protos begin 2% of their words with h, 2% with i and 6.5% with l. Sound change
+piled word starts onto those three over 20,000 years, through three faults. (The earlier measurement that blamed the
+protos counted the 336 protos still alive today, whose words had already changed.) A new standing check now measures
+word starts against NorthEuraLex, and it passes on both worlds. Uvular r is back under the overuse bar. Open-syllable
+languages are not fixed yet. Tickets PW-1686, PW-1642, PW-1647.
+
+**Where the bad word starts came from** (a24559 on main: where each living word's first sound came from, counting each
+historical change once)
+
+- **h was a sink.** Nine catalogue routes lead into h (s > h 15,086 word-starts, ʃ > x > h 7,774, t, k and p by way of
+  s, x and f) and one route leads out (h > ∅). Net, 26,700 word starts became h. Inherited words went from 1.9% h-initial
+  at birth to 11.3% today.
+- **The i came after the h.** When h was lost, the word began with the vowel after it, and that vowel was often i
+  (h > ∅ gave 7,056 i-initial starts, ʔ > ∅ 2,076). i is 33% of all vowel tokens in living lects, which is high too. Only
+  one catalogue row put a consonant back before an initial vowel (the glottal stop), and it is rare.
+- **l came from dissimilations run as laws.** n > l before a later nasal (S094) and r > l before a later r (S091) turned
+  every such word: 10,000 word starts, and almost nothing took l away. The catalogue marks dissimilation and metathesis
+  as "diffusing" (word by word: Latin peregrinus > pellegrino, but most r...r words kept both r's), but that mark was
+  never read.
+- **m and p were low from the draw.** A word's first sound was drawn by the same weights as any other sound. In real word
+  lists, word starts favour p (2.1x their overall share), h (2.0x), k (1.5x) and m (1.3x), and they avoid l (0.6x),
+  n (0.55x), r (0.3x) and ŋ (0x) (NorthEuraLex, 107 languages).
+- Loans, compounds and shifted words (half the lexicon) carry their sources' starts, so they followed the same skew.
+
+**What changed**
+
+- **Word-initial sound weights (PW-1686).** `tools/language/token_priors.py` now also reads, from NorthEuraLex, how much
+  busier each sound class is at the start of a word than in words overall (`initial` column of
+  `data/token_frequency.tsv`). A drawn word's first sound is weighted by it. ŋ is floored at 0.15 because it is common
+  word-initially outside Eurasia. Human protos now begin words with k 14%, t 13%, p 12%, m 8%, l 2.5%, h 3%, i 1.6%.
+- **Lexical diffusion is real now (PW-1686).** A diffusing change (dissimilation, metathesis, syncope, the glottal
+  prothesis) reaches about 30% of the words it fits, chosen by a hash. It changes no grammar forms and does not become a
+  live phonological rule. The rarest rows (grade 1) used to be marked diffusing by default. Their examples are regular
+  laws (Hawaiian t > k, k > ʔ, uvular r), so they stay regular.
+- **Ways back out (PW-1686).** Four new catalogue rows, each a well-attested change:
+  - j before an initial front vowel and w before an initial rounded vowel: the Slavic prothesis, *ezero > jezero,
+    Ukrainian vohon'.
+  - h dropped at the start of a word: Greek psilosis, Latin hora > Italian ora, Cockney.
+  - h dropped between vowels: Latin nihil > nīl.
+- **The standing check (PW-1686).** "word starts vs NorthEuraLex" in the language pass's checks. For living
+  human-voiced lects, the median lect's share of words beginning with a labial, a liquid, h, a vowel and i must each sit
+  inside NorthEuraLex's 10th-90th percentile (`data/word_initial.tsv`). At most 3% of lects may begin over 20% of their
+  words with i (Zulu's noun-class prefixes give 46%; nothing in NorthEuraLex passes 16%). Lipless peoples are left out:
+  their words cannot start with a labial.
+- **Uvular r (PW-1642).** Europe's ʁ is one innovation spread by contact (Trudgill 1974), not one that lines make again
+  and again. On a24559, r > ʁ fired 126 times on its own (plus 75 adoptions from neighbours), and ʁ stood in 14% of living
+  lects. Its draw weight is now 0.3 of its grade (`history.RULE_WEIGHT`, the same lever as S042 and S073): it still
+  happens and still spreads by contact. It now fires 53 times in all.
+- **Open-syllable lines keep an open template (PW-1647, step 1 of the ticket).** While a line holds open syllables (its
+  word-shape anchor under 3% of words with a coda) and single onsets, a few loans with codas no longer open its template.
+  Coined words and later loans are fitted to CV, by epenthesis, the way Japanese and Hawaiian fit theirs.
+
+**Word starts, living lects** (main is the same world on main's code; branch is this lane's code)
+
+| | a24559 main | a24559 branch | de1cc6 main | de1cc6 branch |
+| --- | --- | --- | --- | --- |
+| l / h / i (all living lects, % of words) | 10.9 / 10.8 / 8.2 | 6.5 / 6.2 / 4.8 | 11.0 / 13.8 / 6.6 | 6.4 / 6.9 / 4.0 |
+| m / p / b | 3.1 / 2.0 / 1.3 | 4.1 / 3.1 / 2.2 | 3.7 / 2.0 / 1.8 | 4.3 / 3.5 / 2.6 |
+| median lect i-initial; lects over 20% | 6.9%; 39 | 3.6%; 7 | 5.4%; 10 | 3.0%; 4 |
+| check, human-voiced median: labial (ref 12.8-30.8%) | 11.0 FAIL | 15.7 | 12.4 FAIL | 15.8 |
+| liquid (ref 0.7-10.2%) | 15.0 FAIL | 9.3 | 14.5 FAIL | 9.6 |
+| h (ref 0-6.7%) | 7.0 FAIL | 2.1 | 10.0 FAIL | 3.4 |
+| vowel (ref 8.4-26.6%) / i (ref 0-4.5%) | 24.4 / 6.9 FAIL | 17.2 / 3.1 | 20.1 / 5.5 FAIL | 14.4 / 2.5 |
+
+Main's numbers are measured offline with the check's own code. Main does not run the check.
+
+Labials stay at the low end of the range on purpose. The check counts only human-voiced lects, but half of the a24559
+lects belong to peoples without lips (dragons, kobolds, aarakocra), and their words could not start with m or p anyway.
+Liquids are still high in the range. S091 and S094 still fire about 2,000 times between them on a24559, each firing now
+turning a third of the words it fits, and the reference sample is Eurasian, where the Altaic languages ban initial r.
+
+**World checks (main -> branch)**
+
+| | a24559 main | a24559 branch | de1cc6 main | de1cc6 branch | de1cc6 seed 7 main | seed 7 branch |
+| --- | --- | --- | --- | --- | --- | --- |
+| sisters recognisable (bar 0.5) | 0.555 | 0.561 | 0.530 | 0.476 FAIL | 0.549 | 0.513 |
+| overused segments | ʁ 14.1% FAIL | none | ɖ 23% FAIL | pf 12.4% FAIL | ʁ 17.7%, nʲ, kʲ, ⁿd̪ FAIL | kʲ, ʁ 14.5%, ⁿd̪, nʲ FAIL |
+| pronoun loans (cap 0.08) | 0.065 | 0.063 | 0.085 FAIL | 0.076 | 0.083 FAIL | 0.115 FAIL |
+| living inventory sizes | ok | ok | FAIL | ok | ok | ok |
+| horizon (target 6-10 kyr) | 13.5 FAIL | 17.0 FAIL | 16.0 FAIL | 6.5 ok | 10.0 ok | 11.0 FAIL |
+| word starts | (FAIL offline) | ok | (FAIL offline) | ok | (FAIL offline) | liquid 14.0% FAIL |
+| simple syllables (WALS 12%) | 5.0% | 5.8% | 6.8% | 6.2% | 7.4% | 11.1% |
+
+The second draw of de1cc6 (seed 7) separates signal from swing:
+- **Sisters dip on de1cc6 in both draws** (0.530 -> 0.476, 0.549 -> 0.513), but not on a24559 (0.555 -> 0.561). The four
+  new rows add change, so this may be real. It is small, and the bar is 0.5. Watch it.
+- **Pronoun loans are noise around the bar.** On de1cc6 the branch reads 0.076 and 0.115 against main's 0.085 and 0.083;
+  the branch's first pass read 0.106. None of this lane's changes touch borrowing.
+- **ʁ is down on every draw** (a24559 14.1% -> under the 10% floor; de1cc6 seed 7 17.7% -> 14.5%). de1cc6 seed 7 still
+  fails, alongside kʲ, nʲ and ⁿd̪, which main fails too.
+- **Word starts pass on three of four branch passes.** Seed 7 has liquids at 14% (main 19%), over the 10.2%
+  bar; where that draw's l- comes from is not traced yet.
+- **Simple syllables** went 7.4% -> 11.1% on seed 7 and moved under a point on the other draws: open-syllable lines are a
+  few dozen lects, so one family's luck swings this number.
+
+**What is left**
+
+- **Open-syllable languages (PW-1647) are not fixed.** Step 1 (an open template held against loans) moved simple
+  syllables by under a point on both worlds. The leak is mostly elsewhere: syncope and vowel loss getting past the anchor,
+  and shifted words. Step 2 of the ticket, wholesale final-consonant loss (S099) allowed as a branch's signature change
+  and allowed to keep firing, is written but was not run in this lane (`scratchpad lane16/ed_1647b.py`). It is the next
+  thing to try.
+- **Rare changes fire about ten times more often than their grade says** (draft). Common changes all hit the 4-kyr
+  re-fire wait, so a sound's fate is set by how many rows feed and drain it. That is why h piled up, and why uvular r
+  needed a per-row weight.
+- pf overuse on de1cc6. The High German shift (S178) has more initial p to work on now; a24559 and the second de1cc6 draw do not show it.

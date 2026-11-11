@@ -386,3 +386,26 @@ def test_token_priors_follow_lexical_counts():
     assert t and t[INV.token_class(P("a"))] > t[INV.token_class(P("u"))]
     assert t[INV.token_class(P("t"))] > t[INV.token_class(P("p"))] > t[INV.token_class(P("ɡ")) ] * 0.9
     assert INV.token_class(P("ǃ")) not in t and INV._lexical(P("ǃ"), 0.04) == pytest.approx(0.2)
+
+
+def test_word_initial_priors_shape_word_starts():
+    """PW-1686: a word's first sound is weighted by its class's word-initial busyness (data/token_frequency.tsv `initial`,
+    NorthEuraLex): p and m start words more often than l, n and r; ŋ- is rare but possible (floored)."""
+    from planet.language.percepts import parse_segment as P
+    ip = I.initial_priors()
+
+    def cls(s):
+        return I.token_class(P(s))
+    assert ip[cls("p")] > ip[cls("m")] > 1.0 > ip[cls("l")] > ip[cls("r")]
+    assert ip[cls("ŋ")] == pytest.approx(I.INITIAL_FLOOR)
+    rng = np.random.default_rng(5)
+    first = collections.Counter()
+    for _ in range(40):
+        inv = I.draw_inventory(rng)
+        names = {to_ipa(c) for c in inv.consonants}
+        if not {"p", "l", "n", "m"} <= names:
+            continue
+        for _ in range(60):
+            f = I.draw_word(rng, inv, n_syll=2)
+            first[to_ipa(f[0])] += 1
+    assert first["p"] > first["l"] and first["m"] > first["n"]

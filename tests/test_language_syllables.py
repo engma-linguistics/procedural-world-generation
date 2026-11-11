@@ -87,3 +87,16 @@ def test_phonotactic_refusal_is_the_lines_not_the_draws():
     lc.refused[LC.base_id(apocope.id)] = 9.0
     assert not lc.may_fire(apocope, 8.0) and lc.may_fire(apocope, 9.0 - lc.refire_kyr())
     assert not lc.copy("y", 0, 8.0, "bud").may_fire(apocope, 8.0)
+
+
+def test_retemplate_keeps_the_held_open_pattern():
+    """PW-1647: while the line holds open syllables and single onsets (its word-shape anchor), a few loans with codas or
+    clusters do not open the template, so coins and loan repairs stay CV; once the line's own pattern has codas, they do."""
+    open_ = [w(x) for x in ("pata", "kalu", "mi", "sapo")] * 10
+    leaky = open_ + [w(x) for x in ("patan", "trak")] * 2   # (about 9% of the words: loans from a coda neighbour)
+    inv = I.retemplate(I.draw_inventory(np.random.default_rng(3)), open_)
+    assert I.retemplate(inv, leaky).max_coda >= 1                       # no anchor: the template opens
+    held = I.pattern_of(open_)
+    kept = I.retemplate(inv, leaky, held)
+    assert kept.max_coda == 0 and kept.max_onset == 1 and set(kept.shapes) == {"CV", "V"}
+    assert I.retemplate(inv, leaky, I.pattern_of(leaky)).max_coda >= 1  # a line that holds codas takes them
