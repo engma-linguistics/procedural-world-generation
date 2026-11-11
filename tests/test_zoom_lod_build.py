@@ -179,3 +179,54 @@ def test_edge_steps_like_the_inside(siblings, section, world):
     assert 0.9 <= r_med <= 1.1, (r_med, r_90)
     assert 0.9 <= r_90 <= 1.1, (r_med, r_90)
 
+
+@pytest.fixture(scope="module")
+def volcano_siblings(section, world):
+    """The siblings with a volcano on their shared edge (PW-1695): a cone 1500 m high on the section, its vent on the
+    lattice line between them, 20 km north of the valley."""
+    mp = pytest.MonkeyPatch()
+    mp.setattr(L, "LEVELS", LEVELS)
+    cell, (x0, y0), meta, layers = section
+    a = L.tile_at(cell, 2, x0 - 1.0, y0)
+    b = L.Key(cell, 2, a.tx + 1, a.ty)
+    xv, yv = L.rect(a)[1], y0 + 20.0
+    n, r = 1000, 4.0
+    k = np.arange(n) + 0.5
+    X, Y = np.meshgrid(-2000 + k * r, 2000 - k * r)
+    h = layers["elevation"] + (1500.0 * np.exp(-((X - xv) ** 2 + (Y - yv) ** 2) / (2 * 16.0 ** 2))).astype(np.float32)
+    lat, lon = Z._latlon(L.frame(cell).to_sphere(np.array([xv]), np.array([yv]))[0])
+    ic, ir = int((xv + 2000) / r), int((2000 - yv) / r)
+    top = float(h[ir - 2:ir + 3, ic - 2:ic + 3].max()) + 50.0
+    vol = {"lat": lat, "lon": lon, "top_m": top, "height_m": 1500.0, "kind": "arc", "status": "active"}
+    m2 = {**meta, "id": "sec002", "stats": {"falls": [], "volcanoes": [vol]}}
+    src = {L.Key(cell, 1, 0, 0): (m2, {**layers, "elevation": h})}
+    za = LB.build(world, a, src, log=lambda *_: None)
+    zb = LB.build(world, b, src, log=lambda *_: None)
+    mp.undo()
+    return a, za, zb
+
+
+def test_a_volcano_on_an_edge_is_drawn_by_both_tiles(volcano_siblings):
+    a, za, zb = volcano_siblings
+    va, vb = za["stats"]["volcanoes"], zb["stats"]["volcanoes"]
+    assert len(va) == 1 and len(vb) == 1  # (listed by both: finer levels find it whichever parent they read)
+    assert va[0]["owner"] + vb[0]["owner"] == 1  # (owned by the tile whose pixels hold its vent)
+    assert va[0]["vent_px"][0] == vb[0]["vent_px"][0] and va[0]["vent_px"][1] - vb[0]["vent_px"][1] == L.tile_px(2)
+    ha, hb = za["layers"]["elevation"].astype(float), zb["layers"]["elevation"].astype(float)
+    row = va[0]["vent_px"][0]
+    rows = slice(max(row - 12, 0), row + 13)
+    # the cone stands on both sides of the edge (not cut off at it)
+    assert np.median(ha[rows, -3:]) > np.median(ha[rows, -40]) + 300
+    assert np.median(hb[rows, :3]) > np.median(hb[rows, 40]) + 300
+
+
+def test_no_cliff_over_a_volcano_on_an_edge(volcano_siblings):
+    a, za, zb = volcano_siblings
+    ha, hb = za["layers"]["elevation"].astype(float), zb["layers"]["elevation"].astype(float)
+    row = za["stats"]["volcanoes"][0]["vent_px"][0]
+    rows = slice(max(row - 12, 0), row + 13)
+    across = np.abs(hb[rows, 0] - ha[rows, -1])
+    inside = np.concatenate([np.abs(np.diff(ha[rows, -24:], axis=1)).ravel(),
+                             np.abs(np.diff(hb[rows, :24], axis=1)).ravel()])
+    assert across.max() <= inside.max()
+    assert np.median(across) <= 1.5 * np.median(inside)

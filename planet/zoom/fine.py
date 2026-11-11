@@ -695,7 +695,10 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     gorge = np.zeros(npx, bool)  # (drawn features: kept out of the parent's means, as the parent's own)
     g_wall, g_floor, g_out = np.zeros(npx, bool), np.zeros(npx), np.zeros((npx, 2))  # (walls: their floor
     # and the way out from the path: cut again into the finished ground)
-    sc_relief = float(np.clip(np.percentile(hp[hp > 0], 99) if (hp > 0).any() else ZFL.EARTH_RELIEF_M, 1500.0, 12000.0)) / ZFL.EARTH_RELIEF_M
+    # (a tile's: the planet's relief, not its parent window's: the same for every tile)
+    h_rel = np.asarray(world["layers"]["elevation"], float) if seam else hp
+    sc_relief = float(np.clip(np.percentile(h_rel[h_rel > 0], 99) if (h_rel > 0).any() else ZFL.EARTH_RELIEF_M,
+                              1500.0, 12000.0)) / ZFL.EARTH_RELIEF_M
     for k, ch in chains.items():
         f = falls_p[k]
         top = float(round(ws_flat[ch[0]], 2))
@@ -738,7 +741,9 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         # faces, rapids between and a pool at each foot; the whole staircase held back downstream at the
         # flanks, so its crests curve into a horseshoe round the gorge's head (zoom.falls.fine_profile, horseshoe; PW-522)
         tiers = ZFL.tier_plan(top - bottom, sc_relief, f.get("tiers_m"))
-        rng_f = np.random.default_rng(S_ + 7919 * k + 5)
+        # (a tile's: keyed by the lip's place, not the fall's number in its parent window)
+        rng_f = np.random.default_rng(S_ + 7919 * (int(1e4 * (f["lat"] + 2 * f["lon"])) % 100003
+                                                   if seam and "lat" in f else k) + 5)
         ks_, kz_, foots = ZFL.fine_profile(top, bottom, tiers, s_face, rng_f, 0.9 * max(L_ - s_face, 4 * res))
         rcs, R0, T_h = ZFL.horseshoe(d, tiers[0], hf + (top - bottom) / (1000.0 * np.tan(np.radians(65.0))))
         sp_e = sp - rcs
@@ -752,7 +757,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         # (its rims frayed by a smooth planet-fixed field: finer zooms fray them the same way; slow enough
         # that a wall still climbs all the way to its rim; sampled along the path instead, it drew spokes
         # round the inside of a bend)
-        rug_g = float(np.median(rug[ib]))
+        rug_g = float(np.median(rug[ib] if not seam else  # (a tile's: along the whole path, keyed by place)
+                                pa.bilinear(rug_p, *pa.coords(fr.to_sphere(Q[:, 0], Q[:, 1])))))
         lam_g = 10 * GORGE_FRAY_KM
         n1 = np.clip(ZK.fbm(Pk[ib], lam_g, 2, 0.5, S_ + 21) / 0.17, -1.25, 1.25)
         grad = 1000.0 * np.tan(np.radians(GORGE_WALL_DEG[0] + (GORGE_WALL_DEG[1] - GORGE_WALL_DEG[0]) * rug_g))
@@ -848,7 +854,23 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     rain_p = pa._a("precipitation") if "precipitation" in pa.L else None
     rr_b, cc_b = rr_p[box], cc_p[box]
     xb, yb = fr.to_plane(pa.fr.to_sphere(*pa.plane(rr_b, cc_b)))
-    for k, v in enumerate(pmeta["stats"].get("volcanoes", []) or []):
+    vols_p = list(enumerate(pmeta["stats"].get("volcanoes", []) or []))
+    if seam:  # (a tile: in an order keyed by place, as its neighbours)
+        vols_p.sort(key=lambda kv: (round(float(kv[1].get("lat", kv[1].get("y_km", 0.0))), 4),
+                                    round(float(kv[1].get("lon", kv[1].get("x_km", 0.0))), 4)))
+
+    def surf_at(xq, yq):
+        """(sphere points, target_f, parent row, col) at fine-plane points: the parent's ground with its coast's
+        warp, keyed by place (seam: a volcano's summit is found on its whole hold whichever tile draws it)."""
+        Pq_ = fr.to_sphere(xq, yq)
+        Pkq = np.ascontiguousarray(Pq_ * R_KM)
+        rq, cq = pa.coords(Pq_)
+        wq = np.clip(1.6 * pa.bilinear(_box3(edge_p) / 9.0, rq, cq), 0.0, 1.0) * COAST_PX
+        rq2 = rq + wq * np.clip(ZK.fbm(Pkq, lam_c, oct_c, 0.62, S_ + 21) / 0.17, -1.5, 1.5)
+        cq2 = cq + wq * np.clip(ZK.fbm(Pkq, lam_c, oct_c, 0.62, S_ + 22) / 0.17, -1.5, 1.5)
+        return Pq_, pa.bicubic(hp_f, rq2, cq2), rq, cq
+
+    for k, v in vols_p:
         if "lat" in v:
             Pv = latlon_to_xyz(v["lat"], v["lon"])
         else:
@@ -876,17 +898,24 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         r_run = hv_m / ZFV.ARC_SLOPE / 1000.0 if ZFV.kind_of(v) == "strato" else float(r63)
         prm = ZFV.params(v, float(r63), rain, seed, rim_km, float(np.interp(3.0 * r_run, dist, prof)))
         hold = max(prm["hold_km"], CORE_FINE_PX * res)
-        if abs(vx) > nxr * res / 2 - ramp - hold or abs(vy) > nyr * res / 2 - ramp - hold:
+        if seam:  # (a tile draws every volcano whose reach touches it: its neighbours the same, from the same data)
+            r_out = max(prm["reach_km"], 2 * hold)
+            if abs(vx) > nbx * res / 2 + r_out or abs(vy) > nby * res / 2 + r_out:
+                continue
+        elif abs(vx) > nxr * res / 2 - ramp - hold or abs(vy) > nyr * res / 2 - ramp - hold:
             continue
         dv = np.hypot(px - vx, py - vy)
+        # (the vent's pixel on the lattice, also off the tile; owner: the tile whose region holds it)
+        v_rc = [int(np.floor(nby / 2 - vy / res)) - hb, int(np.floor(vx / res + nbx / 2)) - hb]
+        v_own = {"owner": bool(0 <= v_rc[0] < nyr and 0 <= v_rc[1] < nxr)} if seam else {}
         if ring_h.max() > float(v["top_m"]) + VOLC_CUT_M:
             # (the parent's ground round the vent stands above its summit: it drew no edifice there, and
             # cutting one into its ground stood as a walled pit; left as the parent's)
             log(f"  volcano {k}: the parent's ground stands {ring_h.max() - float(v['top_m']):.0f} m above its summit")
             c_i = int(np.argmin(dv))
-            vol_list.append({**v, "x_km": round(vx, 3), "y_km": round(vy, 3),
-                             "summit_px": [int(c_i // nbx - hb), int(c_i % nbx - hb)],
-                             "vent_px": [int(c_i // nbx - hb), int(c_i % nbx - hb)], "summit_form": "parent's",
+            c_rc = v_rc if seam else [int(c_i // nbx - hb), int(c_i % nbx - hb)]
+            vol_list.append({**v, "x_km": round(vx, 3), "y_km": round(vy, 3), "summit_px": c_rc, "vent_px": c_rc,
+                             "summit_form": "parent's", **v_own,
                              "parent_volcano": k, "lineage": [*v.get("lineage", []), k]})
             continue
         reach = max(prm["reach_km"], 2 * hold)
@@ -896,21 +925,30 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         win = np.hypot(xb - vx, yb - vy) <= reach + 3 * rp
         e_p = np.zeros(pa.ny * pa.nx)
         e_p[np.flatnonzero(box)[win]] = ZFV.parent_view(pa, fr, rr_b[win], cc_b[win], prm, res)
-        wgt = 1.0 - smoothstep(0.6 * reach, reach, ds)
-        E = ZFV.relief(P[sel], prm)
-        e_bar = pa.bicubic(e_p.reshape(pa.ny, pa.nx), pr[sel], pc[sel])
-        fine_e = wgt * (E - e_bar)
-        s1 = target_f[sel] + ed[sel] + fine_e
         # where the parent can't hold the edifice (a coarse parent's pixels average its cone down, far
         # below its summit: more than VOLC_CUT_M below its means on its floor), the edifice stands on
         # its floor: drawn, left out of the means (the deficit at the parent's scale: smooth). Only on
         # the cone's body (its relief there at least DRAWN_BODY of its height): round its foot the
         # floor is a guess (the ground there is the parent's: its valleys aren't filled)
+        e_p1 = None
         if prm["kind"] != "caldera":
-            e_p[np.flatnonzero(box)[win]] += float(v["top_m"]) - prm["H"] - hp.ravel()[np.flatnonzero(box)[win]]
-            body = smoothstep(0.5 * DRAWN_BODY, DRAWN_BODY, e_bar / prm["H"])
-            short = pa.bicubic(e_p.reshape(pa.ny, pa.nx), pr[sel], pc[sel]) - VOLC_CUT_M
-            up = body * Z.softplus(short, DRAWN_M)  # (faded, not cut off: a cut stood as a wall)
+            e_p1 = e_p.copy()
+            e_p1[np.flatnonzero(box)[win]] += float(v["top_m"]) - prm["H"] - hp.ravel()[np.flatnonzero(box)[win]]
+
+        def form(Pq, rq, cq, dq):
+            """(weight, the edifice less its parent-pixel means, its lift where drawn over the parent) at points."""
+            wq = 1.0 - smoothstep(0.6 * reach, reach, dq)
+            eb = pa.bicubic(e_p.reshape(pa.ny, pa.nx), rq, cq)  # (bicubic, as the parent's surface: its means kept)
+            fe = wq * (ZFV.relief(Pq, prm) - eb)
+            if e_p1 is None:
+                return wq, fe, None
+            body = smoothstep(0.5 * DRAWN_BODY, DRAWN_BODY, eb / prm["H"])
+            short = pa.bicubic(e_p1.reshape(pa.ny, pa.nx), rq, cq) - VOLC_CUT_M
+            return wq, fe, body * Z.softplus(short, DRAWN_M)  # (faded, not cut off: a cut stood as a wall)
+
+        wgt, fine_e, up = form(P[sel], pr[sel], pc[sel], ds)
+        s1 = target_f[sel] + ed[sel] + fine_e
+        if up is not None:
             drawn[sel] |= up > 2 * DRAWN_M
             s1 = s1 + up
         # the summit (the crater's rim, a caldera's) at top_m. Standing above it (the parent drew the
@@ -920,13 +958,28 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         hs = ds <= hold
         lift = 1.0 - smoothstep(hold, hold + max(rp, hold), ds)
         top = float(v["top_m"])
-        if s1[hs].max() > top and (s1 - fine_e * lift)[hs].max() < top:
+        if seam:  # (a tile: the summit found on the whole hold, on the lattice, the tile's pixels or not)
+            ia_ = np.arange(int(np.floor((vx - hold) / res + nbx / 2)), int(np.ceil((vx + hold) / res + nbx / 2)) + 1)
+            ja_ = np.arange(int(np.floor(nby / 2 - (vy + hold) / res)), int(np.ceil(nby / 2 - (vy - hold) / res)) + 1)
+            IA, JA = np.meshgrid(ia_, ja_)
+            xa_, ya_ = (IA.ravel() + 0.5 - nbx / 2) * res, (nby / 2 - JA.ravel() - 0.5) * res
+            da_ = np.hypot(xa_ - vx, ya_ - vy)
+            kin = da_ <= hold
+            xa_, ya_, da_, IA_, JA_ = xa_[kin], ya_[kin], da_[kin], IA.ravel()[kin], JA.ravel()[kin]
+            Pa_, tfa, ra_, ca_ = surf_at(xa_, ya_)
+            _, fea, upa = form(Pa_, ra_, ca_, da_)
+            s1h = tfa + fea + (0.0 if upa is None else upa)
+            feh, lifth = fea, 1.0 - smoothstep(hold, hold + max(rp, hold), da_)
+        else:
+            s1h, feh, lifth = s1[hs], fine_e[hs], lift[hs]
+        if s1h.max() > top and (s1h - feh * lifth).max() < top:
             lo_, hi_ = 0.0, 1.0  # (the share of the edifice's form kept at the summit)
             for _ in range(30):
                 mid = 0.5 * (lo_ + hi_)
-                lo_, hi_ = (mid, hi_) if (s1 - (1 - mid) * fine_e * lift)[hs].max() < top else (lo_, mid)
+                lo_, hi_ = (mid, hi_) if (s1h - (1 - mid) * feh * lifth).max() < top else (lo_, mid)
             s1 = s1 - (1 - lo_) * fine_e * lift
-        shift = top - s1[hs].max()
+            s1h = s1h - (1 - lo_) * feh * lifth
+        shift = top - s1h.max()
         s1 = s1 + shift * lift
         log(f"  volcano {k}: {prm['kind']} {prm['status']}, crater {2 * prm['crater_r']:.2f} km, summit shift "
             f"{shift:+.0f} m, drawn over the parent {int(drawn[sel].sum())} px")
@@ -938,12 +991,21 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         hold_i = sel[hs]
         hold_i = hold_i[~(course | pool | gorge)[hold_i] & (target_f[hold_i] + ed[hold_i] > 0)]
         core[hold_i] = True
-        top_i = hold_i[int(np.argmax(target_f[hold_i] + ed[hold_i]))]
-        ed[top_i] = float(v["top_m"]) - target_f[top_i]
-        c_i = int(np.argmin(dv))
-        vol_list.append({**v, "x_km": round(vx, 3), "y_km": round(vy, 3),
-                         "summit_px": [int(top_i // nbx - hb), int(top_i % nbx - hb)],
-                         "vent_px": [int(c_i // nbx - hb), int(c_i % nbx - hb)],
+        if seam:  # (the summit's pixel on the lattice: set where it lies in the built area)
+            a_top = int(np.argmax(s1h))
+            s_rc = [int(JA_[a_top]) - hb, int(IA_[a_top]) - hb]
+            if 0 <= JA_[a_top] < nby and 0 <= IA_[a_top] < nbx:
+                top_i = int(JA_[a_top]) * nbx + int(IA_[a_top])
+                ed[top_i] = float(v["top_m"]) - target_f[top_i]
+            c_rc = v_rc
+        else:
+            top_i = hold_i[int(np.argmax(target_f[hold_i] + ed[hold_i]))]
+            ed[top_i] = float(v["top_m"]) - target_f[top_i]
+            c_i = int(np.argmin(dv))
+            s_rc, c_rc = [int(top_i // nbx - hb), int(top_i % nbx - hb)], [int(c_i // nbx - hb), int(c_i % nbx - hb)]
+        vol_list.append({**v, "x_km": round(vx, 3), "y_km": round(vy, 3), **v_own,
+                         "summit_px": s_rc,
+                         "vent_px": c_rc,
                          "summit_form": ("caldera" if prm["caldera"] else "pit crater" if prm["kind"] == "shield"
                                          else "crater") if prm["crater_d"] > 0 else "parent's",
                          "crater_km": round(2 * prm["crater_r"], 2), "crater_m": round(prm["crater_d"], 0),
@@ -1232,9 +1294,13 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
                               discharge, ~land | pool, glacier_b, land & ~fixed & ~pool & ~vfloor & ~gorge & ~g_wall,
                               region_b)
     if ov is not None:
-        h = ov["h"]
+        # (a tile: the overlays' change fades out over its edge ramp, as the carving: at the edge the ground is the
+        # edge blocks', the same on both sides, and no pond is cut through it)
+        h = ov["h"] if not seam else h + w_in * (ov["h"] - h)
         discharge = np.where(land, ov["q"], discharge)
         pond, pond_depth, lf_overlay = ov["pond"], ov["pond_depth"], ov["stats"]
+        if seam:
+            pond = pond & (w_in >= 1)
         log(f"  landform overlays {lf_overlay} [{time.time() - t0:.1f}s]")
     if seam:  # (a tile: the imposed rivers carry the parent's water, the same on both sides of an edge)
         anc = course & (c_qa > 0)
@@ -1293,10 +1359,14 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         water = np.where(vr["reef"], np.where(vr["h"] > 0, 0, 1), water).astype(np.uint8)
         sea, land = water == 1, water == 0
         surf_f = np.where(vr["reef"], Z.LIMESTONE, surf_f).astype(np.uint8)
+    h0_c = h.copy()
     cz = ZFF.coastal(world, fr, pa, pr, pc, own, Pk, px, py, nx, res, rseed, h, water, glacier, surf_f,
                      None if vr is None else vr["reef"])
     cl = cz["layer"].astype(np.uint8)
     h = cz["h"]  # (the reef flats raised, the lagoons round them deepened: each parent pixel's mean kept)
+    if seam:  # (... fading out over a tile's edge ramp, as the overlays)
+        w_c = np.asarray(w_in)[keep_px]
+        h = h0_c + w_c * (h - h0_c)
     form_f = cat("landform").astype(np.uint8) if "landform" in pa.L else None
     clim_f = cat("climate", Z.SEA_CLIMATE).astype(np.uint8)
     clim_f = np.where(sea, Z.SEA_CLIMATE, clim_f)

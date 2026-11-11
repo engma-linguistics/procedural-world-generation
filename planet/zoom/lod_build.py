@@ -203,6 +203,9 @@ def tile(world_ref: str, key: L.Key | str, seed: int = 1, log=print) -> Path:
     z = build(world, key, src, seed, log=log)
     with S.lock(S.zooms_dir(), L.tile_id(wid, key, seed)):
         out = save(z, wid, key, seed)
+    # (its parent's deposits that lie inside it, at their place: each deposit in the one tile holding its point, the
+    # parent tile's or the section's own; resources.add_to_zoom, PW-618/1695)
+    Z.add_deposits(out, world)
     log(f"tile {key}: {out.name} [{time.time() - t0:.1f}s]")
     return out
 
