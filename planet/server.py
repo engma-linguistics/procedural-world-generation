@@ -32,6 +32,7 @@
   GET    /api/taboos?run=<id>        the taboos of those cultures (lineages/taboos.py, PW-1305, PW-1311): its taboos.json, else worked out, not saved
   GET    /api/faithmap?run=<id>&frame=<f>[&w=1024][&only=<faith>]   where each faith was at one stored frame, an equirectangular PNG (lineages/faithmap.py)
   GET    /api/polities?run=<id>[&ago=<kyr>]   who rules where (lineages/polities.py, PW-1431): the polities and per-step counts; with ago, the nearest century step's map
+  GET    /api/maplabels?run=<id>   the map's labels (lineages/featnames.py, PW-1655/1656): continents, seas, features, states, towns, each in the English Common and the local name
   GET    /api/techspread?run=<id>[&tech=writing]   how fast one tech spread (lineages/techspread.py): who knew it when and how, the share of settled people over time
   GET    /api/trade?run=<id>[&culture=<id>]   the goods ledger (lineages/trade.py, PW-1502): per way of life, or one culture's surplus and lacks per era; &flows=1: where its goods come from and go (trade_flow.py, PW-1503); &routes=1&ago=<kyr>: that era's trade routes and trading towns (trade_routes.py, PW-1504)
   GET    /api/tongues?run=<id>[&culture=<id>|&ago=<kyr>]   the tongues ledger (lineages/tongues.py, PW-1526): per culture and era the tongues its people speak besides its own; trade languages and pidgins per era
@@ -620,6 +621,33 @@ _polities_cache: dict = {}  # (run id, run.json mtime, version) -> polities doc
 _polities_lock = threading.Lock()  # (the summary and the first map come together: one derive)
 
 
+_labels_cache: dict = {}  # (run id, run.json, languages.json and features.json mtimes) -> the map's labels
+
+
+def map_labels(query: str) -> tuple[dict, int]:
+    """GET /api/maplabels?run=<id>: the labels the globe draws (featnames.labels); the features from the run's features.json, else
+    worked out (a few seconds) and kept in memory, never written into the run."""
+    q = dict(parse_qsl(query))
+    try:
+        if not q.get("run"):
+            raise ValueError("run= is required")
+        d = S.find_run(q["run"])
+        key = (d.name, _mtime(d / "run.json"), _mtime(d / "languages.json"), _mtime(d / "features.json"))
+        if key not in _labels_cache:
+            from .lineages import featnames as FN
+            pol = None
+            if (d / "settlements.json").exists():
+                from .lineages import nameslot as NS, polities as PO
+                pol = NS.apply_polities(PO.summary(polities_doc(d)), languages_main(d), named_cultures(d)["cultures"])
+            _labels_cache.clear()
+            _labels_cache[key] = FN.labels(d, pol, languages_main(d) or {})
+        return _labels_cache[key], 200
+    except ValueError as e:
+        return {"error": str(e)}, 400
+    except SystemExit as e:
+        return {"error": str(e)}, 404
+
+
 def polities_doc(d: Path) -> dict:
     """A run's polities doc (lineages/polities.py, PW-1431): read after the run from its settlements, techs, cultures and presence
     (~30 s at L7), kept in memory and on disk under <data root>/.godscache, never in the run folder."""
@@ -1181,6 +1209,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*authored_get(url.query))
         if url.path == "/api/taboos":
             return self.send_json(*taboos(url.query))
+        if url.path == "/api/maplabels":
+            return self.send_json(*map_labels(url.query))
         if url.path == "/api/polities":
             return self.send_json(*polities(url.query))
         if url.path == "/api/techspread":

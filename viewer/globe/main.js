@@ -58,6 +58,7 @@ import { loadFailed, setFrame } from './load.js';
 import { stop } from './playback.js';
 import { paletteReport } from './palettes.js';
 import { fadeSettlements } from './settlements.js';
+import { updateMapLabels } from './maplabels.js';
 import { applyUrlOptions, init, navBarHide, urlp } from './select.js';
 import { LOD, lodDirty, updateLod } from './lodtiles.js';
 import { CAM, afterControls, updateDive } from './dive.js';
@@ -208,6 +209,7 @@ renderer.setAnimationLoop((now) => {
   fitClip();
   updateLod(now);  // (the level-of-detail tiles: lodtiles.js)
   fadeSettlements();  // (the villages fade in as the camera closes in, PW-1106)
+  updateMapLabels();  // (names on the map, thinned by zoom: maplabels.js, PW-1655)
   updateDrape(now);  // (the line overlays eased with the ground, and laid on it when low: drape.js)
   if (DIAG.offset && S.mesh) for (const m of S.mesh.userData.mats) if (!m.polygonOffset) Object.assign(m, { polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 4 });
   DIAG.n.frames++;
