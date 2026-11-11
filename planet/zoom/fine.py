@@ -374,7 +374,9 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     A tile near its cell's edge (the owner line where two cells' tiles meet, docs/review/zoom/lod-plan-v2.md 2.3):
     `line` = (surface, weight), both its built area's pixels, flat: the ground carved once by place along the line
     (lod_build.line_surface) and how far the tile fades to it (1 within a pixel and a half of the line, 0 a ramp
-    inside); applied after the edge fade, so a pixel on both a tile edge and the line is the same on every side."""
+    inside); applied after the edge fade, so a pixel on both a tile edge and the line is the same on every side. Its
+    third item, if any, the courses laid once along the line: the tile lays them there instead of its own
+    (_paste_courses, PW-1713)."""
     if line is not None and not seam:
         raise ValueError("a cell line's fade is a tile's (seam=True)")
     t0 = time.time()
@@ -636,6 +638,15 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         c_rec[a_[nxt]] = b_[nxt]
         for d_ in range(len(seg_pts)):
             river_segs.append(np.column_stack(fr.to_plane(pa.fr.to_sphere(seg_pts[d_][:, 0], seg_pts[d_][:, 1]))))
+    carved_courses = None
+    if carve:  # (a block's courses, one pixel wide: a tile near its cell's edge takes them there, PW-1713)
+        carved_courses = {"course": course.copy(), "rec": c_rec.copy(), "bed": bed.copy(), "q": c_q.copy(),
+                          "a": c_a.copy(), "qa": c_qa.copy(), "aa": c_aa.copy(), "phase": phase_f.copy()}
+    if line is not None and len(line) > 2 and line[2] is not None:
+        # (a tile near its cell's edge: there the courses are the line's, laid once on the owner's lattice, the
+        # same in both cells; its own courses joined to them where they meet: PW-1713)
+        _paste_courses(line[2], np.clip(np.nan_to_num(np.asarray(line[1], float).ravel()), 0.0, 1.0), nbx, nby,
+                       course, c_rec, bed, c_q, c_a, c_qa, c_aa, phase_f, int(np.ceil(4 * ramp / res)))
     # beds fall all the way down a course, if only by a mm a pixel (a warped course can come back to a
     # pixel lower down; a parent's river can be level: the drainage must know which way it runs)
     src_c = np.flatnonzero(c_rec >= 0)
@@ -1226,8 +1237,9 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         hw = np.where(active, np.maximum(hw + fine_of(block_gap(hw)[0]), np.maximum(lb + 0.1 * (hw - lb), 0.5)), hw)
         hw = np.where(active, np.clip(hw, vol_floor, vol_cap), hw)
         hw = _relax(hw, active, s_max, (nby, nbx), res, needles=True)  # (the corrections leave no needle)
-    if carve:  # (a block keyed by place round a tile's edge: its carved ground, region only)
-        return {"hw": hw.reshape(nby, nbx)[hb:hb + nyr, hb:hb + nxr].copy(), "seconds": round(time.time() - t0, 1)}
+    if carve:  # (a block keyed by place round a tile's edge: its carved ground, region only; its courses, halo too)
+        return {"hw": hw.reshape(nby, nbx)[hb:hb + nyr, hb:hb + nxr].copy(), "seconds": round(time.time() - t0, 1),
+                "courses": carved_courses, "hb": hb, "nbx": nbx, "nby": nby}
     # back to the parent's surface at the region's edge
     blend = active  # (the imposed courses keep their beds: the parent's, so the edge still meets it)
     if not seam:
@@ -2091,6 +2103,77 @@ def _parent_gorge(pa: _Parent, ch: list[int], f: dict, path: np.ndarray) -> np.n
     else:
         m[np.asarray(ch[1:-1], int)] = True
     return m
+
+
+LINE_COURSE_W = 0.5  # a tile's courses are the cell line's where its fade to the line's ground is at least this
+
+
+def _paste_courses(lc: dict, la: np.ndarray, nbx: int, nby: int, course, c_rec, bed, c_q, c_a, c_qa, c_aa, phase,
+                   reach: int) -> None:
+    """A tile near its cell's edge takes the line's courses (lc: lod_build.line_surface's, on its built area's flat
+    pixels: px, rec (-1: none), bed, q, a, qa, aa, phase) where its fade to the line's ground la >= LINE_COURSE_W,
+    dropping its own there; a course of its own running into that band, or one of the line's running out of it, is
+    joined by a straight run of pixels to the nearest course of the other kind within `reach` px carrying at least
+    half its water (none: it ends, its water routed over the ground). In place (PW-1713)."""
+    band = la >= LINE_COURSE_W
+    own = course & ~band
+    tgt = np.where(c_rec >= 0, c_rec, 0)
+    dang_own = np.flatnonzero(own & (c_rec >= 0) & band[tgt])
+    course[band], c_rec[band], bed[band], phase[band] = False, -1, np.inf, np.nan
+    for a_ in (c_q, c_a, c_qa, c_aa):
+        a_[band] = 0.0
+    p =np.asarray(lc["px"], np.int64)
+    keep = band[p]
+    o = np.argsort(np.asarray(lc["q"])[keep], kind="stable")  # (a pixel two courses share: the bigger's, as laid)
+    p = p[keep][o]
+    pasted = np.zeros(len(course), bool)
+    pasted[p] = True
+    course[p] = True
+    for a_, k_ in ((bed, "bed"), (c_q, "q"), (c_a, "a"), (c_qa, "qa"), (c_aa, "aa"), (phase, "phase")):
+        a_[p] = np.asarray(lc[k_])[keep][o]
+    r_ = np.asarray(lc["rec"], np.int64)[keep][o]
+    c_rec[p] = np.where((r_ >= 0) & pasted[np.maximum(r_, 0)], r_, -1)
+    dang_line = p[(r_ >= 0) & ~pasted[np.maximum(r_, 0)]]
+    pr_, pc_ = np.divmod(np.arange(len(course)), nbx)
+
+    def join(i, cand, ref=None, near=None):
+        if not len(cand):
+            return False
+        ref = i if ref is None else ref
+        d = np.hypot(pr_[cand] - pr_[ref], pc_[cand] - pc_[ref])
+        ok = (d <= (reach if near is None else near)) & (c_qa[cand] >= 0.5 * c_qa[i]) & (cand != i) & (c_rec[cand] != i)
+        if not ok.any():
+            return False
+        t = int(cand[ok][np.argmin(d[ok])])
+        r0, c0, r1, c1 = pr_[i], pc_[i], pr_[t], pc_[t]
+        m = int(max(abs(r1 - r0), abs(c1 - c0)))
+        prev = int(i)
+        for s in range(1, m + 1):
+            k = int(round(r0 + (r1 - r0) * s / m)) * nbx + int(round(c0 + (c1 - c0) * s / m))
+            c_rec[prev] = k
+            if course[k]:  # (met a course: on down it)
+                return True
+            course[k] = True
+            bed[k] = bed[i] + (bed[t] - bed[i]) * s / m
+            c_q[k], c_a[k], c_qa[k], c_aa[k] = c_q[i], c_a[i], c_qa[i], c_aa[i]
+            prev = k
+        return True
+
+    # (never across the line: a join stays on its side, beyond the line in the other cell too, so the water the tile
+    # brings in there goes on down the line's course and doesn't spill over the line)
+    far = np.asarray(lc["far"], bool)
+    line_px = np.flatnonzero(pasted)
+    line_side = (np.flatnonzero(pasted & ~far), np.flatnonzero(pasted & far))
+    for i in dang_own[np.argsort(-c_qa[dang_own], kind="stable")]:
+        c_rec[i] = -1
+        join(i, line_side[int(far[i])])
+    own_side = (np.flatnonzero(own & ~far), np.flatnonzero(own & far))
+    rmap = dict(zip(p.tolist(), r_.tolist()))
+    for i in dang_line[np.argsort(-c_qa[dang_line], kind="stable")]:
+        # (its next pixel not laid here: where two blocks meet, the line's course on in the next block; else the
+        # tile's own course)
+        if not join(i, line_px, ref=rmap[int(i)], near=1.5):
+            join(i, own_side[int(far[rmap[int(i)]])])
 
 
 def _fill(h: np.ndarray, mask: np.ndarray) -> np.ndarray:

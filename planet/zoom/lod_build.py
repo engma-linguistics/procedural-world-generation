@@ -81,15 +81,20 @@ def _block_rect(level: int, b: tuple) -> tuple[float, float, float, float]:
 def carve_block(world: dict, key: L.Key, sources: dict, b: tuple, seed: int = 1) -> np.ndarray:
     """The landscape pass's ground on the lattice rectangle b (rows x columns), from the parent window round it:
     the same arrays whichever tile asks (its parent window is cut by place, its pixels are the level's lattice)."""
+    return carve(world, key, sources, b, seed)["hw"]
+
+
+def carve(world: dict, key: L.Key, sources: dict, b: tuple, seed: int = 1) -> dict:
+    """carve_block's whole result: fine.build(carve=True)'s {hw, courses (its one-pixel courses over the block and its
+    halo, flat), hb, nbx, nby}."""
     r = _block_rect(key.level, b)
     pm = L.parent_mosaic(key, sources, r)
     fr = Z.PlaneFrame(L.frame(key.cell), 0.5 * (r[0] + r[1]), 0.5 * (r[2] + r[3]))
     lat, lon = Z._latlon(fr.c)
     res = L.res_km(key.level)
     w, h = b[1] - b[0], b[3] - b[2]
-    out = ZF.build(pm, world, lat, lon, max(w, h) * res, res, seed, log=lambda *_: None, frame=fr, seam=True,
-                   shape=(w, h), carve=True)
-    return out["hw"]
+    return ZF.build(pm, world, lat, lon, max(w, h) * res, res, seed, log=lambda *_: None, frame=fr, seam=True,
+                    shape=(w, h), carve=True)
 
 
 def edge_surface(world: dict, key: L.Key, sources: dict, seed: int = 1) -> np.ndarray:
@@ -313,7 +318,7 @@ def _line_plan(key: L.Key, other: str, owner: str) -> tuple | None:
         down = 0.0 if i == len(blocks) - 1 else ZF.smoothstep((j + 1) * n - 0.5 - bz, (j + 1) * n - 0.5 + bz, along)
         w = up * (1.0 - down)
         if (w > 0).any():
-            out.append((b, w))
+            out.append((b, w, j))
     return sel, a[sel], ck, rk, out
 
 
@@ -344,8 +349,10 @@ def _okey(owner: str, level: int, osrc: dict) -> L.Key:
 
 def line_surface(world: dict, key: L.Key, lines: dict, seed: int = 1, log=print, corners: dict | None = None
                  ) -> tuple | None:
-    """The ground a tile (levels 2-4) fades to along its cell's edges, and how far: (surface, weight) over its built
-    area (flat, as fine.build's `line`), or None if no edge is near. lines: {other cell: (owner cell, owner's parent-
+    """The ground a tile (levels 2-4) fades to along its cell's edges, and how far: (surface, weight, courses) over
+    its built area (flat, as fine.build's `line`), or None if no edge is near; courses: the blocks' one-pixel courses
+    on the tile's pixels and which pixels lie beyond the line (_block_courses, _beyond), the courses every tile there
+    lays (PW-1713). lines: {other cell: (owner cell, owner's parent-
     level {Key: (meta, layers)} under the blocks)}; corners: {cells meeting at a corner: (owner, its sources)}. Each
     edge's ground is carved on line_blocks of the owner's lattice from the owner's parent level (carve_block), blended
     between blocks over the ramp, and read here at the tile's pixels (bilinear; on the owner's own pixels, exact); the
@@ -357,18 +364,22 @@ def line_surface(world: dict, key: L.Key, lines: dict, seed: int = 1, log=print,
         return None
     _, _, nb = _built_xy(key)
     num, den, wmax = np.zeros(nb * nb), np.zeros(nb * nb), np.zeros(nb * nb)
+    pieces, far = [], np.zeros(nb * nb, bool)
     for other, (owner, osrc) in sorted(lines.items()):
         plan = _line_plan(key, other, owner)
         if plan is None:
             continue
         sel, a, ck, rk, blocks = plan
+        far[sel] |= _beyond(key, other, sel)
         okey = _okey(owner, key.level, osrc)
         t0 = time.time()
         val = np.zeros(len(sel))
-        for b, w in blocks:
+        rows, n, _ = line_blocks(owner, other if owner == key.cell else key.cell, key.level)
+        for b, w, j in blocks:
             use = w > 0
-            hw = carve_block(world, okey, osrc, b, seed)
-            val[use] += w[use] * _bilinear(hw, b, ck[use], rk[use], f"cell line {key.cell}|{other}")
+            cb = carve(world, okey, osrc, b, seed)
+            val[use] += w[use] * _bilinear(cb["hw"], b, ck[use], rk[use], f"cell line {key.cell}|{other}")
+            pieces.append(_block_courses(key, owner, b, cb, rows, n, j))
         log(f"  cell line {key.cell}|{other} on {owner}'s lattice: {len(sel)} px, {len(blocks)} blocks "
             f"[{time.time() - t0:.1f}s]")
         num[sel] += a * val
@@ -392,7 +403,90 @@ def line_surface(world: dict, key: L.Key, lines: dict, seed: int = 1, log=print,
         s_ = surf[sel]
         surf[sel] = np.where(np.isnan(s_), g, wc * g + (1.0 - wc) * s_)
         log(f"  corner {'+'.join(cells)} on {owner}'s lattice: {len(sel)} px [{time.time() - t0:.1f}s]")
-    return surf, wmax
+    courses = {k: np.concatenate([p[k] for p in pieces]) for k in pieces[0]}
+    return surf, wmax, {**courses, "far": far}
+
+
+def _beyond(key: L.Key, other: str, sel: np.ndarray) -> np.ndarray:
+    """Whether each of the built area's pixels sel lies beyond key's cell's edge with `other` (on the far side of the
+    nearest stretch of the line from the cell's centre, the plane's origin)."""
+    X, Y, _ = _built_xy(key)
+    x, y = X[sel], Y[sel]
+    lx, ly = L.frame(key.cell).to_plane(_line(key.cell, other))
+    m = (_line_px(key) + 4) * L.res_km(key.level)
+    k = np.flatnonzero((lx > x.min() - m) & (lx < x.max() + m) & (ly > y.min() - m) & (ly < y.max() + m))
+    k = np.unique(np.clip(np.r_[k - 1, k], 0, len(lx) - 2))
+    if not len(k):
+        return np.zeros(len(sel), bool)
+    best, side = np.full(len(sel), np.inf), np.zeros(len(sel), bool)
+    for i in k:
+        dx, dy = lx[i + 1] - lx[i], ly[i + 1] - ly[i]
+        t = np.clip(((x - lx[i]) * dx + (y - ly[i]) * dy) / max(dx * dx + dy * dy, 1e-12), 0.0, 1.0)
+        d = np.hypot(x - lx[i] - t * dx, y - ly[i] - t * dy)
+        s = (dx * (y - ly[i]) - dy * (x - lx[i])) * (dx * (0.0 - ly[i]) - dy * (0.0 - lx[i])) < 0
+        side = np.where(d < best, s, side)
+        best = np.minimum(best, d)
+    return side
+
+
+def _to_tile(key: L.Key, owner: str, col: np.ndarray, row: np.ndarray) -> np.ndarray:
+    """Pixels (column, row) of owner's lattice of key's level as flat indices of key's built area (-1 off it)."""
+    res = L.res_km(key.level)
+    x, y = -L.HALF + (col + 0.5) * res, L.HALF - (row + 0.5) * res
+    if owner != key.cell:
+        x, y = L.frame(key.cell).to_plane(L.frame(owner).to_sphere(x, y))
+    hb = ZF._halo_px(L.res_km(key.level - 1), res)
+    nb = L.tile_px(key.level) + 2 * hb
+    x0, _, _, y1 = L.rect(key)
+    tc = np.floor((x - x0) / res + 1e-9).astype(np.int64) + hb
+    tr = np.floor((y1 - y) / res + 1e-9).astype(np.int64) + hb
+    return np.where((tc >= 0) & (tc < nb) & (tr >= 0) & (tr < nb), tr * nb + tc, -1)
+
+
+def _block_courses(key: L.Key, owner: str, b: tuple, cb: dict, rows: bool, n: int, j: int) -> dict:
+    """A line block's one-pixel courses in its own stretch of the line (owner's tiles j, as line_blocks), moved onto
+    key's built area: {px, rec, bed, q, a, qa, aa, phase} (rec: the next pixel down, flat; -1 none). A pixel's next
+    pixel is the first one down its course on another of key's pixels; a step of more than a pixel between the two
+    lattices is filled in."""
+    cc, hb, nbx = cb["courses"], cb["hb"], cb["nbx"]
+    keys = ("bed", "q", "a", "qa", "aa", "phase")
+    empty = {"px": np.zeros(0, np.int64), "rec": np.zeros(0, np.int64), **{k: np.zeros(0) for k in keys}}
+    if cc is None or not cc["course"].any():
+        return empty
+    idx = np.flatnonzero(cc["course"])
+    r, c = np.divmod(idx, nbx)
+    row, col = b[2] - hb + r, b[0] - hb + c
+    along = row if rows else col
+    tp = np.full(len(cc["course"]), -1, np.int64)
+    tp[idx] = _to_tile(key, owner, col, row)
+    mine = idx[(along >= j * n) & (along < (j + 1) * n) & (tp[idx] >= 0)]
+    if not len(mine):
+        return empty
+    rec = cc["rec"]
+    nxt = rec[mine].copy()
+    for _ in range(4):  # (two of the block's pixels on one of key's: on down)
+        same = (nxt >= 0) & (tp[np.maximum(nxt, 0)] == tp[mine])
+        if not same.any():
+            break
+        nxt = np.where(same, rec[np.maximum(nxt, 0)], nxt)
+    rt = np.where(nxt >= 0, tp[np.maximum(nxt, 0)], -1)
+    rt = np.where(rt == tp[mine], -1, rt)
+    out = {"px": list(tp[mine]), "rec": list(rt), **{k: list(cc[k][mine]) for k in keys}}
+    nb = L.tile_px(key.level) + 2 * ZF._halo_px(L.res_km(key.level - 1), L.res_km(key.level))
+    for m in np.flatnonzero(rt >= 0):  # (gaps: a step of more than a pixel between the two lattices)
+        (ra, ca), (rz, cz) = divmod(int(tp[mine[m]]), nb), divmod(int(rt[m]), nb)
+        s = max(abs(rz - ra), abs(cz - ca))
+        if s <= 1:
+            continue
+        steps = [int(round(ra + (rz - ra) * t / s)) * nb + int(round(ca + (cz - ca) * t / s)) for t in range(1, s)]
+        out["rec"][m] = steps[0]
+        for t, k in enumerate(steps):
+            out["px"].append(k)
+            out["rec"].append(steps[t + 1] if t + 1 < len(steps) else int(rt[m]))
+            for kk in keys:
+                out[kk].append(cc[kk][mine[m]])
+    return {"px": np.asarray(out["px"], np.int64), "rec": np.asarray(out["rec"], np.int64),
+            **{k: np.asarray(out[k], float) for k in keys}}
 
 
 def owner_of(world_id: str, cells, seed: int = 1) -> str:
@@ -444,7 +538,7 @@ def _cell_edge_parents(world_id: str, key: L.Key, seed: int = 1) -> tuple[dict, 
         owner = line_owner(world_id, key.cell, b, seed)
         plan = _line_plan(key, b, owner)
         if plan is not None:
-            lines[b] = (owner, sorted({k for bl, _ in plan[4] for k in _block_parents(owner, key.level, bl)}))
+            lines[b] = (owner, sorted({k for bl in plan[4] for k in _block_parents(owner, key.level, bl[0])}))
     if lines:
         for cells in near_corners(key):
             owner = owner_of(world_id, cells, seed)
