@@ -753,7 +753,7 @@ class _Pass:
                 form = _join(cur, own.form, form)
                 taut = f"{_gloss(own.concept)} + the old name (a tautology, like River Avon)"
                 via += "; " + taut
-                base = dict(base, gloss=f"the {_gloss(own.concept)} '{base['gloss'].removeprefix('the ')}'")
+                base = dict(base, gloss=f"the {_gloss(own.concept)} (once {base['gloss']})")
                 words = list(words) + [own]
         g = getattr(cur, "grammar", None)
         loc = GR.place_name(form, g) if g is not None else None
@@ -1603,11 +1603,11 @@ def names_for_brief(names: dict, people_id: str) -> dict | None:
 
 # ---------------------------------------------------------------------------------------------- slip scanner (PW-1739)
 _SLIP_RES = {
-    "the_the": (re.compile(r"\b(the|a|an) (the|a|an)\b", re.I), None),                 # 'named after the the river'
+    "the_the": (re.compile(r"\b(?i:the|a|an) (the|a|an)\b"), None),                # 'named after the the river'
     "doubled_word": (re.compile(r"\b([a-z]{3,}) \1\b"), ("gloss", "english", "name")),   # 'the river river'
     "mid_the": (re.compile(r"\S The\b"), ("english", "name")),                         # 'Market The Black Sea'
     "numbered": (re.compile(r"\s\d+$"), ("english", "roman", "name")),                 # 'Loyings 2'
-    "double_apostrophe": (re.compile(r"''"), ("roman", "english", "gloss")),           # "Zing''s wall", "Ka''uaju"
+    "double_apostrophe": (re.compile(r"''(?=\w)"),("roman", "english", "gloss")),           # "Zing''s wall", "Ka''uaju"
     "of_the_verb": (re.compile(r"\bof the (named|called)\b"), None),                   # 'the land of the named after'
 }
 LONG_FULL_NAME = 40   # a full name (given + byname) longer than this many letters counts as a slip
@@ -1615,7 +1615,7 @@ LONG_FULL_NAME = 40   # a full name (given + byname) longer than this many lette
 
 def slips(names: dict) -> dict:
     """Template slips in a `names` block (languages.json): {kind: [example strings]}, every kind present (an empty list:
-    none). Kinds: _SLIP_RES (strings, by key), `long_full_name` (a personal full name over LONG_FULL_NAME letters),
+    none). Kinds: _SLIP_RES (strings, by key), `long_full_name` (a patronymic full name over LONG_FULL_NAME letters),
     `unnamed_family` (a living lect in no named scholars' family). tests/test_language_names.py keeps them at zero;
     tools/language/slips.py counts them on a languages.json."""
     out: dict = {k: [] for k in (*_SLIP_RES, "long_full_name", "unnamed_family")}
@@ -1635,7 +1635,7 @@ def slips(names: dict) -> dict:
         walk(names.get(part) or {}, part)
     for pn in (names.get("personal") or {}).values():
         for b in pn.get("bynames") or []:
-            if len((b.get("roman") or "").replace(" ", "")) > LONG_FULL_NAME:
+            if b.get("kind") in ("patronymic", "matronymic") and len((b.get("roman") or "").replace(" ", "")) > LONG_FULL_NAME:
                 out["long_full_name"].append(b["roman"])
     fams = names.get("families") or {}
     named = {lid for f in fams.values() if f.get("name") for lid in f.get("lects") or []}

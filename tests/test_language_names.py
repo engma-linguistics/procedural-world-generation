@@ -525,7 +525,7 @@ def test_slip_scanner_catches_each_kind():
     names = {"demes": {"1": {"name": {"gloss": "named after the the river (Ka)"},
                              "places": [{"english": "Market The Black Sea", "gloss": "the land of the named after it"},
                                         {"english": "Loyings 2", "gloss": "the river river", "roman": "Ka''u"}]}},
-             "personal": {"d1": {"bynames": [{"roman": "A" * 41}]}}, "families": {}}
+             "personal": {"d1": {"bynames": [{"roman": "A" * 41, "kind": "patronymic"}]}}, "families": {}}
     s = NM.slips(names)
     assert all(s[k] for k in ("the_the", "doubled_word", "mid_the", "numbered", "double_apostrophe", "of_the_verb",
                               "long_full_name", "unnamed_family")), {k: len(v) for k, v in s.items()}
