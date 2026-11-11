@@ -1,0 +1,1703 @@
+{
+ "world": "dba204",
+ "view": "-4.04,93.15",
+ "slow_ms": 0,
+ "notches": [
+  {
+   "h_km": 15620.602,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 251.5,
+   "near": 1.0512676501632068,
+   "far": 5.452535300326414
+  },
+  {
+   "h_km": 13994.469,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 251.7,
+   "near": 0.92356920698454,
+   "far": 5.19713841396908
+  },
+  {
+   "h_km": 12540.223,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 251.9,
+   "near": 0.8091644056116147,
+   "far": 4.96832881122323
+  },
+  {
+   "h_km": 11233.96,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 252.1,
+   "near": 0.7066480692907031,
+   "far": 4.763296138581406
+  },
+  {
+   "h_km": 10063.765,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 252.3,
+   "near": 0.6148104357888902,
+   "far": 4.579620871577781
+  },
+  {
+   "h_km": 9015.464,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 252.4,
+   "near": 0.5325391487931144,
+   "far": 4.415078297586229
+  },
+  {
+   "h_km": 8076.36,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 252.7,
+   "near": 0.45883772154752034,
+   "far": 4.26767544309504
+  },
+  {
+   "h_km": 7235.079,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 252.9,
+   "near": 0.3928134672008434,
+   "far": 4.135626934401687
+  },
+  {
+   "h_km": 6481.431,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 253,
+   "near": 0.3336666863995914,
+   "far": 4.0173333727991825
+  },
+  {
+   "h_km": 5806.287,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 253.2,
+   "near": 0.28068098116492823,
+   "far": 3.9113619623298566
+  },
+  {
+   "h_km": 5201.47,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 255.6,
+   "near": 0.23321457773295695,
+   "far": 3.816429155465914
+  },
+  {
+   "h_km": 4659.655,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 255.8,
+   "near": 0.19069255325884038,
+   "far": 3.731385106517681
+  },
+  {
+   "h_km": 4174.278,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 255.9,
+   "near": 0.15259987223301286,
+   "far": 3.655199744466026
+  },
+  {
+   "h_km": 3739.46,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 256.1,
+   "near": 0.11847514826511385,
+   "far": 3.586950296530228
+  },
+  {
+   "h_km": 3349.936,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 259.9,
+   "near": 0.08790505567709828,
+   "far": 3.525810111354197
+  },
+  {
+   "h_km": 3000.987,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 260.7,
+   "near": 0.0605193232175788,
+   "far": 3.471038646435158
+  },
+  {
+   "h_km": 2688.387,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 261.3,
+   "near": 0.035986249260243075,
+   "far": 3.4219724985204865
+  },
+  {
+   "h_km": 2408.349,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 262,
+   "near": 0.014008684165507712,
+   "far": 1.2543560379920358
+  },
+  {
+   "h_km": 2157.481,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 262.5,
+   "near": 0.13545634491435418,
+   "far": 1.1961568466046366
+  },
+  {
+   "h_km": 1932.745,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 263.1,
+   "near": 0.12134641761677845,
+   "far": 1.142156339904328
+  },
+  {
+   "h_km": 1731.419,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 263.6,
+   "near": 0.10870626309705803,
+   "far": 1.091976206385292
+  },
+  {
+   "h_km": 1551.064,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 264.1,
+   "near": 0.09738278120286986,
+   "far": 1.0452792940988749
+  },
+  {
+   "h_km": 1389.496,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 264.5,
+   "near": 0.08723881959164395,
+   "far": 1.001764740800895
+  },
+  {
+   "h_km": 1244.758,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 271.2,
+   "near": 0.07815151251317012,
+   "far": 0.961163668117466
+  },
+  {
+   "h_km": 1115.097,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 271.6,
+   "near": 0.07001079263435149,
+   "far": 0.9232353821871349
+  },
+  {
+   "h_km": 998.942,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 272.1,
+   "near": 0.06271805788101874,
+   "far": 0.8877640274722197
+  },
+  {
+   "h_km": 894.886,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 10,
+   "wanted": 11,
+   "tiles_mb": 48.1,
+   "geometries": 26,
+   "textures": 40,
+   "heap_mb": 278.9,
+   "near": 0.05618497714932014,
+   "far": 0.8545556446178387
+  },
+  {
+   "h_km": 801.67,
+   "drawn": 11,
+   "byLevel": {
+    "1": 2,
+    "2": 9
+   },
+   "kept": 11,
+   "wanted": 11,
+   "tiles_mb": 53.3,
+   "geometries": 28,
+   "textures": 46,
+   "heap_mb": 281.2,
+   "near": 0.05033242042121647,
+   "far": 0.823435587345748
+  },
+  {
+   "h_km": 718.163,
+   "drawn": 12,
+   "byLevel": {
+    "1": 2,
+    "2": 10
+   },
+   "kept": 12,
+   "wanted": 12,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 285.5,
+   "near": 0.04508950032542165,
+   "far": 0.794246257366244
+  },
+  {
+   "h_km": 643.355,
+   "drawn": 12,
+   "byLevel": {
+    "1": 2,
+    "2": 10
+   },
+   "kept": 12,
+   "wanted": 11,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 286.4,
+   "near": 0.04039271353497656,
+   "far": 0.7668451201381117
+  },
+  {
+   "h_km": 576.339,
+   "drawn": 11,
+   "byLevel": {
+    "1": 2,
+    "2": 9
+   },
+   "kept": 12,
+   "wanted": 11,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 268.1,
+   "near": 0.036185171601885995,
+   "far": 0.7411029679705141
+  },
+  {
+   "h_km": 516.304,
+   "drawn": 11,
+   "byLevel": {
+    "1": 2,
+    "2": 9
+   },
+   "kept": 12,
+   "wanted": 11,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 268.9,
+   "near": 0.032415911912531924,
+   "far": 0.7169024004145579
+  },
+  {
+   "h_km": 462.523,
+   "drawn": 11,
+   "byLevel": {
+    "1": 2,
+    "2": 9
+   },
+   "kept": 12,
+   "wanted": 11,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 269.8,
+   "near": 0.029039280418011515,
+   "far": 0.6941364951161677
+  },
+  {
+   "h_km": 414.344,
+   "drawn": 11,
+   "byLevel": {
+    "1": 2,
+    "2": 9
+   },
+   "kept": 12,
+   "wanted": 11,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 270.6,
+   "near": 0.026014378662902973,
+   "far": 0.6727076452837386
+  },
+  {
+   "h_km": 371.184,
+   "drawn": 11,
+   "byLevel": {
+    "1": 2,
+    "2": 9
+   },
+   "kept": 12,
+   "wanted": 10,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 271.4,
+   "near": 0.02330456841475801,
+   "far": 0.6525265426588152
+  },
+  {
+   "h_km": 332.519,
+   "drawn": 11,
+   "byLevel": {
+    "1": 2,
+    "2": 9
+   },
+   "kept": 12,
+   "wanted": 8,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 272.2,
+   "near": 0.020877027894293576,
+   "far": 0.6335112873669846
+  },
+  {
+   "h_km": 297.882,
+   "drawn": 11,
+   "byLevel": {
+    "1": 2,
+    "2": 9
+   },
+   "kept": 12,
+   "wanted": 8,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 273.1,
+   "near": 0.01870235423124562,
+   "far": 0.615586608275515
+  },
+  {
+   "h_km": 266.853,
+   "drawn": 11,
+   "byLevel": {
+    "1": 2,
+    "2": 9
+   },
+   "kept": 12,
+   "wanted": 8,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 273.9,
+   "near": 0.016754207330757078,
+   "far": 0.5986831795045248
+  },
+  {
+   "h_km": 239.056,
+   "drawn": 10,
+   "byLevel": {
+    "1": 2,
+    "2": 8
+   },
+   "kept": 12,
+   "wanted": 8,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 274.8,
+   "near": 0.015008990836727243,
+   "far": 0.5827370205423158
+  },
+  {
+   "h_km": 214.154,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 8,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 275.6,
+   "near": 0.013445566327892778,
+   "far": 0.5676889690183925
+  },
+  {
+   "h_km": 191.847,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 8,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 276.4,
+   "near": 0.012044997284919923,
+   "far": 0.5534842166050926
+  },
+  {
+   "h_km": 171.863,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 8,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 277.2,
+   "near": 0.010790319727385445,
+   "far": 0.5400718997673697
+  },
+  {
+   "h_km": 153.961,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 8,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 278.1,
+   "near": 0.009666336742555527,
+   "far": 0.5274047381760623
+  },
+  {
+   "h_km": 137.923,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 8,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 278.9,
+   "near": 0.00865943441725241,
+   "far": 0.5154387145586005
+  },
+  {
+   "h_km": 123.556,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 289.5,
+   "near": 0.007757416943336893,
+   "far": 0.5041327905973234
+  },
+  {
+   "h_km": 110.686,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 290.3,
+   "near": 0.0069493588995687364,
+   "far": 0.49344865421323336
+  },
+  {
+   "h_km": 99.156,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 291,
+   "near": 0.006225472920660203,
+   "far": 0.48335049420491377
+  },
+  {
+   "h_km": 88.828,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 291.7,
+   "near": 0.005576991150691502,
+   "far": 0.473804798759576
+  },
+  {
+   "h_km": 79.575,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 292.5,
+   "near": 0.004996059045036194,
+   "far": 0.46478017482712347
+  },
+  {
+   "h_km": 71.286,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 293.2,
+   "near": 0.0044756402345004,
+   "far": 0.4562471857571746
+  },
+  {
+   "h_km": 63.86,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 293.9,
+   "near": 0.004009431299371968,
+   "far": 0.44817820495214006
+  },
+  {
+   "h_km": 57.208,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 294.6,
+   "near": 0.003591785421103566,
+   "far": 0.4405472835938095
+  },
+  {
+   "h_km": 51.249,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 295.3,
+   "near": 0.0032176439868846886,
+   "far": 0.4333300307631143
+  },
+  {
+   "h_km": 45.911,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 296.1,
+   "near": 0.0028824753186827757,
+   "far": 0.4265035044984359
+  },
+  {
+   "h_km": 41.128,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 296.9,
+   "near": 0.0025822197846255613,
+   "far": 0.42004611253198293
+  },
+  {
+   "h_km": 36.844,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 297.6,
+   "near": 0.0023132406279056106,
+   "far": 0.4139375216109387
+  },
+  {
+   "h_km": 33.006,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 298.3,
+   "near": 0.002072279917632791,
+   "far": 0.40815857445361636
+  },
+  {
+   "h_km": 29.568,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 299,
+   "near": 0.0018564190881052768,
+   "far": 0.4026912135146084
+  },
+  {
+   "h_km": 26.488,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 299.8,
+   "near": 0.0016630435885410578,
+   "far": 0.3975184108391761
+  },
+  {
+   "h_km": 23.729,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 300.6,
+   "near": 0.0014898112151011667,
+   "far": 0.3926241033786898
+  },
+  {
+   "h_km": 21.257,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 301.3,
+   "near": 0.0013346237416352658,
+   "far": 0.38799313321771817
+  },
+  {
+   "h_km": 19.043,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 302,
+   "near": 0.001195601505534061,
+   "far": 0.38361119223126505
+  },
+  {
+   "h_km": 17.059,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 268,
+   "near": 0.001071060640869348,
+   "far": 0.379464770749274
+  },
+  {
+   "h_km": 15.282,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 268.7,
+   "near": 0.0009594926830635231,
+   "far": 0.3755411098559978
+  },
+  {
+   "h_km": 13.69,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 269.5,
+   "near": 0.0008595462980558466,
+   "far": 0.37182815699554134
+  },
+  {
+   "h_km": 12.264,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 270.2,
+   "near": 0.0007700109146662193,
+   "far": 0.36831452459270514
+  },
+  {
+   "h_km": 10.987,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 270.9,
+   "near": 0.0006898020619090062,
+   "far": 0.3649894514310144
+  },
+  {
+   "h_km": 9.842,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 271.6,
+   "near": 0.0006179482336560405,
+   "far": 0.3618427665580573
+  },
+  {
+   "h_km": 8.817,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 272.3,
+   "near": 0.0005535791215552699,
+   "far": 0.35886485551331593
+  },
+  {
+   "h_km": 7.899,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 273,
+   "near": 0.000495915073676656,
+   "far": 0.35604662869481407
+  },
+  {
+   "h_km": 7.076,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 273.8,
+   "near": 0.00044425765120763576,
+   "far": 0.35337949169993765
+  },
+  {
+   "h_km": 6.339,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 274.5,
+   "near": 0.00039798116881843986,
+   "far": 0.3508553174920827
+  },
+  {
+   "h_km": 5.679,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 275.3,
+   "near": 0.0003565251162327421,
+   "far": 0.3484664202592515
+  },
+  {
+   "h_km": 5.087,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 276,
+   "near": 0.000319387369211821,
+   "far": 0.3462055308433041
+  },
+  {
+   "h_km": 4.557,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 276.8,
+   "near": 0.00028611810772236627,
+   "far": 0.34406577362972984
+  },
+  {
+   "h_km": 4.082,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 277.5,
+   "near": 0.00025631436762383334,
+   "far": 0.3420406447977561
+  },
+  {
+   "h_km": 3.657,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 278.2,
+   "near": 0.00022961515988439984,
+   "far": 0.3401239918391642
+  },
+  {
+   "h_km": 3.276,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 278.9,
+   "near": 0.00020569709820605908,
+   "far": 0.3383099942618989
+  },
+  {
+   "h_km": 2.935,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 279.6,
+   "near": 0.0001842704821045871,
+   "far": 0.3365931454018693
+  },
+  {
+   "h_km": 2.629,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 280.3,
+   "near": 0.00016507578799682677,
+   "far": 0.33496823527185704
+  },
+  {
+   "h_km": 2.355,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 281,
+   "near": 0.00014788052579843837,
+   "far": 0.3334303343825837
+  },
+  {
+   "h_km": 2.11,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 281.9,
+   "near": 0.00013247642295581842,
+   "far": 0.33197477847548573
+  },
+  {
+   "h_km": 1.89,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 282.6,
+   "near": 0.00011867690180578094,
+   "far": 0.3305971541114697
+  },
+  {
+   "h_km": 1.693,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 283.3,
+   "near": 0.0001063148197088637,
+   "far": 0.32929328506402133
+  },
+  {
+   "h_km": 1.517,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 284,
+   "near": 9.524044458313341e-05,
+   "far": 0.32805921946844324
+  },
+  {
+   "h_km": 1.359,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 284.8,
+   "near": 8.531964131819336e-05,
+   "far": 0.32689121768261037
+  },
+  {
+   "h_km": 1.217,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 294.7,
+   "near": 7.643224710314201e-05,
+   "far": 0.3257857408174581
+  },
+  {
+   "h_km": 1.091,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 295.4,
+   "near": 6.847061599239979e-05,
+   "far": 0.32473943989874743
+  },
+  {
+   "h_km": 0.977,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 296.2,
+   "near": 6.133831507080246e-05,
+   "far": 0.32374914562236873
+  },
+  {
+   "h_km": 0.875,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 296.9,
+   "near": 5.494895644195808e-05,
+   "far": 0.32281185867118556
+  },
+  {
+   "h_km": 0.784,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 297.6,
+   "near": 4.922515087955049e-05,
+   "far": 0.3219247405600802
+  },
+  {
+   "h_km": 0.702,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 298.3,
+   "near": 4.4097570473056186e-05,
+   "far": 0.3210851049797334
+  },
+  {
+   "h_km": 0.629,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 299,
+   "near": 3.9504108913401836e-05,
+   "far": 0.32029040961112076
+  },
+  {
+   "h_km": 0.564,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 299.7,
+   "near": 3.53891292490971e-05,
+   "far": 0.31953824838457107
+  },
+  {
+   "h_km": 0.505,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 300.4,
+   "near": 3.170278999977683e-05,
+   "far": 0.3188263441583169
+  },
+  {
+   "h_km": 0.452,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 301.1,
+   "near": 2.840044146594778e-05,
+   "far": 0.3181525417934725
+  },
+  {
+   "h_km": 0.405,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 301.8,
+   "near": 2.5442084922655542e-05,
+   "far": 0.3175148016034443
+  },
+  {
+   "h_km": 0.363,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 302.5,
+   "near": 2.279188814693356e-05,
+   "far": 0.3169111931573286
+  },
+  {
+   "h_km": 0.325,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 303.2,
+   "near": 2.0417751409862464e-05,
+   "far": 0.31633988941736907
+  }
+ ],
+ "shots": [
+  {
+   "file": "00_orbit.png",
+   "note": "the whole planet: cells, as today",
+   "h_km": 15620.602,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 249.6,
+   "near": 1.0512676501632068,
+   "far": 5.452535300326414,
+   "frame_ms": 0.35,
+   "fps_uncapped": 2857
+  },
+  {
+   "file": "01_level1_appears.png",
+   "note": "below 6000 km",
+   "h_km": 5806.287,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "tiles_mb": 0,
+   "geometries": 17,
+   "textures": 11,
+   "heap_mb": 254.8,
+   "near": 0.28068098116492823,
+   "far": 3.9113619623298566,
+   "frame_ms": 0.25,
+   "fps_uncapped": 3947
+  },
+  {
+   "file": "02_level1.png",
+   "note": "below 1500 km",
+   "h_km": 1389.496,
+   "drawn": 2,
+   "byLevel": {
+    "1": 2
+   },
+   "kept": 2,
+   "wanted": 2,
+   "tiles_mb": 24.4,
+   "geometries": 19,
+   "textures": 19,
+   "heap_mb": 270.3,
+   "near": 0.08723881959164395,
+   "far": 1.001764740800895,
+   "frame_ms": 0.26,
+   "fps_uncapped": 3797
+  },
+  {
+   "file": "03_level2_arriving.png",
+   "note": "below 700 km",
+   "h_km": 643.355,
+   "drawn": 11,
+   "byLevel": {
+    "1": 2,
+    "2": 9
+   },
+   "kept": 12,
+   "wanted": 11,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 266.8,
+   "near": 0.04039271353497656,
+   "far": 0.7668451201381117,
+   "frame_ms": 0.3,
+   "fps_uncapped": 3279
+  },
+  {
+   "file": "04_level2.png",
+   "note": "below 150 km",
+   "h_km": 137.923,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 8,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 288.4,
+   "near": 0.00865943441725241,
+   "far": 0.5154387145586005,
+   "frame_ms": 0.21,
+   "fps_uncapped": 4724
+  },
+  {
+   "file": "05_low.png",
+   "note": "below 20 km",
+   "h_km": 19.043,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 266.8,
+   "near": 0.001195601505534061,
+   "far": 0.38361119223126505,
+   "frame_ms": 0.26,
+   "fps_uncapped": 3922
+  },
+  {
+   "file": "06_ground_1km.png",
+   "note": "below 1.5 km",
+   "h_km": 1.359,
+   "drawn": 7,
+   "byLevel": {
+    "1": 1,
+    "2": 6
+   },
+   "kept": 12,
+   "wanted": 7,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 293.5,
+   "near": 8.531964131819336e-05,
+   "far": 0.32689121768261037,
+   "frame_ms": 0.61,
+   "fps_uncapped": 1639
+  },
+  {
+   "file": "07_back_at_orbit.png",
+   "note": "scrolled back out: the cells again",
+   "h_km": 15621.173,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 12,
+   "wanted": 0,
+   "tiles_mb": 56.5,
+   "geometries": 29,
+   "textures": 49,
+   "heap_mb": 279,
+   "near": 1.0513124281626953,
+   "far": 5.452624856325391,
+   "frame_ms": 0.19,
+   "fps_uncapped": 5217
+  }
+ ],
+ "dive": {
+  "moving_frames": 98,
+  "fps_median": 59.9,
+  "fps_p10_frame": 59.9,
+  "max_turn_deg": 1.0289,
+  "max_height_ratio": 1.116
+ },
+ "out": {
+  "moving_frames": 98,
+  "fps_median": 59.9,
+  "fps_p10_frame": 59.9,
+  "max_turn_deg": 1.0292,
+  "max_height_ratio": 1.116
+ }
+}

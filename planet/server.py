@@ -15,6 +15,9 @@
   GET    /api/thumb?kind=run|world&id=<id>   a small PNG preview (thumbs.py; &proj=equal-earth|equirect &w=192|512|1024)
   GET    /api/make/options, /api/make/estimate?seed=&preset=&level=...   the New planet form (make.py)
   GET    /api/sections?world=<id>     the 54 tiling sections of a world: centre, up, corners, land share, built zooms
+  GET    /api/tiles/index?world=<id>, /api/tiles/<world>/<cell>/<level>/<tx>/<ty>/<file>
+                                      STAND-IN level-of-detail tiles cut from built section zooms (tiles_standin.py, PW-1688;
+                                      the tile service PW-1690 replaces it)
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/jobs?type=refine        {"active": the queued or running job of that type, or null} (a page opened later follows it)
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
@@ -1197,6 +1200,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 return self.send_json({"error": "res_km must be a number"}, 400)
             return self.send_json({**ZF.rules(), **({"sizes": ZF.size_options(res)} if res else {})})
+        if url.path.startswith("/api/tiles/"):  # STAND-IN tile source (tiles_standin.py, PW-1688); PW-1690 replaces it
+            from . import tiles_standin as TS
+            body, code, ctype = TS.get(url.path, url.query)
+            if isinstance(body, dict):
+                return self.send_json(body, code)
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         if url.path == "/api/sections":  # ?world=: the tiling's sections with what is built (api.sections_listing)
             return self.send_json(*sections_list(url.query))
         if url.path == "/api/planets":

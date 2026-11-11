@@ -1,0 +1,60 @@
+// The level-of-detail tile pyramid's addressing, as planet/zoom/lod.py has it (PW-1688; plan: docs/review/zoom/lod-plan-v2.md).
+// No three.js, so the tests can import it (tests/test_viewer_lod.py checks it against lod.py).
+//
+// Every 4,000 km tiling cell is the root of a pyramid of square tiles laid on the cell's own plane (its section's
+// azimuthal equidistant frame, x east / y up, km, the square [-2000, 2000]). Level 1 is the whole square; each finer
+// level is a grid of tiles on one pixel lattice. A key is {cell, level, tx, ty}, tx east and ty south from the
+// square's north-west corner.
+export const SQUARE_KM = 4000;
+export const HALF = SQUARE_KM / 2;
+export const R_KM = 6371;
+// level -> [res_km, tile_km] (lod.LEVELS)
+export const LEVELS = { 1: [4.0, 4000.0], 2: [1.0, 500.0], 3: [0.25, 125.0], 4: [0.025, 12.5] };
+export const FINEST = 4;
+
+export const resKm = (level) => LEVELS[level][0];
+export const tileKm = (level) => LEVELS[level][1];
+export const tilePx = (level) => Math.round(LEVELS[level][1] / LEVELS[level][0]);
+export const perSide = (level) => Math.round(SQUARE_KM / tileKm(level));
+export const branching = (level) => Math.round(tileKm(level) / tileKm(level + 1));
+
+export const key = (cell, level, tx, ty) => ({ cell, level, tx, ty, id: `${cell}/${level}/${tx}/${ty}` });
+export function parseKey(s) { const [cell, level, tx, ty] = s.split('/'); return key(cell, +level, +tx, +ty); }
+
+// (x0, x1, y0, y1) km in the cell's plane
+export function rect(k) {
+  const t = tileKm(k.level), x0 = -HALF + k.tx * t, y1 = HALF - k.ty * t;
+  return [x0, x0 + t, y1 - t, y1];
+}
+export function centreXY(k) { const [x0, x1, y0, y1] = rect(k); return [(x0 + x1) / 2, (y0 + y1) / 2]; }
+
+export function parent(k) {
+  if (k.level === 1) return null;
+  const b = branching(k.level - 1);
+  return key(k.cell, k.level - 1, Math.floor(k.tx / b), Math.floor(k.ty / b));
+}
+export function children(k) {
+  if (k.level === FINEST) return [];
+  const b = branching(k.level), out = [];
+  for (let j = 0; j < b; j++) for (let i = 0; i < b; i++) out.push(key(k.cell, k.level + 1, k.tx * b + i, k.ty * b + j));
+  return out;
+}
+// the tile of a level holding the plane point (x, y)
+export function tileAt(cell, level, x, y) {
+  const t = tileKm(level), n = perSide(level), c = (v) => Math.min(n - 1, Math.max(0, Math.floor(v)));
+  return key(cell, level, c((x + HALF) / t), c((HALF - y) / t));
+}
+// where (x, y) falls in a tile, as texture coordinates (u east, v south: row 0 is the tile's north edge)
+export function tileUV(k, x, y) { const [x0, , , y1] = rect(k), t = tileKm(k.level); return [(x - x0) / t, (y1 - y) / t]; }
+
+// the level a tile pixel of res_km stops being finer than a screen pixel: refine when a pixel of the next level would
+// cover more than refinePx screen pixels at distance distKm (focalPx: the screen's focal length in CSS pixels)
+export const pixelsOnScreen = (resKmV, distKm, focalPx) => resKmV / Math.max(distKm, 1e-6) * focalPx;
+
+// IEEE half float -> number (view.bin's elevation; for the few CPU samples: the camera's ground)
+export function halfToFloat(h) {
+  const s = h & 0x8000 ? -1 : 1, e = (h >> 10) & 0x1f, f = h & 0x3ff;
+  if (e === 0) return s * 2 ** -14 * (f / 1024);
+  if (e === 31) return f ? NaN : s * Infinity;
+  return s * 2 ** (e - 15) * (1 + f / 1024);
+}

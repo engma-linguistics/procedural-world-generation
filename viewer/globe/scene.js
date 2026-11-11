@@ -35,7 +35,10 @@ camera.position.set(0, 0.6, 3.4);
 export const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = !DIAG.nodamp;
 controls.minDistance = 1.15; controls.maxDistance = 10;
-wheelZoom(controls, renderer.domElement);
+// (globe/dive.js sets the hook: on the globe the wheel dives toward the cursor, down to the ground)
+let wheelHook = null;
+export function setWheelHook(f) { wheelHook = f; }
+wheelZoom(controls, renderer.domElement, (e, dy) => (wheelHook ? wheelHook(e, dy) : false));
 if (DIAG.wheel) {  // ?wheel=1: log each wheel event and the zoom it causes (Firefox over-zoom report)
   renderer.domElement.addEventListener('wheel', (e) => {
     const before = camera.position.length();
@@ -70,13 +73,21 @@ export function resize() {
 // would: 20-50% of the river pixels lost and changing as the camera moves). Nothing drawn is
 // closer than half the camera's height over the highest thing on the globe (radius 1.35: the
 // axis, event markers, the relief at 200x) or the map (its relief plus 0.15).
+// the ground's radius under the camera (globe/lodtiles.js sets it: tiles or cells, as drawn)
+let clipGround = () => 1;
+export function setClipGround(f) { clipGround = f; }
 export function fitClip() {
   if (DIAG.fixclip) { if (camera.near !== 0.01 || camera.far !== 100) { camera.near = 0.01; camera.far = 100; camera.updateProjectionMatrix(); } return; }
   const ext = S.topo?.maxR || 1;
   let h, far;
-  if (state.mode === 'globe') { const r = camera.position.length(); h = r - Math.max(1.35, ext * 1.1); far = r + 2; }
+  if (state.mode === 'globe') {
+    const r = camera.position.length(); h = r - Math.max(1.35, ext * 1.1); far = r + 2;
+    // down near the ground (globe/dive.js, PW-1688): near follows the height over the ground under the camera, far
+    // the horizon (plus the highest relief beyond it), so the depth buffer keeps its precision at a kilometre up
+    if (r < 1.4) { h = Math.min(h > 0 ? h : Infinity, 0.8 * Math.max(r - clipGround(), 2e-7)); far = Math.sqrt(Math.max(r * r - 1, 0)) + Math.sqrt(Math.max(ext * ext - 1, 0)) + 0.05; }
+  }
   else { h = camera.position.z - (relief3d() ? 2 / Math.PI * Math.max(ext - 1, 0) : 0) - 0.15; far = camera.position.distanceTo(controls.target) + 6; }
-  const near = Math.max(0.01, 0.5 * h);
+  const near = Math.max(state.mode === 'globe' && camera.position.length() < 1.4 ? 1e-7 : 0.01, 0.5 * h);
   if (Math.abs(near - camera.near) > 1e-4 * near || Math.abs(far - camera.far) > 1e-3) {
     camera.near = near; camera.far = far; camera.updateProjectionMatrix(); DIAG.n.clip++;
   }
