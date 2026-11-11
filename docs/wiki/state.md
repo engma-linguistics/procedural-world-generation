@@ -14,7 +14,7 @@
 
 ## Lanes running (11-10 ~11:50)
 
-As of 2026-11-10 night. Running: 292 (PW-1693 collapse adds area), 293 (PW-1694/1695 LOD tile edges), 291 (PW-1688 globe to ground), 288 (PW-1684 scorecard medians, PW-1683 L7 3 km), 275b (Andes gate, fork queue then judge), 281e (states: dragon realms, then flip; carries 281d branch), 280 done (split 69 GB peak, PW-1691). Done today: 276 (v0.3.0 close-out, merged), 277b (everyone experiment, docs only on main).
+As of 2026-11-10 night. Running: 281e (states: dragon realms, then flip; carries 281d branch), 292 (PW-1693 collapse adds area + PW-1287 A arm), 293 (PW-1694/1695 LOD tile edges), 294 (PW-1690 on-demand tile service). Merged today: 276, 277b (docs), 278, 280, 281b, 281c, 283, 284, 285, 287, 275b, 286, 288, 289, 290, 291. Next LOD: PW-1696 (ground camera), steps 3, 5, 6.
 v0.3.0 tagged (suite 2033 passed); server restarted. Waiting on Daniel: nothing (D73-D79 answered).
 
 ## Milestones (2026-11-09)

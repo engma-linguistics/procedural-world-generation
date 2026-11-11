@@ -1,4 +1,5 @@
 ---
+id: PW-1696
 title: "LOD globe near the ground: the camera never tilts toward the horizon, and the line overlays float over the eased ground"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane291
 blocked_by: []
 relates: [PW-1688, PW-1690, PW-415]
 refs: [docs/review/zoom/lod-plan-v2.md, viewer/globe/dive.js, "viewer/globe/lodtiles.js::easeEx", "viewer/globe/lodtiles.js::groundRadius", viewer/globe/overlays.js, "viewer/globe/geometry.js::llPos", "viewer/globe/tabs.js::buildZoomOutlines", tools/viewer_lod_dive.py, "world dba204"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -33,3 +36,6 @@ What lane 291 left out of step 4 (plan section 4, "Camera"):
 - [ ] below ~200 km the camera tilts toward the horizon as it descends, can be tilted back, and scrolling out returns
       to the straight-down orbit with no jump (tools/viewer_lod_dive.py, a turn per frame no larger than the dive's)
 - [ ] at 20 km and 1 km over world dba204 the rivers and outlines lie on the ground (screenshot)
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-lod-globe-camera-tilt-and-overlays-at-ground.md (found by lane291).
