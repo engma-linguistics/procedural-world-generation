@@ -2,7 +2,7 @@
 id: PW-1714
 title: "Cuisine through time in the viewer: a culture's food sheet at three eras, with crops arriving, conquest doublets and dates in its own calendar"
 type: story
-status: todo
+status: done
 parent: PW-692
 milestone: v1.0
 subsystem: viewer
@@ -30,4 +30,5 @@ Proposed for v0.6.0 (docs/review/plan/milestones-to-v1.md section 5, #3).
 - [ ] On a Seven Meals culture, the food sheet switches between three eras and lists what changed and why
 
 ## Updates
+- 2026-11-11: Status todo -> done. lane 309 merged
 - 2026-11-11: Created from inbox draft draft-cuisine-through-time.md (found by plan-v1-lane).

@@ -1,5 +1,6 @@
 ---
-title: "Kitchen through time dates each keeping method by the whole people's first knowing it, not the culture's"
+id: PW-1749
+title: Kitchen through time dates each keeping method by the whole people's first knowing it, not the culture's
 type: task
 status: todo
 parent: null
@@ -10,7 +11,9 @@ impact: med
 found_by: lane309
 blocked_by: []
 relates: []
-refs: ["planet/lineages/kitchen_time.py::events", "planet/lineages/cuisine.py::_known", "planet/lineages/techtree.py", "planet/lineages/history/tech_live.py", "planet/lineages/techspread.py", "runs a2b637, de1cc6 (copies in a scratch dir, since deleted)"]
+refs: ["planet/lineages/kitchen_time.py::events", "planet/lineages/cuisine.py::_known", planet/lineages/techtree.py, planet/lineages/history/tech_live.py, planet/lineages/techspread.py, "runs a2b637, de1cc6 (copies in a scratch dir, since deleted)"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -26,3 +29,6 @@ cheese wrongly for those cultures.
 Try: date a method per culture as the later of the people's date and the first frame at which the culture's land touches a culture of a
 people that knew it then (contacts, or techspread's per-culture read-out), or record per-culture first-known dates in the live tree.
 - [ ] two cultures of one people on different landmasses get different dates for a method learnt by contact
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-keeping-dates-are-people-wide.md (found by lane309).

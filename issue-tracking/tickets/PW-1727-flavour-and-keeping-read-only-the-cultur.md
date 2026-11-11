@@ -2,7 +2,7 @@
 id: PW-1727
 title: "Flavour and keeping read only the culture's own land: bought-in salt, spice and sugar never reach the profile"
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: food
@@ -28,4 +28,5 @@ the hot, sweet and fatty axes at a lower weight than home-grown, inside the exch
 - [ ] a culture whose "Bought in" line lists salt or spice shows it in the flavour reasons
 
 ## Updates
+- 2026-11-11: Status todo -> done. lane 309 merged
 - 2026-11-11: Created from inbox draft draft-flavour-ignores-bought-in-salt-and-spice.md (found by lane308).
