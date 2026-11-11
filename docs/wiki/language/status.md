@@ -74,7 +74,7 @@ The **real-language benchmark** (PW-1641) is outside `checks.py`. Run `tools/lan
     - PW-1685 (PW-1547 merged in), PW-1656, PW-1655, PW-1639, PW-1632, PW-1633;
     - PW-1647 (step 2 failed in lane 17; next try a coda-loss conspiracy);
     - PW-1642.
-  - Related: PW-1659 (settlement view, under PW-856).
+  - Related: PW-1659 (settlement view): done 11-11 by lane 312 (planet/lineages/settlement_view.py). The names, isolates and on-demand names should show there.
   - Suggested lane order:
     1. PW-1737, which every later lane is judged on;
     2. PW-1739 + PW-1738;
