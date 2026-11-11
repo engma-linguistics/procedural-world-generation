@@ -4,7 +4,7 @@ title: "Cuisine plants are markers only: no trade goods, no ferments, crude wild
 type: task
 status: todo
 parent: PW-692
-milestone: later
+milestone: v1.0
 subsystem: food
 effort: m
 impact: low

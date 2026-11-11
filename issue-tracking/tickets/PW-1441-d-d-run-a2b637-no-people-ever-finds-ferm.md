@@ -4,7 +4,7 @@ title: "D&D run a2b637: no people ever finds fermentation, so every D&D cuisine 
 type: task
 status: todo
 parent: PW-856
-milestone: later
+milestone: v1.0
 subsystem: culture
 effort: s
 impact: med

@@ -4,7 +4,7 @@ title: "Tech tree: single-origin Pleistocene techs (bread, wild cereals, ferment
 type: task
 status: todo
 parent: PW-675
-milestone: null
+milestone: v1.0
 subsystem: culture
 effort: s
 impact: low

@@ -84,7 +84,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <header>
   <div class="kicker">procgen_world · Wednesday 11 November 2026</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Three questions for you: the plan to 1 December, with an installer for v1.0 (D80), which December world to build (D81, ideally by Thursday), and which extras go in (D82). Overnight one of my zoom builds ran away with memory and took the machine down; every lane process now runs inside a hard memory cap, and your viewer server inside 48 GB.</p>
+  <p class="lede">Your answers are in: the plan is adopted; instead of picking from three December worlds, a lane is designing a catalogue of 10+ varied worlds (preview batch tonight, final batches after the physics lanes); and the six cooking and viewer extras are in for v0.6, starting with flavour profiles and preservation, read against your culinary-dnd notes.</p>
   <nav class="toc"><a href="#answers">For you</a><a href="#coming">Running now</a><a href="#settled">Settled since last night</a></nav>
 </header>
 
@@ -95,43 +95,17 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <div class="card" id="general"><div class="id">ANYTHING ELSE</div>
 <p>Questions, requests, "look at X", priorities: anything that isn't a card.</p>
 <div class="ask" data-id="general"></div></div>
-<div class="card" id="map"><div class="id">THE ROAD TO V1.0 ON 1 DECEMBER (proposed 11-11; D80)</div>
+<div class="card" id="map"><div class="id">THE ROAD TO V1.0 ON 1 DECEMBER (adopted 11-11, D80)</div>
 <div class="tbl"><table>
 <tr><th>Tag</th><th>Target</th><th>What you can do</th><th>Where it is</th></tr>
 <tr><td>v0.2.0</td><td>Tue 10 Nov</td><td>Write your own faiths, read what a culture cooks, see dates in years.</td><td>tagged Sat 7 Nov (3 days early)</td></tr>
 <tr><td>v0.3.0</td><td>Tue 17 Nov</td><td>States and war, first cut.</td><td>tagged Tue 10 Nov (7 days early)</td></tr>
 <tr><td>v0.4.0</td><td>Sun 15 Nov</td><td>States fight inside the history (on since 11-11); scroll from orbit to the ground, Google Earth style.</td><td>states on; zoom steps 1–4 merged, step 5 running (301), then the judge</td></tr>
-<tr><td>v0.5.0</td><td>Fri 20 Nov</td><td>Your December world on L8, every Seven Meals people right.</td><td>needs your star on December A/B/C (D81) by Thu 12 Nov for the overnight runs; the 2 Myr L8 split's 69 GB peak (PW-1691) to fix</td></tr>
-<tr><td>v0.6.0</td><td>Wed 25 Nov</td><td>Install it with one command; it sizes itself to the machine; names on the map; the kitchen deepened (D82). Feature freeze.</td><td>new tickets PW-1716–1721; extras per D82</td></tr>
+<tr><td>v0.5.0</td><td>Fri 20 Nov</td><td>A catalogue of 10+ candidate worlds that differ by more than the seed (supercontinent start, land share, tilt…), and the L7 → L8 pipeline proven on them.</td><td>catalogue being designed (307), preview batch overnight; final batches after the physics lanes land; 2 Myr L8 memory being fixed (305). You pick when one sparks joy.</td></tr>
+<tr><td>v0.6.0</td><td>Wed 25 Nov</td><td>Install it with one command; it sizes itself to the machine; names on the map; flavour profiles, preservation and ferments, kitchens through time, place names, trade goods, a light viewer mode (D82: 1–6 in, 7–8 stretch). Feature freeze.</td><td>new tickets PW-1716–1721; extras per D82</td></tr>
 <tr><td>v1.0.0</td><td>Tue 1 Dec</td><td>An agent walks the checklist on an installed copy (26–27), then you do (28–30); full test run Mon 30; tag.</td><td>fixes only after 25 Nov</td></tr>
 </table></div>
 <p>Pace since 1 Nov: about 27 merges a day; 20 days left is ~45 lane-days, and the must-haves fill ~30, so there is room for extras. Full proposal: <code>docs/review/plan/milestones-to-v1.md</code>.</p>
-</div>
-<div class="card" id="d80"><div class="id">D80 · the plan to 1 December</div>
-<p><b>In plain words:</b> we are well ahead, so I propose three more stops before v1.0 (dates above), with an installer as a v1.0 must-have: one command on Linux that sets up its own Python, keeps your worlds in their own folder, adds an app-menu launcher, and has update and uninstall (uninstall asks before deleting worlds). macOS best effort; Windows through WSL2. The stretch part checks the machine and picks safe settings: minimum 8 cores, 32 GB, 100 GB free disk (L7 worlds, peoples, zooming); recommended 16 cores, 64 GB, 250 GB (adds L8 and faster detail); 96 GB+ for everything (the 2 Myr L8 split). Below 32 GB the zoom detail can't build. The machine numbers are estimates from measured costs.</p>
-<ul>
-<li><b>A (lean).</b> Adopt the plan as above.</li>
-<li><b>B.</b> Adopt, but change something (say what in the note: dates, OS, what's in v1.0).</li>
-</ul>
-<div class="ask" data-id="D80" data-opts="A:Adopt*|B:Adopt with changes"></div>
-</div>
-<div class="card" id="d81"><div class="id">D81 · PW-1437 · which December world?</div>
-<p><b>In plain words:</b> December A, B and C are on the start screen (Earth-like L7 planets with your Seven Meals peoples). Star one, or pick here; v0.5.0 builds it at 2 Myr and refines it to L8 overnight, so a pick by Thu 12 Nov keeps the date. No lean: it's your world.</p>
-<div class="ask" data-id="D81" data-opts="A:December A|B:December B|C:December C"></div>
-</div>
-<div class="card" id="d82"><div class="id">D82 · more, or more better: what goes in v0.6?</div>
-<p><b>In plain words:</b> the spare room, ranked by what it adds to the who-eats-what goal. Pick any (note the numbers); I lean 1–4.</p>
-<ul>
-<li><b>1.</b> A flavour profile on each culture's food sheet: sour, smoky, fermented, sweet, hot and so on, from what it grows and how it cooks (PW-1715).</li>
-<li><b>2.</b> How each people preserves food and what it ferments: salting, smoking, drying, pickling, brewing (PW-744, PW-1441, PW-1141 pulled forward).</li>
-<li><b>3.</b> A culture's kitchen through time in the viewer: what entered and left its diet, and when (PW-1714).</li>
-<li><b>4.</b> Settlement view and place names on the map (PW-1659, PW-1655, PW-1656).</li>
-<li><b>5.</b> A trade goods layer: what moves where (PW-1508).</li>
-<li><b>6.</b> A low-detail viewer mode for weaker graphics cards (PW-1721).</li>
-<li><b>7.</b> Signature dishes per culture (new).</li>
-<li><b>8.</b> A food calendar: feasts, fasts, harvest and slaughter seasons (new).</li>
-</ul>
-<div class="ask" data-id="D82" data-opts="A:1–4*|B:All eight|C:Other (note)"></div>
 </div>
 
 <h2 id="coming">Running now</h2>
@@ -141,6 +115,8 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <tr><td>304 · the installer</td><td>One command to install on Linux: it sets up its own Python, keeps your worlds in their own folder, adds an app-menu launcher, works offline, and can update, roll back and uninstall (asking before it deletes worlds). macOS best effort. Built now since you asked for it in 1.0; D80 can still change details.</td></tr>
 <tr><td>305 · your December world: the 2 Myr L8 memory</td><td>The 2 Myr ice-age history refined to L8 peaked at 69 GB, twice the 1 Myr one, which is too much to build safely. This lane finds where the extra goes and brings it near 40 GB, so your December world can be built for v0.5.</td></tr>
 <tr><td>306 · zooming like Google Earth, step 6: the judge</td><td>An agent dives down the way you would, at mountains, coasts, plains and a square border, measures the joins, times the waits, looks for anything a person would notice (pops, gaps, floating lines, jumps), and fixes the worst one to three.</td></tr>
+<tr><td>307 · a catalogue of candidate worlds</td><td>Lists every lever we have for Earth-like worlds (supercontinent start or not, land share, tilt, star, day length, plates…), designs 12 varied 2-billion-year worlds, builds a runner that does about 6 at once within the machine's limits, and checks the L7 → L8 refine and the split history end to end. A preview batch of 6 starts tonight on today's code; the final batches come after the physics lanes land.</td></tr>
+<tr><td>308 · cooking: flavour profiles and preservation</td><td>Each culture's food sheet gets how it keeps food (salting, smoking, drying, pickling, fermenting, cellaring) and a flavour profile (sour, salty, smoky, funky…) with a one-line description, each traceable to its climate, salt, fuel, crops and herds. Read against your culinary-dnd notes, so goblins come out a ferment-and-raw kitchen.</td></tr>
 <tr><td>302 · physics: coastline edges that flicker (finishing)</td><td>Fixed behind a switch: on 20 test worlds the flicker went from about 105 quick flips to 1, with no world running too hot or cold. But it also nudges things (crust a little thinner, about 2 °C warmer on average, not significant), so before switching it on for everyone it gets a proper judge. A last L7 check is finishing.</td></tr>
 
 
