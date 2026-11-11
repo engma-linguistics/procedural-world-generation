@@ -94,3 +94,64 @@ Baseline: b74691 on the 1 Myr zoom (present 992 kyr) against 580f8c on the 2 Myr
 
 Nothing here called for a change to the history or the presets: the schedule already follows the zoom it is given, and no
 date sits in a gap the longer zoom opens.
+
+## 4. Why the 2 Myr split peaks at 69 GB (PW-1691, lane 305)
+
+**Diagnosis.** The extra memory is the history's own stored frames from before the cut, held in memory at the fine grid's size.
+Not the recent pass (`recent.Pass` memory-maps the time zoom's frames, `timeline.load_frames`, and `recent_rain.npz` holds only
+the 30-kyr window's ~16 full climates), not the ice history. Line numbers are main at 3085f020.
+
+- The history keeps every stored frame in a list until the run is written (`history/model.py:267`). A frame
+  (`history/frame.py:71`) holds the step's whole climate (`env`: elevation, ice, temperature, rain, tree cover as float64, the
+  climate class and a land mask, from `recent.Pass.fields`, `recent.py:353-366`) and ~20 cell layers (peoples, composition,
+  crop and animal bit flags as uint64 / uint16, body shares), about 80-90 bytes a cell.
+- A glacial frame is stored every 4 kyr of the time zoom (`steps.py:66`, `History(glacial_every=4.0)`, `model.py:44`): the
+  2 Myr zoom stores ~250 more glacial frames than the 1 Myr one, all before the cut (12 kyr ago on Earth-like A).
+- At the cut, `regrid_frames` (`history/handover.py:231-259`, called at `model.py:223`) copies every frame stored so far onto
+  the fine grid at once (`R.keep`, the fine cell's first parent): each one becomes 4x its L7 size, and they all stay to the
+  end. At L8 a frame is ~55 MB, so ~250 more frames is ~14 GB more.
+- `output.save` then holds the frames, the encoded layers as per-frame lists (`output.py:93-101`) and the same layers
+  stacked (`output.py:105`, `np.stack`) before `write_layers` (`output.py:114`): the frames' encoded layers twice more, ~45
+  bytes a cell each time, again scaling with the frame count. This is where lane 267 saw the 1 Myr split peak (after the
+  history; section 1 of docs/review/refine-l8/split.md).
+
+Measured on a small analogue (an L6 run, 0760b3, seed 250979, 1000 Myr; zooms of 1 and 2 Myr from 1000 Myr; finished at
+the interglacial and refined to L7: worlds 56ff8d and 2cf3b0; dnd tree, one try; RSS sampled every 0.5 s, by stage):
+`regrid_frames` alone added 3.8 GB on the 1 Myr zoom (4.25 -> 8.04 GB) and 6.7 GB on the 2 Myr zoom (5.5 -> 12.2 GB),
+against a history that had peaked at 4.5 and 5.5 GB before it; `np.stack` then added 2.3 GB (1 Myr) and 4.7 GB (2 Myr), and
+the stacked layers stayed alive through every after-run stage, since `save` holds them to its end. Each run's peak came
+during the languages pass, the last stage, on top of all of it. Both zooms store 1 frame per 4 kyr, and the 2 Myr run kept
+580 frames (cut at step 1191 of 1312, 12.0 kyr ago) against the 1 Myr run's 333 (cut at step 691 of 812).
+
+**The fix** (lane 305):
+- `handover.FineFrames` (`history/handover.py`, used at `model.py:223`): the frames stored before the cut stay on the coarse
+  grid and are read on the fine grid one field at a time, when asked (the same `R.keep` and sparse-presence rule as
+  `regrid_frames`, which is kept and tested against it); nothing regridded is kept.
+- `output.save` writes the frames' layers with `store.LayerStream` as it reads them (the same files, bytes and metadata as
+  `write_layers` of the stacked arrays) instead of holding per-frame lists and their stack.
+- On the way, the split run on main crashed after the hand-over (three times, each a coarse-grid object carried onto the
+  fine grid since PW-1687 and the live tech tree): the dragon cultures (`dcul`, `dregions`), the live tech tree's goods,
+  landmass and stored-presence caches, and the live polities' ring counts and ring table (`r_town`, `r_city`, `_ring_of`,
+  `inv_rows`) are now made on the fine grid or carried by first parent. `r_town`/`r_city` had been carried silently at their
+  coarse ring counts (fewer rings than the km asks on L8). Every split run on main stops at the first stored frame after the cut
+  without this, so the baseline below is main plus these hand-over fixes only.
+
+**Measured** on the same L6 -> L7 analogue, `/usr/bin/time -v` peak RSS and wall, two threads each, four runs side by side.
+Baseline: main 3085f020 plus the hand-over fixes ("before"), against this branch ("after"); same worlds, same tree and seed.
+
+| | 1 Myr zoom (56ff8d) | 2 Myr zoom (2cf3b0) |
+|---|---|---|
+| peak before | 14.1 GB | 20.4 GB |
+| peak after | 8.7 GB | 10.3 GB |
+| 2 Myr peak over the 1 Myr peak | before 1.45x | after 1.19x |
+| history (`generated_in_s`) before / after | | 1,505 / 1,357 s |
+| wall before / after | 54:04 / 55:03 | 1:01:08 / 58:12 |
+
+**Outputs**: every file of the before and after runs is byte-identical (101 layer files, the presence tables, demes,
+cultures, settlements...), except timing fields, the run id inside `languages.json` and the tree file's path (the two
+checkouts); `same.py` in the lane's scratch.
+
+*Estimate* for L8 (not measured here: lane 280's December A worlds are gone and rebuilding the 2 Myr zoom is ~2 h): the
+analogue's 2 Myr run fell to 0.50x of its before peak; on lane 280's 69.3 GB that is ~35 GB, near the 1 Myr split's 35.5 GB
+(itself before the fix: it should fall too). `tools/split_peak_l8.sh <scratch root>` rebuilds the chain from December A and
+measures it, for an overnight run.

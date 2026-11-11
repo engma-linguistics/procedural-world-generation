@@ -220,7 +220,7 @@ class History(EventsMixin, CounterMixin, HuntsMixin, StepsMixin, HabitatMixin, O
             if cut is not None and step.ago <= cut + 1e-9:  # (the settled window: on to the fine world's grid, PW-1265)
                 coarse = self.grid
                 HO.hand_over(self, *self._fine, si)
-                frames = HO.regrid_frames(frames, coarse, self.grid)
+                frames = HO.FineFrames(frames, coarse, self.grid)  # (read on the fine grid when asked, PW-1691)
                 self.handover.update(cut_kyr=round(float(cut), 3), at_step=si, step_ago=step.ago)
                 step, cut = self.steps[si], None
                 g = self.grid

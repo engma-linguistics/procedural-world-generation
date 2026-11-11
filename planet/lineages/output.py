@@ -90,28 +90,33 @@ def save(h: History, res: dict, pres: dict, world: str | None = None, name: str 
     # body flags given as a share of a people (lactase persistence...): % of the cell's people with the trait (PW-701)
     animal_layers = {**animal_layers, **{f"body_{k}": U8(f"% of the cell's people with the body trait '{k}' (each people's share, mixed by the cell's composition)")
                                        for k in h.share_traits}}
-    arrays = {k: [] for k in (*TERRAIN, *PEOPLE_LAYERS, *animal_layers)}
+    specs = {**TERRAIN, **PEOPLE_LAYERS, **animal_layers}
+    run_id = S.new_id()
+    out = S.path_of("run", run_id)
+    # (the frames' layers written as they are read, PW-1691: the same files as write_layers of the stacked frames, without holding
+    # every frame's encoded layers in memory twice over, as lists and stacked)
+    stream = S.LayerStream(out, specs)
     out_frames = []
-    for f in frames:
-        env = f["env"]
-        for k, spec in TERRAIN.items():
-            v = env.get(k, np.zeros(g.n))
-            arrays[k].append(S.encode(np.round(v) if k != "climate" else v, spec))
-        for k in (*PEOPLE_LAYERS, *animal_layers):
-            arrays[k].append(f[k])
-        st = {kk: vv for kk, vv in f["stats"].items() if not isinstance(vv, (list, dict)) or kk in ("peoples", "learned")}  # (learned: PW-1155, Mkm² of learned country per line by biome)
-        st["t"] = -round(f["ago"], 3)
-        out_frames.append({"t": -round(f["ago"], 3), "stats": st, "omega": {}, "hotspots": [], "volcanoes": []})
-    arrays = {k: np.stack(v) for k, v in arrays.items()}
+    try:
+        for f in frames:
+            env = f["env"]
+            for k, spec in TERRAIN.items():
+                v = env.get(k, np.zeros(g.n))
+                stream.append(k, S.encode(np.round(v) if k != "climate" else v, spec))
+            for k in (*PEOPLE_LAYERS, *animal_layers):
+                stream.append(k, f[k])
+            st = {kk: vv for kk, vv in f["stats"].items() if not isinstance(vv, (list, dict)) or kk in ("peoples", "learned")}  # (learned: PW-1155, Mkm² of learned country per line by biome)
+            st["t"] = -round(f["ago"], 3)
+            out_frames.append({"t": -round(f["ago"], 3), "stats": st, "omega": {}, "hotspots": [], "volcanoes": []})
+            del env
+    finally:
+        stream.close()
+    layers = stream.layers()
     win = [(j, f) for j, f in enumerate(frames) if f.get("eraq")]  # frames recent enough to keep the land-use inputs of the fuels per era (PW-742)
     eraq_meta = None
     if win:
         eraq_meta = {"frames": [j for j, _ in win], "ago_kyr": [round(f["ago"], 3) for _, f in win], "keys": list(LU.ERA_KEYS),
                      "note": "uint8 per window frame (landuse.frame_inputs): dens log2p1, farm/herd/wood % of heads, herd_mult/farm_mult x20"}
-    specs = {**TERRAIN, **PEOPLE_LAYERS, **animal_layers}
-    run_id = S.new_id()
-    out = S.path_of("run", run_id)
-    layers = S.write_layers(out, arrays, specs)
     if eraq_meta:
         for k in LU.ERA_KEYS:
             (out / "layers" / f"eraq_{k}.bin").write_bytes(np.stack([f["eraq"][k] for _, f in win]).tobytes())

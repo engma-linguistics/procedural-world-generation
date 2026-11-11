@@ -75,8 +75,31 @@ def test_split_history_hands_over_at_the_first_farming_and_keeps_the_coarse_past
         assert a["ago"] == b["ago"]
         assert np.array_equal(Rg.keep(a["peoples"]), b["peoples"])  # (the coarse past, unchanged)
     assert all(f["peoples"].shape == (ps4.grid.n,) for f in rs["frames"])
+    # (PW-1691: the frames before the cut stay coarse and are read on the fine grid when asked, as the eager regrid made them)
+    assert isinstance(rs["frames"], HO.FineFrames)
+    eager = HO.regrid_frames(pre, ps3.grid, ps4.grid)
+    for a, b in zip(eager, rs["frames"]):
+        assert set(a) == set(b)
+        for k in a:
+            _same(a[k], b[k])
     out = O.save(hs, rs, present_summary(hs, rs["present"]), name="split test")
     assert out.exists()
+
+
+def _same(a, b):
+    """Equal values, dtypes and container shapes (frames: arrays, dicts, tuples, numbers)."""
+    if isinstance(a, np.ndarray):
+        assert isinstance(b, np.ndarray) and a.dtype == b.dtype and np.array_equal(a, b)
+    elif isinstance(a, dict):
+        assert dict(a).keys() == dict(b).keys()
+        for k in a:
+            _same(a[k], b[k])
+    elif isinstance(a, (list, tuple)):
+        assert type(a) is type(b) and len(a) == len(b)
+        for x, y in zip(a, b):
+            _same(x, y)
+    else:
+        assert a == b or (a != a and b != b)
 
 
 def test_a_refined_worlds_detail_rides_on_every_prolonged_frame(faketz, monkeypatch):
