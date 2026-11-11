@@ -4,14 +4,19 @@ A tile of level 2-4 (zoom/lod.py) is the fine pass (zoom/fine.py) run on its lev
 plane (lod.tile_frame), from its parent level stitched into one window (lod.parent_mosaic), with seam=True: its edge
 fades to a surface that depends only on the place, its parent's rivers are imposed with their meander phase and their
 discharge, so tiles built at different times, in any order, meet at their edges. Level 1 is the cell's section at 4 km
-(regional.zoom(section=...), the API's section build); this module finds it but does not build it.
+(regional.zoom(section=...)), built matched (zoom/match.py) to whichever neighbouring cells' level 1 is already built:
+the neighbours' ground where they own it, exact at the owner line (the cell edge), blended over match.RAMP_KM inside
+(lod-plan-v2.md 2.3, step 3; PW-1699). Level-1 builds of one world queue one at a time, so each sees every one before.
 
     build(world, key, sources, seed)       the tile (a zoom dict, as fine.build)
     edge_surface(world, key, sources, seed) the ground at its edges, carved on blocks keyed by place (PW-1694)
     save(z, world_id, key, pmeta, seed)    an ordinary zoom directory under zooms/<lod.tile_id>, with a `tile` block
     find(world_id, key, seed)              the saved tile's (or level-1 section's) directory, or None
     load_sources(world_id, key, seed)      the parent tiles its build reads (lod.parent_sources), loaded
+    built_neighbours(world_id, cell, seed) the ids of the neighbouring cells' level-1 sections already built
+    build_level1(world_ref, cell, seed)    find or build-and-save a cell's level 1, matched to them
     tile(world_ref, key, seed)             find or build-and-save one tile whose parent tiles are built
+Seam diagnostics: edge_steps (siblings), cell_line, line_seam, resampled, line_rivers (two cells' level 1 at their edge).
 """
 from __future__ import annotations
 
@@ -26,6 +31,7 @@ from .. import world as W
 from . import fine as ZF
 from . import lod as L
 from . import regional as Z
+from . import tiling as ZT
 
 STRIP_PX = 32  # px: an edge block's half width (a strip centred on a tile's edge; its carving clear of its own edge)
 
@@ -176,6 +182,34 @@ def find(world_id: str, key: L.Key, seed: int = 1) -> Path | None:
     return d if (d / "zoom.json").exists() else None
 
 
+def built_neighbours(world_id: str, cell: str, seed: int = 1) -> list[str]:
+    """The ids of the level-1 sections already built of the cells sharing an edge or a corner with `cell` (tiling's
+    neighbours), in the neighbours' order."""
+    out = []
+    for c in ZT.section(cell, L.SQUARE_KM)["neighbours"]:
+        d = _section_dir(world_id, c, seed)
+        if d is not None:
+            out.append(d.name)
+    return out
+
+
+def build_level1(world_ref: str, cell: str, seed: int = 1, log=print) -> Path:
+    """A cell's level 1 (its 4 km section): found, or built matched to the neighbouring cells' level 1 already built
+    (regional.zoom(section=, match=), zoom/match.py) and saved. The order the cells are built in decides who matches
+    whom: one lock per world and seed queues level-1 builds, so a cell built after a neighbour always sees it (two
+    built side by side would each be built alone and disagree at their edge)."""
+    wpath = Z.find_world(world_ref)
+    wid = wpath.stem
+    with S.lock(S.zooms_dir(), f"lod-level1-{wid}-{seed}"):
+        d = _section_dir(wid, cell, seed)
+        if d is not None:
+            return d
+        nb = built_neighbours(wid, cell, seed)
+        if nb:
+            log(f"level 1 of {cell}: matched to {', '.join(nb)}")
+        return Z.zoom(str(wpath), None, None, L.SQUARE_KM, L.res_km(1), seed, log=log, section=cell, match=tuple(nb))
+
+
 def load_sources(world_id: str, key: L.Key, seed: int = 1) -> dict:
     """{parent-level Key: (meta, decoded layers)} of the tiles the build of `key` reads; raises if one isn't built."""
     out = {}
@@ -188,8 +222,11 @@ def load_sources(world_id: str, key: L.Key, seed: int = 1) -> dict:
 
 
 def tile(world_ref: str, key: L.Key | str, seed: int = 1, log=print) -> Path:
-    """The saved tile `key` of a world: found, or built from its parent tiles (which must be built) and saved."""
+    """The saved tile `key` of a world: found, or built from its parent tiles (which must be built) and saved. Level 1
+    (the cell's section) is built from the world, matched to its built neighbours (build_level1)."""
     key = L.Key.parse(key) if isinstance(key, str) else key
+    if key.level == min(L.LEVELS):
+        return build_level1(world_ref, key.cell, seed, log=log)
     wpath = Z.find_world(world_ref)
     wid = wpath.stem
     d = find(wid, key, seed)
@@ -226,3 +263,69 @@ def edge_steps(a: np.ndarray, b: np.ndarray, axis: int, band: tuple[int, int] | 
         n = a.shape[1]
         da, db = da[:, n - 1 - hi:n - 1 - lo], db[:, lo:hi]
     return across, np.concatenate([da.ravel(), db.ravel()])
+
+
+def _cells_of(P: np.ndarray) -> np.ndarray:
+    """The tiling cell id of each unit vector."""
+    f, i, j = ZT.locate(P / np.linalg.norm(P, axis=1, keepdims=True), ZT.choose_n(L.SQUARE_KM, 190.0))
+    names = np.array(list(ZT.FACES))
+    return np.char.add(np.char.add(np.char.add(names[f], "."), i.astype(str)), np.char.add(".", j.astype(str)))
+
+
+def cell_line(a: str, b: str, per_edge: int = 1000) -> np.ndarray:
+    """Points (unit vectors, (m, 3)) on the edge cells a and b share: the owner line where their level 1 meet (the
+    seam test of step 3, lod-plan-v2.md 2.3). Empty if they share no edge."""
+    s = ZT.section(a, L.SQUARE_KM)
+    n = ZT.choose_n(L.SQUARE_KM, 190.0)
+    P = ZT._boundary(list(ZT.FACES).index(s["face"]), s["i"], s["j"], n, per_edge)
+    d = P - L.frame(a).c
+    keep = (_cells_of(P + 1e-4 * d) == b) & (_cells_of(P - 1e-4 * d) == a)
+    return P[keep]
+
+
+def line_seam(sa: dict, sb: dict, P: np.ndarray) -> dict:
+    """Two level-1 sections (match.sources / match.source_of dicts) at the points P of their shared line: |a - b| of
+    their ground there (bilinear; a lake at its surface), over the points both call land and both cover."""
+    from . import match as ZM
+    ha, _, la, _, _, ina = ZM._sample(sa, P, sa["res"])
+    hb, _, lb, _, _, inb = ZM._sample(sb, P, sb["res"])
+    d = np.abs(ha - hb)[la & lb & (ina > 0) & (inb > 0)]
+    if not len(d):
+        return {"n": 0, "median": np.nan, "p90": np.nan, "max": np.nan, "d": d}
+    return {"n": len(d), "median": float(np.median(d)), "p90": float(np.percentile(d, 90)), "max": float(d.max()),
+            "d": d}
+
+
+def resampled(sa: dict, sb: dict) -> dict:
+    """sb with sa's ground (bilinear) at every pixel of sb's that sa covers: the best any section on sb's lattice can
+    do to agree with sa. line_seam(sa, resampled(sa, sb), P) is the floor of the seam at the line between two
+    lattices (each drawn by interpolating its own pixels; their difference at the line is sa's roughness between its
+    pixels), the reference a matched section's seam is judged against."""
+    from . import match as ZM
+    nx, ny, res = sb["nx"], sb["ny"], sb["res"]
+    r, c = np.divmod(np.arange(nx * ny), nx)
+    h, _, la, _, _, ins = ZM._sample(sa, sb["frame"].to_sphere((c + 0.5 - nx / 2) * res, (ny / 2 - r - 0.5) * res), sa["res"])
+    hb = np.where(ins > 0, h, sb["h"].ravel()).astype(np.float32).reshape(ny, nx)
+    return {**sb, "h": hb, "land": np.where((ins > 0).reshape(ny, nx), la.reshape(ny, nx), sb["land"])}
+
+
+def line_rivers(sa: dict, a: str, sb: dict, b: str, qmin: float = 100.0) -> list[tuple[float, float]]:
+    """The rivers of section a (its own network, on its own ground) flowing into cell b: [(a's discharge at its last
+    pixel, b's largest discharge within 2 of b's pixels round where it enters)] for each crossing of >= qmin m3/s.
+    Carried on: the second about the first (more, with b's own tributaries joining at the line)."""
+    def pts(s, idx):
+        r, c = np.divmod(idx, s["nx"])
+        return s["frame"].to_sphere((c + 0.5 - s["nx"] / 2) * s["res"], (s["ny"] / 2 - r - 0.5) * s["res"])
+    cand = np.flatnonzero((sa["rec"] >= 0) & (sa["q"] >= qmin) & sa["land"].ravel())
+    cand = cand[_cells_of(pts(sa, cand)) == a]
+    cand = cand[_cells_of(pts(sa, sa["rec"][cand])) == b]
+    qb = sb["q"].reshape(sb["ny"], sb["nx"])
+    out = []
+    for k in cand:
+        x, y = sb["frame"].to_plane(pts(sa, sa["rec"][k:k + 1]))
+        r = int(np.floor(sb["ny"] / 2 - y[0] / sb["res"]))
+        c = int(np.floor(x[0] / sb["res"] + sb["nx"] / 2))
+        if not (2 <= r < sb["ny"] - 2 and 2 <= c < sb["nx"] - 2):  # (enters b's ground off b's raster)
+            continue
+        out.append((float(sa["q"][k]), float(qb[r - 2:r + 3, c - 2:c + 3].max())))
+    return out

@@ -328,3 +328,25 @@ def test_trees_spread_one_cell_per_step_and_stay_put():
         assert tree[hops == steps].max() > 0.3  # (and the stand on the new ground grows up within the step)
     held = V.model(*args, nu0=nu0, cheap=True, steps=V.HELD_STEPS, migrate=V.HELD)
     assert held["eq"]["nu"][V.TREES].sum(0)[hops > 0].max() == 0
+
+
+def test_classify_takes_the_callers_land_mask():
+    """A zoom's pixels are no sphere grid: classify takes the zoom's own land call (PW-1701: a level-2 tile with a land
+    pixel at or below sea level failed in geo.is_land). Here: a grid's cells less one, one of them a land depression
+    at -5 m; with land given it is classified as land, without it is_land can't place the cells."""
+    g = build_grid(3)
+    n = g.n
+    t = np.full(n, 15.0)
+    v = V.model(g, np.full(n, 300.0), t, t + 8, t - 8, np.full(n, 900.0), np.full(n, 700.0))
+    k = n - 1
+
+    def cut(d):
+        return {key: (np.asarray(x)[..., :k] if isinstance(x, np.ndarray) and x.shape[-1:] == (n,) else x)
+                for key, x in d.items()}
+    s, eq, sm = cut(v["s"]), cut(v["eq"]), cut(v["sm"])
+    elev = np.full(k, 300.0)
+    elev[7] = -5.0
+    types = V.classify(s, eq, sm, elev, land=np.ones(k, bool))
+    assert types[7] != 0 and (types > 0).all()
+    with pytest.raises(ValueError):
+        V.classify(s, eq, sm, elev)

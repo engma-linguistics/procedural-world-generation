@@ -19,8 +19,9 @@ tiles on screen and the server builds them, on demand, and keeps them.
     GET  .../layer/<name>.bin            one zoom layer as n*n float32 (decoded units)
 
 Builds run as server jobs (api.Jobs, each in a worker process), never in a request thread:
-  - level 1 is the cell's section at 4 km (POST /api/zoom {world, section, res_km: 4}: api's section job), one at a time
-    and not beside another section-sized zoom; budget PEAK_GB[1] = 8.3 GB (lane 290 measured);
+  - level 1 is the cell's section at 4 km, a lod_build.tile job too: built matched to the neighbouring cells' level 1
+    already built (lod_build.build_level1, PW-1699), one at a time and not beside another section-sized zoom; budget
+    PEAK_GB[1] = 8.3 GB (lane 290 measured; matched 8.3-8.4 GB, lane 295);
   - levels 2-4 are lod_build.tile jobs, AT_ONCE (3) at a time, PEAK_GB 3.2 GB each (lane 290: 2.9-3.2 GB);
   - at most AT_ONCE tile jobs in all (the server has 4 job workers: one is left for everything else);
   - the RAM guard: a build starts only while free memory covers its peak, api.ZOOM_RAM_SPARE_GB and the peaks of the
@@ -204,8 +205,9 @@ class TileService:
                 return d
             del ix[str(key)]
             self._dirty.add(wid)
-        if key.level == 1:
-            d = S.zooms_dir() / api.section_zoom_id(self._section_request(wid, key.cell), wid)
+        if key.level == 1:  # (any section of the cell at 4 km: alone, or matched to its neighbours)
+            from .zoom import lod_build as LB
+            d = LB.find(wid, key, SEED) or S.zooms_dir() / api.section_zoom_id(self._section_request(wid, key.cell), wid)
         else:
             d = S.zooms_dir() / L.tile_id(wid, key, SEED)
         if not (d / "zoom.json").exists():
@@ -326,8 +328,7 @@ class TileService:
                         if busy:
                             self.note = f"waiting for another section-sized zoom (job {busy})"
                             continue
-                    else:
-                        req = {"type": "tile", "world": wid, "tile": str(k), "seed": SEED}
+                    req = {"type": "tile", "world": wid, "tile": str(k), "seed": SEED}
                     self.inflight[(wid, k)] = {"jid": self.jobs.submit(req), "level": k.level, "t0": self.clock()}
             self.evict()
             self.flush()

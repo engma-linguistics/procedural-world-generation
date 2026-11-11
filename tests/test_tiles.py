@@ -71,6 +71,10 @@ class FakeJobs:
             zid = (api.section_zoom_id(T.TileService._section_request(W, k.cell), W) if k.level == 1
                    else L.tile_id(W, k, T.SEED))
             _fake_tile_dir(S.zooms_dir() / zid)
+            if k.level == 1:  # (a section's meta, as lod_build.find reads it)
+                f = S.zooms_dir() / zid / "zoom.json"
+                f.write_text(json.dumps({**json.loads(f.read_text()), "section": k.cell, "res_km": L.res_km(1),
+                                         "seed": T.SEED, "created": "2026-11-11 00:00:00"}))
             self.jobs[jid].update(status="done", zoom=zid)
         else:
             self.jobs[jid].update(status="error", error="boom")
