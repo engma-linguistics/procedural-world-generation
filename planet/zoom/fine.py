@@ -117,6 +117,12 @@ EDGE_PX = 3  # parent px: the built area (region + halo) stays this far inside t
 HALO_PARENT_PX = 1.0  # parent px of terrain built round the region (drainage), cropped off
 RIVER_AREA_PX = 25.0  # parent rivers imposed: draining at least this many parent pixels ...
 RIVER_AREA_MIN = 1.0  # ... and at least this many km^2
+RIVER_AREA_PX_TILE = 4.0  # a level-of-detail tile's (seam=True): every stream it can draw is its parent's, keyed by place
+EDGE_TEXTURE = 2.5  # a tile's edge: pixel-scale texture, this x the parent's local relief per fine pixel (the carved
+# ground inside is that much rougher than the parent's surface and its detail noise; set so the steps across a tile's
+# edge are those inside it, lane 290 on world dba204: docs/review/zoom/lod-plan-v2.md State)
+TILE_REACH_PX = 16  # parent px: a tile's parent network read this far round its built area (its courses' smoothing and
+# meander trains reach a few parent px: started this far out, they are the same on both sides of a tile's edge)
 WARP_PX = 0.4  # parent px: the categories' warp between parent pixel centres
 COAST_PX = 0.38  # parent px: the shore's fractal displacement (PW-488), largest octave
 SMOOTH_PX = 1.0  # parent px: a parent's river course smoothed by this (its D8 steps; PW-405)
@@ -186,7 +192,7 @@ def size_options(parent_res: float) -> dict:
     return {"default": {"size_km": ds, "res_km": dr}, "options": opts}
 
 
-def check(pmeta: dict, lat: float, lon: float, size_km: float, res_km: float) -> None:
+def check(pmeta: dict, lat: float, lon: float, size_km: float, res_km: float, fr=None) -> None:
     """Raises ValueError (with what to do instead) for a request the
     conditioning can't honour: a parent too coarse or too fine, a step over
     MAX_STEP, a region not well inside the parent."""
@@ -213,7 +219,8 @@ def check(pmeta: dict, lat: float, lon: float, size_km: float, res_km: float) ->
     if not -90 <= lat <= 90:
         raise ValueError("lat must be within -90..90")
     fp = Z.frame_of(pmeta["center"])
-    fr = Z.Frame(lat, lon, up=pmeta["center"].get("up"))  # (the parent's orientation, PW-1341)
+    if fr is None:
+        fr = Z.Frame(lat, lon, up=pmeta["center"].get("up"))  # (the parent's orientation, PW-1341)
     half = 0.5 * size_km + _halo_px(rp, res_km) * res_km
     t = np.array([-1.0, 0.0, 1.0]) * half
     X, Y = np.meshgrid(t, t)
@@ -336,14 +343,21 @@ def _fall_chain(pa: _Parent, rec, ws, f: dict) -> list[int] | None:
 # The fine pass
 # ---------------------------------------------------------------------------
 def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_km: float, res_km: float,
-          seed: int = 1, log=print) -> dict:
+          seed: int = 1, log=print, frame=None, seam: bool = False) -> dict:
     """The fine zoom of `parent` ((meta, decoded layers), zoom.load) round
     (lat, lon), size_km across at res_km per pixel. world: the parent's
     source world (climate for the fine pixels). Returns a zoom dict as
-    zoom.build (layers, stats, satellite, frame, ...) plus 'parent'."""
+    zoom.build (layers, stats, satellite, frame, ...) plus 'parent'.
+
+    A level-of-detail tile (zoom/lod_build.py; docs/review/zoom/lod-plan-v2.md 2.2) passes its `frame` (a
+    regional.PlaneFrame: its pixels on its level's lattice of its cell's plane; lat, lon its centre) and seam=True:
+    its edge fades to a surface that depends on the place only (the parent's ground, its coast's warp and the detail
+    noise: only the landscape pass's carving fades out), its parent's rivers down to RIVER_AREA_PX_TILE are imposed
+    with their meander phase read from the parent's `river_phase` layer (saved here), and their discharge and area
+    are the parent's along their courses, so two tiles built apart meet at their shared edge."""
     t0 = time.time()
     pmeta, play = parent
-    check(pmeta, lat, lon, size_km, res_km)
+    check(pmeta, lat, lon, size_km, res_km, fr=frame)
     pa = _Parent(pmeta, {k: np.asarray(v) for k, v in play.items()})
     rp, res = pa.rp, float(res_km)
     n = int(round(size_km / res))
@@ -357,7 +371,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     world = Z.land_world(world)[0]
 
     # --- 1. projection ---------------------------------------------------
-    fr = Z.Frame(lat, lon, up=pmeta["center"].get("up"))  # (turned like its parent, PW-1341: pixels stay square to it)
+    fr = frame if frame is not None else Z.Frame(lat, lon, up=pmeta["center"].get("up"))  # (turned like its parent,
+    # PW-1341: pixels stay square to it)
     xs = (np.arange(nb) + 0.5 - nb / 2) * res
     ys = (nb / 2 - np.arange(nb) - 0.5) * res
     X, Y = np.meshgrid(xs, ys)
@@ -407,7 +422,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     # not the parent's pixel outline but a refined curve with bays, headlands, inlets and islets
     cpx = (wp != 1).astype(float)
     edge_p = (_box3(cpx) % 9 != 0).astype(float)  # (a parent pixel with land and sea in its 3x3)
-    wcoast = np.clip(1.6 * pa.bilinear(_box3(edge_p) / 9.0, pr, pc), 0.0, 1.0) * w_in
+    wcoast = np.clip(1.6 * pa.bilinear(_box3(edge_p) / 9.0, pr, pc), 0.0, 1.0) * (1.0 if seam else w_in)
     lam_c = 2.0 * rp
     oct_c = Z._octaves(lam_c, 3 * res)
     dr_c = ZK.fbm(Pk, lam_c, oct_c, 0.62, S_ + 21) / 0.17
@@ -434,7 +449,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     noise = ZK.fbm(Pk, lam, Z._octaves(lam, 4 * res), 0.55, S_ + 1) / 0.17
     ridge = ZK.ridged(Pk, lam, Z._octaves(lam, 4 * res), 0.55, S_ + 2) - 0.5
     amp = np.where(target > 0, np.clip(0.35 * relief * rug, 1.0, 300.0), np.clip(0.1 * relief, 0.0, 20.0))
-    h = target_f + w_in * amp * ((1 - rug) * noise + rug * 1.5 * ridge)
+    detail0 = amp * ((1 - rug) * noise + rug * 1.5 * ridge)  # (place-keyed: a tile's edge fades to target + this)
+    h = target_f + (1.0 if seam else w_in) * detail0
     detail = h - target_f  # (also steers the drainage of the landscape pass: no D8 grain)
     # warp for the categorical layers (parent px)
     wr = WARP_PX * np.clip(ZK.fbm(Pk, 1.5 * rp, 3, 0.5, S_ + 3) / 0.17, -1.25, 1.25)
@@ -449,7 +465,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     a_p = np.asarray(pa.L["drainage_area"], float).ravel()
     ws_flat = wsp.ravel()
     # (through lakes too: a course goes on)
-    riv_all = (a_p >= max(RIVER_AREA_PX * rp * rp, RIVER_AREA_MIN)) & (wp.ravel() != 1) & (rec_p >= 0)
+    a_riv = max((RIVER_AREA_PX_TILE if seam else RIVER_AREA_PX) * rp * rp, RIVER_AREA_MIN)
+    riv_all = (a_p >= a_riv) & (wp.ravel() != 1) & (rec_p >= 0)
     for ch in chains.values():
         riv_all[ch[:-1]] = True
     order_q = np.argsort(q_p)
@@ -462,11 +479,14 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
 
     # the meanders' phase down the whole parent network (planet-fixed: sibling zooms agree)
     up_all = mains(riv_all)
-    psi_p = _river_phase(riv_all, rec_p, up_all, q_p, pa, S_ + 13)
+    # (a tile: where the parent drew courses, their phase as it drew them: continued across tiles and levels)
+    known = np.asarray(pa.L["river_phase"], float).ravel() if seam and "river_phase" in pa.L else None
+    psi_p = _river_phase(riv_all, rec_p, up_all, q_p, pa, S_ + 13, known)
     # only the parent pixels round the built area
     rr_p, cc_p = np.divmod(np.arange(pa.nx * pa.ny), pa.nx)
-    box = ((rr_p >= np.floor(pr.min()) - 5) & (rr_p <= np.ceil(pr.max()) + 5)
-           & (cc_p >= np.floor(pc.min()) - 5) & (cc_p <= np.ceil(pc.max()) + 5))
+    bm = TILE_REACH_PX if seam else 5
+    box = ((rr_p >= np.floor(pr.min()) - bm) & (rr_p <= np.ceil(pr.max()) + bm)
+           & (cc_p >= np.floor(pc.min()) - bm) & (cc_p <= np.ceil(pc.max()) + bm))
     riv_p = riv_all & box
     up_main = mains(riv_p)
     links = np.flatnonzero(riv_p)
@@ -480,11 +500,12 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         j = rec_p[i]
         if riv_p[i] and j >= 0 and j not in lips:
             bed_p[j] = min(bed_p[j], bed_p[i] - 0.01)
-    seg_pts, seg_z, seg_q, seg_a, seg_t, seg_link = [], [], [], [], [], []
+    seg_pts, seg_z, seg_q, seg_a, seg_t, seg_link, seg_qa, seg_aa, seg_ph = [], [], [], [], [], [], [], [], []
     river_segs = []
     # the courses: smoothed, their planform chosen per reach (_courses)
     paths_c = _courses(pa, riv_p, rec_p, up_main, q_p, bed_p, fall_links, (psi_p, up_all), hp_f, res,
-                       bool(pmeta.get("parent_zoom")), S_ + 11, diag := {}, axes := {}, oxb := [])
+                       bool(pmeta.get("parent_zoom")), S_ + 11, diag := {}, axes := {}, oxb := [], phs := {},
+                       place_phase=seam)
     log("  river courses (parent km): " + ", ".join(f"{k} {v:.1f}" for k, v in diag.items()))
     for i in links:
         j = rec_p[i]
@@ -498,6 +519,12 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         seg_q.append(np.full(len(pts), q_p[i]))
         seg_a.append(np.full(len(pts), a_p[i]))
         seg_link.append(np.full(len(pts), i))
+        # (a tile's: the parent's discharge and area along the link, its meander phase at each sample)
+        # (the link's own: a confluence's water joins at its node, so two pixels either side of a tile's edge,
+        # in one link, carry the same)
+        seg_qa.append(np.full(len(pts), q_p[i]))
+        seg_aa.append(np.full(len(pts), a_p[i]))
+        seg_ph.append(phs[i])
     # the valley axes (PW-412): each link's samples, its floor's and meander belt's half widths
     ax_pts, ax_hf, ax_belt, ax_z, ax_q = [], [], [], [], []
     for i, (pts, hf_, belt_) in axes.items():
@@ -515,6 +542,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     c_q, c_a = np.zeros(npx), np.zeros(npx)
     q_in, a_in = np.zeros(npx), np.zeros(npx)  # the parent's rivers coming in from outside the built area
     c_rec = np.full(npx, -1)  # each course pixel's next pixel down its course (the drainage is pinned to it)
+    c_qa, c_aa = np.zeros(npx), np.zeros(npx)  # (a tile's: the parent's discharge and area on its courses)
+    phase_f = np.full(npx, np.nan)  # (... and their meander phase, saved as river_phase)
     if seg_pts:
         pts = np.concatenate(seg_pts)
         tt = np.concatenate(seg_t)
@@ -529,6 +558,14 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         np.maximum.at(c_q, k_px[ok], qq[ok])
         np.maximum.at(c_a, k_px[ok], aa[ok])
         course[k_px[ok]] = True
+        if seam:
+            np.maximum.at(c_qa, k_px[ok], np.concatenate(seg_qa)[ok])
+            np.maximum.at(c_aa, k_px[ok], np.concatenate(seg_aa)[ok])
+            # (a pixel two courses share: the bigger river's phase)
+            ph_ = np.concatenate(seg_ph)[ok]
+            o_ = np.lexsort((ph_, qq[ok]))[::-1]
+            kk_, first = np.unique(k_px[ok][o_], return_index=True)
+            phase_f[kk_] = ph_[o_][first]
         # the parent's rivers from outside the built area come in at the first node of their course
         # inside the region (not in the halo: its ring is an outlet, the water could leave again at once)
         at0 = (tt == 0) & ok
@@ -589,9 +626,13 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         bz = np.where(src, bed, np.inf).reshape(nb, nb)
         rz = np.where(src, rad, 0).reshape(nb, nb)
         nbz, nrz = bz.copy(), np.zeros_like(rz)
+        qz, az_ = np.where(src, c_qa, 0.0).reshape(nb, nb), np.where(src, c_aa, 0.0).reshape(nb, nb)
+        nqz, naz = qz.copy(), az_.copy()
         for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)):
             nbz = np.minimum(nbz, Z._shift(bz, dr, dc, np.inf))  # (the lowest bed beside it: close enough)
             nrz = np.maximum(nrz, Z._shift(rz, dr, dc, 0))
+            nqz = np.maximum(nqz, Z._shift(qz, dr, dc, 0.0))
+            naz = np.maximum(naz, Z._shift(az_, dr, dc, 0.0))
         grow = (nrz.ravel() >= 1) & ~course
         if not grow.any():
             break
@@ -599,6 +640,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         rad = np.where(grow, nrz.ravel() - 1, np.where(src, 0, rad))
         c_q = np.where(grow, 0.0, c_q)
         c_a = np.where(grow, 0.0, c_a)
+        c_qa = np.where(grow, nqz.ravel(), c_qa)
+        c_aa = np.where(grow, naz.ravel(), c_aa)
         course |= grow
 
     # --- 3b. lakes and the sea -------------------------------------------
@@ -1096,7 +1139,20 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         hw = _relax(hw, active, s_max, nb, res, needles=True)  # (the corrections leave no needle)
     # back to the parent's surface at the region's edge
     blend = active  # (the imposed courses keep their beds: the parent's, so the edge still meets it)
-    hw = np.where(blend, w_in * hw + (1 - w_in) * np.maximum(target, 0.5), hw)
+    # (a tile's edge: the parent's ground with the place's detail, as its neighbour's; only the carving fades)
+    if not seam:
+        hw = np.where(blend, w_in * hw + (1 - w_in) * np.maximum(target, 0.5), hw)
+    else:
+        # (a tile: its texture kept through the ramp, not halved: the two surfaces' departures from the parent's
+        # ground mixed as uncorrelated, their rms kept)
+        # (the place's texture at the pixel scale, which the carving gives the inside: the detail noise is
+        # smooth below ~4 px; valleys (ridged) on rugged rock, rolling ground on soft)
+        lam_e = 4 * res
+        tex_e = ((1 - rug) * ZK.fbm(Pk, lam_e, 2, 0.55, S_ + 31) / 0.17
+                 + rug * 1.5 * (ZK.ridged(Pk, lam_e, 2, 0.55, S_ + 32) - 0.5))
+        edge_to = target + detail0 + EDGE_TEXTURE * relief * (res / rp) * tex_e
+        mix = (w_in * (hw - target) + (1 - w_in) * (edge_to - target)) / np.sqrt(w_in ** 2 + (1 - w_in) ** 2)
+        hw = np.where(blend, np.maximum(target + mix, 0.5), hw)
     # the gorges' walls no higher than the ground at their rims, straight out from the path (held at
     # the parent's surface through the pass, a rim stood as a ridge where the fine ground beyond it is
     # a valley)
@@ -1169,6 +1225,10 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         discharge = np.where(land, ov["q"], discharge)
         pond, pond_depth, lf_overlay = ov["pond"], ov["pond_depth"], ov["stats"]
         log(f"  landform overlays {lf_overlay} [{time.time() - t0:.1f}s]")
+    if seam:  # (a tile: the imposed rivers carry the parent's water, the same on both sides of an edge)
+        anc = course & (c_qa > 0)
+        discharge = np.where(anc, c_qa, discharge)
+        area = np.where(anc, np.maximum(c_aa, px_area), area)
 
     # --- crop the halo ---------------------------------------------------
     keep_px = ((row >= hb) & (row < hb + n) & (col >= hb) & (col < hb + n))
@@ -1180,9 +1240,10 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         return np.asarray(a)[keep_px]
 
     (h, sea, lake, pool, land, discharge, area, lake_depth, cr, cc, pr, pc, Pk, px, py, own, target, course_c,
-     vfloor, vbelt, vf_z, vf_own, oxbow_c, glacier_c, ice_th_c, pond, pond_depth) = (
+     vfloor, vbelt, vf_z, vf_own, oxbow_c, glacier_c, ice_th_c, pond, pond_depth, phase_f) = (
         crop(a) for a in (h, sea, lake, pool, land, discharge, area, lake_depth, cr, cc, pr, pc, Pk, px, py, own,
-                          target, course, vfloor, vbelt, vf_z, vf_own, oxbow, glacier_b, ice_th_b, pond, pond_depth))
+                          target, course, vfloor, vbelt, vf_z, vf_own, oxbow, glacier_b, ice_th_b, pond, pond_depth,
+                          phase_f))
     nx = ny = n
     npx = n * n
     lake = lake | pond  # (karst ponds: pits below the water table)
@@ -1359,6 +1420,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         **({f"cloud_{s}": np.round(100 * fields[f"cloud_{s}"]) for s in ("jul", "jan")}
            if fields.get("cloud_jul") is not None else {}),
     }
+    if seam:  # (a tile's courses' meander phase: its children's meanders go on from it)
+        layers["river_phase"] = phase_f.astype(np.float32)
     if "lake_kind" in pa.L:  # (a lake keeps the parent's kind: salt where the parent's is)
         lk = cat("lake_kind")
         layers["lake_kind"] = np.where(lake, np.where(lk == 2, 2, 1), np.where(pool, 1, 0)).astype(np.uint8)
@@ -1368,7 +1431,8 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     # the game and human-use layers and the coast ones (fine_layers.py, PW-1679): as many layers as the parent has
     t_fl = time.time()
     extra = FL.make(layers, n=nx, res=res, nu=nu, pix_lat=pix_lat, tilt=tilt, falls=fall_list, pa=pa, pr=pr, pc=pc,
-                    size_km=size_km, world=world, seed=seed, lat=lat, lon=lon, up=Z._up_list(fr), log=log)
+                    size_km=size_km, world=world, seed=seed, lat=lat, lon=lon, up=Z._up_list(fr), log=log,
+                    center=Z.center_of(fr, lat, lon))
     layers.update({k: np.asarray(v).ravel() for k, v in extra["layers"].items()})
     log(f"  game, human-use and coast layers: {len(extra['layers'])} [{time.time() - t_fl:.1f}s]")
     stats["coast"] = extra["coast"]["stats"]
@@ -1435,7 +1499,7 @@ def _gauss(a: np.ndarray, sigma: float) -> np.ndarray:
 def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray, q: np.ndarray,
              bed: np.ndarray, fall_links: dict, phase: tuple, hp_f: np.ndarray, res: float,
              parent_fine: bool, seed: int, diag: dict | None = None, floor: dict | None = None,
-             oxbows: list | None = None) -> dict:
+             oxbows: list | None = None, phases: dict | None = None, place_phase: bool = False) -> dict:
     """Each parent river link's course (PW-405): {link i: (k, 2) parent
     plane km, i's node first, its receiver's last}.
 
@@ -1467,7 +1531,11 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
     floors cut a V down to its channel).
 
     oxbows (PW-425): filled with the cut-off loops' arcs (zoom.fine_meander):
-    [(points (k, 2) parent plane km, channel width km, discharge m^3/s)]."""
+    [(points (k, 2) parent plane km, channel width km, discharge m^3/s)].
+
+    phases: filled with each link's meander phase (rad) at its course's samples (a tile's river_phase).
+    place_phase (a tile's): the phase at each node is the network's own (phase[0]), not run on from the
+    course's head here: the same on both sides of a tile's edge."""
     rp = pa.rp
     nxp = pa.nx
     ok_link = riv & (rec >= 0)
@@ -1605,7 +1673,8 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
         # (the wander only where no meanders are drawn: at a fine parent its bends are shorter than a meander
         # wavelength, and its curvature on theirs made hairpins, PW-424)
         B = B + wan * (1.0 - np.clip(om_u / (0.5 * MEANDER_OMEGA), 0.0, 1.0))[:, None]
-        if (om_u > 0.02).any():
+        psi_u = None
+        if (om_u > 0.02).any() or phases is not None:
             # (the phase down the whole parent network from the course's head; where this course's main
             # upstream isn't the network's (a bigger one outside the built area), on at its own rate)
             psi, up_all = phase
@@ -1613,10 +1682,11 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
             own_rate = up_all[ch[1:]] != ch[:-1]
             dpsi[own_rate] = (2 * np.pi * seg / lam[:-1])[own_rate]
             dpsi *= _gauss(seg, 2.0) / np.maximum(seg, 1e-9)  # (D8 steps: a diagonal's 1.41 evened out)
-            psi_c = psi[ch[0]] + np.r_[0.0, np.cumsum(dpsi)]
+            psi_c = psi[ch].astype(float) if place_phase else psi[ch[0]] + np.r_[0.0, np.cumsum(dpsi)]
             # (at the course's own arc length between its nodes, evened over a parent pixel: the phase's rate
             # per km jumped at the parent's D8 links (straight 1, diagonal 1.41), and with it the bends' size)
             psi_u = _gauss(np.interp(s_, s_[::M], psi_c), M)
+        if (om_u > 0.02).any():
             # (the offsets at right angles to the axis's direction over a quarter wavelength: the axis keeps
             # the parent's pixel steps at a fraction of a pixel, and turning a full swing with each of them
             # drew boxy loops with right-angled corners, PW-412)
@@ -1667,6 +1737,8 @@ def _courses(pa: _Parent, riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray,
             sub = C[k * M:(k + 1) * M + 1]
             tt = np.linspace(0.0, 1.0, M + 1)
             out[int(ch[k])] = np.column_stack([np.interp(t, tt, sub[:, 0]), np.interp(t, tt, sub[:, 1])])
+            if phases is not None:
+                phases[int(ch[k])] = np.interp(t, tt, psi_u[k * M:(k + 1) * M + 1])
             if floor is not None:
                 ax = B[k * M:(k + 1) * M + 1]
                 floor[int(ch[k])] = (np.column_stack([np.interp(t, tt, ax[:, 0]), np.interp(t, tt, ax[:, 1])]),
@@ -1696,10 +1768,12 @@ def _run_min(a: np.ndarray, half: int) -> np.ndarray:
 
 
 def _river_phase(riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray, q: np.ndarray, pa: _Parent,
-                 seed: int) -> np.ndarray:
+                 seed: int, known: np.ndarray | None = None) -> np.ndarray:
     """Each parent river node's meander phase (rad): from a planet-fixed
     random start at its course's head, on down its main stem by 2 pi per
-    meander wavelength (MEANDER_WL widths) of D8 length."""
+    meander wavelength (MEANDER_WL widths) of D8 length. known: the phase
+    a tile parent drew its courses with (river_phase, NaN off them): taken
+    where it has one, the rest going on from it."""
     nxp = pa.nx
     psi = np.zeros(len(rec))
     rr, cc = np.divmod(np.arange(len(rec)), nxp)
@@ -1709,15 +1783,35 @@ def _river_phase(riv: np.ndarray, rec: np.ndarray, up_main: np.ndarray, q: np.nd
     psi[hd] = 2 * np.pi * (0.5 + 0.5 * np.tanh(ZK.fbm(P[hd], 0.3 * pa.rp, 1, 0.5, seed) / 0.1))
     order = ZK.receiver_order(np.where(riv, rec, -1))
     lam = np.maximum(MEANDER_WL * 4.0 * np.sqrt(np.maximum(q, 0.0)) / 1000.0, 1e-4)
+    kn = None if known is None else np.isfinite(known) & riv
+    if kn is not None:
+        psi[kn] = known[kn]
     for i in order[::-1]:  # (headwater -> outlet)
         j = rec[i]
-        if riv[i] and j >= 0:
+        if riv[i] and j >= 0 and (kn is None or not kn[j]):
             d = pa.rp * (1.41421356 if (i % nxp != j % nxp and i // nxp != j // nxp) else 1.0)
             if up_main[j] == i:
                 psi[j] = psi[i] + 2 * np.pi * d / lam[i]
             elif not riv[j] or up_main[j] < 0:
                 psi[j] = psi[i]
     return psi
+
+
+def network_phase(meta: dict, layers: dict, seed: int = 1) -> np.ndarray:
+    """A level-1 section's meander phase (rad, (ny, nx); NaN off its rivers) over its whole network, as a tile's
+    build (seam=True) computes it: every level-2 tile of the cell then reads the same phases (zoom/lod_build.py)."""
+    pa = _Parent(meta, {k: np.asarray(v) for k, v in layers.items()})
+    rp = pa.rp
+    rec_p = pa.receivers()
+    q_p = np.asarray(pa.L["discharge"], float).ravel()
+    a_p = np.asarray(pa.L["drainage_area"], float).ravel()
+    riv = (a_p >= max(RIVER_AREA_PX_TILE * rp * rp, RIVER_AREA_MIN)) & (np.asarray(pa.L["water"]).ravel() != 1) & (rec_p >= 0)
+    order_q = np.argsort(q_p)
+    um = np.full(pa.nx * pa.ny, -1)
+    for i in order_q[riv[order_q]]:
+        um[rec_p[i]] = i
+    psi = _river_phase(riv, rec_p, um, q_p, pa, 1_000_003 * seed + 517 + 13)
+    return np.where(riv | (um >= 0), psi, np.nan).reshape(pa.ny, pa.nx)
 
 
 def planform(rec: np.ndarray, q: np.ndarray, h: np.ndarray, water: np.ndarray, nx: int, res: float,
@@ -1980,8 +2074,10 @@ def _relax(hw: np.ndarray, active: np.ndarray, s_max: np.ndarray, nb: int, res: 
 # ---------------------------------------------------------------------------
 # Save, and the entry point
 # ---------------------------------------------------------------------------
-def save(z: dict, pmeta: dict, lat: float, lon: float, size_km: float, res_km: float, seed: int) -> Path:
-    zid = fine_id(pmeta["id"], lat, lon, size_km, res_km, seed)
+def save(z: dict, pmeta: dict, lat: float, lon: float, size_km: float, res_km: float, seed: int,
+         zid: str | None = None, name: str | None = None, extra: dict | None = None) -> Path:
+    """Writes a fine zoom (or, with zid, name and extra (its `tile` block), a level-of-detail tile: zoom/lod_build.py)."""
+    zid = zid or fine_id(pmeta["id"], lat, lon, size_km, res_km, seed)
     out = S.path_of("zoom", zid)
     out.mkdir(parents=True, exist_ok=True)
     specs, arrays = {}, {}
@@ -2012,12 +2108,12 @@ def save(z: dict, pmeta: dict, lat: float, lon: float, size_km: float, res_km: f
     meta = {
         "format": "procgen-zoom/2",
         "id": zid,
-        "name": f"{base}: {lat:g}, {lon:g} ({z['size_km']:g} km @ {z['res'] * 1000:g} m, in {pmeta['id']})",
+        "name": name or f"{base}: {lat:g}, {lon:g} ({z['size_km']:g} km @ {z['res'] * 1000:g} m, in {pmeta['id']})",
         "created": time.strftime("%Y-%m-%d %H:%M:%S"),
         "generated_in_s": z["seconds"],
         "source_world": pmeta["source_world"],
         "parent_zoom": z["parent"],
-        "center": {"lat": lat, "lon": lon, **({"up": up} if up else {})},  # (up: the parent's orientation, PW-1341)
+        "center": Z.center_of(fr, lat, lon),  # (up: the parent's orientation, PW-1341; a tile's plane)
         "size_km": z["size_km"],
         "res_km": z["res"],
         "nx": z["nx"], "ny": z["ny"],
@@ -2042,6 +2138,7 @@ def save(z: dict, pmeta: dict, lat: float, lon: float, size_km: float, res_km: f
         "coast": {"features": z["coast_features"], "stats": z["stats"]["coast"], "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "params": z["params"],
         "stats": z["stats"],
+        **(extra or {}),
     }
     S.write_atomic(out / "zoom.json", json.dumps(meta, indent=1))
     Z.update_index()

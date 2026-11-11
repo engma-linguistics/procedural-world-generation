@@ -236,6 +236,8 @@ class Frame:
     tiling's sections, PW-1319); `self.up` keeps it (None: north-up)."""
 
     def __init__(self, lat0: float, lon0: float, up: np.ndarray | None = None):
+        self.lat0, self.lon0 = lat0, lon0
+        self.up_arg = None if up is None else np.asarray(up, float)  # (as given: a PlaneFrame's zoom.json rebuilds it)
         la, lo = np.radians(lat0), np.radians(lon0)
         self.c = xyz(la, lo)
         self.up = None
@@ -265,9 +267,44 @@ class Frame:
         return np.cos(rho)[:, None] * self.c + np.sin(rho)[:, None] * d
 
 
+class PlaneFrame(Frame):
+    """A window of another frame's plane (the level-of-detail tiles, zoom/lod.py): plane coordinates are the base
+    frame's less (x0, y0), so a zoom whose pixels are centred on its own (0, 0) lies on the base plane's lattice round
+    (x0, y0). `c` is the window's centre on the sphere (what selects the world's cells round it); `e`, `n`, `up` the
+    base's."""
+
+    def __init__(self, base: Frame, x0: float, y0: float):
+        self.base, self.x0, self.y0 = base, float(x0), float(y0)
+        self.c = base.to_sphere(np.array([self.x0]), np.array([self.y0]))[0]
+        self.e, self.n, self.up = base.e, base.n, base.up
+
+    def to_plane(self, p: np.ndarray):
+        x, y = self.base.to_plane(p)
+        return x - self.x0, y - self.y0
+
+    def to_sphere(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        return self.base.to_sphere(np.asarray(x, float) + self.x0, np.asarray(y, float) + self.y0)
+
+
 def frame_of(center: dict) -> Frame:
-    """The frame of a saved zoom from its zoom.json `center` ({lat, lon} and, for a turned section, `up`: PW-1338)."""
+    """The frame of a saved zoom from its zoom.json `center` ({lat, lon} and, for a turned section, `up`: PW-1338; a
+    level-of-detail tile's `plane`: {lat, lon, up, offset_km} of its cell's plane, PlaneFrame)."""
+    if center.get("plane"):
+        p = center["plane"]
+        return PlaneFrame(Frame(p["lat"], p["lon"], up=p.get("up")), *p["offset_km"])
     return Frame(center["lat"], center["lon"], up=center.get("up"))
+
+
+def center_of(fr: Frame, lat: float, lon: float) -> dict:
+    """zoom.json's `center` of a zoom round (lat, lon) on frame fr: {lat, lon, up (turned frames)}; a PlaneFrame's also
+    carries its `plane` (its base frame's lat, lon, up and the window's offset_km), which frame_of reads."""
+    up = _up_list(fr)
+    out = {"lat": lat, "lon": lon, **({"up": up} if up else {})}
+    if isinstance(fr, PlaneFrame):
+        b = fr.base
+        out["plane"] = {"lat": b.lat0, "lon": b.lon0, **({"up": [float(v) for v in b.up_arg]} if b.up_arg is not None
+                                                        else {}), "offset_km": [fr.x0, fr.y0]}
+    return out
 
 
 def up_of(lat: float, lon: float, up) -> np.ndarray | None:
@@ -1437,6 +1474,9 @@ LAYER_DOC = {
                              "meander belt (where a migrating channel sweeps), 3 the channel on it"),
     "floor_m": ("m", "fine zooms (PW-412): the valley floor's surface (under its channel too: where a migrating "
                      "channel leaves its bed); 0 off the floors"),
+    "river_phase": ("rad", "level-of-detail tiles (zoom/lod_build.py): the meander phase along the imposed river courses "
+                           "(unwrapped, 2 pi per meander wavelength down the river; a child tile's meanders go on from "
+                           "it); NaN off them"),
     # (layers with an encoding: stored scaled / as integers, store.encode; read with store.decode)
     "temperature_jul": ("C", "July mean temperature (the cells' July interpolated, so continuous across the equator), "
                              "lapse-rate adjusted", {"dtype": "<i2", "scale": 0.1}),

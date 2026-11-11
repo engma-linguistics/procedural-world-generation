@@ -311,3 +311,62 @@ first; everything finer is built from it.
   instead of a centred Frame; `check` against the window); the fade to the place-keyed surface; `river_phase` saved and read;
   discharge anchored on imposed courses; then the sibling seam test of 2.2.
 - Inbox drafts filed for steps 1-3 (`issue-tracking/inbox/draft-lod2-*.md`).
+
+## State (lane 290, 11-10: step 1 built; the seam-step criterion not met yet)
+
+**Built.** `planet/zoom/lod_build.py` builds a tile of levels 2-4: `tile(world, "py.1.1/3/18/19")` finds or builds and
+saves it (its parent tiles must be built; level 1 is the cell's 4 km section, found by `section` + `res_km` 4).
+- `lod.parent_mosaic(key, sources)`: the parent window cut from 1, 2 or 4 parent tiles on the parent level's lattice
+  (edge-filled past them, no rivers there); water leaving a parent tile is handed to its lowest neighbour across the join
+  (loops through a tile's filled pits dropped); falls moved into the window's pixels, volcanoes de-duplicated by place.
+- `regional.PlaneFrame(base, x0, y0)`: a window of a cell's plane; zoom.json's `center` carries `plane: {lat, lon, up,
+  offset_km}` and `regional.frame_of` reads it, so tiles are ordinary zooms (zoom.load, fine zooms of them, coast layers)
+  whose pixels sit on the level's lattice (`lod.tile_frame`). `center.lat/lon` is the tile's own centre.
+- `fine.build(..., frame=, seam=True)`: no `w_in` on the detail noise and the coast's warp (place-keyed); the edge fades
+  to `target + detail + EDGE_TEXTURE x relief x (res/rp) x fine noise` with a variance-kept mix (no halved texture in the
+  ramp); parent rivers imposed down to `RIVER_AREA_PX_TILE` 4 parent px, read `TILE_REACH_PX` 16 parent px round the
+  built area; the meander phase at each node is the network's own (`place_phase`), read from the parent's new
+  **`river_phase`** layer (level 2: `fine.network_phase` over the whole section); discharge and drainage area on the
+  imposed courses are the parent link's (constant along a link: a confluence's water joins at its node).
+- **API change:** `lod.parent_margin_px()` is now 18 (was 6): the window holds the 16 px river reach. Keys, ids, rects,
+  lattices unchanged. `tile_id` as before; a saved tile has a `tile` block in zoom.json (world, cell, level, tx, ty, key,
+  seed, rect_km, res_km, px, parent, parent_id, parent_sources). A saved tile has 73 layers, `river_phase`
+  among them (fine zooms without seam=True don't write it). `fine.save` takes `zid`, `name`, `extra`; `fine_layers.make` takes `center`.
+- Not done: `Z.add_deposits` for tiles; nothing in the server or viewer calls this yet (steps 2 and 4).
+
+**Seams, world dba204, cell py.1.1, level 2 tiles 4/4, 5/4, 4/5, 5/5** (built in two orders; `edge_steps`: steps
+across the shared edge against the steps 16-48 px inside on the same lines, land pixels off the imposed courses):
+
+| Edge | Across, median / p90 (m) | Inside, median / p90 (m) | Ratio median / p90 |
+|---|---|---|---|
+| 4/4 : 5/4 | 6.7 / 18.9 | 8.5 / 27.6 | 0.78 / 0.68 |
+| 4/4 : 4/5 | 5.5 / 18.2 | 6.4 / 18.7 | 0.87 / 0.97 |
+| 5/4 : 5/5 | 7.3 / 35.5 | 6.8 / 23.0 | 1.09 / 1.54 |
+| 4/5 : 5/5 | 21.4 / 85.6 | 22.0 / 65.6 | 0.97 / 1.30 |
+
+Without the texture (`EDGE_TEXTURE` 0) the first two were 0.52-0.58 (median): the smooth stripe the plan feared. A noise
+texture cannot match carved ground in every terrain (one constant, 2.5, is a compromise; the synthetic test's hills give
+0.53). **Not within 10%**: inbox `draft-lod-edge-carving.md` (carve a place-keyed block straddling each edge);
+`tests/test_zoom_lod_build.py::test_edge_steps_like_the_inside` is xfail until then. No cliffs (max step across 40-233 m
+where the inside's reach 87-778 m).
+- **Rivers:** 104 imposed-course pixels on A's side of the four edges have a course pixel within 1 px on B's side; 97
+  carry the same discharge exactly (0.000%), the other 7 are confluences on the edge pixel (a tributary meets the main river
+  there: 55.7 against 87.3 m^3/s) or a river running along the edge inside one tile. The meander phase runs on across the
+  edge (e.g. 1880 -> 1900 -> 1924 rad, 4/4 : 5/4).
+- **Rebuild:** tile 4/4 rebuilt in a fresh root: all 73 layers bit-identical (also tested on synthetic tiles).
+
+**Per tile, one chain at the lane-289 spot** (-4.0449, 93.1529; level 1 -> 2/4/4 and 2/4/5 -> 3/18/19 (reads both) ->
+4/188/195), each its own process, `/usr/bin/time -v`, `NUMBA_NUM_THREADS=8`, machine shared (130 GB available):
+
+| Level | Tile | Wall | Peak RAM | CPU | Disk |
+|---|---|---|---|---|---|
+| 1 | section py.1.1 at 4 km (1,000 px) | 123 s | 8.3 GB | 468% | 134 MB |
+| 2 | 4/4, 4/5 (500 px at 1 km) | 11.7 s, 14.1 s | 2.9, 3.2 GB | 255-268% | 35 MB |
+| 3 | 18/19 (500 px at 250 m) | 12.6 s | 3.1 GB | 285% | 34 MB |
+| 4 | 188/195 (500 px at 25 m) | 10.8 s | 3.0 GB | 281% | 34 MB |
+
+Level 4 at 500 px is measured for the first time: as level 3. Times include the process start and the world's load; the
+level-1 peak is above lane 289's 5.7 GB (same command; machine state differs), so step 2's RAM anchor should use 8.3 GB.
+
+**Next:** the edge-carving draft (the done-when's step criterion); the features-at-edges draft
+(`draft-lod-features-at-tile-edges.md`); then step 2 can serve tiles with `lod_build.tile`.
