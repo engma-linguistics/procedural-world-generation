@@ -144,8 +144,8 @@ class Params:
     # it; a direct Simulation caller should, else 1000, earth.RUN_END_DEFAULT). An extension keeps it. A run
     # longer than its star's age is refused (earth.check_star).
     run_end: float = 0.0
-    # A CONTROL, NOT PHYSICS (PW-791; earth.star_control): the world-builder's star thermostat, on for the Earth-like
-    # preset. It dims or brightens the star slowly when the planet's running icehouse share (the share of the last
+    # A CONTROL, NOT PHYSICS (PW-791; earth.star_control): the world-builder's star thermostat, opt-in (off in every
+    # preset, docs/overview.md). It dims or brightens the star slowly when the planet's running icehouse share (the share of the last
     # ~star_window Myr with land ice holding >= 20 m of sea level) leaves star_ice_band, so a run stays in a
     # "life can live here" state (neither never-ice nor icebox nor hellhole). It moves the star's output only;
     # CO2 stays the carbon cycle's outcome (a dimmer star lets the weathering thermostat keep more of it).

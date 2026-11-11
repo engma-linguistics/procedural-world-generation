@@ -228,6 +228,9 @@ def hand_over(h, ps, goods, si: int) -> None:
     tech = getattr(h.rule, "tech", None)
     if tech is not None:
         tech.h = h
+        tech._G = tech._lm = None  # (its goods-over-threshold and landmass caches are the grid's: made again from the fine world)
+        if isinstance(getattr(tech, "_stored", None), np.ndarray):
+            tech._stored = R.auto(tech._stored)
         if tech.towns is not None:
             tech.towns["_cell_km2"] = float(h.cell_mkm2 * 1e6)
     h.handover["people_after"] = float((np.where(h.p >= EST, h.p, 0) * Df)[~ov].sum() * cell_area_km2(R.nf))

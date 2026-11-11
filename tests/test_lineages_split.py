@@ -71,6 +71,9 @@ def test_split_history_hands_over_at_the_first_farming_and_keeps_the_coarse_past
     dc = getattr(hs.rule, "dcul", None)  # (the live rule's grid objects are the fine grid's: a coarse one crashed the L8 split, lane 307)
     if dc is not None:
         assert dc.g.n == ps4.grid.n and all(v.shape == (ps4.grid.n,) for v in [*dc.lab.values(), *dc.since.values()])
+    tech = getattr(hs.rule, "tech", None)
+    if tech is not None and getattr(tech, "_G", None) is not None:
+        assert tech._G[2].shape[-1] == ps4.grid.n
     if hasattr(hs.rule, "_ring_of"):
         assert len(hs.rule._ring_of.off) == ps4.grid.n + 1
     Rg = HO.Regrid(ps3.grid, ps4.grid)
