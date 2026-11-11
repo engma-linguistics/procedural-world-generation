@@ -45,3 +45,4 @@ Lean: A for v1, B if the dragon trees read too shallow.
 - 2026-11-09: Status needs-decision -> todo. Coordinator call (not a trade-off for the owner, 11-09): accept for v1. The 'long generations change less' check passes (4.84); per-generation parity for long-lived lines is a refinement, pick up with PW-1579.
 - 2026-11-09: Created from inbox draft draft-language-change-rate-not-linear-in-generations.md (found by lang-weights (PW-1551 lane)).
 - 2026-11-11: Re-measure after lane 17 (PW-1692: re-fire wait now scales with weight, RATE_SCALE 220 -> 60); the 11-11 assessment expects it to close with that.
+- 2026-11-11: Lane 17 merged; re-measure long-lived vs human changes per generation on the PW-1737 matrix and close if in line.

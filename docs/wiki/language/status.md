@@ -66,7 +66,7 @@ The **real-language benchmark** (PW-1641) is outside `checks.py`. Run `tools/lan
     4. PW-1741;
     5. the names lane (PW-1685/1656);
     6. the viewer lanes (PW-1742/1743/1744/1655/1659).
-- **Lane 17 (merging 11-11):** PW-1692 fixed by mechanism (re-fire wait ∝ 1/weight, RATE_SCALE 60, wave adoption × catalogue weight; S148/S042/S073 overrides removed). PW-1646 fixed on the benchmark (harmony.back 51% → 16% of daughters).
+- **Lane 17 (merged 11-11, 21bbe7a6):** PW-1692 fixed by mechanism (re-fire wait ∝ 1/weight, RATE_SCALE 60, wave adoption × catalogue weight; S148/S042/S073 overrides removed). PW-1646 fixed on the benchmark (harmony.back 51% → 16% of daughters).
 - **Blocked on polities (PW-1549):** PW-1652, PW-1643 and PW-1561 are one contact-inputs question (don't touch PW-1561 or `tongues.py`). Also blocked: PW-1651 and PW-1669.
 - **`later` tail, parked on purpose:**
   - PW-1553, PW-1554, PW-1543 (now stress only), PW-1541, PW-1620 (PW-1605 merged in);

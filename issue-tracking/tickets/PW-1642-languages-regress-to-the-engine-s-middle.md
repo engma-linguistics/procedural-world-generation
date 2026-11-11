@@ -44,3 +44,4 @@ If never done, every world's languages blur toward one sound over time, which is
 - 2026-11-10: Created from inbox draft draft-lineage-drift-tendencies.md (found by lang-coordinator).
 - 2026-11-10: Lane 16 (merged 15b6fea2): RULE_WEIGHT S148 = 0.3, so ʁ no longer counts as overused on a24559. A de1cc6 re-roll still has ʁ at 14.5%. The root cause is PW-1692 (re-fire cap saturation); remove the per-row weight once that is fixed.
 - 2026-11-11: Moved under the language finish-line epic PW-1736 (assessment docs/review/language/assessment-2026-11-11.html; owner agreed 11-11).
+- 2026-11-11: Lane 17: the per-row overrides (S148 etc.) are gone, the regression-to-the-middle part now rests on the tendencies plus grade-true firing. ʁ: a24559 9.1% (under the bar on 3 of 4 draws); de1cc6 seed 7 18.1% (71 of 120 ʁ lects from one proto born with ʁ). Judge on the PW-1737 matrix.
