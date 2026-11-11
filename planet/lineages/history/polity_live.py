@@ -107,12 +107,14 @@ def ring_pairs(off, idx, r: int):
     return seen // n, seen % n
 
 
-def dragon_regions(g, held: np.ndarray, r_link: int, min_cells: int, lab_out: np.ndarray | None = None) -> tuple[np.ndarray, int]:
+def dragon_regions(g, held: np.ndarray, r_link: int, min_cells: int, lab_out: np.ndarray | None = None,
+                   reach: dict | None = None) -> tuple[np.ndarray, int]:
     """A dragon people's range cut into regions as the demes cut a dragon kind (demes.Demes._cut with mobility's terrain-free reach):
     held cells within 2 x r_link rings of each other (megafauna.LINK_KM: a gap a dragon flies across) are one region; a region of
     fewer than min_cells held cells (demes.MIN_KM2) goes with the nearest bigger one (straight through the grid, as demes' small
     pieces go to the nearest deme); if none is that big, the biggest stands alone. Returns (region per cell, -1 off the range; count),
-    regions numbered by size, biggest first (ties: lowest cell)."""
+    regions numbered by size, biggest first (ties: lowest cell). reach: a dict that gets the cells within reach ("mask": the held
+    cells and the gaps a dragon crosses, demes' reach subgraph) and their pieces ("comp", -1 off it)."""
     from ..spread import nearest_label
     n = g.n
     lab = np.full(n, -1, np.int64) if lab_out is None else lab_out
@@ -123,6 +125,8 @@ def dragon_regions(g, held: np.ndarray, r_link: int, min_cells: int, lab_out: np
     for _ in range(r_link):
         d = d | (nbr_reduce(g, np.maximum, d[np.asarray(g.nbr_idx, np.int64)].astype(np.int8)) > 0)
     comp, _nc = g.components(d)
+    if reach is not None:
+        reach["mask"], reach["comp"] = d, np.where(d, comp, -1).astype(np.int64)
     hc = comp[held]
     ids, cnt = np.unique(hc, return_counts=True)
     cells = np.flatnonzero(held)
@@ -155,8 +159,11 @@ class DragonCultures:
     - two cultures of a people on neighbouring cells merge, the younger into the older, after cultures.MERGE_CONTACT_KYR x (1 -
       cohesion) side by side (a dragon kind's 0.9: within a century);
     - followed from demes.WINDOW_KYR ago, as the demes are cut (the glacial pass's steps too).
-    No new number. Not mirrored: the demes' split by distance (a deme wider than SPLIT_KM x LINK_KM / JUMP_KM halves; the halves
-    touch, so the cultures engine merges them back within a century) and niche learning (split_adapted)."""
+    - a label wider than demes.SPLIT_KM x LINK_KM / JUMP_KM (its travel diameter over its cells and the gaps it crosses, a dragon
+      paying no terrain: demes.Demes._diameters) halves from the two ends of that diameter, the half with the older cells keeping it
+      (demes.Demes._halve, up to demes.SPLIT_ITER rounds a frame); the other half is a new piece, a culture after t_apart (round28.md);
+    - merges are tried smallest pair first, a culture merging at most once a frame (cultures.Cultures._contacts' order).
+    No new number. Not mirrored: the demes' fusion (FUSE_KM) and niche learning (split_adapted)."""
 
     def __init__(self, g, coh: dict | None = None):
         from ..seafood import cells_for
@@ -173,6 +180,11 @@ class DragonCultures:
         self.info: dict[int, list] = {}  # line -> per label: [key (None: a piece not yet apart), born kyr ago, parent, frames, into, split off]
         self.n_cul: dict[int, int] = {}  # line -> cultures made so far (the keys' numbers)
         self.touch: dict[int, dict] = {}  # line -> {(a, b): kyr side by side}
+        self.since: dict[int, np.ndarray] = {}  # line -> kyr ago each held cell was settled (NaN off its range)
+        from ...geo import R_KM
+        from .params import JUMP_KM
+        self.cell_km = float(round(g.spacing * R_KM))  # (the demes' step: meta cell_size_km)
+        self.split_km = DE.SPLIT_KM * LINK_KM / JUMP_KM  # (demes.Demes.mobility: a dragon's scale, LINK_KM / JUMP_KM)
 
     @staticmethod
     def _into(inf, a: int) -> int:
@@ -196,6 +208,70 @@ class DragonCultures:
             inf.append([None, ago, parent, 0, None, src])
         return len(inf) - 1
 
+    def _halve(self, k, people, inf, lab, held, rch, since, ago):
+        """demes.Demes._diameters and _halve on the labels (in place on lab): each label's cells and the gaps it crosses (the reach
+        cells of its piece, each taking the nearest label there, demes' grow); a label whose diameter (two sweeps, a dragon's cost 1
+        a km) is over split_km halves from its two ends if both halves hold MIN_KM2; the half whose cells were settled earlier on
+        average keeps the label, the other is a new piece of its culture (no source label: it does not go back; a culture after
+        t_apart). Up to demes.SPLIT_ITER rounds, each re-measuring only the labels it touched."""
+        from .. import demes as DE
+        n = self.g.n
+        nl = len(inf)
+        one = np.ones(n)
+        hc = np.flatnonzero(held)
+        comp = rch["comp"]
+        ncp = int(comp.max()) + 2
+        u, c = np.unique(lab[hc] * ncp + comp[hc], return_counts=True)
+        lg = np.full(nl, -2, np.int64)
+        for key, _c in sorted(zip(u.tolist(), c.tolist()), key=lambda t: t[1]):
+            lg[key // ncp] = key % ncp  # (a label's piece: the one holding most of its cells)
+        f = np.where(held, lab, -1).astype(np.int64)
+        f, _ = DE.grow(f, np.zeros(n), comp, lg, one, self.cell_km, self.off, self.dst)
+        only = None
+        for _ in range(DE.SPLIT_ITER):
+            nl = len(inf)
+            ids = np.unique(f[f >= 0]) if only is None else np.array(sorted(only), np.int64)
+            sel = np.isin(f, ids)
+            grp = np.where(sel, f, -1).astype(np.int64)
+            ar = np.arange(nl, dtype=np.int64)
+            first = np.full(nl, -1, np.int64)
+            cells = np.flatnonzero(sel)
+            first[f[cells[::-1]]] = cells[::-1]
+            s = np.full(n, -1, np.int64)
+            ok = first[ids] >= 0
+            s[first[ids][ok]] = ids[ok]
+            l2, dd = DE.grow(s, np.zeros(n), grp, ar, one, self.cell_km, self.off, self.dst)
+            ea, _bv = DE.group_argmax(l2, dd, nl)
+            s = np.full(n, -1, np.int64)
+            ok = ea[ids] >= 0
+            s[ea[ids][ok]] = ids[ok]
+            l2, dd = DE.grow(s, np.zeros(n), grp, ar, one, self.cell_km, self.off, self.dst)
+            eb, bv = DE.group_argmax(l2, dd, nl)
+            wide = [int(d) for d in ids.tolist() if np.isfinite(bv[d]) and bv[d] > self.split_km]
+            if not wide:
+                return
+            tmp = {d: nl + i for i, d in enumerate(wide)}
+            lg2 = np.concatenate([ar, np.array(wide, np.int64)])
+            sw = np.isin(f, np.array(wide, np.int64))
+            s = np.full(n, -1, np.int64)
+            for d in wide:
+                if ea[d] >= 0 and eb[d] >= 0 and ea[d] != eb[d]:
+                    s[ea[d]], s[eb[d]] = d, tmp[d]
+            l3, _ = DE.grow(s, np.zeros(n), np.where(sw, f, -1).astype(np.int64), lg2, one, self.cell_km, self.off, self.dst)
+            only = set()
+            for d in wide:
+                h0, h1 = sw & (l3 == d), sw & (l3 == tmp[d])
+                n0, n1 = int((h0 & held).sum()), int((h1 & held).sum())
+                if n0 < self.min_cells or n1 < self.min_cells:
+                    continue
+                bud = h1 if np.nanmean(since[h0 & held]) >= np.nanmean(since[h1 & held]) else h0
+                nd = self._new(k, people, inf, ago, self._res(inf, d))
+                f[bud] = nd
+                lab[bud & held] = nd
+                only |= {d, nd}
+            if not only:
+                return
+
     def step(self, k: int, people: str, held: np.ndarray, ago: float, dt: float, stored: bool, apart: float) -> list[tuple]:
         """(key, cells) of each culture of people (line k) alive this step, oldest first."""
         from ..spread import nearest_label
@@ -203,10 +279,14 @@ class DragonCultures:
         inf = self.info.setdefault(k, [])
         lab = self.lab.get(k)
         lab = np.full(n, -1, np.int64) if lab is None else np.where(held, lab, -1)
+        old_since = self.since.get(k)
+        since = np.where(held, ago, np.nan) if old_since is None else np.where(held, np.where(np.isnan(old_since), ago, old_since), np.nan)
+        self.since[k] = since
         if not held.any():
             self.lab[k], self.touch[k] = lab, {}
             return []
-        reg, nr = dragon_regions(self.g, held, self.r_link, self.min_cells)
+        rch: dict = {}
+        reg, nr = dragon_regions(self.g, held, self.r_link, self.min_cells, reach=rch)
         if not (lab >= 0).any():  # (the first range, or a kind back from dying out: one culture, whatever its pieces, as the
             f = self._new(k, people, inf, ago, None)  # cultures engine's one founding culture of a people's first demes)
             for r in range(nr):
@@ -233,24 +313,26 @@ class DragonCultures:
             parts = sorted(zip(c[ul == a].tolist(), ur[ul == a].tolist()), key=lambda t: (-t[0], t[1]))
             for sz, r in parts[1:]:
                 if sz >= self.min_cells:
-                    lab[(reg == r) & (lab == a)] = self._new(k, people, inf, ago, self._res(inf, a), self._into(inf, a))
+                    lab[(reg == r) & (lab == a)] = self._new(k, people, inf, ago, self._res(inf, a), a)
+        # splits by distance: a label too wide halves (demes.Demes._diameters and _halve)
+        self._halve(k, people, inf, lab, held, rch, since, ago)
         # pieces (the labels stay on the cells, as the demes' ids do: a label falling apart is a split): a piece split off a label
         # goes back to it if it shares a region with that label's land again before it has stayed apart demes.PERSIST frames (flicker
         # leaves no trace); a piece is a culture of its own once apart PERSIST frames (a crossing at once, as a deme) and t_apart
         here = np.unique(lab[held]).tolist()
-        into = np.full(len(inf), -1, np.int64)
-        for b in here:
-            into[b] = self._into(inf, b)
-        il = np.where(lab >= 0, into[np.maximum(lab, 0)], -1)
         for a in here:
             x = inf[a]
             if x[0] is not None or x[4] is not None or x[3] < 0:
                 continue
             x[3] += 1 if stored else 0
             if x[5] is not None and x[3] <= self.DE.PERSIST:
-                s_ = self._into(inf, x[5])
-                if np.isin(np.unique(reg[lab == a]), np.unique(reg[held & (il == s_)])).any():
+                s_ = x[5]
+                while inf[s_][0] is None and inf[s_][4] is not None:  # (a source that went back itself: the label it went back to)
+                    s_ = inf[s_][4]
+                _r, _c = np.unique(reg[held & ((lab == a) | (lab == s_))], return_counts=True)
+                if (_c >= self.min_cells).sum() < 2:  # (the label with its piece no longer in two parts of MIN_KM2: demes' `multi`)
                     x[4] = s_
+                    lab[lab == a] = s_  # (its cells are the label's again, as a deme that never split: a later gap splits it anew)
                     continue
             if (x[5] is None or x[3] >= self.DE.PERSIST) and x[1] - ago >= apart - 1e-9:
                 x[0] = f"d{people}.{self.n_cul[k]}"
@@ -264,7 +346,8 @@ class DragonCultures:
         e = (cs >= 0) & (cd >= 0) & (cs < cd)
         old, now, gone = self.touch.get(k, {}), {}, set()
         need = self.CU.MERGE_CONTACT_KYR * (1.0 - self.coh.get(people, 0.0))
-        for a, b in sorted(set(zip(cs[e].tolist(), cd[e].tolist()))):
+        size = np.bincount(cl[held], minlength=len(inf))
+        for a, b in sorted(set(zip(cs[e].tolist(), cd[e].tolist())), key=lambda q: (int(size[q[0]] + size[q[1]]), q)):
             now[(a, b)] = old[(a, b)] + dt if (a, b) in old else 0.0
             if now[(a, b)] >= need - 1e-9 and a not in gone and b not in gone:
                 keep, lose = (a, b) if inf[a][1] >= inf[b][1] else (b, a)
