@@ -1,8 +1,10 @@
 ---
-title: "A trading town is credited to a culture of another people than the one living in it"
+id: PW-1761
+title: A trading town is credited to a culture of another people than the one living in it
 type: task
 status: todo
 parent: null
+milestone: null
 subsystem: culture
 effort: s
 impact: med
@@ -10,6 +12,8 @@ found_by: lane312
 blocked_by: []
 relates: [PW-1504, PW-1659]
 refs: ["planet/lineages/trade_routes.py::frame_view", planet/lineages/settlement_view.py, viewer/globe/trade.js, "run de1cc6 (Seven Meals on 2762ba)", docs/review/viewer/lane312.md]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -27,3 +31,6 @@ Check how the hub's culture is chosen (probably the cell's culture with the most
 when it has a deme in the cell.
 - [ ] the hub's culture is one of the town's own peoples' cultures, whenever one lives in the cell
 - [ ] a test with a town of one people in a cell where another people's culture has more heads
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-trading-town-culture-not-its-people.md (found by lane312).
