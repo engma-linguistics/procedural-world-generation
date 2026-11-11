@@ -1,0 +1,5313 @@
+{
+ "world": "dba204",
+ "view": "2.48,75.346",
+ "slow_ms": 0,
+ "wait_s": 240.0,
+ "notches": [
+  {
+   "h_km": 15563.003,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 509.7,
+   "near": 1.0512676501632068,
+   "far": 5.452535300326414,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1006.1,
+    "gpu": 299.2
+   }
+  },
+  {
+   "h_km": 13941.869,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 510,
+   "near": 0.9240400862618272,
+   "far": 5.198080172523655,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1006.7,
+    "gpu": 299.2
+   }
+  },
+  {
+   "h_km": 12489.602,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 510.2,
+   "near": 0.810065291568351,
+   "far": 4.970130583136703,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1006.9,
+    "gpu": 299.2
+   }
+  },
+  {
+   "h_km": 11188.612,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 510.5,
+   "near": 0.707962779918522,
+   "far": 4.765925559837044,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1007.1,
+    "gpu": 299.2
+   }
+  },
+  {
+   "h_km": 10023.14,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 510.8,
+   "near": 0.6164958646830929,
+   "far": 4.582991729366186,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1007.3,
+    "gpu": 299.3
+   }
+  },
+  {
+   "h_km": 8979.071,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 511,
+   "near": 0.5345566797649217,
+   "far": 4.4191133595298435,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1007.5,
+    "gpu": 299.3
+   }
+  },
+  {
+   "h_km": 8043.759,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 511.3,
+   "near": 0.46115276089684953,
+   "far": 4.272305521793699,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1007.6,
+    "gpu": 299.3
+   }
+  },
+  {
+   "h_km": 7205.874,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 511.5,
+   "near": 0.39539502471029353,
+   "far": 4.140790049420588,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1007.8,
+    "gpu": 299.3
+   }
+  },
+  {
+   "h_km": 6455.268,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 511.7,
+   "near": 0.336486999974553,
+   "far": 4.022973999949106,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1008.1,
+    "gpu": 299.3
+   }
+  },
+  {
+   "h_km": 5782.849,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 512,
+   "near": 0.2837151805733843,
+   "far": 3.917430361146769,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 1008.3,
+    "gpu": 299.3
+   }
+  },
+  {
+   "h_km": 5180.474,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 498,
+   "near": 0.23644038337211382,
+   "far": 3.8228807667442277,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.2,
+    "renderer": 1010.9,
+    "gpu": 299.0
+   }
+  },
+  {
+   "h_km": 4640.845,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 498.2,
+   "near": 0.19409000629999495,
+   "far": 3.73818001259999,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.2,
+    "renderer": 1010.9,
+    "gpu": 299.0
+   }
+  },
+  {
+   "h_km": 4157.427,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 498.4,
+   "near": 0.15615109287611162,
+   "far": 3.6623021857522233,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.2,
+    "renderer": 1010.9,
+    "gpu": 299.0
+   }
+  },
+  {
+   "h_km": 3724.365,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 498.6,
+   "near": 0.12216411917493686,
+   "far": 3.594328238349874,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.2,
+    "renderer": 1010.9,
+    "gpu": 299.0
+   }
+  },
+  {
+   "h_km": 3336.414,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 1,
+   "wanted": 6,
+   "queued": 5,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 4.2,
+   "records": 386,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 491.8,
+   "near": 0.09171742797799953,
+   "far": 3.533434855955999,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.6,
+    "renderer": 1052.1,
+    "gpu": 299.1
+   }
+  },
+  {
+   "h_km": 2997.845,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 6,
+   "queued": 5,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 386,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 496.4,
+   "near": 0.0643603701034412,
+   "far": 3.4787207402068825,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.6,
+    "renderer": 1052.6,
+    "gpu": 326.3
+   }
+  },
+  {
+   "h_km": 2685.572,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 7,
+   "queued": 5,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 446,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 507.7,
+   "near": 0.039852983818129184,
+   "far": 3.4297059676362585,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.6,
+    "renderer": 1052.8,
+    "gpu": 326.3
+   }
+  },
+  {
+   "h_km": 2405.827,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 8,
+   "queued": 5,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 506,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 492,
+   "near": 0.017898430616848593,
+   "far": 1.2656278263788636,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.6,
+    "renderer": 1052.7,
+    "gpu": 326.3
+   }
+  },
+  {
+   "h_km": 2155.222,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 8,
+   "queued": 5,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 506,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 492.9,
+   "near": 0.13531451359848568,
+   "far": 1.2078781415055009,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.7,
+    "renderer": 1052.8,
+    "gpu": 326.3
+   }
+  },
+  {
+   "h_km": 1932.264,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 9,
+   "queued": 5,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 550,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 514.5,
+   "near": 0.12131842359332241,
+   "far": 1.1543558984379516,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.7,
+    "renderer": 1052.8,
+    "gpu": 326.3
+   }
+  },
+  {
+   "h_km": 1735.509,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 10,
+   "queued": 5,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 594,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 502.8,
+   "near": 0.10896962902303545,
+   "far": 1.1046442537787562,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1053.0,
+    "gpu": 326.4
+   }
+  },
+  {
+   "h_km": 1558.844,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 11,
+   "queued": 5,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 638,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 492.8,
+   "near": 0.09787727383161551,
+   "far": 1.0583266701619962,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 544.7,
+    "renderer": 1053.1,
+    "gpu": 326.4
+   }
+  },
+  {
+   "h_km": 1400.212,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 12,
+   "queued": 5,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 514.6,
+   "near": 0.08791716990599463,
+   "far": 1.0151141493304776,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 544.7,
+    "renderer": 1053.2,
+    "gpu": 326.4
+   }
+  },
+  {
+   "h_km": 1257.768,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 13,
+   "queued": 11,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 493.9,
+   "near": 0.07897346161313178,
+   "far": 0.9747479145887612,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.7,
+    "renderer": 1052.4,
+    "gpu": 326.5
+   }
+  },
+  {
+   "h_km": 1129.856,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 13,
+   "queued": 11,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 495,
+   "near": 0.0709421734057627,
+   "far": 0.936995886653271,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.7,
+    "renderer": 1052.7,
+    "gpu": 326.5
+   }
+  },
+  {
+   "h_km": 1014.989,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 13,
+   "queued": 11,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 726,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 496,
+   "near": 0.06372998932131911,
+   "far": 0.901649572088033,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.7,
+    "renderer": 1052.8,
+    "gpu": 326.5
+   }
+  },
+  {
+   "h_km": 911.835,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 24,
+   "queued": 11,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 882,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 506.9,
+   "near": 0.05725315807434406,
+   "far": 0.8685213203351585,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.7,
+    "renderer": 1052.8,
+    "gpu": 326.5
+   }
+  },
+  {
+   "h_km": 819.195,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 25,
+   "queued": 11,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 898,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 510.2,
+   "near": 0.05143651080342675,
+   "far": 0.8374419090226111,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.7,
+    "renderer": 1052.7,
+    "gpu": 326.5
+   }
+  },
+  {
+   "h_km": 735.996,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 25,
+   "queued": 11,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 898,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 512.1,
+   "near": 0.04621257986278007,
+   "far": 0.8082584207468462,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.7,
+    "renderer": 1053.3,
+    "gpu": 326.5
+   }
+  },
+  {
+   "h_km": 661.272,
+   "drawn": 2,
+   "byLevel": {
+    "1": 1,
+    "2": 1
+   },
+   "kept": 2,
+   "wanted": 26,
+   "queued": 11,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 914,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 15,
+   "textures": 16,
+   "heap_mb": 522.9,
+   "near": 0.041520808248806954,
+   "far": 0.7808323779299602,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.4,
+    "renderer": 1054.5,
+    "gpu": 326.6
+   }
+  },
+  {
+   "h_km": 594.158,
+   "drawn": 2,
+   "byLevel": {
+    "1": 1,
+    "2": 1
+   },
+   "kept": 2,
+   "wanted": 27,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 930,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 15,
+   "textures": 16,
+   "heap_mb": 502.1,
+   "near": 0.03730684032557568,
+   "far": 0.7550381055838062,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1052.4,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 533.877,
+   "drawn": 2,
+   "byLevel": {
+    "1": 1,
+    "2": 1
+   },
+   "kept": 2,
+   "wanted": 27,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 930,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 15,
+   "textures": 16,
+   "heap_mb": 503.6,
+   "near": 0.033521885474760364,
+   "far": 0.7307612948550775,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1052.4,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 479.731,
+   "drawn": 2,
+   "byLevel": {
+    "1": 1,
+    "2": 1
+   },
+   "kept": 2,
+   "wanted": 24,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 930,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 15,
+   "textures": 16,
+   "heap_mb": 505,
+   "near": 0.030122147163568782,
+   "far": 0.707897743094247,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1052.5,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 431.094,
+   "drawn": 2,
+   "byLevel": {
+    "1": 1,
+    "2": 1
+   },
+   "kept": 2,
+   "wanted": 24,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 930,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 15,
+   "textures": 16,
+   "heap_mb": 506.4,
+   "near": 0.027068310690782128,
+   "far": 0.6863522487959204,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1052.5,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 387.404,
+   "drawn": 2,
+   "byLevel": {
+    "1": 1,
+    "2": 1
+   },
+   "kept": 2,
+   "wanted": 24,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 930,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 15,
+   "textures": 16,
+   "heap_mb": 507.8,
+   "near": 0.02432508357389107,
+   "far": 0.6660376422180815,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1052.8,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 348.156,
+   "drawn": 2,
+   "byLevel": {
+    "1": 1,
+    "2": 1
+   },
+   "kept": 2,
+   "wanted": 23,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 930,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 15,
+   "textures": 16,
+   "heap_mb": 509.2,
+   "near": 0.021860783157403585,
+   "far": 0.6468739346796806,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1052.9,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 312.898,
+   "drawn": 2,
+   "byLevel": {
+    "1": 1,
+    "2": 1
+   },
+   "kept": 2,
+   "wanted": 22,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 930,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 15,
+   "textures": 16,
+   "heap_mb": 510.5,
+   "near": 0.01964696658314509,
+   "far": 0.6287875715485309,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1053.0,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 281.223,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 21,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 930,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 514.4,
+   "near": 0.017658098763890972,
+   "far": 0.6117107757382123,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 1.5,
+    "msMax": 1.5,
+    "segs": 12,
+    "pieces": 122,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1053.5,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 252.765,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 20,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 930,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 516.8,
+   "near": 0.015869656007995392,
+   "far": 0.5955809701429684,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 1.5,
+    "msMax": 1.5,
+    "segs": 12,
+    "pieces": 122,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1053.7,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 227.197,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 29,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 1830,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 500.1,
+   "near": 0.014264374603087672,
+   "far": 0.5803402689068552,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 1.5,
+    "msMax": 1.5,
+    "segs": 12,
+    "pieces": 122,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1053.6,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 204.224,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 32,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 2130,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 519.7,
+   "near": 0.012822044392381306,
+   "far": 0.5659350286626967,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 1.5,
+    "msMax": 1.5,
+    "segs": 12,
+    "pieces": 122,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1053.8,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 183.453,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 34,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 2330,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 501.2,
+   "near": 0.011517873938219837,
+   "far": 0.5522846821582785,
+   "tilt_deg": 1.31,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 1.5,
+    "msMax": 1.5,
+    "segs": 12,
+    "pieces": 122,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1054.0,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 164.634,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 34,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 2370,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 499.3,
+   "near": 0.010336471542753323,
+   "far": 0.5392881022009206,
+   "tilt_deg": 2.94,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 0.7,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1057.6,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 147.657,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 35,
+   "queued": 22,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 2518,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 525.1,
+   "near": 0.009270584271477844,
+   "far": 0.5269136753490687,
+   "tilt_deg": 4.58,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 0.7,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1054.3,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 132.348,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 33,
+   "queued": 32,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 2618,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 511.4,
+   "near": 0.008309404318352698,
+   "far": 0.5151333910066195,
+   "tilt_deg": 6.21,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 0.7,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1054.9,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 118.549,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 27,
+   "queued": 32,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 2618,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 514.5,
+   "near": 0.007443047903030475,
+   "far": 0.5039205841788986,
+   "tilt_deg": 7.83,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 0.7,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1054.9,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 106.118,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 25,
+   "queued": 32,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 2618,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 517.5,
+   "near": 0.006662549079478009,
+   "far": 0.49324983500659264,
+   "tilt_deg": 9.46,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 0.7,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1055.0,
+    "gpu": 326.8
+   }
+  },
+  {
+   "h_km": 95.095,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 25,
+   "queued": 16,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 550,
+   "near": 0.005970460272819534,
+   "far": 0.4830644540020169,
+   "tilt_deg": 11.03,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 12,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.8,
+    "renderer": 1092.8,
+    "gpu": 327.1
+   }
+  },
+  {
+   "h_km": 84.908,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 25,
+   "queued": 16,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 523.2,
+   "near": 0.005330892810972721,
+   "far": 0.47336567104229893,
+   "tilt_deg": 12.66,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 12,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.8,
+    "renderer": 1091.1,
+    "gpu": 327.1
+   }
+  },
+  {
+   "h_km": 75.812,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 25,
+   "queued": 16,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 525.8,
+   "near": 0.004759797072575545,
+   "far": 0.4641425153906062,
+   "tilt_deg": 14.3,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 12,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.8,
+    "renderer": 1091.2,
+    "gpu": 327.1
+   }
+  },
+  {
+   "h_km": 67.631,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 25,
+   "queued": 16,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 528.4,
+   "near": 0.0042461893937138845,
+   "far": 0.4553738917544985,
+   "tilt_deg": 15.93,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 12,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.8,
+    "renderer": 1091.2,
+    "gpu": 327.1
+   }
+  },
+  {
+   "h_km": 60.281,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 24,
+   "queued": 16,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 531.1,
+   "near": 0.003784697117777558,
+   "far": 0.44703928587042113,
+   "tilt_deg": 17.56,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.8,
+    "renderer": 1091.6,
+    "gpu": 327.1
+   }
+  },
+  {
+   "h_km": 53.701,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 24,
+   "queued": 16,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 533.7,
+   "near": 0.003371585219501494,
+   "far": 0.4391190042466419,
+   "tilt_deg": 19.19,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.8,
+    "renderer": 1091.9,
+    "gpu": 327.1
+   }
+  },
+  {
+   "h_km": 47.747,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 24,
+   "queued": 16,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 536.3,
+   "near": 0.002997777880129249,
+   "far": 0.4315917156161058,
+   "tilt_deg": 20.84,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.8,
+    "renderer": 1092.2,
+    "gpu": 327.1
+   }
+  },
+  {
+   "h_km": 42.23,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 23,
+   "queued": 16,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 538.9,
+   "near": 0.0026514089891953143,
+   "far": 0.42444878120604485,
+   "tilt_deg": 22.53,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.8,
+    "renderer": 1092.4,
+    "gpu": 327.1
+   }
+  },
+  {
+   "h_km": 37.26,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 23,
+   "queued": 16,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 541.5,
+   "near": 0.0023393745168240445,
+   "far": 0.41769407137602027,
+   "tilt_deg": 24.21,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 14,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.8,
+    "renderer": 1092.7,
+    "gpu": 327.1
+   }
+  },
+  {
+   "h_km": 32.703,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 22,
+   "queued": 14,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 529.9,
+   "near": 0.002053262116038379,
+   "far": 0.4113106413854694,
+   "tilt_deg": 25.9,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 14,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.2,
+    "renderer": 1092.7,
+    "gpu": 327.2
+   }
+  },
+  {
+   "h_km": 28.634,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 22,
+   "queued": 14,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 532.3,
+   "near": 0.0017977670293998216,
+   "far": 0.4052823011201532,
+   "tilt_deg": 27.58,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 14,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.2,
+    "renderer": 1092.9,
+    "gpu": 327.2
+   }
+  },
+  {
+   "h_km": 24.908,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 21,
+   "queued": 14,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 534.6,
+   "near": 0.0015638634891703695,
+   "far": 0.3995935884162289,
+   "tilt_deg": 29.27,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 14,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.2,
+    "renderer": 1093.2,
+    "gpu": 327.2
+   }
+  },
+  {
+   "h_km": 21.549,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 30,
+   "queued": 14,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1730,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 542,
+   "near": 0.0013529711140619406,
+   "far": 0.394229743373493,
+   "tilt_deg": 30.96,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 15,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.2,
+    "renderer": 1093.5,
+    "gpu": 327.2
+   }
+  },
+  {
+   "h_km": 18.606,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 34,
+   "queued": 14,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1830,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 549.6,
+   "near": 0.001168199350272925,
+   "far": 0.3891766831412311,
+   "tilt_deg": 32.64,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 15,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.2,
+    "renderer": 1094.1,
+    "gpu": 327.2
+   }
+  },
+  {
+   "h_km": 15.835,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 36,
+   "queued": 14,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1830,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 525.2,
+   "near": 0.0009942078085588336,
+   "far": 0.3844209766778136,
+   "tilt_deg": 34.33,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 15,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.2,
+    "renderer": 1092.6,
+    "gpu": 327.2
+   }
+  },
+  {
+   "h_km": 13.565,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 39,
+   "queued": 14,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1846,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 526.6,
+   "near": 0.0008516924483206623,
+   "far": 0.37994981898991653,
+   "tilt_deg": 36.02,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 15,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.2,
+    "renderer": 1092.6,
+    "gpu": 327.2
+   }
+  },
+  {
+   "h_km": 11.823,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 43,
+   "queued": 14,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1882,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 542.9,
+   "near": 0.0007422888154251517,
+   "far": 0.3757510043543361,
+   "tilt_deg": 37.7,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 16,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.2,
+    "renderer": 1092.6,
+    "gpu": 327.2
+   }
+  },
+  {
+   "h_km": 10.285,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 44,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1622,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 518.4,
+   "near": 0.0006457271451949077,
+   "far": 0.3718194711429143,
+   "tilt_deg": 39.4,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 46,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1096.3,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 9.074,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 46,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1662,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 517.2,
+   "near": 0.0005696792886943136,
+   "far": 0.3681357911169121,
+   "tilt_deg": 41.09,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 46,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1097.7,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 7.859,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 46,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1662,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 521.7,
+   "near": 0.0004934432340428785,
+   "far": 0.3646911662434175,
+   "tilt_deg": 42.78,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 46,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1097.9,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 6.912,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 47,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1662,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 518.1,
+   "near": 0.00043396476162946843,
+   "far": 0.361475484657416,
+   "tilt_deg": 44.46,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 47,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1097.8,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 6.059,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 47,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1662,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 522.8,
+   "near": 0.00038038041694097305,
+   "far": 0.3584790650446082,
+   "tilt_deg": 46.15,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 47,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1098.1,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 5.275,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 48,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1662,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 519.1,
+   "near": 0.00033117491186223096,
+   "far": 0.3556926137009556,
+   "tilt_deg": 47.83,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 47,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1097.8,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 4.559,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 47,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1662,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 523.8,
+   "near": 0.00028622294647533407,
+   "far": 0.35310717811948544,
+   "tilt_deg": 49.52,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 47,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1098.3,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 3.96,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 47,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1662,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 520.1,
+   "near": 0.0002486411335749672,
+   "far": 0.3507140974521772,
+   "tilt_deg": 51.21,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 48,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1097.9,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 3.391,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 49,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 524.8,
+   "near": 0.00021288559015717468,
+   "far": 0.34850495059165043,
+   "tilt_deg": 52.89,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 48,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1098.9,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 2.828,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 48,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 521,
+   "near": 0.00017754025249345774,
+   "far": 0.34647150308870617,
+   "tilt_deg": 54.58,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 48,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1098.3,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 2.358,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 48,
+   "queued": 20,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 518.8,
+   "near": 0.0001480476350356419,
+   "far": 0.34460565463174897,
+   "tilt_deg": 56.26,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 49,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1098.3,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 2.031,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 48,
+   "queued": 25,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 525,
+   "near": 0.0001275217088593017,
+   "far": 0.34289938930956976,
+   "tilt_deg": 57.95,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 50,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1098.4,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 1.424,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 48,
+   "queued": 25,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 521.5,
+   "near": 8.937948871095003e-05,
+   "far": 0.3413447312782011,
+   "tilt_deg": 59.64,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 50,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1097.9,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 1.17,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 46,
+   "queued": 25,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 519.2,
+   "near": 7.342774613032788e-05,
+   "far": 0.339933708665622,
+   "tilt_deg": 61.32,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 51,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1097.9,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 0.96,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 46,
+   "queued": 25,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 522.3,
+   "near": 6.0255296247646584e-05,
+   "far": 0.3386583284805732,
+   "tilt_deg": 63.01,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 51,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1098.1,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 0.737,
+   "drawn": 20,
+   "byLevel": {
+    "1": 1,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 45,
+   "queued": 25,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 518.9,
+   "near": 4.6286024930886074e-05,
+   "far": 0.33751056488012904,
+   "tilt_deg": 64.7,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 52,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1097.0,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 0.485,
+   "drawn": 20,
+   "byLevel": {
+    "1": 1,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 45,
+   "queued": 25,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 523.4,
+   "near": 3.047073223862995e-05,
+   "far": 0.3364823623730245,
+   "tilt_deg": 66.38,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 52,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1097.7,
+    "gpu": 339.2
+   }
+  },
+  {
+   "h_km": 0.316,
+   "drawn": 20,
+   "byLevel": {
+    "1": 1,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 45,
+   "queued": 25,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 519.7,
+   "near": 1.9850114058250767e-05,
+   "far": 0.3355656544435814,
+   "tilt_deg": 68.07,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 53,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1097.5,
+    "gpu": 339.2
+   }
+  }
+ ],
+ "shots": [
+  {
+   "file": "00_orbit.png",
+   "note": "the whole planet: cells, as today",
+   "h_km": 15563.003,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 487,
+   "near": 1.0512676501632068,
+   "far": 5.452535300326414,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 538.8,
+    "renderer": 994.0,
+    "gpu": 298.0
+   },
+   "frame_ms": 0.25,
+   "fps_uncapped": 3974,
+   "hover": "cell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 mm \u00b7 11 kg C/m\u00b2 \u00b7 well drained\nresources\nbanded iron formation 0.70 \u00b7 orogenic (lode) gol",
+   "float_km": {
+    "region_km": 8160.9,
+    "built": {
+     "n": 5115,
+     "median": 19.1447,
+     "p90": 76.6395,
+     "max": 95.4066
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "01_level1_appears.png",
+   "note": "below 6000 km",
+   "h_km": 5782.849,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "records": 54,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 13,
+   "textures": 7,
+   "heap_mb": 488.1,
+   "near": 0.2837151805733843,
+   "far": 3.917430361146769,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.1,
+    "renderer": 1010.4,
+    "gpu": 299.1
+   },
+   "frame_ms": 0.14,
+   "fps_uncapped": 6897,
+   "hover": "cell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 mm \u00b7 11 kg C/m\u00b2 \u00b7 well drained\nresources\nbanded iron formation 0.70 \u00b7 orogenic (lode) gol",
+   "float_km": {
+    "region_km": 6537.6,
+    "built": {
+     "n": 3955,
+     "median": 19.1403,
+     "p90": 76.4841,
+     "max": 95.4066
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "02_level1.png",
+   "note": "below 1500 km",
+   "h_km": 1400.212,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 12,
+   "queued": 10,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 505.4,
+   "near": 0.08791716990599463,
+   "far": 1.0151141493304776,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 544.0,
+    "renderer": 1053.2,
+    "gpu": 326.3
+   },
+   "frame_ms": 0.17,
+   "fps_uncapped": 5941,
+   "hover": "Detail 4 km/px: land, 1,777 m (2.480, 75.346; tile py.1.1/1/0/0)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 mm ",
+   "float_km": {
+    "region_km": 1015.6,
+    "built": {
+     "n": 256,
+     "median": 14.0393,
+     "p90": 15.486,
+     "max": 20.3832
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "03_level1_arrived.png",
+   "note": "the first level-1 tile drawn, 0 s after the stop",
+   "h_km": 1400.212,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 1,
+   "wanted": 12,
+   "queued": 10,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 12.2,
+   "records": 682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 14,
+   "textures": 12,
+   "heap_mb": 499.4,
+   "near": 0.08791716990599463,
+   "far": 1.0151141493304776,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 542.7,
+    "renderer": 1052.1,
+    "gpu": 326.4
+   },
+   "frame_ms": 0.19,
+   "fps_uncapped": 5357,
+   "hover": "Detail 4 km/px: land, 1,777 m (2.480, 75.346; tile py.1.1/1/0/0)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 mm ",
+   "float_km": {
+    "region_km": 1015.6,
+    "built": {
+     "n": 256,
+     "median": 14.0393,
+     "p90": 15.486,
+     "max": 20.3832
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "04_level2_arriving.png",
+   "note": "below 700 km",
+   "h_km": 661.272,
+   "drawn": 2,
+   "byLevel": {
+    "1": 1,
+    "2": 1
+   },
+   "kept": 2,
+   "wanted": 26,
+   "queued": 21,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 914,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 15,
+   "textures": 16,
+   "heap_mb": 497.6,
+   "near": 0.041520808248806954,
+   "far": 0.7808323779299602,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.2,
+    "renderer": 1053.3,
+    "gpu": 326.6
+   },
+   "frame_ms": 0.17,
+   "fps_uncapped": 5941,
+   "hover": "Detail 4 km/px: land, 1,777 m (2.480, 75.346; tile py.1.1/1/0/0)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 mm ",
+   "float_km": {
+    "region_km": 464.8,
+    "built": {
+     "n": 42,
+     "median": 7.3308,
+     "p90": 9.7006,
+     "max": 10.5918
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "05_level2_arrived.png",
+   "note": "the first level-2 tile drawn, 0 s after the stop",
+   "h_km": 661.272,
+   "drawn": 2,
+   "byLevel": {
+    "1": 1,
+    "2": 1
+   },
+   "kept": 2,
+   "wanted": 26,
+   "queued": 21,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 914,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 15,
+   "textures": 16,
+   "heap_mb": 522.8,
+   "near": 0.041520808248806954,
+   "far": 0.7808323779299602,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "chrome_mb": {
+    "other": 543.3,
+    "renderer": 1054.7,
+    "gpu": 326.7
+   },
+   "frame_ms": 0.18,
+   "fps_uncapped": 5556,
+   "hover": "Detail 4 km/px: land, 1,777 m (2.480, 75.346; tile py.1.1/1/0/0)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 mm ",
+   "float_km": {
+    "region_km": 464.8,
+    "built": {
+     "n": 42,
+     "median": 7.3308,
+     "p90": 9.7006,
+     "max": 10.5918
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "06_level2.png",
+   "note": "below 150 km",
+   "h_km": 147.658,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 35,
+   "queued": 32,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 2518,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 519.4,
+   "near": 0.009270584271477844,
+   "far": 0.5269136753490687,
+   "tilt_deg": 4.58,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 0.7,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1054.6,
+    "gpu": 326.7
+   },
+   "frame_ms": 0.14,
+   "fps_uncapped": 7059,
+   "hover": "Detail 4 km/px: land, 1,777 m (2.480, 75.346; tile py.1.1/1/0/0)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 mm ",
+   "float_km": {
+    "region_km": 112,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "07_level3_arriving.png",
+   "note": "below 110 km",
+   "h_km": 106.119,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 25,
+   "queued": 22,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 2618,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 501.4,
+   "near": 0.006662549079478009,
+   "far": 0.49324983500659264,
+   "tilt_deg": 9.46,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 0.7,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.9,
+    "renderer": 1055.4,
+    "gpu": 326.8
+   },
+   "frame_ms": 0.14,
+   "fps_uncapped": 7229,
+   "hover": "Detail 4 km/px: land, 1,777 m (2.480, 75.346; tile py.1.1/1/0/0)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 mm ",
+   "float_km": {
+    "region_km": 89.8,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "08_level3_building.png",
+   "note": "level 3 wanted and building: the level-1 parent stretched, the badge on",
+   "h_km": 106.119,
+   "drawn": 1,
+   "byLevel": {
+    "1": 1
+   },
+   "kept": 2,
+   "wanted": 25,
+   "queued": 22,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 16.4,
+   "records": 2618,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 23,
+   "textures": 16,
+   "heap_mb": 523.1,
+   "near": 0.006662549079478009,
+   "far": 0.49324983500659264,
+   "tilt_deg": 9.46,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 0.7,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.8,
+    "renderer": 1056.1,
+    "gpu": 326.7
+   },
+   "frame_ms": 0.16,
+   "fps_uncapped": 6383,
+   "hover": "Detail 4 km/px: land, 1,777 m (2.480, 75.346; tile py.1.1/1/0/0)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 mm ",
+   "float_km": {
+    "region_km": 89.8,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "09_level3_arrived.png",
+   "note": "the first level-3 tile drawn, 74 s after the stop",
+   "h_km": 106.34,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 25,
+   "queued": 16,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 538.9,
+   "near": 0.006676706092581242,
+   "far": 0.4932617684315654,
+   "tilt_deg": 9.4,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 12,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 543.8,
+    "renderer": 1094.0,
+    "gpu": 326.9
+   },
+   "frame_ms": 0.16,
+   "fps_uncapped": 6061,
+   "hover": "Detail 250 m/px: land, 1,867 m (2.480, 75.346; tile py.1.1/3/2/13)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 m",
+   "float_km": {
+    "region_km": 89.9,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "10_level3.png",
+   "note": "below 40 km",
+   "h_km": 37.26,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 23,
+   "queued": 14,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1630,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 548.9,
+   "near": 0.0023393745168240445,
+   "far": 0.41769407137602027,
+   "tilt_deg": 24.21,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 14,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.2,
+    "renderer": 1093.2,
+    "gpu": 327.1
+   },
+   "frame_ms": 0.23,
+   "fps_uncapped": 4380,
+   "hover": "Detail 250 m/px: land, 1,867 m (2.480, 75.346; tile py.1.1/3/2/13)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 m",
+   "float_km": {
+    "region_km": 46.1,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "11_level4_arriving.png",
+   "note": "below 12 km",
+   "h_km": 11.823,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 43,
+   "queued": 34,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1882,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 526,
+   "near": 0.0007422888154251517,
+   "far": 0.3757510043543361,
+   "tilt_deg": 37.7,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 16,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.7,
+    "renderer": 1092.3,
+    "gpu": 327.1
+   },
+   "frame_ms": 0.16,
+   "fps_uncapped": 6122,
+   "hover": "Detail 250 m/px: land, 1,867 m (2.480, 75.346; tile py.1.1/3/2/13)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 m",
+   "float_km": {
+    "region_km": 22.3,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "12_level4_building.png",
+   "note": "level 4 wanted and building: the level-1 parent stretched, the badge on",
+   "h_km": 11.823,
+   "drawn": 6,
+   "byLevel": {
+    "1": 1,
+    "2": 4,
+    "3": 1
+   },
+   "kept": 7,
+   "wanted": 43,
+   "queued": 34,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 37.5,
+   "records": 1882,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 28,
+   "textures": 36,
+   "heap_mb": 540.7,
+   "near": 0.0007422888154251517,
+   "far": 0.3757510043543361,
+   "tilt_deg": 37.7,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 16,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.8,
+    "renderer": 1094.3,
+    "gpu": 327.1
+   },
+   "frame_ms": 0.17,
+   "fps_uncapped": 5941,
+   "hover": "Detail 250 m/px: land, 1,867 m (2.480, 75.346; tile py.1.1/3/2/13)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 m",
+   "float_km": {
+    "region_km": 22.3,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "13_level4_arrived.png",
+   "note": "the first level-4 tile drawn, 216 s after the stop",
+   "h_km": 11.825,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 43,
+   "queued": 19,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1622,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 521.4,
+   "near": 0.0007424224716331197,
+   "far": 0.3757527881686949,
+   "tilt_deg": 37.72,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 46,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.1,
+    "renderer": 1096.0,
+    "gpu": 339.1
+   },
+   "frame_ms": 0.24,
+   "fps_uncapped": 4255,
+   "hover": "Detail 25 m/px: land, 1,860 m (2.480, 75.346; tile py.1.1/4/29/137)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 ",
+   "float_km": {
+    "region_km": 22.3,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "14_level4.png",
+   "note": "below 2.5 km",
+   "h_km": 2.358,
+   "drawn": 21,
+   "byLevel": {
+    "1": 2,
+    "2": 6,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 48,
+   "queued": 25,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 522.2,
+   "near": 0.0001480476350356419,
+   "far": 0.34460565463174897,
+   "tilt_deg": 56.26,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 49,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 544.5,
+    "renderer": 1097.7,
+    "gpu": 339.1
+   },
+   "frame_ms": 0.24,
+   "fps_uncapped": 4138,
+   "hover": "Detail 25 m/px: land, 1,860 m (2.480, 75.346; tile py.1.1/4/29/137)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 ",
+   "float_km": {
+    "region_km": 11.1,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "15_ground_300m.png",
+   "note": "below 0.4 km",
+   "h_km": 0.316,
+   "drawn": 19,
+   "byLevel": {
+    "1": 1,
+    "2": 5,
+    "3": 12,
+    "4": 1
+   },
+   "kept": 22,
+   "wanted": 45,
+   "queued": 24,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 108.7,
+   "records": 1682,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 43,
+   "textures": 96,
+   "heap_mb": 524.3,
+   "near": 1.9850114058250767e-05,
+   "far": 0.3355656544435814,
+   "tilt_deg": 68.07,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 54,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.2,
+    "renderer": 1098.0,
+    "gpu": 339.2
+   },
+   "frame_ms": 0.23,
+   "fps_uncapped": 4412,
+   "hover": "Detail 25 m/px: land, 1,860 m (2.480, 75.346; tile py.1.1/4/29/137)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 ",
+   "float_km": {
+    "region_km": 10.9,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "16_ground_settled.png",
+   "note": "the ground once the tiles in view were built (240 s)",
+   "h_km": 0.316,
+   "drawn": 41,
+   "byLevel": {
+    "1": 3,
+    "2": 8,
+    "3": 12,
+    "4": 18
+   },
+   "kept": 44,
+   "wanted": 45,
+   "queued": 2,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 217.3,
+   "records": 1570,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 65,
+   "textures": 184,
+   "heap_mb": 559.9,
+   "near": 1.9850114058250767e-05,
+   "far": 0.3355656544435814,
+   "tilt_deg": 68.07,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 98,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 546.6,
+    "renderer": 1225.3,
+    "gpu": 344.2
+   },
+   "frame_ms": 0.31,
+   "fps_uncapped": 3243,
+   "hover": "Detail 25 m/px: land, 1,860 m (2.480, 75.346; tile py.1.1/4/29/137)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 ",
+   "float_km": {
+    "region_km": 10.9,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "17_tilted_back.png",
+   "note": "a right-drag down: back toward straight down",
+   "h_km": 2.358,
+   "drawn": 34,
+   "byLevel": {
+    "1": 3,
+    "2": 5,
+    "3": 9,
+    "4": 17
+   },
+   "kept": 44,
+   "wanted": 39,
+   "queued": 3,
+   "building": 2,
+   "badge": true,
+   "tiles_mb": 217.3,
+   "records": 1706,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 65,
+   "textures": 184,
+   "heap_mb": 561.7,
+   "near": 0.00014803276735362303,
+   "far": 0.3426236989789667,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 103,
+    "ms": 0.2,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 547.9,
+    "renderer": 1249.0,
+    "gpu": 344.3
+   },
+   "frame_ms": 0.3,
+   "fps_uncapped": 3352,
+   "hover": "Detail 25 m/px: land, 1,860 m (2.480, 75.346; tile py.1.1/4/29/137)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 ",
+   "float_km": {
+    "region_km": 1.6,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "18_tilted_up.png",
+   "note": "a right-drag up: toward the horizon",
+   "h_km": 0.3,
+   "drawn": 41,
+   "byLevel": {
+    "1": 3,
+    "2": 8,
+    "3": 12,
+    "4": 18
+   },
+   "kept": 44,
+   "wanted": 45,
+   "queued": 2,
+   "building": 3,
+   "badge": true,
+   "tiles_mb": 217.3,
+   "records": 1706,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 65,
+   "textures": 184,
+   "heap_mb": 551,
+   "near": 1.8835347669288183e-05,
+   "far": 0.3355869002533263,
+   "tilt_deg": 75,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 109,
+    "ms": 0.1,
+    "msMax": 1.5,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 545.5,
+    "renderer": 1246.2,
+    "gpu": 344.2
+   },
+   "frame_ms": 0.39,
+   "fps_uncapped": 2597,
+   "hover": "Detail 25 m/px: land, 1,860 m (2.480, 75.346; tile py.1.1/4/29/137)\nthe globe cell here:\ncell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 ",
+   "float_km": {
+    "region_km": 14.3,
+    "built": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "19_back_at_orbit.png",
+   "note": "scrolled back out: the cells again",
+   "h_km": 15879.417,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 45,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 229.6,
+   "records": 2910,
+   "dropped": 0,
+   "sat_only": 0,
+   "geometries": 58,
+   "textures": 188,
+   "heap_mb": 588.4,
+   "near": 1.0760999980862063,
+   "far": 5.502199996172413,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 136,
+    "ms": 7.5,
+    "msMax": 7.5,
+    "segs": 10,
+    "pieces": 106,
+    "objects": 8
+   },
+   "chrome_mb": {
+    "other": 548.3,
+    "renderer": 1270.1,
+    "gpu": 344.7
+   },
+   "frame_ms": 0.26,
+   "fps_uncapped": 3797,
+   "hover": "cell 46457 lat 2.5, lon 75.3\nelevation\n2484 m\nvegetation\nwarm temperate mixed forest\ntrees\n100%\nNPP\n489 g C/m\u00b2/yr\nsoil\nthin stony soil (Leptosol / Entisol (lithic)), loam \u00b7 0.1 m deep \u00b7 fertility 0.4 \u00b7 holds 11 mm \u00b7 11 kg C/m\u00b2 \u00b7 well drained\nresources\nbanded iron formation 0.70 \u00b7 orogenic (lode) gol",
+   "float_km": {
+    "region_km": 8188.2,
+    "built": {
+     "n": 5120,
+     "median": 19.1448,
+     "p90": 76.6491,
+     "max": 95.4066
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  }
+ ],
+ "waits": [
+  {
+   "level": 1,
+   "seconds": 0.0,
+   "badge_seen": true,
+   "arrived": true
+  },
+  {
+   "level": 2,
+   "seconds": 0.0,
+   "badge_seen": true,
+   "arrived": true
+  },
+  {
+   "level": 3,
+   "seconds": 73.5,
+   "badge_seen": true,
+   "arrived": true
+  },
+  {
+   "level": 4,
+   "seconds": 215.9,
+   "badge_seen": true,
+   "arrived": true
+  }
+ ],
+ "ground_settle_s": 240.5,
+ "drape_log": [
+  [
+   280.3,
+   1.5,
+   12,
+   122,
+   335
+  ],
+  [
+   164.26,
+   0.7,
+   0,
+   0,
+   200
+  ],
+  [
+   106.12,
+   0.2,
+   0,
+   0,
+   143
+  ],
+  [
+   106.24,
+   0.2,
+   0,
+   0,
+   143
+  ],
+  [
+   106.24,
+   0.3,
+   0,
+   0,
+   143
+  ],
+  [
+   106.24,
+   0.1,
+   0,
+   0,
+   143
+  ],
+  [
+   106.24,
+   0.2,
+   0,
+   0,
+   143
+  ],
+  [
+   106.24,
+   0.1,
+   0,
+   0,
+   143
+  ],
+  [
+   106.24,
+   0.2,
+   0,
+   0,
+   143
+  ],
+  [
+   106.24,
+   0.2,
+   0,
+   0,
+   143
+  ],
+  [
+   106.24,
+   0.3,
+   0,
+   0,
+   143
+  ],
+  [
+   106.34,
+   0.2,
+   0,
+   0,
+   143
+  ],
+  [
+   60.48,
+   0.2,
+   0,
+   0,
+   91
+  ],
+  [
+   37.42,
+   0.1,
+   0,
+   0,
+   67
+  ],
+  [
+   21.7,
+   0.2,
+   0,
+   0,
+   47
+  ],
+  [
+   12.09,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.3,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.3,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.3,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.2,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.3,
+   0,
+   0,
+   33
+  ],
+  [
+   11.82,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   7.12,
+   0.1,
+   0,
+   0,
+   25
+  ],
+  [
+   4.1,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   2.46,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   2.11,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   1.25,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.77,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.37,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.3,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.3,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.3,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.32,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.61,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   1.17,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   1.93,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   2.36,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   2.36,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   2.37,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   1.72,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   1.05,
+   0.2,
+   0,
+   0,
+   20
+  ],
+  [
+   0.52,
+   0,
+   0,
+   0,
+   20
+  ],
+  [
+   0.3,
+   0.1,
+   0,
+   0,
+   20
+  ],
+  [
+   0.3,
+   0.1,
+   0,
+   0,
+   21
+  ],
+  [
+   0.3,
+   0.2,
+   0,
+   0,
+   211
+  ],
+  [
+   0.3,
+   0.1,
+   0,
+   0,
+   211
+  ],
+  [
+   0.3,
+   0.1,
+   0,
+   0,
+   211
+  ],
+  [
+   0.3,
+   0.1,
+   0,
+   0,
+   211
+  ],
+  [
+   0.3,
+   0.2,
+   0,
+   0,
+   211
+  ],
+  [
+   0.35,
+   0.1,
+   0,
+   0,
+   212
+  ],
+  [
+   0.37,
+   0.2,
+   0,
+   0,
+   213
+  ],
+  [
+   0.4,
+   0.1,
+   0,
+   0,
+   214
+  ],
+  [
+   0.41,
+   0.1,
+   0,
+   0,
+   214
+  ],
+  [
+   0.41,
+   0.1,
+   0,
+   0,
+   214
+  ],
+  [
+   0.5,
+   0.2,
+   0,
+   0,
+   218
+  ],
+  [
+   0.53,
+   0.1,
+   0,
+   0,
+   219
+  ],
+  [
+   0.57,
+   0.2,
+   0,
+   0,
+   220
+  ],
+  [
+   0.58,
+   0.2,
+   0,
+   0,
+   220
+  ],
+  [
+   0.66,
+   0.1,
+   0,
+   0,
+   226
+  ],
+  [
+   1.23,
+   0.2,
+   0,
+   0,
+   31
+  ],
+  [
+   2.25,
+   0.1,
+   0,
+   0,
+   30
+  ],
+  [
+   3.6,
+   0.1,
+   0,
+   0,
+   26
+  ],
+  [
+   6.53,
+   0.1,
+   0,
+   0,
+   33
+  ],
+  [
+   10.33,
+   0.1,
+   0,
+   0,
+   38
+  ],
+  [
+   17.45,
+   0.2,
+   0,
+   0,
+   55
+  ],
+  [
+   26.99,
+   0.1,
+   0,
+   0,
+   68
+  ],
+  [
+   45.1,
+   0.1,
+   0,
+   0,
+   96
+  ],
+  [
+   65.49,
+   0.2,
+   0,
+   0,
+   117
+  ],
+  [
+   104.45,
+   0.2,
+   0,
+   0,
+   157
+  ],
+  [
+   164.46,
+   0.2,
+   0,
+   0,
+   223
+  ],
+  [
+   254.27,
+   7.5,
+   10,
+   106,
+   331
+  ]
+ ],
+ "dive": {
+  "moving_frames": 232,
+  "fps_median": 59.9,
+  "fps_p10_frame": 59.9,
+  "max_turn_deg": 0.0141,
+  "max_view_turn_deg": 0.504,
+  "view_turns_top": [
+   [
+    0.504,
+    47.935
+   ],
+   [
+    0.504,
+    182.937
+   ],
+   [
+    0.504,
+    9.211
+   ],
+   [
+    0.504,
+    53.747
+   ],
+   [
+    0.504,
+    3.407
+   ]
+  ],
+  "max_height_ratio": 1.398
+ },
+ "out": {
+  "moving_frames": 280,
+  "fps_median": 59.9,
+  "fps_p10_frame": 59.9,
+  "max_turn_deg": 0.0764,
+  "max_view_turn_deg": 3.0656,
+  "view_turns_top": [
+   [
+    3.066,
+    0.3
+   ],
+   [
+    1.378,
+    0.346
+   ],
+   [
+    0.504,
+    164.596
+   ],
+   [
+    0.504,
+    117.033
+   ],
+   [
+    0.504,
+    205.515
+   ]
+  ],
+  "max_height_ratio": 1.303
+ }
+}

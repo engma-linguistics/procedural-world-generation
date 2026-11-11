@@ -120,3 +120,18 @@ def test_lodmath_tile_ground_and_tilt(tmp_path):
             assert cap == 0
     autos = [a for _, a, _ in got["tilt"]]
     assert autos == sorted(autos, reverse=True) and abs(autos[1] - np.radians(T["AUTO_DEG"])) < 1e-9
+
+
+def test_tile_children_grid_and_no_double_click():
+    """lodtiles.js: a tile's children grid (KIDS_PX) splits evenly at every level's branching, down to level 4 (PW-1673
+    step 5); the globe has no double-click zoom (PW-1710: scroll dives, the zoom tab and picker make zooms)."""
+    import re
+    from planet.zoom import lod
+    root = Path(__file__).resolve().parents[1] / "viewer" / "globe"
+    src = (root / "lodtiles.js").read_text()
+    kids = int(re.search(r"const KIDS_PX = (\d+)", src).group(1))
+    for level in range(1, max(lod.LEVELS)):
+        assert kids % lod.branching(level) == 0, (level, kids)
+    assert "maxLevel: Math.min(+P.get('lodmax') || M.FINEST, M.FINEST)" in src
+    pick = (root / "pick.js").read_text()
+    assert "addEventListener('dblclick'" not in pick and "double-click: zoom" not in pick and "double-click to zoom" not in pick

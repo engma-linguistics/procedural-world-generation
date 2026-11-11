@@ -27,7 +27,7 @@ import * as THREE from 'three';
 import { esc } from '../planets.js';
 import { S, state } from './state.js';
 import { loadPolities, politiesColor, politiesLegend } from './polities.js';
-import { ANIMAL_COLS, BARE, COASTAL, COASTAL_COLS, CROP_COLS, CYAN, ICE, NOBODY, NODATA, OCEAN, RED, TECH_HOW, TECH_HOW_TEXT, animalStocks, animalsColor, anthroLoad, anthroOn, anthroTint, bits, coastColor, coastLegend, coastalTop, cropStocks, cropsColor, demeOf, demesColor, loadDemesAll, fuelColor, huColor, huSwatches, isSeaPeople, lakeColor, landUseColor, obsColor, obsView, peoplesColor, peoplesIdx, plateColor, resColor, resLegend, seasonUnits, seasonalData, techColor, techFrameColors, techHowText, techId, techName, techOldest, techTree, worldAnthroOn } from './colours.js';
+import { colourSeason, ANIMAL_COLS, BARE, COASTAL, COASTAL_COLS, CROP_COLS, CYAN, ICE, NOBODY, NODATA, OCEAN, RED, TECH_HOW, TECH_HOW_TEXT, animalStocks, animalsColor, anthroLoad, anthroOn, anthroTint, bits, coastColor, coastLegend, coastalTop, cropStocks, cropsColor, demeOf, demesColor, loadDemesAll, fuelColor, huColor, huSwatches, isSeaPeople, lakeColor, landUseColor, obsColor, obsView, peoplesColor, peoplesIdx, plateColor, resColor, resLegend, seasonUnits, seasonalData, techColor, techFrameColors, techHowText, techId, techName, techOldest, techTree, worldAnthroOn } from './colours.js';
 import { rampLegend } from './panel.js';
 import { agoLabel } from './timezoom.js';
 import { pftColor } from './pick.js';
@@ -552,3 +552,31 @@ export const WORLD_TINTED = new Set(Object.keys(pick((d) => (d.tint?.includes('w
 export const VEG_VIEWS = new Set(Object.keys(pick((d) => (d.group === 'plants' ? 1 : null))));
 export const HU_LAYERS = byGroup('humanuse');
 export const COAST_SCORES = byGroup('coasts');
+
+// ---- the active layer on the level-of-detail tiles (PW-1673 step 5, lodtiles.js) ------------------------------------
+// A globe layer follows you down when its colouring reads only its own values (a ramp of one layer, classes by id) and
+// the tile has a zoom layer of that name: the value layer `main` (the seasonal one when a season is picked) and the
+// extras its colouring may also read (`more`: ice, ...; missing ones are left out). Layers coloured from per-cell globe
+// tables (human use, resources, coasts, peoples, the families, the plant type), the observed views and the satellite
+// view return null: the tiles show their own satellite view. World names the zooms call otherwise: ZOOM_NAME.
+const TILE_SKIP = new Set(['humanuse', 'resources', 'coasts', 'peoples']);
+const ZOOM_NAME = { flow: 'discharge' };
+export function tileLayer(layer = state.layer) {
+  const d = LAYERS[layer];
+  if (!d || layer === 'satellite' || layer === 'plant type' || TILE_SKIP.has(d.group) || familyOf(layer) || obsView(layer)) return null;
+  const sk = SEASONAL[layer], s = sk && colourSeason(layer), sv = sk ? (s ? `${sk}_${s}` : sk) : null;
+  const main = sv || (d.cat ? d.cat(S.V)[0] : null) || d.num || d.key || layer;
+  const zn = (k) => ZOOM_NAME[k] || k;
+  const more = [...new Set([d.key, d.num, layer === 'elevation' ? 'ice' : null].filter((k) => k && k !== main))];
+  return { id: `${layer}|${main}`, layer, main: zn(main), sv: !!sv, names: Object.fromEntries([main, ...more].map((k) => [zn(k), k])),
+    // ctx: {L: the tile's arrays by the world's names, elev: > 0 land, <= 0 sea per pixel, sv: the seasonal values or null}
+    color: (ctx) => (d.color || rampColor)({ ...ctx, layer }) };
+}
+// a tile pixel's value as text for the hover readout (the layer's units; a class's name)
+export function tileValueText(layer, v) {
+  const d = LAYERS[layer];
+  if (!d || v === undefined || Number.isNaN(v)) return '';
+  if (d.cat) { const list = d.cat(S.V)[1] || [], it = list.find((x) => x.id === v); return it ? it.name : `class ${v}`; }
+  const a = Math.abs(v), txt = a >= 100 ? v.toFixed(0) : a >= 10 ? v.toFixed(1) : v.toFixed(2);
+  return `${txt} ${(UNITS[layer] || '').split(',')[0]}`.trim();
+}

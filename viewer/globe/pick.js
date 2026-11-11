@@ -6,10 +6,11 @@ import { buildTopology, nearestCellU, paint } from './geometry.js';
 import { renderTip } from './panel.js';
 import { closeDetail, describe, infoBoxHtml, openDetail, renderDetail } from './describe.js';
 import { syncProj } from './map2d.js';
-import { pickCell, startZoom } from './zoom.js';
+import { pickCell } from './zoom.js';
 import { turnTo } from './highlights.js';
 import { outlineAt, showTab } from './tabs.js';
 import { refresh } from './load.js';
+import { tileHit, tileHover } from './lodtiles.js';
 // hover / click
 export const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
 // The cell under the pointer on the globe (PW-679). three's raycast tests every triangle (~1 M at L7,
@@ -65,7 +66,11 @@ export function pickGlobeCell() {
 export function updateHover() {
   if (!S.mesh || proj.on) return;  // (the flat map's canvas covers the live map: its own pointer handler picks)
   ray.setFromCamera(mouse, camera);
-  const fast = pickGlobeCell();
+  // over the level-of-detail tiles: the drawn ground under the cursor, the tile's own reading there, and the globe
+  // cell holding that point (PW-1673 step 5)
+  const th = state.mode === 'globe' ? tileHit(ray.ray) : null;
+  S.tileHover = th ? tileHover(th) : null;
+  const fast = th ? nearestCellU([th.dir.x, th.dir.y, th.dir.z]) : pickGlobeCell();
   if (fast !== undefined) S.hovered = fast;
   else { const hit = ray.intersectObject(S.mesh)[0]; S.hovered = hit ? S.topo.triCell[hit.faceIndex] : -1; }
   renderHover();
@@ -74,8 +79,9 @@ export function renderHover() {
   renderTip();
   if (S.detailCell >= 0) renderDetail();  // (a new frame: the panel follows)
   if (S.picked) return;  // the info box stays on the clicked cell until it's closed
-  const html = S.hovered >= 0 ? infoBoxHtml(S.hovered) + '<div class="muted ifoot">click: copy and pick for zooming · double-click: zoom</div>'
-    : '<span class="muted">Hover a cell. Click to copy its description and pick it for a regional zoom; double-click to zoom straight in.</span>';
+  const th = S.tileHover, tileLine = th ? `<div class="tilehov"><b>Detail ${th.res}/px</b>: ${esc(th.text)} <span class="muted">(${th.lat.toFixed(3)}, ${th.lon.toFixed(3)}; tile ${esc(th.id)})</span></div><div class="muted">the globe cell here:</div>` : '';
+  const html = S.hovered >= 0 ? tileLine + infoBoxHtml(S.hovered) + '<div class="muted ifoot">click: copy and pick for a regional zoom · scroll: dive · right-drag: tilt</div>'
+    : '<span class="muted">Hover a cell. Click to copy its description and pick it for a regional zoom (the zoom tab makes it). Scroll to dive toward the cursor, drag to pan, right-drag or Shift-drag to tilt.</span>';
   // (only when it changes, PW-415: rewriting the same box on every mouse move, as over empty
   // space, repainted the panel over the canvas each time, and on the owner's Chrome each
   // such repaint flickered the rivers; ?rehover=1 rewrites it every time, for comparison)
@@ -103,7 +109,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   navigator.clipboard?.writeText(txt).then(() => toast('Copied: ' + txt.slice(0, 60) + '…'), () => {});
   pickCell(S.hovered);
 });
-renderer.domElement.addEventListener('dblclick', () => { if (S.hovered >= 0) { pickCell(S.hovered); startZoom(); } });
+// (no double-click zoom, PW-1710: the globe is Google-Earth-like, scroll dives; the zoom tab and the picker make zooms)
 // References (PW-105, convention in issue-tracking/README.md): run:<id>@<t>Myr(lat,lon) or
 // world:<id>(lat,lon), and a deep link that reopens the viewer there (?run=&t=&lat=&lon=, picking the cell)
 function refOf(i) {
