@@ -210,6 +210,22 @@ def test_deterministic(result):
     assert json.dumps(doc, sort_keys=True) == json.dumps(doc2, sort_keys=True)
 
 
+def test_workers_do_not_change_output(result):
+    """`planet languages --workers N` forks the lect steps, the protos and the spelling: the document must be the same
+    byte for byte as in one process (PW-1737; which worker steps a lect must never matter)."""
+    _, doc, _ = result
+    old = (H.RATE_SCALE, H.SHIFT_K, H.WORKERS)
+    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 240.0, 1.0, 3
+    try:
+        doc3 = OU.document(H.generate(None, run=TinyRun()))
+    finally:
+        H.RATE_SCALE, H.SHIFT_K, H.WORKERS = old
+    a, b = dict(doc), dict(doc3)
+    for d in (a, b):
+        d.pop("timing", None)
+    assert json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+
+
 def test_rules_and_roman(result):
     _, doc, _ = result
     from planet.language.history import snapshot_full
