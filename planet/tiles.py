@@ -26,8 +26,12 @@ Builds run as server jobs (api.Jobs, each in a worker process), never in a reque
   - at most AT_ONCE tile jobs in all (the server has 4 job workers: one is left for everything else);
   - the RAM guard: a build starts only while free memory covers its peak, api.ZOOM_RAM_SPARE_GB and the peaks of the
     tile builds already started (counted again although they show in the free memory: on the safe side).
-The disk cache: tiles are ordinary zoom directories under zooms/ (lod.tile_id; level 1: the section zoom), with an index
-per world at <data root>/.tiles/<world>.json (bytes, built, last used). Past the cap (CAP_GB, $PLANET_TILE_CACHE_GB,
+The disk cache: tiles are zoom directories (zoom.load and the zoom page's files work on them) in the world's own tile
+store, <data root>/.tiles/<world>/zooms/ (store.tile_store; lod.tile_id; level 1: the cell's matched section), never in
+zooms/: they are not in zooms/index.json, so not in the viewer's zoom lists, the navigator or `planet list`, and saving one
+rescans nothing. An index per world at <data root>/.tiles/<world>.json (bytes, built, last used) is how a tile is found
+(levels 2-4 also by their deterministic id). The globe uses only level-1 sections built here, matched to their built
+neighbours; a section made by POST /api/zoom is an ordinary zoom and the globe never sees it (lod-plan-v2.md, State lane 298). Past the cap (CAP_GB, $PLANET_TILE_CACHE_GB,
 default 60) the least recently used tiles of levels 2-4 are deleted (a tile counts as used when any finer tile under it
 was: children go before their parents); level 1 is never dropped, nor a tile a queued or running build reads.
 """
@@ -48,7 +52,7 @@ from . import store as S
 from .zoom import lod as L
 
 SEED = 1  # (lod_build's: every tile of a world is built with seed 1)
-PEAK_GB = {1: 8.3, 2: 3.2, 3: 3.2, 4: 3.2}  # budget per build (lod-plan-v2.md, State lane 290: L1 8.3 GB; L2-4 2.9-3.2)
+PEAK_GB = api.TILE_PEAK_GB  # budget per build by level (the job checks the same numbers; lod-plan-v2.md, State lanes 290, 295)
 AT_ONCE = 3  # tile builds at once (level 1 among them, at most one of those)
 CAP_GB = 60.0  # the disk cache's default cap
 EVICT_TO = 0.95  # a sweep frees down to this share of the cap (so not every build sweeps)
@@ -141,9 +145,8 @@ class TileService:
                 ix = json.loads(self._index_path(wid).read_text())
             except (OSError, ValueError):
                 ix = {}
-            ix = {k: e for k, e in ix.items() if (S.zooms_dir() / e["id"] / "zoom.json").exists()}
+            ix = {k: e for k, e in ix.items() if (S.tile_zooms_dir(wid) / e["id"] / "zoom.json").exists()}
             self.idx[wid] = ix
-            self._scan_sections(wid)
         return ix
 
     def load_all(self):
@@ -152,19 +155,6 @@ class TileService:
         for f in sorted(d.glob("*.json")) if d.is_dir() else []:
             with self.lock:
                 self._world_index(f.stem)
-
-    def _scan_sections(self, wid: str):
-        """Level-1 sections built before (any section zoom of this world at 4 km), from the zoom listing."""
-        try:
-            entries = json.loads((S.zooms_dir() / "index.json").read_text())
-        except (OSError, ValueError):
-            return
-        for e in entries:
-            if (e.get("world") == wid and e.get("section") and not e.get("parent_zoom")
-                    and abs(float(e.get("res_km", 0)) - L.res_km(1)) < 1e-9 and e.get("size_km") == L.SQUARE_KM):
-                k = str(L.Key(e["section"], 1, 0, 0))
-                if k not in self.idx[wid] and (S.zooms_dir() / e["id"] / "zoom.json").exists():
-                    self._record(wid, L.Key(e["section"], 1, 0, 0), S.zooms_dir() / e["id"])
 
     def _record(self, wid: str, key: L.Key, d: Path) -> dict:
         now = self.clock()
@@ -199,17 +189,16 @@ class TileService:
         """The tile's directory if it is built (recorded in the index when found)."""
         ix = self._world_index(wid)
         e = ix.get(str(key))
+        td = S.tile_zooms_dir(wid)
         if e is not None:
-            d = S.zooms_dir() / e["id"]
+            d = td / e["id"]
             if (d / "zoom.json").exists():
                 return d
             del ix[str(key)]
             self._dirty.add(wid)
-        if key.level == 1:  # (any section of the cell at 4 km: alone, or matched to its neighbours)
-            from .zoom import lod_build as LB
-            d = LB.find(wid, key, SEED) or S.zooms_dir() / api.section_zoom_id(self._section_request(wid, key.cell), wid)
-        else:
-            d = S.zooms_dir() / L.tile_id(wid, key, SEED)
+        if key.level == 1:  # (a matched section's id depends on what it was matched to: only the index knows it, from
+            return None     # the job that built it (_refresh))
+        d = td / L.tile_id(wid, key, SEED)
         if not (d / "zoom.json").exists():
             return None
         self._record(wid, key, d)
@@ -263,6 +252,8 @@ class TileService:
             del self.inflight[(wid, k)]
             if st == "done":
                 d = self.built(wid, k)
+                if d is None and j.get("zoom") and (S.tile_zooms_dir(wid) / j["zoom"] / "zoom.json").exists():
+                    d = S.tile_zooms_dir(wid) / j["zoom"]  # (level 1: named by the job)
                 if d is not None:
                     try:
                         write_view(d)
@@ -430,20 +421,17 @@ class TileService:
                         eff[pk] = max(eff[pk], u)
         cands = sorted(((u, -L.Key.parse(ks).level, wid, ks) for (wid, ks), u in eff.items()
                         if L.Key.parse(ks).level > 1 and (wid, L.Key.parse(ks)) not in keep))
-        dropped, zd = [], S.zooms_dir().resolve()
+        dropped = []
         for _, _, wid, ks in cands:
             if total <= EVICT_TO * cap:
                 break
             e = self.idx[wid].pop(ks)
             self._dirty.add(wid)
             total -= e["bytes"]
-            d = S.zooms_dir() / e["id"]
-            if d.is_dir() and not d.is_symlink() and d.resolve().parent == zd:
+            d = S.tile_zooms_dir(wid) / e["id"]
+            if d.is_dir() and not d.is_symlink() and d.resolve().parent == S.tile_zooms_dir(wid).resolve():
                 shutil.rmtree(d)
             dropped.append(f"{wid}:{ks}")
-        if dropped:
-            from .zoom import regional as Z
-            Z.update_index()
         return dropped
 
     # ---- the ticker ------------------------------------------------------------------------------------------------

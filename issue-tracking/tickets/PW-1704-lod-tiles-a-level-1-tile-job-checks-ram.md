@@ -2,7 +2,7 @@
 id: PW-1704
 title: "LOD tiles: a level-1 tile job checks RAM for a 3.2 GB tile, and an API section build can shadow a matched one"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -30,4 +30,5 @@ Measured (lane 295, dba204, 4 threads, two builds at once): level 1 unmatched 22
       with built neighbours is built matched (`lod_build.build_level1`), or the globe prefers the matched one
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 298: TILE_PEAK_GB by level; globe uses only matched tile-service sections.
 - 2026-11-11: Created from inbox draft draft-lod-level1-job-ram-and-api-sections.md (found by lane295).

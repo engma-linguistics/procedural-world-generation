@@ -65,6 +65,31 @@ def test_level1_is_matched_to_the_neighbours_already_built(data_root, monkeypatc
     assert calls[-1] == (nb[1], ())
 
 
+def test_a_built_section_is_looked_up_not_scanned(data_root, monkeypatch):
+    """build_level1 records each section in the store's sections.json (PW-1707): finding a built cell's level 1 then
+    scans no zoom.json; a section the file doesn't know is found by the scan once, and recorded."""
+    (data_root / "worlds").mkdir()
+    (data_root / "worlds" / "w0.json").write_text("{}")
+
+    def fake_zoom(world_ref, lat, lon, size_km, res_km, seed, log=print, section=None, match=()):
+        d = data_root / "zooms" / f"z-{section}"
+        d.mkdir(parents=True)
+        (d / "zoom.json").write_text(json.dumps({"id": d.name, "section": section, "res_km": res_km, "seed": seed,
+                                                 "source_world": {"id": "w0"}, "created": "2026-11-11 00:00:00"}))
+        return d
+
+    monkeypatch.setattr(RG, "zoom", fake_zoom)
+    da = LB.tile("w0", "py.1.1/1/0/0", log=lambda *_: None)
+    assert json.loads((data_root / "zooms" / LB.SECTIONS_FILE).read_text()) == {"w0/py.1.1/1": da.name}
+    other = fake_zoom("w0", None, None, 0, L.res_km(1), 1, section="py.0.1")  # (built by another path)
+    scans = []
+    real = LB._scan_section
+    monkeypatch.setattr(LB, "_scan_section", lambda *a: scans.append(a) or real(*a))
+    assert LB.find("w0", L.Key("py.1.1", 1, 0, 0)) == da and not scans
+    assert LB.find("w0", L.Key("py.0.1", 1, 0, 0)) == other and len(scans) == 1
+    assert LB.find("w0", L.Key("py.0.1", 1, 0, 0)) == other and len(scans) == 1
+
+
 # ---- two neighbouring cells meeting at their edge ----------------------------------------------------------------
 
 @pytest.fixture(scope="module")

@@ -496,3 +496,19 @@ def test_world_layer_encoding_is_exact_and_small():
         assert back.dtype == {"int": np.int64, "float": np.float64, "bool": bool}[kind], name
     with pytest.raises(TypeError):
         S.world_layer_encode(np.array(["a"]))
+
+
+def test_a_world_takes_its_lod_tiles_with_it(data_root):
+    """LOD tiles live in .tiles/<world>/zooms (never in a zoom list); deleting the world deletes them and their index."""
+    _fake("world", "abc123")
+    _fake("world", "w2")
+    for w in ("abc123", "w2"):
+        with S.tile_store(w) as d:
+            _fake("zoom", "t1", world=w)
+            assert (d / "t1" / "zoom.json").exists() and S.update_index("zoom") == []
+        (S.tiles_dir() / f"{w}.json").write_text("{}")
+    assert S.items("zoom") == []
+    gone = S.delete("world", "abc123")
+    assert S.tile_zooms_dir("abc123").parent in gone and not S.tile_zooms_dir("abc123").exists()
+    assert not (S.tiles_dir() / "abc123.json").exists()
+    assert (S.tile_zooms_dir("w2") / "t1" / "zoom.json").exists() and (S.tiles_dir() / "w2.json").exists()

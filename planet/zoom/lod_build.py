@@ -352,8 +352,38 @@ def save(z: dict, world_id: str, key: L.Key, seed: int = 1) -> Path:
                    extra={"tile": tile_block(world_id, key, seed, pmeta, z.get("cell_lines"))})
 
 
+SECTIONS_FILE = "sections.json"  # in the zoom store (a world's tile store): {"<world>/<cell>/<seed>": zoom id}
+
+
+def _sections() -> dict:
+    try:
+        return json.loads((S.zooms_dir() / SECTIONS_FILE).read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def _remember_section(world_id: str, cell: str, seed: int, zid: str) -> None:
+    """Records a cell's level-1 section in the store's sections.json (PW-1707), under a lock (read, add, replace)."""
+    with S.lock(S.zooms_dir(), "lod-sections"):
+        m = _sections()
+        k = f"{world_id}/{cell}/{seed}"
+        if m.get(k) != zid:
+            S.write_json(S.zooms_dir() / SECTIONS_FILE, {**m, k: zid})
+
+
 def _section_dir(world_id: str, cell: str, seed: int) -> Path | None:
-    """The cell's level-1 section of this world (a zoom with section == cell at level 1's res_km), newest first."""
+    """The cell's level-1 section of this world: looked up in the store's sections.json (written by build_level1);
+    else found by scanning the store (a zoom with section == cell at level 1's res_km, newest first) and recorded."""
+    zid = _sections().get(f"{world_id}/{cell}/{seed}")
+    if zid and (S.zooms_dir() / zid / "zoom.json").exists():
+        return S.zooms_dir() / zid
+    d = _scan_section(world_id, cell, seed)
+    if d is not None:
+        _remember_section(world_id, cell, seed, d.name)
+    return d
+
+
+def _scan_section(world_id: str, cell: str, seed: int) -> Path | None:
     best = None
     for d in sorted(S.zooms_dir().glob("*/zoom.json")):
         try:
@@ -399,7 +429,9 @@ def build_level1(world_ref: str, cell: str, seed: int = 1, log=print) -> Path:
         nb = built_neighbours(wid, cell, seed)
         if nb:
             log(f"level 1 of {cell}: matched to {', '.join(nb)}")
-        return Z.zoom(str(wpath), None, None, L.SQUARE_KM, L.res_km(1), seed, log=log, section=cell, match=tuple(nb))
+        d = Z.zoom(str(wpath), None, None, L.SQUARE_KM, L.res_km(1), seed, log=log, section=cell, match=tuple(nb))
+        _remember_section(wid, cell, seed, Path(d).name)
+        return d
 
 
 def load_sources(world_id: str, key: L.Key, seed: int = 1) -> dict:

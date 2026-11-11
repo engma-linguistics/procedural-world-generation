@@ -68,11 +68,10 @@ class FakeJobs:
     def finish(self, jid, ok=True):
         k = self.tile_of(jid)
         if ok:
-            zid = (api.section_zoom_id(T.TileService._section_request(W, k.cell), W) if k.level == 1
-                   else L.tile_id(W, k, T.SEED))
-            _fake_tile_dir(S.zooms_dir() / zid)
+            zid = f"m{k.cell.replace('.', '')}" if k.level == 1 else L.tile_id(W, k, T.SEED)  # (a matched section's id is its own)
+            _fake_tile_dir(S.tile_zooms_dir(W) / zid)
             if k.level == 1:  # (a section's meta, as lod_build.find reads it)
-                f = S.zooms_dir() / zid / "zoom.json"
+                f = S.tile_zooms_dir(W) / zid / "zoom.json"
                 f.write_text(json.dumps({**json.loads(f.read_text()), "section": k.cell, "res_km": L.res_km(1),
                                          "seed": T.SEED, "created": "2026-11-11 00:00:00"}))
             self.jobs[jid].update(status="done", zoom=zid)
@@ -245,7 +244,7 @@ def test_the_cache_cap_drops_the_least_recently_used(svc):
     s.cap_gb = 4.3
     # least recently used first: kids[0] (t + 2)
     assert s.evict() == [f"{W}:{kids[0]}"]
-    assert not (S.zooms_dir() / L.tile_id(W, kids[0])).exists()
+    assert not (S.tile_zooms_dir(W) / L.tile_id(W, kids[0])).exists()
     # a's use is its latest child's (t + 5, later than b's t + 3); at a tie the child goes first; level 1 never
     s.cap_gb = 2.0
     assert s.evict() == [f"{W}:{b}", f"{W}:{kids[1]}", f"{W}:{a}"]  # (down to 95% of the cap)
@@ -303,3 +302,20 @@ def test_want_route(svc):
     assert code == 200 and body["gen"] == 7 and body["building"] == 1
     assert s.post("/api/tiles/want", b"{not json")[1] == 400
     assert s.post("/api/tiles/want", json.dumps({"world": W, "tiles": [["py.1.1", 9, 0, 0]]}).encode())[1] == 400
+
+
+def test_tiles_stay_out_of_the_zoom_store(svc):
+    """Tiles are saved in .tiles/<world>/zooms/: zooms/ holds none, and inside tile_store a save lists nothing."""
+    s = svc
+    s.want(W, ["py.1.1/1/0/0"])
+    _finish_all(s)
+    assert list((S.root() / "zooms").iterdir()) == []
+    assert list(S.tile_zooms_dir(W).glob("*/zoom.json"))
+    assert S.items("zoom") == []  # (the viewer's zoom list, /api/planets, `planet list`)
+    zd = S.zooms_dir()
+    with S.tile_store(W) as d:
+        assert S.zooms_dir() == d != zd and S.path_of("zoom", "abc") == d / "abc"
+        assert S.update_index("zoom") == []  # (no scan)
+    assert S.zooms_dir() == zd
+    assert not (zd / "index.json").exists()
+
