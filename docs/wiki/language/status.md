@@ -7,7 +7,7 @@
 **Finish line (epic PW-1736), roughly in order:**
 1. Check every change on several worlds at once, not just a24559.
 2. Fix the visible slips: garbled place names, random taboo words, "rr" everywhere, unnamed families, too few given names.
-3. Stop borrowing core words like "I", "two" and "mother".
+3. Borrowing in the right places: less for core words like "I" and "two", more for things a people met late (horse, new crops, new tools), with a bigger everyday vocabulary.
 4. Fix sound systems that drift into odd shapes (no /m/, too few aspirates).
 5. Bring isolating languages back, along with more gender and classifiers.
 6. The names work: names that wear down over time, and feature names.
@@ -53,6 +53,7 @@ The **real-language benchmark** (PW-1641) is outside `checks.py`. Run `tools/lan
     - PW-1742: isolates in the viewer, relic first.
     - PW-1743: names on demand.
     - PW-1744: viewer catch-up (PW-1644 folded in).
+    - PW-1745: late things arrive as loans (animals gated by range and herd spread, wild fauna and flora by biome, kitchen and everyday-item words; owner 11-11). Pair it with PW-1738 in one borrowing lane.
   - Moved under it:
     - PW-1685 (PW-1547 merged in), PW-1656, PW-1655, PW-1639, PW-1632, PW-1633;
     - PW-1647 (step 2 failed in lane 17; next try a coda-loss conspiracy);
