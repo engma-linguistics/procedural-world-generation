@@ -129,3 +129,26 @@ export const TILT = { AUTO_DEG: 75, AUTO_HI_KM: 200, AUTO_LO_KM: 1.5, MAX_DEG: 8
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
 export const autoTilt = (hKm) => TILT.AUTO_DEG * Math.PI / 180 * clamp01(Math.log(TILT.AUTO_HI_KM / hKm) / Math.log(TILT.AUTO_HI_KM / TILT.AUTO_LO_KM));
 export const capTilt = (hKm) => TILT.MAX_DEG * Math.PI / 180 * clamp01(Math.log(TILT.CAP_HI_KM / hKm) / Math.log(TILT.CAP_HI_KM / TILT.CAP_LO_KM));
+
+// ---- which cell a point of the sphere is in, exactly (tiling.py's locate): the cube face's normal A and tangents U
+// (index i), V (index j), and the cell's edges as face angles (tiling._edges: (pi/4) sign(t)|t|^WARP, t even in -1..1).
+// A point p (planet coordinates) is in face.i.j when p.A > 0, atan2(p.U, p.A) in [a0, a1) and atan2(p.V, p.A) in
+// [b0, b1): the tile shader's clip at the cell edge (lodtiles.js), the same great circles for both cells there.
+export const CUBE = {
+  px: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], py: [[0, 1, 0], [-1, 0, 0], [0, 0, 1]], mx: [[-1, 0, 0], [0, -1, 0], [0, 0, 1]],
+  my: [[0, -1, 0], [1, 0, 0], [0, 0, 1]], pz: [[0, 0, 1], [0, 1, 0], [-1, 0, 0]], mz: [[0, 0, -1], [0, 1, 0], [1, 0, 0]],
+};
+export const WARP = 0.88, CELLS_PER_FACE = 3;
+export function cellEdges(n = CELLS_PER_FACE) {
+  return Array.from({ length: n + 1 }, (_, k) => { const t = -1 + 2 * k / n; return Math.PI / 4 * Math.sign(t) * Math.abs(t) ** WARP; });
+}
+export function cellAngles(id) {
+  const [f, i, j] = id.split('.'), e = cellEdges(), [A, U, V] = CUBE[f];
+  return { A, U, V, ab: [e[+i], e[+i + 1], e[+j], e[+j + 1]] };
+}
+export function inCellAngles(c, p, pad = 0) {
+  const d = p[0] * c.A[0] + p[1] * c.A[1] + p[2] * c.A[2];
+  if (!(d > 0)) return false;
+  const a = Math.atan2(p[0] * c.U[0] + p[1] * c.U[1] + p[2] * c.U[2], d), b = Math.atan2(p[0] * c.V[0] + p[1] * c.V[1] + p[2] * c.V[2], d);
+  return a >= c.ab[0] - pad && a < c.ab[1] + pad && b >= c.ab[2] - pad && b < c.ab[3] + pad;
+}

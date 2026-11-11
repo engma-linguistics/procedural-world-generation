@@ -5,7 +5,9 @@
 //
 //   - A tile shows when it has arrived; until then its parent shows there, stretched (the parent drops, by dithering,
 //     exactly the fragments its drawn children keep: their fade-in over FADE_S is the parent's fade-out; no sorting).
-//   - Each cell's tiles are clipped to the cell (a mask of its outline in its plane), so neighbours meet at the line.
+//   - Each cell's tiles are clipped to the cell exactly (its edges are the cube's great circles, lodmath.js::cellAngles),
+//     a pixel of the tile's level generous, so neighbours meet at the line (a 2 km mask did, PW-1673 step 6: at 25 m
+//     the cells overlapped by up to ~1 km, beyond the line's fade, and their grounds cut through each other).
 //   - The globe's cells are hidden by the stencil wherever a tile is drawn (tiles draw first and mark it).
 //   - Heights: the globe's exaggeration, easing to 1x between 2,000 km and 50 km above the ground (the cells too, so
 //     cells and tiles stand at one height; easeEx).
@@ -33,7 +35,7 @@ import { NotBuilt, TileSource } from './tilesource.js';
 
 const P = new URLSearchParams(location.search);
 const R_M = 6371000;
-const FADE_S = 0.4, MAX_TILES = 120, MAX_BYTES = 0.4e9, FORGET_MS = 60000, FETCHES = 4, MASK_PX = 2048, GN = 129;
+const FADE_S = 0.4, MAX_TILES = 120, MAX_BYTES = 0.4e9, FORGET_MS = 60000, FETCHES = 4, GN = 129;
 const KIDS_PX = 80;  // (a tile's children grid: 8, 4 and 10 a side divide it)
 const RIVER_W = 4.5, RIVER_MAX_PX = 8;  // river width m = RIVER_W sqrt(Q m3/s) (judgement), at most RIVER_MAX_PX pixels across
 const EASE_HI_KM = 2000, EASE_LO_KM = 50;
@@ -61,27 +63,33 @@ const SHARED = (() => {
 const VERT = `
 uniform sampler2D uElev; uniform vec3 uCentre; uniform float uEx; uniform float uSkirt;
 attribute float skirt;
-varying vec2 vUv;
+varying vec2 vUv; varying vec3 vDir;
 void main() {
   vUv = uv;
   vec3 n = normalize(uCentre + position);
+  vDir = vec3(n.x, -n.z, n.y);  // (planet coordinates: the scene's (x, y, z) is the planet's (x, z, -y))
   float h = max(texture2D(uElev, uv).r, 0.0);
   vec3 p = position + n * (uEx * h - skirt * uSkirt);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
 }`;
 const FRAG = `
-uniform sampler2D uElev; uniform sampler2D uColor; uniform sampler2D uMask; uniform sampler2D uKids; uniform sampler2D uRiver;
+uniform sampler2D uElev; uniform sampler2D uColor; uniform sampler2D uKids; uniform sampler2D uRiver;
 uniform float uRiverOn; uniform vec3 uRiverCol; uniform vec3 uRiverBig;
 uniform vec3 uRect; uniform float uFade; uniform float uExM; uniform float uTexel; uniform float uResM;
-varying vec2 vUv;
+uniform vec3 uFA; uniform vec3 uFU; uniform vec3 uFV; uniform vec4 uAB; uniform float uPad;
+varying vec2 vUv; varying vec3 vDir;
 float ign(vec2 p) { return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }
 float hAt(vec2 q) { return max(texture2D(uElev, q).r, 0.0); }
 void main() {
   float d = ign(gl_FragCoord.xy);
   if (d >= uFade) discard;                       // fading in
   if (d < texture2D(uKids, vUv).r) discard;      // a drawn child has this spot (its share of the dither)
-  vec2 pl = vec2(uRect.x + vUv.x * uRect.z, uRect.y - vUv.y * uRect.z);
-  if (texture2D(uMask, vec2((pl.x + 2000.0) / 4000.0, (2000.0 - pl.y) / 4000.0)).r < 0.3) discard;  // outside the cell (a fraction of a mask texel generous: neighbours overlap, never gap)
+  // outside the cell: its edges are great circles of the cube (lodmath.js::inCellAngles), exact for both cells there; each
+  // cell draws uPad (a pixel of the tile's level) past them, where both cells' tiles hold the same ground (the fade to
+  // the line, lod_build.line_surface: weight 1 within 1.5 px), so neighbours overlap a little and never leave a gap
+  float fd = dot(vDir, uFA);
+  vec2 ab = vec2(atan(dot(vDir, uFU), fd), atan(dot(vDir, uFV), fd));
+  if (fd <= 0.0 || ab.x < uAB.x - uPad || ab.x > uAB.y + uPad || ab.y < uAB.z - uPad || ab.y > uAB.w + uPad) discard;
   float gx = (hAt(vUv + vec2(uTexel, 0.0)) - hAt(vUv - vec2(uTexel, 0.0))) * uExM / (2.0 * uResM);
   float gy = (hAt(vUv - vec2(0.0, uTexel)) - hAt(vUv + vec2(0.0, uTexel))) * uExM / (2.0 * uResM);
   vec3 nrm = normalize(vec3(-gx, -gy, 1.0)), L = normalize(vec3(-1.0, 1.0, 1.2));
@@ -107,23 +115,12 @@ async function openWorld(id) {
     if (LOD.world !== id) return;
     LOD.cells = cells.map((c) => {
       const fr = aeFrame(c.lat, c.lon, c.up);
-      return { ...c, fr, centre: three(fr.C), mask: cellMask(c.outline) };
+      const a = M.cellAngles(c.id);
+      return { ...c, fr, centre: three(fr.C), clip: { A: new THREE.Vector3(...a.A), U: new THREE.Vector3(...a.U), V: new THREE.Vector3(...a.V),
+                                                     ab: new THREE.Vector4(...a.ab) } };
     });
     LOD.src = src; LOD.dirty = true;
   } catch (e) { console.warn('[lod] no tiles:', e.message); LOD.note = 'no detail tiles for this world'; }
-}
-function cellMask(outline) {
-  const cv = document.createElement('canvas'); cv.width = cv.height = MASK_PX;
-  const g = cv.getContext('2d'), s = MASK_PX / M.SQUARE_KM;
-  g.fillStyle = '#000'; g.fillRect(0, 0, MASK_PX, MASK_PX); g.fillStyle = '#fff'; g.beginPath();
-  outline.forEach(([x, y], i) => (i ? g.lineTo : g.moveTo).call(g, (x + M.HALF) * s, (M.HALF - y) * s));
-  g.closePath(); g.fill();
-  // (one byte a texel: 4 MB on the GPU a cell, not the canvas's 16)
-  const rgba = g.getImageData(0, 0, MASK_PX, MASK_PX).data, r = new Uint8Array(MASK_PX * MASK_PX);
-  for (let i = 0; i < r.length; i++) r[i] = rgba[4 * i];
-  const t = new THREE.DataTexture(r, MASK_PX, MASK_PX, THREE.RedFormat, THREE.UnsignedByteType);
-  Object.assign(t, { flipY: false, generateMipmaps: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, needsUpdate: true });
-  return t;
 }
 
 // ---- tiles ----------------------------------------------------------------------------------------------------------
@@ -158,7 +155,8 @@ function buildMesh(t) {
   Object.assign(t.kidTex, { flipY: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, needsUpdate: true });
   const mat = new THREE.ShaderMaterial({
     vertexShader: VERT, fragmentShader: FRAG, side: THREE.DoubleSide,
-    uniforms: { uElev: { value: et }, uColor: { value: null }, uMask: { value: cell.mask }, uKids: { value: t.kidTex }, uCentre: { value: c.clone() },
+    uniforms: { uElev: { value: et }, uColor: { value: null }, uFA: { value: cell.clip.A }, uFU: { value: cell.clip.U }, uFV: { value: cell.clip.V }, uAB: { value: cell.clip.ab },
+                uPad: { value: M.resKm(k.level) / M.R_KM }, uKids: { value: t.kidTex }, uCentre: { value: c.clone() },
                 uRiver: { value: NO_RIVER }, uRiverOn: { value: 0 }, uRiverCol: { value: new THREE.Color() }, uRiverBig: { value: new THREE.Color() },
                 uEx: { value: 0 }, uExM: { value: 1 }, uSkirt: { value: 3 * M.resKm(k.level) / M.R_KM }, uRect: { value: new THREE.Vector3(x0, y1, T) },
                 uFade: { value: 0 }, uTexel: { value: 1 / n }, uResM: { value: M.resKm(k.level) * 1000 } },
