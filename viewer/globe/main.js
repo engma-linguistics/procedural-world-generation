@@ -46,6 +46,7 @@ import './tabs.js';
 import './load.js';
 import './playback.js';
 import './select.js';
+import './settleview.js';  // (the settlement view, PW-1659)
 import * as THREE from 'three';
 import { esc } from '../planets.js';
 import { S, state } from './state.js';

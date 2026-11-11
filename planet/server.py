@@ -791,6 +791,9 @@ def trade(query: str) -> tuple[dict, int]:
         if not meta.get("eraq") or not meta.get("world"):
             raise ValueError("this run has no land-use window or no world (made before PW-742): no goods ledger")
         doc = trade_doc(d)
+        if q.get("good"):  # (PW-1508: one good's spare and lacking per cell at the land-use frame nearest ago, the globe's Trade goods layer)
+            from .lineages import settlement_view as SV
+            return SV.good_view(d, q["good"], max(0.0, float(q.get("ago") or 0.0))), 200
         if q.get("routes"):  # (step 3, PW-1504: the routes and trading towns of the frame nearest ago, for the globe's Trade routes overlay)
             from .lineages import trade_routes as RT
             return RT.frame_view(trade_flow_doc(d), float(q.get("ago") or 0.0)), 200
@@ -1187,6 +1190,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*techspread(url.query))
         if url.path == "/api/trade":
             return self.send_json(*trade(url.query))
+        if url.path == "/api/settlement":  # (PW-1659: the settlement view, lineages/settlement_view.py)
+            from .lineages import settlement_view as SV
+            return self.send_json(*SV.api(url.query))
         if url.path == "/api/tongues":
             return self.send_json(*tongues(url.query))
         if url.path == "/api/faithmap":
