@@ -31,4 +31,5 @@ To do:
 **Self-contained option (stretch):** a fully offline single-download bundle per OS (e.g. PyInstaller), which would be large because of numba/llvmlite. The uv route is self-bootstrapping and much smaller, so prefer it unless Daniel wants offline installs.
 
 ## Updates
+- 2026-11-11: Daniel has a Mac to test on: Apple Silicon, 24 GB RAM. The macOS install is proven by hand on it: a checklist step for Daniel, with exact commands; a lane can't reach it. No Windows machine, so Windows is proven by the GitHub Actions run only (push of a test branch pending Daniel's OK).
 - 2026-11-11: Created from inbox draft draft-native-windows-macos-install.md (found by owner).
