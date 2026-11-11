@@ -44,10 +44,14 @@ from . import rules as RU
 from . import romanize as RO
 
 START_KYR = I.START_KYR
-RATE_SCALE = float(__import__("os").environ.get("LANG_RATE_SCALE", "220.0"))  # multiplies lect.RATE_RULE (calibration lever;
+RATE_SCALE = float(__import__("os").environ.get("LANG_RATE_SCALE", "60.0"))  # multiplies lect.RATE_RULE (calibration lever;
 # calibration.md). 5 -> 220 with the single draw (PW-1551): most draws now land on a row that changes nothing and fire
 # nothing, so 44x the draws give about the same applied changes (isolated-lect harness 14.8 -> 17.2 per lect-kyr; full pass
 # a24559: human rules per kyr 17.9 -> 18.8, horizon reading 11.4 -> 11.4; 150 left it at 16.0)
+# 220 -> 60 with the weight-scaled re-fire wait (PW-1692, lane 17; lect.REFIRE_W_KYR): at 220 every row of naturalness 3
+# or more was drawn many times within its wait, so the commoner rows all fired at one capped rate and rare rows fired 10-35x
+# as often per unit weight; at 60 a row is drawn about in proportion to its weight. Human changes per kyr on a24559 stay
+# at 14.7 (main 14.8): more of them are now the common rows (h > 0 1,215 -> 2,300 firings), fewer the rare ones.
 REPLACE_SCALE = float(__import__("os").environ.get("LANG_REPLACE_SCALE", "1.0"))  # (1.25 -> 1.0 with lexicon.FREQ_SPREAD 10 -> 4, 2026-11-04) multiplies lexicon.BASE_REPLACE through the generations handed to lexicon.step (calibration lever)
 PROTO_LINK = 0.05  # same-people contact that joins start demes into one proto-language
 CONTACT_MIN = 0.05  # contact for the wave
@@ -129,9 +133,7 @@ AREAL_WEIGHT = {"word_order": 1.0, "adposition": 1.0, "genitive": 1.5, "adjectiv
 # driver-side draw (and wave adoption) weight overrides, by rule id, catalogue id or `family:<name>` (lect.weight_override):
 # ʔ-prothesis is rare; tonogenesis (which needs the conditioning coda/onset contrast lost) and vowel reduction are not drawn in
 # every lect; the onset-voicing split, never vetoed (it merges nothing), was the tone source of nearly every lect at 0.3
-RULE_WEIGHT = {"S042": 0.15, "family:tone": 0.5, "tone.onset_voicing_split": 0.05, "family:reduction": 0.5,
-               "S073": 0.3,  # (u > y: with y > i after it, the u of every lect drained into i)
-               "S148": 0.3}  # (r > ʁ: see below)
+RULE_WEIGHT = {"family:tone": 0.5, "tone.onset_voicing_split": 0.05, "family:reduction": 0.5}
 # (PW-1642: uvular r. Europe's ʁ is one innovation spread by contact (Trudgill 1974; the Paris r carried to German,
 # Danish, Dutch, Portuguese and Hebrew), not one that lines make again and again; PHOIBLE has ʁ in 3.7% of languages.
 # At naturalness 1 r > ʁ still fired 126 times on its own in a24559's 1,185 lects (plus 75 adoptions by wave), and ʁ stood
@@ -402,6 +404,11 @@ class History:
                 for r in fired[l.id]:
                     w = LC.weight_override(RULE_WEIGHT, r)
                     w = 1.0 if w is None else w
+                    # (PW-1692, lane 17: a rare change is taken up as reluctantly as it arises, by its catalogue weight
+                    # for the receiver's voice, up to 1: naturalness 3 and up spread freely, 2 at 1/3, 1 at 1/9.
+                    # Before, contact spread every change alike: harmony.back reached half of a24559's living lects,
+                    # more of them by adoption than by their own change)
+                    w *= min(1.0, LC.catalogue_weight(r, y))
                     if r.family == "tone" or r.cause == "tonogenesis":  # (an ear that hears tone coarsely takes it up less)
                         w *= min(1.0, (getattr(y.profile, "hear", None) or {}).get("tone", 1.0)) ** 2
                     # (the ease drag: a change toward rarer sounds spreads as reluctantly as it arises; the size steer: nor

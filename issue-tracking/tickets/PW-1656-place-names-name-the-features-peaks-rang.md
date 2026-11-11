@@ -3,7 +3,7 @@ id: PW-1656
 title: "Place names: name the features (peaks, ranges, capes, bays, islands, lakes, regions); rivers keep names longest, towns are renamed most"
 type: story
 status: todo
-parent: PW-767
+parent: PW-1736
 milestone: v4
 subsystem: culture
 effort: m
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-972]
 refs: [planet/language/names.py]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -38,3 +38,4 @@ last), its article (construct), rendaku (feature), the locative prefix (locative
 as the head (VALLEY for a construct river, MOUNTAIN for a feature peak). Keep the English Common rendering as is.
 - [ ] a24559: river and peak names of two families with different templates told apart by eye
 - [ ] tests: a construct habit names a river 'generic + article + specific'
+- 2026-11-11: Moved under the language finish-line epic PW-1736 (assessment docs/review/language/assessment-2026-11-11.html; owner agreed 11-11).

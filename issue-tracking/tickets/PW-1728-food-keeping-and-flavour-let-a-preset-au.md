@@ -2,7 +2,7 @@
 id: PW-1728
 title: "Food keeping and flavour: let a preset author a kind's keeping leanings (elves' long ageing, halflings' short horizon)"
 type: task
-status: todo
+status: done
 parent: null
 milestone: null
 subsystem: food
@@ -31,4 +31,5 @@ only (Seven Meals is frozen), with the viewer's body editor showing it.
 - [ ] the D&D preset's elves, halflings and dragonborn read as the notes say on a fresh D&D run
 
 ## Updates
+- 2026-11-11: Status todo -> done. lane 309 merged
 - 2026-11-11: Created from inbox draft draft-keeping-leanings-authored-per-kind.md (found by lane308).

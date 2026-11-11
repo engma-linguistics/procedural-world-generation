@@ -1,6 +1,6 @@
 # Languages
 
-*Last updated 2026-11-11 (after lane 16; lane 17 running). Each page here has a short part for Daniel on top and a longer part for agents below the line.*
+*Last updated 2026-11-11 (after lane 17). Each page here has a short part for Daniel on top and a longer part for agents below the line.*
 
 ## What it is
 
@@ -25,9 +25,9 @@ A pass over a finished peoples run. It grows every people's languages over the l
 ## Where it stands
 
 - `planet make` runs the language pass by default. It takes about 10 minutes on a24559.
-- That run has 621 living varieties, grouped into 579 languages and 264 true families.
+- That run has 623 living varieties, grouped into 571 languages.
 - 16 of 17 realism checks pass. The one that fails, how far back scholars can trace families, you accepted.
-- Next: the place-names lane (names that wear down over time, feature names), then map labels and the settlement view.
+- Next: a short finish line (epic PW-1736, about two weeks), then the language work is done. See [what's open](status.md).
 
 More: [how it works](how-it-works.md), [what's open](status.md).
 
@@ -72,9 +72,9 @@ uv run pytest -q tests/test_language_*.py tests/test_languages_viewer.py
 ### Artifacts
 | Artifact | URL | Built by |
 |---|---|---|
-| Demo (v22) | https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs | `tools/language/demo_page.py --backend espeak` (always eSpeak) |
-| Sisters (v3) | https://claude.ai/artifact/YD1V4gaWYbqaontwgb37B9 | `tools/language/sisters_page.py`; needs a pre-lane-15 `--before` copy |
-| Places (v2) | https://claude.ai/artifact/4UWoSY3i1jqkz9zYzY1gVA | `tools/language/places_page.py` |
+| Demo (v23) | https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs | `tools/language/demo_page.py --backend espeak` (always eSpeak) |
+| Sisters (v4) | https://claude.ai/artifact/YD1V4gaWYbqaontwgb37B9 | `tools/language/sisters_page.py`; needs a pre-lane-15 `--before` copy |
+| Places (v3) | https://claude.ai/artifact/4UWoSY3i1jqkz9zYzY1gVA | `tools/language/places_page.py` |
 | Language Desk | https://claude.ai/artifact/HYNL244a8zVvfSGFWK5Fgw | source `docs/review/language/desk/index.html`; answers in db collection `answers` |
 | Real-inventory experiment | https://claude.ai/artifact/D9zoxQnya6RG5uYspUJX84 | `tools/language/real_inventory.py --html` |
 | Original design doc | https://claude.ai/artifact/58m5qxKajjfn6TkTqq3EL2 | (the *what*; architecture.md is the *how*) |

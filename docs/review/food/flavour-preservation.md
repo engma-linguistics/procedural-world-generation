@@ -116,7 +116,92 @@ descriptor.
 
 - The kind leanings come only from the body keys a tree already has (fire, raw_meat, bitter, sweet, capsaicin, salt, diet) and from traits.
   A preset can't yet author a leaning directly, such as the notes' elves who age "on scales nobody else can attempt", or halflings whose
-  "preservation is short-horizon". There is an inbox draft for this.
+  "preservation is short-horizon". There is an inbox draft for this. (Lane 309: done, the body key `keeping`; see below.)
 - PW-1441 (no D&D people knows fermentation) does not show on a2b637 with today's code. Only 30 of its 273 living cultures read "no beer
   or wine yet", and 243 have at least one ferment among their keeping methods. The 30 are the dragon cultures, which know none of the
   keeping techs. One run isn't the "two or three D&D runs" that ticket asks for.
+
+
+# Lane 309: the kitchen through time, bought-in food, authored leanings (PW-1714, PW-1727, PW-1728)
+
+## Kitchen through time (PW-1714; `planet/lineages/kitchen_time.py`)
+
+A culture's cuisine sheet now carries `through_time`. The brief reads every stored frame from the culture's founding to the era asked
+(at most 60, thinned evenly; inside the land-use window a frame each 500 years). At each frame it reads the same things the sheet reads,
+on that frame's land: crops and herds known there, ways of life, lead fuel, dairy, bought-in food, and the flavour profile (keeping.py on
+that frame's land, salt, fish, fuels and trade). Keeping methods are dated by its people's tech dates (meta.techtree.known), with whom
+they were taken from. A change is listed when it holds two frames running (three for the lead fuel and the two leading tastes, which flip
+at near-ties). A crop that was on the culture's land before its people knew it reads "another people's, on its land". The viewer's
+Culinary brief tab shows a "Kitchen through time" table under Keeping food, with a small grid of the ten tastes frame by frame (darker is
+stronger, hover for the date and descriptor). The brief's Markdown has the same lines. Building it adds about 5 to 17 s to a culture's
+brief at L7.
+
+Three samples (present day; all lines are the run's, unedited):
+
+- a2b637 (D&D), culture 268, steppe orcs of the west of Huramom: first seen 50,000 years ago as foragers eating fresh; 34,500 drying and
+  smoking known (from storm giants); 7,000 takes up herding (93%), the kitchen turns fatty and salty; 6,900 fermenting milk known (from
+  humans); 6,400 salting known (worked out by its own people); 5,000 sheep and goats arrive, takes up farming (81%), milks its herds, makes
+  cheese, cooks mostly on dung (was drift), the kitchen turns salty and sour; 4,500 pickling; 4,000 wheat and barley (another people's,
+  on its land); 3,500 horses arrive, grain bought in from orcs of Huramom; 3,000 fermenting fish known (from tritons); 2,500 grain no
+  longer bought in; 1,500 to 500 olives, quinoa, beans, greens, maize, peanuts, tree fruit arrive.
+- de1cc6 (Seven Meals), culture 114, Laaulaah (goblin): founded 216,000 years ago; 38,500 drying and smoking (from lizardfolk); 12,000
+  fermenting roots and meat (from hill giants) and cellaring; 11,000 takes up farming (81%), salt fish bought in; 10,000 sugar cane
+  arrives (its people had tamed it ~12,000 years ago); 9,500 fermenting milk and grain (from hobgoblins); 8,000 sheep and goats; 6,500
+  wheat and barley, cooks mostly on dung, the kitchen turns funky and sour (was smoky and herbal); 4,500 salt bought in from Ansiwuḷu;
+  3,500 milks its herds, makes cheese; 2,500 beans and rice arrive, salt fish no longer bought in.
+- de1cc6, culture 182, Sigbtaluu (antelope folk): 37,000 drying and smoking; 11,000 sheep and goats; 10,500 takes up herding (96%),
+  the kitchen turns smoky and fatty; 8,800 fermenting milk, grain and roots (from elves); 8,000 takes up farming (59%); 6,600 salting
+  (from tortles); 6,000 foxtail millet arrives, grain bought in; 5,000 horses; 3,500 wheat and barley; present, tree fruit arrives, cooks
+  mostly on dung (was peat), the kitchen turns sour and fatty.
+
+Limits: the tech dates are its people's (the whole kind's), not the culture's own; the era picker, conquest doublets and the culture's
+own calendar for the step dates (the ticket's other parts) are not in this lane. The brief's dates do follow a chosen calendar.
+
+## Bought-in food in the profile (PW-1727)
+
+keeping.inputs now reads the sheet's own "Bought in" line (brief.trade_reach, bought_in.py): trade only (tribute is not bought), from 1%
+of the culture's people supplied and with a giver named. Bought salt raises the salt reach by 2.5x its share, to at most 0.8 (bought salt
+is never as cheap as one's own); that moves salting, pickling and the salty axis. Bought spice adds heat (pepper, chili), bitterness (tea,
+cacao) or sweetness (vanilla, or chili for a people that feels no capsaicin), by what the givers' fields grow. Bought sugar adds
+sweetness, bought oil fat (wine alone adds none), bought salt fish savouriness. Each adds `base + 2.5 x share` up to a cap (heat 0.5,
+sweet 0.4, fat 0.3, savoury 0.3). All of these are JUDGEMENT. Each comes with a reason, e.g. "salt far on its own land, but salt bought
+in from first hill giants of Ratal (10% of its people supplied)".
+
+At the present, over all living cultures:
+
+| run | living | buys salt | buys spice | profile changed | salting share changed | two leading tastes changed |
+|---|---|---|---|---|---|---|
+| a2b637 | 273 | 37 | 43 | 114 | 35 | 45 |
+| de1cc6 | 218 | 23 | 39 | 95 | 20 | 49 |
+
+Examples: a2b637 goliaths of the west of Simath (culture 446), salty 0.16 -> 0.37 and salting 1.4% -> 3.1% of all food, hot 0 -> 0.21
+from pepper bought from humans of the south-west of Tobrosal; de1cc6 Lin̆yei (aarakocra, culture 429), salty 0.04 -> 0.43, salt from
+Luazsiw by river (21%), the descriptor "funky, sour and bitter" becomes "sour, salty and funky".
+
+## Authored keeping leanings (PW-1728)
+
+The tree's body key `keeping` (spec.parse_keeping; documented in the dnd.toml header and docs/proposals/lineages.md): keeping method ->
+multiplier 0..5, `kept` (how much of all food is kept) and `why`. Applied after the tech gates (a leaning never teaches a tech), with
+an "authored for this kind" reason; 0 lists the method as "never done by this kind". Merged key by key down the tree. The workbench body
+editor has a "keeping leanings" field. The D&D preset sets, from culinary-dnd's fact sheets:
+
+- elves: kept x1.25, cellaring x1.6, grain and fruit ferments x1.4, crocks x1.3 ("ageing and fermentation on scales nobody else can
+  attempt; great cellars of wine aged for decades");
+- halflings: kept x0.6, cellaring x0.6, salting x0.7 ("preservation is short-horizon, kept for next week, not next year");
+- dragonborn: smoking 0 ("straw and crop-residue fire, fast and hot; steaming and wok cooking").
+
+Seven Meals is frozen and does not set it.
+
+On a fresh D&D run with these leanings (run 12face, world dba204, one try, made under lane 309; scratch, since deleted), at the present,
+the mean over the living cultures of each kind, with the leaning and with it removed (same land, same everything else):
+
+| kind | cultures | kept share | cellaring (share of all food) | smoking (share of all food) | cultures that smoke |
+|---|---|---|---|---|---|
+| elves | 9 | 0.358 (0.286 without) | 0.048 (0.03) | 0.041 (0.04) | 9 (9) |
+| halflings | 1 | 0.15 (0.25) | 0 (0) | 0.009 (0.014) | 1 (1) |
+| dragonborn | 25 | 0.427 (0.427) | 0.024 (0.023) | 0 (0.016) | 0 (23) |
+| humans (no leaning) | 36 | 0.424 | 0.012 | 0.022 | 36 |
+
+Elves keep more and ferment and cellar more; the one living halfling culture keeps 15% of its food, not 25%; no dragonborn culture
+smokes ("never done by this kind" in its not-yet list). Elves still smoke: their notes say wood is "abundant, indifferently used", so no
+leaning was set there. Halflings are one culture on this run, so their row is a single case.

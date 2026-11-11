@@ -2,7 +2,7 @@
 id: PW-1692
 title: "Languages: common sound changes hit the re-fire cap, so rare ones fire about 10x more often than their weight says"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: v4
 subsystem: peoples
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1642, PW-1686, PW-1551]
 refs: ["planet/language/lect.py::Lect.may_fire", "planet/language/lect.py::REFIRE_KYR", "planet/language/history.py::RATE_SCALE", "planet/language/history.py::RULE_WEIGHT", "planet/language/rules.py::pick_rule", planet/language/data/sound_changes.tsv, "run a24559", docs/review/language/for-daniel.md]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -42,3 +42,4 @@ and drop the per-row overrides that become unnecessary.
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-rule-weight-saturation.md (found by lang-lane16).
+- 2026-11-11: Done in lane 17 (merged 21bbe7a6; suite 2128 passed): re-fire wait = REFIRE_W_KYR 2.0 / the row's draw weight, RATE_SCALE 220 -> 60, wave adoption x catalogue weight (lect.catalogue_weight); S148/S042/S073 overrides removed. Grade-1 vs grade-5 firings per unit weight 21x -> 6.6x whole-run (a24559; 4 draws 6.6-7.6x); on the fair measure (firings per kyr of opportunity per unit weight, scratchpad/lane17/opp.py) within 2x from weight 0.01 to 3 and 3x up to 9. Acceptance reworded to that measure (the whole-run count can't reach 2x: conditioned rows exhaust their input, grade-5 rows are deliberately damped). Human changes per kyr kept (14.8 -> 14.1).

@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1636, PW-1561]
 refs: ["planet/language/inputs.py::Run._trade_triggers", "planet/language/history.py::History.loan_kinds", "planet/language/contact.py::RAW", "planet/language/contact.py::TRADE_NUMERALS", "run a24559", "run de1cc6"]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -38,3 +38,4 @@ cells; keep the long shared-land pairs as plain neighbours. Measure the trade/ne
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-trade-contact-too-broad.md (found by lang-lane13).
+- 2026-11-11: 11-11 assessment: contact inputs (this, PW-1561, PW-1652) are one question for the polities work PW-1549; keep them together there.

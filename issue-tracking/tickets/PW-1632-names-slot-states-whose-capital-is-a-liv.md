@@ -3,7 +3,7 @@ id: PW-1632
 title: "Names slot: states whose capital is a living village keep a gloss name (the languages name only each deme's 3 biggest places)"
 type: task
 status: todo
-parent: PW-767
+parent: PW-1736
 milestone: v5
 subsystem: culture
 effort: s
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1604, PW-1436]
 refs: ["planet/language/personal.py::Personal.settlements", "planet/language/personal.py::SITES_PER_DEME", "planet/language/personal.py::Personal.ruins", "planet/language/names.py::_Pass", "planet/lineages/nameslot.py::place_names", "planet/lineages/nameslot.py::apply_polities", "planet/lineages/polities.py::derive", "run a24559"]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -44,3 +44,5 @@ Options:
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-living-capitals-unnamed.md (found by lang-lane11).
+- 2026-11-11: Moved under the language finish-line epic PW-1736 (assessment docs/review/language/assessment-2026-11-11.html; owner agreed 11-11).
+- 2026-11-11: Part of the finish line (names).

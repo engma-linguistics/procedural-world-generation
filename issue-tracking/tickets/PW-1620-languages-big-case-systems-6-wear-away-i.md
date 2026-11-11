@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1605, PW-1586]
 refs: ["planet/language/grammar.py::step", "planet/language/grammar.py::_check_lost", "planet/language/history.py::areal_step", "planet/language/history.py::AREAL_WEIGHT", "planet/language/lect.py::Lect.step", "planet/language/grammar.py::social_factors", "run a24559", "run de1cc6", docs/review/language/calibration.md]
 created: 2026-11-09
-updated: 2026-11-09
+updated: 2026-11-11
 ---
 
 ## Description
@@ -43,3 +43,4 @@ small ones a third too common; a reader takes the world's grammar as poorer in c
 ## Updates
 - 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-11-09: Created from inbox draft draft-language-case-big-systems-history.md (found by language lane 10 (PW-1605)).
+- 2026-11-11: PW-1605 merged in: both are halves of WALS 49A (2-5 case 33% vs 20%, none 38% vs 47%, 6+ 26% vs 32%); fix the case-count distribution as one.

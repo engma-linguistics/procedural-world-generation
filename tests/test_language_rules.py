@@ -181,7 +181,8 @@ def test_pick_rule_deterministic():
     rules = R.catalogue(HUMAN)
 
     def run(rng):
-        return [getattr(R.pick_rule(rng, rules, lex, inv), "id", None) for _ in range(30)]
+        return [getattr(R.pick_rule(rng, rules, lex, inv), "id", None) for _ in range(100)]   # (30 drew nothing that
+        # applied once harmony.back went to naturalness 2, PW-1646: most draws land on rows these eight words lack)
 
     assert run(np.random.default_rng(7)) == run(np.random.default_rng(7))
     assert run(random.Random(7)) == run(random.Random(7))

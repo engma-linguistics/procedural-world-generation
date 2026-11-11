@@ -2,7 +2,7 @@
 id: PW-1719
 title: "Installer: one-command uv bootstrap with a launcher, a data folder outside the code, and an offline viewer (Linux first)"
 type: story
-status: todo
+status: done
 parent: null
 milestone: v1.0
 subsystem: infra
@@ -33,4 +33,5 @@ What the script (`install.sh`, Linux x86-64; macOS best effort; Windows via docu
 - [ ] README has an "Install" section (Linux, macOS best effort, WSL2)
 
 ## Updates
+- 2026-11-11: Status todo -> done. merged (lanes 304/306)
 - 2026-11-11: Created from inbox draft draft-installer-uv-bootstrap.md (found by plan-v1-lane).

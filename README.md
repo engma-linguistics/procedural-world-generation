@@ -4,6 +4,13 @@ Toy procedural planets: a plate-tectonics terrain generator, a
 climate / river / biome pipeline, a plain-text world format, and a 3D
 browser viewer.
 
+## Install (users)
+
+`sh install.sh` from a checkout or tarball (Linux; macOS best effort; Windows via WSL2) installs a private uv and
+Python 3.14 under `~/.local/share/procgen-world`, a `planet` launcher and an app-menu entry, and keeps data in
+`~/procgen-world-data`. Then `planet self open`, `planet self update | rollback | uninstall`. Details, timings and
+disk use: `docs/review/plan/installer.md`. Developers keep using `uv run` from the checkout.
+
 ## Quick start
 
 ```sh

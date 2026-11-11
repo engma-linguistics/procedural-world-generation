@@ -13,7 +13,7 @@ blocked_by: [PW-1549]
 relates: [PW-1549, PW-1561, PW-661]
 refs: [planet/language/names.py]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -23,3 +23,4 @@ Do not overlap the trade-language lane (PW-1561): read its ledger. Needs states 
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-common-by-reach.md (found by coordinator).
+- 2026-11-11: 11-11 assessment: goes with PW-1643 and PW-1561 under PW-1549 (contact inputs). Also: family expansion (one family spreading and replacing others, so fewer isolates and a dialect level) is a polities outcome; 175 of 264 true families are single-lect today.

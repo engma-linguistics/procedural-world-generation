@@ -1,96 +1,93 @@
 # Languages: what's done, what's open
 
-*Last updated 2026-11-11 (after lane 16; lane 17 running). [Back to Languages](index.md).*
+*Last updated 2026-11-11 (lane 18: check matrix). [Back to Languages](index.md).*
 
-**Solid:**
-- Sound systems and how common each sound is, measured against real languages.
-- Related languages that still look related.
-- Borrowing that depends on who borrows from whom.
-- Language shift.
-- Grammar that wears down and renews.
-- Names built from each language's own words.
-- The Common in English.
-- Audio.
+**Verdict (assessment 11-11, you agreed):** the machinery is essentially complete. What's left is a short finish line, about two weeks of lane time, then it's done and the long tail stays parked. [Assessment](https://claude.ai/artifact/Foz8PcmxBDSu1U3DUeLjXz).
 
-**Still off, being worked on (lane 17):**
-- Too many languages develop back vowel harmony.
-- Too few languages are open-syllable.
-- Some rare sound changes fire too often.
+**Finish line (epic PW-1736), roughly in order:**
+1. Check every change on several worlds at once, not just a24559 (done in lane 18: 4 worlds x 2 seeds; pass mark waiting on you).
+2. Fix the visible slips: garbled place names, random taboo words, "rr" everywhere, unnamed families, too few given names.
+3. Borrowing in the right places: less for core words like "I" and "two", more for things a people met late (horse, new crops, new tools), with a bigger everyday vocabulary.
+4. Fix sound systems that drift into odd shapes (no /m/, too few aspirates).
+5. Bring isolating languages back, along with more gender and classifiers.
+6. The names work: names that wear down over time, and feature names.
+7. In the viewer: language isolates (your Basque), names on demand, map labels, the settlement view, and the rest of what's now only on one-off pages.
 
-**Next (names):**
-- Place names should be coined from the founders' words as they were at the founding, then wear down.
-- Hills, capes, bays and other features need names.
-- Map labels with an English/local toggle.
-- A settlement view in the viewer.
-
-**Waiting on states and empires:** empires spreading their language, and names for states.
-
-**Parked as `later`:** a long tail of realism details (pidgins and creoles, stress that changes over time, richer allophony, and so on).
+**Waiting on states and empires:** empires spreading their languages (which also means fewer, truer isolates), and state names.
 
 ---
 
 ## For agents
 
-### Checks on a24559 (lane 16 rebuild, 2026-11-10)
+### Check matrix (lane 18, PW-1737): how every language lane is judged
+`uv run python -I tools/language/matrix.py --scratch DIR --json m.json --md m.md` runs the pass with `--out` over 4 peoples
+runs x 2 seeds (a24559, de1cc6 = Seven Meals, 0141d1, 3e0eb4; seeds own and 7919), 4 cells x 4 workers, ~15 min per wave,
+~30 min in all. `--compare main.json branch.json` for a lane. Baseline on main: `docs/review/language/matrix/baseline-2026-11-11.md`.
+Proposed bar (Language Desk card m.bar): realism and guard checks in >= 70% of cells, invariants in all, horizon shown not barred,
+and no check down more than one cell against main.
+
+### Checks on a24559 (lane 17 rebuild, 2026-11-11; 623 living, 571 languages)
 | Check | Value | Target | Pass |
 |---|---|---|---|
 | proto inventories vs PHOIBLE | C 0.51 / V 0.54 in IQR | medians in PHOIBLE IQR, 35–75% inside | yes |
-| sisters recognisable, distant not | siblings 0.5605, cross-family 0.0003 | > 0.5 / < 0.15 | yes |
-| scholars' horizon | human 17.0 kyr (16.0 overall) | 6–10 kyr | **no** (accepted; swings 4.5–19 with seed) |
-| language shift happened | 148 shifts, 91 living off descent | > 0 | yes |
-| long generations change less | human 14.8 rules/kyr | long-lived < 1/3 | yes |
-| hubs simpler, isolated richer | 15.5 vs 19.1 | hubs < isolated | yes |
+| sisters recognisable, distant not | siblings 0.606, cross-family 0.0003 | > 0.5 / < 0.15 | yes |
+| scholars' horizon | human 13.5 kyr (logistic 14.9) | logistic reading ≥ 6 kyr since lane 18 (owner 11-08: ~11+ is fine) | yes (shown, not barred) |
+| language shift happened | 145 shifts, 93 living off descent | > 0 | yes |
+| long generations change less | human 14.2 rules/kyr, ratio 4.1 | long-lived < 1/3 | yes |
+| hubs simpler, isolated richer | 16.0 vs 18.5 | hubs < isolated | yes |
 | living inventory sizes vs PHOIBLE | — | medians/quartiles within tolerance | yes |
 | living segment frequencies | top-20 overlap 16 | ≥ 12 | yes |
-| overused segments | none (worst ɖ 2.4x) | none > 10% and > 3x | yes |
+| overused segments | none (worst ɖ 3.0x) | none > 10% and > 3x | yes |
 | typology agrees with live grams | 0 clashes | 0 | yes |
-| loans follow WOLD borrowability | rho 0.48, pronoun loans 0.063 | rho ≥ 0.3, ≤ 0.08 | yes |
-| areal signal | near − far 0.014 | ≥ 0.01 | yes |
+| loans follow WOLD borrowability | rho 0.50, pronoun loans 0.059 | rho ≥ 0.3, ≤ 0.08 | yes |
+| areal signal | near − far 0.017 | ≥ 0.01 | yes |
 | no impossible segments | 0 | 0 | yes |
 | second voice only with a syrinx | 0 | 0 | yes |
 | loans follow contact kind | — | elite prestige ≥ 1.5x | yes |
-| doublets under elite rule | — | ≥ 0.2 | yes |
-| word starts vs NorthEuraLex | l 6.5 / h 6.2 / i 4.8 / m 4.1% | p10–p90 per class | yes |
+| doublets under elite rule | — | ≥ 0.5 since lane 18 | yes |
+| word starts vs NorthEuraLex | labial median 18.6%, liquid 8.4% | p10–p90 per class | yes |
 
-The **real-language benchmark** (PW-1641) is outside `checks.py`. Run `tools/language/real_inventory.py --check`. It seeds protos with real inventories or toolkits and measures what comes out. Its gaps are now-work, per the owner's 11-10 ruling.
+Baseline pass rates (8 cells): sisters 88%, hubs 88%, living sizes 75%, WOLD 75% (pronoun loans fail on both de1cc6
+draws, 0.092: PW-1738), **overuse 62%** (under the bar: PW-1740/PW-1642), everything else 100%. Check kinds: realism
+(sisters, horizon, living sizes/segments, overuse, areal, word starts), guard (proto inventories, shifts, long
+generations, hubs, WOLD, contact kind, doublets: they confirm wiring, prove little), invariant (typology, impossible
+segments, second voice). Horizon: judged on the logistic reading (12.7-20.6 kyr across cells; the two-window read went as
+low as 3.8 kyr on a24559 seed 7919), only under 6 kyr fails (owner 11-08). `--workers` does not change the output (test,
+and 3 vs 4 workers byte-equal tables on de1cc6).
+
+The **real-language benchmark** (PW-1641) is outside `checks.py`. Run `tools/language/real_inventory.py --check`. It seeds protos with real inventories or toolkits and measures what comes out. Since lane 18 it has two absolute bars beside the baseline bands: back harmony in < 25% of daughters (now 16%, ok) and >= 4 of 7 languages keep their character (now 3, MISSED: Spanish, Mandarin, Arabic drift). Its gaps are now-work, per the owner's 11-10 ruling.
 
 ### Open tickets
-- **Lane 17, in progress:**
-  - PW-1692: the re-fire cap saturates, which inflates rare rules; then drop the S148/S042/S073 overrides.
-  - PW-1646: back vowel harmony.
-  - PW-1647: CV share at 5% against 12% in WALS (step-2 script at `docs/review/language/lane16/ed_1647b.py`).
-  - PW-1642: lineage tendencies, in progress.
-- **Names lane, next:**
-  - PW-1685: names from founding-era words, wearing down; cousins counted as heirs; page clarity.
-  - PW-1656: feature names.
-  - PW-1547: river, peak and old personal names should age through sound change.
-- **Owner-facing, after that:**
-  - PW-1655: map labels with an English/local toggle.
-  - PW-1659: settlement view.
-  - PW-1644: doublets shown in the viewer.
-  - PW-1722: question-word grid (v5).
-  - PW-1632: living capitals unnamed.
-- **Blocked on polities (PW-1549):**
-  - PW-1652: the Common by reach.
-  - PW-1651: saints, conquest renaming, "New X".
-  - PW-1669: a contact layer for place names (Danelaw -by).
-  - PW-1561: two bilingualism models. Don't touch it or `tongues.py`.
-- **v4 realism:**
-  - PW-1668: "not" renewed as "not one" in about 40% of languages.
-  - PW-1639: single-process pass outside `planet make`.
-- **`later` tail:**
-  - PW-1553: sound backlog.
-  - PW-1554: contact backlog (pidgins, creoles, lingua francas, diglossia).
-  - PW-1543: stress.
-  - PW-1541: optional grammar stripped.
-  - PW-1605 and PW-1620: case-system shares.
-  - PW-1619: prenasals.
-  - PW-1648: token priors.
-  - PW-1578: long-lived rate.
-  - PW-1550, PW-1567, PW-1601, PW-1614, PW-1633, PW-1643, PW-1723.
-  - PW-983: first-principles phonology experiment.
-  - PW-767: historical-linguistics umbrella.
-- **Needs decision:** PW-1602, real-world book spellings. o.looks answered "real"; check whether the ticket can close.
+- **Finish line, epic PW-1736 (owner agreed 11-11):**
+  - Stories:
+    - PW-1737: multi-world, multi-seed check matrix, run concurrently, plus honest checks (horizon on the owner's band, wiring checks labelled, benchmark absolute bars, worker-count determinism, de1cc6 sisters dip).
+    - PW-1738: core borrowing (`_renew_cell` order).
+    - PW-1739: output slips.
+    - PW-1740: living inventories (sinks without sources).
+    - PW-1741: isolating languages back, gender, classifiers, Q, gram sources (owner ruling 11-11).
+    - PW-1742: isolates in the viewer, relic first.
+    - PW-1743: names on demand.
+    - PW-1744: viewer catch-up (PW-1644 folded in).
+    - PW-1745: late things arrive as loans (animals gated by range and herd spread, wild fauna and flora by biome, kitchen and everyday-item words; owner 11-11). Pair it with PW-1738 in one borrowing lane.
+  - Moved under it:
+    - PW-1685 (PW-1547 merged in), PW-1656, PW-1655, PW-1639, PW-1632, PW-1633;
+    - PW-1647 (step 2 failed in lane 17; next try a coda-loss conspiracy);
+    - PW-1642.
+  - Related: PW-1659 (settlement view, under PW-856).
+  - Suggested lane order:
+    1. PW-1737, which every later lane is judged on;
+    2. PW-1739 + PW-1738;
+    3. PW-1740;
+    4. PW-1741;
+    5. the names lane (PW-1685/1656);
+    6. the viewer lanes (PW-1742/1743/1744/1655/1659).
+- **Lane 17 (merged 11-11, 21bbe7a6):** PW-1692 fixed by mechanism (re-fire wait ∝ 1/weight, RATE_SCALE 60, wave adoption × catalogue weight; S148/S042/S073 overrides removed). PW-1646 fixed on the benchmark (harmony.back 51% → 16% of daughters).
+- **Blocked on polities (PW-1549):** PW-1652, PW-1643 and PW-1561 are one contact-inputs question (don't touch PW-1561 or `tongues.py`). Also blocked: PW-1651 and PW-1669.
+- **`later` tail, parked on purpose:**
+  - PW-1553, PW-1554, PW-1543 (now stress only), PW-1541, PW-1620 (PW-1605 merged in);
+  - PW-1619, PW-1648, PW-1578 (re-measure after lane 17), PW-1550, PW-1601, PW-1614, PW-1723, PW-1668, PW-1722.
+  - PW-767 is the umbrella.
+- **Closed 11-11:** PW-1602 (done), PW-983 and PW-1567 (dropped).
 
 To refresh: `grep -rl -E "language|lect" issue-tracking/tickets/ | xargs grep -L "^status: *done"`, or `board.py list --open` and filter on the titles.
 
@@ -107,9 +104,9 @@ For the rulings, see [decisions.md](../decisions.md) and `language-lane-endgame`
 - **Machine:** at most half the machine.
 - **Priority:** language is not the biggest need once realistic enough. No new realism lanes unless Daniel asks, but benchmark gaps count as asked.
 
-### Known weak spots (coordinator's view)
+### Known weak spots (assessment 11-11 has the full list)
 - **Horizon:** the scholars' horizon is noisy across seeds.
 - **Per-frame lexicon:** Lects keep no per-frame lexicon, which blocks the time-true names in PW-1685. Either store the snapshots per name or re-coin names at the founding frame.
 - **Rule weights:** sound-change weights were hand-tuned per rule (`RULE_WEIGHT`) until PW-1692. Watch for regressions to the engine's middle (PW-1642).
-- **Second test world:** de1cc6's sisters share dipped to 0.48–0.51 on lane 16's draws (accepted, but fragile).
+- **Second test world (settled, lane 18):** de1cc6's sisters dip (0.476–0.513 after lane 16) was lane 16's, and lane 17's rate fix took most of it back: on current main 0.520 / 0.567 (seed own / 7919) against lane 15's 0.530 / 0.579 on the same seeds, so -0.01, a fifth of the seed-to-seed swing. Lexical diffusion is not the cause (switched off: 0.513 / 0.571). No fix needed.
 - **Contact data:** contact kinds come from derived trade triggers. Nearly all contact counts as trade (PW-1643) until polities land.

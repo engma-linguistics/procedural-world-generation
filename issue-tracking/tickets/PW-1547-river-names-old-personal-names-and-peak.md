@@ -2,7 +2,7 @@
 id: PW-1547
 title: River names, old personal names and peak names should age through each language's own sound changes, as god names already do
 type: task
-status: todo
+status: wontdo
 parent: PW-767
 milestone: later
 subsystem: culture
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-972, PW-1436]
 refs: [docs/review/language/names-spelling-gaps.md, docs/review/language/architecture.md, docs/review/language/for-daniel.md, planet/language/names.py, planet/language/personal.py, "planet/language/faiths.py::coin_name", planet/language/lexicon.py, planet/language/history.py, "run a24559"]
 created: 2026-11-08
-updated: 2026-11-09
+updated: 2026-11-11
 ---
 
 ## Description
@@ -43,3 +43,4 @@ the workbench is missing.
 ## Updates
 - 2026-11-09: Language wrap-up 11-09: realism polish, parked as later (owner: language good enough to move forward).
 - 2026-11-08: Created from inbox draft draft-language-names-through-sound-history.md (found by lang-design (names & spelling lane, faiths & contact pass 3, 2026-11-08)).
+- 2026-11-11: Merged into PW-1685 (same mechanism), per the 11-11 assessment.

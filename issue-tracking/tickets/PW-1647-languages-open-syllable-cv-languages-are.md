@@ -3,7 +3,7 @@ id: PW-1647
 title: "Languages: open-syllable (CV) languages are 5% of living lects, against about 12% in WALS"
 type: task
 status: todo
-parent: PW-767
+parent: PW-1736
 milestone: v4
 subsystem: peoples
 effort: s
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1642, PW-1641]
 refs: ["planet/language/lect.py::pattern_resist", "planet/language/lect.py::PATTERN_K", "planet/language/inventory.py::retemplate", "planet/language/lexicon.py::borrow"]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -45,3 +45,5 @@ Try, one at a time, judged on a24559 + de1cc6 (scratch syl.py) and `real_invento
 ## Updates
 - 2026-11-10: Created from inbox draft draft-open-syllable-stable-state.md (found by lang-lane14b).
 - 2026-11-10: Lane 16 (merged 15b6fea2): step 1 done (retemplate keeps CV while the anchor holds), gain under 1 point (a24559 5.0 > 5.8%). Step 2 (S099 final-consonant loss as a split signature, one-off cap lifted for it) is written but not run; the edit script is kept at docs/review/language/lane16/ed_1647b.py (an untested patch script).
+- 2026-11-11: Moved under the language finish-line epic PW-1736 (assessment docs/review/language/assessment-2026-11-11.html; owner agreed 11-11).
+- 2026-11-11: Lane 17: step 2 (ed_1647b.py, S099 final-consonant loss as a split signature) tried and not kept: S099 fired 8 -> 50 (a24559) but simple syllables moved only 4.8 -> 5.3%, because branches keep medial codas and clusters. Next: a coda-loss conspiracy as the signature (final + medial coda loss + cluster simplification together, the Oceanic > Polynesian route). Simple syllables after lane 17: a24559 5.2%, de1cc6 6.6%.

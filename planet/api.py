@@ -50,7 +50,10 @@ import json
 import math
 import os
 import queue
+import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -756,15 +759,103 @@ REFINE_TMP_MIN_GB = 40.0  # free /tmp kept (on the Threadripper /tmp is RAM: bel
 REFINE_LONG_MIN = 20.0  # longer than this: say "run it overnight"
 
 
-def free_ram_gb() -> float | None:
-    """Memory available to a new process, GB (Linux's MemAvailable), or None where it can't be read."""
-    try:
-        for line in Path("/proc/meminfo").read_text().splitlines():
-            if line.startswith("MemAvailable:"):
-                return int(line.split()[1]) / 1e6  # (kB)
-    except (OSError, ValueError, IndexError):
-        pass
+def parse_meminfo(text: str) -> float | None:
+    """GB available from Linux's /proc/meminfo text (MemAvailable), or None."""
+    for line in text.splitlines():
+        if line.startswith("MemAvailable:"):
+            return int(line.split()[1]) / 1e6  # (kB)
     return None
+
+
+def parse_vm_stat(text: str) -> float | None:
+    """GB available from macOS's `vm_stat` output: free + inactive + speculative pages (psutil's
+    `available`; purgeable and file-backed pages are already among those), or None."""
+    m = re.search(r"page size of (\d+) bytes", text)
+    if not m:
+        return None
+    pages = {}
+    for line in text.splitlines():
+        k, _, v = line.partition(":")
+        v = v.strip().rstrip(".")
+        if v.isdigit():
+            pages[k.strip().strip('"')] = int(v)
+    if "Pages free" not in pages or "Pages inactive" not in pages:
+        return None
+    n = pages["Pages free"] + pages["Pages inactive"] + pages.get("Pages speculative", 0)
+    return n * int(m.group(1)) / 1e9
+
+
+MAC_FALLBACK_SHARE = 0.25  # without vm_stat: a quarter of the RAM is taken as free (conservative)
+_ram_warned: set[str] = set()
+
+
+def _warn_ram_once(msg: str) -> None:
+    if msg not in _ram_warned:
+        _ram_warned.add(msg)
+        print(f"warning: {msg}", file=sys.stderr, flush=True)
+
+
+def _run_text(cmd: list[str]) -> str | None:
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=5, check=True).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def free_ram_gb() -> float | None:
+    """Memory available to a new process, GB, or None where it can't be read (the RAM guards then let jobs through).
+    Linux: /proc/meminfo's MemAvailable. macOS: vm_stat (free + inactive + speculative pages); if that fails,
+    a conservative quarter of `sysctl hw.memsize`, with a warning (PW-1716)."""
+    try:
+        gb = parse_meminfo(Path("/proc/meminfo").read_text())
+    except (OSError, ValueError, IndexError):
+        gb = None
+    if gb is not None:
+        room = cgroup_room_gb()
+        return gb if room is None else min(gb, room)
+    if sys.platform == "darwin":
+        try:
+            gb = parse_vm_stat(_run_text(["vm_stat"]) or "")
+        except ValueError:
+            gb = None
+        if gb is not None:
+            return gb
+        total = _run_text(["sysctl", "-n", "hw.memsize"])
+        if total and total.strip().isdigit():
+            _warn_ram_once(f"vm_stat could not be read: taking {MAC_FALLBACK_SHARE:.0%} of the RAM as free "
+                           "for the RAM guards")
+            return int(total.strip()) * MAC_FALLBACK_SHARE / 1e9
+    _warn_ram_once("free RAM cannot be read on this system: the RAM guards are off")
+    return None
+
+
+def parse_cgroup_room(max_text: str, current_text: str) -> float | None:
+    """GB left under a cgroup v2 memory cap (memory.max - memory.current), or None when uncapped ("max")."""
+    m = max_text.strip()
+    if m == "max" or not m.isdigit():
+        return None
+    return max(0.0, (int(m) - int(current_text.strip())) / 1e9)
+
+
+def cgroup_room_gb() -> float | None:
+    """The room left under this process's cgroup v2 memory cap (a systemd-run --scope MemoryMax), or None if the
+    process is uncapped or it can't be read; the tightest cap up the hierarchy wins (PW-1731)."""
+    try:
+        rel = next(l.split("::", 1)[1].strip() for l in Path("/proc/self/cgroup").read_text().splitlines()
+                   if l.startswith("0::"))
+    except (OSError, StopIteration):
+        return None
+    root, best = Path("/sys/fs/cgroup"), None
+    parts = [x for x in rel.strip("/").split("/") if x]
+    for i in range(len(parts), 0, -1):
+        d = root.joinpath(*parts[:i])
+        try:
+            room = parse_cgroup_room((d / "memory.max").read_text(), (d / "memory.current").read_text())
+        except (OSError, ValueError):
+            continue
+        if room is not None:
+            best = room if best is None else min(best, room)
+    return best
 
 
 def free_disk_gb(path) -> float | None:
