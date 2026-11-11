@@ -25,5 +25,12 @@ new checks it added fail narrowly on the matrix, so they count as failing realis
   origins ("tamed here", legitimate) and `tech_step` / `wild_step` coinages when a neighbour already had a word. Levers:
   `WILD_LOAN` 0.6 -> 0.7, and in `tech_step` borrow from any contact lect that has the word more often; or exclude route
   origins (a taming deme coins by definition) from the share.
+Round 2 (lane 20, 05edb1aa: CORE_LOAN_DAMP 0.25, WILD_LOAN 0.8, tech words not intensity-scaled, calques first): late
+loans now pass 8 of 8 (50-57%); core loans 4 of 8. The fails are THREE 0.059-0.062 on a24559 own and 0141d1 own; on
+de1cc6 (Seven Meals) the cross-family share is 2.3% on both draws and TWO is 0.103 on one. CORE_LOAN_DAMP 0.2 made
+tests/test_language_history.py::test_root_families_in_the_document fail on a draw-dependent colex/etymology node
+mismatch (('colex:MANY', 'rɛri') not among the word's steps), which needs chasing before going lower. The check now reports
+`item_loan_sources` (each loan step's note) to show which path borrows TWO and THREE. Suspects are trade or elite
+contact kinds and numeral-system loans.
 What misleads if never done: the matrix shows two red realism rows on every cell, which hides a real regression there.
 - [ ] both checks pass in >= 70% of matrix cells, no other check worse by more than one cell

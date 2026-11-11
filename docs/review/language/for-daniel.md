@@ -2187,3 +2187,15 @@ and the WOLD check went from 6 to 8 draws. Hubs went from 7 to 8. Four checks lo
 generations 8 to 7, overused segments 5 to 4 and word starts 8 to 7. That is inside the proposed bar of at most one draw
 worse. It looks like reshuffled chance (every proto lexicon is drawn afresh), not a pattern. The two new checks fail as
 described above. Tables: `docs/review/language/matrix/lane20-2026-11-11.md`.
+
+**Round 2.** I damped the core further (0.35 to 0.25). Where a neighbour already has a word, new technology and newly met
+wildlife are now borrowed or calqued more often (WILD_LOAN 0.6 to 0.8; tech_step no longer scales the loan by the contact
+intensity, and it calques before it coins). **Your ruling on taboo and size is in:** "dangerous" is now relative to the
+speakers. The voice profile's pitch register stands for body size: dragons and true giants are -2, giant-kin -1, small
+folk +1. Dragons and true giants avoid no animal's name. Giant-kin avoid only the biggest beasts (bear, big cat,
+crocodile, big snake). Humans and small folk avoid them all. A test checks that a dragon lect never takes a predator
+taboo. On the matrix, new things are now loans or calques in 50-57% of cases, so that check passes on all 8 draws. Core
+words pass on only 4 of 8 draws. The Swadesh-100 cross-family share is 1.6-2.0% on six draws but 2.3% on both Seven
+Meals draws. "Three" reaches 0.06 on two draws, and "two" 0.10 on one Seven Meals draw. A stronger damping (0.2) tripped
+an etymology-consistency test on a draw-dependent edge, so I stopped at 0.25. Tables:
+`docs/review/language/matrix/lane20-round2-2026-11-11.md`.
