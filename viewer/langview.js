@@ -173,6 +173,12 @@
     try { T.draw($('tab-' + S.tab), S); } catch (e) { $('tab-' + S.tab).innerHTML = `<p class="err">could not draw this tab: ${esc(e.message)}</p>`; console.error(e); }
     S.lastDrawMs = Math.round(performance.now() - t0);
   }
+  // a family's name (names.scholars for true families, names.families for the scholars' families; PW-1739), else its id
+  function famName(slot, id) {
+    if (!id) return '–';
+    const x = ((S.doc.names || {})[slot] || {})[id];
+    return x && x.name ? x.name : id;
+  }
   function lectBar() {
     const el = $('lectbar'), l = lect(S.sel);
     if (!l) { el.innerHTML = '<span class="muted">pick a lect in any tab (click a tree line, a dot on the map or a name)</span>'; return; }
@@ -180,9 +186,9 @@
     const how = { proto: l.deme == null ? 'a proto-language' : 'first to speak', bud: 'budded off', shift: 'took over the speech of', arrival: 'arrived with settlers from' }[l.how] || l.how;
     el.innerHTML = `${sw(peopleColor(l.people))}<b>${esc(lectLabel(l.id))}</b>
       <span><span class="k">people</span> ${esc(peopleName(l.people))}</span>
-      ${lang ? `<span><span class="k">language</span> ${sw(langColor(l.id))}${esc(lang.name)} (${lang.lects.length} lect${lang.lects.length > 1 ? 's' : ''})</span>` : ''}
-      <span><span class="k">true family</span> ${esc(l.family_true || '–')}</span>
-      ${l.family_scholars ? `<span><span class="k">scholars' family</span> ${esc(l.family_scholars)}</span>` : ''}
+      ${lang ? `<span><span class="k">language</span> ${sw(langColor(l.id))}${esc(lang.name)}${lang.where && lang.where !== lang.name ? ` <span class="muted">(${esc(lang.where)})</span>` : ''} (${lang.lects.length} lect${lang.lects.length > 1 ? 's' : ''})</span>` : ''}
+      <span><span class="k">true family</span> ${esc(famName('scholars', l.family_true))}</span>
+      ${l.family_scholars ? `<span><span class="k">scholars' family</span> ${esc(famName('families', l.family_scholars))}</span>` : ''}
       <span><span class="k">from</span> ${ago(l.born_kyr)}${l.parent ? `, ${how} ${lk(l.parent)}` : ''}${l.substrate ? `, over ${lk(l.substrate)} (substrate)` : ''}</span>
       <span>${l.died_kyr == null ? '<span class="ok">spoken now</span>' : `<span class="muted">${esc(l.end || 'ended')} ${ago(l.died_kyr)}</span>`}</span>
       ${l.population ? `<span><span class="k">speakers</span> ~${NumFmt.count(l.population)}</span>` : ''}

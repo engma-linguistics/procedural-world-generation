@@ -437,6 +437,12 @@ WAYS = {
 }
 WAYS["fish"] = WAYS["meat"]
 
+#: sequencing (PW-1739: recipes were bare imperatives): 'first' on the first step, 'then' (the word for 'after') on the
+#: later ones, and on the first step that cooks, 'until it is <state>' (the word for 'when' as the linker, as Swahili
+#: mpaka or Japanese made: the closest the core list has): (state concept, English) per cooking verb
+SEQ_FIRST, SEQ_THEN, SEQ_UNTIL = "FIRST", "AFTER", "WHEN"
+UNTIL = {"BOIL": ("SOFT", "soft"), "ROAST OR FRY": ("BROWN", "brown"), "BAKE": ("COOKED", "cooked"),
+         "SMOKE (FOOD)": ("DRY", "dry"), "FERMENT": ("READY", "ready")}
 #: the closing line, picked by the lect's hash: (quality concept, English)
 CLOSING = (("GOOD", "good"), ("TASTY", "tasty"), ("GOOD", "good"))
 CLOSING_SWEET = (("SWEET", "sweet"), ("GOOD", "good"), ("TASTY", "tasty"))   # (fruit and sweet crops)
@@ -522,7 +528,16 @@ def recipe(lj: dict) -> tuple[str, list[dict]]:
     if v.w("TAKE"):
         add(_imp(v, "TAKE", SN.noun_phrase(v, food, SN._a(v))), f"Take some {fen}.",
             ["a command: the bare verb or the imperative marker"])
+    def state(Vc, many_):
+        """'it is soft' (a stative verb where adjectives are verb-like, else the copula), or None."""
+        subj = SN.pronoun(v, "THEY" if many_ else "HE OR SHE OR IT")
+        if subj is None or not v.w(Vc):
+            return None
+        if v.t.get("adjective_verb_like") == "yes":
+            return subj.words + SN.verb(v, Vc, "3PL" if many_ else "3SG")[0]
+        return subj.words + SN.cop_phrase(v, SN.NP([SN.Word(v.ipa(Vc), SN.lgloss(Vc), Vc)], 0))
     ways = [w for w in WAYS[kind] if _usable(v, w)]
+    k, until_done = 0, False
     for step in (ways[_pick(lj, "way", len(ways))] if ways else ()):
         verb, ven, obl = step[0], step[1], step[2]
         tail = f" {step[3]}" if len(step) > 3 else ""
@@ -541,7 +556,25 @@ def recipe(lj: dict) -> tuple[str, list[dict]]:
             if fn == "LOC":
                 prep = _prep_en(X, prep)
             xen = f" {prep} {art + ' ' if art else ''}{OBL_EN.get(noun, SN.en(noun))}"
-        add(_imp(v, verb, _it(v, many), X), f"{ven.capitalize()} {it_en}{tail}{xen}.", note)
+        words = _imp(v, verb, _it(v, many), X)
+        seq = SEQ_FIRST if k == 0 else SEQ_THEN
+        sen = ""
+        if v.w(seq):   # (a clause-initial adverb, as English 'first', 'then')
+            words = [SN.Word(v.ipa(seq), "first" if k == 0 else "then", seq)] + words
+            sen = "First, " if k == 0 else "Then "
+        ven_s = f"{ven} {it_en}{tail}{xen}"
+        if not until_done and verb in UNTIL and v.w(SEQ_UNTIL):
+            st_c, st_en = UNTIL[verb]
+            sub = state(st_c, many)
+            if sub is not None:
+                link = SN.Word(v.ipa(SEQ_UNTIL), "until", SEQ_UNTIL)
+                # (a head-final lect puts the linked clause first, the linker at its end: Japanese made; else after)
+                words = (sub + [link] + words) if v.hd_final() else (words + [link] + sub)
+                ven_s += f" until {it_en} {'are' if many else 'is'} {st_en}"
+                note = note + ["'until' said with the word for 'when' (the core list has no 'until')"]
+                until_done = True
+        add(words, f"{sen}{ven_s}."[:1].upper() + f"{sen}{ven_s}."[1:], note)
+        k += 1
     cl = CLOSING_SWEET if kind in ("fruit", "sweet") else CLOSING
     q, qen = cl[_pick(lj, "close", len(cl))]
     if not v.w(q):

@@ -163,3 +163,21 @@ def test_fable_ancestor_is_the_state_at_the_split():
     for d in ds:   # (a change of the line after the split, shared across it: the cold review's R2)
         d["lexicon"]["SAY"]["roots"] = ["m1:SAY@4"]
     assert any("shared by branches" in x for x in TX.fable_descent(anc, ds, roots, lects))
+
+
+def test_recipe_is_sequenced():
+    """PW-1739: 'first', 'then' and one 'until it is <state>' on the first cooking step."""
+    lj = _fable_lect()
+    lj["lexicon"].update({c: {"ipa": f, "roman": f, "pos": p} for c, f, p in (
+        ("crop:rice", "padi", "N"), ("TAKE", "ambil", "V"), ("GRIND", "giling", "V"), ("PUT", "taruh", "V"),
+        ("POT", "periuk", "N"), ("BOIL", "rebus", "V"), ("SALT", "garam", "N"), ("STONE", "batu", "N"),
+        ("BAKE", "bakar", "V"), ("POUND", "tumbuk", "V"), ("MORTAR", "lesung", "N"), ("ASH", "abu", "N"),
+        ("HONEY", "madu", "N"), ("MILK", "susu", "N"), ("WATER", "air", "N"), ("FIRE", "api", "N"), ("FIRST", "dulu", "ADV"),
+        ("AFTER", "lalu", "ADV"), ("WHEN", "sampai", "ADV"), ("SOFT", "lembut", "ADJ"), ("COOKED", "masak", "ADJ"),
+        ("BROWN", "coklat", "ADJ"))})
+    _title, sents = TX.recipe(lj)
+    en = [s["en"] for s in sents]
+    assert en[1].startswith("First, ") and all(e.startswith("Then ") for e in en[2:-1]), en
+    assert sum(" until it is " in e for e in en) == 1, en
+    s = next(s for s in sents if " until " in s["en"])
+    assert any(w[1] == "until" for w in s["w"]) and any(w[1] == "then" or w[1] == "first" for w in s["w"])

@@ -34,6 +34,7 @@ Deterministic: every draw is `np.random.default_rng((seed, 972, crc32(key)))`. T
 source-checked; only its patterns are used."""
 from __future__ import annotations
 
+import re
 import zlib
 
 import numpy as np
@@ -91,7 +92,9 @@ TRAIT_CONCEPT = {"hunter": ("HUNT", "the hunters"), "miner": ("STONE", "the ston
 DIRECTION = {"north": "NORTH", "south": "SOUTH", "east": "EAST", "west": "WEST", "northeast": "NORTH", "northwest": "NORTH",
              "southeast": "SOUTH", "southwest": "SOUTH"}
 RIVER_MODS = ("BLACK", "WHITE", "RED", "BIG", "LONG", "COLD", "STONE", "GOOD", "OLD")
-PEAK_MODS = ("WHITE", "BIG", "OLD", "COLD", "STONE", "BLACK")
+PEAK_MODS = ("WHITE", "BIG", "OLD", "COLD", "STONE", "BLACK", "HIGH", "RED", "SHARP", "SNOW", "WIND", "EAGLE", "HOLY",
+             "THUNDER", "STAR", "TOOTH")   # (PW-1739: 6 gave 203 peaks; PW-1656 redoes feature names)
+SEA_MODS = ("BLACK", "WHITE", "BIG", "COLD", "SALTY", "GREEN", "BLUE", "DEEP", "CALM", "STORM", "WIDE", "DARK", "FAR")
 TABOO_ANIMAL = (("snake", "SNAKE"), ("eel", "SNAKE"), ("bear", "BEAR"), ("wolf", "WOLF"), ("deer", "DEER"), ("cervid", "DEER"),
                 ("dog", "DOG"), ("bird", "BIRD"), ("fowl", "BIRD"), ("fish", "FISH"), ("horse", "HORSE"), ("cattle", "COW"))
 RAID_WORDS = ("incursion", "displacement", "raid", "war", "driven out", "settled among")
@@ -108,6 +111,7 @@ P6_KYR = 1.0         # ... after at least this much contact (kyr)
 SCHOLAR_W = {"river": 0.6, "reconstruction": 0.4}  # a dead family's scholars' name: its river, or its word for 'person' (Bantu)
 LAND_MODS = ("BIG", "LONG", "WHITE", "OLD", "GOOD", "HIGH", "RED", "BLACK", "GREEN", "COLD", "WARM")
 DISH_MAX = 3
+LAND_LETTERS = 11    # a landmass's native name is cut to this many book letters (never below two syllables): a taste call
 
 
 def _rng(seed: int, *key) -> np.random.Generator:
@@ -348,6 +352,25 @@ def _people_name(lect, mods: list, gloss: str, variant: str, root_override=None,
             "plain": f"{roman}, '{gloss}': from {plain_parts}" if plain_parts else f"{roman}, '{gloss}'"}
 
 
+def _poss(name: str) -> str:
+    from .placenames import _poss as p
+    return p(name)
+
+
+def _the(gloss: str) -> str:
+    """A gloss with one definite article: 'the river' stays, 'black river' becomes 'the black river' (no 'the the')."""
+    g = (gloss or "").strip()
+    return g if g.lower().startswith(("the ", "a ", "an ")) else f"the {g}"
+
+
+def _land_gloss(gloss: str, what: str = "land") -> str:
+    """'the land of the real people'; a gloss that is not a noun phrase ('named after the river (X)') reads 'the land of
+    the people named after the river' (PW-1739: was 'the land of the named after the the river'). `what`: 'speech' for
+    a glossonym."""
+    g = gloss.split(" (")[0]
+    return f"the {what} of {g}" if g.lower().startswith("the ") else f"the {what} of the people {g}"
+
+
 def _english_feature(parts: list, key) -> tuple[str, str]:
     """A feature's Common English name (PW-1654) from its parts' concepts ([modifier, head] or [head], the head last):
     Blackwater, Whitemere, Coldfell; a sea apart (the White Sea)."""
@@ -384,6 +407,7 @@ class _Pass:
         self._ls: dict = {}
         self._contacts: dict = {}
         self.endonyms: dict = {}
+        self.glossonyms: dict = {}
         self.patterns: dict = {}
         self.ctx: dict = {}
         self.exo_forms: dict = {}   # (observer, subject) -> (form, gloss, roman, pattern): for relays (X4) and X9
@@ -619,7 +643,7 @@ class _Pass:
         if var == "river_name" and ctx.get("river") is not None:
             hyd = self.river_name(lect, ctx["river"])
             if hyd is not None:
-                return _people_name(lect, [], f"named after the {hyd['gloss']} ({hyd['roman']})", var, root_override=hyd["form"],
+                return _people_name(lect, [], f"named after {_the(hyd['gloss'])} ({hyd['roman']})", var, root_override=hyd["form"],
                                     note=f"the river's name {hyd['roman']}, '{hyd['gloss']}'")
         if var == "original" and W("OLD") is not None:
             return _people_name(lect, [W("OLD")], f"the old people (first on {ctx.get('landmass', 'their land')})", var)
@@ -729,7 +753,7 @@ class _Pass:
                 form = _join(cur, own.form, form)
                 taut = f"{_gloss(own.concept)} + the old name (a tautology, like River Avon)"
                 via += "; " + taut
-                base = dict(base, gloss=f"the {_gloss(own.concept)} {base['gloss'].removeprefix('the ')}")
+                base = dict(base, gloss=f"the {_gloss(own.concept)} '{base['gloss'].removeprefix('the ')}'")
                 words = list(words) + [own]
         g = getattr(cur, "grammar", None)
         loc = GR.place_name(form, g) if g is not None else None
@@ -788,7 +812,7 @@ class _Pass:
             if r:
                 out.append(r)
         if float(ls.get("coast_share") or 0) >= COAST_SHARE:
-            r = self.plain_place(l, "sea", "SEA", ("BLACK", "WHITE", "BIG", "COLD", "SALTY"), l.deme)
+            r = self.plain_place(l, "sea", "SEA", SEA_MODS, l.deme)
             if r:
                 out.append(r)
         if float(ls.get("mountain_m") or 0) >= PEAK_M:
@@ -801,7 +825,7 @@ class _Pass:
             en = anglicize(endo["roman"]) + ("land" if zlib.crc32(str(l.deme).encode()) % 3 else "mark")
             out.append({"kind": "land", "ipa": land["ipa"], "roman": land["roman"], "roman_full": land["roman_full"],
                         "english": en, "english_how": f"{endo['roman']} + -{en[len(anglicize(endo['roman'])):]} 'land'",
-                        "gloss": f"the land of the {endo['gloss'].split(' (')[0].removeprefix('the ')}",
+                        "gloss": _land_gloss(endo["gloss"]),
                         "lect": l.id, "named_by": l.id, "kyr": None, "substrate_of": None, "pattern": endo["pattern"],
                         "locative": None, "etym": endo["etym"][-1:], "plain": f"{land['roman']}: their land ({land['how']})"})
         for p in out:
@@ -1002,10 +1026,10 @@ class _Pass:
         return None
 
     # -------------------------------------------------------------- the Common and the scholars
-    def unique_english(self, demes: dict) -> None:
+    def unique_english(self, demes: dict, personal: dict | None = None) -> None:
         """PW-1654: the Common's English names unique per region (the deme's place, 'the west of Simath'): living places
         first by size, then ruins (placenames.unique_english)."""
-        from .placenames import unique_english
+        from .placenames import anglicize, unique_english
         recs = []
         for d, e in demes.items():
             for x in e.get("places") or []:
@@ -1020,11 +1044,19 @@ class _Pass:
                 return (self.R.demes[d].get("place") or str(d)) if hasattr(self.R, "demes") else str(d)
             except Exception:  # noqa: BLE001
                 return str(d)
+        def extras(r):   # (its land's features, and the lords who may tell two places apart: the lect's given names)
+            e = demes.get(str(r["_deme"])) or {}
+            feats = [(p.get("kind"), p.get("english")) for p in e.get("places") or [] if p is not r]
+            pn = (personal or {}).get(e.get("lect")) or {}
+            lords = [anglicize(g["roman"]) for g in pn.get("given") or [] if g.get("roman")]
+            if r.get("roman"):
+                lords.append(anglicize(r["roman"]))   # (last: the place's own name, as Sutton Coldfield)
+            return feats, list(dict.fromkeys(x for x in lords if x))
         xs = []
         for _a, _b, _c, d, x in recs:
             x["_deme"] = d
             xs.append(x)
-        unique_english(xs, region)
+        unique_english(xs, region, extras)
         for x in xs:
             x.pop("_deme", None)
 
@@ -1056,9 +1088,7 @@ class _Pass:
         alive = {self.family(l) for l in self.living}
         out, used = {}, {}
         like = (getattr(getattr(common, "lexicon", None), "affixes", {}) or {}).get("like") if common is not None else None
-        for f, ls in sorted(fams.items()):
-            if f in alive:
-                continue
+        for f, ls in sorted(fams.items(), key=lambda kv: (kv[0] in alive, kv[0])):   # (dead first: they keep their numbers)
             old = max(ls, key=lambda l: (l.born_kyr, -_num(l.id), l.id))
             i = self.R.frame_of(old.born_kyr) if hasattr(self.R, "frame_of") else 0
             ls0 = self.deme_ls(old.deme, i)
@@ -1104,7 +1134,59 @@ class _Pass:
                 stem_full = f"{stem_full} {_ROMAN_NUM[min(n, len(_ROMAN_NUM)) - 1]}"
             out[f] = {"name": f"the {stem} languages", "roman": stem, "roman_full": stem_full, "gloss": gl, "pattern": "scholarly",
                       "basis": basis_used, "by_lect": common.id if common else None,
-                      "lects": sorted(x.id for x in ls), "oldest_deme": old.deme, "died_kyr": min((x.died_kyr or 0.0) for x in ls)}
+                      "lects": sorted(x.id for x in ls), "oldest_deme": old.deme,
+                      "died_kyr": None if f in alive else min((x.died_kyr or 0.0) for x in ls), "living": f in alive}
+        return out
+
+    def family_names(self, scholars: dict) -> dict:
+        """Names for the scholars' families of living lects (families.analyse: fam0, fam1...; PW-1739): one true family
+        inside it, that family's scholarly name; several, the two biggest joined (Niger-Congo, Afro-Asiatic)."""
+        by: dict = {}
+        for l in self.living:
+            f = getattr(l, "family_scholars", None)
+            if f:
+                by.setdefault(f, []).append(l)
+        out = {}
+        for f, ls in sorted(by.items()):
+            pop: dict = {}
+            for l in ls:
+                t = self.family(l)
+                pop[t] = pop.get(t, 0.0) + float(getattr(l, "population", 0) or 0) + 1e-9
+            tops = [t for t, _v in sorted(pop.items(), key=lambda kv: (-kv[1], kv[0])) if t in scholars][:2]
+            if not tops:
+                continue
+            stems = [scholars[t]["roman"] for t in tops]
+            roman = "-".join(dict.fromkeys(stems))
+            gloss = (f"one true family, {scholars[tops[0]]['name']}" if len(pop) == 1 else
+                     f"{len(pop)} true families lumped together, named after the two biggest")
+            out[f] = {"name": f"the {roman} languages", "roman": roman, "gloss": gloss, "true": tops, "pattern": "scholarly",
+                      "lects": sorted(l.id for l in ls)}
+        return out
+
+    def language_names(self) -> dict:
+        """Each living language (families.analyse's lang0, lang1...) under its own name: its largest lect's word for its
+        speech (the people's glossonym where that lect is the people's main one), PW-1739. Sets the row's `name` and keeps
+        the old description as `where`."""
+        out = {}
+        for row in (self.res.get("families") or {}).get("languages") or []:
+            big = self.lects.get(row.get("largest_lect"))
+            if big is None:
+                continue
+            p = self._people(big)
+            e = (self.endonyms.get(p) or {})
+            n = (e.get("by_lect") or {}).get(big.id)
+            if n is None:
+                continue
+            gl = self.glossonyms.get(p) if (e.get("main") or {}).get("lect") == big.id else None
+            sp = gl or {**n["set"]["language"], "gloss": _land_gloss(n["gloss"], "speech")}
+            roman = sp["roman"]
+            if not roman:
+                continue
+            rec = {"name": roman, "roman": roman, "roman_full": sp.get("roman_full") or roman, "ipa": sp.get("ipa"),
+                   "gloss": sp.get("gloss"), "lect": big.id, "where": row.get("where") or row.get("name")}
+            out[row["id"]] = rec
+            row.setdefault("where", row.get("name"))
+            row["name"] = roman
         return out
 
     # -------------------------------------------------------------- name history (PW-1546: the taxonomy's processes)
@@ -1241,6 +1323,17 @@ class _Pass:
             self.note(p, "P3", by=cp, **{"from": x["roman"]}, to=roman,
                       cause="the Common's name for them, taken up beside their own (P8: parallel names by audience)")
 
+    @staticmethod
+    def _readable(lect, form) -> tuple:
+        """A landmass name a map reader can say (PW-1739: 'Ndschemhttjjitschkukzzirr'): syllables dropped from the end
+        until its book spelling is at most LAND_LETTERS letters, never below two syllables."""
+        form = tuple(form)
+        n = LX.syllables(form)
+        while n > 2 and len(_roman_form(lect, form)) > LAND_LETTERS:
+            n -= 1
+            form = _repair(lect, tuple(LX.clip(form, n)))
+        return form
+
     def landmasses(self) -> dict:
         """Landmass names from the languages (names-spelling-gaps.md item 18): coined by the first lect of the landmass's
         first settlers ('the long land', 'the white land': LAND_MODS + LAND), and as today's main lect there says it
@@ -1270,6 +1363,7 @@ class _Pass:
                 form, gloss = _join(namer, head.form, m.form), f"the {_gloss(m.concept)} {_gloss(head.concept)}"
             else:
                 form, gloss = tuple(head.form), f"the {_gloss(head.concept)}"
+            form = self._readable(namer, form)
             living = [l for l in self.living if l in on]
             now = max(living, key=lambda l: (float(getattr(l, "population", 0) or 0), l.id)) if living else None
             rec = {"called": called, "ipa": word_ipa(form), "roman": RO.title_name(_roman_form(namer, form)),
@@ -1317,7 +1411,7 @@ class _Pass:
             if given:
                 g = given[int(rng.integers(len(given)))]
                 from .percepts import from_ipa
-                out.append(rec("eponym", _join(l, fw.form, from_ipa(g["ipa"])), f"{g['roman']}'s {fen}",
+                out.append(rec("eponym", _join(l, fw.form, from_ipa(g["ipa"])), f"{_poss(g['roman'])} {fen}",
                                f"{fen} named after someone called {g['roman']} ('{g['gloss']}')"))
         for r in sorted(self.res.get("food_routes") or [], key=lambda r: (r.get("concept") or "", r.get("origin_lect") or "")):
             o = self.lects.get(r.get("origin_lect"))
@@ -1353,9 +1447,10 @@ class _Pass:
             if m is None:
                 continue
             gl = m["set"]["language"]
-            glossonym = {"ipa": gl["ipa"], "roman": gl["roman"], "roman_full": gl["roman_full"], "gloss": f"the speech of {m['gloss'].split(' (')[0]}",
+            glossonym = {"ipa": gl["ipa"], "roman": gl["roman"], "roman_full": gl["roman_full"], "gloss": _land_gloss(m["gloss"], "speech"),
                          "pattern": gl["how"], "lect": main.id}
             glossonym = self.glossonym_drift(p, main, ctx) or glossonym
+            self.glossonyms[p] = glossonym
             peoples[p] = {"endonym": _public(m), "glossonym": glossonym, "set": m["set"],
                           "by_lect": {k: {"ipa": v["ipa"], "roman": v["roman"], "roman_full": v["roman_full"], "pattern": v["pattern"], "variant": v["variant"]} for k, v in sorted(by_lect.items())},
                           "exonyms": [], "why": {k: (v if isinstance(v, (str, int, float)) else list(v) if isinstance(v, tuple) else v)
@@ -1385,7 +1480,7 @@ class _Pass:
                     lid = ru[0]["lect"]
                     e = demes[str(d)] = {"gone": True, "people": self._people(self.lects[lid]), "lect": lid, "places": []}
                 e["settlements"] = (e.get("settlements") or []) + ru
-        self.unique_english(demes)
+        self.unique_english(demes, personal)
         habits = {l.id: PN.H.summary(l) for l in self.living if getattr(l, "lexicon", None) is not None}
         rows = ((getattr(self.R, "meta", {}) or {}).get("present") or {}).get("reputation") or {}
         # (three rounds: neighbours first, whose X1 names the misattributed X9 names and relays reuse; then the rest; then
@@ -1433,7 +1528,9 @@ class _Pass:
             ds = self.dishes(l, demes.get(str(l.deme)) or {}, personal.get(l.id))
             if ds:
                 demes[str(l.deme)]["dishes"] = ds
-        return {"peoples": peoples, "demes": demes, "common": out_common, "scholars": self.scholars(common), "personal": personal,
+        scholars = self.scholars(common)
+        return {"peoples": peoples, "demes": demes, "common": out_common, "scholars": scholars, "families": self.family_names(scholars),
+                "languages": self.language_names(), "personal": personal,
                 "landmasses": self.landmasses(), "habits": habits,
                 "patterns": PATTERNS, "note": "PW-972: patterns from the owner's ethnonym taxonomy; forms from each lect's words "
                                               "and grammar (names.py)"}
@@ -1502,3 +1599,45 @@ def names_for_brief(names: dict, people_id: str) -> dict | None:
     return {"headword": e["roman"], "ipa": e["ipa"], "gloss": e["gloss"], "pattern": e["pattern"],
             "glossonym": {"roman": p["glossonym"]["roman"], "gloss": p["glossonym"]["gloss"]},
             "exonyms": exonyms, "etymologies": ety[:3]}
+
+
+# ---------------------------------------------------------------------------------------------- slip scanner (PW-1739)
+_SLIP_RES = {
+    "the_the": (re.compile(r"\b(the|a|an) (the|a|an)\b", re.I), None),                 # 'named after the the river'
+    "doubled_word": (re.compile(r"\b([a-z]{3,}) \1\b"), ("gloss", "english", "name")),   # 'the river river'
+    "mid_the": (re.compile(r"\S The\b"), ("english", "name")),                         # 'Market The Black Sea'
+    "numbered": (re.compile(r"\s\d+$"), ("english", "roman", "name")),                 # 'Loyings 2'
+    "double_apostrophe": (re.compile(r"''"), ("roman", "english", "gloss")),           # "Zing''s wall", "Ka''uaju"
+    "of_the_verb": (re.compile(r"\bof the (named|called)\b"), None),                   # 'the land of the named after'
+}
+LONG_FULL_NAME = 40   # a full name (given + byname) longer than this many letters counts as a slip
+
+
+def slips(names: dict) -> dict:
+    """Template slips in a `names` block (languages.json): {kind: [example strings]}, every kind present (an empty list:
+    none). Kinds: _SLIP_RES (strings, by key), `long_full_name` (a personal full name over LONG_FULL_NAME letters),
+    `unnamed_family` (a living lect in no named scholars' family). tests/test_language_names.py keeps them at zero;
+    tools/language/slips.py counts them on a languages.json."""
+    out: dict = {k: [] for k in (*_SLIP_RES, "long_full_name", "unnamed_family")}
+
+    def walk(x, key):
+        if isinstance(x, dict):
+            for k, v in x.items():
+                walk(v, k if isinstance(k, str) else key)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v, key)
+        elif isinstance(x, str):
+            for kind, (rx, keys) in _SLIP_RES.items():
+                if (keys is None or key in keys) and rx.search(x):
+                    out[kind].append(x)
+    for part in ("peoples", "demes", "common", "scholars", "families", "languages", "landmasses"):
+        walk(names.get(part) or {}, part)
+    for pn in (names.get("personal") or {}).values():
+        for b in pn.get("bynames") or []:
+            if len((b.get("roman") or "").replace(" ", "")) > LONG_FULL_NAME:
+                out["long_full_name"].append(b["roman"])
+    fams = names.get("families") or {}
+    named = {lid for f in fams.values() if f.get("name") for lid in f.get("lects") or []}
+    out["unnamed_family"] = sorted(lid for lid in (names.get("personal") or {}) if lid not in named)
+    return out
