@@ -2,9 +2,9 @@
 id: PW-1287
 title: Drowned continental crust floats as if in air, so a shelf's sediment lifts it less than the same sediment lifts the ocean floor
 type: task
-status: needs-decision
+status: in-progress
 parent: null
-milestone: null
+milestone: v1.0
 subsystem: tectonics
 effort: m
 impact: low
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-950, PW-980]
 refs: [planet/tectonics/isostasy.py, tests/test_sea_level.py, planet/tectonics/isostasy.py::sediment_iso, planet/tectonics/isostasy.py::sediment_lift, planet/tectonics/earth.py, tests/test_sea_level.py::test_sediment_moved_off_a_shelf_onto_the_ocean_floor_keeps_the_sea, docs/review/tectonics/margin/deep-dive.md, docs/review/tectonics/margin/handoff.md]
 created: 2026-11-01
-updated: 2026-11-01
+updated: 2026-11-10
 ---
 
 ## Description
@@ -37,5 +37,6 @@ Lean: B for v1, A when the margins are next revisited.
 - [ ] decision A or B
 
 ## Updates
+- 2026-11-10: Status needs-decision -> in-progress. Coordinator ruling 11-10: A (drowned continental cells use the under-water isostatic response, smooth join at the shore). Screened in lane 292 alongside PW-1693, since the new margin crust only reaches shelf depth with A; one judge for the shipped arm.
 - 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-11-01: Created from inbox draft draft-drowned-continental-crust-floats-as-in-air.md (found by lane-100e).

@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-818, PW-846]
 refs: [planet/surface.py, planet/tectonics/, tools/scorecard.py, planet/tectonics/isostasy.py::subsidence, planet/tectonics/crust.py::necking, planet/surface.py::_creep, paper:McKenzie1978, paper:Mohn2012, paper:Mosher2017, paper:Mitchell2008, docs/review/tectonics/margin/report.md, docs/review/tectonics/margin/deep-dive.md, docs/review/tectonics/margin/handoff.md, docs/review/tectonics/margin/diagnosis.md, docs/review/tectonics/margin/diagnosis-foreset.md, docs/review/tectonics/margin/diagnosis-land.md, docs/review/tectonics/margin/margindiag.py, docs/review/tectonics/margin/tracediag.py, docs/review/tectonics/margin/sinkdiag.py, docs/review/tectonics/margin/earth_margin.py, docs/review/tectonics/margin/paired_margin.sh]
 created: 2026-10-28
-updated: 2026-11-03
+updated: 2026-11-10
 ---
 
 ## Description
@@ -28,6 +28,7 @@ crust thinned. Try water-loaded isostasy for sea cells of continental crust (no 
 - [ ] shelf share of ocean >= 3% without a pass-rate cost on the paired judge
 
 ## Updates
+- 2026-11-10: 11-10: Daniel asked about better continental shelves. Lane 292 reports shelf share and margin depth per arm (PW-1693 collapse-adds-area, PW-1287 A, both).
 - 2026-11-03: Triage 11-03: v2 -> later: second-order tectonics refinement; the planet is stable without it
 - 2026-11-01: refs enriched (lane 113): code functions, margin notes and harnesses, papers by key.
 - 2026-10-31: Lane 100 round (branch worktree-agent-a5fd6321b3834f864 @ daaf016f, held until after the v1 tag): necking (crust.necking, neck_km) + continental rise, both off by default. L6 s1-3: next-cell cliff 23 -> 15% (Earth 3.5), 200-3000 m band 12.3 -> 14.7% (Earth 19.6), shelf 2.6 -> 3.1%. Criteria unmet; residual wall is the brink fill's one-cell front (draft: foreset slope). Paired judge 11 draws: CO2 dips 0 -> 3 under 100 ppm (85/69/82, all recover; p 0.25), to recheck under D32 B. docs/review/tectonics/margin/report.md
