@@ -504,3 +504,45 @@ the edge ramp (ponds only where the ramp is done), so the edge is the carved blo
   lists (inbox `draft-lod-tiles-flood-the-zoom-index.md`). With 2 threads a section takes ~6 min, so the first
   sharpening over a new big square waits that long on the shared machine; the owner's server (4 jobs, threads shared
   out, at most 8) should be nearer lane 290's 2 min. The viewer still stops at level 2 (`?lodmax`, step 5).
+
+## State (step 3, lane 295, 11-11: PW-1699 level 1 matched; PW-1701 fixed)
+
+**Built.** `lod_build.tile(world, "cell/1/0/0")` builds a cell's level 1 (`build_level1`): the 4 km section matched
+(`regional.zoom(section=, match=)`, match.py) to every neighbouring cell's level 1 already built (`built_neighbours`:
+the tiling's edge and corner neighbours, same world and seed), one level-1 build per world and seed at a time (a lock),
+so a cell built later always sees the earlier ones. The tile service (`tiles.py`) now submits level 1 as a
+`{"type": "tile"}` job too and finds it with `lod_build.find` (any 4 km section of the cell). Diagnostics:
+`cell_line`, `line_seam`, `resampled`, `line_rivers`. Tests: `tests/test_zoom_lod_level1.py` (which neighbours;
+two cells at 10 km/px built both orders meet at the line as well as the two-lattice floor; rivers carried).
+
+**Level 1 at the cell edge**, dba204, A = py.1.1, B = py.0.1, 3,760-3,765 land points on the line, |hA - hB| (m),
+each section sampled bilinearly at the line (as the viewer's meshes interpolate their own pixels):
+
+| Pair | median | p90 | max |
+|---|---|---|---|
+| both built alone (today's main) | 41.8 | 222.8 | 1,436 |
+| A first, B matched | 8.8 | 69.8 | 540 |
+| B first, A matched | 9.5 | 72.7 | 479 |
+| floor: the earlier one resampled onto the later one's lattice | 8.7 / 9.3 | 69.7 / 72.4 | 540 / 479 |
+
+At its own pixels the matched section *is* the earlier one's ground (held pixels: median 0.00, max 1.2 m; its own
+pixels within 1.5 px of the line: median 0.01 m); what is left along the line is two 4 km lattices on two planes
+interpolating rough ground differently (the step between line points 4 km apart: median 84 m). Within 1% of the
+floor: no construction on two lattices does better without the viewer stitching the meshes. Rivers (>= 100 m3/s)
+from the earlier cell into the later: 16 of 16 carried (>= 0.8x) in both orders (alone: 15 and 13 of 16); back
+from the later into the earlier: 8-10 of 12-13 (the earlier cell's own estimate, PW-1355, as planned).
+
+**Level 2 at the line** (tiles py.1.1/2/0/3-4 against py.0.1/2/7/3-4, 1,068 land points, 1 km apart): median / p90
+29 / 115 m (A first), 38 / 174 m (B first), against 69 / 211 m on level-1 sections built alone; the level-1 parents
+there 12-14 / 56-59 m; the neighbouring-pixel step along the line 19-25 m. **Not "a few metres"**: the cell edge is
+no tile edge, each side carves its own ground (inbox `draft-lod-level2-at-cell-edges.md`). Large rivers keep their
+discharge where level 1 carried them (3,618 -> 3,619, 1,256 -> 1,288, 454 -> 442 m3/s).
+
+**Time and peak** (`/usr/bin/time -v`, 4 threads, two builds at once, load 20-40 of 48): level 1 alone 227-229 s,
+8.53-8.54 GB; matched 182-188 s, 8.32-8.37 GB (CPU 570-591 s against 664-684 s alone; the held ground isn't
+graded). The 8.3 GB budget stands (8.4 GB at most). `api.tile_job` still checks 3.2 GB for a level-1 key and the
+API's section route still builds unmatched (inbox `draft-lod-level1-job-ram-and-api-sections.md`).
+
+**PW-1701.** `vegetation.classify` takes the caller's `land`; the zoom's vegetation passes its own land pixels
+(a depression below the sea among them, which `geo.is_land` could not place on a sphere grid). dba204's
+py.1.1/2/1/5 builds (24 s, 3.3 GB). Test `test_classify_takes_the_callers_land_mask`.

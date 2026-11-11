@@ -1450,12 +1450,14 @@ COASTAL_MIN = 0.3  # share of a cell under mangroves or salt marsh that names it
 
 
 def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=None, fw=None,
-             coastal=None) -> np.ndarray:
+             coastal=None, land=None) -> np.ndarray:
     """Named vegetation type (TYPES id) per cell: the first rule that holds
     (section 2.3): ice and lakes, coastal (mangrove forest or salt marsh
     over COASTAL_MIN of the cell: coastal's shares 0..1, coastal.py),
     non-vegetated, wetland, forest (trees >= 60%), woodland and savanna
-    (10-60%), sparse, shrubland, grassland."""
+    (10-60%), sparse, shrubland, grassland. land: which cells are land, where
+    the caller has decided it (a zoom's pixels: its own coast, not a sphere
+    grid's; PW-1701); else geo.is_land on the sphere grid of len(elev) cells."""
     from .hydrology import CLOSED_LAKE, SALT_PAN
     nu = sm["shade"]
     n = len(elev)
@@ -1479,7 +1481,8 @@ def classify(s: dict, eq: dict, sm: dict, elev, ice=None, lake=None, lake_kind=N
         sel = mask & (out < 0)
         out[sel] = tid[sel] if np.ndim(tid) else tid
 
-    put(~is_land(elev, ice), 0)  # (the sea; a bed below it under grounded ice is land: ice)
+    land = is_land(elev, ice) if land is None else np.asarray(land, bool)
+    put(~land, 0)  # (the sea; a bed below it under grounded ice is land: ice)
     if ice is not None:
         put(np.asarray(ice) > 0, T["ice"])
     if lake is not None:

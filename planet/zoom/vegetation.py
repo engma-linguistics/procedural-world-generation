@@ -556,7 +556,9 @@ def compute(world: dict, fr, nx: int, ny: int, res: float, seed: int, size_km: f
     sm["height"][rsel] = np.where(strip_h[rsel], sm_h["height"][nv:], sm_h["height"][rsel])
     nu = mix(nu)
     eq = dict(eq, nu=nu, burned=burned)
-    types = V.classify(s, eq, sm, hv, fw=fw)
+    # (every pixel here is land by the zoom's own coast, a depression below the sea among them: not a sphere grid's
+    # cells for geo.is_land to judge, PW-1701)
+    types = V.classify(s, eq, sm, hv, fw=fw, land=np.ones(nv, bool))
     # oasis and desert riparian woodland: trees by a river through dry land,
     # where the strip holds a woodland and is a fifth of the pixel or its only trees
     desert = rain_mi < 0.3
