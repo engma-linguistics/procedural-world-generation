@@ -14,7 +14,7 @@
 
 ## Lanes running (11-10 ~11:50)
 
-As of 2026-11-11 evening. Running: 307 (world catalogue + L8 readiness), 310c (PW-1726: 26 more pairs, driver /data/personal/scratch/lane310/drive2.sh; 10-pair verdict needs more, leaning on). Milestones (D80): v0.4.0 Sun 15 Nov, v0.5.0 Fri 20 Nov, v0.6.0 Wed 25 Nov (freeze), v1.0.0 Tue 1 Dec. Installer merged; main + v0.1-0.3 tags pushed (D83 A); push main + each new v* tag at release. Lane 309 (kitchen through time) merged. Every lane process under systemd-run MemoryMax; 8765 server is unit planet-serve-8765 (48G). New lane worktrees go in ~/personal/repos/pwg-worktrees/ (not .claude/, which prompts Daniel). Scratch lane288/lane292 await Daniel.
+As of 2026-11-11 evening. Running: 311 (map labels + place names PW-1655/1656), 312 (settlement view PW-1659 + trade layer PW-1508), 313 (machine presets PW-1720 + low-detail viewer PW-1721), 314 (physics: PW-894 2 Gyr icebox, side lane), 310c (PW-1726: 26 more pairs, driver /data/personal/scratch/lane310/drive2.sh; 10-pair verdict needs more, leaning on). Milestones (D80): v0.4.0 Sun 15 Nov, v0.5.0 Fri 20 Nov, v0.6.0 Wed 25 Nov (freeze), v1.0.0 Tue 1 Dec. Installer merged; main + v0.1-0.3 tags pushed (D83 A); push main + each new v* tag at release. Lane 309 (kitchen through time) merged. Every lane process under systemd-run MemoryMax; 8765 server is unit planet-serve-8765 (48G). New lane worktrees go in ~/personal/repos/pwg-worktrees/ (not .claude/, which prompts Daniel). Scratch lane288/lane292 await Daniel. Lane worktrees: ~/personal/repos/pwg-worktrees/laneNNN. Catalogue (tools/catalogue.py, 12 configs) builds Sun 15 / Mon 16 Nov.
 v0.3.0 tagged (suite 2033 passed); server restarted. Waiting on Daniel: nothing (D73-D79 answered).
 
 ## Milestones (2026-11-09)
