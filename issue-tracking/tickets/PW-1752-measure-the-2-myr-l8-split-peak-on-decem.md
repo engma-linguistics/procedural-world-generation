@@ -1,4 +1,5 @@
 ---
+id: PW-1752
 title: Measure the 2 Myr L8 split peak on December A after the frame streaming (only estimated so far)
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane305
 blocked_by: []
 relates: []
 refs: [tools/split_peak_l8.sh, docs/review/timezoom/two-myr.md, planet/lineages/history/handover.py, planet/lineages/output.py]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -25,3 +28,6 @@ analogue lacks, the run still will not fit beside other lanes.
 **Do.** On a quiet machine: copy runs/0b3439 and grids/ into a scratch root, `tools/split_peak_l8.sh <root>` (zoom, finish,
 refine to L8, `planet lineages --tree dnd --tries 1` under MemoryMax=48G). Record wall and peak in two-myr.md section 4.
 - [ ] peak at or under ~40 GB, or the stage that peaks named
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-split-2myr-l8-peak-measure.md (found by lane305).

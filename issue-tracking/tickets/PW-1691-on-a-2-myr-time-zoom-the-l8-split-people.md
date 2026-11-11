@@ -2,7 +2,7 @@
 id: PW-1691
 title: On a 2 Myr time zoom the L8 split peoples run peaks at 69 GB, almost twice the 1 Myr split's 35.5 GB
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1.0
 subsystem: peoples
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1584, PW-1661]
 refs: [docs/review/timezoom/two-myr.md, docs/review/refine-l8/split.md]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -30,4 +30,5 @@ not beside other lanes (daytime cap ~90 GB for everything), and an L8 refine of 
 settled window needs, or stream them. Done when a 2 Myr split peaks within ~1.2x of the 1 Myr split on the same world.
 
 ## Updates
+- 2026-11-11: Status todo -> done. lane 305 merged: L6->L7 analogue 2 Myr peak 20.4 -> 10.3 GB, byte-identical outputs; L8 measurement is PW-1752
 - 2026-11-10: Created from inbox draft draft-split-2myr-peak-69gb.md (found by coordinator (lane 280 chain)).

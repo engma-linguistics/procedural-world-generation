@@ -1,4 +1,5 @@
 ---
+id: PW-1754
 title: planet timezoom without --at zooms the run's first moment (0 Myr), whose finished world is barren and crashes the peoples
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane305
 blocked_by: []
 relates: []
 refs: [planet/__main__.py, planet/lineages/ladder.py, "run 0760b3 (lane 305 scratch, deleted)"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -26,3 +29,6 @@ crash an hour later; the ladder crashes on any world without grazing.
 **Do.** Default `--at` to the run's end (as `make` and the viewer do), and let the ladder read a missing good as zero.
 - [ ] `planet timezoom <run>` with no --at starts at the run's last keyframe
 - [ ] lineages on a world without grazing runs
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-timezoom-default-at-zero.md (found by lane305).

@@ -1,4 +1,5 @@
 ---
+id: PW-1753
 title: No test runs the split hand-over with dragons and the live polities, so grid-sized state crashed it three ways unseen
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane305
 blocked_by: []
 relates: []
 refs: [planet/lineages/history/handover.py, planet/lineages/history/polity_live.py, planet/lineages/history/tech_live.py, tests/test_lineages_split.py]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -28,3 +31,6 @@ the L8 December world again, or (worse) runs with coarse values, and only a full
 the cut; and a check in `hand_over` that no attribute of the new rule, its tech or its dragon cultures still holds an array of
 the coarse cell count.
 - [ ] the test fails on 3085f020 and passes now
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-split-handover-live-state-test.md (found by lane305).
