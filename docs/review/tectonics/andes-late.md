@@ -5,7 +5,8 @@ Script: `docs/review/tectonics/mountains/andes_late_series.py` (read-only, per 2
 
 ## In plain words
 
-STATUS: IN PROGRESS (see the hand-off section at the end).
+See "In plain words (summary)" at the end: the late rise is pulses caught by a single-moment reading, not a trend;
+no default change.
 
 ## 0. Runs and baselines
 
@@ -117,12 +118,101 @@ driver of the sink), with the share of it from land above 3 km, and the carbon s
 
 ## 2. Screens
 
-(pending)
+### 2.1 Third seed (6001), the ticket's checkbox
 
-## 3. L7, seed 2, 1 Gyr, main's defaults
+Same arms, L6, 1 Gyr. Medians of the checkpoints (scout8.md's measure), and means 600-1000 Myr:
 
-(pending)
+| seed | arm | >3 km 600-1000 | >3 km 900-1000 | >4 km 600-1000 | >4 km mean | Andes share | dT | land ice % | NPP |
+|---|---|---|---|---|---|---|---|---|---|
+| 6001 | on | 1.40 | 1.68 | 0.47 | 0.49 | 28.8 | +1.0 | 6.3 | 442 |
+| 6001 | off | 3.31 | 5.33 | 1.19 | 1.34 | 14.4 | -1.4 | 18.9 | 383 |
+
+Over the three seeds (1, 2, 6001), 600-1000 Myr:
+
+| measure | on | off |
+|---|---|---|
+| land > 3 km, median per seed | 3.36, 3.30, 1.40 (mean **2.69**) | 3.54, 2.67, 3.31 (mean **3.17**) |
+| land > 4 km, median per seed | 1.55, 1.20, 0.47 (mean 1.07) | 1.69, 1.01, 1.19 (mean 1.30) |
+| land > 4 km, mean per seed | 1.99, 1.70, 0.49 (mean 1.39) | 1.46, 1.12, 1.34 (mean 1.31) |
+| land > 3 km, median 900-1000 | 2.66, **6.40**, 1.68 (mean 3.58) | **4.58**, 3.08, **5.33** (mean 4.33) |
+| Andes share of > 3 km | 25.4, 29.4, 28.8 | 8.9, 12.5, 14.4 |
+| dT (C), mean | +1.3, +1.4, +1.0 (mean +1.2) | +2.6, +0.1, -1.4 (mean +0.4) |
+| land ice % of land, mean | 8.4, 8.6, 6.3 (mean 7.8) | 5.5, 10.0, 18.9 (mean 11.5) |
+
+- **No late rise across seeds.** On 600-1000 Myr the on arm passes scout8.md's bar (mean <= 3.0%, no seed above
+  3.5%: 2.69%, max 3.36%) and the off arm does not (3.17%, seed 1 3.54%). In the last 100 Myr both arms break it
+  on single pulses (on: seed 2; off: seeds 1 and 6001). Seed 6001 goes the other way from seed 2: lower high
+  ground and warmer with the mechanism on.
+- **No systematic cooling** in these three pairs (on is warmer on two of three seeds, with less ice on average).
+  The judge's colder signal (glacial maxima 10 vs 3 of 18, late dT -0.8 C with a CI across 0) is on other seeds
+  and a brighter-star setting; it stays as lane 275b measured it. The high ground-to-weathering link is real
+  within a run (section 1.3) but which arm has the bigger pulse late is chaos.
+
+### 2.2 Candidate 2: `andean_steer = 1` (seeds 1, 2, L6, 1 Gyr; against the on arm, same seeds)
+
+| seed | >3 km median 600-1000 | >4 km median | Andes share | dT mean | ice % | area thermostat |
+|---|---|---|---|---|---|---|
+| 1 | 1.80 (on 3.36) | 0.85 (on 1.55) | 24.6 (on 25.4) | +1.9 (on +1.3) | 5.6 (on 8.4) | x0.5-0.8, off its floor |
+| 2 | **5.73** (on 3.30) | **2.55** (on 1.20) | 18.7 (on 29.4) | -1.4 (on +1.4) | 17.3 (on 8.6) | x0.3-0.35 |
+
+Rejected: it takes seed 1's area thermostat off its floor and halves its high ground, but nearly doubles seed 2's
+and makes it 2.8 C colder. No consistent sign, so it is chaos plus a weaker Andes share, not a fix.
+
+Candidate 3 (extensional collapse returning area) was not built: section 2.1 shows nothing to fix, and the
+thermostat holds area on target on all three seeds (seed 1 with no slack).
+
+## 3. L7, seed 2, 1 Gyr, main's defaults (7dae542a; run 8f0042 in the scratch root, deleted)
+
+One run, `--level 7 --checkpoint-every 20`, seed 2 (the seed whose L6 run climbed late). The Andes zone at L7 is
+4 cells (scout6_measure's), the attribution zones 10 and 6 cells. Every 100 Myr, then window medians:
+
+| t (Myr) | > 3 km | > 4 km | Andes share of > 3 km | land ice % | land NPP | dT (C) |
+|---|---|---|---|---|---|---|
+| 200 | 5.48 | 2.26 | 8.2 | 6.7 | - | +3.2 |
+| 300 | 3.59 | 2.08 | 27.4 | 2.4 | - | +4.6 |
+| 400 | 4.18 | 1.89 | 13.2 | 11.7 | - | +0.3 |
+| 500 | 2.22 | 1.11 | 20.7 | 20.9 | - | -3.3 |
+| 600 | 4.34 | 1.11 | 14.4 | 10.8 | 337 | +1.6 |
+| 700 | 4.33 | 0.83 | 23.5 | 2.2 | 367 | +7.4 |
+| 800 | 2.57 | 0.96 | 7.1 | 12.5 | 396 | +1.8 |
+| 900 | 2.95 | 1.29 | 21.1 | 3.0 | 508 | +4.8 |
+| 1000 | 1.65 | 0.09 | 26.0 | 2.9 | 555 | +4.0 |
+
+| window | > 3 km median | > 4 km median | Andes share (pooled) |
+|---|---|---|---|
+| 100-600 | 3.69 | 1.95 | 15.5 |
+| 600-1000 | 4.33 (mean 4.01) | 1.29 (mean 1.45) | 17.9 |
+| 900-1000 | 4.04 | 1.17 | 15.2 |
+
+Late means (600-1000): land ice 9.1% of land, NPP 394 g C/m2/yr, dT +2.5 C; 88% of the land above 4 km live
+(collapse working), 44% of it by collisions, 15% Andean.
+
+- **No late climb at L7.** Land above 4 km falls from a median of 1.95% (100-600 Myr) to 1.29% (600-1000) and 1.17%
+  (900-1000); the run ends at 0.09%. Earth on the L7 grid: 1.6% (ETOPO1). The highest peak late is 3.35% at 840 Myr.
+- **Land above 3 km is high at L7**: median 4.3% late against Earth's 2.5% on the L7 grid, and the L7 continents
+  are thicker than L6's (mean continental crust 36.9 km late against 34.9 km on the L6 run of the same seed).
+  There is no L7 run without the mechanism to say whether this is PW-1497's or L7's own; L6 shows no such
+  difference between arms (section 2.1). Inbox draft `draft-l7-land-above-3km.md`.
+- Andes share at L7 is lower than at L6 (18% against 25-29%), on one seed.
+
+## In plain words (summary)
+
+- **The late rise is not a trend; it is mountain-building pulses landing on the measuring moment.** With collapse
+  on, high ground comes and goes: a collision raises it for 50-100 Myr, then it comes down. The scorecard reads one
+  moment (1000 Myr), and on seed 2 that moment sat on a pulse. Over the last 400 Myr of three test planets, land
+  above 3 km is lower with the new physics (2.69% against 3.17%, Earth 2.4%) and land above 4 km about the same
+  (1.07% against 1.30% by median, 1.39% against 1.31% by mean; Earth 1.5%).
+- **Collapse works**: 96-99% of land above 4 km is in belts being squeezed now (without it 40-47% is dead belts).
+- **The cooling** follows the pulses (fresh high ground weathers fast and draws down CO2), but which arm is
+  colder late is chance: two of three planets are warmer with the new physics, and on average there is less ice.
+  The scorecard's NPP drop is the same snapshot falling in a cold spell.
+- **Verdict: legitimate and within bounds; no default change.** The one candidate fix (`andean_steer`) halved
+  high ground on one seed and doubled it on the other, so it was dropped.
+- **L7 (seed 2, 1 Gyr, today's defaults)**: land above 4 km falls late (median 1.3%, Earth 1.6%), so no
+  over-mountainous showcase from this. Land above 3 km is high at L7 (4.3%, Earth 2.5%), cause not yet known.
 
 ## Hand-off state
 
-(pending)
+Done. Commits on this lane: the diagnosis (b6ffa840) and this write-up. No code change. Scratch root
+/data/personal/scratch/lane286 deleted after measuring (no symlinks were made in it). Drafts:
+`draft-scorecard-late-window-medians.md`, `draft-l7-land-above-3km.md`.
