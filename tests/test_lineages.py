@@ -4291,12 +4291,14 @@ def test_live_dragon_people_seats_a_realm_per_culture(faketz, monkeypatch):
         ago = round(2.0 - 0.1 * i, 3)
         if i == 2:
             h.p[kb][c] = 0.9  # (a new region, far from the others)
-        h.rule.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1, store=True))
+        st = types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1, store=True)
+        h.rule.begin_step(st)
         _sync_pm(h)
         seen.append((ago, sorted(k for k in R.founded if k.startswith("d"))))
-    assert seen[0][1] == ["dkob"]  # (the founding culture: one realm, two regions)
+        h.rule.end_step(st)  # (the cultures are cut on the frame the step stores; the polities read them from the next step on)
+    assert seen[0][1] == [] and seen[1][1] == ["dkob"]  # (the founding culture: one realm, two regions)
     late = [a_ for a_, s in seen if "dkob.1" in s]
-    assert late and max(late) == pytest.approx(1.8 - CU.T_APART_KYR["stone age"], abs=1e-6)
+    assert late and max(late) == pytest.approx(1.8 - CU.T_APART_KYR["stone age"] - 0.1, abs=1e-6)
 
 
 def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):

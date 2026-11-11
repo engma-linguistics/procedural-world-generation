@@ -321,6 +321,7 @@ class LivePolities(StandIns):
             coh = {}
         self.dcul = DragonCultures(g, coh)  # (PW-1687: each dragon people's cultures, followed from demes.WINDOW_KYR ago)
         self._window = self.dcul.DE.WINDOW_KYR
+        self._dc_ago = None  # (the last frame the dragon cultures were cut on)
         self.dregions: dict = {}  # (line -> this step's cultures, DragonCultures.step)
         meta = [{"id": l.id, "group_of": l.group_of, "parents": list(l.parents or [])} for l in L]
         self.anc = IV.ancestors(meta)
@@ -377,6 +378,8 @@ class LivePolities(StandIns):
         On a step that stores a frame the tree also keeps the presence as stored, for its regions (LiveTech.at_frame, PW-1597)."""
         if step.store and hasattr(self.tech, "at_frame"):
             self.tech.at_frame()
+        if step.store and step.epoch != "deep" and float(step.ago) <= self._window + 1e-9:
+            self._dragon_cultures(step)  # (PW-1687: on the state the stored frame holds)
         if step.epoch == "recent":  # (the places are also the seats' places from the next step on, PW-1596: kept with or without the arms)
             towns = self.town_cells(float(step.ago), fresh=step.store)
             if getattr(self.tech, "towns", None) is not None:
@@ -384,8 +387,6 @@ class LivePolities(StandIns):
 
     def begin_step(self, step):
         self.tech.step(step)  # (every step: the tree runs down to the history's time before anything reads it)
-        if step.epoch != "deep" and float(step.ago) <= self._window + 1e-9:
-            self._dragon_cultures(step)
         if step.epoch != "recent":
             return
         import time
@@ -397,18 +398,23 @@ class LivePolities(StandIns):
             self.secs += time.time() - t0
 
     def _dragon_cultures(self, step):
-        """PW-1687: each dragon people's cultures this step (DragonCultures), every glacial and recent step from demes.WINDOW_KYR ago,
-        chiefdoms or not, so their time apart is counted as the demes count it."""
+        """PW-1687: each dragon people's cultures (DragonCultures) on each frame the history stores from demes.WINDOW_KYR ago, on the
+        state the frame holds (the end of its step), chiefdoms or not: the demes and the cultures engine read the stored frames, so
+        their gaps, time apart and contacts are counted at the frames (a contact between frames is not one). The live polities read
+        the last frame's cultures, as the read-out reads the latest frame at or before each step (polities._Run.frame_of)."""
         import time
         t0 = time.time()
         h = self.h
         from .. import cultures as CU
+        ago = float(step.ago)
+        dt = (self._dc_ago - ago) if self._dc_ago is not None else 0.0
+        self._dc_ago = ago
         T_ = getattr(self.tech, "T", None)  # (the tree inside the history; a lent calendar has none: the stone age's time apart)
         for k in self.dragons:
             l = h.lines[k]
             held = h.p[k] >= EST if h.active.get(l.id) else np.zeros(self.g.n, bool)
             era = CU.eras({"techs": list(T_["techs"].values()), "known": {l.id: self.tech.known.get(l.id) or {}}}).get(l.id) if T_ else None
-            self.dregions[k] = self.dcul.step(k, l.id, held, float(step.ago), float(step.dt), bool(step.store), CU.t_apart(era, float(step.ago)))
+            self.dregions[k] = self.dcul.step(k, l.id, held, ago, dt, True, CU.t_apart(era, ago))
         self.secs += time.time() - t0
 
     def _attitudes(self, step):
