@@ -129,8 +129,8 @@ def bought_of(tr: dict | None) -> dict:
     for fd in tr["foods"]:
         gv = [g for g in fd.get("givers") or [] if g.get("road") != "tribute"]
         sh = _num(fd.get("share")) - sum(_num(g.get("share")) for g in fd.get("givers") or [] if g.get("road") == "tribute")  # (tribute is not bought)
-        if sh < BOUGHT_MIN:
-            continue
+        if sh < BOUGHT_MIN or not gv:
+            continue  # (no giver named on the sheet's Bought in line: each under 1%, so the line does not list it either)
         crops = {k for g in gv for k in g.get("crops") or ()}
         out[fd["good"]] = {"share": round(sh, 3), "from": [g["name"] for g in gv[:2]], "what": list(dict.fromkeys(w for g in gv for w in g.get("what") or ()))[:3],
                            "crops": crops, "label": fd.get("label") or fd["good"]}

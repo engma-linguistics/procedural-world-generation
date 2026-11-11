@@ -153,7 +153,6 @@ def events(ep: list, known: dict, born: float, label=lambda kind, x: x.replace("
     ev: list = []
     if not ep:
         return ev
-    first = ep[0]
     for key, kind in (("crops", "crop"), ("herds", "herd"), ("bought", "bought")):
         ser = [set(e[key]) for e in ep]
         for e, (came, went) in zip(ep[1:], _steady(ser)):
@@ -176,9 +175,11 @@ def events(ep: list, known: dict, born: float, label=lambda kind, x: x.replace("
             if went:
                 ev.append({"ago_kyr": e["ago_kyr"], "kind": "way_lost", "item": way, "text": f"gives up {word}"})
     ser = [{e["fuel"]} if e["fuel"] else set() for e in ep]
-    for e0, e, (came, _) in zip(ep, ep[1:], _steady(ser, HOLD_SLOW)):
+    was = ep[0]["fuel"]
+    for e, (came, _) in zip(ep[1:], _steady(ser, HOLD_SLOW)):
         if came:
-            ev.append({"ago_kyr": e["ago_kyr"], "kind": "fuel", "item": e["fuel"], "text": f"cooks mostly on {e['fuel']}" + (f" (was {e0['fuel']})" if e0["fuel"] else "")})
+            ev.append({"ago_kyr": e["ago_kyr"], "kind": "fuel", "item": e["fuel"], "text": f"cooks mostly on {e['fuel']}" + (f" (was {was})" if was else "")})
+            was = e["fuel"]
     ser = [({"dairy"} if e["dairy"] else set()) | ({"cheese"} if e["cheese"] else set()) for e in ep]
     for e, (came, _) in zip(ep[1:], _steady(ser)):
         if "dairy" in came:
