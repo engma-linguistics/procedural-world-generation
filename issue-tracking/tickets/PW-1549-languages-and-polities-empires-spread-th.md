@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1434, PW-1436, PW-756, PW-972]
 refs: [docs/review/language/contact-gaps.md, docs/review/language/names-spelling-gaps.md, docs/review/language/for-daniel.md, docs/review/language/architecture.md, "planet/server.py::polities_doc", planet/lineages/polities.py, planet/language/history.py, planet/language/inputs.py, planet/language/names.py, planet/language/grammar.py, "run a24559"]
 created: 2026-11-08
-updated: 2026-11-08
+updated: 2026-11-11
 ---
 
 ## Description
@@ -42,3 +42,4 @@ Needs a run with polities and languages both (a24559 is too old: re-run or pick 
 
 ## Updates
 - 2026-11-08: Created from inbox draft draft-language-polities.md (found by lang-design (lexicon & contact, names, grammar D lanes, 2026-11-08)).
+- 2026-11-11: Trade goods as loanwords (owner 11-11, from lane 20 / PW-1745): words for things that travel along trade routes (salt, metals, cloth, spices, dyes, wine) should follow the goods the polities' trade actually moves, as Wanderwörter: borrowed hop by hop along the route, with the etymology as the route, as crop words do now. Today they arrive only through tech-gated concepts (lexicon.TECH_CONCEPT) and the trade contact profile (contact.py), not from what is traded where. Needs the trade network this ticket brings; do it with the contact-inputs work (PW-1643, PW-1652).
