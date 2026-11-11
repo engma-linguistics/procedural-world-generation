@@ -79,3 +79,72 @@ def test_arc_outgassing_is_the_slabs_melt_not_the_volume_thermostats_gain():
     assert n1.sum() > 0 and np.array_equal(n1, n3) and np.allclose(g1, n1)
     assert g3.sum() > n3.sum() + 0.1  # (the gain still builds the continental arcs' crust)
     assert np.all(g3 >= n3 - 1e-12) and np.all(g3 <= 3.0 * n3 + 1e-12)
+
+
+def _coastal_belt(sim):
+    """A continental coast cell with an ocean neighbour of its own plate, thickened with its continental
+    neighbours into a 70-km dead belt (never folded). Returns (Column, coast cell, its ocean neighbours)."""
+    from planet.tectonics import record
+    from planet.tectonics.crust import Column
+    g, own, c = sim.grid, sim.owner, sim.w_cont
+    col = Column(t=sim.w_thick.copy(), cover=sim.w_cover.copy(), x=sim.w_extra.copy(), cont=c.copy(),
+                 rock=sim.w_rock.copy(), rec=sim.w_rec.copy(), lith=sim.w_lith.copy())
+    for i in np.random.default_rng(0).permutation(g.n):
+        nb = np.asarray(g.neighbors[i])
+        sea = nb[~c[nb] & (own[nb] == own[i])]
+        if c[i] and len(sea) and (own[nb] == own[i]).all() and c[nb].sum() >= 3:
+            belt = np.concatenate([[i], nb[c[nb]]])
+            col.t[belt] = 70.0
+            col.cover[belt] = 0.0
+            col.x[belt] = 0.0
+            col.rec[:, record.T_FOLD] = record.NEVER
+            return col, i, sea
+    raise AssertionError("no coast cell")
+
+
+def test_a_dead_belt_at_the_coast_spreads_seaward_and_widens_the_continent():
+    """PW-1693: with collapse_margin on, a thick dead belt at a continent's edge also flows into its plate's ocean
+    cell next to it, which becomes thin continental crust once it holds BECOMES_CONT_KM: the continent gains area,
+    the crust's volume is kept. Off (the default), and at a trench, collapse stays inside the continent."""
+    from planet.tectonics.isostasy import BECOMES_CONT_KM
+    n = build_grid(5).n
+    out = {}
+    for name, cm, at_trench in (("off", 0.0, False), ("on", 1.0, False), ("trench", 1.0, True)):
+        sim = Simulation(build_grid(5), 1, Params(collapse_margin=cm), 2.0)
+        sim.dt_now = 5.0
+        col, coast, sea = _coastal_belt(sim)
+        trench = np.zeros(n, bool)
+        if at_trench:
+            trench[coast] = True
+        v0 = col.t.sum()
+        area0 = col.cont.sum()
+        crust.flow_and_orogeny(sim, col, crust.inner_edges(sim, col.cont), np.zeros(n), trench)
+        assert abs(col.t.sum() - v0) < 1e-6 * v0  # volume kept (ocean and continent together)
+        out[name] = (col.cont.sum() - area0, col.t[sea].max())
+        if name == "on":
+            grown = sea[col.cont[sea]]
+            assert len(grown) and (col.t[grown] >= BECOMES_CONT_KM).all()
+            assert sim.budget.get("collapse.margin", 0) > 0
+    assert out["off"][0] == 0 and out["trench"][0] == 0
+    assert out["on"][0] > 0, out
+
+
+def test_drowned_continent_floats_water_loaded():
+    """PW-1287 A: with wet = WET (water_loaded 1), continental crust below the sea stands rho_m / (rho_m - rho_w)
+    times its air-loaded depth (its hollow holds water); land and ocean floor are unchanged, and the two meet at
+    the shore. The numba and numpy paths agree."""
+    from planet.tectonics.isostasy import WET, elevation
+    thick = np.array([20.0, 30.0, 33.0, 36.0, 45.0, 7.0])
+    cont = np.array([True, True, True, True, True, False])
+    age = np.full(6, 50.0)
+    rock = np.zeros(6, np.int64)
+    sed = np.array([0.0, 1.0, 0.0, 0.0, 0.0, 0.5])
+    air = elevation(thick, age, cont, rock, -300.0, sed)
+    wet = elevation(thick, age, cont, rock, -300.0, sed, WET)
+    slow = elevation(thick, age.astype(np.float32), cont, rock, -300.0, sed, WET)  # (the numpy path)
+    assert np.allclose(wet, slow)
+    drowned = cont & (air < 0)
+    assert drowned.sum() >= 2 and (~drowned & cont).any()
+    assert np.allclose(wet[drowned], WET * air[drowned])
+    assert np.array_equal(wet[~drowned], air[~drowned])
+    assert 1.45 < WET < 1.46

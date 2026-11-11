@@ -254,7 +254,7 @@ def max_km(cont, cover, extra):
 
 
 @njit(cache=True, parallel=True)
-def _elevation_k(thick, age, cont, rock, swell, sw0, use_sw, sed, out):
+def _elevation_k(thick, age, cont, rock, swell, sw0, use_sw, sed, out, wet):
     for i in prange(thick.shape[0]):
         extra = thick[i] - OCEAN_KM
         if cont[i]:
@@ -266,12 +266,23 @@ def _elevation_k(thick, age, cont, rock, swell, sw0, use_sw, sed, out):
             a = age[i] if age[i] > 0 else 0.0
             od = -min(2600 + 345 * np.sqrt(a), 6400)
             base = od + ISO_SEA * extra + (ISO_VOLCANO - ISO_SEA) * pile
-        out[i] = base + _lift1(cont[i], sed[i]) + (swell[i] if use_sw else sw0)
+        e = base + _lift1(cont[i], sed[i]) + (swell[i] if use_sw else sw0)
+        out[i] = e * wet if cont[i] and e < 0 else e
 
 
-def elevation(thick, age, cont, rock, swell, sed):
+WET = K_SEA / K_LAND  # how much deeper a drowned column stands with water on it than with air (1.46)
+
+
+def elevation(thick, age, cont, rock, swell, sed, wet=1.0):
     """m above sea level (swell: m of plume doming minus the sea level;
-    sed: km of the crust that is (light) sediment, see sediment_km)."""
+    sed: km of the crust that is (light) sediment, see sediment_km).
+    wet: continental crust below the sea stands wet x as deep as its
+    air-loaded depth (PW-1287 A, Simulation.wet): the hollow its column
+    leaves under the mantle's level is filled with water, not air, so it
+    sinks rho_m / (rho_m - rho_w) = WET times as deep (the air- to
+    water-loaded conversion; McKenzie 1978's E0 under water). The ocean
+    floor's ISO_SEA / K_SEA already float that way. Continuous at the
+    shore (both 0 there). 1: air-loaded (as before)."""
     # (a volcanic pile is held up by the plate's flexure only up to the
     # load it can carry, VOLCANO_PILE_KM; crust beyond that floats like
     # any other: PW-172, a 45 km sediment-laden pile stood at 11.5 km)
@@ -280,13 +291,15 @@ def elevation(thick, age, cont, rock, swell, sed):
             and (np.ndim(swell) == 0 or (_fast(thick, swell) and swell.dtype == np.float64))):
         out = np.empty(thick.shape)
         use = np.ndim(swell) != 0
-        _elevation_k(thick, age, cont, rock, swell if use else out, 0.0 if use else float(swell), use, sed, out)
+        _elevation_k(thick, age, cont, rock, swell if use else out, 0.0 if use else float(swell), use, sed, out,
+                     float(wet))
         return out
     extra = thick - OCEAN_KM
     pile = np.where(rock == HOTSPOT, np.clip(extra, 0, VOLCANO_PILE_KM), 0.0)
-    return np.where(cont, 250 + ISO_LAND * (thick - CONT_KM),
-                    ocean_depth(age) + ISO_SEA * extra + (ISO_VOLCANO - ISO_SEA) * pile) \
+    e = np.where(cont, 250 + ISO_LAND * (thick - CONT_KM),
+                 ocean_depth(age) + ISO_SEA * extra + (ISO_VOLCANO - ISO_SEA) * pile) \
         + sediment_lift(cont, rock, sed) + swell
+    return np.where(cont & (e < 0), e * wet, e) if wet != 1.0 else e
 
 
 def ocean_depth(age):

@@ -40,7 +40,7 @@ from ..geo import R_KM, is_land
 from ..grid import Grid
 from . import crust, earth, events, mantle, motion, output, record, volcanism
 from .crust import Column
-from .isostasy import EXTRA, LAVA, LIFT, MIX, VALLEY, elevation, max_km, sediment_km, subsidence
+from .isostasy import EXTRA, LAVA, LIFT, MIX, VALLEY, WET, elevation, max_km, sediment_km, subsidence
 from .params import Params
 from .plate_kernels import cleanup_ghosts, resolve, world_view, write_back
 from .plates import Plates
@@ -288,7 +288,7 @@ class Simulation:
         resume bit for bit: test_state, PW-970's branch.)"""
         earth.update_climate(self, e)
         self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.datum(),
-                                sediment_km(self.w_cover, self.w_extra))
+                                sediment_km(self.w_cover, self.w_extra), self.wet())
         self.climate_in = {"dT": float(self.dT)}  # (what this climate saw: earth.climate_moved)
 
     def _resolve(self):
@@ -337,7 +337,9 @@ class Simulation:
         col.t = volcanism.volcanoes(self, growth, col.t, rng)
         self.book("volcano", t0, col.t, col.cont)
         crust.stretch(self, col, stretch, plume, newc, stack_add)
-        squeezed = crust.flow_and_orogeny(self, col, edges, stack_add)
+        trench = np.zeros(self.grid.n, bool)
+        trench[bd.sinking] = trench[bd.overriding] = True
+        squeezed = crust.flow_and_orogeny(self, col, edges, stack_add, trench)
 
         # weather, ice, rivers, erosion, sediment
         # (the climate's random drift has its own stream: changes to how many
@@ -346,15 +348,13 @@ class Simulation:
                                  plume=head + apron + vents)  # (the plumes' melt degasses: PW-875)
         if self.precip is None:  # the first step: erosion needs a climate (later ones: step's end)
             self._climate(elevation(col.t, self.w_age, col.cont, col.rock, self.datum(),
-                                    sediment_km(col.cover, col.x)))
+                                    sediment_km(col.cover, col.x), self.wet()))
         dep, lake = earth.erode(self, col)
         chem = earth.sediments(self, col, dep, lake)
         earth.bury(self, col)
         earth.reefs(self, col, dep, chem)
         col.rec[self.ice > 0, record.T_ICE] = self.t
 
-        trench = np.zeros(self.grid.n, bool)
-        trench[bd.sinking] = trench[bd.overriding] = True
         crust.coherence(self, col, trench)
         born = crust.birth_and_cratons(self, col, arcky, squeezed)
         self._write_back(col, born)
@@ -398,7 +398,7 @@ class Simulation:
         self.w_rec, self.w_lith = col.rec, col.lith
         self._subsidence()
         self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.datum(),
-                                sediment_km(self.w_cover, self.w_extra))
+                                sediment_km(self.w_cover, self.w_extra), self.wet())
         self._scatter()
 
     def _record_boundaries(self, bd, conv):
@@ -434,7 +434,7 @@ class Simulation:
         self.swell = self.w_extra[:, LIFT]
         self._subsidence()
         self.w_elev = elevation(self.w_thick, self.w_age, self.w_cont, self.w_rock, self.datum(),
-                                sediment_km(self.w_cover, self.w_extra))
+                                sediment_km(self.w_cover, self.w_extra), self.wet())
         self.w_ref = r
 
     def _subsidence(self):
@@ -444,6 +444,10 @@ class Simulation:
         p = self.params
         self.dyn = subsidence(self.grid, self.w_thick, self.w_cont, self.w_rec, self.t, p.flexure, p.rift_sag,
                               p.sag_time)
+
+    def wet(self) -> float:
+        """isostasy.elevation's wet: how much deeper drowned continental crust stands than air-loaded (PW-1287 A)."""
+        return 1.0 + self.params.water_loaded * (WET - 1.0)
 
     def datum(self) -> np.ndarray:
         """m added to each cell's isostatic elevation (isostasy.elevation's

@@ -181,3 +181,169 @@ Stopped at the diagnosis and screen (tool-call budget). Nothing in `planet/` cha
 run. Inbox draft `draft-andean-area-sink-exhausts-thermostat.md` carries candidate 1. The L7 runs 2e1bc2,
 6286ce (seed 2) and 213321, 28d710 (seed 1) are kept under /data/personal/scratch/lane288/data/runs for the
 lane that builds candidate 1 (its baselines); the L6 runs were deleted.
+
+# Lane 292 (PW-1693): collapse that gives area back
+
+Lane 292, 2026-11-10. Base: main bb30e268 (run code as 5411930b: lane 288's merge adds docs and the scorecard's
+`late` block only). Baselines: lane 288's L7 runs on 5411930b (section 2.1, 2.4): 2e1bc2 (seed 2 on), 6286ce (seed 2
+off), 213321 (seed 1 on), 28d710 (seed 1 off), kept under /data/personal/scratch/lane288/data/runs.
+
+## 4. Design note (written before coding)
+
+### 4.1 What collapse does today
+
+- `flow_and_orogeny` (`planet/tectonics/crust.py:547-576`) runs `plate_kernels.crust_flow` (`plate_kernels.py:250-262`)
+  on the edges `inner_edges` gives it (`crust.py:168-189`): continental cells of one plate, plus collision edges
+  between two continents. A cell not folded for `collapse_delay` (20 Myr, `record.T_FOLD`) on both ends of an edge
+  flows (1 + `collapse`) = 31 times faster (`crust.py:559-564`).
+- Flow on those edges only moves crust between continental cells: volume kept, and no cell changes from ocean to
+  continent, so collapse is area-neutral. A dead belt at a continent's edge can only spread inward; the crust that
+  Andean closing stacked behind the trench (`andean_contraction`, `crust.py:271-330`, whose closed cells became
+  ocean) never gets that area back. The area it took is answered only by subduction erosion's thermostat, which
+  sits at its x0.2 floor (`crust.py:77`) on L7 seeds 1 and 2 (sections 2.2-2.4).
+
+### 4.2 The change (`collapse_margin`, default 0 first)
+
+In `flow_and_orogeny`, beside the inner edges, the edges from a dead continental cell to a neighbouring ocean cell
+of the same plate also flow, at the dead belt's rate times `collapse_margin` (1: as fast as inland). Not at a trench
+(either side of a subducting edge: a live Andean margin is held up by the slab, and its forearc notch is
+subduction erosion's), not into a hotspot pile. The kernel is unchanged, so flow only runs where the thicker side
+is over 40 km (`crust_flow`'s x = (t - 40)/10): only thick dead belts spread out, a normal 35 km coast does not.
+An ocean cell filled to `BECOMES_CONT_KM` (20 km) becomes continental crust there and then: thin, extended crust
+(the belt's basement rock, its rift time set now, as `rifted_margin` lays one), booked as "collapse.margin". Crust
+in a cell not yet filled sits on the ocean floor until it fills (booked out with "flow+cap"). Volume is kept;
+area grows by the cells the spreading belt fills, so a run that loses area to shortening gets some back where
+the shortened crust collapses.
+
+### 4.3 Why it is physical
+
+Gravitational collapse is the decay of the lateral contrast in gravitational potential energy a thickened belt
+holds (Rey, Vanderhaeghe & Teyssier 2001, "Gravitational collapse of the continental crust: definition, regimes
+and modes", Tectonophysics 342(3-4):435-449, doi:10.1016/S0040-1951(01)00174-3; abstract read on the
+repository.geologyscience.ru record): in fixed-boundary divergent collapse the orogen grows laterally at the
+expense of its forelands (brittle gravitational sliding plus horizontal spreading of the lower crust); in
+free-boundary collapse the thick crust thins homogeneously. Either way the belt's crust ends up wider: the area
+shortening took is given back by extension (Dewey 1988, already the model's collapse source). A thick dead belt
+whose foreland is the ocean side of its own plate is the free side; its spreading moves the continent's edge
+seaward as thin extended crust, which is what the change lets the flow do. It is a feedback on thickness itself
+(only crust over 40 km spreads), not on a global area target, and it does not touch the thermostat's clamp.
+
+### 4.4 Screen bar
+
+L7 seeds 1 and 2 to 1 Gyr, `collapse_margin=1`, against the on arms 2e1bc2 / 213321, medians over 600-1000 Myr
+(`l7_high_ground.py`): the area thermostat off its floor; land above 3 and 4 km down toward the off arms (6286ce,
+28d710); the Andes share of land above 3 km kept (on arms 19.2% / 24.7%).
+
+## 5. Second arm: PW-1287 option A, water-loaded drowned continent (coordinator's addition)
+
+Coordinator ruling A (correct physics), screened beside collapse_margin, each behind its own parameter
+(`water_loaded`, default 0) and in its own commit. Side measures in every arm: shelf share of the ocean (0 to
+-200 m) and the median submerged continental cell's depth, late-window medians (PW-950 baseline ~1.4% and
+~-1,500 m at L6; Earth on the L6 grid ~5.8% and -184 m).
+
+**What it changes.** `isostasy.elevation` (`_elevation_k` and the numpy path) gives continental crust standing
+below the sea `wet` x its air-loaded depth, `wet = K_SEA / K_LAND = rho_m / (rho_m - rho_w) = 1.456` with
+`water_loaded = 1` (`Simulation.wet`); the air-loaded height includes `sediment_lift`, so a drowned shelf's
+sediment lifts it at the under-water rate (K_SEA), as on the ocean floor, which is PW-1287's bookkeeping gap. The
+join at the shore is continuous (0 both sides) with a kink, which is the physics: water loading starts where the
+water does. Erosion and deposition's elevation-per-km (`earth.erode`'s `iso`, `iso_dep`) and the reefs' fill take
+the same factor on drowned continental cells, so a fill of d metres lays d / (wet x rate) km.
+
+**Expected sign, stated before the screen.** This deepens drowned margins, it does not raise them: under water each
+km of thinning sinks the column (rho_m - rho_c) / (rho_m - rho_w) ~ 220 m against 150 m in air (the standard air- to
+water-loaded conversion). PW-950's own 2026-10-28 update records lane 23 trying it at L6 (seed 1, branch code):
+submerged median -766/-875/-997 m air-loaded against -1105/-1135/-1369 m water-loaded at 200/300/400 Myr, shelf
+lower in 6 of 8 samples; and McKenzie 1978's E0 is larger under water (3.2 against 2.2 km, the ticket's 10-29
+update). PW-1287's own option text says A "raises the drowned margins"; that holds only for the sediment term
+(a km of sediment lifts a drowned shelf 1.46x more), not for the crust's depth. So A is expected to lower the shelf
+share and deepen the submerged median, and to lower sea level a little (more water held on drowned continent,
+`earth.continent_water`). It is screened as ruled; if it causes trouble it is dropped, not tuned.
+
+## 6. Screens (L7 seeds 1 and 2, 1 Gyr, medians over 600-1000 Myr)
+
+All `planet simulate --seed S --level 7 --myr 1000 --checkpoint-every 20 --threads 4 --set ...` on this branch
+(dea5bee9 / 5c55c21a: both parameters default off, so the off settings run main bb30e268's code), scratch
+/data/personal/scratch/lane292/data. Measured with `l7_high_ground.py` (lane 292 added `shelf`, the share of the
+ocean at 0 to -200 m, and `subm`, the median submerged continental cell, and reads pre-lane-292 runs with both
+parameters off). Baselines: lane 288's runs on 5411930b (same run code), re-measured here for the shelf columns.
+
+### 6.1 collapse_margin = 1 alone
+
+| seed | arm (run) | > 3 km | > 4 km | area thermostat | cont. area % | mean cont. crust km | Andes share of > 3 km | shelf % of ocean | submerged median m |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | on, main (213321) | 5.62 | 3.42 | 0.20 floor | 37.6 | 37.7 | 24.7 | 1.03 | -1140 |
+| 1 | off, main (28d710) | 3.90 | 1.11 | 0.33 | 40.5 | 35.2 | 8.9 | 1.34 | -878 |
+| 1 | **collapse_margin (4635ef)** | 4.96 | 1.74 | **0.20 floor** | 38.5 | 37.8 | 23.5 | 1.00 | -982 |
+| 2 | on, main (2e1bc2) | 4.33 | 1.29 | 0.20 floor | 39.7 | 36.7 | 19.2 | 1.28 | -1050 |
+| 2 | off, main (6286ce) | 2.77 | 0.82 | 0.37 | 41.0 | 35.5 | 12.3 | 1.70 | -1030 |
+| 2 | **collapse_margin (d4f6be)** | 3.45 | 1.45 | **0.20 floor** | 38.2 | 37.4 | 20.4 | 0.81 | -1000 |
+
+Books at 1 Gyr (km x L5 cells of crust): `collapse.margin` +9.25e3 (seed 1) / +9.21e3 (seed 2) against
+`andean.closed` -5.44e4 / -5.82e4. The margin cells are laid at ~20 km and the closed cells held ~35-40 km, so
+collapse gives back roughly a quarter to a third of the area Andean closing takes.
+
+- **Fails the screen's main bar.** The area thermostat stays at its floor (x0.20) through the late window on both
+  seeds, as on main; the continents are no thinner (37.8 / 37.4 km against 37.7 / 36.7) and area no closer to
+  target on seed 2 (38.2% against 39.7%).
+- Land above 3 km falls on both seeds (5.62 -> 4.96, 4.33 -> 3.45), still above the off arms; above 4 km falls on
+  seed 1 (3.42 -> 1.74) and rises a little on seed 2 (1.29 -> 1.45). With the thermostat unchanged this is the
+  dead coastal belts spreading out, not the area balance being restored; two seeds cannot tell it from chaos.
+- The Andes share is kept (23.5 / 20.4 against 24.7 / 19.2).
+- Shelf and submerged median: no consistent change (shelf 1.00 / 0.81 against 1.03 / 1.28).
+- Why it is weak: the flow kernel (`crust_flow`) moves crust only where the thicker side is over 40 km, so a belt
+  spreads seaward only until its edge is down to ~40 km, and a new 20 km margin cell spreads no further unless the
+  belt behind it is still over 40 km. Collapse on Earth runs until the potential-energy contrast is gone, nearer
+  normal thickness, so the 40 km stop makes the model's seaward collapse end early. A revision that let margin
+  spreading run below 40 km would need a new rate or reference thickness without a source, which is tuning; it
+  was not attempted (section 7).
+
+### 6.2 water_loaded = 1 alone (PW-1287 A)
+
+| seed | arm (run) | > 3 km | > 4 km | area thermostat | cont. area % | mean cont. crust km | Andes share | land % | shelf % of ocean | submerged median m |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | on, main (213321) | 5.62 | 3.42 | 0.20 | 37.6 | 37.7 | 24.7 | 32.8 | 1.03 | -1140 |
+| 1 | **water_loaded (145d7f)** | 3.96 | 1.84 | 0.20 | 38.3 | 37.6 | 20.1 | 33.0 | **0.81** | **-1500** |
+| 2 | on, main (2e1bc2) | 4.33 | 1.29 | 0.20 | 39.7 | 36.7 | 19.2 | 34.0 | 1.28 | -1050 |
+| 2 | **water_loaded (ea1b47)** | 3.82 | 1.44 | 0.20 | 38.9 | 37.9 | 21.1 | 33.7 | **0.96** | **-1440** |
+
+- **As predicted in section 5, A deepens the drowned margins and shrinks the shelves**: submerged median -1140 ->
+  -1500 m and -1050 -> -1440 m, shelf 1.03 -> 0.81% and 1.28 -> 0.96% of the ocean (PW-950's Earth on L6 ~5.8%,
+  -184 m). The direction is the opposite of what PW-950 wants. No trouble with sea level or land (land 33.0 / 33.7%
+  against 32.8 / 34.0%). It does not touch the area thermostat (floor on both).
+- High ground moves (5.62 -> 3.96, 4.33 -> 3.82 above 3 km), but A changes nothing on land above sea level, so this
+  is a different run history (erosion and deposition on drowned cells), not a mechanism on high ground; two seeds
+  cannot tell it from chaos.
+- A is the correct isostasy (it closes PW-1287's bookkeeping gap: sediment off a drowned shelf onto the ocean floor
+  is now lifted at the same under-water rate on both), so it may still be wanted, but it makes the shelves worse,
+  and PW-950's fix lies elsewhere (lane 23's suggestions: tapered necking, sediment wedges, wave-base planation).
+
+### 6.3 Both (collapse_margin = 1, water_loaded = 1)
+
+| seed | arm (run) | > 3 km | > 4 km | area thermostat | cont. area % | mean cont. crust km | Andes share | land % | shelf % of ocean | submerged median m |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | on, main (213321) | 5.62 | 3.42 | 0.20 | 37.6 | 37.7 | 24.7 | 32.8 | 1.03 | -1140 |
+| 1 | **both (eb41d6)** | 3.33 | 1.56 | **0.20** | 38.6 | 36.9 | 23.5 | 33.8 | 0.94 | -1380 |
+| 2 | on, main (2e1bc2) | 4.33 | 1.29 | 0.20 | 39.7 | 36.7 | 19.2 | 34.0 | 1.28 | -1050 |
+| 2 | **both (a95c21)** | 2.89 | 0.95 | **0.20** | 38.7 | 36.9 | 30.4 | 33.5 | 1.17 | -1480 |
+
+Books at 1 Gyr: `collapse.margin` +9.2e3 / +9.0e3 against `andean.closed` -5.6e4 / -5.8e4.
+
+- The lowest high ground of the three arms on both seeds (seed 2 at the off arm's level), Andes share kept, but the
+  thermostat is still at its floor and the continents are no thinner on seed 2 (36.9 against 36.7 km). Each part
+  alone moved land above 3 km down by 0.5-1.7 points with the thermostat unchanged, so these are run histories
+  diverging, not the area balance restored; two seeds are not enough to call a high-ground gain.
+- Shelves: deeper and smaller, as with A alone.
+
+## 7. Verdict (lane 292)
+
+- **No arm passes the screen's main bar** (thermostat off its floor): all three stay at x0.20 on both L7 seeds.
+  Seaward collapse gives back only ~1/4-1/3 of the area Andean closing takes (6.1). PW-1287 A deepens the drowned
+  margins by ~400 m and shrinks shelves (6.2), as the physics says it must (section 5).
+- So no paired judge was run and **nothing is on by default**: both parameters stay 0 (commits dea5bee9
+  `collapse_margin`, 5c55c21a `water_loaded`), each in its own commit with tests (`tests/test_crust_belts.py`).
+- No revision was attempted: the one that would strengthen collapse_margin (seaward spreading below 40 km) needs an
+  unsourced reference thickness; it is option A of the draft below, for a decision.
+- Drafts: `draft-area-thermostat-floor-unsolved-after-collapse-margin.md` (needs-decision: A/B/C),
+  `draft-water-loaded-isostasy-deepens-shelves.md` (needs-decision: keep A off until PW-950's margin work).
+- Scratch runs (lane 288's four baselines and lane 292's six) are still under /data/personal/scratch/lane288 and lane292: deleting them was denied by the permission system, so the coordinator deletes them (no symlinks inside); the per-checkpoint tables
+  are in logs/measure_*.txt there.

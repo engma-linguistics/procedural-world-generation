@@ -6,6 +6,7 @@ Per checkpoint (t >= 100 Myr), beside andes_late_series' high ground and Andes s
   volume / area, so a thicker continent means volume above target or area below it;
 - the thermostats' factors now (arc growth x, subduction erosion x; 1 = nominal, floor 0.1 / 0.2);
 - land area and mean land elevation; land above 2/3/4 km; the 90th and 99th percentile of land elevation;
+- (lane 292, PW-1693) the shelf share of the ocean (0 to -200 m) and the median submerged continental cell (m);
 - the run's crust books since the run's start (sim.budget: km x L5 cells per process) at the checkpoint, so the
   area sinks (andean.closed, subd.erosion) can be compared between levels.
 usage: PYTHONPATH=. l7_high_ground.py RUN_DIR [RUN_DIR ...]   (--every N: every Nth checkpoint)"""
@@ -25,14 +26,15 @@ from andes_late_series import zones  # noqa: E402
 
 from planet import timeline as T  # noqa: E402
 
-BOOKS = ("andean.closed", "subd.erosion", "arc", "born", "margin", "coherence", "erosion", "flow+cap", "clip")
+BOOKS = ("andean.closed", "subd.erosion", "arc", "born", "margin", "coherence", "erosion", "flow+cap", "clip",
+         "collapse.margin")
 
 
 def series(rd, every=1):
     rd = Path(rd)
     m = S.read_header(rd / "run.json")["meta"]
     g = build_grid(m["level"])
-    params = Params.from_stored(m["params"])
+    params = Params.from_stored({"collapse_margin": 0.0, "water_loaded": 0.0, **m["params"]})  # (older runs: off)
     try:  # (a run still going has no layers yet: no Andes share)
         r, arr = T.load_frames(rd, ["plate", "crust", "plate_boundary"])
     except KeyError:
@@ -58,12 +60,14 @@ def series(rd, every=1):
                          grow=float(grow), shrink=float(shrink), land=100 * land.mean(), mland=float(el.mean()),
                          gt2=100 * (e > 2000).sum() / nl, gt3=100 * h3.sum() / nl, gt4=100 * (e > 4000).sum() / nl,
                          p90=float(np.percentile(el, 90)), p99=float(np.percentile(el, 99)),
+                         shelf=100 * ((e <= 0) & (e > -200)).sum() / max((e <= 0).sum(), 1),
+                         subm=float(np.median(e[cont & (e <= 0)])) if (cont & (e <= 0)).any() else np.nan,
                          andes3=100 * (h3 & zone).sum() / max(h3.sum(), 1) if zone is not None else np.nan,
                          **{b: float(sim.budget.get(b, 0.0)) for b in BOOKS}))
     return m, params, rows
 
 
-KEYS = ("cont", "target", "volr", "thick", "grow", "shrink", "land", "mland", "gt2", "gt3", "gt4", "p90", "p99", "andes3")
+KEYS = ("cont", "target", "volr", "thick", "grow", "shrink", "land", "mland", "gt2", "gt3", "gt4", "p90", "p99", "andes3", "shelf", "subm")
 
 if __name__ == "__main__":
     args = sys.argv[1:]

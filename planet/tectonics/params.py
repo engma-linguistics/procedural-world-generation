@@ -55,6 +55,13 @@ class Params:
     # (1 + collapse) x faster (crust.flow_and_orogeny). 0: off. On since lane 275b (30: dead high ground gone 30-60 Myr after its last squeeze).
     collapse: float = 30.0
     collapse_delay: float = 20.0
+    # PW-1693 (lane 292, l7-high-ground.md section 4): a dead belt at a continent's edge also spreads into the same
+    # plate's neighbouring ocean cells (not at a trench), at collapse_margin x its collapsed rate; a cell filled to
+    # BECOMES_CONT_KM becomes thin extended continent, so collapse gives back area shortening took. 0: off.
+    collapse_margin: float = 0.0
+    # PW-1287 A (lane 292): continental crust below the sea floats water-loaded (isostasy.elevation's wet): 0 air-loaded
+    # (as before), 1 water-loaded (drowned continent 1.46x its air-loaded depth). Simulation.wet.
+    water_loaded: float = 0.0
     # tectonic subsidence beyond local isostasy (isostasy.subsidence, PW-054):
     # share of a mountain belt's spread root that drags the plain beside it
     # down (flexural foreland / intermontane basins), and the thermal sag of

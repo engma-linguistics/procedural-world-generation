@@ -456,7 +456,7 @@ def cap_plumes(sim, col, plume, tops, cont_share=0.25):
     as_volcano, which sinks as it decays)."""
     dt, cont = sim.dt_now, col.cont
     as_volcano = elevation(col.t, sim.w_age, cont, np.where(cont, col.rock, HOTSPOT), sim.datum(),
-                           sediment_km(col.cover, col.x))
+                           sediment_km(col.cover, col.x), sim.wet())
     head = np.where(cont, tops[1], tops[0])
     taper = np.clip((head - as_volcano) / 1500.0, 0, 1)
     room = np.maximum(head - as_volcano, 0) / iso_rate(cont, np.full(len(cont), HOTSPOT), col.t)
@@ -477,7 +477,7 @@ def volcanoes(sim, growth, t, rng):
     # only on established arcs: continental margins (Andes, Cascades) or
     # island arcs that have built up near the surface (Japan, Aleutians)
     near_top = elevation(t, sim.w_age, sim.w_cont, sim.w_rock, sim.datum(),
-                         sediment_km(sim.w_cover, sim.w_extra)) > -1500
+                         sediment_km(sim.w_cover, sim.w_extra), sim.wet()) > -1500
     # (growth's bar is a rate, km/Myr x the run's step: a finish-window step is shorter, PW-915; the chance
     # below is per step, so it takes the step's own length)
     cand = np.flatnonzero((growth * sim.dt > 0.15) & near_top & (sim.w_cont | (t > OCEAN_KM + 8)))

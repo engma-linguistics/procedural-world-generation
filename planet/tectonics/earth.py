@@ -1240,10 +1240,13 @@ def erode(sim, col):
     # sediment cover if there is one, else the basement), and of the
     # (light) sediment deposited
     sed = sediment_km(cover, x)
-    iso_dep = sediment_iso(cont, rock, sed)
-    iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock, t))
+    e0 = elevation(t, sim.w_age, cont, rock, sim.datum(), sed, sim.wet())
+    # (drowned continent stands wet x deeper per km it loses: and rises wet x higher per km laid on it, PW-1287 A)
+    gain = np.where(cont & (e0 < 0), sim.wet(), 1.0)
+    iso_dep = sediment_iso(cont, rock, sed) * gain
+    iso = np.where(cover > surface.COVER_SHOWS, iso_dep, iso_rate(cont, rock, t) * gain)
     col.t, col.cover, x[:, MIX], sim.removed, dep, sim.flow, sim.down, lk, crept = surface.erode(
-        g, elevation(t, sim.w_age, cont, rock, sim.datum(), sed), t, cover, x[:, MIX],
+        g, e0, t, cover, x[:, MIX],
         rock, cont, sim.precip, sim.runoff, sim.aet, sim.lake_evap, dt, p.hillslope, p.erosion_timescale,
         p.erosion_height, p.incision, sim.scale, iso, k_mult, p.alluvial, p.fan_km, iso_dep, valley=x[:, VALLEY],
         base_rise=max(-float(sim.sea_ice), 0.0), rise=p.rise > 0, slope_k=p.slope_k, pet=sim.pet)
@@ -1283,7 +1286,7 @@ def sediments(sim, col, dep, lake):
                  exist (none before land plants ~450 Ma on Earth)"""
     p, g, dt = sim.params, sim.grid, sim.dt_now
     x, cover = col.x, col.cover
-    e = elevation(col.t, sim.w_age, col.cont, col.rock, sim.datum(), sediment_km(col.cover, x))
+    e = elevation(col.t, sim.w_age, col.cont, col.rock, sim.datum(), sediment_km(col.cover, x), sim.wet())
     land = is_land(e, grid=g)
     x[:, SAND] += dep * np.where(land, 0.6, np.where(e > -200, 0.5, 0.15))
     net = dep - col.eroded_cover
@@ -1345,11 +1348,11 @@ def reefs(sim, col, dep, chem):
     chem = evap + coal
     cont, rock = col.cont, col.rock
     sed = sediment_km(col.cover, col.x)
-    e = elevation(col.t, sim.w_age, cont, rock, sim.datum(), sed)
+    e = elevation(col.t, sim.w_age, cont, rock, sim.datum(), sed, sim.wet())
     reef = (e < -5) & (e > -1500) & (sim.sst >= p.reef_temp) & (dep * 1000 < p.reef_mud * dt)
     rate = p.reef_rate * (1.0 if sim.t >= reef_builders_t(sim) - 1e-9 else MICROBIAL_REEF)
     grow = np.minimum(rate * np.exp((e + 5) / 150.0) * dt, -5 - e) * reef  # m of elevation
-    carb = grow / sediment_iso(cont, rock, sed)
+    carb = grow / (sediment_iso(cont, rock, sed) * np.where(cont & (e < 0), sim.wet(), 1.0))
     col.t, col.cover = col.t + carb, col.cover + carb
     col.x[:, CARB] += carb
     col.t, col.cover = col.t + chem, col.cover + chem
