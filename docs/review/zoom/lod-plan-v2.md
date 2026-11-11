@@ -370,3 +370,39 @@ level-1 peak is above lane 289's 5.7 GB (same command; machine state differs), s
 
 **Next:** the edge-carving draft (the done-when's step criterion); the features-at-edges draft
 (`draft-lod-features-at-tile-edges.md`); then step 2 can serve tiles with `lod_build.tile`.
+
+## State (step 4, lane 291, 11-10: PW-1688)
+
+- **Done.** On the globe page the wheel dives toward the point under the cursor, from orbit to 0.3 km over the ground
+  (`viewer/globe/dive.js`: each notch a share of the height over the *drawn* ground; the least distance follows the ground;
+  drag speed follows the height; near/far follow the height and the horizon in `scene.js::fitClip`). Level 0 (the cells)
+  stays as today; level 1 and level 2 tiles replace it where their pixel covers > 1.5 screen pixels
+  (`viewer/globe/lodtiles.js`; `viewer/lodmath.js` mirrors `lod.py`, checked by `tests/test_viewer_lod.py`). A missing tile
+  shows its parent stretched; a child fades in over 0.4 s by complementary dithering against its parent (no transparency);
+  each cell's tiles are clipped to the cell by a mask of its outline; the globe's cells are hidden under drawn tiles by the
+  stencil; skirts hang from tile edges. Heights: the globe's exaggeration easing to 1x between 2,000 and 50 km over the
+  ground, tiles and cells alike. Tiles are placed relative to their own centre. Per tile only the active layer is fetched:
+  satellite, or elevation / temperature / precipitation / biome coloured with the globe's own ramps; any other layer shows
+  the satellite view. At most 300 tiles / ~1.2 GB are kept, least recently drawn dropped first. URL: `?lod=0`, `?lodpx=`,
+  `?lodmax=`, `?lodslow=<ms>`.
+- **Measured** (`tools/viewer_lod_dive.py 8791 dba204 OUT --view=-4.04,93.15 --embed`, headless Chrome on the GPU,
+  1,600 x 1,000, world dba204 with sections py.1.1 and py.0.1): every frame while the camera moved drawn at the 60 fps cap
+  (98 of 98 moving frames, both ways); a frame drawn back to back took 0.2-0.6 ms (0.61 ms at 1.4 km up, 7 tiles); the
+  camera's largest single-frame turn 1.03 degrees with the cursor off centre (0 straight down), the height ratio per frame
+  never above one wheel notch's 1.116: no jumps. Renderer memory after the dive and back: 29-33 geometries, 49-61 textures,
+  ~57-69 MB of tile data (the tiles' own estimate), JS heap 250 MB at orbit to ~300 MB at the ground. With `--slow=2500`
+  the parent shows round the first two children while the rest load. Screenshots and the run's `report.json`:
+  `docs/review/zoom/lod-dive-291/` (orbit, level 1, parent while children load, two cells meeting at the line, level 2,
+  1.4 km up, back at orbit).
+- **The tile source is a STAND-IN** (`planet/tiles_standin.py`, routes `GET /api/tiles/index` and
+  `GET /api/tiles/<world>/<cell>/<level>/<tx>/<ty>/{view.bin, satellite.png, layer/<name>.bin}` in `server.py`): it builds
+  nothing; it serves a world's built 4 km section as level 1 and 500 km slices of its 1 km section (else of the 4 km one,
+  125 px) as level 2. **PW-1690 replaces** that module and its routes: keep `view.bin`'s layout (`PWT1`, int32 n, n*n float16
+  elevation, n*n uint8 water) and the file names, or change `viewer/globe/tilesource.js` with them; make `want()` POST
+  `/api/tiles/want` (the viewer already calls it each frame with the wanted-and-missing tiles in priority order), make
+  `has()` true for every tile `lod.exists` (buildable), and add the status poll for the "building detail" badge.
+- **Not done** (draft `draft-lod-globe-camera-tilt-and-overlays-at-ground.md`): the tilt toward the horizon below ~200 km
+  (the camera always looks at the centre), and the line overlays (rivers, outlines) still stand at the full exaggeration,
+  so they float over the eased ground when low. Tiles are lit by their own hillshade, the cells by the scene's lights: the
+  colours shift a little at the level-1 switch. Not tried on Daniel's own Chrome (PW-415's shimmer); the dithered fade and
+  the stencil need no transparency or logarithmic depth.
