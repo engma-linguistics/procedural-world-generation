@@ -14,7 +14,7 @@
 
 ## Lanes running (11-10 ~11:50)
 
-As of 2026-11-10 night. Running: 281e (states: dragon realms, then flip; carries 281d branch), 292 (PW-1693 collapse adds area + PW-1287 A arm), 294 (PW-1690 on-demand tile service), 295 (PW-1699 LOD step 3 level 1 matched, then PW-1698). Merged 11-10/11: 293, 276, 277b (docs), 278, 280, 281b, 281c, 283, 284, 285, 287, 275b, 286, 288, 289, 290, 291. Next LOD: PW-1696 (ground camera), steps 3, 5, 6.
+As of 2026-11-11. Running: 292 (PW-1693 collapse adds area + PW-1287 A arm), 295 (PW-1699 LOD step 3, then PW-1701, PW-1698), 281f (coordinator flipping POLITIES_LIVE, PW-1700). Merged 11-10/11: 276, 277b (docs), 278, 280, 281b-e, 283-291, 293, 294, 275b. Next LOD: PW-1702 (tiles flood zoom index), PW-1696 (ground camera), step 5, step 6.
 v0.3.0 tagged (suite 2033 passed); server restarted. Waiting on Daniel: nothing (D73-D79 answered).
 
 ## Milestones (2026-11-09)
