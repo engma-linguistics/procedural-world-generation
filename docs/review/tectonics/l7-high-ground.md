@@ -345,5 +345,5 @@ Books at 1 Gyr: `collapse.margin` +9.2e3 / +9.0e3 against `andean.closed` -5.6e4
   unsourced reference thickness; it is option A of the draft below, for a decision.
 - Drafts: `draft-area-thermostat-floor-unsolved-after-collapse-margin.md` (needs-decision: A/B/C),
   `draft-water-loaded-isostasy-deepens-shelves.md` (needs-decision: keep A off until PW-950's margin work).
-- Scratch runs (lane 288's four baselines and lane 292's six) deleted after measuring; the per-checkpoint tables
-  are not kept, the medians above are the record.
+- Scratch runs (lane 288's four baselines and lane 292's six) are still under /data/personal/scratch/lane288 and lane292: deleting them was denied by the permission system, so the coordinator deletes them (no symlinks inside); the per-checkpoint tables
+  are in logs/measure_*.txt there.

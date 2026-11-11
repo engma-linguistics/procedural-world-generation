@@ -10,7 +10,7 @@ impact: med
 found_by: lane 292
 blocked_by: []
 relates: [PW-1287, PW-950]
-refs: [docs/review/tectonics/l7-high-ground.md, "planet/tectonics/isostasy.py::elevation", "planet/tectonics/simulation.py::Simulation.wet", "planet/tectonics/earth.py::erode", "planet/tectonics/earth.py::continent_water", docs/review/tectonics/mountains/l7_high_ground.py, "runs 145d7f ea1b47 (lane292 scratch; deleted)", "runs 213321 2e1bc2 (lane288 scratch, main 5411930b; deleted)", "McKenzie 1978 EPSL 40:25"]
+refs: [docs/review/tectonics/l7-high-ground.md, "planet/tectonics/isostasy.py::elevation", "planet/tectonics/simulation.py::Simulation.wet", "planet/tectonics/earth.py::erode", "planet/tectonics/earth.py::continent_water", docs/review/tectonics/mountains/l7_high_ground.py, "runs 145d7f ea1b47 (lane292 scratch; to be deleted)", "runs 213321 2e1bc2 (lane288 scratch, main 5411930b; to be deleted)", "McKenzie 1978 EPSL 40:25"]
 ---
 
 ## Description

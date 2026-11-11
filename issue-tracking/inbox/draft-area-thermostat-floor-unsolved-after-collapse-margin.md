@@ -10,7 +10,7 @@ impact: high
 found_by: lane 292
 blocked_by: []
 relates: [PW-1683, PW-1497]
-refs: [docs/review/tectonics/l7-high-ground.md, docs/review/tectonics/mountains/l7_high_ground.py, "planet/tectonics/crust.py::margin_edges", "planet/tectonics/crust.py::margin_spread", "planet/tectonics/crust.py::flow_and_orogeny", "planet/tectonics/plate_kernels.py::crust_flow", "planet/tectonics/crust.py::thermostats", "planet/tectonics/crust.py::andean_contraction", "runs 213321 2e1bc2 28d710 6286ce (lane288 scratch, main 5411930b; deleted)", "runs 4635ef d4f6be eb41d6 a95c21 (lane292 scratch; deleted)", "Rey, Vanderhaeghe & Teyssier 2001 Tectonophysics 342:435", "Dewey 1988 Tectonics 7(6)"]
+refs: [docs/review/tectonics/l7-high-ground.md, docs/review/tectonics/mountains/l7_high_ground.py, "planet/tectonics/crust.py::margin_edges", "planet/tectonics/crust.py::margin_spread", "planet/tectonics/crust.py::flow_and_orogeny", "planet/tectonics/plate_kernels.py::crust_flow", "planet/tectonics/crust.py::thermostats", "planet/tectonics/crust.py::andean_contraction", "runs 213321 2e1bc2 28d710 6286ce (lane288 scratch, main 5411930b; to be deleted)", "runs 4635ef d4f6be eb41d6 a95c21 (lane292 scratch; to be deleted)", "Rey, Vanderhaeghe & Teyssier 2001 Tectonophysics 342:435", "Dewey 1988 Tectonics 7(6)"]
 ---
 
 ## Description
