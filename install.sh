@@ -322,6 +322,7 @@ switch_to() {
     run cp "$ROOT/app/$1/install.sh" "$ROOT/bin/manage.sh"
     _keep_prev=$(previous_version)
     for _d in "$ROOT"/app/*/; do
+        [ -d "$_d" ] || continue  # (no match: the pattern itself)
         _v=$(basename "$_d")
         case "$_v" in current | previous | "$1" | "$_keep_prev") ;;
             *) [ -L "${_d%/}" ] || { say "    removing old version $_v"; run rm -rf "${ROOT:?}/app/${_v:?}"; } ;;
@@ -466,7 +467,7 @@ cmd_first_run() {
     _t=$(now)
     if [ "$DRY_RUN" = 1 ]; then say "  [dry-run] PLANET_DATA=$_warm planet make --seed 7 --level 4 --myr 20 --kyr 10 --zooms 1"
     else
-        PLANET_DATA=$_warm "$_planet" make --seed 7 --level 4 --myr 20 --kyr 10 --zooms 1 --name warmup 2>&1 |
+        PYTHONUNBUFFERED=1 PLANET_DATA=$_warm "$_planet" make --seed 7 --level 4 --myr 20 --kyr 10 --zooms 1 --name warmup 2>&1 |
             sed 's/^/    | /' || die "the warm-up run failed"
         rm -rf "${_warm:?}"
         say "    compiled in $(($(now) - _t)) s"
@@ -496,7 +497,12 @@ cmd_update() {
     switch_to "$VERSION"
     write_launcher
     say "Now on $VERSION ($(($(now) - _t)) s). Back to $_cur with: planet self rollback"
-    say "The numba cache is per version: the first run of each part compiles again (planet self first-run warms it)."
+    if [ "$FIRST_RUN" = 1 ]; then
+        STARTER=n
+        cmd_first_run  # the numba cache is per version: warm the new one now
+    else
+        say "The numba cache is per version: run planet self first-run to compile it before first use."
+    fi
 }
 
 cmd_rollback() {
@@ -530,7 +536,10 @@ cmd_uninstall() {
     if [ -n "${S_BIN_LINK:-}" ] && [ "$(readlink "$S_BIN_LINK" 2>/dev/null)" = "$ROOT/bin/planet" ]; then
         run rm -f "$S_BIN_LINK"
     fi
-    if [ -n "${S_DESKTOP_FILE:-}" ] && [ -f "$S_DESKTOP_FILE" ]; then run rm -f "$S_DESKTOP_FILE"; fi
+    if [ -n "${S_DESKTOP_FILE:-}" ] && [ -f "$S_DESKTOP_FILE" ]; then
+        run rm -f "$S_DESKTOP_FILE"
+        if command -v update-desktop-database >/dev/null 2>&1; then update-desktop-database "$(dirname "$S_DESKTOP_FILE")" 2>/dev/null || true; fi
+    fi
     if [ -f "$CONFIG" ]; then run rm -f "$CONFIG"; fi
     run rmdir "$(dirname "$CONFIG")" 2>/dev/null || true
     for _d in app uv python cache bin warmup; do
