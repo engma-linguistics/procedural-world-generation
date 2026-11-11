@@ -2,7 +2,7 @@
 id: PW-1656
 title: "Place names: name the features (peaks, ranges, capes, bays, islands, lakes, regions); rivers keep names longest, towns are renamed most"
 type: story
-status: todo
+status: done
 parent: PW-1736
 milestone: v4
 subsystem: culture
@@ -22,6 +22,7 @@ In plain words: towns and the biggest rivers get names now; mountains, capes, ba
 Acceptance: every named feature carries its namer, age and layer; on a24559 the median age of river names exceeds mountains', which exceeds towns'.
 
 ## Updates
+- 2026-11-11: Status todo -> done. lane 311 merged (feature names + map labels; family naming habits on features not yet, see follow-ups)
 - 2026-11-10: Created from inbox draft draft-name-features-and-durability.md (found by coordinator).
 
 ## From lane 15 (folded draft: feature names follow family habits)

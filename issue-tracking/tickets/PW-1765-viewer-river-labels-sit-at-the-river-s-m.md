@@ -1,4 +1,5 @@
 ---
+id: PW-1765
 title: "Viewer: river labels sit at the river's mouth, not along its course"
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: low
 found_by: lane311
 blocked_by: []
 relates: []
-refs: [viewer/globe/maplabels.js, planet/lineages/featnames.py::build, planet/language/output.py::landscape_json, "languages.json landscape.rivers (lat, lon = mouth)", "run a24559 (copy)", docs/review/names/lane311/]
+refs: [viewer/globe/maplabels.js, "planet/lineages/featnames.py::build", "planet/language/output.py::landscape_json", "languages.json landscape.rivers (lat, lon = mouth)", "run a24559 (copy)", docs/review/names/lane311/]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -24,3 +27,6 @@ zoomed in on the middle of a long river sees no name for it.
 Try: in featnames.build, take the river's cells from the world's river layer (or the run's flow) and place the label at the
 middle cell of its main stem, with the stem's direction so the viewer can tilt the text along it.
 - [ ] a24559: the five biggest rivers' labels sit inland, on the river
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-river-labels-along-the-river.md (found by lane311).
