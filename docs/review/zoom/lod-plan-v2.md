@@ -853,3 +853,12 @@ findings folded in (blocks carry their own clipped rims; sized to the fall's rea
   `draft-lod-tiles-table-coloured-layers.md`). While a child builds, its parent's rivers are stretched: a 250 m or 1 km
   pixel wide, so a small river shows as a wide band for those seconds. Salt lakes are drawn in the fresh-lake colour on
   tiles. Levels 3-4 at cell edges are lane 297's draft. Not tried on Daniel's own Chrome (PW-415).
+
+## State (step 6, lane 306, 11-11: judged; one fix)
+
+Two cold dives on a fresh copy of dba204 (the py.0.1 / py.1.1 border in high mountains; the four-cell corner at -16.4,
+72.9) and the border again after the fix: `lod-judge-306.md` (verdicts, screenshots, `tools/lod_judge_seams.py`).
+Heights pass everywhere they were measured (siblings against the carved no-seam line 6 of 7 within 10%; levels and cell
+lines at the floor); 60 fps and no camera jump. **Fixed:** tiles clipped to their cell exactly (cube cell edges in the
+shader, `lodmath.js::cellAngles`) instead of a 2 km mask that let two cells' 25 m tiles cut through each other. Drafted:
+satellite colours across cell edges, the cold border's level-1 builds in turn, the corner's ground staying at 1 km.

@@ -135,3 +135,36 @@ def test_tile_children_grid_and_no_double_click():
     assert "maxLevel: Math.min(+P.get('lodmax') || M.FINEST, M.FINEST)" in src
     pick = (root / "pick.js").read_text()
     assert "addEventListener('dblclick'" not in pick and "double-click: zoom" not in pick and "double-click to zoom" not in pick
+
+
+_JS_CELL = r"""
+import * as M from '%s';
+const { ids, pts } = JSON.parse(process.argv[2]);
+const cs = ids.map((id) => M.cellAngles(id));
+console.log(JSON.stringify(pts.map((p) => cs.map((c) => M.inCellAngles(c, p)))));
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+def test_tile_clip_is_tiling_locate(tmp_path):
+    """The tile shader's clip at the cell edge (lodmath.js::cellAngles, inCellAngles; PW-1673 step 6) is tiling.locate:
+    every point of the sphere in exactly one cell, that one, points close to edges, corners and face edges included."""
+    from planet.zoom import lod_build as LB
+    from planet.zoom import tiling as ZT
+    ids = [f"{f}.{i}.{j}" for f in ZT.FACES for i in range(3) for j in range(3)]
+    rng = np.random.default_rng(3)
+    P = rng.normal(size=(1500, 3))
+    near = np.concatenate([LB._line("py.0.1", "py.1.1")[::200], LB._line("px.2.1", "py.0.1")[::200],
+                           np.array([c[1] for c in LB.cell_corners("py.0.0")])])
+    P = np.concatenate([P, near + 1e-6 * rng.normal(size=near.shape)])  # (within ~6 m of an edge or a corner)
+    P /= np.linalg.norm(P, axis=1, keepdims=True)
+    assert ZT.choose_n(L.SQUARE_KM, 190.0) == 3
+    f = tmp_path / "c.mjs"
+    f.write_text(_JS_CELL % (VIEWER / "lodmath.js").as_uri())
+    r = subprocess.run(["node", str(f), json.dumps({"ids": ids, "pts": P.tolist()})], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    got = np.array(json.loads(r.stdout))
+    face, i, j = ZT.locate(P, 3)
+    want = [f"{list(ZT.FACES)[a]}.{b}.{c}" for a, b, c in zip(face, i, j)]
+    assert (got.sum(axis=1) == 1).all()
+    assert [ids[k] for k in got.argmax(axis=1)] == want
