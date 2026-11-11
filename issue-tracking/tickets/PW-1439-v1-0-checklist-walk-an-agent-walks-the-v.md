@@ -4,7 +4,7 @@ title: "v1.0 checklist walk: an agent walks the v2-v5 'done when' lists headless
 type: task
 status: todo
 parent: null
-milestone: v5
+milestone: v1.0
 subsystem: docs
 effort: s
 impact: high
