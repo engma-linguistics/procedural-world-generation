@@ -157,14 +157,25 @@ def test_no_cliff_along_the_shared_edge(siblings):
     assert np.percentile(across, 90) < 1.5 * np.percentile(inside, 90)
 
 
-@pytest.mark.xfail(reason="lod-plan-v2.md 2.2 done-when not met yet: the edge fades to the parent's ground plus a "
-                          "place-keyed texture (fine.EDGE_TEXTURE), which is smoother than the carved ground here "
-                          "(0.5x its steps) and within 0.8-1.1x on world dba204: a place-keyed carving at the edges is "
-                          "the fix (State section)", strict=False)
-def test_edge_steps_like_the_inside(siblings):
+def test_edge_steps_like_the_inside(siblings, section, world):
+    """The edge is carved like the inside (PW-1694): the steps across the shared edge are those the same line has
+    with no seam at all (one block carved over both tiles, lod_build.carve_block), within 10% (median and p90). The
+    inside band 16-48 px away is not the reference: on single lines inside dba204 tiles (no seam) its ratio to the
+    band ran 0.4-1.4 (median) and 0.6-1.9 (p90)
+    (lod-plan-v2.md State, lane 293)."""
+    a, b, za, zb, _ = siblings
     across, inside = _steps(siblings)
-    r_med = np.median(across) / np.median(inside)
-    r_90 = np.percentile(across, 90) / np.percentile(inside, 90)
-    # no smooth stripe either (lod-plan-v2.md 2.1 item 2): the step distribution within 10% of the inside's
+    cell, _, meta, layers = section
+    src = {L.Key(cell, 1, 0, 0): (meta, layers)}
+    n, m = L.tile_px(2), 40
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(L, "LEVELS", LEVELS)
+        hw = LB.carve_block(world, a, src, (a.tx * n - m, (b.tx + 1) * n + m, a.ty * n, (a.ty + 1) * n))
+    off = ~(np.isfinite(za["layers"]["river_phase"][:, -1]) | np.isfinite(zb["layers"]["river_phase"][:, 0]))
+    ref, ref_in = LB.edge_steps(hw[:, :m + n], hw[:, m + n:], 1, band=(16, 48))
+    ref = ref[off]
+    r_med = (np.median(across) / np.median(inside)) / (np.median(ref) / np.median(ref_in))
+    r_90 = (np.percentile(across, 90) / np.percentile(inside, 90)) / (np.percentile(ref, 90) / np.percentile(ref_in, 90))
     assert 0.9 <= r_med <= 1.1, (r_med, r_90)
     assert 0.9 <= r_90 <= 1.1, (r_med, r_90)
+

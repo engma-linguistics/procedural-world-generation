@@ -125,7 +125,7 @@ def harmonic(z, held, mask, nx, ny, iters):
 
 
 def _spread(E, A, blocked, nb):
-    spread(E, A, blocked, nb, nb, False, np.zeros(1), 0.0, 0.0, 0.0)
+    spread(E, A, blocked, nb[0], nb[1], False, np.zeros(1), 0.0, 0.0, 0.0)
 
 
 def floors(nb, res, src, hf, belt, z0, w, d, course, bed, q_ch, blocked, t3, near):
@@ -138,8 +138,10 @@ def floors(nb, res, src, hf, belt, z0, w, d, course, bed, q_ch, blocked, t3, nea
     the axis a floor goes on only where they are within CONF bankfull depths
     of its level (a block mostly floor has too little hillslope to take the
     volume cut for it). Returns (floor mask, belt mask, floor surface m:
-    also under the channels; nan elsewhere)."""
-    npx = nb * nb
+    also under the channels; nan elsewhere). nb: pixels across, or (across, down) for a rectangle."""
+    nb = (nb, nb) if np.isscalar(nb) else tuple(nb)
+    nbx, nby = nb
+    npx = nbx * nby
     o = np.argsort(hf)  # (the widest floor's sample wins a pixel)
     E = np.full(npx, -np.inf)
     A = np.zeros((4, npx))
@@ -147,7 +149,7 @@ def floors(nb, res, src, hf, belt, z0, w, d, course, bed, q_ch, blocked, t3, nea
     A[:, src[o]] = np.vstack([z0, w, d, hf / res])[:, o]
     # (beyond `near`, a floor goes on only over the parent's low ground: gated in the spread, so it stays in
     # one piece and a tributary's narrower reach doesn't stop the main river's floor)
-    spread(E, A, blocked, nb, nb, True, t3, near / res, CONF, FREEBOARD)
+    spread(E, A, blocked, nbx, nby, True, t3, near / res, CONF, FREEBOARD)
     A[3] *= res
     zc, wv, dv, hv = A
     from_axis = hv - E * res  # (km)
@@ -173,20 +175,20 @@ def floors(nb, res, src, hf, belt, z0, w, d, course, bed, q_ch, blocked, t3, nea
     ax[src] = True
     ax &= on
     lev[src[o]] = (z0 + FREEBOARD * d)[o]
-    harmonic(lev, ax, on, nb, nb, HARMONIC_IT)
+    harmonic(lev, ax, on, nbx, nby, HARMONIC_IT)
     z = lev + dv * TOE * frac * frac + LEVEE * dc * np.exp(-bank / np.maximum(LEVEE_W * wc, 1e-9))
     z = np.where(on, z, np.nan)
-    m = on.reshape(nb, nb)
+    m = on.reshape(nby, nbx)
     for _ in range(SMOOTH):  # (masked 3x3 mean)
-        zz = np.where(m, z.reshape(nb, nb), 0.0)
+        zz = np.where(m, z.reshape(nby, nbx), 0.0)
         s = np.zeros_like(zz)
         n = np.zeros_like(zz)
         p = np.pad(zz, 1)
         pm = np.pad(m.astype(float), 1)
         for dr in range(3):
             for dc_ in range(3):
-                s += p[dr:dr + nb, dc_:dc_ + nb]
-                n += pm[dr:dr + nb, dc_:dc_ + nb]
+                s += p[dr:dr + nby, dc_:dc_ + nbx]
+                n += pm[dr:dr + nby, dc_:dc_ + nbx]
         z = np.where(on, (s / np.maximum(n, 1)).ravel(), np.nan)
     # (never below the channel beside it: its water there plus a quarter of its depth)
     z = np.where(on, np.maximum(z, Ac[0] + 0.25 * dc), np.nan)

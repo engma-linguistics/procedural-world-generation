@@ -7,6 +7,7 @@ discharge, so tiles built at different times, in any order, meet at their edges.
 (regional.zoom(section=...), the API's section build); this module finds it but does not build it.
 
     build(world, key, sources, seed)       the tile (a zoom dict, as fine.build)
+    edge_surface(world, key, sources, seed) the ground at its edges, carved on blocks keyed by place (PW-1694)
     save(z, world_id, key, pmeta, seed)    an ordinary zoom directory under zooms/<lod.tile_id>, with a `tile` block
     find(world_id, key, seed)              the saved tile's (or level-1 section's) directory, or None
     load_sources(world_id, key, seed)      the parent tiles its build reads (lod.parent_sources), loaded
@@ -26,6 +27,91 @@ from . import fine as ZF
 from . import lod as L
 from . import regional as Z
 
+STRIP_PX = 32  # px: an edge block's half width (a strip centred on a tile's edge; its carving clear of its own edge)
+
+
+def ramp_px(level: int) -> int:
+    """Pixels over which a tile of this level fades to its edge surface (fine.build's ramp)."""
+    rp, res = L.res_km(level - 1), L.res_km(level)
+    return int(np.ceil(max(rp, 8 * res) / res - 1e-9))
+
+
+def edge_blocks(key: L.Key) -> dict:
+    """The blocks round a tile's edges, keyed by place: {name: (c0, c1, r0, r1)} on its level's lattice (columns from
+    the square's west edge, rows from its north). A strip centred on each edge (2 x STRIP_PX wide, as long as the edge
+    and STRIP_PX past each end) and a square centred on each corner (reaching a corner's fade further): a neighbour
+    sharing an edge or a corner names the same rectangles."""
+    n, h = L.tile_px(key.level), STRIP_PX
+    hc = h + 2 * ramp_px(key.level) + 4
+    x0, y0 = key.tx * n, key.ty * n
+    x1, y1 = x0 + n, y0 + n
+    out = {"w": (x0 - h, x0 + h, y0 - h, y1 + h), "e": (x1 - h, x1 + h, y0 - h, y1 + h),
+           "n": (x0 - h, x1 + h, y0 - h, y0 + h), "s": (x0 - h, x1 + h, y1 - h, y1 + h)}
+    for nm, (cx, cy) in (("nw", (x0, y0)), ("ne", (x1, y0)), ("sw", (x0, y1)), ("se", (x1, y1))):
+        out[nm] = (cx - hc, cx + hc, cy - hc, cy + hc)
+    return out
+
+
+def _block_rect(level: int, b: tuple) -> tuple[float, float, float, float]:
+    """A lattice rectangle (c0, c1, r0, r1) of a level as plane km (x0, x1, y0, y1)."""
+    r = L.res_km(level)
+    return -L.HALF + b[0] * r, -L.HALF + b[1] * r, L.HALF - b[3] * r, L.HALF - b[2] * r
+
+
+def carve_block(world: dict, key: L.Key, sources: dict, b: tuple, seed: int = 1) -> np.ndarray:
+    """The landscape pass's ground on the lattice rectangle b (rows x columns), from the parent window round it:
+    the same arrays whichever tile asks (its parent window is cut by place, its pixels are the level's lattice)."""
+    r = _block_rect(key.level, b)
+    pm = L.parent_mosaic(key, sources, r)
+    fr = Z.PlaneFrame(L.frame(key.cell), 0.5 * (r[0] + r[1]), 0.5 * (r[2] + r[3]))
+    lat, lon = Z._latlon(fr.c)
+    res = L.res_km(key.level)
+    w, h = b[1] - b[0], b[3] - b[2]
+    out = ZF.build(pm, world, lat, lon, max(w, h) * res, res, seed, log=lambda *_: None, frame=fr, seam=True,
+                   shape=(w, h), carve=True)
+    return out["hw"]
+
+
+def edge_surface(world: dict, key: L.Key, sources: dict, seed: int = 1) -> np.ndarray:
+    """The ground a tile fades to at its edges, over its built area (fine.build's, halo included; flat; nan where
+    unused): each pixel near one edge that edge's strip, near a corner the corner's block (blended between them by
+    the distance to the corner), every block carved by the landscape pass (carve_block). A function of the place:
+    the neighbour across an edge or a corner finds the same values there (docs/review/zoom/lod-plan-v2.md 2.2)."""
+    n = L.tile_px(key.level)
+    hb = ZF._halo_px(L.res_km(key.level - 1), L.res_km(key.level))
+    nb = n + 2 * hb
+    r_ = ramp_px(key.level)
+    x0, y0 = key.tx * n, key.ty * n
+    x1, y1 = x0 + n, y0 + n
+    gc = x0 - hb + np.arange(nb) + 0.5  # (pixel centres on the lattice)
+    gr = y0 - hb + np.arange(nb) + 0.5
+    GC, GR = np.meshgrid(gc, gr)
+    d = np.stack([GC - x0, x1 - GC, GR - y0, y1 - GR])  # (to the w, e, n, s edges; negative in the halo)
+    near = np.argmin(d, axis=0)
+    dmin = d.min(axis=0)
+    cx = np.where(GC - x0 < x1 - GC, x0, x1)
+    cy = np.where(GR - y0 < y1 - GR, y0, y1)
+    cheb = np.maximum(np.abs(GC - cx), np.abs(GR - cy))
+    wc = 1.0 - ZF.smoothstep(r_ + 2.0, 2.0 * r_ + 4.0, cheb)
+    used = dmin < r_ + 1  # (the ramp and the halo)
+    blocks = edge_blocks(key)
+    E = np.full((nb, nb), np.nan)
+    S = np.full((nb, nb), np.nan)
+    C = np.full((nb, nb), np.nan)
+    for nm, b in blocks.items():
+        if len(nm) == 1:
+            sel = used & (near == "wens".index(nm)) & (wc < 1)
+        else:
+            sel = used & (wc > 0) & (cx == (x0 if "w" in nm else x1)) & (cy == (y0 if "n" in nm else y1))
+        if not sel.any():
+            continue
+        hw = carve_block(world, key, sources, b, seed)
+        rr = (GR[sel] - 0.5).astype(int) - b[2]
+        cc = (GC[sel] - 0.5).astype(int) - b[0]
+        (S if len(nm) == 1 else C)[sel] = hw[rr, cc]
+    E = np.where(wc >= 1, C, np.where(wc <= 0, S, wc * C + (1 - wc) * S))
+    return np.where(used, E, np.nan).ravel()
+
 
 def build(world: dict, key: L.Key, sources: dict, seed: int = 1, log=print) -> dict:
     """The tile `key` from its parent tiles `sources` ({Key: (meta, decoded layers)}, load_sources). Deterministic: the
@@ -40,7 +126,11 @@ def build(world: dict, key: L.Key, sources: dict, seed: int = 1, log=print) -> d
     pm = L.parent_mosaic(key, sources)
     fr = L.tile_frame(key)
     lat, lon = Z._latlon(fr.c)
-    z = ZF.build(pm, world, lat, lon, L.tile_km(key.level), L.res_km(key.level), seed, log=log, frame=fr, seam=True)
+    t0 = time.time()
+    edge = edge_surface(world, key, sources, seed)
+    log(f"  edge blocks carved [{time.time() - t0:.1f}s]")
+    z = ZF.build(pm, world, lat, lon, L.tile_km(key.level), L.res_km(key.level), seed, log=log, frame=fr, seam=True,
+                 edge=edge)
     z["parent_meta"] = pm[0]  # (what save() records the tile was built from)
     return z
 
