@@ -84,6 +84,20 @@ Sidecars:
 - **Batching.** Time steps in 0.5-kyr frames, 41 of them. The per-generation hazards are batched per interval (architecture §8), never looped.
 - **Rule weights.** These come from the catalogue, times `history.RULE_WEIGHT` overrides (S148 0.3, S042, S073), times a re-fire cap. PW-1692 found the cap saturates for common rules; lane 17 is fixing that, and the overrides should then be removed.
 - **Borrowing.** Loans follow WOLD borrowability, then a contact-kind multiplier (`contact.py`). Pronoun loans have a hard check cap of 0.08.
+  Since lane 20 (PW-1738) a Swadesh-100 / Leipzig-Jakarta meaning's loan factor is x0.35 and the hard core (pronouns,
+  ONE-THREE, MOTHER, FATHER: `lexicon.HARD_CORE`) x0.08, both on the low-intensity curve; paradigm repair (`_renew_cell`)
+  borrows only with chance I x loan_factor; a lect never borrows back a word that passed through it (`back_loan`).
+- **Things met late (lane 20, PW-1745).** Stocked herd animals (but the dog) and 17 biome fauna/flora kinds
+  (`lexicon.BIOME_KINDS`) are not proto words: a proto-language names them only if its demes met them at its birth
+  (`history.met_concepts`: the run's `animal_wild` / `animal_known` bits, biome kinds from temperature, rain, tree cover
+  and coast in `inputs.Run.wild_met`, >= `WILD_SHARE` of the deme's cells). Later they arrive with the herd
+  (`food_step`, as crops) or when a deme moves into their range (`wild_step`: the locals' word with `WILD_LOAN`, a calque
+  of their compound with `WILD_CALQUE`, else an own compound from `data/compounds.tsv`). Meat words and PIG/OX/HEN/ROOSTER
+  /SHEEP/BULL travel with their animal (`lexicon.companions`). Kitchen and everyday items arrive with their tech
+  (`TECH_CONCEPT`; WHEEL/CART/SAIL only when the run has a techtree). `history.proto_met` records what each proto met.
+- **Taboo (lane 20, PW-1739).** Only `lexicon.TABOO_TRAITS` concepts (bear, wolf, snake, deer, fox, louse, worm, big cat,
+  crocodile, big snake; die, death, kill, blood, storm, flood, enemy) take taboo paraphrases, each from a trait ('honey-eat',
+  'the brown one', 'forest dog'). The avoidance register keeps the generic 'the <quality> one' (`taboo_word(generic=True)`).
 - **Phonotactic veto.** A sound change that would create a syllable the lect forbids is vetoed per draw (PW-1622). CV languages are protected by `retemplate`.
 - **Determinism.** Every draw is seeded with `seed_for(run_seed, "lect", id)`, so `--workers` does not change the output (byte-identical).
 - **Speed.** About 10–11 min at 8 workers. Most of it is `steps`, about 300 s of CPU, then `wave`. `planet make` runs the pass; `--no-languages` skips it.

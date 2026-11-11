@@ -2126,3 +2126,57 @@ inventories ticket (PW-1740), so I did not loosen it.
 **de1cc6 sisters: not a regression any more.** The dip came with lane 16, and lane 17 took most of it back. On the same two
 seeds: lane 15 0.530 / 0.579, main now 0.520 / 0.567. The 0.01 left is a fifth of the swing between two seeds of the same
 world. Turning lexical diffusion off did not move it (0.513 / 0.571), so that is not the cause. Nothing to fix.
+
+## Lane 20: borrowing in the right places (PW-1738, PW-1745, PW-1739 taboo)
+
+**Core words are no longer borrowed.** Before, 10-22% of the living languages of a24559 had borrowed their word for "I",
+"one" to "three", "mother" or "father". Most of the "I" loans came from a repair step that borrowed before it tried to
+build a word from the language's own material. Now that step builds first and borrows only rarely, by the meaning's
+borrowability and how close the contact is. Basic vocabulary is also several times harder to borrow than other words,
+because WOLD's own scores for "mother" and "two" are inflated by nursery words and borrowed number sets. A language no
+longer borrows back its own word from a neighbour that took it (the A to B to A ping-pong).
+
+| word (a24559, own seed) | before | after |
+|---|---|---|
+| I | 0.10 | 0.003 |
+| one / two / three | 0.16 / 0.18 / 0.22 | 0.016 / 0.023 / 0.040 |
+| mother / father | 0.195 / 0.20 | 0.019 / 0.038 |
+| pronoun loans (WOLD check) | 0.059 (de1cc6: 0.092, failing) | 0.004 (de1cc6: 0.009, passing) |
+
+**A people that meets a horse late borrows the word.** A proto-language now has a native word for a herd animal only
+if its homeland lay in the animal's wild range or kept it. Otherwise the word comes with the herd, from the neighbour
+that passed it on, or the people makes its own ("big dog", "big deer"), and the etymology names the route. The same goes
+for 17 kinds of wild animal and plant by land (big cat, ape, crocodile, big snake, seal, whale, camel, elephant,
+antelope, parrot, palm, bamboo, cactus, conifer, mangrove, reed, lichen; never Earth species). A people moving into a
+new land takes the locals' word, translates their compound, or coins its own ("sea dog" for a seal, "needle tree").
+Meat words and pig, ox, hen and sheep travel with their animal. On a24559 about 19% of the living languages with a
+horse word have a native one (90% have a word at all), 46% a loan and 35% a coinage; the median loan or coinage is 4
+kyr old.
+
+Examples (a24559):
+- **dragonborn 31 (Trojanel)**: *baʃ* "horse", borrowed 0.5 kyr ago "with the horses from brass dragon 8".
+- **human 109 (Simath)**: *zɔmdəntɨbɛnb* "horse" = "dog + big", made on the spot when the herds arrived (Brown 1999's
+  "big dog", as in Cree *mistatim*).
+- **gnome 1 (west Simath)**: "horse" borrowed 3 kyr ago from elf 25 with the herds; the elves had built it as "big deer".
+- **seal**: gold dragon 14 coined "dog + sea" 19 kyr ago; human 2 borrowed it, and red dragon 8 took it 15.5 kyr ago
+  "met in the wild, from human 2".
+
+**Kitchen and everyday words.** New: chop, peel, slice, slaughter, spoon, crisp, tender, sticky, chewy, and morning,
+midday and evening meals, which every people has. Jar, plate, ladle, sieve, stew, broth, sauce and spice come with
+pottery, boiling, winnowing and the spice trade. Plough, loom, cloth, linen, silk, felt, copper, bronze, tin, iron, steel,
+gold, canoe, oar, ship, saddle, bridle and stirrup come with their technology, as do wheel, cart and sail. A late
+technology often brings its word with it, as copper, wine and saddle travelled in Eurasia. The list grew from 969 to 1,024
+concepts.
+
+**Taboo words now have a reason.** Only wild or dangerous animals and things are avoided: bear, wolf, snake, deer, fox,
+louse, worm, big cat, crocodile and big snake, plus die, death, kill, blood, storm, flood and enemy. Each paraphrase names
+a trait. A bear is "honey-eat" (like Slavic *medvěd*), "the brown one" (like Germanic *bear*) or "old man". A wolf is
+"forest dog", "the tooth one" or "the night one", and a snake is "the long one" or "grass rope". Pigs, cattle and fish
+scales are never avoided any more.
+
+**Not yet at my own bars.** Two new checks are just under the marks I set. Swadesh-100 words borrowed across families in the
+last 3 kyr are at 2.4-3.0%, against a bar of 2%. New things are named by a loan or calque 41-51% of the time, against a bar
+of 50%; the rest are the people's own compounds. The next step is a stronger core damping (0.35 to about 0.25) and fewer
+coinages when a neighbour already has a word. **Cost:** the pass takes 630 s at 8 workers on a24559 (main: 589 s on a
+quieter machine). languages.json is 67.0 MB (+2.4%) and the etymology file 65.9 MB (+5.8%). The memory peak rose from
+21.6 GB to 25.3 GB, so the matrix ran with a 30 GB cap (draft ticket).
