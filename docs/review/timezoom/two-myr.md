@@ -56,7 +56,7 @@ side, machine load 15-50 from other lanes (so "about"). `/usr/bin/time -v` wall 
 | time zoom | 82048d: 1:01:51 wall (3,709 s own), 4.5 GB peak, 501 frames, 886 MB on disk | 040d59: 1:54:05 wall (6,843 s own), 6.6 GB peak, 1,001 frames, 1.7 GB on disk |
 | finish at `--now interglacial` | d17df8 at 992 kyr, ~2.5 min | 6e2f17 at 1,988 kyr, ~1.5 min |
 | dnd peoples, 1 try (`planet lineages <world> --tree dnd --tries 1`) | b74691: 1:15:30 wall, history 2,231 s, 815 steps, 14.5 GB peak, 2.7 GB on disk | 580f8c: 1:26:57 wall, history 2,966 s, 1,310 steps, 20.3 GB peak, 4.5 GB on disk |
-| split (refine to L8, then the history L7 to the first farming, L8 after) | not run | running at the lane's hand-off (scratch chain /data/personal/scratch/lane280/chain.sh: refine of 6e2f17 to L8, then `planet lineages <refined> --tree dnd --tries 1`; logs refine.log, split.log) |
+| split (refine to L8, then the history L7 to the first farming, L8 after) | 025b98 on 5d09cc (docs/review/refine-l8/split.md): history 55 min, 1:56:41 wall, 35.5 GB peak | refine of 6e2f17 to L8 (bcf4ba): 4:22 wall, 11.7 GB peak; split run 1f49d0 (`planet lineages bcf4ba --tree dnd --tries 1`): 2:09:40 wall, **69.3 GB peak** (`/usr/bin/time -v`), exit 0. Peak almost doubles against the 1 Myr split (different world; same tree) — ticketed (coordinator, 11-10). |
 
 So at L7 the time zoom costs ~1 h per 1000 kyr, linear in the span (3.7 and 3.4 s per kyr), and its memory grows by 2.1 GB
 per extra Myr (the frames are held in memory until written). The peoples history adds ~500 glacial steps (one per stored
