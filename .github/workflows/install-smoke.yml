@@ -35,7 +35,7 @@ jobs:
 
       - name: Install (install.sh from the checkout)
         run: |
-          sh install.sh --yes --no-first-run --no-starter --source "$GITHUB_WORKSPACE" \
+          sh install.sh --yes --no-first-run --no-starter --source "$GITHUB_WORKSPACE" --ref HEAD \
             --root "$RUNNER_TEMP/root" --data "$RUNNER_TEMP/data" --port "$PORT"
           test -x "$RUNNER_TEMP/root/bin/planet"
 
@@ -97,7 +97,7 @@ jobs:
         run: |
           $root = Join-Path $env:RUNNER_TEMP 'root'
           $data = Join-Path $env:RUNNER_TEMP 'data'
-          & ([scriptblock]::Create((Get-Content -Raw install.ps1))) -Yes -NoFirstRun -NoStarter -Source $env:GITHUB_WORKSPACE -Root $root -Data $data -Port $env:PORT
+          & ([scriptblock]::Create((Get-Content -Raw install.ps1))) -Yes -NoFirstRun -NoStarter -Source $env:GITHUB_WORKSPACE -Ref HEAD -Root $root -Data $data -Port $env:PORT
           if (-not (Test-Path "$root\bin\planet.cmd")) { throw 'no launcher written' }
           Get-Content "$root\bin\planet.cmd"
           Get-Content "$env:APPDATA\procgen-world\config.toml"
