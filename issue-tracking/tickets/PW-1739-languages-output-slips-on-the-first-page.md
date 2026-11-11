@@ -2,7 +2,7 @@
 id: PW-1739
 title: "Languages: output slips on the first page: 'the the' and numbered place names, random taboo words, rr for every trill, unnamed living families, 6 given names"
 type: story
-status: todo
+status: in-progress
 parent: PW-1736
 milestone: v4
 subsystem: culture
@@ -28,3 +28,5 @@ In plain words: cheap, visible defects a reader meets first (assessment 2026-11-
 
 ## Updates
 - 2026-11-11: Created.
+- 2026-11-11: Lane 19 merged (suite 2165): 'the the' 400 -> 0, numbered names 457 -> 0 (qualifier, feature, then lord's name), doubled words and apostrophes 0, 'rr' in place names 28% -> 3-6% (only with a tap), one book spelling per page (output.Speller), living families and languages named (names.scholars/families/languages), given names 6 -> ~18, patronymic words clipped at 14 letters, recipes with then/until, peak/sea adjectives 16/13. Scanner tools/language/slips.py + test. Matrix identical to baseline on all 8 cells. Taboo item done in lane 20 (merging separately).
+- 2026-11-11: Status todo -> in-progress until lane 20's taboo item lands.

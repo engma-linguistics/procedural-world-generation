@@ -1,15 +1,19 @@
 ---
+id: PW-1750
 title: "Languages: recipes say 'until' with the word for 'when' (the core list has no UNTIL or THEN)"
 type: task
 status: todo
 parent: PW-1736
+milestone: null
 subsystem: culture
 effort: s
 impact: low
 found_by: lang-lane19
 blocked_by: []
 relates: [PW-1739]
-refs: [planet/language/texts.py::recipe, planet/language/texts.py::UNTIL, planet/language/lexicon.py, docs/review/language/for-daniel.md]
+refs: ["planet/language/texts.py::recipe", "planet/language/texts.py::UNTIL", planet/language/lexicon.py, docs/review/language/for-daniel.md]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -24,3 +28,7 @@ Fix (lexicon lane, lane 20's files): add UNTIL as a grammaticalising concept (fr
 converb gram, and let texts.recipe use it when present.
 - [ ] UNTIL (and THEN, if wanted) in the concept list with per-lect sources
 - [ ] texts.recipe uses them, the WHEN fallback only where missing
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-language-until-then-concepts.md (found by lang-lane19).
+- 2026-11-11: Lane 20 adds THEN and UNTIL as function-word concepts (commit 9a960503, merging); close when lane 20 is in main.
