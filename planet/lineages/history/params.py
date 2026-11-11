@@ -226,7 +226,7 @@ TROUBLE_LOG_KYR = 1.0  # (one logged 'troubles' event per people per kyr at most
 # share of people war drives out pushes as hard as the same share of land filled. Jumps only: fed into the spread's crowding as well,
 # the push moved a small people's numbers by ~40% in a unit test's fake world (test_demography_defaults...). No winner's bonus (it would reward the biggest people)
 REFUGEE_Q = 1.0
-POLITIES_LIVE = False  # PW-1434 (lane 183): polities in the history, first cut (history.polity_live; round7.md). Off: the stand-ins of history.rule
+POLITIES_LIVE = True  # on by default since 11-11 (PW-1700, coordinator ruling A). PW-1434 (lane 183): polities in the history, first cut (history.polity_live; round7.md). Off: the stand-ins of history.rule
 STATE_Q = 3.0  # G = 1 / (1 + STATE_Q x tech level x farm share): states pacify (Gomez et al. 2016; Turchin 2009's -alpha S); judgement
 # violent deaths a year by way of life at reference density with a full hostile frontier (lane 82: medians of OWID's compilation of
 # Keeley 1996, Gat 2006, Bowles 2009 and others): foragers 20-160 per 100k, highland horticulturalists 290-731, herders 970-1000,

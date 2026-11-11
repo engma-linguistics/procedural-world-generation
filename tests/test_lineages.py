@@ -3744,10 +3744,10 @@ def _grow_places(h):
 def test_polities_in_the_history_seat_claim_and_conquer_with_the_winners_tolerance(faketz, monkeypatch):
     """PW-1434 (lane 183, round7.md): switched on, the history seats states from its own central places and they claim land (war is
     polities.war_v0 itself, tested there); the peoples on land a war took fare by the winner's hostility: the kobolds folk hate are
-    expelled, but never more than FATE_MAX of their heads in one step, and a tolerant winner keeps them. Off by default."""
+    expelled, but never more than FATE_MAX of their heads in one step, and a tolerant winner keeps them. On by default (PW-1700)."""
     import types
     from planet.lineages.history import params as HP, polity_live as PL
-    assert HP.POLITIES_LIVE is False
+    assert HP.POLITIES_LIVE is True
     h, env, step, land = _live_setup(faketz, monkeypatch)
     fk, kb = h.idx["folk"], h.idx["kob"]
     for ago in (1.2, 1.1, 1.0, 0.9):
