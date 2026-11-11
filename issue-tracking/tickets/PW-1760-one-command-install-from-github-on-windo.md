@@ -26,10 +26,10 @@ To do:
 - `.github/workflows/install-smoke.yml`: on ubuntu-latest, macos-latest (arm64) and windows-latest, run the installer from the checkout, then `planet self status`, a tiny L4 make, and the viewer answering 200.
 - README: the three one-liners.
 
-**Testing needs Daniel's OK:** only Linux is on hand here, so the Windows and macOS proof is the Actions run, which needs a branch pushed to GitHub (pushes are otherwise only at releases, D83).
+**Testing (Daniel OK.d the test-branch push 11-11):** only Linux is on hand here, so the Windows and macOS proof is the Actions run, which needs a branch pushed to GitHub (pushes are otherwise only at releases, D83).
 
 **Self-contained option (stretch):** a fully offline single-download bundle per OS (e.g. PyInstaller), which would be large because of numba/llvmlite. The uv route is self-bootstrapping and much smaller, so prefer it unless Daniel wants offline installs.
 
 ## Updates
-- 2026-11-11: Daniel has a Mac to test on: Apple Silicon, 24 GB RAM. The macOS install is proven by hand on it: a checklist step for Daniel, with exact commands; a lane can't reach it. No Windows machine, so Windows is proven by the GitHub Actions run only (push of a test branch pending Daniel's OK).
+- 2026-11-11: Daniel has a Mac to test on: Apple Silicon, 24 GB RAM. The macOS install is proven by hand on it: a checklist step for Daniel, with exact commands; a lane can't reach it. No Windows machine, so Windows is proven by the GitHub Actions run only (Daniel OK.d pushing a test branch for it, 11-11).
 - 2026-11-11: Created from inbox draft draft-native-windows-macos-install.md (found by owner).
