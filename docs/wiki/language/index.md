@@ -72,9 +72,9 @@ uv run pytest -q tests/test_language_*.py tests/test_languages_viewer.py
 ### Artifacts
 | Artifact | URL | Built by |
 |---|---|---|
-| Demo (v22) | https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs | `tools/language/demo_page.py --backend espeak` (always eSpeak) |
-| Sisters (v3) | https://claude.ai/artifact/YD1V4gaWYbqaontwgb37B9 | `tools/language/sisters_page.py`; needs a pre-lane-15 `--before` copy |
-| Places (v2) | https://claude.ai/artifact/4UWoSY3i1jqkz9zYzY1gVA | `tools/language/places_page.py` |
+| Demo (v23) | https://claude.ai/artifact/GQUxhWHnErqn3zx7MTaFUs | `tools/language/demo_page.py --backend espeak` (always eSpeak) |
+| Sisters (v4) | https://claude.ai/artifact/YD1V4gaWYbqaontwgb37B9 | `tools/language/sisters_page.py`; needs a pre-lane-15 `--before` copy |
+| Places (v3) | https://claude.ai/artifact/4UWoSY3i1jqkz9zYzY1gVA | `tools/language/places_page.py` |
 | Language Desk | https://claude.ai/artifact/HYNL244a8zVvfSGFWK5Fgw | source `docs/review/language/desk/index.html`; answers in db collection `answers` |
 | Real-inventory experiment | https://claude.ai/artifact/D9zoxQnya6RG5uYspUJX84 | `tools/language/real_inventory.py --html` |
 | Original design doc | https://claude.ai/artifact/58m5qxKajjfn6TkTqq3EL2 | (the *what*; architecture.md is the *how*) |
