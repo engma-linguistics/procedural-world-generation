@@ -455,3 +455,4 @@ One line per ruling: date · topic · ruling · ticket. Newest first within a se
 - 2026-11-11: lane 297 merged (PW-1705 level-2 cell-edge seam at the floor; PW-1707 sections.json). PW-1698 superseded by PW-1709 (falls keyed by lip). Lane 300 started (PW-1708 levels 3-4 and corners, then PW-1709). Desk retired 'Zooming like Google Earth: the plan'.
 - 2026-11-11: full suite after the 292-298 batch: 2111 passed.
 - 2026-11-11: lanes 299 (PW-1696 tilt + draped overlays) and 296 (PW-1703 option A, off) merged. PW-1712 ruled C1 (accept the L7 thermostat floor for v1); PW-1710 ruled A (remove globe double-click zoom). Closed PW-1688/1689/1359/1341/1299; PW-1296/1676/1706 to later. Lanes 301 (LOD step 5 + PW-1710/1711) and 302 (PW-1295 D38, attempt 3) started.
+- 2026-11-11: lane 300 merged (PW-1708 cell edges at levels 3-4 and corners at the floor). PW-1713 (river jog at cell edges) intaken. Lane 303 started (PW-1713, PW-1709).
