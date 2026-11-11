@@ -14,6 +14,7 @@ Read first, in order:
 | What is running, what is v1/v2 status, which ids are the showcases? | [state.md](state.md) |
 | Where is the run store, review folder, scorecard, presets, server? | [where-things-live.md](where-things-live.md) |
 | What goes in a subagent prompt? How do I merge a lane? | [coordinator-playbook.md](coordinator-playbook.md) |
+| How do the languages work, what is their state, which artifacts show them? | [language/](language/index.md) (pages split: short part for Daniel, agent detail below) |
 | How does subsystem X work? | [overview.md](../overview.md) |
 | Open work, tickets, drafts | the board (`uv run python issue-tracking/board.py next`); rules in [issue-tracking/README.md](../../issue-tracking/README.md) |
 | Worktrees, run costs, showcase recipes, server | [coordination.md](../coordination.md) |
