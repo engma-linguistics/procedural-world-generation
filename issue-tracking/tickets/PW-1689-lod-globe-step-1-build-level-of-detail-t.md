@@ -40,4 +40,5 @@ What is left (2.2 of the plan):
 - [ ] time and peak per level re-measured (today's fine pass: 13-17 s, 3.4-3.5 GB per 500 px tile, plan 1.3)
 
 ## Updates
+- 2026-11-10: Lane 290 merged (b53e5c3e): lod_build.py, seam-true tiles; rivers cross with identical discharge on 97/104 pixels, rebuild bit-identical; edge steps 0.78-1.09x interior (median), not yet within 10% (xfail; PW-1694). Level costs: L1 123 s / 8.3 GB; L2-L4 tiles 11-14 s / ~3 GB / ~35 MB.
 - 2026-11-10: Created from inbox draft draft-lod2-seam-true-tiles.md (found by lane289).

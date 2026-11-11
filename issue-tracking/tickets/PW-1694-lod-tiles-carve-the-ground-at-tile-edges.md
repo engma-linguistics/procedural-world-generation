@@ -1,4 +1,5 @@
 ---
+id: PW-1694
 title: "LOD tiles: carve the ground at tile edges in a place-keyed block, so the edge strip is neither smoother nor rougher than inside"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane290
 blocked_by: []
 relates: [PW-1689, PW-1688]
 refs: [planet/zoom/fine.py, "planet/zoom/fine.py::build", "planet/zoom/fine.py::EDGE_TEXTURE", planet/zoom/lod_build.py, tests/test_zoom_lod_build.py, docs/review/zoom/lod-plan-v2.md, "world dba204", "cell py.1.1"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -34,3 +37,6 @@ per tile, ~+35% pixels for the landscape pass only (the rest of the build is unc
 - [ ] tests/test_zoom_lod_build.py::test_edge_steps_like_the_inside passes (remove its xfail) and the four dba204 seams of
       cell py.1.1 level 2 (tiles 4/4, 5/4, 4/5, 5/5) have land-step ratios (median and p90) within 0.9-1.1
 - [ ] rebuilds stay bit-identical; per-tile time and peak re-measured
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-lod-edge-carving.md (found by lane290).
