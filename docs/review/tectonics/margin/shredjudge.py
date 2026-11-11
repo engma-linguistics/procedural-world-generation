@@ -2,7 +2,7 @@
 usage: shredjudge.py OUT_ROOT ARM_A ARM_B   (OUT_ROOT/<ARM>_r<roll>_<tag>/seed*_L6.json.gz, as paired_margin.sh lays out)
 Per draw: quick shreds / quick births / all shreds / births over 100-1000 and 200-1000 Myr (L5-equivalent cells),
 the late (600-1000 Myr) means of the margin record's land %, continental crust %, mean continental thickness and the
-plate count, the plates at 1 Gyr, and the end T (true global mean at the last step). Then per measure: the median of
+plate count, the 100-300 Myr mean plate count (the spin-up, PW-1318), the plates at 1 Gyr, and the end T (true global mean at the last step). Then per measure: the median of
 B - A, the number of draws with B > A / B < A, and the exact two-sided sign test. Harness only."""
 import gzip
 import json
@@ -28,6 +28,7 @@ def load(p):
     out["land % (late)"] = float(np.mean([s["margin"]["land"] for s in late]))
     out["cont crust % (late)"] = float(np.mean([s["margin"]["cont"] for s in late]))
     out["thick km (late)"] = float(np.mean([s["margin"]["thick"] for s in late]))
+    out["plates (100-300 mean)"] = float(np.mean([m[t]["plates"] for t in m if 100 <= t <= 300]))  # the spin-up (PW-1318)
     out["plates (late mean)"] = float(np.mean([s["plates"] for s in late]))
     out["plates at 1 Gyr"] = m[max(m)]["plates"]
     last = ss[-1]

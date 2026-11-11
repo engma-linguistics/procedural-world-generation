@@ -476,3 +476,73 @@ Reading:
   swing, larger at L5 / 400 Myr than the -1.3 land points lane 115 judged at L6 / 1 Gyr. End T is warmer by +1.9 C
   median, 14 / 20 (sign test p ~0.12), late dT +0.75 (12 / 20): not a clear signal at 20 seeds, but its direction
   agrees with more pCO2 on 14 / 20.
+
+## 7. Judge (lane 310 / 310b, PW-1726): `shred_km=15` against off, L6, 1 Gyr, 10 paired draws
+
+Runs (lane 310): one frozen copy of main 783095e9 (model identical), `judgediag.py --myr 1000 --level 6 --set
+star_brightening=1.0 climate_offset=<draw offset + 0.0005>`, arm `base` = `shred_km` 0 (off, the default) and arm
+`on` = `shred_km=15`. Draws: the first 10 of paired_margin.sh's 18 (l6fix x4, l6c_0 x4, l6c_m x2; the l6c_m pair
+runs at offset -0.0005), roll 0.0005 only. All 20 runs reached 1000 Myr. Measured (lane 310b) with
+[shredjudge.py](shredjudge.py) (side measures; the 100-1000 / 200-1000 Myr counts are L5-equivalent cells; the
+`true_temp_c` it reads is the step's global mean, the same field tools/judge.py's end T uses, present on every
+step), `tools/judge.py paired OUT base on` (climate, pass count) and `tools/hard_bar.py` per arm (each arm's
+json.gz copied into its own root as arm `m`). **Baseline everywhere is the paired off arm (`base`)**; "on < off"
+counts draws where the on arm is lower than its own off draw. No threshold changed.
+
+| measure | off (baseline) median | on median | median on - off | on > off / on < off | sign p (95% CI) |
+|---|---|---|---|---|---|
+| quick shreds, 100-1000 Myr (the flicker) | 268.1 | 1.5 | -266.6 | 0 / 10 | 0.002 |
+| quick births, 100-1000 Myr | 140.5 | 0 | -140.5 | 0 / 10 | 0.002 |
+| all shreds / births, 100-1000 Myr | 2361 / 1493 | 455 / 813 | -1864 / -656 | 0 / 10 both | 0.002 |
+| land % (margin record, 600-1000 mean) | 33.30 | 32.57 | -0.40 | 3 / 7 | 0.344 |
+| land % (judge's late land) | 33.74 | 33.17 | -0.44 | 2 / 8 | 0.109 [-1.22, +0.01], not moved |
+| continental crust % (late) | 40.38 | 41.37 | +1.24 | 8 / 2 | 0.109 |
+| mean continental thickness, km (late) | 35.24 | 34.04 | -1.15 | 0 / 10 | 0.002 |
+| plates, 100-300 Myr mean (spin-up, PW-1318) | 15.1 | 14.8 | -0.3 | 4 / 6 | 0.754 |
+| plates, 600-1000 mean / at 1 Gyr | 15.2 / 16.0 | 14.6 / 13.5 | -0.4 / -2.5 | 4 / 6, 2 / 6 | 0.754, 0.289 |
+| end T (vs pre-industrial, C) | -0.82 | +0.45 | -0.12 | 5 / 5 | 1.000 [-1.89, +2.90], not moved |
+| late dT (C) | 1.87 | 1.01 | -0.62 | 4 / 6 | 0.754 [-1.45, +1.29], not moved |
+| late CO2 index | 0.73 | 0.61 | +0.03 | 5 / 5 | 1.000 [-0.13, +0.23], not moved |
+| arid % / hot desert % / trees % | 22.1 / 6.9 / 38.6 | 21.7 / 7.0 / 38.3 | +0.8 / -0.4 / -0.3 | 6/4, 4/6, 4/6 | none moved |
+| **pass (bar + finish moment)** | **10 / 10** | **9 / 10** | both 9, off only 1, on only 0 | | McNemar 1.000 |
+| hard: frozen over / boiled / ocean loss / CO2 crash | 0 / 0 / 0 / 0 | 0 / 0 / 0 / 0 | | | |
+| secondary: pCO2 < 100 ppm; 8-fold fall (end <= 1/4); end pCO2 outside 180-600 | 0; 8; 3 | 0; 6; 4 | | | |
+
+The one draw that fails on and passes off is l6fix seed 639472: no frozen, boiled or other hard failure, but the
+finish moment fails the land-ice check at the end (land ice 0.6-0.9% over its last 10 Myr, under the 1% "none"
+line; end T +3.9 C, 17.7 C). Its off draw ends at 15.8 C with 2.4-3.6% land ice and passes. A warm, ice-free
+finish, not a collapse.
+
+**Against the bars** (PW-1726: "flip the default only if no hard failure and the soft pass level holds"; section 3's
+reading of "level", 32 against 33 of 36):
+- No hard failure: met (0 / 10 in both arms on all four hard bars).
+- Soft pass level holds: **not shown**. 9 / 10 against 10 / 10 is one discordant draw (McNemar 1.0), so nothing says
+  the level fell, but at 10 draws one draw is 10 points, and the ticket's judge is 18 draws x 2 rolls (36 pairs),
+  the sample section 3 judged "level" on. This is 10 of those 36 (roll 0.0005, l6c_p's 8 draws and all of roll
+  0.001 not run).
+- The flicker cure: decisive (every draw, 268 -> 1.5 quick shreds).
+- Side effects: the same direction as section 3 and section 6's L5 screen for crust (thinner on 10 / 10, -1.15 km;
+  area +1.24 points, 8 / 10) and land (-0.4, 8 / 10 lower, interval just touching 0). Climate did not move (every
+  interval straddles 0; the L5 screen's +1.9 C warming does not show here: end T -0.1 C median, 5 / 5). Plates are
+  not lower in the spin-up (4 / 6, -0.3) or late; the end count is 2.5 lower in median but 2 up / 6 down / 2 tied, no
+  sign.
+- PW-1314 A (the second arm of the ticket) was not run.
+
+**Recommendation: needs more, leaning on.** Nothing here argues against switching it on at 15: no hard failure,
+climate unmoved, plates not lower, the flicker gone on every draw. But the ticket's own condition for the flip,
+the pass level holding, can't be shown on 10 draws with one on-only failure; finishing the 26 missing pairs (same
+frozen code, paired_margin.sh's l6c_p at 0.0005 and all 18 at 0.001, ~21 min per run at 2 threads) is what the bar
+asks for. If those come back with on within a draw or two of off (as section 3's 32 / 33), switch it on at 15. The
+PW-1314 A arm is the ticket's second box and stays open either way; it targets the thinner crust, which is the one
+measure that moved on every draw.
+
+**In plain words.** The switch does what it was built for: the ragged coastline cells that kept flipping between
+land and sea stop flipping, in all ten test worlds, almost completely. It doesn't break anything: no world froze,
+boiled, lost its ocean or ran out of CO2, and the climate came out the same on average. The continents end up a bit
+thinner (about a kilometre) and there is slightly less dry land, as expected. One of the ten worlds with the switch
+on ended a little too warm, with almost no ice on land, and so failed the "Earth-like finish" check, while its twin
+with the switch off passed. One in ten is too few to tell whether that is bad luck or a real cost, and the test plan
+called for 36 worlds, not 10. Run the other 26 pairs; if the pass count stays about even, turn it on.
+
+Lane 310b, 2026-11-11. Scratch: /data/personal/scratch/lane310 (runs; left for the owner to delete), lane310b's
+hard-bar copies deleted.
