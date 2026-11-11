@@ -28,7 +28,11 @@ What the history lacks, and how this cut stands in (round7.md section 2):
 - the tech calendar: the tech tree runs inside the history (history.tech_live, PW-1466, round8.md): each step it runs down to the
   history's time first, and the gates (chiefdoms, proto-writing or writing, kingship, law, the military edges, boats, a dragon's hoards)
   read what each people knew by then. output.save writes the same calendar out as meta.techtree;
-- cultures: a polity is a people's; an empire is a state whose subject peoples hold SUBJECT_SHARE of its sedentary heads.
+- cultures: a polity is a people's; an empire is a state whose subject peoples hold SUBJECT_SHARE of its sedentary heads. A dragon
+  people seats one realm per region of its range (PW-1687, coordinator ruling B; round27.md), the region cut by the demes' and
+  cultures' own rule for a dragon kind (dragon_regions, DragonRegions): pieces of its range within a dragon's reach (megafauna.LINK_KM)
+  are one population, a piece under demes.MIN_KM2 goes with the nearest region, and a region that appears is a realm of its own
+  only once it has lived apart cultures.t_apart (the read-out's one realm per dragon culture);
 This module writes polities_live.json; when a run has it, the after-run read-out (polities.derive, PW-1575) draws these polities, not
 its own: the viewer's Polities layer, the state cards and the religion read-out's rulers are this map, named and coloured by derive.
 """
@@ -104,6 +108,95 @@ def ring_pairs(off, idx, r: int):
     return seen // n, seen % n
 
 
+def dragon_regions(g, held: np.ndarray, r_link: int, min_cells: int, lab_out: np.ndarray | None = None) -> tuple[np.ndarray, int]:
+    """A dragon people's range cut into regions as the demes cut a dragon kind (demes.Demes._cut with mobility's terrain-free reach):
+    held cells within 2 x r_link rings of each other (megafauna.LINK_KM: a gap a dragon flies across) are one region; a region of
+    fewer than min_cells held cells (demes.MIN_KM2) goes with the nearest bigger one (straight through the grid, as demes' small
+    pieces go to the nearest deme); if none is that big, the biggest stands alone. Returns (region per cell, -1 off the range; count),
+    regions numbered by size, biggest first (ties: lowest cell)."""
+    from ..spread import nearest_label
+    n = g.n
+    lab = np.full(n, -1, np.int64) if lab_out is None else lab_out
+    lab[:] = -1
+    if not held.any():
+        return lab, 0
+    d = held.copy()
+    for _ in range(r_link):
+        d = d | (nbr_reduce(g, np.maximum, d[np.asarray(g.nbr_idx, np.int64)].astype(np.int8)) > 0)
+    comp, _nc = g.components(d)
+    hc = comp[held]
+    ids, cnt = np.unique(hc, return_counts=True)
+    cells = np.flatnonzero(held)
+    first = np.full(len(ids), n, np.int64)
+    np.minimum.at(first, np.searchsorted(ids, comp[cells]), cells)
+    order = np.lexsort((first, -cnt))
+    big = [i for i in order if cnt[i] >= min_cells] or [order[0]]
+    rank = np.full(int(comp.max()) + 1, -1, np.int64)
+    rank[ids[big]] = np.arange(len(big))
+    lab[held] = rank[hc]
+    if (lab[held] < 0).any():
+        seed = np.where(lab >= 0, lab, -1)
+        near = nearest_label(seed, np.ones(n, np.bool_), np.asarray(g.nbr_off, np.int64), np.asarray(g.nbr_idx, np.int64))
+        lab[held] = near[held]
+    return lab, len(big)
+
+
+class DragonRegions:
+    """Each dragon people's regions followed from step to step under stable keys (PW-1687): a region keeps the key of last step's
+    region it shares most cells with (the larger overlap first; ties to the older key), as a deme keeps its id; a region that takes
+    no key is new and dated now. A dragon people's first regions (the first step the history sees it in the recent pass) are its
+    founding culture's, realms at once; a later one is its own realm once it has lived apart cultures.t_apart(its era), the
+    cultures engine's own time apart, and is its parent's (no realm) until then. Two regions that join keep the older key, as
+    sister dragon cultures touching merge within a century (cohesion 0.9 x MERGE_CONTACT_KYR)."""
+
+    def __init__(self, g):
+        from ..seafood import cells_for
+        from .. import demes as DE
+        from .megafauna import LINK_KM
+        self.g = g
+        self.r_link = rings_for(g, LINK_KM / 2)
+        self.min_cells = cells_for(g, DE.MIN_KM2)
+        self.lab: dict[int, np.ndarray] = {}  # line -> last step's region key index per cell (-1 off its range)
+        self.keys: dict[int, list] = {}  # line -> [key, born kyr ago] per key index ever given
+        self._tmp = np.full(g.n, -1, np.int64)
+
+    def step(self, k: int, people: str, held: np.ndarray, ago: float) -> list[tuple]:
+        """(key, kyr ago it began, founding or not, its held cells) of each region of people (line k) this step, biggest first."""
+        lab, nr = dragon_regions(self.g, held, self.r_link, self.min_cells, self._tmp)
+        prev = self.lab.get(k)
+        keys = self.keys.setdefault(k, [])
+        new_lab = np.full(self.g.n, -1, np.int64)
+        out = []
+        if nr == 0:
+            self.lab[k] = new_lab
+            return out
+        cells_of = [np.flatnonzero(lab == r) for r in range(nr)]
+        got = [-1] * nr
+        if prev is not None:
+            pairs = []
+            for r in range(nr):
+                pk = prev[cells_of[r]]
+                pk = pk[pk >= 0]
+                if len(pk):
+                    u, c = np.unique(pk, return_counts=True)
+                    pairs += [(-int(c_), int(u_), r) for u_, c_ in zip(u, c)]
+            used = set()
+            for _c, u_, r in sorted(pairs):  # (the largest overlap first; ties to the older key, then the bigger region)
+                if got[r] < 0 and u_ not in used:
+                    got[r] = u_
+                    used.add(u_)
+        founding = prev is None
+        for r in range(nr):
+            if got[r] < 0:
+                got[r] = len(keys)
+                keys.append([f"d{people}" if not keys else f"d{people}.{len(keys)}", ago, founding])
+            new_lab[cells_of[r]] = got[r]
+            key, born, fnd = keys[got[r]]
+            out.append((key, born, fnd, cells_of[r]))
+        self.lab[k] = new_lab
+        return out
+
+
 class _Rings:
     """Each cell's cells within some rings, from ring_pairs' (cell, other) pairs sorted by cell (the cell itself included): rings[c]."""
 
@@ -140,6 +233,8 @@ class LivePolities(StandIns):
         L = h.lines
         self.ppl = np.array([i for i, l in enumerate(L) if not (l.overlay or l.megafauna or l.marine)], np.int64)  # (peoples that may hold towns)
         self.dragons = [i for i, l in enumerate(L) if is_dragon(l)]
+        self.dreg = DragonRegions(g)  # (PW-1687: each dragon people's regions, followed every recent step)
+        self.dregions: dict = {}  # (line -> this step's regions, DragonRegions.step)
         meta = [{"id": l.id, "group_of": l.group_of, "parents": list(l.parents or [])} for l in L]
         self.anc = IV.ancestors(meta)
         rows, self.inv_notes = IV.clean(INVASIONS, strict=False) if INVASIONS else ([], [])
@@ -207,6 +302,10 @@ class LivePolities(StandIns):
         import time
         t0 = time.time()
         try:
+            h = self.h
+            for k in self.dragons:  # (PW-1687: followed every recent step, chiefdoms or not, so a region's time apart is counted)
+                held = h.p[k] >= EST if h.active.get(h.lines[k].id) else np.zeros(self.g.n, bool)
+                self.dregions[k] = self.dreg.step(k, h.lines[k].id, held, float(step.ago))
             self._step(step)
             self._attitudes(step)
         finally:
@@ -545,25 +644,29 @@ class LivePolities(StandIns):
         # a second people's place under the lead's: on L7 899985 seed 7 about half the read-out's confederations, round25.md)
         if PO.CONFED and self.owner is not None:
             seats = self._confederations(seats, *self._ledger_places(), ago, k_, peopled, edz, sea, ice, city_min)
-        # 2. dragon realms: one per dragon people (the read-out's one per dragon culture; the history has no cultures, and a dragon
-        # kind is one culture for now), at the core of its range by the read-out's rule (polities._core: the most of its cells within
-        # two rings). Lane 281c (round26.md): one per connected piece of the range, as before, seated 290-310 realms on L6 4360a3
-        # seed 7 against the read-out's 22-25 on the same history (a dragon people's range is hundreds of scattered pieces), and its
-        # key moved with the piece's densest cell every step
+        # 2. dragon realms: one per region of a dragon people's range (PW-1687, coordinator ruling B, round27.md), the read-out's one
+        # per dragon culture with the regions cut as the demes and cultures cut a dragon kind (DragonRegions), each at its core by the
+        # read-out's rule (polities._core: the most of its cells within two rings), keyed by its region. Before: one per connected
+        # piece (290-310 realms on L6 4360a3 seed 7 against the read-out's 22-25, keys moving every step), then one per people (4-6
+        # against 16-26; round26.md)
+        from .. import cultures as CU
         for k in self.dragons:
             l = L[k]
-            if not h.active.get(l.id) or not self.knows(l.id, "hoards", ago):
+            regs = self.dregions.get(k) or []
+            if not regs or not h.active.get(l.id) or not self.knows(l.id, "hoards", ago):
                 continue
-            cells = np.flatnonzero(h.p[k] >= EST)
-            if not len(cells):
-                continue
-            core = PO._core(cells, self._ring_of)
-            key = f"d{l.id}"
-            if self.cool.get(key, -1) >= k_:
-                continue
-            self.founded.setdefault(key, ago)
-            seats.append({"key": key, "cell": core, "people": l.id, "line": k, "uid": None, "pop": 0.0, "tier": "dragon realm", "cls": 1,
-                          "rank": len(cells) * (PO.INCUMBENT if key in self.prev_cap else 1.0), "own": cells})
+            T_ = getattr(self.tech, "T", None)  # (the tree inside the history; a lent calendar has none: the stone age's time apart)
+            era = CU.eras({"techs": list(T_["techs"].values()), "known": {l.id: self.tech.known.get(l.id) or {}}}).get(l.id) if T_ else None
+            apart = CU.t_apart(era, ago)
+            for key, born, founding, cells in regs:
+                if not founding and born - ago < apart - 1e-9:
+                    continue  # (not yet apart long enough to be a culture of its own: its parent's, no realm)
+                if self.cool.get(key, -1) >= k_:
+                    continue
+                core = PO._core(cells, self._ring_of)
+                self.founded.setdefault(key, ago)
+                seats.append({"key": key, "cell": core, "people": l.id, "line": k, "uid": None, "pop": 0.0, "tier": "dragon realm", "cls": 1,
+                              "rank": len(cells) * (PO.INCUMBENT if key in self.prev_cap else 1.0), "own": cells})
         if IV.WAR_BAND and self.inv_rows:  # (PW-1479, D50 C: a strong row whose invaders rule only chiefdoms seats a war band, as derive)
             PO._war_bands(self, seats, self.inv_rows, ago, self.prev_cap, self.open_, self.anc)
         by_key = {s["key"]: s for s in seats}

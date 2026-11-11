@@ -4208,23 +4208,82 @@ def test_live_polities_know_the_dragons_as_the_read_out_does():
     assert live == readout and {"red_dragon", "gold_dragon"} <= live and "dragonborn" not in live
 
 
-def test_live_dragon_people_seats_one_realm_however_scattered_its_range(faketz, monkeypatch):
-    """Lane 281c (round26.md): a dragon people seats one realm in the history (the read-out's one per dragon culture; a dragon kind is
-    one culture for now), keyed by the people, however many pieces its range is in. Before, one per connected piece: 290-310 realms
-    on L6 4360a3 seed 7 against the read-out's 22-25."""
+def _gc_km(g, a, b):
+    la, lo = np.radians(np.asarray(g.lat)), np.radians(np.asarray(g.lon))
+    c = np.sin(la[a]) * np.sin(la[b]) + np.cos(la[a]) * np.cos(la[b]) * np.cos(lo[a] - lo[b])
+    return 6371.0 * np.arccos(np.clip(c, -1, 1))
+
+
+def test_dragon_regions_cut_a_range_as_the_demes_cut_a_dragon_kind():
+    """Lane 281d (PW-1687 B, round27.md): a dragon people's range is cut into regions by the demes' own rule for a dragon kind: pieces
+    within a dragon's reach (megafauna.LINK_KM, over land and sea) are one region, farther ones apart, and a piece under demes.MIN_KM2
+    goes with the nearest region. DragonRegions keeps each region's key from step to step and dates a new one."""
+    from planet.grid import shared_grid
+    from planet.lineages.history import polity_live as PL
+    from planet.lineages.history.megafauna import LINK_KM
+    from planet.lineages import demes as DE
+    from planet.lineages.seafood import cells_for, rings_for
+    g = shared_grid(5)
+    D = PL.DragonRegions(g)
+    assert D.r_link == rings_for(g, LINK_KM / 2) and D.min_cells == cells_for(g, DE.MIN_KM2) > 1
+    a = 0
+    d = _gc_km(g, a, np.arange(g.n))
+    blob = lambda c, km: _gc_km(g, c, np.arange(g.n)) <= km  # noqa: E731
+    near = int(np.argmin(np.abs(d - 0.6 * LINK_KM)))  # (a gap of well under LINK_KM between the two: one region)
+    far = int(np.argmin(np.abs(d - 5 * LINK_KM)))  # (far beyond it: a region of its own)
+    held = blob(a, 400) | blob(near, 300) | blob(far, 400)
+    lab, n = PL.dragon_regions(g, held, D.r_link, D.min_cells)
+    assert n == 2 and lab[a] == lab[near] == 0 and lab[far] == 1 and (lab[held] >= 0).all() and (lab[~held] < 0).all()
+    tiny = int(np.argmin(np.abs(d - 3 * LINK_KM)))  # (one cell alone, under MIN_KM2: the nearest region's, no region of its own)
+    held2 = held.copy()
+    held2[tiny] = True
+    lab2, n2 = PL.dragon_regions(g, held2, D.r_link, D.min_cells)
+    assert n2 == 2 and lab2[tiny] in (0, 1)
+    r1 = D.step(0, "x", held, 1.0)
+    assert [(k_, b, f) for k_, b, f, _ in r1] == [("dx", 1.0, True), ("dx.1", 1.0, True)]
+    third = int(np.argmin(np.abs(d - 10 * LINK_KM)))
+    held3 = held.copy()
+    held3[blob(far, 400)] = False  # (the far region moves a little: the same key)
+    held3[blob(far, 500) & ~blob(far, 150)] = True
+    held3 |= blob(third, 400)
+    r2 = {k_: (b, f) for k_, b, f, _ in D.step(0, "x", held3, 0.9)}
+    assert r2 == {"dx": (1.0, True), "dx.1": (1.0, True), "dx.2": (0.9, False)}
+
+
+def test_live_dragon_people_seats_a_realm_per_region_once_apart(faketz, monkeypatch):
+    """Lane 281d (PW-1687 B, round27.md): a dragon people seats one realm per region of its range in the history (the read-out's one
+    per dragon culture), keyed by the region and the same key from step to step; a region that appears later is a realm only once it
+    has lived apart cultures.t_apart (the stone age's 0.6 kyr). Lane 281c had one per people (4-6 realms against the read-out's
+    16-26); before that one per connected piece (290-310 against 22-25, keys moving every step)."""
     import types
+    from planet.lineages import cultures as CU
     h, env, step, land = _live_setup(faketz, monkeypatch)
     R = h.rule
+    g = h.grid
     kb = h.idx["kob"]
-    R.dragons = [kb]  # (the kobolds stand in for a dragon people: scattered pieces, hoards known)
+    R.dragons = [kb]  # (the kobolds stand in for a dragon people: hoards known)
     R.tech.known["kob"]["hoards"] = [100.0, "test", None]
+    a = int(land[310])
+    d = _gc_km(g, a, land)
+    b = int(land[np.argmax(d)])  # (the land farthest away: another region)
+    c = int(land[np.argmax(np.minimum(d, _gc_km(g, b, land)))])  # (far from both: a third, settled later)
+    assert min(_gc_km(g, a, b), _gc_km(g, a, c), _gc_km(g, b, c)) > 2 * 1500.0
     h.p[kb][:] = 0.0
-    h.p[kb][land[300:330:3]] = 0.9  # (ten pieces, a cell apart or more)
+    h.p[kb][[a, b]] = 0.9
     _sync_pm(h)
-    for ago in (1.2, 1.1):
-        h.rule.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
+    seen = []
+    ago = 2.0
+    while ago > 1.0 - 1e-9:
+        if abs(ago - 1.8) < 1e-9:
+            h.p[kb][c] = 0.9  # (a new region, far from the others)
+        h.rule.begin_step(types.SimpleNamespace(epoch="recent", ago=round(ago, 3), dt=0.1))
         _sync_pm(h)
-    assert [k for k in R.founded if k.startswith("d")] == ["dkob"]
+        seen.append(sorted(k for k in R.founded if k.startswith("d")))
+        ago -= 0.1
+    assert seen[0] == ["dkob", "dkob.1"]  # (the founding regions: realms at once)
+    born = 1.8 - CU.T_APART_KYR["stone age"]
+    late = [round(2.0 - 0.1 * i, 3) for i, s in enumerate(seen) if "dkob.2" in s]
+    assert late and max(late) == pytest.approx(born, abs=1e-6)
 
 
 def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
