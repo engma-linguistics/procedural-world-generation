@@ -4218,6 +4218,7 @@ def test_dragon_cultures_cut_a_range_as_the_demes_and_cultures_cut_a_dragon_kind
     """Lane 281d (PW-1687 B, round27.md): inside the history a dragon people's cultures are cut by the demes' and the cultures engine's
     own rules for a dragon kind. Regions: pieces within a dragon's reach (megafauna.LINK_KM, over land and sea) are one, farther ones
     apart, a piece under demes.MIN_KM2 goes with the nearest. Cultures: the first range is one founding culture, however many regions;
+    a piece split off by a gap waits demes.PERSIST stored frames (a crossing does not) and cultures.t_apart;
     a region settled later is its parent's until it has stayed apart demes.PERSIST stored frames and cultures.t_apart, then a culture
     of its own under a key it keeps; two cultures on neighbouring cells merge, the younger into the older, after MERGE_CONTACT_KYR x
     (1 - cohesion) side by side."""
@@ -4251,8 +4252,8 @@ def test_dragon_cultures_cut_a_range_as_the_demes_and_cultures_cut_a_dragon_kind
         r = D.step(0, "x", held3, ago, 0.5, True, CU.T_APART_KYR["stone age"])
         seen.append((ago, keys(r), {k_: len(c) for k_, c in r}))
         ago -= 0.5
-    assert [s[1] for s in seen[:3]] == [["dx"]] * 3 and seen[0][2]["dx"] == int(held3.sum())  # (a piece: its parent's for now)
-    assert seen[3][1] == ["dx", "dx.1"] and seen[5][1] == ["dx", "dx.1"]  # (four stored frames apart, past t_apart: its own)
+    assert [s[1] for s in seen[:2]] == [["dx"]] * 2 and seen[0][2]["dx"] == int(held3.sum())  # (a crossing: its parent's for now)
+    assert seen[2][1] == ["dx", "dx.1"] and seen[5][1] == ["dx", "dx.1"]  # (apart t_apart: its own; a crossing is a deme at once)
     bridge = blob(third, 400) | blob(far, 400)  # (the two meet: neighbouring cells, then one merged culture, the older's)
     path = np.zeros(g.n, bool)
     for t in np.linspace(0, 1, 600):

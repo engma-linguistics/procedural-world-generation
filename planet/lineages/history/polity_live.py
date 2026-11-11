@@ -170,7 +170,7 @@ class DragonCultures:
         self.off = np.asarray(g.nbr_off, np.int64)
         self.coh = coh or {}
         self.lab: dict[int, np.ndarray] = {}  # line -> label per cell (-1 off its range)
-        self.info: dict[int, list] = {}  # line -> per label: [key (None: a piece not yet apart), born kyr ago, parent, frames, into]
+        self.info: dict[int, list] = {}  # line -> per label: [key (None: a piece not yet apart), born kyr ago, parent, frames, into, split off]
         self.n_cul: dict[int, int] = {}  # line -> cultures made so far (the keys' numbers)
         self.touch: dict[int, dict] = {}  # line -> {(a, b): kyr side by side}
 
@@ -187,12 +187,13 @@ class DragonCultures:
             a = self._into(inf, inf[a][2])
         return a
 
-    def _new(self, k, people, inf, ago, parent):
+    def _new(self, k, people, inf, ago, parent, src=None):
+        """A new label: a culture (no parent) or a piece of parent's culture, split off label src (None: a crossing or a first deme)."""
         if parent is None:
-            inf.append([f"d{people}" if not inf else f"d{people}.{self.n_cul.get(k, 0)}", ago, None, 0, None])
+            inf.append([f"d{people}" if not inf else f"d{people}.{self.n_cul.get(k, 0)}", ago, None, 0, None, None])
             self.n_cul[k] = self.n_cul.get(k, 0) + 1
         else:
-            inf.append([None, ago, parent, 0, None])
+            inf.append([None, ago, parent, 0, None, src])
         return len(inf) - 1
 
     def step(self, k: int, people: str, held: np.ndarray, ago: float, dt: float, stored: bool, apart: float) -> list[tuple]:
@@ -211,7 +212,7 @@ class DragonCultures:
             for r in range(nr):
                 lab[reg == r] = f if r == 0 else self._new(k, people, inf, ago, f)
                 if r:
-                    inf[-1][3] = -1  # (a first deme: its founding culture's for good, unless it falls apart again)
+                    inf[-1][3] = -1  # (a first deme: its founding culture's for good)
         # newly held cells: the nearest label of their own region; a region with none is a crossing, a piece of the nearest culture
         if (held & (lab < 0)).any():
             for r in range(nr):
@@ -232,28 +233,26 @@ class DragonCultures:
             parts = sorted(zip(c[ul == a].tolist(), ur[ul == a].tolist()), key=lambda t: (-t[0], t[1]))
             for sz, r in parts[1:]:
                 if sz >= self.min_cells:
-                    lab[(reg == r) & (lab == a)] = self._new(k, people, inf, ago, self._res(inf, a))
-        # pieces: back to their culture if they share a region with its own land; a culture of their own once apart long enough. The
-        # labels stay on the cells as the demes' ids do (a label falling apart is a split); a culture's own land is its labels', those
-        # merged into it and its first demes', not its pieces'
+                    lab[(reg == r) & (lab == a)] = self._new(k, people, inf, ago, self._res(inf, a), self._into(inf, a))
+        # pieces (the labels stay on the cells, as the demes' ids do: a label falling apart is a split): a piece split off a label
+        # goes back to it if it shares a region with that label's land again before it has stayed apart demes.PERSIST frames (flicker
+        # leaves no trace); a piece is a culture of its own once apart PERSIST frames (a crossing at once, as a deme) and t_apart
         here = np.unique(lab[held]).tolist()
-        own = np.full(len(inf), -1, np.int64)
+        into = np.full(len(inf), -1, np.int64)
         for b in here:
-            b2 = self._into(inf, b)
-            own[b] = self._res(inf, b2) if (inf[b2][0] is not None or inf[b2][3] < 0) else -1
-        ol = np.where(lab >= 0, own[np.maximum(lab, 0)], -1)
+            into[b] = self._into(inf, b)
+        il = np.where(lab >= 0, into[np.maximum(lab, 0)], -1)
         for a in here:
             x = inf[a]
-            if x[0] is not None or x[4] is not None:
-                continue
-            p = self._res(inf, a)
-            if np.isin(np.unique(reg[lab == a]), np.unique(reg[held & (ol == p) & (lab != a)])).any():
-                x[4] = p
-                continue
-            if x[3] < 0:
+            if x[0] is not None or x[4] is not None or x[3] < 0:
                 continue
             x[3] += 1 if stored else 0
-            if x[3] >= self.DE.PERSIST and x[1] - ago >= apart - 1e-9:
+            if x[5] is not None and x[3] <= self.DE.PERSIST:
+                s_ = self._into(inf, x[5])
+                if np.isin(np.unique(reg[lab == a]), np.unique(reg[held & (il == s_)])).any():
+                    x[4] = s_
+                    continue
+            if (x[5] is None or x[3] >= self.DE.PERSIST) and x[1] - ago >= apart - 1e-9:
                 x[0] = f"d{people}.{self.n_cul[k]}"
                 self.n_cul[k] += 1
         # merges: two cultures on neighbouring cells, side by side MERGE_CONTACT_KYR x (1 - cohesion): the younger into the older
