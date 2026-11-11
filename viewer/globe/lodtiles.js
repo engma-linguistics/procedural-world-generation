@@ -127,7 +127,7 @@ function tileRec(k, cell) {
 function dropTile(t) {
   if (t.mesh) { group.remove(t.mesh); t.mesh.geometry.dispose(); const u = t.mesh.material.uniforms; u.uElev.value.dispose(); u.uColor.value?.dispose(); t.mesh.material.dispose(); }
   t.kidTex?.dispose();
-  t.mesh = null; t.elev = null; t.colId = null; t.kidTex = null; t.bytes = 0;
+  t.mesh = null; t.elev = null; t.vh = null; t.colId = null; t.kidTex = null; t.bytes = 0;
 }
 function buildMesh(t) {
   const { k, cell } = t, [x0, , , y1] = M.rect(k), T = M.tileKm(k.level), pos = new Float32Array(3 * G * G), c = t.centre;
@@ -219,7 +219,11 @@ export function easeEx(hKm) {
   const t = Math.min(1, Math.max(0, Math.log(hKm / EASE_LO_KM) / Math.log(EASE_HI_KM / EASE_LO_KM)));
   return Math.exp(Math.log(one) + t * (Math.log(g) - Math.log(one)));
 }
-// the drawn ground's radius under a direction (group space): the finest drawn tile there, else the globe's cell
+// The drawn ground's radius along a direction (group space, any length): where the ray from the centre meets the
+// surface as drawn this frame (PW-1696). The finest tile drawn there (its own mesh: the grid's heights as the vertex
+// shader samples them, the grid's two triangles between), else the globe's cells (the fan of triangles from the cell's
+// centre to its corners, eased as patchCells eases them). The camera's least height and its pivot (dive.js) and the
+// overlays laid on the ground (drape.js) all stand on it.
 const _v = new THREE.Vector3();
 export function groundRadius(dir) {
   const u = _v.copy(dir).normalize();
@@ -230,15 +234,45 @@ export function groundRadius(dir) {
     for (let lv = LOD.maxLevel; lv >= 1; lv--) {
       if (Math.abs(x) >= M.HALF || Math.abs(y) >= M.HALF) break;
       const t = LOD.tiles.get(M.tileAt(best.id, lv, x, y).id);
-      if (!t?.elev || !(t.fade > 0)) continue;
-      const [tu, tv] = M.tileUV(t.k, x, y), n = t.elev.n, i = Math.min(n - 1, Math.floor(tu * n)), j = Math.min(n - 1, Math.floor(tv * n));
-      return 1 + LOD.ex * Math.max(0, M.halfToFloat(t.elev.half[j * n + i]));
+      if (!t?.elev || !(t.fade > 0) || !t.mesh?.visible) continue;
+      const [tu, tv] = M.tileUV(t.k, x, y);
+      return 1 + LOD.ex * meshHeight(t, tu, tv);
     }
   }
+  return cellsRadius(u);
+}
+// the tile mesh's height (m) at (u, v) (lodmath.js: the grid's heights as the vertex shader samples them, its
+// triangles between)
+function meshHeight(t, u, v) {
+  t.vh ??= M.gridHeights(t.elev.half, t.elev.n, GN);
+  return M.meshHeightAt(t.vh, GN, u, v);
+}
+// the globe's cell mesh along u: the fan triangle (centre, corner k, corner k+1) that the ray meets, of the nearest cell
+// or one of its neighbours, its vertices eased as the cells' shader eases them (patchCells)
+const triple = (a, b, c) => a[0] * (b[1] * c[2] - b[2] * c[1]) + a[1] * (b[2] * c[0] - b[0] * c[2]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
+function cellsRadius(u) {
   if (!S.V?.layers?.elevation || state.mode !== 'globe') return 1;
-  const i = nearestCellU([u.x, u.y, u.z]);
-  const r0 = S.V.R ? S.V.R[i] : 1 + reliefScale() * Math.max(S.V.layers.elevation[i], 0);
-  return 1 + (r0 - 1) * LOD.relK.value;
+  const i = nearestCellU([u.x, u.y, u.z]), R = S.V.R, k = LOD.relK.value, ease = (r) => 1 + (r - 1) * k;
+  if (!R || !S.V.U || !S.V.UC) return ease(1 + reliefScale() * Math.max(S.V.layers.elevation[i], 0));
+  for (const c of [i, ...(S.V.grid.nbr?.[i] || [])]) { const r = fanRadius(c, u, R, ease); if (r !== null) return r; }
+  return ease(R[i]);
+}
+function fanRadius(i, u, R, ease) {
+  const U = S.V.U, UC = S.V.UC, n = S.V.n, cs = S.V.grid.cells[i], m = cs.length, w = [u.x, u.y, u.z];
+  const P0 = [U[3 * i], U[3 * i + 1], U[3 * i + 2]], r0 = ease(R[i]);
+  for (let q = 0; q < m; q++) {
+    const a = cs[q], b = cs[(q + 1) % m];
+    const A = [UC[3 * a], UC[3 * a + 1], UC[3 * a + 2]], B = [UC[3 * b], UC[3 * b + 1], UC[3 * b + 2]];
+    const o = triple(P0, A, B);  // (u inside the cone of the three: on the inner side of each of its planes)
+    if (triple(P0, A, w) * o < -1e-15 || triple(A, B, w) * o < -1e-15 || triple(B, P0, w) * o < -1e-15) continue;
+    const ra = ease(R[n + a]), rb = ease(R[n + b]);
+    const p = [P0[0] * r0, P0[1] * r0, P0[2] * r0];
+    const e1 = [A[0] * ra - p[0], A[1] * ra - p[1], A[2] * ra - p[2]], e2 = [B[0] * rb - p[0], B[1] * rb - p[1], B[2] * rb - p[2]];
+    const nx = e1[1] * e2[2] - e1[2] * e2[1], ny = e1[2] * e2[0] - e1[0] * e2[2], nz = e1[0] * e2[1] - e1[1] * e2[0];
+    const den = nx * w[0] + ny * w[1] + nz * w[2];
+    if (Math.abs(den) > 1e-15) return (nx * p[0] + ny * p[1] + nz * p[2]) / den;
+  }
+  return null;
 }
 
 // ---- the globe's cells: eased with the tiles, hidden under them -------------------------------------------------------

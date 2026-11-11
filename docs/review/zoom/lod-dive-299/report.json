@@ -1,0 +1,4507 @@
+{
+ "world": "dba204",
+ "view": "-4.08,88.518",
+ "slow_ms": 0,
+ "wait_s": 0.0,
+ "notches": [
+  {
+   "h_km": 15625.002,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 711.4,
+   "near": 1.0512676501632068,
+   "far": 5.452535300326414,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 13997.41,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 525.2,
+   "near": 0.9235332395836175,
+   "far": 5.197066479167235,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 12539.358,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 525.6,
+   "near": 0.8091043943344396,
+   "far": 4.968208788668879,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 11233.185,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 525.9,
+   "near": 0.7065951286976622,
+   "far": 4.763190257395324,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 10063.07,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 526.1,
+   "near": 0.614763829356058,
+   "far": 4.5795276587121165,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 9014.842,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 526.4,
+   "near": 0.5324982167172152,
+   "far": 4.41499643343443,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 8075.803,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 526.6,
+   "near": 0.458801872754258,
+   "far": 4.2676037455085165,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 7234.58,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 526.8,
+   "near": 0.3927821721856868,
+   "far": 4.135564344371374,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 6480.984,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 527.1,
+   "near": 0.33363947081430556,
+   "far": 4.017278941628611,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 5805.887,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 527.3,
+   "near": 0.280657420072173,
+   "far": 3.911314840144346,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 5201.111,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 562.7,
+   "near": 0.23319429045935813,
+   "far": 3.8163885809187166,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 4659.333,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 562.9,
+   "near": 0.19067519878419503,
+   "far": 3.73135039756839,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 4173.99,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 563.2,
+   "near": 0.15258514505978138,
+   "far": 3.655170290119563,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 3739.202,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 563.4,
+   "near": 0.11846277471817312,
+   "far": 3.586925549436346,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 3349.705,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 2,
+   "wanted": 7,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 8.4,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 580.2,
+   "near": 0.08789479058893057,
+   "far": 3.525789581177861,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 3000.244,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 8,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 573.5,
+   "near": 0.060510946958752365,
+   "far": 3.471021893917505,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 2687.721,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 563,
+   "near": 0.03598395034378454,
+   "far": 3.4219679006875694,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 2407.752,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 564.4,
+   "near": 0.014011829539794074,
+   "far": 1.2543651810722112,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 2156.946,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 565.7,
+   "near": 0.13542278961731374,
+   "far": 1.1961809818703693,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 1932.285,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 567.2,
+   "near": 0.12131635763626997,
+   "far": 1.142194981625834,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 1731.064,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 568.8,
+   "near": 0.10868039459379038,
+   "far": 1.0920284899695625,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 1550.797,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 570.2,
+   "near": 0.09736278674006958,
+   "far": 1.0453434225501714,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 1389.304,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 571.5,
+   "near": 0.08722379637766507,
+   "far": 1.001839139167944,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 1244.628,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 563.4,
+   "near": 0.0781406784162389,
+   "far": 0.9612469525133005,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 1115.019,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 564.6,
+   "near": 0.07000347117806163,
+   "far": 0.9233263333534489,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 998.907,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 566,
+   "near": 0.06271366502568708,
+   "far": 0.8878615682547969,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 894.961,
+   "drawn": 12,
+   "byLevel": {
+    "1": 4,
+    "2": 8
+   },
+   "kept": 13,
+   "wanted": 18,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 75.7,
+   "geometries": 28,
+   "textures": 49,
+   "heap_mb": 596.4,
+   "near": 0.05618968066097692,
+   "far": 0.8546588207954599,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 801.759,
+   "drawn": 14,
+   "byLevel": {
+    "1": 4,
+    "2": 10
+   },
+   "kept": 15,
+   "wanted": 19,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 84.1,
+   "geometries": 31,
+   "textures": 58,
+   "heap_mb": 575.5,
+   "near": 0.050336633002902524,
+   "far": 0.8235409020480591,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 718.263,
+   "drawn": 15,
+   "byLevel": {
+    "1": 4,
+    "2": 11
+   },
+   "kept": 17,
+   "wanted": 20,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 33,
+   "textures": 64,
+   "heap_mb": 582.9,
+   "near": 0.04509451522236061,
+   "far": 0.7943532472141368,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 643.463,
+   "drawn": 15,
+   "byLevel": {
+    "1": 4,
+    "2": 11
+   },
+   "kept": 17,
+   "wanted": 21,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 33,
+   "textures": 64,
+   "heap_mb": 577.5,
+   "near": 0.04039833360636971,
+   "far": 0.7669533729060661,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 576.452,
+   "drawn": 15,
+   "byLevel": {
+    "1": 4,
+    "2": 11
+   },
+   "kept": 17,
+   "wanted": 19,
+   "queued": 5,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 33,
+   "textures": 64,
+   "heap_mb": 578.6,
+   "near": 0.036191230634337136,
+   "far": 0.7412121161468883,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 516.421,
+   "drawn": 15,
+   "byLevel": {
+    "1": 4,
+    "2": 11
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 5,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 33,
+   "textures": 64,
+   "heap_mb": 580.2,
+   "near": 0.03242227044750728,
+   "far": 0.7170121157422739,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 462.641,
+   "drawn": 15,
+   "byLevel": {
+    "1": 4,
+    "2": 11
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 5,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 33,
+   "textures": 64,
+   "heap_mb": 581.7,
+   "near": 0.02904582210095903,
+   "far": 0.6942464839556154,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 414.462,
+   "drawn": 15,
+   "byLevel": {
+    "1": 4,
+    "2": 11
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 5,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 33,
+   "textures": 64,
+   "heap_mb": 583.3,
+   "near": 0.02602100705172852,
+   "far": 0.6728176446640536,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 371.3,
+   "drawn": 13,
+   "byLevel": {
+    "1": 4,
+    "2": 9
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 33,
+   "textures": 64,
+   "heap_mb": 584.9,
+   "near": 0.023311204192573334,
+   "far": 0.6526363169047205,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 332.634,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 33,
+   "textures": 64,
+   "heap_mb": 586.4,
+   "near": 0.020883606437750224,
+   "far": 0.6336206252064362,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   }
+  },
+  {
+   "h_km": 297.994,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 602.4,
+   "near": 0.01870882349144818,
+   "far": 0.61569532034889,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 7.8,
+    "msMax": 7.8,
+    "segs": 774,
+    "pieces": 5257,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 266.962,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 604.5,
+   "near": 0.01676052598876625,
+   "far": 0.5987910962091509,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 7.8,
+    "msMax": 7.8,
+    "segs": 774,
+    "pieces": 5257,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 239.161,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 606.4,
+   "near": 0.015015126700125593,
+   "far": 0.582843990157297,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 7.8,
+    "msMax": 7.8,
+    "segs": 774,
+    "pieces": 5257,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 214.256,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 608.3,
+   "near": 0.013451494938821185,
+   "far": 0.5677948560639936,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 7.8,
+    "msMax": 7.8,
+    "segs": 774,
+    "pieces": 5257,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 191.948,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 579.2,
+   "near": 0.012051107522822502,
+   "far": 0.5535841881639378,
+   "tilt_deg": 0.63,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 1,
+    "ms": 7.8,
+    "msMax": 7.8,
+    "segs": 774,
+    "pieces": 5257,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 171.831,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 15,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 583.6,
+   "near": 0.01078833729146842,
+   "far": 0.5400810237867745,
+   "tilt_deg": 2.32,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 5.4,
+    "msMax": 7.8,
+    "segs": 304,
+    "pieces": 3380,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 153.695,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 14,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 585.3,
+   "near": 0.009649682897659152,
+   "far": 0.5272401565024761,
+   "tilt_deg": 4,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 5.4,
+    "msMax": 7.8,
+    "segs": 304,
+    "pieces": 3380,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 137.356,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 14,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 587.1,
+   "near": 0.008623834877775937,
+   "far": 0.5150291583114417,
+   "tilt_deg": 5.69,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 5.4,
+    "msMax": 7.8,
+    "segs": 304,
+    "pieces": 3380,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 122.646,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 13,
+   "queued": 3,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 580.2,
+   "near": 0.007700246488609431,
+   "far": 0.503419701893347,
+   "tilt_deg": 7.37,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 5.4,
+    "msMax": 7.8,
+    "segs": 304,
+    "pieces": 3380,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 109.414,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 3,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 583.9,
+   "near": 0.006869513615008583,
+   "far": 0.49238478291349935,
+   "tilt_deg": 9.06,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 3,
+    "ms": 6.4,
+    "msMax": 7.8,
+    "segs": 176,
+    "pieces": 2781,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 97.524,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 3,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 585.6,
+   "near": 0.006122983082837586,
+   "far": 0.48189861727512207,
+   "tilt_deg": 10.74,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 3,
+    "ms": 6.4,
+    "msMax": 7.8,
+    "segs": 176,
+    "pieces": 2781,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 86.848,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 587.3,
+   "near": 0.005452691170645974,
+   "far": 0.4719365537302897,
+   "tilt_deg": 12.43,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 3,
+    "ms": 6.4,
+    "msMax": 7.8,
+    "segs": 176,
+    "pieces": 2781,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 77.268,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 589.1,
+   "near": 0.004851245783828251,
+   "far": 0.4624749991497365,
+   "tilt_deg": 14.11,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 3,
+    "ms": 6.4,
+    "msMax": 7.8,
+    "segs": 176,
+    "pieces": 2781,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 68.683,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 11,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 592.2,
+   "near": 0.004312253586257065,
+   "far": 0.4534913540436138,
+   "tilt_deg": 15.8,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 4,
+    "ms": 4.1,
+    "msMax": 7.8,
+    "segs": 104,
+    "pieces": 2292,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 60.997,
+   "drawn": 9,
+   "byLevel": {
+    "1": 4,
+    "2": 5
+   },
+   "kept": 17,
+   "wanted": 11,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 593.7,
+   "near": 0.003829636988306451,
+   "far": 0.44496395701171404,
+   "tilt_deg": 17.49,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 4,
+    "ms": 4.1,
+    "msMax": 7.8,
+    "segs": 104,
+    "pieces": 2292,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 54.118,
+   "drawn": 9,
+   "byLevel": {
+    "1": 4,
+    "2": 5
+   },
+   "kept": 17,
+   "wanted": 11,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 595.2,
+   "near": 0.0033977540499635418,
+   "far": 0.43687203561175686,
+   "tilt_deg": 19.17,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 4,
+    "ms": 4.1,
+    "msMax": 7.8,
+    "segs": 104,
+    "pieces": 2292,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 47.967,
+   "drawn": 9,
+   "byLevel": {
+    "1": 4,
+    "2": 5
+   },
+   "kept": 17,
+   "wanted": 11,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 596.7,
+   "near": 0.0030115806701344287,
+   "far": 0.4291956371771007,
+   "tilt_deg": 20.86,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 4,
+    "ms": 4.1,
+    "msMax": 7.8,
+    "segs": 104,
+    "pieces": 2292,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 42.472,
+   "drawn": 9,
+   "byLevel": {
+    "1": 4,
+    "2": 5
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 599.6,
+   "near": 0.0026665830002808202,
+   "far": 0.4219157282716698,
+   "tilt_deg": 22.54,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 5,
+    "ms": 6,
+    "msMax": 7.8,
+    "segs": 69,
+    "pieces": 2097,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 37.568,
+   "drawn": 10,
+   "byLevel": {
+    "1": 3,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 601.4,
+   "near": 0.002358706265170341,
+   "far": 0.41501421665515953,
+   "tilt_deg": 24.23,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 5,
+    "ms": 6,
+    "msMax": 7.8,
+    "segs": 69,
+    "pieces": 2097,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 33.196,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 13,
+   "queued": 2,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 603,
+   "near": 0.002084201457170387,
+   "far": 0.40847349362795365,
+   "tilt_deg": 25.92,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 5,
+    "ms": 6,
+    "msMax": 7.8,
+    "segs": 69,
+    "pieces": 2097,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 29.301,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 2,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 605.8,
+   "near": 0.0018396797073934935,
+   "far": 0.4022766631074067,
+   "tilt_deg": 27.6,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 6,
+    "ms": 6.1,
+    "msMax": 7.8,
+    "segs": 44,
+    "pieces": 2040,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 25.835,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 2,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 607.3,
+   "near": 0.0016220431414706304,
+   "far": 0.39640751458523854,
+   "tilt_deg": 29.29,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 6,
+    "ms": 6.1,
+    "msMax": 7.8,
+    "segs": 44,
+    "pieces": 2040,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 22.753,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 2,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 608.8,
+   "near": 0.0014285129920683206,
+   "far": 0.3908504977856398,
+   "tilt_deg": 30.97,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 6,
+    "ms": 6.1,
+    "msMax": 7.8,
+    "segs": 44,
+    "pieces": 2040,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 20.014,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 610.2,
+   "near": 0.001256590702861704,
+   "far": 0.3855906987251078,
+   "tilt_deg": 32.66,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 6,
+    "ms": 6.1,
+    "msMax": 7.8,
+    "segs": 44,
+    "pieces": 2040,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 17.584,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 612.7,
+   "near": 0.001104009048736021,
+   "far": 0.38061381693364216,
+   "tilt_deg": 34.35,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 7,
+    "ms": 6.7,
+    "msMax": 7.8,
+    "segs": 36,
+    "pieces": 2079,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 15.429,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 599,
+   "near": 0.0009687162047235632,
+   "far": 0.37590614364347713,
+   "tilt_deg": 36.03,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 8,
+    "ms": 5.8,
+    "msMax": 7.8,
+    "segs": 30,
+    "pieces": 1955,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 13.52,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 600.4,
+   "near": 0.0008488740704362563,
+   "far": 0.3714545407904373,
+   "tilt_deg": 37.72,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 8,
+    "ms": 5.8,
+    "msMax": 7.8,
+    "segs": 30,
+    "pieces": 1955,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 11.831,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 601.7,
+   "near": 0.0007428286866384859,
+   "far": 0.3672464207022938,
+   "tilt_deg": 39.4,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 8,
+    "ms": 5.8,
+    "msMax": 7.8,
+    "segs": 30,
+    "pieces": 1955,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 10.338,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 603.9,
+   "near": 0.0006490884583667978,
+   "far": 0.3632697263725668,
+   "tilt_deg": 41.09,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 9,
+    "ms": 6.4,
+    "msMax": 7.8,
+    "segs": 15,
+    "pieces": 1487,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 9.02,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 11,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 605.3,
+   "near": 0.0005663135423006338,
+   "far": 0.3595129122360552,
+   "tilt_deg": 42.78,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 9,
+    "ms": 6.4,
+    "msMax": 7.8,
+    "segs": 15,
+    "pieces": 1487,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 7.857,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 11,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 606.8,
+   "near": 0.0004933011173285706,
+   "far": 0.3559649253752607,
+   "tilt_deg": 44.46,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 9,
+    "ms": 6.4,
+    "msMax": 7.8,
+    "segs": 15,
+    "pieces": 1487,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 6.833,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 11,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 609,
+   "near": 0.00042899483078358004,
+   "far": 0.352615187096108,
+   "tilt_deg": 46.15,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 10,
+    "ms": 3.5,
+    "msMax": 7.8,
+    "segs": 12,
+    "pieces": 1604,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 5.932,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 610.2,
+   "near": 0.00037243886963214126,
+   "far": 0.34945357481574846,
+   "tilt_deg": 47.84,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 10,
+    "ms": 3.5,
+    "msMax": 7.8,
+    "segs": 12,
+    "pieces": 1604,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 5.14,
+   "drawn": 10,
+   "byLevel": {
+    "1": 2,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 611.5,
+   "near": 0.00032273060355816343,
+   "far": 0.3464704042061247,
+   "tilt_deg": 49.52,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 10,
+    "ms": 3.5,
+    "msMax": 7.8,
+    "segs": 12,
+    "pieces": 1604,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 4.445,
+   "drawn": 10,
+   "byLevel": {
+    "1": 2,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 612.8,
+   "near": 0.00027909572106104007,
+   "far": 0.3436564115338276,
+   "tilt_deg": 51.21,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 10,
+    "ms": 3.5,
+    "msMax": 7.8,
+    "segs": 12,
+    "pieces": 1604,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 3.836,
+   "drawn": 10,
+   "byLevel": {
+    "1": 2,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 614.9,
+   "near": 0.00024084218701814208,
+   "far": 0.34100273612886745,
+   "tilt_deg": 52.89,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 11,
+    "ms": 3.3,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1309,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 3.303,
+   "drawn": 10,
+   "byLevel": {
+    "1": 2,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 616.2,
+   "near": 0.00020735204690023324,
+   "far": 0.33850090290179524,
+   "tilt_deg": 54.58,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 11,
+    "ms": 3.3,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1309,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 2.836,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 581.2,
+   "near": 0.00017807398687805787,
+   "far": 0.3361428048084108,
+   "tilt_deg": 56.27,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 11,
+    "ms": 3.3,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1309,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 2.429,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 583.5,
+   "near": 0.00015251658726747055,
+   "far": 0.33392068513185547,
+   "tilt_deg": 57.95,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 12,
+    "ms": 6,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1322,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 2.074,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 584.7,
+   "near": 0.0001302258890528485,
+   "far": 0.33182711941001686,
+   "tilt_deg": 59.64,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 12,
+    "ms": 6,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1322,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 1.765,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 586,
+   "near": 0.00011080839915598162,
+   "far": 0.3298549967756454,
+   "tilt_deg": 61.32,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 12,
+    "ms": 6,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1322,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 1.496,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 588.1,
+   "near": 9.391121041257833e-05,
+   "far": 0.3279975003897569,
+   "tilt_deg": 63.01,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 3.8,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1328,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 1.262,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 605.4,
+   "near": 7.925924829725872e-05,
+   "far": 0.32624808652135523,
+   "tilt_deg": 64.7,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 3.8,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1328,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 1.06,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 606.7,
+   "near": 6.657945078174521e-05,
+   "far": 0.3246004616376064,
+   "tilt_deg": 66.38,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 3.8,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1328,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 0.886,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 610.9,
+   "near": 5.5629752238584024e-05,
+   "far": 0.3230485565815495,
+   "tilt_deg": 68.07,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 15,
+    "ms": 6.1,
+    "msMax": 7.8,
+    "segs": 38,
+    "pieces": 3207,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 0.736,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 615.2,
+   "near": 4.619577696258759e-05,
+   "far": 0.3215864964684525,
+   "tilt_deg": 69.76,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 16,
+    "ms": 4.1,
+    "msMax": 7.8,
+    "segs": 122,
+    "pieces": 5350,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 0.607,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 9,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 616.5,
+   "near": 3.80878635657389e-05,
+   "far": 0.320208564222337,
+   "tilt_deg": 71.44,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 16,
+    "ms": 4.1,
+    "msMax": 7.8,
+    "segs": 122,
+    "pieces": 5350,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 0.496,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 9,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 581.9,
+   "near": 3.11383895390982e-05,
+   "far": 0.31890915450629354,
+   "tilt_deg": 73.13,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 16,
+    "ms": 4.1,
+    "msMax": 7.8,
+    "segs": 122,
+    "pieces": 5350,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 0.401,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 9,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 586.3,
+   "near": 2.5199367846706624e-05,
+   "far": 0.3176827128173564,
+   "tilt_deg": 74.81,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 17,
+    "ms": 5.3,
+    "msMax": 7.8,
+    "segs": 120,
+    "pieces": 5275,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 0.355,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 9,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 587.5,
+   "near": 2.2305146829815217e-05,
+   "far": 0.31703724844212966,
+   "tilt_deg": 75,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 17,
+    "ms": 5.3,
+    "msMax": 7.8,
+    "segs": 120,
+    "pieces": 5275,
+    "objects": 11
+   }
+  },
+  {
+   "h_km": 0.318,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 9,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 588.7,
+   "near": 1.998091927211121e-05,
+   "far": 0.3164900783920703,
+   "tilt_deg": 75,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 17,
+    "ms": 5.3,
+    "msMax": 7.8,
+    "segs": 120,
+    "pieces": 5275,
+    "objects": 11
+   }
+  }
+ ],
+ "shots": [
+  {
+   "file": "00_orbit.png",
+   "note": "the whole planet: cells, as today",
+   "h_km": 15625.002,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 645.3,
+   "near": 1.0512676501632068,
+   "far": 5.452535300326414,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "frame_ms": 0.44,
+   "fps_uncapped": 2299,
+   "float_km": {
+    "region_km": 8160.9,
+    "built": {
+     "n": 704578,
+     "median": 6.3712,
+     "p90": 6.394,
+     "max": 95.4066
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "01_level1_appears.png",
+   "note": "below 6000 km",
+   "h_km": 5805.887,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 0,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 0,
+   "geometries": 16,
+   "textures": 9,
+   "heap_mb": 529.9,
+   "near": 0.280657420072173,
+   "far": 3.911314840144346,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "frame_ms": 0.27,
+   "fps_uncapped": 3659,
+   "float_km": {
+    "region_km": 6525.1,
+    "built": {
+     "n": 476842,
+     "median": 6.3712,
+     "p90": 6.3915,
+     "max": 95.4066
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "02_level1.png",
+   "note": "below 1500 km",
+   "h_km": 1389.304,
+   "drawn": 4,
+   "byLevel": {
+    "1": 4
+   },
+   "kept": 4,
+   "wanted": 9,
+   "queued": 4,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 48.8,
+   "geometries": 20,
+   "textures": 25,
+   "heap_mb": 590,
+   "near": 0.08722379637766507,
+   "far": 1.001839139167944,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "frame_ms": 0.27,
+   "fps_uncapped": 3659,
+   "float_km": {
+    "region_km": 1013.5,
+    "built": {
+     "n": 11769,
+     "median": 4.636,
+     "p90": 5.6194,
+     "max": 57.426
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "03_level2_arriving.png",
+   "note": "below 700 km",
+   "h_km": 643.463,
+   "drawn": 15,
+   "byLevel": {
+    "1": 4,
+    "2": 11
+   },
+   "kept": 17,
+   "wanted": 21,
+   "queued": 5,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 33,
+   "textures": 64,
+   "heap_mb": 603.7,
+   "near": 0.04039833360636971,
+   "far": 0.7669533729060661,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 0,
+    "ms": 0,
+    "msMax": 0,
+    "segs": 0,
+    "pieces": 0,
+    "objects": 0
+   },
+   "frame_ms": 0.28,
+   "fps_uncapped": 3571,
+   "float_km": {
+    "region_km": 453.3,
+    "built": {
+     "n": 2377,
+     "median": 2.5111,
+     "p90": 3.2965,
+     "max": 29.9441
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  },
+  {
+   "file": "04_level2.png",
+   "note": "below 150 km",
+   "h_km": 137.356,
+   "drawn": 10,
+   "byLevel": {
+    "1": 4,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 14,
+   "queued": 3,
+   "building": 1,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 609.8,
+   "near": 0.008623834877775937,
+   "far": 0.5150291583114417,
+   "tilt_deg": 5.69,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 2,
+    "ms": 5.4,
+    "msMax": 7.8,
+    "segs": 304,
+    "pieces": 3380,
+    "objects": 11
+   },
+   "frame_ms": 0.34,
+   "fps_uncapped": 2899,
+   "float_km": {
+    "region_km": 106.8,
+    "built": {
+     "n": 192,
+     "median": 0.8097,
+     "p90": 7.3593,
+     "max": 7.7819
+    },
+    "draped": {
+     "n": 2210,
+     "median": 0.0001,
+     "p90": 0.0001,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "05_low_20km.png",
+   "note": "below 20 km",
+   "h_km": 17.584,
+   "drawn": 11,
+   "byLevel": {
+    "1": 3,
+    "2": 8
+   },
+   "kept": 17,
+   "wanted": 12,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 595.7,
+   "near": 0.001104009048736021,
+   "far": 0.38061381693364216,
+   "tilt_deg": 34.35,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 8,
+    "ms": 5.8,
+    "msMax": 7.8,
+    "segs": 30,
+    "pieces": 1955,
+    "objects": 11
+   },
+   "frame_ms": 0.27,
+   "fps_uncapped": 3704,
+   "float_km": {
+    "region_km": 29.6,
+    "built": {
+     "n": 20,
+     "median": 3.0393,
+     "p90": 3.0502,
+     "max": 3.0502
+    },
+    "draped": {
+     "n": 1444,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "06_ground_1km.png",
+   "note": "below 1.5 km",
+   "h_km": 1.496,
+   "drawn": 9,
+   "byLevel": {
+    "1": 2,
+    "2": 7
+   },
+   "kept": 17,
+   "wanted": 10,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 602.6,
+   "near": 9.391121041257833e-05,
+   "far": 0.3279975003897569,
+   "tilt_deg": 63.01,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 13,
+    "ms": 3.8,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1328,
+    "objects": 11
+   },
+   "frame_ms": 0.2,
+   "fps_uncapped": 4878,
+   "float_km": {
+    "region_km": 14,
+    "built": {
+     "n": 6,
+     "median": 3.0393,
+     "p90": 3.0421,
+     "max": 3.0421
+    },
+    "draped": {
+     "n": 806,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "07_tilted_back.png",
+   "note": "a right-drag down: back toward straight down",
+   "h_km": 1.219,
+   "drawn": 6,
+   "byLevel": {
+    "1": 2,
+    "2": 4
+   },
+   "kept": 17,
+   "wanted": 7,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 596.8,
+   "near": 7.650417703795043e-05,
+   "far": 0.32595050178058843,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 140,
+    "ms": 3.4,
+    "msMax": 7.8,
+    "segs": 7,
+    "pieces": 1330,
+    "objects": 11
+   },
+   "frame_ms": 0.2,
+   "fps_uncapped": 5042,
+   "float_km": {
+    "region_km": 0.8,
+    "built": {
+     "n": 2,
+     "median": 0.7491,
+     "p90": 0.7491,
+     "max": 0.7491
+    },
+    "draped": {
+     "n": 26,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "08_tilted_up.png",
+   "note": "a right-drag up: toward the horizon",
+   "h_km": 0.318,
+   "drawn": 8,
+   "byLevel": {
+    "1": 2,
+    "2": 6
+   },
+   "kept": 17,
+   "wanted": 9,
+   "queued": 1,
+   "building": 0,
+   "badge": true,
+   "tiles_mb": 90.5,
+   "geometries": 44,
+   "textures": 64,
+   "heap_mb": 617.8,
+   "near": 1.998091927211121e-05,
+   "far": 0.3164900783920703,
+   "tilt_deg": 75,
+   "drape": {
+    "on": true,
+    "low": true,
+    "built": 191,
+    "ms": 2.8,
+    "msMax": 28.7,
+    "segs": 81,
+    "pieces": 4327,
+    "objects": 11
+   },
+   "frame_ms": 0.24,
+   "fps_uncapped": 4167,
+   "float_km": {
+    "region_km": 90.8,
+    "built": {
+     "n": 132,
+     "median": 0.3658,
+     "p90": 3.049,
+     "max": 3.222
+    },
+    "draped": {
+     "n": 8100,
+     "median": 0.0001,
+     "p90": 0.0002,
+     "max": 0.0002
+    }
+   }
+  },
+  {
+   "file": "09_back_at_orbit.png",
+   "note": "scrolled back out: the cells again",
+   "h_km": 15626.11,
+   "drawn": 0,
+   "byLevel": {},
+   "kept": 17,
+   "wanted": 0,
+   "queued": 0,
+   "building": 0,
+   "badge": false,
+   "tiles_mb": 90.5,
+   "geometries": 33,
+   "textures": 64,
+   "heap_mb": 631.6,
+   "near": 1.0513545754215026,
+   "far": 5.452709150843005,
+   "tilt_deg": 0,
+   "drape": {
+    "on": true,
+    "low": false,
+    "built": 224,
+    "ms": 5.1,
+    "msMax": 28.7,
+    "segs": 507,
+    "pieces": 4245,
+    "objects": 11
+   },
+   "frame_ms": 0.24,
+   "fps_uncapped": 4138,
+   "float_km": {
+    "region_km": 8161,
+    "built": {
+     "n": 704578,
+     "median": 6.3712,
+     "p90": 6.394,
+     "max": 95.4066
+    },
+    "draped": {
+     "n": 0,
+     "median": null,
+     "p90": null,
+     "max": null
+    }
+   }
+  }
+ ],
+ "waits": [],
+ "drape_log": [
+  [
+   0.32,
+   6.3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   7.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   7.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.2,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.2,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5.2,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.2,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.2,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5.3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.56,
+   3.7,
+   7,
+   1332,
+   20
+  ],
+  [
+   0.95,
+   3.1,
+   7,
+   1331,
+   20
+  ],
+  [
+   1.22,
+   3.4,
+   7,
+   1330,
+   20
+  ],
+  [
+   1.22,
+   3.4,
+   7,
+   1330,
+   20
+  ],
+  [
+   1.13,
+   3.4,
+   7,
+   1329,
+   20
+  ],
+  [
+   0.68,
+   2.2,
+   7,
+   1331,
+   20
+  ],
+  [
+   0.39,
+   2.9,
+   104,
+   4875,
+   98
+  ],
+  [
+   0.32,
+   4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   7.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   28.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5.3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.7,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.4,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   5,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.1,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3.3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.8,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   4.9,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   2.6,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.32,
+   3,
+   81,
+   4327,
+   91
+  ],
+  [
+   0.36,
+   2.9,
+   87,
+   4446,
+   94
+  ],
+  [
+   0.4,
+   3.6,
+   104,
+   4867,
+   98
+  ],
+  [
+   0.46,
+   3.1,
+   120,
+   5276,
+   104
+  ],
+  [
+   0.48,
+   3,
+   120,
+   5276,
+   105
+  ],
+  [
+   0.49,
+   3.1,
+   120,
+   5275,
+   106
+  ],
+  [
+   0.5,
+   3.1,
+   120,
+   5275,
+   106
+  ],
+  [
+   0.57,
+   3.1,
+   121,
+   5313,
+   112
+  ],
+  [
+   0.59,
+   3.1,
+   121,
+   5312,
+   113
+  ],
+  [
+   0.6,
+   3.3,
+   122,
+   5350,
+   114
+  ],
+  [
+   0.61,
+   3,
+   122,
+   5350,
+   114
+  ],
+  [
+   0.69,
+   3.3,
+   122,
+   5348,
+   121
+  ],
+  [
+   0.71,
+   2.9,
+   122,
+   5348,
+   122
+  ],
+  [
+   0.73,
+   4.4,
+   122,
+   5348,
+   123
+  ],
+  [
+   0.74,
+   3.2,
+   122,
+   5348,
+   123
+  ],
+  [
+   0.84,
+   3.9,
+   130,
+   5512,
+   130
+  ],
+  [
+   1.44,
+   2.3,
+   7,
+   1328,
+   24
+  ],
+  [
+   2.35,
+   2,
+   7,
+   1322,
+   21
+  ],
+  [
+   3.78,
+   3.4,
+   7,
+   1309,
+   22
+  ],
+  [
+   6.68,
+   3.6,
+   12,
+   1608,
+   28
+  ],
+  [
+   10.34,
+   3.9,
+   20,
+   1800,
+   33
+  ],
+  [
+   17.33,
+   3.9,
+   35,
+   2188,
+   45
+  ],
+  [
+   25.84,
+   4.5,
+   40,
+   2020,
+   56
+  ],
+  [
+   42.1,
+   2.8,
+   58,
+   1972,
+   77
+  ],
+  [
+   61,
+   2.4,
+   94,
+   2291,
+   94
+  ],
+  [
+   97.53,
+   3.1,
+   148,
+   2569,
+   134
+  ],
+  [
+   153.57,
+   2.6,
+   260,
+   3165,
+   194
+  ],
+  [
+   239.18,
+   5.1,
+   507,
+   4245,
+   285
+  ]
+ ],
+ "dive": {
+  "moving_frames": 231,
+  "fps_median": 59.9,
+  "fps_p10_frame": 59.9,
+  "max_turn_deg": 0.0147,
+  "max_view_turn_deg": 0.504,
+  "view_turns_top": [
+   [
+    0.504,
+    5.263
+   ],
+   [
+    0.504,
+    122.695
+   ],
+   [
+    0.504,
+    33.385
+   ],
+   [
+    0.504,
+    15.657
+   ],
+   [
+    0.504,
+    10.522
+   ]
+  ],
+  "max_height_ratio": 1.149
+ },
+ "out": {
+  "moving_frames": 231,
+  "fps_median": 59.9,
+  "fps_p10_frame": 59.9,
+  "max_turn_deg": 0.0147,
+  "max_view_turn_deg": 0.504,
+  "view_turns_top": [
+   [
+    0.504,
+    137.318
+   ],
+   [
+    0.504,
+    5.068
+   ],
+   [
+    0.504,
+    0.695
+   ],
+   [
+    0.504,
+    0.601
+   ],
+   [
+    0.501,
+    60.59
+   ]
+  ],
+  "max_height_ratio": 1.152
+ }
+}

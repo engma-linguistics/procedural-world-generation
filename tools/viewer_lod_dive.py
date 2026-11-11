@@ -1,6 +1,6 @@
 """A scripted dive on the globe from orbit to ~1 km over the ground and back out, in headless Chrome (PW-1688).
 
-    uv run --with playwright python tools/viewer_lod_dive.py PORT WORLD_ID OUT_DIR [--view=lat,lon] [--cursor=fx,fy] [--slow=ms] [--wait=s] [--embed] [--sw] [--video]
+    uv run --with playwright python tools/viewer_lod_dive.py PORT WORLD_ID OUT_DIR [--view=lat,lon] [--cursor=fx,fy] [--slow=ms] [--wait=s] [--q=&k=v...] [--embed] [--sw] [--video]
 
 Needs `planet serve --port PORT --no-open` already running (never the owner's port) on a data root with WORLD_ID. The
 server builds the tiles in view on demand (planet/tiles.py, PW-1690): with --wait=S, on a world with nothing built,
@@ -10,9 +10,13 @@ shoots it arriving, and goes on.
 Scrolls the wheel over a point a little off the screen's centre, notch by notch, and writes to OUT_DIR:
   *.webm               with --video: the screen recording (Playwright's video; needs `playwright install ffmpeg`)
   NN_<what>.png        screenshots: orbit, each level appearing, a parent showing while its child loads (--slow delays
-                       each tile by that many ms), the ground at ~1 km, back at orbit
+                       each tile by that many ms), 20 km, the ground at ~1 km (tilted toward the horizon, PW-1696), tilted
+                       back to straight down and up again with a right-drag, back at orbit (--q adds to the address, e.g.
+                       --q=&outlines=1)
   report.json          waits: per level, the seconds from the stop to the first tile drawn and the badge seen; per notch: height over the ground (km), the drawn tiles per level; per frame while moving: the
-                       camera's step (largest single-frame turn and height ratio: a jump shows as an outlier), fps while
+                       camera's step (largest single-frame turn of its position and of its view direction, and height
+                       ratio: a jump shows as an outlier), the tilt per notch, how far the line overlays stand off the
+                       drawn ground at each shot (float_km: as built and eased, and draped), fps while
                        moving, renderer memory (geometries, textures, the tiles' bytes, the JS heap)
 """
 import json
@@ -44,11 +48,12 @@ def main():
         pg.on("response", lambda r: r.status >= 400 and print("[http]", r.status, r.url))
         # the camera, reached through the module graph (the page's scene module is not on window)
         pg.add_init_script("window.__cam = () => [0, 0, 0];")
-        url = f"http://127.0.0.1:{port}/viewer/?world={world}.json&view={view}&layer=satellite" + (f"&lodslow={slow}" if slow else "") + ("&embed=1" if "--embed" in sys.argv else "")
+        url = f"http://127.0.0.1:{port}/viewer/?world={world}.json&view={view}&layer=satellite" + (f"&lodslow={slow}" if slow else "") + ("&embed=1" if "--embed" in sys.argv else "") + opt.get("q", "")
         pg.goto(url)
         pg.wait_for_function("window.planetViewer?.lod?.src && window.planetViewer.diag.n.renders > 0", timeout=120000)
         pg.evaluate("""async () => { const m = await import('/viewer/globe/scene.js');
-          window.__scene = m; window.__cam = () => { const p = m.camera.position; return [p.length(), p.x / p.length(), p.y / p.length(), p.z / p.length()]; }; }""")
+          window.__scene = m; const f = new m.camera.position.constructor();
+          window.__cam = () => { const p = m.camera.position; m.camera.getWorldDirection(f); return [p.length(), p.x / p.length(), p.y / p.length(), p.z / p.length(), f.x, f.y, f.z]; }; }""")
         pg.evaluate("""() => { const P = window.planetViewer, out = window.__trace = []; let last = P.diag.n.renders;
           const tick = (now) => { const c = window.__cam(), r = P.diag.n.renders; out.push([now, ...c, r - last, P.lod.hgKm]); last = r; requestAnimationFrame(tick); };
           requestAnimationFrame(tick); }""")
@@ -61,7 +66,8 @@ def main():
                        queued: L.stats.queued, building: L.stats.building, badge: !!bd && bd.style.opacity === '1',
                        tiles_mb: +(L.stats.bytes / 1e6).toFixed(1), geometries: info.memory.geometries, textures: info.memory.textures,
                        heap_mb: performance.memory ? +(performance.memory.usedJSHeapSize / 1e6).toFixed(1) : null,
-                       near: m.camera.near, far: m.camera.far }; }""")
+                       near: m.camera.near, far: m.camera.far, tilt_deg: +(window.planetViewer.cam.tilt * 180 / Math.PI).toFixed(2),
+                       drape: (({ log, ...x }) => x)(window.planetViewer.drape) }; }""")
 
         def bench(frames=60):
             """ms per frame drawn back to back, a pixel read back after each (so the GPU's time counts; no vsync cap)."""
@@ -72,7 +78,8 @@ def main():
         def shot(name, note=""):
             f = out / f"{len(rep['shots']):02d}_{name}.png"
             pg.screenshot(path=str(f))
-            rep["shots"].append({"file": f.name, "note": note, **state(), **bench()})
+            rep["shots"].append({"file": f.name, "note": note, **state(), **bench(),
+                                 "float_km": pg.evaluate("window.planetViewer.drapeFloat ? window.planetViewer.drapeFloat() : null")})
             print(f.name, rep["shots"][-1])
 
         cx, cy = map(float, opt.get("cursor", "0.53,0.47").split(","))
@@ -80,7 +87,7 @@ def main():
         pg.mouse.move(mx, my)
         shot("orbit", "the whole planet: cells, as today")
         t0 = time.time()
-        marks = [(6000, "level1_appears"), (1500, "level1"), (700, "level2_arriving"), (150, "level2"), (20, "low"), (1.5, "ground_1km")]
+        marks = [(6000, "level1_appears"), (1500, "level1"), (700, "level2_arriving"), (150, "level2"), (20, "low_20km"), (1.5, "ground_1km")]
         while True:
             s = state()
             rep["notches"].append(s)
@@ -122,6 +129,18 @@ def main():
         if marks:
             shot(marks[-1][1], "the lowest reached")
         dive_trace = pg.evaluate("window.__trace.splice(0)")
+        # the tilt by hand (PW-1696): a right-drag down tilts back to straight down, up toward the horizon again
+        for name, dy in (("tilted_back", 400), ("tilted_up", -250)):
+            pg.mouse.move(W // 2, H // 2)
+            pg.mouse.down(button="right")
+            for k in range(20):
+                pg.mouse.move(W // 2, H // 2 + dy * (k + 1) // 20)
+                time.sleep(0.02)
+            pg.mouse.up(button="right")
+            time.sleep(1.0)
+            shot(name, "a right-drag " + ("down: back toward straight down" if dy > 0 else "up: toward the horizon"))
+        pg.mouse.move(mx, my)
+        pg.evaluate("window.__trace.splice(0)")
         # back out
         while state()["h_km"] < 15000:
             pg.mouse.wheel(0, 100)
@@ -129,26 +148,30 @@ def main():
         time.sleep(1.5)
         shot("back_at_orbit", "scrolled back out: the cells again")
         out_trace = pg.evaluate("window.__trace.splice(0)")
+        rep["drape_log"] = pg.evaluate("window.planetViewer.drape.log")  # (each rebuild of the draped overlays: [km, ms, segments, pieces, region km])
         ctx.close()
         b.close()
 
     def steps(tr):
         """Per drawn frame while the camera moved: the turn (deg) and the height ratio; fps over the moving frames."""
         import math
-        turns, ratios, dts = [], [], []
+        turns, views, ratios, dts = [], [], [], []
         prev = None
-        for now, r, x, y, z, drawn, hg in tr:
-            if prev and (abs(r - prev[1]) > 1e-12 or abs(x - prev[2]) > 1e-12):
+        for now, r, x, y, z, fx, fy, fz, drawn, hg in tr:
+            if prev and (abs(r - prev[1]) > 1e-12 or abs(x - prev[2]) > 1e-12 or abs(fx - prev[7]) > 1e-12):
                 dot = max(-1, min(1, x * prev[2] + y * prev[3] + z * prev[4]))
                 turns.append(math.degrees(math.acos(dot)))
+                views.append((math.degrees(math.acos(max(-1, min(1, fx * prev[7] + fy * prev[8] + fz * prev[9])))), round(hg or 0, 3)))
                 if hg and prev[6]:
                     ratios.append(max(hg / prev[6], prev[6] / hg))
                 dts.append(now - prev[0])
-            prev = (now, r, x, y, z, drawn, hg)
+            prev = (now, r, x, y, z, drawn, hg, fx, fy, fz)
         dts.sort()
         return {"moving_frames": len(dts), "fps_median": round(1000 / dts[len(dts) // 2], 1) if dts else None,
                 "fps_p10_frame": round(1000 / dts[int(len(dts) * 0.9)], 1) if dts else None,
-                "max_turn_deg": round(max(turns), 4) if turns else None, "max_height_ratio": round(max(ratios), 3) if ratios else None}
+                "max_turn_deg": round(max(turns), 4) if turns else None, "max_view_turn_deg": round(max(views)[0], 4) if views else None,
+                "view_turns_top": [[round(a, 3), hk] for a, hk in sorted(views, reverse=True)[:5]],
+                "max_height_ratio": round(max(ratios), 3) if ratios else None}
 
     rep["dive"] = steps(dive_trace)
     rep["out"] = steps(out_trace)

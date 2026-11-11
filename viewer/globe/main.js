@@ -24,7 +24,8 @@
 //   select.js    the run / world picker, URL options, favourites
 //   tilesource.js where the level-of-detail tiles come from (today the stand-in over built section zooms)
 //   lodtiles.js  the level-of-detail tiles on the globe: choosing, fetching, fading, clipping (PW-1688)
-//   dive.js      the globe camera down to the ground: zoom toward the cursor, the least height over the ground
+//   dive.js      the globe camera down to the ground: zoom toward the cursor, the least height over the ground, the tilt
+//   drape.js     the line overlays near the ground: eased with the cells, laid on the drawn ground when low
 //   main.js      boot, planetViewer (headless checks), the render loop
 // every module runs its own top-level code once (its controls' wiring, its defaults), then the boot below
 import './scene.js';
@@ -59,7 +60,8 @@ import { paletteReport } from './palettes.js';
 import { fadeSettlements } from './settlements.js';
 import { applyUrlOptions, init, navBarHide, urlp } from './select.js';
 import { LOD, lodDirty, updateLod } from './lodtiles.js';
-import { updateDive } from './dive.js';
+import { CAM, afterControls, updateDive } from './dive.js';
+import { DRAPE, drapeFloat, updateDrape } from './drape.js';
 // ------------------------------------------------------------ boot
 // (after every module has run its own top-level code: the URL's options override their defaults)
 addEventListener('resize', () => { resize(); if (state.mode === 'map') fitMap(); if (S.V?.kind === 'run') drawTint(); });
@@ -190,6 +192,9 @@ function dbgReadout(now) {
 }
 window.planetViewer.diag = DIAG;
 window.planetViewer.lod = LOD;  // (the level-of-detail tiles' state and stats: tools, the screen captures)
+window.planetViewer.cam = CAM;  // (the camera's tilt: tools/viewer_lod_dive.py)
+window.planetViewer.drape = DRAPE;  // (the overlays laid on the ground: rebuilds, their cost)
+window.planetViewer.drapeFloat = drapeFloat;  // (how far the line overlays stand off the drawn ground)
 renderer.setAnimationLoop((now) => {
   if (state.tab === 'zoom') { sigPrev = new Float64Array(0); return; }  // the globe is hidden (drawn afresh when it's back)
   if (state.playing && S.V?.kind === 'run' && now - S.lastAdvance > 1000 / +$('fps').value) {
@@ -199,9 +204,11 @@ renderer.setAnimationLoop((now) => {
   if ($('spin').checked && state.mode === 'globe') group.rotation.y += 0.0015;
   updateDive();  // (the least distance follows the ground, the drag speed the height: dive.js)
   controls.update();
+  afterControls(now);  // (the tilt toward the horizon near the ground: dive.js)
   fitClip();
   updateLod(now);  // (the level-of-detail tiles: lodtiles.js)
   fadeSettlements();  // (the villages fade in as the camera closes in, PW-1106)
+  updateDrape(now);  // (the line overlays eased with the ground, and laid on it when low: drape.js)
   if (DIAG.offset && S.mesh) for (const m of S.mesh.userData.mats) if (!m.polygonOffset) Object.assign(m, { polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 4 });
   DIAG.n.frames++;
   if (frameChanged() | lodDirty() || DIAG.always) { renderer.render(scene, camera); DIAG.n.renders++; }

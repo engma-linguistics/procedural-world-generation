@@ -69,3 +69,54 @@ def test_lodmath_exists_matches_lod_py(tmp_path):
     want = [L.exists(L.Key(*k)) for k in keys]
     assert got == want
     assert 0 < sum(want) < len(want)  # (some don't exist: the test can tell)
+
+
+_JS_GROUND = r"""
+import * as M from '%s';
+const { n, gn, h } = JSON.parse(process.argv[2]);
+const half = Uint16Array.from(h), vh = M.gridHeights(half, n, gn);
+const at = (u, v) => M.meshHeightAt(vh, gn, u, v);
+// at the grid's vertices; across the diagonal of a quad (its two triangles); across a row of vertices
+const verts = [[0, 0], [1, 0], [0, 1], [1, 1], [5, 7], [gn - 1, gn - 1]].map(([i, j]) => [vh[j * gn + i], at(i / (gn - 1), j / (gn - 1))]);
+const e = 1e-7, i = 3, j = 4, s = 1 / (gn - 1);
+const diag = [0.2, 0.5, 0.8].map((t) => [at((i + 1 - t) * s - e, (j + t) * s - e), at((i + 1 - t) * s + e, (j + t) * s + e)]);
+const row = [0.25, 0.5].map((t) => [at((i + t) * s, j * s - e), at((i + t) * s, j * s + e)]);
+const tilt = [0.3, 1.5, 20, 199.9, 200, 200.1, 500, 999, 1000, 20000].map((k) => [k, M.autoTilt(k), M.capTilt(k)]);
+console.log(JSON.stringify({ verts, diag, row, tilt, T: M.TILT }));
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="needs node")
+def test_lodmath_tile_ground_and_tilt(tmp_path):
+    """PW-1696. The tile mesh's ground (gridHeights, meshHeightAt; the camera's least height and the draped overlays stand
+    on it): the grid's vertex heights at the vertices (the elevation sampled as the vertex shader samples it, the sea at
+    0), continuous across a quad's diagonal and between quads. The tilt: 0 above 200 km (automatic) and 1,000 km (the
+    cap), growing as the camera comes down, the automatic one within the cap, so scrolling out always ends straight down."""
+    rng = np.random.default_rng(3)
+    n, gn = 40, 9
+    elev = rng.normal(300, 400, (n, n)).astype(np.float16)  # (some below the sea)
+    f = tmp_path / "g.mjs"
+    f.write_text(_JS_GROUND % (VIEWER / "lodmath.js").as_uri())
+    arg = {"n": n, "gn": gn, "h": elev.view(np.uint16).ravel().tolist()}
+    r = subprocess.run(["node", str(f), json.dumps(arg)], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    got = json.loads(r.stdout)
+    for want, have in got["verts"]:
+        assert want >= 0 and abs(want - have) < 1e-3
+    e = np.maximum(elev.astype(np.float64), 0)
+    fx, fy = 5 / (gn - 1) * n - 0.5, 7 / (gn - 1) * n - 0.5
+    x0, y0 = int(np.floor(fx)), int(np.floor(fy))
+    ax, ay = fx - x0, fy - y0
+    v57 = (1 - ay) * ((1 - ax) * e[y0, x0] + ax * e[y0, x0 + 1]) + ay * ((1 - ax) * e[y0 + 1, x0] + ax * e[y0 + 1, x0 + 1])
+    assert abs(got["verts"][4][0] - v57) < 1e-2
+    for a, b in got["diag"] + got["row"]:
+        assert abs(a - b) < 1e-2
+    T = got["T"]
+    for k, auto, cap in got["tilt"]:
+        assert 0 <= auto <= cap + 1e-12
+        if k >= T["AUTO_HI_KM"]:
+            assert auto == 0
+        if k >= T["CAP_HI_KM"]:
+            assert cap == 0
+    autos = [a for _, a, _ in got["tilt"]]
+    assert autos == sorted(autos, reverse=True) and abs(autos[1] - np.radians(T["AUTO_DEG"])) < 1e-9
