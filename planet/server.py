@@ -15,9 +15,9 @@
   GET    /api/thumb?kind=run|world&id=<id>   a small PNG preview (thumbs.py; &proj=equal-earth|equirect &w=192|512|1024)
   GET    /api/make/options, /api/make/estimate?seed=&preset=&level=...   the New planet form (make.py)
   GET    /api/sections?world=<id>     the 54 tiling sections of a world: centre, up, corners, land share, built zooms
-  GET    /api/tiles/index?world=<id>, /api/tiles/<world>/<cell>/<level>/<tx>/<ty>/<file>
-                                      STAND-IN level-of-detail tiles cut from built section zooms (tiles_standin.py, PW-1688;
-                                      the tile service PW-1690 replaces it)
+  GET    /api/tiles/index?world=<id>, /api/tiles/status?world=<id>, /api/tiles/<world>/<cell>/<level>/<tx>/<ty>/<file>
+  POST   /api/tiles/want {world, gen, tiles}   the level-of-detail globe's tiles, built on demand (tiles.py, PW-1690):
+                                      the want list replaces the world's build queue; built tiles are kept (disk cap)
   GET    /api/jobs/<id>               a job's progress / result
   GET    /api/jobs?type=refine        {"active": the queued or running job of that type, or null} (a page opened later follows it)
   GET    /api/highlights?run=<id>&t=<Myr> or ?world=<id>   (api.highlights)
@@ -77,6 +77,7 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
 from . import api, family, favourites, make, thumbs
+from . import tiles as T
 from .zoom import fine as ZF
 from . import parallel as P
 from . import store as S
@@ -1021,6 +1022,16 @@ def submit(jobs: api.Jobs, path: str, body: bytes) -> tuple[dict, int]:
 class Handler(http.server.SimpleHTTPRequestHandler):
     jobs: api.Jobs | None = None  # set by serve()
     hl_pool: P.Pool | None = None  # (highlights' worker processes, set by serve())
+    tiles: "T.TileService | None" = None  # (the level-of-detail tile service, set by serve())
+    _tiles_lock = threading.Lock()
+
+    def tile_service(self) -> "T.TileService":
+        """The tile service (serve() starts it; made here when a test drives the handler without serve())."""
+        with Handler._tiles_lock:
+            if Handler.tiles is None:
+                Handler.tiles = T.TileService(self.jobs)
+                Handler.tiles.start()
+            return Handler.tiles
 
     def translate_path(self, path):
         # the viewer (and the review pages it links to, docs/review/, PW-967) comes from the repository, everything else from the data root
@@ -1200,9 +1211,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except ValueError:
                 return self.send_json({"error": "res_km must be a number"}, 400)
             return self.send_json({**ZF.rules(), **({"sizes": ZF.size_options(res)} if res else {})})
-        if url.path.startswith("/api/tiles/"):  # STAND-IN tile source (tiles_standin.py, PW-1688); PW-1690 replaces it
-            from . import tiles_standin as TS
-            body, code, ctype = TS.get(url.path, url.query)
+        if url.path.startswith("/api/tiles/"):  # the level-of-detail tiles, built on demand (tiles.py, PW-1690)
+            body, code, ctype = self.tile_service().get(url.path, url.query)
             if isinstance(body, dict):
                 return self.send_json(body, code)
             self.send_response(code)
@@ -1316,6 +1326,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(*rename_landmass(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path == "/api/authored":
             return self.send_json(*authored_set(self.rfile.read(int(self.headers.get("Content-Length", 0)))))
+        if self.path == "/api/tiles/want":
+            return self.send_json(*self.tile_service().post(self.path, self.rfile.read(int(self.headers.get("Content-Length", 0)))))
         if self.path not in ("/api/zoom", "/api/timezoom", "/api/finish", "/api/make", "/api/highlight-zooms",
                          "/api/enrich", "/api/refine"):
             return self.send_error(404)
@@ -1351,6 +1363,8 @@ def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads
         # job state survives a restart (per checkout and port: worktrees share the data folders)
         Handler.jobs = api.Jobs(pool.caller(api.any_job), S.REPO / ".jobs" / f"{port}.json", workers=jobs,
                                 contexts=True)
+        Handler.tiles = T.TileService(Handler.jobs)
+        Handler.tiles.start()
         http.server.ThreadingHTTPServer.allow_reuse_address = True
         http.server.ThreadingHTTPServer.daemon_threads = True
         # a world's ~180 layer files are asked for at once, each on its own connection (HTTP/1.0): a deeper accept
@@ -1365,6 +1379,8 @@ def serve(port: int = 8765, open_browser: bool = True, jobs: int = JOBS, threads
             httpd.serve_forever()
     finally:
         try:
+            if Handler.tiles:
+                Handler.tiles.stop()
             pool.close(kill=True)  # (running jobs are queued again at the next start)
         finally:
             if Handler.hl_pool:
