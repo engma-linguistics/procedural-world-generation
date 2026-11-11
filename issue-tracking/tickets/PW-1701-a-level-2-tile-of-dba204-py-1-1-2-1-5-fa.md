@@ -1,4 +1,5 @@
 ---
+id: PW-1701
 title: "A level-2 tile of dba204 (py.1.1/2/1/5) fails to build: vegetation's is_land is handed the tile's land pixels, which are no sphere grid"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane294
 blocked_by: []
 relates: [PW-1690, PW-1689]
 refs: ["planet/vegetation.py::classify", "planet/geo.py::is_land", "planet/geo.py::_grid_of", "planet/zoom/vegetation.py::compute", "planet/zoom/fine.py::build", "planet/zoom/lod_build.py::tile", planet/tiles.py, "world dba204", "tile py.1.1/2/1/5"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -33,3 +36,6 @@ coast calls land), which is why most tiles build and this one doesn't. The sea/l
 zoom (its `water` layer), so the zoom's caller should hand classify that land mask (or classify should take one),
 not recompute it on a grid it doesn't have. Not fixed by lane 294: planet/zoom was another lane's this round.
 - [ ] `py.1.1/2/1/5` of dba204 builds; a synthetic tile with a land pixel below sea level builds (test)
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-tile-build-crashes-in-vegetation-is-land.md (found by lane294).

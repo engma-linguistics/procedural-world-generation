@@ -1,7 +1,8 @@
 ---
+id: PW-1700
 title: Live dragon realms ~28 % short on three of fifteen dates; flip POLITIES_LIVE anyway or one more mirror?
 type: task
-status: needs-decision
+status: in-progress
 parent: PW-661
 milestone: null
 subsystem: culture
@@ -11,6 +12,8 @@ found_by: lane281e
 blocked_by: []
 relates: [PW-1596, PW-1687]
 refs: [docs/review/culture/polities/round28.md, docs/review/culture/polities/round27.md, docs/review/culture/polities/round26.md, "planet/lineages/history/polity_live.py::DragonCultures", "planet/lineages/demes.py::Demes._cut", "planet/lineages/demes.py::Demes._fuse", "planet/lineages/cultures.py::Cultures._contacts", "planet/lineages/polities.py::_core", docs/review/culture/polities/round28/replay.py, docs/review/culture/polities/round27/per_people.py, docs/review/culture/polities/round26/measure.py, "runs a1c6ed 1a7fae 91c10c 8e517f a80cfe (scratch, deleted; numbers in round28.md)"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## In plain words
@@ -35,3 +38,7 @@ Options:
 - **C: loosen the bar to ~30 %.** Same outcome as A, stated as a threshold change.
 
 - [ ] Coordinator picks A, B or C; if A, flip in its own commit and re-run the tests and goldens.
+
+## Updates
+- 2026-11-11: Status needs-decision -> in-progress. Coordinator ruled A: flip now. The mechanism (live dragon cultures following the demes' rules) is the right one; 12/15 dates within 25%, the three misses are 28-29%, just past the line; states inside their limit, same seed reproduces. B goes to later as a polish ticket if the look is off. The 25% bar was the coordinator's, not Daniel's.
+- 2026-11-11: Created from inbox draft draft-live-dragon-realms-three-dates-short.md (found by lane281e).

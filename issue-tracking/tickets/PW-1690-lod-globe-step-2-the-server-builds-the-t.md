@@ -2,7 +2,7 @@
 id: PW-1690
 title: "LOD globe step 2: the server builds the tiles in view on demand (replace-queue, centre first, cancel on pan, RAM guard, disk cap)"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: viewer
@@ -13,7 +13,7 @@ blocked_by: [PW-1689]
 relates: [PW-1198, PW-1674]
 refs: [docs/review/zoom/lod-plan-v2.md, planet/zoom/lod.py, planet/server.py, "planet/api.py::zoom_estimate", "planet/api.py::zoom_peak_gb", "planet/api.py::zoom_is_heavy"]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -34,4 +34,5 @@ the addressing (`lod.py`) is already there.
       each tile from disk in under 100 ms; tests on a scratch data root (never port 8765)
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 294 (bc0a79ed): on-demand tile service; follow-ups PW-1701, PW-1702.
 - 2026-11-10: Created from inbox draft draft-lod2-tile-service.md (found by lane289).

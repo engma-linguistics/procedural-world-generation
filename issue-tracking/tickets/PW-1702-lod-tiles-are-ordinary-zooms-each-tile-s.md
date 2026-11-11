@@ -1,4 +1,5 @@
 ---
+id: PW-1702
 title: "LOD tiles are ordinary zooms: each tile save rereads every zoom, and the tiles flood the viewer's zoom lists"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane294
 blocked_by: []
 relates: [PW-1690, PW-1689]
 refs: [planet/tiles.py, "planet/zoom/lod_build.py::_section_dir", "planet/zoom/lod_build.py::save", "planet/zoom/fine.py::save", "planet/zoom/regional.py::update_index", "planet/store.py::update_index", "planet/store.py::items", planet/family.py, docs/review/zoom/lod-plan-v2.md, "world dba204"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -34,3 +37,6 @@ tile service has its own index) and mark them in `_zoom_item` so the listings sk
 `lod_build` by its deterministic id (`api.section_zoom_id` logic) before falling back to the scan.
 - [ ] building the 100th tile of a world takes no longer than the first (same tile, timed) and no tile appears in
       `/api/planets` or the world's zoom list
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-tiles-flood-the-zoom-index.md (found by lane294).
