@@ -172,7 +172,10 @@ inside the cell (the owner line), so the line is the seam, and there the two agr
 edge is no tile edge, so each side carved its own ground there (lane 295 measured 29-38 m median at level 2). Level-2 tiles
 near a cell edge now fade, over their edge ramp, to ground carved once along the edge on blocks keyed by place on the lattice
 of the cell the other was matched to (the earlier: `lod_build.line_owner`), which the other cell's tiles resample: at the line
-the two then differ only as two lattices interpolating the same ground (lane 297, PW-1705; levels 3-4 and corners: inbox).
+the two then differ only as two lattices interpolating the same ground (lane 297, PW-1705). Levels 3-4 do the same one
+level down, carved from the owner's tiles of the level above (built first when the other cell's tile is wanted), and
+near a corner where three or four cells meet every one of them blends to one ground carved round the corner (lane 300,
+PW-1708).
 
 Rivers across a cell edge: a river from the earlier cell into the later keeps its water (PW-1302, done); one from the later into
 the earlier keeps the earlier cell's own estimate (PW-1355: off by >25% on the practice pairs). Order-dependence is the price of
@@ -677,3 +680,66 @@ Test: `test_a_built_section_is_looked_up_not_scanned`.
   `draft-lod-globe-river-ribbons-vs-tile-rivers.md`); double-click still starts a regional zoom (inbox
   `draft-globe-double-click-starts-a-zoom.md`). 1-pixel lines near the horizon break into dashes (thin cell outlines
   at grazing angles). Not tried on Daniel's own Chrome (PW-415). No heading (compass) turn: the tilt keeps north up.
+## State (lane 300, 11-11: PW-1708 levels 3-4 and corners at cell edges; PW-1709 not started)
+
+**Built.** `near_lines` covers levels 2-4. A level-L tile's line ground is carved on `line_blocks` of the owner's
+level-L lattice from the owner's level L-1 tiles under each block (`_block_parents`; level 2: the owner's level 1, as
+before). `lod_build.tile` first builds any of those owner tiles that aren't built (`build_line_parents`, via `tile`, so
+recursively: a level-4 tile of the later cell can build the earlier cell's level-3 and level-2 tiles along the line),
+then loads them (`load_lines`, now `(lines, corners)`). Corners: `cell_corners(cell)` names each corner where 3-4 cells
+meet by the first cell's vertex (every cell there gets the same floats); `owner_of(cells)` generalises `line_owner` (the
+earliest built: matched to none of the others; `line_owner` is it for two). Round each corner a square block on the
+owner's lattice (`corner_block`) is carved; every cell's tile there takes that ground alone within 1.5 x (ramp + 2) px
+of the corner (beyond it a point on one edge is clear of the other edges' fades) and blends to its edges' ground over
+another ramp + 2 px (`line_surface(corners=)`). The fade weight is unchanged. `tile`'s signature unchanged; zoom.json's
+`cell_lines` lists corners too (`"a+b+c+d": owner`). Away from corners level 2 is unchanged: py.0.1/2/7/3 rebuilt
+with main's code is bit-identical to this branch's.
+
+**Seam at the line**, dba204, A = py.1.1, B = py.0.1, level 1 in both orders in scratch roots; level 3: A 3/0/15-16
+against B 3/28/15-16, level 4: A 4/7/154-155 against B 4/284/155, the same tiles built with main's code (from the same
+level 1 and level 2) and this branch's; |hA - hB| (`line_seam`, pooled over the tile pairs) at line points 250 m
+(level 3) and 25 m (level 4) apart; floor: the owner's tiles resampled onto the other's lattice (`resampled`, the same
+line with no seam, PW-1697's rule), median / p90 / max m:
+
+| Order, level | Main | This branch | Floor | Branch / floor (median, p90) |
+|---|---|---|---|---|
+| A first, 3 | 20.5 / 62.2 / 218 | 1.56 / 7.41 / 53 | 1.56 / 7.41 / 53 | 1.000, 1.000 |
+| A first, 4 | 30.1 / 88.9 / 147 | 0.17 / 0.70 / 2.0 | 0.17 / 0.70 / 2.0 | 1.000, 1.000 |
+| B first, 3 | 20.6 / 88.4 / 364 | 2.29 / 12.3 / 51 | 2.29 / 12.3 / 51 | 1.000, 1.000 |
+| B first, 4 | 24.1 / 73.9 / 142 | 0.18 / 1.00 / 6.1 | 0.18 / 1.00 / 6.1 | 1.000, 1.000 |
+
+(1,068 points at level 3, 529 at level 4; main's floor is the same within 0.1 m.) Level 2 on these tiles: 3.20 / 14.95
+m = floor (A first, lane 297's 3.1 / 14.8 on a slightly different set).
+- **Rivers** (`line_rivers`, >= 100 m3/s, level 3): the same on main and the branch, apart from B first where a
+  3,576-6,101 m3/s river along the line crosses it 5 times on main, 3 on the branch, each finding 0 m3/s within 2 px on
+  the other side; A first, 3,618 -> 3,612 carried, 2,874 -> 140 within 2 px. In both cases the other side's river is
+  4-16 px (1-4 km) away: the two cells lay their courses from their own parents (inbox
+  `draft-lod-rivers-jog-at-cell-edges-levels-3-4.md`). Discharge is kept (2,874 -> 2,927 m3/s 16 px along).
+- **Rebuild:** py.0.1/3/28/15 and py.0.1/4/284/155 (the non-owner's, resampling) rebuilt in a copy of the root: all
+  layers and images bit-identical (zoom.json differs in timings only).
+- **Time and peak** (7 tiles a process, `NUMBA_NUM_THREADS=4`, two processes at once, load 14-33 of 48, `/usr/bin/time
+  -v`): level 3 15.1-23.6 s a tile (main 15.1-20.1 s; first tile of a process 28-45 s, numba), level 4 13.7-18.8 s
+  (main 12.4-17.3 s), the cell line 1.1-2.6 s of it (three blocks). B's level-4 tile with A's level-3 owner tile not
+  built: 34.9 s, building it. Peak 3.96-4.12 GB per process (main 3.99-4.25 GB).
+- **Corners** (synthetic, `tests/test_zoom_lod_cells.py`, four cells at a corner, level 2 at 1 km, points within
+  20 km of the corner, median / p90 m; floor: both sides resampled from the corner owner's tiles):
+  | Edge | Each cell blends its own edges | One corner ground | Floor |
+  |---|---|---|---|
+  | px.1.2 : px.2.2 | 1.96 / 27.6 | 1.29 / 2.62 | 1.29 / 2.62 |
+  | px.1.2 : pz.1.0 | 2.94 / 12.2 | 0.39 / 5.01 | 0.39 / 5.01 |
+  | px.2.2 : pz.2.0 | 1.81 / 2.88 | 4.28 / 9.54 | 4.37 / 9.69 |
+  | pz.1.0 : pz.2.0 | 3.18 / 30.9 | 2.35 / 9.65 | 2.31 / 9.34 |
+  The worst edge drops from 31 m (p90) to 10 m. An edge neither of whose cells owns the corner now reads a third
+  lattice on both sides (px.2.2 : pz.2.0, 1.8 -> 4.3 m median): no construction on one lattice avoids that. dba204 has
+  no built corner (no tile store in the main checkout), so none was measured there.
+- **Tests:** `tests/test_zoom_lod_cells.py`: level-3 tiles at the edge within 10% of the floor and a rebuild
+  bit-identical (`slow`, ~50 s); every cell at a corner names the same corner; the corner seams within 10% of the
+  floor and the worst under half the own-edges one; a corner's owner is its earliest cell.
+
+**PW-1709 (falls on blocks keyed by the lip): not started** (budget). Read for sizing: besides the draft's list, the
+walls are clipped to their rims *after* the landscape pass from the tile's own finished ground (`g_wall` loop in
+`fine.build`), so a pasted fall's walls would also need the block's rims, and a gorge's `margin` is
+hf + 2 (drop + 200 m) / tan(wall angle) + 2 px: kilometres for a big fall, so its block can be several hundred px.
+
+**Next:** the river jog at cell edges (draft); PW-1709.
+

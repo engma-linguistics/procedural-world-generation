@@ -110,15 +110,17 @@ def pair(world):
     return out
 
 
-def _seam(za, zb, a, b):
+def _seam(za, zb, a, b, per_edge=LB.LINE_PER_EDGE):
+    """(|a - b| at their shared edge's points, the same with b resampled from a: the floor); per_edge sets the points'
+    spacing (LINE_PER_EDGE: 1 km)."""
     sa, sb = ZM.source_of(za), ZM.source_of(zb)
-    P = LB._line(a, b)
+    P = LB._line(a, b) if per_edge == LB.LINE_PER_EDGE else LB.cell_line(*sorted((a, b)), per_edge)
     return LB.line_seam(sa, sb, P), LB.line_seam(sa, LB.resampled(sa, sb), P)
 
 
 def test_tiles_at_a_cell_edge_fade_to_it(pair):
     assert pair["b"] in pair["near"][0] and pair["a"] in pair["near"][1]
-    assert LB.near_lines(L.Key(pair["a"], 3, 0, 0)) == []  # (finer levels fade to their parents)
+    assert LB.near_lines(L.Key(pair["a"], 1, 0, 0)) == []  # (level 1 is matched, match.py)
 
 
 def test_two_cells_meet_at_their_edge_as_two_lattices_of_one_ground(pair):
@@ -150,4 +152,143 @@ def test_the_owner_is_the_earlier_cell(data_root):
     assert LB.line_owner("w0", "py.0.1", "py.1.1") == "py.1.1"  # (only it built: the other will match it)
     sec("py.0.1", "z2", ["z1"])
     assert LB.line_owner("w0", "py.0.1", "py.1.1") == LB.line_owner("w0", "py.1.1", "py.0.1") == "py.1.1"
+    sec("py.1.0", "z3", ["z2", "z1"])  # (a corner's owner: the earliest of its cells, py.0.0 not built)
+    assert LB.owner_of("w0", ("py.0.0", "py.0.1", "py.1.0", "py.1.1")) == "py.1.1"
 
+
+def _saved(z, key, root):
+    """A built tile as a parent source (meta, decoded layers): saved under root's zooms/ and loaded back."""
+    from planet import store as S
+    old = S._root
+    S.set_root(root)
+    try:
+        return Z.load(LB.save(z, "w0", key), decode=True)
+    finally:
+        S._root = old
+
+
+@pytest.fixture(scope="module")
+def pair3(world, tmp_path_factory):
+    """Level 3 at the same edge (PW-1708): a's (the owner's) and b's level-2 tiles under a level-3 tile of each over
+    the edge's point nearest CENTRE (both faded to the edge at level 2, as built), then the two level-3 tiles faded to
+    the edge's level-3 ground (carved on a's level-3 lattice from a's level-2 tiles), b's twice, and both unfaded."""
+    mp = pytest.MonkeyPatch()
+    mp.setattr(L, "LEVELS", LEVELS)
+    root = tmp_path_factory.mktemp("lod3")
+    quiet = dict(log=lambda *_: None)
+    c = xyz(np.radians(CENTRE[0]), np.radians(CENTRE[1]))
+    a = str(LB._cells_of(c[None, :])[0])
+    b = min(LB.cell_lines(a), key=lambda o: np.arccos(np.clip(LB._line(a, o) @ c, -1, 1)).min())
+    P = LB._line(a, b)
+    pm = P[np.argmin(np.arccos(np.clip(P @ c, -1, 1)))]
+    ka, kb = (L.tile_at(cl, 3, *(float(v[0]) for v in L.frame(cl).to_plane(pm[None, :]))) for cl in (a, b))
+    sec = {a: _section(a), b: _section(b)}
+    need = set(L.parent_sources(ka)) | set(L.parent_sources(kb))
+    for k in (ka, kb):
+        plan = LB._line_plan(k, b if k.cell == a else a, a)
+        need |= {p for bl, _ in plan[4] for p in LB._block_parents(a, 3, bl)}
+    l2 = {}
+    for k in sorted(need):
+        other = b if k.cell == a else a
+        lines = {other: (a, sec[a])} if other in LB.near_lines(k) else {}
+        l2[k] = _saved(LB.build(world, k, sec[k.cell], lines=lines, **quiet), k, root)
+    osrc = {k: v for k, v in l2.items() if k.cell == a}
+
+    def mine(k):
+        return {p: l2[p] for p in L.parent_sources(k)}
+    out = {"a": a, "b": b, "ka": ka, "kb": kb, "near": (LB.near_lines(ka), LB.near_lines(kb)),
+           "za": LB.build(world, ka, mine(ka), lines={b: (a, osrc)}, **quiet),
+           "zb": LB.build(world, kb, mine(kb), lines={a: (a, osrc)}, **quiet),
+           "zb2": LB.build(world, kb, mine(kb), lines={a: (a, osrc)}, **quiet),
+           "za0": LB.build(world, ka, mine(ka), **quiet), "zb0": LB.build(world, kb, mine(kb), **quiet)}
+    mp.undo()
+    return out
+
+
+@pytest.mark.slow
+def test_level3_tiles_meet_at_their_cell_edge_as_two_lattices_of_one_ground(pair3):
+    """PW-1708: as level 2, one level down: within 10% of the same line with no seam, under half the unfaded seam."""
+    assert pair3["b"] in pair3["near"][0] and pair3["a"] in pair3["near"][1]
+    seam, floor = _seam(pair3["za"], pair3["zb"], pair3["a"], pair3["b"], 16000)  # (points 250 m apart: a pixel)
+    alone, _ = _seam(pair3["za0"], pair3["zb0"], pair3["a"], pair3["b"], 16000)
+    assert seam["n"] > 40, seam
+    assert seam["median"] <= 1.1 * floor["median"] + 0.5 and seam["p90"] <= 1.1 * floor["p90"] + 0.5, (seam, floor)
+    assert seam["median"] < 0.5 * alone["median"], (seam, alone)
+    for k, v in pair3["zb"]["layers"].items():
+        assert np.array_equal(np.asarray(v), np.asarray(pair3["zb2"]["layers"][k]), equal_nan=True), k
+
+
+def test_every_cell_at_a_corner_names_the_same_corner():
+    for cells, P in LB.cell_corners("py.1.1"):
+        assert len(cells) in (3, 4) and "py.1.1" in cells
+        for o in cells:
+            assert dict(LB.cell_corners(o))[cells] == P
+
+
+@pytest.fixture(scope="module")
+def corner(world):
+    """The level-2 tiles of the cells meeting at a's corner nearest CENTRE within 22 km of it, faded to their cells'
+    edges (every edge's owner the first of its two cells by name) with and without the corner's own ground (owner: the
+    first of all by name)."""
+    mp = pytest.MonkeyPatch()
+    mp.setattr(L, "LEVELS", LEVELS)
+    quiet = dict(log=lambda *_: None)
+    c = xyz(np.radians(CENTRE[0]), np.radians(CENTRE[1]))
+    a = str(LB._cells_of(c[None, :])[0])
+    cells, P = min(LB.cell_corners(a), key=lambda cp: np.arccos(np.clip(np.dot(cp[1], c), -1, 1)))
+    sec = {cl: _section(cl) for cl in cells}
+    out = {"cells": cells, "P": np.array(P), "with": {}, "without": {}}
+    for cl in cells:
+        x, y = (float(v[0]) for v in L.frame(cl).to_plane(np.array([P])))
+        for k in L.covering(cl, 2, (x - 22, x + 22, y - 22, y + 22)):
+            lines = {o: (min(cl, o), sec[min(cl, o)]) for o in LB.near_lines(k) if o in cells}
+            assert cells in LB.near_corners(k)
+            out["with"][k] = LB.build(world, k, sec[cl], lines=lines, corners={cells: (cells[0], sec[cells[0]])},
+                                      **quiet)
+            out["without"][k] = LB.build(world, k, sec[cl], lines=lines, **quiet)
+    mp.undo()
+    return out
+
+
+def _corner_seams(corner, which):
+    """{(a, b): (seam, floor)} along each edge of the corner's cells within 20 km of it, pooled over every pair of their
+    tiles: |a - b| (lod_build.line_seam), and the same with both sides resampled from the corner owner's tiles (the
+    same line with no seam when the ground is on a third lattice: each side interpolates the owner's)."""
+    cells, P0 = corner["cells"], corner["P"]
+    owner = [ZM.source_of(z) for k, z in corner[which].items() if k.cell == cells[0]]
+
+    def from_owner(s):
+        for so in owner:
+            s = LB.resampled(so, s)
+        return s
+    out = {}
+    for i, a in enumerate(cells):
+        for b in cells[i + 1:]:
+            if b not in LB.cell_lines(a):  # (a diagonal: they meet only at the corner)
+                continue
+            P = LB._line(a, b)
+            P = P[np.arccos(np.clip(P @ P0, -1, 1)) * R_KM < 20.0]
+            d, f = [], []
+            for ka, za in corner[which].items():
+                for kb, zb in corner[which].items():
+                    if ka.cell == a and kb.cell == b:
+                        sa, sb = ZM.source_of(za), ZM.source_of(zb)
+                        d.append(LB.line_seam(sa, sb, P)["d"])
+                        f.append(LB.line_seam(from_owner(sa), from_owner(sb), P)["d"])
+            d, f = np.concatenate(d), np.concatenate(f)
+            out[(a, b)] = tuple({"n": len(v), "median": float(np.median(v)) if len(v) else np.nan,
+                                 "p90": float(np.percentile(v, 90)) if len(v) else np.nan} for v in (d, f))
+    return out
+
+
+def test_cells_meeting_at_a_corner_blend_one_ground_there(corner):
+    """PW-1708: along every edge within 20 km of a corner where three or four cells meet, the two cells' tiles differ
+    by no more than both resampled from the corner's owner (within 10%): each cell blends one ground carved round the
+    corner. Each blending its own two edges' grounds (no corner ground), the worst edge differs by more."""
+    seams, alone = _corner_seams(corner, "with"), _corner_seams(corner, "without")
+    assert len(seams) >= 3
+    for ab, (seam, floor) in seams.items():
+        assert seam["n"] >= 10, (ab, seam)
+        assert seam["median"] <= 1.1 * floor["median"] + 0.5 and seam["p90"] <= 1.1 * floor["p90"] + 0.5, \
+            (ab, seam, floor)
+    assert max(s["p90"] for s, _ in seams.values()) < 0.5 * max(s["p90"] for s, _ in alone.values()), (seams, alone)
