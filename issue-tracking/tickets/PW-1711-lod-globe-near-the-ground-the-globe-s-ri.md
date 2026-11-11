@@ -2,7 +2,7 @@
 id: PW-1711
 title: "LOD globe near the ground: the globe's river ribbons run cell centre to cell centre, away from the tiles' own rivers"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: viewer
@@ -34,4 +34,5 @@ cells are drawn. The draped copies already know which tile is under each point (
 - [ ] where tiles are still building, the globe ribbon shows as now
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 301: tiles draw their own rivers; ribbons hidden over level 2+.
 - 2026-11-11: Created from inbox draft draft-lod-globe-river-ribbons-vs-tile-rivers.md (found by lane299).

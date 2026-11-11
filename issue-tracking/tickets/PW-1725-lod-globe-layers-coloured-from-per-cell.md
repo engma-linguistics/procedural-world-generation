@@ -1,4 +1,5 @@
 ---
+id: PW-1725
 title: "LOD globe: layers coloured from per-cell tables (human use, resources, coasts, peoples) show only the satellite view on detail tiles"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane301
 blocked_by: []
 relates: [PW-1673, PW-1688]
 refs: ["viewer/globe/layers.js::tileLayer", "viewer/globe/lodtiles.js::valuesTexture", "viewer/globe/lodtiles.js::legendNote", viewer/globe/colours.js, docs/review/zoom/lod-plan-v2.md, "world dba204"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -29,3 +32,6 @@ twin: draw the globe cell's colour on the tile instead (sample the globe cell un
 `nearestCellU`), which at least keeps the map.
 - [ ] the human-use layers with a zoom twin drawn on tiles in the globe's colours
 - [ ] peoples/polities layers keep their colours on tiles (the cell's colour), no satellite fallback
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-tiles-table-coloured-layers.md (found by lane301).

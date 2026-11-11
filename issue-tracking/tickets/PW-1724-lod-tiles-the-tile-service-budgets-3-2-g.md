@@ -1,7 +1,8 @@
 ---
+id: PW-1724
 title: "LOD tiles: the tile service budgets 3.2 GB a tile, a build process peaks at 4.0-4.4 GB, and nothing caps one that runs away"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -11,6 +12,8 @@ found_by: lane303
 blocked_by: []
 relates: [PW-1713, PW-1690, PW-1708]
 refs: ["planet/api.py::TILE_PEAK_GB", "planet/api.py::tile_job", planet/tiles.py, "planet/zoom/lod_build.py::tile", "planet/zoom/lod_build.py::build_line_parents", "planet/zoom/fine_meander.py::_ease", docs/review/zoom/lod-plan-v2.md, "world dba204", "tiles py.1.1/4/7/151, py.1.1/4/7/163"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -32,3 +35,7 @@ If never done: the next runaway allocation in a tile build takes Daniel's machin
 check admits more concurrent tiles than fit.
 - [ ] each tile job runs under a memory cap (a failed tile, not a dead machine), tested with a deliberate over-allocation
 - [ ] TILE_PEAK_GB for levels 2-4 from the measured 4.0-4.4 GB peaks (and a recursive owner build counted, or queued)
+
+## Updates
+- 2026-11-11: Status todo -> done. Coordinator: TILE_PEAK_GB levels 2-4 raised 3.2 -> 5.0 (lanes 301/303 measured 4-4.9 GB). Per-job cap: the 8765 server now runs in a 48 GB systemd scope (unit planet-serve-8765); the runaway itself was the _ease bug fixed by lane 303 (3093954e).
+- 2026-11-11: Created from inbox draft draft-lod-tile-ram-budget-and-cap.md (found by lane303).

@@ -22,7 +22,7 @@ Builds run as server jobs (api.Jobs, each in a worker process), never in a reque
   - level 1 is the cell's section at 4 km, a lod_build.tile job too: built matched to the neighbouring cells' level 1
     already built (lod_build.build_level1, PW-1699), one at a time and not beside another section-sized zoom; budget
     PEAK_GB[1] = 8.3 GB (lane 290 measured; matched 8.3-8.4 GB, lane 295);
-  - levels 2-4 are lod_build.tile jobs, AT_ONCE (3) at a time, PEAK_GB 3.2 GB each (lane 290: 2.9-3.2 GB);
+  - levels 2-4 are lod_build.tile jobs, AT_ONCE (3) at a time, PEAK_GB 5.0 GB each (lanes 301, 303: 4-4.9 GB; PW-1724);
   - at most AT_ONCE tile jobs in all (the server has 4 job workers: one is left for everything else);
   - the RAM guard: a build starts only while free memory covers its peak, api.ZOOM_RAM_SPARE_GB and the peaks of the
     tile builds already started (counted again although they show in the free memory: on the safe side).

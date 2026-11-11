@@ -406,8 +406,8 @@ def _section_zoom_job(r: dict, progress) -> dict:
         return {"zoom": out.name, "world": world_path.stem, "section": r["section"]}
 
 
-TILE_PEAK_GB = {1: 8.3, 2: 3.2, 3: 3.2, 4: 3.2}  # RAM budget of an LOD tile build by level (lod-plan-v2.md, State lanes
-# 290 and 295: level 1, the matched 4 km section, 8.3-8.4 GB; levels 2-4, fine passes at 500 px, 2.9-3.2 GB)
+TILE_PEAK_GB = {1: 8.3, 2: 5.0, 3: 5.0, 4: 5.0}  # RAM budget of an LOD tile build by level (lod-plan-v2.md, State lanes
+# 290 and 295: level 1, the matched 4 km section, 8.3-8.4 GB; levels 2-4 measured 3.97-4.42 GB peak by lane 303 and 4.7-4.9 GB held by lane 301 after the cell-edge and line work, so 5.0; PW-1724)
 
 
 def tile_job(req: dict, progress=lambda f, msg: None) -> dict:
