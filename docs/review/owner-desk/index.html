@@ -84,7 +84,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <header>
   <div class="kicker">procgen_world · Wednesday 11 November 2026</div>
   <h1>Owner's Desk</h1>
-  <p class="lede">Nothing waiting on you. Today: the installer, the zoom judge and kitchens through time are merged; main and the release tags are on GitHub (D83 A), and the one-line web install works from v0.4.0 on Sunday. The 2 Myr L8 memory fix is merged. Still running: the world catalogue preview (throwaway: it tests the pipeline; real candidates come after the physics lanes), and the coastline-fix verdict (its runs are done).</p>
+  <p class="lede">Nothing waiting on you. Today: the installer, the zoom judge and kitchens through time are merged; main and the release tags are on GitHub (D83 A), and the one-line web install works from v0.4.0 on Sunday. The 2 Myr L8 memory fix is merged. Still running: the world catalogue preview (throwaway: it tests the pipeline; real candidates come after the physics lanes), and the rest of the coastline-fix judge (26 more pairs, ~5 h; first 10 look good).</p>
   <nav class="toc"><a href="#answers">For you</a><a href="#coming">Running now</a><a href="#settled">Settled since last night</a></nav>
 </header>
 
@@ -114,7 +114,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <tr><th>Lane</th><th>What</th></tr>
 
 <tr><td>307 · a catalogue of candidate worlds</td><td>Lists every lever we have for Earth-like worlds (supercontinent start or not, land share, tilt, star, day length, plates…), designs 12 varied 2-billion-year worlds, builds a runner that does about 6 at once within the machine's limits, and checks the L7 → L8 refine and the split history end to end. A preview batch of 6 starts tonight on today's code; the final batches come after the physics lanes land.</td></tr>
-<tr><td>310 · physics: judging the coastline-flicker fix</td><td>All 20 test runs are done (10 small worlds, each with the fix off and on, to 1 billion years). A short lane is now reading them against the usual bars (no frozen, boiled or drowned worlds; scorecard pass rate); then I decide whether to switch it on for everyone.</td></tr>
+<tr><td>310 · physics: judging the coastline-flicker fix</td><td>First 10 of 36 world pairs judged: the fix cures the flicker in all 10, no world froze, boiled or lost its ocean, the climate came out the same, continents a kilometre thinner. One of the 10 failed the "Earth-like finish" check with the fix on (a bit warm, almost no land ice) while its twin passed: too few to call. The other 26 pairs are running (~5 h); if the pass count stays about even, I switch it on.</td></tr>
 
 
 
@@ -146,7 +146,7 @@ footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule);
 <li><b>L8's missing people: half found</b> (PW-1631, PW-1630 part, lanes 272b, 272c, merged). Irrigated valleys were a share of a map cell, so on L8 they were half as wide; and the wild-food richness that delays farming read only the shore cell, which is richer on L8. Both now work in km. Same world, L7 against the L8 split, before → after: people today −12.4% → −5.6%, humans 433 → 461 M (L7 660 M), coast towns 4.4% → 5.2% (L7 7.6%), islands with a town 11 → 13 (L7 22). L7 byte-identical. These runs predate the L8 soil fix (lane 274, merged), which should close more of it; the remaining coast-town gap is ticketed.</li>
 </ul>
 
-<footer>Desk v243 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
+<footer>Desk v244 · upkeep rules in <code>.claude/skills/owner-desk/SKILL.md</code></footer>
 </div>
 <script>
 /* Answers live in the artifact's db, collection "answers", one doc per .ask (id = data-id): {choice, note, at, reply}.
