@@ -1,0 +1,152 @@
+# PW-1760: the one-command install on Ubuntu, macOS (Apple Silicon) and native Windows, from this checkout (not the
+# network: no release is public yet). Each OS installs, prints `planet self status`, makes the cheapest documented world
+# (the installer's own warm-up recipe: L4, 20 Myr, 10 kyr time zoom, 1 zoom), serves the viewer and checks GET /viewer/
+# answers 200, then uninstalls. Pushed only to ci/* branches by the coordinator, or run by hand.
+name: install-smoke
+
+on:
+  push:
+    branches: ["ci/*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  posix:
+    name: install (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      PROCGEN_MIN_FREE_GB: "5"   # (the runners have less free disk than the installer's 20 GB floor)
+      PORT: "8790"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Machine
+        run: |
+          uname -a
+          if [ "$(uname -s)" = Darwin ]; then sw_vers; sysctl -n hw.memsize hw.ncpu machdep.cpu.brand_string; fi
+          df -h "$RUNNER_TEMP"
+
+      - name: Install (install.sh from the checkout)
+        run: |
+          sh install.sh --yes --no-first-run --no-starter --source "$GITHUB_WORKSPACE" --ref HEAD \
+            --root "$RUNNER_TEMP/root" --data "$RUNNER_TEMP/data" --port "$PORT"
+          test -x "$RUNNER_TEMP/root/bin/planet"
+
+      - name: planet self status
+        run: |
+          "$RUNNER_TEMP/root/bin/planet" self status
+          "$RUNNER_TEMP/root/bin/planet" self probe
+
+      - name: Make a tiny world (L4, 20 Myr, 10 kyr, 1 zoom)
+        timeout-minutes: 15
+        run: |
+          start=$(date +%s)
+          PYTHONUNBUFFERED=1 "$RUNNER_TEMP/root/bin/planet" make --seed 7 --level 4 --myr 20 --kyr 10 --zooms 1 --name ci
+          echo "made in $(( $(date +%s) - start )) s"
+          "$RUNNER_TEMP/root/bin/planet" list
+
+      - name: Serve and GET /viewer/
+        run: |
+          "$RUNNER_TEMP/root/bin/planet" serve --no-open --port "$PORT" >"$RUNNER_TEMP/serve.log" 2>&1 &
+          pid=$!
+          code=000
+          for _ in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/viewer/" || true)
+            [ "$code" = 200 ] && break
+            sleep 2
+          done
+          curl -sf "http://127.0.0.1:$PORT/api/planets" | head -c 400; echo
+          kill "$pid" || true
+          cat "$RUNNER_TEMP/serve.log"
+          echo "GET /viewer/ -> $code"
+          test "$code" = 200
+
+      - name: Uninstall
+        run: |
+          "$RUNNER_TEMP/root/bin/planet" self uninstall --yes --delete-data
+          test ! -e "$RUNNER_TEMP/root"
+          test ! -e "$RUNNER_TEMP/data"
+
+  windows:
+    name: install (windows-latest)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      PROCGEN_MIN_FREE_GB: "5"
+      PORT: "8790"
+    defaults:
+      run:
+        shell: powershell   # Windows PowerShell 5.1: what `irm | iex` runs in on a user's machine
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Machine
+        run: |
+          $PSVersionTable.PSVersion
+          Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, TotalVisibleMemorySize
+          Get-PSDrive -PSProvider FileSystem
+
+      - name: Install (install.ps1 as a script block, the way the one-liner with options runs it)
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'root'
+          $data = Join-Path $env:RUNNER_TEMP 'data'
+          & ([scriptblock]::Create((Get-Content -Raw install.ps1))) -Yes -NoFirstRun -NoStarter -Source $env:GITHUB_WORKSPACE -Ref HEAD -Root $root -Data $data -Port $env:PORT
+          if (-not (Test-Path "$root\bin\planet.cmd")) { throw 'no launcher written' }
+          Get-Content "$root\bin\planet.cmd"
+          Get-Content "$env:APPDATA\procgen-world\config.toml"
+
+      - name: planet self status
+        run: |
+          $planet = Join-Path $env:RUNNER_TEMP 'root\bin\planet.cmd'
+          & $planet self status
+          if ($LASTEXITCODE -ne 0) { throw "status failed ($LASTEXITCODE)" }
+          & $planet self probe
+          if ($LASTEXITCODE -ne 0) { throw "probe failed ($LASTEXITCODE)" }
+
+      - name: Make a tiny world (L4, 20 Myr, 10 kyr, 1 zoom)
+        timeout-minutes: 15
+        run: |
+          $planet = Join-Path $env:RUNNER_TEMP 'root\bin\planet.cmd'
+          $env:PYTHONUNBUFFERED = '1'
+          $t = Get-Date
+          $ErrorActionPreference = 'Continue'
+          & $planet make --seed 7 --level 4 --myr 20 --kyr 10 --zooms 1 --name ci 2>&1 | ForEach-Object { "$_" }
+          if ($LASTEXITCODE -ne 0) { throw "make failed ($LASTEXITCODE)" }
+          "made in $([int]((Get-Date) - $t).TotalSeconds) s"
+          & $planet list
+          if ($LASTEXITCODE -ne 0) { throw "list failed ($LASTEXITCODE)" }
+
+      - name: Serve and GET /viewer/
+        run: |
+          $planet = Join-Path $env:RUNNER_TEMP 'root\bin\planet.cmd'
+          $log = Join-Path $env:RUNNER_TEMP 'serve.log'
+          $p = Start-Process -FilePath $planet -ArgumentList 'serve', '--no-open', '--port', $env:PORT -PassThru -NoNewWindow `
+            -RedirectStandardOutput $log -RedirectStandardError "$log.err"
+          $code = 0
+          for ($i = 0; $i -lt 60; $i++) {
+            try { $code = (Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$env:PORT/viewer/").StatusCode } catch { $code = 0 }
+            if ($code -eq 200) { break }
+            Start-Sleep -Seconds 2
+          }
+          try { (Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$env:PORT/api/planets").Content.Substring(0, 300) } catch { "api: $_" }
+          & taskkill.exe /PID $p.Id /T /F
+          Get-Content $log, "$log.err" -ErrorAction SilentlyContinue
+          "GET /viewer/ -> $code"
+          if ($code -ne 200) { throw 'the viewer did not answer 200' }
+
+      - name: Uninstall (through the launcher, as a user would)
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'root'
+          & "$root\bin\planet.cmd" self uninstall --yes --delete-data
+          if (Test-Path $root) { Get-ChildItem -Recurse $root | Select-Object -First 20; throw 'the install root is still there' }
+          if (Test-Path (Join-Path $env:RUNNER_TEMP 'data')) { throw 'the data folder is still there' }
+          $user = [Environment]::GetEnvironmentVariable('Path', 'User')
+          if ($user -like "*$root*") { throw 'bin is still on the user PATH' }
+          if (Test-Path (Join-Path ([Environment]::GetFolderPath('Programs')) 'Procgen World.lnk')) { throw 'the shortcut is still there' }

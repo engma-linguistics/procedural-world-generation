@@ -46,7 +46,10 @@ def _mapped(shape, dtype) -> np.ndarray:
     dtype = np.dtype(dtype)
     count = int(np.prod(shape))
     # (private: madvise(DONTNEED) frees a private page and it reads as zero again; a shared one keeps its data)
-    buf = mmap.mmap(-1, max(count * dtype.itemsize, 1), flags=mmap.MAP_PRIVATE | mmap.MAP_ANONYMOUS)
+    if hasattr(mmap, "MAP_ANONYMOUS"):
+        buf = mmap.mmap(-1, max(count * dtype.itemsize, 1), flags=mmap.MAP_PRIVATE | mmap.MAP_ANONYMOUS)
+    else:  # (Windows: no flags; an anonymous map is zeroed, backed by the page file; release() does nothing, PW-1760)
+        buf = mmap.mmap(-1, max(count * dtype.itemsize, 1))
     return np.frombuffer(buf, dtype, count).reshape(shape)
 
 

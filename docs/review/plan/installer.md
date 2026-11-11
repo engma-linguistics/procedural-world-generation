@@ -176,3 +176,102 @@ code; uv and Python came from the network). Install and warm-up ran under
 - The starter world is only offered (default no, ~18 min on 8 cores); the downloadable sample bundle the plan
   mentions is not built (the L6 family weighs 1.3 GB, mostly the run's layers).
 - WSL2: not tested; it is plain Linux to the script, but `xdg-open` from WSL needs `wslu` to reach the Windows browser.
+
+## Windows, macOS and the 3-OS smoke test (lane 315, PW-1760)
+
+### In plain words
+
+There is now a Windows installer, `install.ps1`, which does what `install.sh` does: one line in PowerShell
+(`irm …/install.ps1 | iex`) fetches a pinned, checksummed uv, which brings its own Python, so nothing has to be on the
+PC first. It puts a "Procgen World" shortcut in the Start menu and a `planet` command on the PATH, and it has the same
+`planet self open | update | rollback | uninstall | status` commands.
+
+Before this, a few parts of the program would have gone badly wrong on Windows. The worst: checking whether a running
+simulation was still alive would have **killed it**, because that Linux call means "terminate" on Windows. Each of
+those spots now has a Windows version. Linux does exactly what it did before.
+
+On a Mac, the installer now refuses Intel Macs and macOS older than 14 with a plain message. The libraries the
+simulation needs have no builds for them, so the old behaviour was a confusing failure halfway through. Both
+installers also work without git when the source is GitHub: they download the tag's archive instead. A fresh Mac or
+Ubuntu has no git.
+
+**What is proven where.** Only Linux was available here. Linux: the full install, make, serve and uninstall run (below),
+and the unit tests. **Windows: nothing has run on Windows yet.** `install.ps1` has not even been parsed: there is no
+`pwsh` on this machine, so its parse test skips. Windows is proven only when the GitHub Actions run
+(`.github/workflows/install-smoke.yml`) passes. **macOS: only by the Actions run and by Daniel's checklist**
+(`install-mac-checklist.md`).
+
+### What changed, per OS
+
+| | Linux | macOS | Windows |
+|---|---|---|---|
+| installer | `install.sh` (unchanged path) | `install.sh`: refuses Intel and macOS < 14 up front; `~/Applications/Procgen World.command` as before | **new** `install.ps1`: uv `x86_64-pc-windows-msvc` 0.12.7, sha256 `bf1518af…5218` (checked against the release's `.sha256` and a download); ARM64 refused (piper-tts has no wheel) |
+| source without git | GitHub tarball via the tags API (`PROCGEN_NO_GIT=1` forces it, for tests) | same | GitHub zip, same way |
+| install root / config / data | `~/.local/share/procgen-world`, `~/.config/procgen-world/config.toml`, `~/procgen-world-data` | same | `%LOCALAPPDATA%\procgen-world`, `%APPDATA%\procgen-world\config.toml`, `%USERPROFILE%\procgen-world-data` (written with `/` in the TOML) |
+| current / previous | symlinks | symlinks | `app\current.txt`, `app\previous.txt` (symlinks need admin or developer mode) |
+| launcher | `bin/planet` linked into `~/.local/bin` (PATH never edited) | same | `bin\planet.cmd`; `bin\` is **added to the user PATH** (as uv's own installer does; `-NoModifyPath` skips it; uninstall removes it). Sets `PYTHONUTF8=1`: Python 3.14 on Windows still writes text in the ANSI code page |
+| app menu | `.desktop` | `.command` | Start-menu `Procgen World.lnk` → `planet.cmd self open` |
+| memory cap (`mem_cap_gb`) | systemd-run scope | none | none (inbox draft) |
+| process alive? (`store._alive`) | `os.kill(pid, 0)` | same | OpenProcess + GetExitCodeProcess: **never os.kill** |
+| process start (`store._proc_start`) | `/proc/<pid>/stat` | None, as before | GetProcessTimes' creation time |
+| cross-process lock (`store.lock`) | `fcntl.flock` | same | `msvcrt.locking` on byte 0, waited for, released before close |
+| atomic write (`store.write_atomic`, `atomic_path`, checkpoints) | `os.replace` | same | `os.replace` retried up to ~2 s on PermissionError (a reader has the file open) |
+| free RAM (`api.free_ram_gb`) | `/proc/meminfo` + cgroup | `vm_stat` | GlobalMemoryStatusEx `ullAvailPhys` (`machine.windows_free_ram_gb`, the same ctypes reader as the total) |
+| refine's temp-folder rule | "/tmp … (it is memory on this machine)" | "the temp folder (…) is nearly full" | same as macOS |
+| worker watchdog (`parallel._exit_with_parent`) | getppid changes | same | the parent's pid still running (Windows never reparents) |
+| language pass workers | forked | forked | 1 (no fork on Windows; same output, slower) |
+| plate arrays (`tectonics/plates._mapped`) | private anonymous mmap | same | plain anonymous mmap (no MAP_* flags on Windows); `release()` already did nothing there |
+| opening the browser | `webbrowser` (already portable) | same | same |
+
+The OS branches live in `planet/osutil.py` and are chosen by `sys.platform` when they are called, so tests can fake them.
+`grep` over `planet/` (not `planet/language/`, `tools/` or `docs/`) for `os.kill`, `fcntl`, `signal.`, `/proc`, `/sys`,
+`xdg-open`, `os.fork`, `preexec_fn`, `start_new_session`, `.sh`, `mmap` and `sched_` found nothing else that runs on an
+install: `/proc` and `/sys/fs/cgroup` reads are already wrapped in `try` (cgroup caps are Linux-only by nature), there
+are no signals or process groups, the job pool uses `spawn`, and `machine.usable_cores` already falls back off Linux.
+`planet/language/history.py` asks for a `fork` pool directly. That folder was out of bounds for this lane, so the
+callers (`make.py`, `planet languages`) pass 1 worker where fork is missing.
+
+**Lockfile limits found on the way:** uv.lock has Python 3.14 wheels of numba, llvmlite and onnxruntime for Apple
+Silicon only (onnxruntime: macOS 14+), so Intel Macs cannot install. piper-tts has no ARM64 Windows wheel. Both are now
+refused up front (inbox draft).
+
+### The smoke workflow
+
+`.github/workflows/install-smoke.yml` runs on push to `ci/*` branches and on `workflow_dispatch`, on ubuntu-latest,
+macos-latest (arm64) and windows-latest. Each job has a 30-minute limit. Each installs from the checkout
+(`--source $GITHUB_WORKSPACE --ref HEAD`, so a tag in the checkout cannot pick an older version), then runs `planet self
+status` and `planet self probe`. It makes the cheapest documented world, the installer's warm-up recipe
+(`make --seed 7 --level 4 --myr 20 --kyr 10 --zooms 1`, 62–76 s cold on 8 cores here). It serves on port 8790 and
+requires `GET /viewer/` to answer 200, then uninstalls with `--yes --delete-data` and checks that nothing is left.
+Windows runs `install.ps1` in Windows PowerShell 5.1, as a script block with options (the one-liner's form). It
+uninstalls through `planet.cmd self uninstall`, the way a user would, and checks that the PATH entry and the shortcut
+are gone. `PROCGEN_MIN_FREE_GB=5` lowers the 20 GB disk floor for the small runners (both installers read it).
+
+**Run here, on Linux, the same steps as the ubuntu job** (scratch HOME, root and data under
+`/data/personal/scratch/lane315/`, `MemoryMax=16G`, cores 0–7, port 8797): install 6 s (770 MB), `self status` and
+`self probe` correct, the make **75 s** cold, `GET /viewer/` 200, `/api/planets` lists the world, uninstall removed
+root, data, launcher link, menu entry and config; **85 s** in all. First try failed: with no `--ref`, the worktree's
+`v0.3.0` tag (older than the installer) was picked, and its tree has no install.sh. Hence `--ref HEAD` in the workflow.
+
+### Tests (`tests/test_install_os.py`, on Linux with faked OS values)
+
+A fake kernel32 (OpenProcess, GetExitCodeProcess, GetProcessTimes) under `sys.platform = "win32"`, with `os.kill` set to
+fail the test: liveness, access-denied, exited and reused pids, and `run_status` of a running run. A fake msvcrt: the
+lock waits through two busy tries, is re-entrant, and is released before the close. Also: the `os.replace` retry (and no
+retry on Linux), one language worker without fork, plates' anonymous map without `MAP_ANONYMOUS`, and Windows free RAM
+reaching `api.free_ram_gb`. Linux is checked unchanged: `/proc` start time, `os.kill` liveness. For the installers:
+`install.sh` and `install.ps1` pin the same uv; install.ps1 has every verb of install.sh; the launcher's `self` line
+exits on the same line (uninstall deletes the .cmd while cmd reads it); it sets `PYTHONUTF8`; there is no bare `exit`,
+which would close the window under `iex`; install.ps1 parses (skips: no pwsh here). The no-git tarball dry run, and the
+macOS checks with fake `uname`/`sw_vers` (Intel refused, 13 refused, 15 accepted).
+
+### Not done / caveats
+
+- **install.ps1 has never run.** Expect the first Actions run to find PowerShell 5.1 slips. Known risks: argument
+  passing of `--yes`-style flags through `powershell -File`, and native stderr under `$ErrorActionPreference = 'Stop'`
+  (wrapped, but unproven).
+- The one-liners in the README need a public repository or release and a `v*` tag (the release-source draft, D80).
+- No memory cap on Windows or macOS; rewriting files the server has mapped is unproven on Windows (inbox drafts).
+- `planet make` still prints `view: http://127.0.0.1:8765/…` whatever the port (cosmetic, as before).
+- The Mac `.command` is written locally, so it carries no quarantine flag. The checklist asks Daniel to note it if
+  Gatekeeper complains.

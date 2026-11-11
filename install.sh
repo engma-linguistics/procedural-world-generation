@@ -1,5 +1,5 @@
 #!/bin/sh
-# procgen_world installer and manager (Linux x86-64/arm64; macOS best effort; Windows through WSL2).
+# procgen_world installer and manager (Linux x86-64/arm64; macOS 14+ on Apple Silicon; native Windows: install.ps1).
 #
 #   curl -LsSf <release>/install.sh | sh                 install the newest release tag
 #   sh install.sh                                        install from this checkout or unpacked tarball
@@ -87,6 +87,16 @@ fetch_url() {  # url dest
 }
 
 is_git_url() { case "$1" in http://* | https://* | git@* | ssh://* | git://*) return 0 ;; *) return 1 ;; esac; }
+
+# owner/repo of a https://github.com/ source, else fails
+github_slug() {
+    case "$1" in https://github.com/*/*) ;; *) return 1 ;; esac
+    _s=${1#https://github.com/}; _s=${_s%/}; _s=${_s%.git}
+    echo "$_s"
+}
+have_git() { [ "${PROCGEN_NO_GIT:-}" != 1 ] && command -v git >/dev/null 2>&1; }
+# a GitHub source with no git on the machine (a fresh Mac or Ubuntu): tags from the API, code from the tarball
+use_archive() { ! have_git && github_slug "$SOURCE" >/dev/null; }
 is_git_repo() { [ -d "$1" ] && git -C "$1" rev-parse --git-dir >/dev/null 2>&1; }
 
 # ---------------------------------------------------------------------------------------------- options
@@ -182,14 +192,20 @@ platform() {
     case "$_arch" in x86_64 | amd64) _arch=x86_64 ;; arm64 | aarch64) _arch=aarch64 ;; *) die "unsupported CPU: $_arch" ;; esac
     case "$_os" in
         Linux) TARGET=$_arch-unknown-linux-gnu OS=linux ;;
-        Darwin) TARGET=$_arch-apple-darwin OS=mac ;;
-        *) die "unsupported OS: $_os (on Windows, use WSL2)" ;;
+        Darwin)
+            TARGET=$_arch-apple-darwin OS=mac
+            # uv.lock's numba, llvmlite and onnxruntime have Python 3.14 wheels for Apple Silicon only (onnxruntime: macOS 14+)
+            [ "$_arch" = aarch64 ] || die "Intel Macs are not supported: numba, llvmlite and onnxruntime publish no Python 3.14 wheels for them"
+            _mv=$(sw_vers -productVersion 2>/dev/null | cut -d. -f1)
+            case "$_mv" in '' | *[!0-9]*) ;; *) [ "$_mv" -ge 14 ] || die "macOS $_mv is too old: procgen_world needs macOS 14 (Sonoma) or newer" ;; esac
+            ;;
+        *) die "unsupported OS: $_os (on Windows, use install.ps1 in PowerShell)" ;;
     esac
 }
 
 check_disk() {
     _f=$(free_gb "$1")
-    if [ "$_f" -lt 20 ]; then
+    if [ "$_f" -lt "${PROCGEN_MIN_FREE_GB:-20}" ]; then  # (PROCGEN_MIN_FREE_GB: lower it on a small CI runner)
         die "only $_f GB free under $1; procgen_world needs at least 20 GB (an L7 world family is ~3 GB, plus the tile cache)"
     elif [ "$_f" -lt 50 ]; then
         warn "only $_f GB free under $1; 50 GB or more is recommended"
@@ -234,7 +250,12 @@ default_source() {
 
 # the newest release tag of the source (v1.2.3; sort -V), empty if none
 newest_tag() {
-    if is_git_url "$SOURCE"; then
+    if use_archive; then
+        _tags=$(mktemp)
+        fetch_url "https://api.github.com/repos/$(github_slug "$SOURCE")/tags?per_page=100" "$_tags" 2>/dev/null || :
+        sed -n 's/.*"name": *"\(v[0-9][^"]*\)".*/\1/p' "$_tags" | sort -V | tail -n 1
+        rm -f "$_tags"
+    elif is_git_url "$SOURCE"; then
         git ls-remote --tags --refs "$SOURCE" 'v[0-9]*' | sed 's#.*refs/tags/##' | sort -V | tail -n 1
     elif is_git_repo "$SOURCE"; then
         git -C "$SOURCE" tag -l 'v[0-9]*' | sort -V | tail -n 1
@@ -244,7 +265,7 @@ newest_tag() {
 # resolve REF and VERSION (the app folder's name) for the source
 resolve_version() {
     if is_git_url "$SOURCE" || is_git_repo "$SOURCE"; then
-        command -v git >/dev/null 2>&1 || die "git is needed to install from $SOURCE"
+        use_archive || have_git || die "git is needed to install from $SOURCE"
         [ -n "$REF" ] || REF=$(newest_tag)
         if [ -z "$REF" ]; then
             is_git_repo "$SOURCE" || die "no release tag in $SOURCE; pass --ref"
@@ -267,7 +288,17 @@ resolve_version() {
 }
 
 fetch_code() {  # into $1
-    if is_git_url "$SOURCE"; then
+    if use_archive; then
+        _url=https://github.com/$(github_slug "$SOURCE")/archive/$REF.tar.gz
+        run mkdir -p "$1"
+        if [ "$DRY_RUN" = 1 ]; then say "  [dry-run] fetch $_url | tar -xz -C $1 (no git here)"
+        else
+            _tgz=$(mktemp)
+            fetch_url "$_url" "$_tgz" || { rm -f "$_tgz"; die "could not download $_url"; }
+            tar -xzf "$_tgz" -C "$1" --strip-components=1
+            rm -f "$_tgz"
+        fi
+    elif is_git_url "$SOURCE"; then
         run git clone -q --depth 1 --branch "$REF" "$SOURCE" "$1"
         run rm -rf "${1:?}/.git"
     elif is_git_repo "$SOURCE"; then

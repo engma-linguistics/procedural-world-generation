@@ -107,8 +107,9 @@ def parse_memsize(text: str) -> float | None:
     return int(t) / 1e9 if t.isdigit() else None
 
 
-def windows_ram_gb(kernel32=None) -> float | None:
-    """Windows: GlobalMemoryStatusEx's ullTotalPhys, GB (kernel32: ctypes.windll.kernel32, or a fake for tests)."""
+def windows_ram_gb(kernel32=None, field: str = "ullTotalPhys") -> float | None:
+    """Windows: GlobalMemoryStatusEx's ullTotalPhys, GB (kernel32: ctypes.windll.kernel32, or a fake for tests).
+    field="ullAvailPhys": the physical memory free now (windows_free_ram_gb)."""
     import ctypes
 
     class MEMORYSTATUSEX(ctypes.Structure):
@@ -122,9 +123,15 @@ def windows_ram_gb(kernel32=None) -> float | None:
         st.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
         if not k.GlobalMemoryStatusEx(ctypes.byref(st)):
             return None
-        return st.ullTotalPhys / 1e9 or None
+        return getattr(st, field) / 1e9 or None
     except (AttributeError, OSError, ValueError, TypeError):
         return None
+
+
+def windows_free_ram_gb(kernel32=None) -> float | None:
+    """Windows: GlobalMemoryStatusEx's ullAvailPhys (memory available without paging), GB; the RAM guards' free RAM
+    (api.free_ram_gb, PW-1760)."""
+    return windows_ram_gb(kernel32, "ullAvailPhys")
 
 
 def total_ram_gb(system: str | None = None) -> float | None:

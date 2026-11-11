@@ -396,7 +396,8 @@ def cmd_languages(args):
     for ref in args.runs:
         d = S.find_run(ref)
         out = Path(args.out) / d.name if args.out else None
-        sm = LR.write(d, out_dir=out, seed=args.seed, workers=args.workers)
+        from . import osutil as OS
+        sm = LR.write(d, out_dir=out, seed=args.seed, workers=OS.fork_workers(args.workers))  # (no fork on Windows, PW-1760)
         print(ref, "\n".join(LR.lines_for_report(sm)))
         if out is None:  # (the features' names read the new languages: PW-1656)
             cmd_features(argparse.Namespace(runs=[ref]))

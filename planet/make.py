@@ -37,6 +37,7 @@ from pathlib import Path
 import numpy as np
 
 from . import api
+from . import osutil as OS
 from . import store as S
 from . import highlights as H
 from .finish import NOWS
@@ -371,7 +372,7 @@ def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = Fal
                 p(0.0, f"languages: the pass over peoples run {out['peoples']} ({spec['language_workers']} workers)")
                 rd = S.find_run(out["peoples"])
                 try:  # (a failure is logged, not fatal, as in the peoples stage before: the peoples run stands without languages)
-                    sm = LR.write(rd, workers=spec["language_workers"], report=True, progress=p)
+                    sm = LR.write(rd, workers=OS.fork_workers(spec["language_workers"]), report=True, progress=p)  # (no fork on Windows: 1, PW-1760)
                 except api.Cancelled:
                     raise
                 except Exception as e:  # noqa: BLE001 (a run too short for the pass's 20 kyr, no demes...)

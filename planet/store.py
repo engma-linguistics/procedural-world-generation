@@ -60,11 +60,12 @@ from pathlib import Path
 
 try:
     import fcntl
-except ImportError:  # (Windows: no cross-process locks; the project targets Linux and macOS)
+except ImportError:  # (Windows: msvcrt byte-range locks instead, osutil.lock_fd, PW-1760)
     fcntl = None
 
 import numpy as np
 
+from . import osutil as OS
 from .humanuse import LAYER_SPECS as HUMAN_USE_SPECS
 from .gameattrs import LAYER_SPECS as GAME_SPECS
 from .resources import LAYER_SPECS as RESOURCE_SPECS
@@ -216,7 +217,7 @@ def write_atomic(path: Path, data: str | bytes) -> Path:
             tmp.write_text(data)
         else:
             tmp.write_bytes(data)
-        os.replace(tmp, path)
+        OS.replace(tmp, path)
     except BaseException:
         tmp.unlink(missing_ok=True)
         raise
@@ -233,7 +234,7 @@ def atomic_path(path: Path):
     tmp = path.with_name(f".{path.stem}.{os.getpid()}.{threading.get_ident()}.tmp{path.suffix}")
     try:
         yield tmp
-        os.replace(tmp, path)
+        OS.replace(tmp, path)
     except BaseException:
         tmp.unlink(missing_ok=True)
         raise
@@ -276,6 +277,8 @@ def lock(base_dir: Path, name: str):
             try:
                 if fcntl is not None:
                     fcntl.flock(fd, fcntl.LOCK_EX)
+                else:
+                    OS.lock_fd(fd)  # (Windows)
             except BaseException:
                 os.close(fd)
                 raise
@@ -286,6 +289,8 @@ def lock(base_dir: Path, name: str):
         finally:
             ent[1] -= 1
             if ent[1] == 0:
+                if fcntl is None:
+                    OS.unlock_fd(ent[2])  # (Windows: released before the close)
                 os.close(ent[2])  # (releases the flock)
                 ent[2] = None
 
@@ -825,11 +830,9 @@ def exists(kind: str, item_id: str) -> bool:
 # whole run.json (no status) at the end; on an error or Ctrl-C the header says "interrupted" and the folder, with its
 # checkpoints, is kept (PW-508). A running header whose process is gone (a hard kill) counts as interrupted.
 def _proc_start(pid: int) -> str | None:
-    """When process pid started (Linux /proc: clock ticks since boot), to tell it from a later process with its pid."""
-    try:
-        return Path(f"/proc/{pid}/stat").read_text().rpartition(")")[2].split()[19]
-    except (OSError, IndexError):
-        return None
+    """When process pid started (Linux /proc: clock ticks since boot; Windows: its creation time; macOS: None), to tell
+    it from a later process with its pid (osutil.proc_start, PW-1760)."""
+    return OS.proc_start(pid)
 
 
 def process_stamp() -> dict:
@@ -841,12 +844,8 @@ def _alive(meta: dict) -> bool:
     pid = meta.get("pid")
     if not isinstance(pid, int):
         return False
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
+    if not OS.pid_alive(pid):  # (POSIX: os.kill(pid, 0); never on Windows, where it would end the run, PW-1760)
         return False
-    except PermissionError:
-        pass
     return meta.get("pid_start") is None or _proc_start(pid) == meta.get("pid_start")
 
 
@@ -1139,7 +1138,7 @@ class VolcanoStream:
         self.f.seek(9)
         self.f.write(bytes([255]))  # OS "unknown", as gzip.compress
         self.f.close()
-        os.replace(self.tmp, self.path)
+        OS.replace(self.tmp, self.path)
         return self.path
 
     def abort(self) -> None:

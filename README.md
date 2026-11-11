@@ -6,10 +6,26 @@ browser viewer.
 
 ## Install (users)
 
-`sh install.sh` from a checkout or tarball (Linux; macOS best effort; Windows via WSL2) installs a private uv and
-Python 3.14 under `~/.local/share/procgen-world`, a `planet` launcher and an app-menu entry, and keeps data in
-`~/procgen-world-data`. Then `planet self open`, `planet self update | rollback | uninstall`. Details, timings and
-disk use: `docs/review/plan/installer.md`. Developers keep using `uv run` from the checkout.
+One command, nothing needed beforehand (not even Python: a pinned, checksummed uv fetches a private Python 3.14):
+
+```sh
+# Ubuntu / Linux (x86-64, arm64)
+curl -LsSf https://raw.githubusercontent.com/engma-linguistics/procedural-world-generation/main/install.sh | sh
+# macOS 14+ on Apple Silicon (Terminal)
+curl -LsSf https://raw.githubusercontent.com/engma-linguistics/procedural-world-generation/main/install.sh | sh
+```
+
+```powershell
+# Windows 10/11 x86-64 (PowerShell)
+irm https://raw.githubusercontent.com/engma-linguistics/procedural-world-generation/main/install.ps1 | iex
+```
+
+(The URLs work once the repository or its releases are public. From a checkout: `sh install.sh`, or on Windows
+`powershell -ExecutionPolicy Bypass -File install.ps1 -Source .`.) It installs under `~/.local/share/procgen-world`
+(Windows: `%LOCALAPPDATA%\procgen-world`), adds a `planet` command and an app-menu entry (macOS:
+`~/Applications/Procgen World.command`; Windows: the Start menu), and keeps data in `~/procgen-world-data`. Then
+`planet self open`, `planet self update | rollback | uninstall | status`. Details, timings and disk use:
+`docs/review/plan/installer.md`. Developers keep using `uv run` from the checkout.
 
 ## Quick start
 
