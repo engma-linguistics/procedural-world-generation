@@ -731,8 +731,11 @@ def word_starts(result: dict) -> dict:
 
 # --- borrowing in the right places (PW-1738, PW-1745: language lane 20) ------------------------------------------------
 CORE_ITEMS = ("I", "WE", "ONE", "TWO", "THREE", "MOTHER", "FATHER")
-CORE_ITEM_MAX = 0.05   # each: the share of living lects whose word is a loan (WOLD: pronouns, low numerals, parent terms
-#                        are borrowed in a few percent of languages at most; a24559 had 10-22% before lane 20)
+CORE_ITEM_MAX = 0.05   # each: the share of living lects whose word is a loan (WOLD: pronouns and parent terms are
+#                        borrowed in a few percent of languages at most; a24559 had 10-22% before lane 20)
+NUMERAL_ITEMS = ("ONE", "TWO", "THREE")
+NUMERAL_ITEM_MAX = 0.10   # owner 2026-11-11, Language Desk n.numcap A: numerals are fairly borrowable (WOLD TWO 0.23,
+#                           THREE 0.22 vs ~0.1 for pronouns; whole numeral sets were taken by Japanese, Korean, Thai, Swahili)
 SW100_XFAM_MAX = 0.02   # Swadesh-100 words borrowed across families in the last 3 kyr, share of all (living lect, word)
 XFAM_KYR = 3.0
 LATE_KYR = 6.0   # a late concept: its word in the lect was first made (or taken) in the last LATE_KYR kyr
@@ -780,12 +783,13 @@ def core_loans(result: dict) -> dict:
             if len(bs) >= 2:   # (A > B > A: a borrowing into a lect that an earlier borrowing took the word from)
                 pp += any(s.lect in {x.process.split(":", 1)[1] for x in bs[:j]} for j, s in enumerate(bs))
     share = xf / max(n, 1)
-    worst = max(items.values()) if items else 0.0
+    over = {k: v for k, v in items.items() if v > (NUMERAL_ITEM_MAX if k in NUMERAL_ITEMS else CORE_ITEM_MAX)}
     return _row("core words rarely borrowed", {"items": items, "item_loan_sources": dict(sorted(how.items(), key=lambda x: -x[1])[:8]),
                                                "sw100_xfam_3kyr": round(share, 4),
                                                "pingpong": round(pp / max(nw, 1), 4)},
-                f"each of {', '.join(CORE_ITEMS)} <= {CORE_ITEM_MAX}; Swadesh-100 cross-family loans in the last "
-                f"{XFAM_KYR:g} kyr <= {SW100_XFAM_MAX}", worst <= CORE_ITEM_MAX and share <= SW100_XFAM_MAX,
+                f"pronouns and parent words each <= {CORE_ITEM_MAX}, {', '.join(NUMERAL_ITEMS)} each <= {NUMERAL_ITEM_MAX}; "
+                f"Swadesh-100 cross-family loans in the last {XFAM_KYR:g} kyr <= {SW100_XFAM_MAX}",
+                not over and share <= SW100_XFAM_MAX,
                 "loan = the word's latest word-making step is a borrowing; WOLD/Tadmor 2009 for the core's low borrowability")
 
 

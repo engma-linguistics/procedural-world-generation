@@ -12,7 +12,9 @@ languages*.json files are deleted (unless --keep): /tmp is RAM. `--code DIR` run
 commit, for a before/after on the same cells).
 
 The pass bar (PW-1737, first baseline 2026-11-11): every realism and guard check except the horizon passes in at least
-PASS_BAR of the cells; invariants in all of them; the horizon is reported, not barred (owner 11-08)."""
+PASS_BAR of the cells; invariants in all of them; the horizon is reported, not barred (owner 11-08). A lane (`--compare
+main.json branch.json`) also may not lower any check's pass rate by more than one cell against main. Owner ruling
+2026-11-11 (Language Desk m.bar, A)."""
 from __future__ import annotations
 
 import argparse
@@ -30,7 +32,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 RUNS = ("a24559", "de1cc6", "0141d1", "3e0eb4")   # D&D on dba204; Seven Meals on 2762ba (stress); D&D on 899985; D&D on dba204, 2nd draw
 SEEDS = ("own", "7919")   # "own" = the run's meta.seed (the pass's default)
-PASS_BAR = 0.7            # share of cells each non-horizon realism/guard check must pass (seed-pass-rate convention)
+PASS_BAR = 0.7            # share of cells each non-horizon realism/guard check must pass (owner 11-11, m.bar A: 6 of 8)
+MAX_DROP_CELLS = 1        # a lane may lower a check's pass rate by at most this many cells against main (m.bar A)
 HORIZON = "scholars' horizon (human lects)"
 SHORT = {"proto inventories vs PHOIBLE": "proto inventories", "sisters recognisable, distant not": "sisters",
          HORIZON: "horizon", "language shift happened": "shifts", "long generations change less": "long generations",
@@ -199,6 +202,10 @@ def compare(a: dict, b: dict) -> str:
         L.append(f"| {SHORT.get(n, n)} | {(ra or rb)['kind']} | {ra['rate']:.0%} | {rb['rate']:.0%} | {d} |" if ra and rb else
                  f"| {SHORT.get(n, n)} | {(ra or rb)['kind']} | {ra and format(ra['rate'], '.0%') or '-'} | "
                  f"{rb and format(rb['rate'], '.0%') or '-'} | |")
+    n_cells = max(1, len([c for c in b["cells"] if "numbers" in c]))
+    drops = [SHORT.get(n, n) for n in a["rates"] if n in b["rates"] and n != HORIZON
+             and a["rates"][n]["rate"] - b["rates"][n]["rate"] > MAX_DROP_CELLS / n_cells + 1e-9]
+    L += ["", f"lane verdict (B against A): {'OK' if not drops else 'FAIL: down more than ' + str(MAX_DROP_CELLS) + ' cell: ' + ', '.join(drops)}"]
     keyed = {c["cell"]: c for c in b["cells"] if "numbers" in c}
     L += ["", "| cell | " + " | ".join(f"{k} A>B" for k in NUMBERS) + " |", "|---|" + "---|" * len(NUMBERS)]
     for c in a["cells"]:
@@ -224,7 +231,7 @@ def main(argv=None) -> int:
     ap.add_argument("--seeds", default=",".join(SEEDS), help="seeds, comma-separated; 'own' = the run's own (default own,7919)")
     ap.add_argument("--cells", type=int, default=4, help="cells run at once (default 4)")
     ap.add_argument("--workers", type=int, default=4, help="workers per cell (default 4; cells x workers <= the core budget)")
-    ap.add_argument("--memory-max", default="24G", help="systemd-run MemoryMax per cell (default 24G; '' = none)")
+    ap.add_argument("--memory-max", default="30G", help="systemd-run MemoryMax per cell (default 30G since lane 20, PW-1763; '' = none)")
     ap.add_argument("--scratch", help="folder for the cells' outputs (one subfolder per cell); finished cells are reused")
     ap.add_argument("--code", default=str(REPO), help="checkout to run the pass from (default this one)")
     ap.add_argument("--data", help="data root with runs/ (default $PLANET_DATA, else this or the main checkout)")
