@@ -1,11 +1,11 @@
 # Languages: what's done, what's open
 
-*Last updated 2026-11-11 (lane 17 merging; finish line filed). [Back to Languages](index.md).*
+*Last updated 2026-11-11 (lane 18: check matrix). [Back to Languages](index.md).*
 
 **Verdict (assessment 11-11, you agreed):** the machinery is essentially complete. What's left is a short finish line, about two weeks of lane time, then it's done and the long tail stays parked. [Assessment](https://claude.ai/artifact/Foz8PcmxBDSu1U3DUeLjXz).
 
 **Finish line (epic PW-1736), roughly in order:**
-1. Check every change on several worlds at once, not just a24559.
+1. Check every change on several worlds at once, not just a24559 (done in lane 18: 4 worlds x 2 seeds; pass mark waiting on you).
 2. Fix the visible slips: garbled place names, random taboo words, "rr" everywhere, unnamed families, too few given names.
 3. Borrowing in the right places: less for core words like "I" and "two", more for things a people met late (horse, new crops, new tools), with a bigger everyday vocabulary.
 4. Fix sound systems that drift into odd shapes (no /m/, too few aspirates).
@@ -19,28 +19,22 @@
 
 ## For agents
 
-### Checks on a24559 (lane 16 rebuild, 2026-11-10)
-| Check | Value | Target | Pass |
-|---|---|---|---|
-| proto inventories vs PHOIBLE | C 0.51 / V 0.54 in IQR | medians in PHOIBLE IQR, 35–75% inside | yes |
-| sisters recognisable, distant not | siblings 0.5605, cross-family 0.0003 | > 0.5 / < 0.15 | yes |
-| scholars' horizon | human 17.0 kyr (16.0 overall) | 6–10 kyr | **no** (accepted; swings 4.5–19 with seed) |
-| language shift happened | 148 shifts, 91 living off descent | > 0 | yes |
-| long generations change less | human 14.8 rules/kyr | long-lived < 1/3 | yes |
-| hubs simpler, isolated richer | 15.5 vs 19.1 | hubs < isolated | yes |
-| living inventory sizes vs PHOIBLE | — | medians/quartiles within tolerance | yes |
-| living segment frequencies | top-20 overlap 16 | ≥ 12 | yes |
-| overused segments | none (worst ɖ 2.4x) | none > 10% and > 3x | yes |
-| typology agrees with live grams | 0 clashes | 0 | yes |
-| loans follow WOLD borrowability | rho 0.48, pronoun loans 0.063 | rho ≥ 0.3, ≤ 0.08 | yes |
-| areal signal | near − far 0.014 | ≥ 0.01 | yes |
-| no impossible segments | 0 | 0 | yes |
-| second voice only with a syrinx | 0 | 0 | yes |
-| loans follow contact kind | — | elite prestige ≥ 1.5x | yes |
-| doublets under elite rule | — | ≥ 0.2 | yes |
-| word starts vs NorthEuraLex | l 6.5 / h 6.2 / i 4.8 / m 4.1% | p10–p90 per class | yes |
+### Check matrix (lane 18, PW-1737): how every language lane is judged
+`uv run python -I tools/language/matrix.py --scratch DIR --json m.json --md m.md` runs the pass with `--out` over 4 peoples
+runs x 2 seeds (a24559, de1cc6 = Seven Meals, 0141d1, 3e0eb4; seeds own and 7919), 4 cells x 4 workers, ~15 min per wave,
+~30 min in all. `--compare main.json branch.json` for a lane. Baseline on main: `docs/review/language/matrix/baseline-2026-11-11.md`.
+Proposed bar (needs-decision draft): realism and guard checks in >= 70% of cells, invariants in all, horizon shown not barred,
+and no check down more than one cell against main.
 
-The **real-language benchmark** (PW-1641) is outside `checks.py`. Run `tools/language/real_inventory.py --check`. It seeds protos with real inventories or toolkits and measures what comes out. Its gaps are now-work, per the owner's 11-10 ruling.
+Baseline pass rates (8 cells): sisters 88%, hubs 88%, living sizes 75%, WOLD 75% (pronoun loans fail on both de1cc6
+draws, 0.092: PW-1738), **overuse 62%** (under the bar: PW-1740/PW-1642), everything else 100%. Check kinds: realism
+(sisters, horizon, living sizes/segments, overuse, areal, word starts), guard (proto inventories, shifts, long
+generations, hubs, WOLD, contact kind, doublets: they confirm wiring, prove little), invariant (typology, impossible
+segments, second voice). Horizon: judged on the logistic reading (12.7-20.6 kyr across cells; the two-window read went as
+low as 3.8 kyr on a24559 seed 7919), only under 6 kyr fails (owner 11-08). `--workers` does not change the output (test,
+and 3 vs 4 workers byte-equal tables on de1cc6).
+
+The **real-language benchmark** (PW-1641) is outside `checks.py`. Run `tools/language/real_inventory.py --check`. It seeds protos with real inventories or toolkits and measures what comes out. Since lane 18 it has two absolute bars beside the baseline bands: back harmony in < 25% of daughters (now 16%, ok) and >= 4 of 7 languages keep their character (now 3, MISSED: Spanish, Mandarin, Arabic drift). Its gaps are now-work, per the owner's 11-10 ruling.
 
 ### Open tickets
 - **Finish line, epic PW-1736 (owner agreed 11-11):**
@@ -93,5 +87,5 @@ For the rulings, see [decisions.md](../decisions.md) and `language-lane-endgame`
 - **Horizon:** the scholars' horizon is noisy across seeds.
 - **Per-frame lexicon:** Lects keep no per-frame lexicon, which blocks the time-true names in PW-1685. Either store the snapshots per name or re-coin names at the founding frame.
 - **Rule weights:** sound-change weights were hand-tuned per rule (`RULE_WEIGHT`) until PW-1692. Watch for regressions to the engine's middle (PW-1642).
-- **Second test world:** de1cc6's sisters share has been 0.476–0.513 since lane 16, against 0.53–0.55 before. This is likely a regression, not noise (PW-1737).
+- **Second test world (settled, lane 18):** de1cc6's sisters dip (0.476–0.513 after lane 16) was lane 16's, and lane 17's rate fix took most of it back: on current main 0.520 / 0.567 (seed own / 7919) against lane 15's 0.530 / 0.579 on the same seeds, so -0.01, a fifth of the seed-to-seed swing. Lexical diffusion is not the cause (switched off: 0.513 / 0.571). No fix needed.
 - **Contact data:** contact kinds come from derived trade triggers. Nearly all contact counts as trade (PW-1643) until polities land.

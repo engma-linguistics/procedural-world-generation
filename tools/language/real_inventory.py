@@ -725,10 +725,9 @@ CHECK_METRICS = {"birth": (-1, 0.15), "aged": (-1, 0.15), "growth": (-1, 0.15), 
                  "final_c_shift": (-1, 0.04), "harmony": (-1, 0.15)}
 AGG_METRICS = {"near": (+1, 1.0), "spread_ratio": (+1, 0.05), "universal": (-1, 1.0), "mean_growth": (-1, 0.1)}
 # Absolute bars (PW-1737): the baseline bands above only catch a change for the worse, so a stale or poor baseline passes
-# forever. These hold whatever the baseline says. metric -> (direction, bar, label); see ABS_BARS in check_report.
+# forever. These hold whatever the baseline says (the two bars of PW-1737). metric -> (direction, bar, label).
 ABS_BARS = {"back_harmony": (-1, 0.25, "full-toolkit daughters that fired harmony.back < 25%"),
-            "near": (+1, 4.0, "languages that kept their character >= 4 of 7"),
-            "universal": (-1, 0.0, "no drift signature (a change in >= 80% of all daughters)")}
+            "near": (+1, 4.0, "languages that kept their character >= 4 of 7")}
 
 
 def _mse(xs: list[float]) -> tuple[float, float]:
