@@ -13,6 +13,13 @@ Mechanisms, not per-people fixes. Each method's weight is a product of four thin
   - the body (spec.BODY_DEFAULT): no fire (no smoking; ferment and sun instead), raw meat (raw, aged and buried ferments), a low bitter
     sense (sharp, pungent ferments are no hardship), no sweet sense (ferments taken on to sour), a salt craving, a carnivore's diet (no
     grain or vegetable crocks); and the people's traits (a den or underground people keeps a cellar).
+Two more inputs (lane 309):
+  - bought-in food (PW-1727): the exchange's "Bought in" line (brief.trade_reach, bought_in.py) reaches the profile. Bought salt raises the
+    salt reach (so salting, pickling and the salty axis), bought spice, sugar and oil add to the hot, sweet and fatty axes and bought salt
+    fish to the savoury one, each at a lower weight than food from its own land, each with a "bought in from ..." reason;
+  - a kind's authored leanings (PW-1728): the tree's body key `keeping` (spec.parse_keeping), method -> multiplier and `kept` (how much of
+    its food is kept at all), laid over the derived weights with an "authored for this kind" reason. A leaning never opens a method whose
+    tech the people does not know.
 culinary-dnd's notes are the design intent these follow (docs/review/food/flavour-preservation.md quotes them): goblins' bitter-root
 detox and chicha ferments and their "strong stomachs" (the D&D tree's goblinoid body: raw_meat, bitter low), the steppe orcs' "dung fire:
 no roasting, no smoking" and dairy ferments "by necessity" (low lactase), the dwarves' cold cellars and salting, the delta lizardfolk's
@@ -50,6 +57,16 @@ HOT_CROPS = ("chili", "spice_tree", "alliums")
 VEG_CROPS = ("greens", "alliums", "roots", "squash", "nightshade_fruit", "beans", "pulses", "cowpea", "soybean", "potato", "sweet_potato")
 GRAIN_CROPS = ("wheat", "rye", "foxtail_millet", "sorghum", "rice", "maize", "pseudograin", "stonegrain")
 BITTER_CROPS = ("tea", "cacao", "greens")
+# PW-1727: bought-in food (bought_in.py: per good the share of the culture's people some other culture supplies). JUDGEMENT: a bought share
+# counts BOUGHT_GAIN times over (a market's salt reaches more tables than the people counted as supplied), bought salt never makes salt as
+# cheap as one's own (BOUGHT_SALT_CAP), and each bought taste adds at most its cap to its axis; nothing below BOUGHT_MIN counts.
+BOUGHT_MIN = 0.01  # (bought_in.SHOW_MIN: a giver is named from 1% of the people supplied)
+BOUGHT_GAIN = 2.5
+BOUGHT_SALT_CAP = 0.8
+BOUGHT_TASTE = {"spices": ("hot", 0.15, 0.5), "sugar": ("sweet", 0.1, 0.4), "oil_wine": ("fatty", 0.05, 0.3), "dried_fish": ("umami", 0.05, 0.3)}  # good -> (axis, base, cap)
+OIL_GIVER_CROPS = ("olive", "oil_seeds", "coconut")  # (oil_wine is oil where a giver grows these; wine alone adds no fat)
+SPICE_AXIS = {"chili": "hot", "spice_tree": "hot", "tea": "bitter", "cacao": "bitter", "vanilla": "sweet"}  # (the "spices" good is what the
+# givers' fields grow: pepper and chili are heat, tea and cacao bitterness, vanilla sweetness; givers with no crop named count as heat)
 AXES = ("salty", "sour", "umami", "fatty", "hot", "smoky", "sweet", "bitter", "funk", "herbal")
 SHORT = {"salty": "salty", "sour": "sour", "umami": "savoury", "fatty": "fatty", "hot": "hot", "smoky": "smoky", "sweet": "sweet",
          "bitter": "bitter", "funk": "funky", "herbal": "herbal"}
@@ -91,12 +108,40 @@ def inputs(brief: dict, p: dict) -> dict:
     body = p.get("body") or {}
     crops = set(p.get("crops") or {})
     carn = body.get("diet") in ("carnivore", "obligate_carnivore")
-    return {"arid": arid, "tropic": tropic, "cold_c": cold_c, "frost": frost, "lean": min(12.0, lean), "precip": precip,
+    bought = bought_of(brief.get("trade_reach"))
+    own_salt = salt
+    if "salt" in bought:
+        salt = max(salt, min(BOUGHT_SALT_CAP, salt + BOUGHT_GAIN * bought["salt"]["share"]))
+    return {"bought": bought, "own_salt": own_salt, "arid": arid, "tropic": tropic, "cold_c": cold_c, "frost": frost, "lean": min(12.0, lean), "precip": precip,
             "temp": land.get("temperature_c"), "elev": _num((land.get("elevation_m") or {}).get("mean")), "tree": _num(land.get("tree_cover_pct")),
             "salt": salt, "salt_km": (sa.get("km_to_salt") or {}).get("mean"), "sea_salt": sea_salt, "salt_mine": salt_mine,
             "fish": fish, "seals": min(1.0, seals), "fuel": fuel, "farm": _num(w.get("farm")), "herd": _num(w.get("herd")),
             "forage": _num(w.get("forage"), 1.0), "crops": crops, "carn": carn, "body": body, "know": set(p.get("know") or ()),
             "dairy": p.get("dairy"), "herds": set(p.get("herds") or {}), "traits": set(_traits(p)), "tree_techs": p.get("tree_techs")}
+
+
+def bought_of(tr: dict | None) -> dict:
+    """{good: {share, from: [giver names], what: [crop goods], crops: set}} of the culture's bought-in foods (its own "Bought in" line,
+    bought_in.of_culture; trade only, not tribute), from BOUGHT_MIN of its people supplied. Empty outside the exchange's window."""
+    out: dict = {}
+    if not tr or "foods" not in tr:
+        return out
+    for fd in tr["foods"]:
+        gv = [g for g in fd.get("givers") or [] if g.get("road") != "tribute"]
+        sh = _num(fd.get("share")) - sum(_num(g.get("share")) for g in fd.get("givers") or [] if g.get("road") == "tribute")  # (tribute is not bought)
+        if sh < BOUGHT_MIN:
+            continue
+        crops = {k for g in gv for k in g.get("crops") or ()}
+        out[fd["good"]] = {"share": round(sh, 3), "from": [g["name"] for g in gv[:2]], "what": list(dict.fromkeys(w for g in gv for w in g.get("what") or ()))[:3],
+                           "crops": crops, "label": fd.get("label") or fd["good"]}
+    return out
+
+
+def bought_why(b: dict, good: str) -> str:
+    """'bought in from X and Y (4% of its people supplied)'."""
+    r = b[good]
+    who = " and ".join(r["from"]) if r["from"] else "other cultures"
+    return f"{r['label']} bought in from {who} ({max(1, round(100 * r['share']))}% of its people supplied)"
 
 
 def _traits(p: dict) -> list:
@@ -180,12 +225,16 @@ def preservation(brief: dict, p: dict, x: dict | None = None) -> dict:
     W["smoking"] = w
     # salting: salt reach times what there is to salt
     w = (0.05 + 1.1 * x["salt"]) * (0.2 + 0.8 * meat + 1.2 * fish + (0.3 if x["dairy"] else 0.0))
-    if x["salt"] >= 0.6:
+    own = x.get("own_salt", x["salt"])  # (the reason is about its own land; bought salt has its own line below)
+    if own >= 0.6:
         R["salting"].append("salt is near: " + ("the sea is the salt" if x["sea_salt"] >= 0.2 else "salt springs or deposits") + (", and its own salt mines" if x["salt_mine"] else ""))
-    elif x["salt"] <= 0.3:
-        R["salting"].append(f"salt is far ({x['salt_km']} km on average): traded in and dear, so little is salted")
+    elif own <= 0.3:
+        R["salting"].append(f"salt is far on its own land ({x['salt_km']} km on average)" if "salt" in x.get("bought", {}) else
+                            f"salt is far ({x['salt_km']} km on average): traded in and dear, so little is salted")
     else:
         R["salting"].append("salt within reach for part of the land")
+    if "salt" in x.get("bought", {}):
+        R["salting"].append(bought_why(x["bought"], "salt") + (": salt it has not on its own land" if own <= 0.3 else ""))
     if b.get("salt") == "craving":
         w *= 1.3
         R["salting"].append("its body craves salt")
@@ -284,14 +333,30 @@ def preservation(brief: dict, p: dict, x: dict | None = None) -> dict:
             W[mid] = 0.0
         elif W[mid] < 0.05:
             W[mid] = 0.0
+    lean, lean_why = b.get("keeping") or {}, (b.get("keeping") or {}).get("why")
+    for mid, label, _, _ in METHODS:  # (PW-1728: the kind's authored leanings, after the gates: a leaning never opens a closed method)
+        k = lean.get(mid)
+        if k is None or k == 1.0 or any(a["id"] == mid for a in absent):
+            continue
+        if k == 0.0:
+            if W[mid] > 0:
+                absent.append({"id": mid, "label": label, "why": "never done by this kind (authored in the tree)" + (f": {lean_why}" if lean_why else "")})
+            W[mid] = 0.0
+            continue
+        W[mid] *= k
+        R[mid].append(f"authored for this kind: x{k:g}" + (f" ({lean_why})" if lean_why else ""))
     hunter = not any(W.values())  # (knows none of the keeping techs: a hunter of the moment, as the off-ladder kinds)
     # how much of all food is kept at all: the lean season, with store-keeping farmers and herds (JUDGEMENT)
     pres = 0.08 + 0.045 * x["lean"] + (0.15 if grain else 0.0) + 0.1 * min(1.0, x["herd"]) + (0.05 if x["arid"] >= 0.5 else 0.0)
     if x["forage"] >= 0.6 and not deep_cold:
         pres *= 0.7
-    pres = round(min(0.75, max(0.05, pres)), 2) if not hunter else 0.0
+    if "kept" in lean and lean["kept"] != 1.0:
+        pres *= lean["kept"]
+    pres = round(min(0.75, max(0.05 if lean.get("kept", 1.0) > 0 else 0.0, pres)), 2) if not hunter else 0.0
     pres_why = f"lean season about {round(x['lean'])} months" + ("; farmed grain is a stored food" if grain else "") + \
         ("; the herd is a larder on the hoof" if x["herd"] >= 0.3 else "") + ("; foragers store little" if x["forage"] >= 0.6 and not deep_cold else "")
+    if "kept" in lean and lean["kept"] != 1.0:
+        pres_why += f"; authored for this kind: x{lean['kept']:g} of its food kept" + (f" ({lean_why})" if lean_why else "")
     if hunter:
         pres_why = "it knows none of the ways of keeping food: the kill and the gathered food are eaten fresh"
     tot = sum(W.values()) or 1.0
@@ -328,7 +393,12 @@ def flavour(brief: dict, p: dict, keep: dict | None = None, x: dict | None = Non
             R[a].append(why)
 
     kept = lambda m: pres * S.get(m, 0.0) * 2.5  # noqa: E731  (a method's pull on the plate: its share of all food, scaled)
-    add("salty", (0.6 if S.get("salting") or S.get("fish_sauce") else 0.35) * x["salt"], "salt near at hand" if x["salt"] >= 0.6 else "some salt within reach" if x["salt"] > 0.3 else "salt far and dear")
+    bo = x.get("bought") or {}
+    own = x.get("own_salt", x["salt"])
+    salt_word = "salt near at hand" if own >= 0.6 else "some salt within reach" if own > 0.3 else "salt far and dear"
+    if "salt" in bo:
+        salt_word = ("salt far on its own land, but " if own <= 0.3 else salt_word + "; and ") + bought_why(bo, "salt")
+    add("salty", (0.6 if S.get("salting") or S.get("fish_sauce") else 0.35) * x["salt"], salt_word)
     add("salty", kept("salting") + 0.6 * kept("fish_sauce") + 0.4 * kept("pickling"), "salted, brined and fish-sauced keeping")
     if b.get("salt") == "craving":
         add("salty", 0.2, "a body that craves salt")
@@ -386,6 +456,21 @@ def flavour(brief: dict, p: dict, keep: dict | None = None, x: dict | None = Non
         "wild greens and herbs gathered" + (", garden herbs" if crops & {"greens", "alliums"} else ""))
     if b.get("smell") == "keen":
         add("herbal", 0.15, "a keen nose: aroma counts")
+    for good, (ax, base, cap) in BOUGHT_TASTE.items():  # (PW-1727: bought-in tastes, below what its own land would give)
+        if good not in bo or (good == "oil_wine" and bo[good]["crops"] and not bo[good]["crops"] & set(OIL_GIVER_CROPS)):
+            continue
+        v = min(cap, base + BOUGHT_GAIN * bo[good]["share"])
+        why = bought_why(bo, good) + (f": {', '.join(bo[good]['what'])}" if bo[good]["what"] else "")
+        axes = [ax]
+        if good == "spices" and bo[good]["crops"] & set(SPICE_AXIS):
+            sp = bo[good]["crops"] & set(SPICE_AXIS)
+            if b.get("capsaicin") is False and "chili" in sp and "spice_tree" not in sp:
+                sp = (sp - {"chili"}) | {"vanilla"}  # (chili that does not burn this people tastes fruity-sweet)
+            axes = sorted({SPICE_AXIS[c] for c in sp})
+        for a in axes:
+            if a == "sweet" and b.get("sweet") is False:
+                continue
+            add(a, v if a == ax else 0.6 * v, why)
     out = {}
     for a in AXES:
         v = round(min(1.0, A[a]), 2)
