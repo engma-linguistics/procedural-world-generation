@@ -44,4 +44,4 @@ Try, one at a time, judged on a24559 + de1cc6 (scratch syl.py) and `real_invento
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-open-syllable-stable-state.md (found by lang-lane14b).
-- 2026-11-10: Lane 16 (merged 15b6fea2): step 1 done (retemplate keeps CV while the anchor holds), gain under 1 point (a24559 5.0 > 5.8%). Step 2 (S099 final-consonant loss as a split signature, one-off cap lifted for it) is written but not run; the edit script is lane16/ed_1647b.py in the coordinator scratchpad, which is gone, so rewrite it from this description.
+- 2026-11-10: Lane 16 (merged 15b6fea2): step 1 done (retemplate keeps CV while the anchor holds), gain under 1 point (a24559 5.0 > 5.8%). Step 2 (S099 final-consonant loss as a split signature, one-off cap lifted for it) is written but not run; the edit script is kept at docs/review/language/lane16/ed_1647b.py (an untested patch script).
