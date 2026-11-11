@@ -31,6 +31,7 @@ strong spells only), what LOG = 1 means (lean: D56 at iron-age tech), and partia
 - [ ] measures in proposal section 4 pass on five re-rolled draws, same commit on/off
 
 ## Updates
+- 2026-11-10: Owner 11-10: no turn-by-turn campaigns. Even at the finest steps whole wars and campaigns happen inside one step; supply only scales reach, siege staying power and edge losses per step. Keep doing what we're doing; it reads realistic so far.
 - 2026-11-10: Owner 11-10 caution: as on PW-1649, ordinary logistics first; magic supply (D73/D74) is optional and gets parked in later at the first sign of weirdness.
 - 2026-11-10: Owner 11-10 D73 C (magical supply capped ~1.5x; magic supply draws on magical/alchemical resources and trade goods; potency and prevalence grow with the tech tree like other war techs), D75 A (iron age = today's ~1,000 km reach), D76 A (small polities conquered whole; larger empires lose edges piecemeal and see rebellious breakaways).
 - 2026-11-10: Created from inbox draft draft-logistics-reach-and-siege.md (found by lane279).
