@@ -296,7 +296,26 @@ def _fine_zoom_job(r: dict, progress) -> dict:
 
 
 # ---- sections of the tiling, and the RAM a zoom job needs (PW-1674; docs/review/zoom/lod-plan.md step 1)
-ZOOM_RAM_SPARE_GB = 8.0  # memory left free beside a zoom's expected peak (as REFINE_RAM_SPARE_GB)
+ZOOM_RAM_SPARE_GB = 8.0  # memory left free beside a zoom's expected peak (as REFINE_RAM_SPARE_GB), at most: ram_spare_gb
+
+
+@functools.lru_cache(maxsize=1)
+def _total_ram_gb() -> float | None:
+    from . import machine as MC
+    return MC.total_ram_gb()
+
+
+def ram_spare_gb(total_gb: float | None = None) -> float:
+    """The memory the RAM guards (zoom, tile, refine) keep free beside a job's expected peak: machine.spare_gb of the
+    physical RAM (machine.total_ram_gb, read once), the rule the machine presets use: 8 GB from 32 GB of RAM up, a
+    quarter of the RAM below (a 7 GB CI runner keeps 1.8 GB, so a 2 GB zoom fits; PW-1760). 8 GB when the RAM can't
+    be read. total_gb: a made-up machine's RAM (tests)."""
+    if total_gb is None:
+        total_gb = _total_ram_gb()
+    if not total_gb:
+        return ZOOM_RAM_SPARE_GB
+    from . import machine as MC
+    return MC.spare_gb(total_gb)
 HEAVY_ZOOM_PX = 1_000_000  # a zoom this big (and >= 1,000 km) is "section-sized": one at a time
 # (pixels, peak GB) of one regional zoom of a 4,000 km section, the budget figure for each resolution:
 ZOOM_PEAK_ANCHORS = (
@@ -337,7 +356,8 @@ def zoom_estimate(r: dict, busy: str | None = None) -> dict:
     refuse: why it must not start now (memory short, naming the RAM it needs; or, with `busy`, the id of another
     section-sized zoom job: one at a time)."""
     peak = zoom_peak_gb(r["size_km"], r["res_km"])
-    need = peak + ZOOM_RAM_SPARE_GB
+    spare = ram_spare_gb()
+    need = peak + spare
     ram, heavy, refuse = free_ram_gb(), zoom_is_heavy(r), []
     what = (f"section {r['section']} " if r.get("section") else "") + f"{r['size_km']:g} km at {r['res_km']:g} km/px"
     if busy and heavy:
@@ -345,10 +365,10 @@ def zoom_estimate(r: dict, busy: str | None = None) -> dict:
     if ram is not None and ram < need:
         coarser = ""
         if heavy:
-            alts = [x for x in (4.0, 2.0, 1.0) if x > r["res_km"] and zoom_peak_gb(r["size_km"], x) + ZOOM_RAM_SPARE_GB <= ram]
+            alts = [x for x in (4.0, 2.0, 1.0) if x > r["res_km"] and zoom_peak_gb(r["size_km"], x) + spare <= ram]
             coarser = f"; {alts[-1]:g} km/px would fit now" if alts else ""
         refuse.append(f"not enough free memory: {ram:.0f} GB free, the {what} zoom needs about {peak:.0f} GB plus "
-                      f"{ZOOM_RAM_SPARE_GB:.0f} GB to spare ({need:.0f} GB in all). Close something or wait for other "
+                      f"{spare:g} GB to spare ({need:.0f} GB in all). Close something or wait for other "
                       f"jobs{coarser}")
     return {"peak_gb": round(peak, 1), "need_gb": round(need, 1), "free_ram_gb": None if ram is None else round(ram, 1),
             "heavy": heavy, "refuse": refuse}
@@ -428,9 +448,10 @@ def tile_job(req: dict, progress=lambda f, msg: None) -> dict:
         if d is None:
             need = TILE_PEAK_GB[key.level]
             ram = free_ram_gb()
-            if ram is not None and ram < need + ZOOM_RAM_SPARE_GB:
+            spare = ram_spare_gb()
+            if ram is not None and ram < need + spare:
                 raise BadRequest(f"not started: not enough free memory: {ram:.0f} GB free, a level {key.level} tile needs "
-                                 f"about {need:g} GB plus {ZOOM_RAM_SPARE_GB:.0f} GB to spare")
+                                 f"about {need:g} GB plus {spare:g} GB to spare")
             done = [0]
 
             def log(msg):
@@ -754,7 +775,7 @@ def enrich_job(req: dict, progress=lambda f, msg: None) -> dict:
 REFINE_MAX_LEVEL = 9
 VIEWER_MAX_LEVEL = 9  # (an L9 world opens since its layers are binary files, PW-1209; slowly: VIEWER_SLOW_LEVEL)
 VIEWER_SLOW_LEVEL = 9  # opening takes 10-20 s and about 4 GB of the browser's memory (docs/review/viewer/binary-layers.md)
-REFINE_RAM_SPARE_GB = 8.0  # memory left free beside the refine's expected peak
+REFINE_RAM_SPARE_GB = 8.0  # memory left free beside the refine's expected peak, at most (ram_spare_gb)
 REFINE_TMP_MIN_GB = 40.0  # free /tmp kept (on the Threadripper /tmp is RAM: below this the machine runs short)
 REFINE_LONG_MIN = 20.0  # longer than this: say "run it overnight"
 
@@ -913,12 +934,13 @@ def refine_estimate(req: dict, busy: str | None = None) -> dict:
     refuse, warn = [], []
     if busy:
         refuse.append(f"another refine is queued or running (job {busy}): one at a time")
-    need = c["peak_gb"] + REFINE_RAM_SPARE_GB
+    spare = ram_spare_gb()
+    need = c["peak_gb"] + spare
     if ram is None:
         warn.append("could not read the free memory: check it yourself")
     elif ram < need:
         refuse.append(f"not enough free memory: {ram:.0f} GB free, it needs about {c['peak_gb']:.0f} GB "
-                      f"plus {REFINE_RAM_SPARE_GB:.0f} GB to spare. Close something or wait for other jobs")
+                      f"plus {spare:g} GB to spare. Close something or wait for other jobs")
     if tmp is not None and tmp < REFINE_TMP_MIN_GB:
         if sys.platform.startswith("linux"):
             refuse.append(f"/tmp is nearly full: {tmp:.0f} GB free, keep at least {REFINE_TMP_MIN_GB:.0f} GB "

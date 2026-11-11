@@ -1623,7 +1623,7 @@ def add_satellite(ref: str | Path) -> Path:
     images, the cloud layers and the preview. Recomputes the plant fractions
     (zoom.vegetation.fractions, ~5 s)."""
     d = S.find_zoom(ref)
-    meta, lay = load(d, decode=True)
+    meta, lay = load(d, decode=True, mmap=False)  # (it rewrites layer files: none may be mapped, PW-1760)
     world = land_world(W.load(find_world(meta["source_world"]["id"])))[0]
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
     fr = frame_of(meta["center"])
@@ -1653,7 +1653,7 @@ def add_game(ref: str | Path) -> Path:
     """(Re)makes a saved zoom's game attributes in place (gameattrs.py, PW-206). Recomputes the plant
     fractions (zoom.vegetation.fractions, ~5 s)."""
     d = S.find_zoom(ref)
-    meta, lay = load(d, decode=True)
+    meta, lay = load(d, decode=True, mmap=False)  # (it rewrites layer files: none may be mapped, PW-1760)
     world = W.load(find_world(meta["source_world"]["id"]))
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
     fr = frame_of(meta["center"])
@@ -1678,7 +1678,7 @@ def add_game(ref: str | Path) -> Path:
 def add_humanuse(ref: str | Path) -> Path:
     """(Re)makes a saved zoom's human-use layers in place (humanuse.py, PW-099): the class maps and the legend."""
     d = S.find_zoom(ref)
-    meta, lay = load(d, decode=True)
+    meta, lay = load(d, decode=True, mmap=False)  # (it rewrites layer files: none may be mapped, PW-1760)
     nx, ny, res = meta["nx"], meta["ny"], meta["res_km"]
     fr = frame_of(meta["center"])
     new = HU.zoom_layers(lay, res, HU.falls_pixels(meta.get("stats", {}).get("falls", []), fr, nx, ny, res))
@@ -1692,12 +1692,14 @@ def add_humanuse(ref: str | Path) -> Path:
     return d
 
 
-def load(ref: str | Path, decode: bool = False) -> tuple[dict, dict]:
+def load(ref: str | Path, decode: bool = False, mmap: bool = True) -> tuple[dict, dict]:
     """(meta, {layer: (ny, nx) array}) for zooms/<id> (or a path to it);
-    raw as stored, or in real units with decode (scaled layers: float)."""
+    raw as stored, or in real units with decode (scaled layers: float).
+    mmap=False reads the layers into memory instead of mapping them: a caller that rewrites this zoom's layer files
+    must use it, because Windows will not rewrite or replace a file this process still maps ([Errno 22], PW-1760)."""
     d = S.find_zoom(ref)
     meta = json.loads((d / "zoom.json").read_text())
-    raw = S.read_layers(d, meta["layers"])
+    raw = S.read_layers(d, meta["layers"], mmap=mmap)
     if decode:
         raw = {k: S.decode(np.asarray(v), meta["layers"][k]) for k, v in raw.items()}
     return meta, raw
@@ -1745,6 +1747,7 @@ def zoom(world_ref: str, lat: float | None, lon: float | None, size_km: float = 
     zid = zoom_id(path.stem, lat, lon, size_km, res_km, seed, iterations, peoples, _up_list(z["frame"]), match)
     with S.lock(S.zooms_dir(), zid):
         out = save(z, path, world, lat, lon, size_km, res_km, seed, iterations, peoples, section, match)  # (one writer per zoom folder)
+    del z  # (the built arrays are saved: free them before the coast pass reads the layers back into memory, PW-1760)
     ZC.add_to_zoom(out.name, world=world)  # (the coast layers and features, PW-097: the islands are in the terrain already)
     add_deposits(out, world)
     return out

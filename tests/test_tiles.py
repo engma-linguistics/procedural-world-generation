@@ -195,7 +195,7 @@ def test_the_ram_guard(svc):
     s.want(W, ["py.1.1/1/0/0"])
     _finish_all(s)
     l2 = _l2()
-    spare = api.ZOOM_RAM_SPARE_GB
+    spare = api.ram_spare_gb()
     # room for two: the second's need counts the first's peak again (on the safe side)
     s.free_ram = lambda: T.PEAK_GB[2] * 2 + spare + 0.1
     st = s.want(W, [str(k) for k in l2[:4]])
@@ -213,7 +213,7 @@ def test_one_section_at_a_time(svc):
     st = s.want(W, ["py.1.1/1/0/0", "px.1.1/1/0/0"])
     assert s.fake.started() == ["py.1.1/1/0/0"] and st["queued"] == 1
     # the section RAM budget is lane 290's 8.3 GB
-    s.free_ram = lambda: T.PEAK_GB[1] + api.ZOOM_RAM_SPARE_GB - 0.1
+    s.free_ram = lambda: T.PEAK_GB[1] + api.ram_spare_gb() - 0.1
     _finish_all(s)
     assert s.fake.live() == []
     # not beside another section-sized zoom (someone's POST /api/zoom)

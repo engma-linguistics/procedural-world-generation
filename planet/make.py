@@ -31,7 +31,10 @@ docs/coordination.md has the same numbers).
 from __future__ import annotations
 
 import json
+import os
 import secrets
+import sys
+import traceback
 from pathlib import Path
 
 import numpy as np
@@ -259,6 +262,27 @@ def _load_state(state, spec: dict) -> dict:
     return out
 
 
+DEBUG_ENV = "PLANET_DEBUG"  # (set, not 0/no/off: a failed stage's traceback is also printed to stderr)
+
+
+def log_failure(stage: str, run_id: str | None) -> str | None:
+    """Called inside the except block of a failed stage: appends the full traceback to the run's run.txt (when the run
+    exists) and, with $PLANET_DEBUG set, prints it to stderr, so a failure on a machine we can't reach (the 3-OS CI,
+    PW-1760) shows where it came from. Returns the log file's path for the message, or None. Never raises."""
+    tb = traceback.format_exc()
+    if os.environ.get(DEBUG_ENV, "").lower() not in ("", "0", "no", "off"):
+        print(f"planet make: {stage} failed:\n{tb}", file=sys.stderr, flush=True)
+    if not run_id:
+        return None
+    try:
+        path = S.find_run(run_id) / "run.txt"
+        with open(path, "a") as f:
+            f.write(f"\nplanet make: {stage} failed:\n{tb}")
+        return S.rel(path)
+    except (Exception, SystemExit):  # noqa: BLE001 (the log is a help; the stage's own error is what is raised)
+        return None
+
+
 def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = False) -> dict:
     """Runs the chain. Returns {"run", "timezoom", "world", "zooms": [...], "highlights": n, "peoples": run id, "languages": {living,
     languages, secs} (PW-1634), "t_myr"};
@@ -394,6 +418,8 @@ def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = Fal
         raise
     except (Exception, SystemExit) as e:
         made = ", ".join(f"{k} {v}" for k, v in out.items() if k in ("run", "timezoom", "world", "peoples")) or "nothing"
-        raise RuntimeError(f"{stage} failed: {e or type(e).__name__} (made so far: {made})") from e
+        where = log_failure(stage, out.get("run"))
+        raise RuntimeError(f"{stage} failed: {e or type(e).__name__} (made so far: {made})"
+                           + (f"; the traceback is in {where}" if where else "")) from e
     progress(1.0, "done")
     return out

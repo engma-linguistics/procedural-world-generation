@@ -163,6 +163,7 @@ def _post(jobs, body):
 
 def test_big_zoom_refused_without_the_ram(data_root, world_id, monkeypatch):
     jobs = FakeJobs()
+    monkeypatch.setattr(api, "_total_ram_gb", lambda: 180.0)  # (a big machine: the full 8 GB spare)
     monkeypatch.setattr(api, "free_ram_gb", lambda: 40.0)  # 1 km needs 110 + 8
     out, status = _post(jobs, {"world": world_id, "section": "px.1.1", "res_km": 1})
     assert status == 409 and jobs.submitted == []
@@ -179,6 +180,33 @@ def test_big_zoom_refused_without_the_ram(data_root, world_id, monkeypatch):
     assert _post(jobs, {"world": world_id, "section": "px.1.1", "res_km": 2})[1] == 409
     monkeypatch.setattr(api, "free_ram_gb", lambda: None)  # unreadable: let it through
     assert _post(jobs, {"world": world_id, "section": "px.1.1", "res_km": 1})[1] == 200
+
+
+def test_the_spare_follows_the_machine_presets_rule(monkeypatch):
+    """The zoom guard keeps machine.spare_gb of the physical RAM free (PW-1760): a 7 GB CI runner (macos-latest)
+    keeps a quarter, 1.8 GB, so the tiny make's 2 GB zoom starts there while a 10 GB one is still refused; from 32 GB
+    up it is the 8 GB it always was."""
+    small = {"size_km": 2000.0, "res_km": 4.0}  # (the tiny make's highlight zoom on the macOS runner)
+    big = {"size_km": 4000.0, "res_km": 3.5}
+    assert zoom_peak_gb_between(small, 1.9, 2.1) and zoom_peak_gb_between(big, 9.5, 10.5)
+    monkeypatch.setattr(api, "free_ram_gb", lambda: 7.0)
+    monkeypatch.setattr(api, "_total_ram_gb", lambda: 7.0)
+    assert api.ram_spare_gb() == 1.8 == api.ram_spare_gb(7.0)
+    est = api.zoom_estimate(small)
+    assert est["refuse"] == [] and est["need_gb"] == 3.8
+    est = api.zoom_estimate(big)
+    assert len(est["refuse"]) == 1 and "1.8 GB to spare" in est["refuse"][0]
+    monkeypatch.setattr(api, "_total_ram_gb", lambda: 180.0)  # (the Threadripper: unchanged)
+    assert api.ram_spare_gb() == 8.0
+    est = api.zoom_estimate(small)
+    assert "8 GB to spare (10 GB in all)" in est["refuse"][0] and est["need_gb"] == 10.0
+    assert api.ram_spare_gb(32.0) == 8.0 and api.ram_spare_gb(16.0) == 4.0
+    monkeypatch.setattr(api, "_total_ram_gb", lambda: None)  # (RAM unreadable: the full spare)
+    assert api.ram_spare_gb() == 8.0
+
+
+def zoom_peak_gb_between(r, lo, hi):
+    return lo <= api.zoom_peak_gb(r["size_km"], r["res_km"]) <= hi
 
 
 def test_an_existing_zoom_needs_no_ram(data_root, world_id, stub_build, monkeypatch):

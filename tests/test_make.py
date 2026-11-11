@@ -4,6 +4,7 @@ behind the start screen and the navigator (PW-472, PW-473)."""
 import http.client
 import http.server
 import json
+import re
 import sys
 import threading
 
@@ -244,6 +245,21 @@ def test_make_builds_a_peoples_run_of_its_own_kind(made, tmp_path):
 def test_make_failure_names_the_stage(data_root):
     with pytest.raises(RuntimeError, match=r"simulate failed.*made so far: nothing"):
         make.make({"seed": 1, "level": 4, "myr": 40, "set": {"n_plates": 12}}, lambda f, m: (_ for _ in ()).throw(ValueError("x")))
+
+
+def test_a_failed_stage_logs_its_traceback(data_root, monkeypatch, capsys):
+    """A stage that fails after the run exists (PW-1760: the zoom step on the Windows CI) appends its full traceback to
+    the run's run.txt and names the file; with $PLANET_DEBUG it is printed to stderr too."""
+    def boom(*a, **k):
+        raise OSError(22, "Invalid argument", "layers/barrier_island.bin")
+    monkeypatch.setattr(api, "timezoom_job", boom)
+    monkeypatch.setenv("PLANET_DEBUG", "1")
+    with pytest.raises(RuntimeError, match=r"timezoom failed: \[Errno 22\].*the traceback is in .*run\.txt") as ei:
+        make.make({"seed": 1, "level": 4, "myr": 40, "kyr": 10, "zooms": 0})
+    rid = re.search(r"made so far: run (\w+)", str(ei.value)).group(1)
+    log = (S.find_run(rid) / "run.txt").read_text()
+    assert "planet make: timezoom failed:" in log and "Traceback (most recent call last)" in log and "in boom" in log
+    assert "in boom" in capsys.readouterr().err
 
 
 def test_family_and_thumbs_of_a_made_planet(made):

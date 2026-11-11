@@ -570,7 +570,8 @@ def write_layers(out_dir: Path, arrays: dict, specs: dict | None = None) -> dict
         dt = np.dtype(spec.get("dtype") or np.asarray(a).dtype).newbyteorder("<")
         arr = np.ascontiguousarray(np.asarray(a).astype(dt))
         path = out_dir / "layers" / f"{name}.bin"
-        arr.tofile(path)
+        with open(path, "wb") as f:  # (the same bytes as arr.tofile(path); Windows refuses this while the file is
+            arr.tofile(f)            # mapped in this process, so rewriters load with mmap=False: zoom.regional.load)
         meta[name] = _layer_meta(name, spec, dt, arr.shape)
     return meta
 

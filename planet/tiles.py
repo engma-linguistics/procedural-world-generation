@@ -24,7 +24,7 @@ Builds run as server jobs (api.Jobs, each in a worker process), never in a reque
     PEAK_GB[1] = 8.3 GB (lane 290 measured; matched 8.3-8.4 GB, lane 295);
   - levels 2-4 are lod_build.tile jobs, AT_ONCE (3) at a time, PEAK_GB 5.0 GB each (lanes 301, 303: 4-4.9 GB; PW-1724);
   - at most AT_ONCE tile jobs in all (the server has 4 job workers: one is left for everything else);
-  - the RAM guard: a build starts only while free memory covers its peak, api.ZOOM_RAM_SPARE_GB and the peaks of the
+  - the RAM guard: a build starts only while free memory covers its peak, api.ram_spare_gb() and the peaks of the
     tile builds already started (counted again although they show in the free memory: on the safe side).
 The disk cache: tiles are zoom directories (zoom.load and the zoom page's files work on them) in the world's own tile
 store, <data root>/.tiles/<world>/zooms/ (store.tile_store; lod.tile_id; level 1: the cell's matched section), never in
@@ -311,11 +311,12 @@ class TileService:
                     if k.level == 1 and any(f["level"] == 1 for f in self.inflight.values()):
                         continue  # (one section at a time)
                     reserved = sum(PEAK_GB[f["level"]] for f in self.inflight.values())
-                    need = PEAK_GB[k.level] + api.ZOOM_RAM_SPARE_GB + reserved
+                    spare = api.ram_spare_gb()
+                    need = PEAK_GB[k.level] + spare + reserved
                     ram = self.free_ram()
                     if ram is not None and ram < need:
                         self.note = (f"waiting for memory: {ram:.0f} GB free, the next tile needs {PEAK_GB[k.level]:.1f} GB "
-                                     f"+ {api.ZOOM_RAM_SPARE_GB:.0f} spare + {reserved:.1f} for the builds running")
+                                     f"+ {spare:g} spare + {reserved:.1f} for the builds running")
                         stop = True
                         break
                     if k.level == 1:

@@ -275,3 +275,31 @@ macOS checks with fake `uname`/`sw_vers` (Intel refused, 13 refused, 15 accepted
 - `planet make` still prints `view: http://127.0.0.1:8765/…` whatever the port (cosmetic, as before).
 - The Mac `.command` is written locally, so it carries no quarantine flag. The checklist asks Daniel to note it if
   Gatekeeper complains.
+
+## The smoke test's zoom step on macOS and Windows (lane 316, PW-1760)
+
+Actions run 43116330508 (`ci/install-smoke`): ubuntu passed; macOS and Windows installed and passed `self status`, then
+the tiny make failed at its one zoom.
+
+- **macOS: the zoom RAM guard kept a fixed 8 GB spare.** `api.zoom_estimate` needed peak + `ZOOM_RAM_SPARE_GB` (8), so
+  the 2000 km, 4 km/px zoom (about 2 GB) needed 10 GB on a 7 GB runner. Now the zoom, tile and refine guards keep
+  `api.ram_spare_gb()`: `machine.spare_gb` of the physical RAM, the presets' own rule (8 GB, at most a quarter of the
+  RAM). The 7 GB runner keeps 1.8 GB (the zoom needs 3.8 GB in all); a 32 GB or bigger machine keeps 8 GB as before;
+  RAM that can't be read keeps 8. Physical RAM, not a cgroup cap: under `systemd-run MemoryMax` the guard already
+  counts the cap's room as the free memory, and the spare stays what the machine is.
+- **Windows: `[Errno 22] Invalid argument: ...zooms/<id>/layers/barrier_island.bin`.** `regional.zoom` saves the zoom,
+  then `coast.add_to_zoom` loads it with `regional.load`, whose layers are `np.memmap`s (`store.read_layer`), and
+  rewrites `barrier_island.bin` with `store.write_layers` while those maps are alive. Windows refuses to open a mapped
+  file for writing (ERROR_USER_MAPPED_FILE, which Python reports as errno 22); Linux allows it. `regional.load` has an
+  `mmap` option now, and every caller that rewrites layer files of the zoom it loaded uses `mmap=False`:
+  `coast.add_to_zoom`, `regional.add_satellite`, `add_game`, `add_humanuse`. `regional.zoom` also frees the built
+  arrays before the coast pass, so reading the layers into memory does not raise the peak (at most ~110 bytes a pixel,
+  1.8 GB on a 16 Mpx section). Layer bytes are unchanged: the same 70 files, byte for byte, from a zoom with
+  add_humanuse and add_game made by the code before and after.
+- **`planet make` now logs a failed stage's full traceback** to the run's `run.txt` (named in the error) and, with
+  `PLANET_DEBUG=1` (set in the smoke workflow), prints it to stderr.
+
+Tests: `tests/test_windows_mapped_files.py` plays Windows on Linux (a write or `os.replace` onto a layer file with a
+live map from `store.read_layer` raises errno 22 / access denied). Without the fix it fails with the CI's message;
+with it a zoom build and all four in-place steps pass. `test_zoom_sections.py::test_the_spare_follows_the_machine_presets_rule`
+(7 GB: the 2 GB zoom starts, a 10 GB one is refused; 180 GB: unchanged), `test_make.py::test_a_failed_stage_logs_its_traceback`.

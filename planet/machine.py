@@ -73,6 +73,13 @@ LOW_VRAM_GB = 2.0  # under this the viewer starts in low detail (milestones-to-v
 LOW_RAM_GB = 16.0  # and on a machine with less RAM than this (the browser shares it)
 
 
+def spare_gb(ram_gb: float) -> float:
+    """The memory kept free beside a big job's expected peak on a machine with ram_gb of RAM: SPARE_GB (8), but at most
+    a quarter of the RAM (2 GB on an 8 GB laptop). The presets and the server's RAM guards (api.ram_spare_gb) both use
+    it (PW-1760)."""
+    return round(min(SPARE_GB, SPARE_SHARE * ram_gb), 1)
+
+
 def share_of(ram_gb: float) -> float:
     """The share of the RAM the app may use (milestones-to-v1.md section 4's per-process cap, an estimate)."""
     return 0.70 if ram_gb < 32 else 0.75 if ram_gb < 64 else 0.80
@@ -276,7 +283,7 @@ def presets_for(p: dict) -> dict:
     if not ram:  # (RAM unknown: plan for the minimum machine's 32 GB, milestones-to-v1.md section 4, and say so)
         ram = 32.0
     budget = round(share_of(ram) * ram, 1)
-    spare = round(min(SPARE_GB, SPARE_SHARE * ram), 1)
+    spare = spare_gb(ram)
     gates = {k: gate(v["gb"], budget, spare) for k, v in PEAKS.items()}
     if gates["tiles_l1"] == "off":  # (levels 2-4 read level 1: without it there are no tiles)
         gates["tiles_l2"] = "off"

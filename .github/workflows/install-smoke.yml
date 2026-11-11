@@ -24,6 +24,7 @@ jobs:
     env:
       PROCGEN_MIN_FREE_GB: "5"   # (the runners have less free disk than the installer's 20 GB floor)
       PORT: "8790"
+      PLANET_DEBUG: "1"          # (a failed `planet make` stage prints its full traceback, PW-1760)
     steps:
       - uses: actions/checkout@v4
 
@@ -81,6 +82,7 @@ jobs:
     env:
       PROCGEN_MIN_FREE_GB: "5"
       PORT: "8790"
+      PLANET_DEBUG: "1"          # (a failed `planet make` stage prints its full traceback, PW-1760)
     defaults:
       run:
         shell: powershell   # Windows PowerShell 5.1: what `irm | iex` runs in on a user's machine

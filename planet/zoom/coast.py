@@ -344,7 +344,7 @@ def add_to_zoom(ref, terrain: bool = False, world: dict | None = None):
     from .. import world as W
     from . import regional as Z
     d = S.find_zoom(ref)
-    meta, lay = Z.load(d, decode=True)
+    meta, lay = Z.load(d, decode=True, mmap=False)  # (it rewrites layer files: none may be mapped, PW-1760)
     w = world or W.load(S.find_world(meta["source_world"]["id"]))
     r = build(w, meta, lay, terrain=terrain)
     new = r["layers"]
