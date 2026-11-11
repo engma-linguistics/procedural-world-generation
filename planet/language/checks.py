@@ -750,10 +750,15 @@ def core_loans(result: dict) -> dict:
     from . import lexicon as LX
     living = [l for l in result["lects"] if l.alive and l.deme is not None and not getattr(l, "minority", False)]
     by_id = {l.id: l for l in result["lects"]}
-    items = {}
+    items, how = {}, {}
     for k in CORE_ITEMS:
         ws = [l.lexicon.words[k] for l in living if k in l.lexicon.words]
         items[k] = round(float(np.mean([_is_loan(w) for w in ws])), 3) if ws else 0.0
+        for w in ws:   # (where the item loans come from: the loan step's note, first clause)
+            st = _last_loan(w)
+            if st is not None:
+                key = (st.note or "?").split(";")[0].split(" in city")[0][:40]
+                how[key] = how.get(key, 0) + 1
     sw = [c.id for c in LX.concept_index().values() if "SW100" in c.lists]
     n = xf = pp = nw = 0
     for l in living:
@@ -776,7 +781,8 @@ def core_loans(result: dict) -> dict:
                 pp += any(s.lect in {x.process.split(":", 1)[1] for x in bs[:j]} for j, s in enumerate(bs))
     share = xf / max(n, 1)
     worst = max(items.values()) if items else 0.0
-    return _row("core words rarely borrowed", {"items": items, "sw100_xfam_3kyr": round(share, 4),
+    return _row("core words rarely borrowed", {"items": items, "item_loan_sources": dict(sorted(how.items(), key=lambda x: -x[1])[:8]),
+                                               "sw100_xfam_3kyr": round(share, 4),
                                                "pingpong": round(pp / max(nw, 1), 4)},
                 f"each of {', '.join(CORE_ITEMS)} <= {CORE_ITEM_MAX}; Swadesh-100 cross-family loans in the last "
                 f"{XFAM_KYR:g} kyr <= {SW100_XFAM_MAX}", worst <= CORE_ITEM_MAX and share <= SW100_XFAM_MAX,

@@ -106,8 +106,9 @@ MINORITY_PULL = 1.0
 # against 1,552 trade triggers; now other peoples only, 1 kyr)
 TRADE_PARTNER_KYR = 1.0
 TECH_LOAN = 0.7  # chance a technology's word comes with it from the teaching people's lect in contact (history.tech_step)
-WILD_LOAN = 0.6  # chance a wild animal or plant met in a new land is named after the locals (history.wild_step, PW-1745;
-#                  Brown 1999: introduced and newly met species are named by loans or by 'X-like' native compounds)
+WILD_LOAN = 0.8  # chance a wild animal or plant met in a new land is named after the locals (history.wild_step, PW-1745;
+#                  Brown 1999: introduced and newly met species are named by loans or by 'X-like' native compounds;
+#                  0.6 -> 0.8 in lane 20 round 2: 41-51% of late words were loans or calques at 0.6, under the 50% bar)
 WILD_CALQUE = 0.3  # of those, the share taken as a loan translation when the locals' word is a compound
 # Substrate on shift (contact-gaps.md rec. 2): each local word (landscape, plants, animals) survives with a chance drawn
 # per shift from SUBSTRATE_KEEP (a handful plus the names, like Celtic in English, not 18% of the lexicon); names always.
@@ -1152,9 +1153,16 @@ class History:
                 teach = [x for x in have if self.lects[x].people == frm]
                 if teach and rng.random() < TECH_LOAN:
                     pick = max(teach, key=lambda x: (cw[x], x))
-                elif have and rng.random() < TECH_LOAN * min(1.0, sum(cw.values())):
-                    pick = max(have, key=lambda x: (cw[x], x))
-                if pick is not None:
+                elif have and rng.random() < TECH_LOAN:   # (lane 20 round 2: a neighbour's word for a new thing is taken
+                    pick = max(have, key=lambda x: (cw[x], x))   # as readily as the teacher's; it was x the intensity)
+                cq = None
+                if pick is None and have and rng.random() < WILD_CALQUE:   # (else its compound translated, if it is one)
+                    dl = self.lects[max(have, key=lambda x: (cw[x], x))]
+                    cq = LX.calque(rng, l.lexicon, dl.lexicon[concept], l.inventory, t1, l.id,
+                                   f"with {tech.replace('_', ' ')}, after {self.deme_label(dl.deme) if dl.deme is not None else dl.id}")
+                if cq is not None:
+                    l.lexicon.set(cq)
+                elif pick is not None:
                     dl = self.lects[pick]
                     if dl.deme is not None and dl.people != l.people:
                         self.partners[(d, dl.deme)] = t1

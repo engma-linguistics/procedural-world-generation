@@ -925,7 +925,7 @@ BORROW_REF = 0.19   # the mean WOLD score over the concept list (0.19 over the 6
 # hard core of pronouns, low numerals and parent terms ~ 1%). So a Swadesh-100 / Leipzig-Jakarta meaning's loan factor
 # is x CORE_LOAN_DAMP and the hard core's x HARD_CORE_LOAN_DAMP, and both stay on the low-intensity curve (gamma 1.5): even
 # intense contact does not make 'I' an ordinary word to borrow (English 'they' stays possible, at a few percent).
-CORE_LOAN_DAMP = 0.35
+CORE_LOAN_DAMP = 0.25   # (0.35 -> 0.25, lane 20 round 2: Swadesh-100 cross-family loans in 3 kyr were 2.3-3.0%, bar 2%)
 HARD_CORE_LOAN_DAMP = 0.08
 HARD_CORE = frozenset({"I", "THOU", "WE", "WE (INCLUSIVE)", "YOU", "THEY", "ONE", "TWO", "THREE", "MOTHER", "FATHER"})
 _CORE_LOAN_LISTS = frozenset({"SW100", "LJ100"})
