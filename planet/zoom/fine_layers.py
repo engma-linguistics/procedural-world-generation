@@ -156,7 +156,7 @@ def _inherit_pass(pa, pr, pc, n):
 
 
 def make(layers: dict, *, n: int, res: float, nu, pix_lat, tilt: float, falls: list, pa, pr, pc, size_km: float,
-         world: dict, seed: int, lat: float, lon: float, up, log=print) -> dict:
+         world: dict, seed: int, lat: float, lon: float, up, log=print, center: dict | None = None) -> dict:
     """The fine zoom's missing layers ((n, n) arrays) from its finished ones (`layers`: flat or (n, n))."""
     L = {kk: np.asarray(v).reshape(n, n) for kk, v in layers.items()}
     out: dict = {}
@@ -201,7 +201,7 @@ def make(layers: dict, *, n: int, res: float, nu, pix_lat, tilt: float, falls: l
     out.update(GA.zoom_layers(L, res, pix_lat, nu, tilt))
     # coast (zoom.coast: km windows; the world's coast classes and the sea state)
     meta = {"res_km": res, "nx": n, "ny": n, "seed": seed,
-            "center": {"lat": lat, "lon": lon, **({"up": up} if up else {})}}
+            "center": center or {"lat": lat, "lon": lon, **({"up": up} if up else {})}}
     cst = ZC.build(world, meta, {**L, **{kk_: v for kk_, v in out.items()}}, seed=seed)
     for kk_ in ("coast_type", "nav_hazard", "shore_form"):
         out[kk_] = cst["layers"][kk_]

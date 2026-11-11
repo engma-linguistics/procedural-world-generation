@@ -14,7 +14,10 @@ here builds a tile: it names them, places them and says which parent tiles a bui
     exists(key)                     the tile touches its cell (dilated by PAD_PX of its own pixels)
     covering(cell, level, rect)     the existing tiles over a rectangle of the plane (what a view needs)
     parent_sources(key)             the parent-level tiles a build's stitched parent window reads
+    parent_mosaic(key, sources)     that window cut from them into one parent zoom (fine.build's input)
+    tile_frame(key)                 the tile's frame: its cell's plane round the tile's centre (regional.PlaneFrame)
     tile_id(world_id, key, seed)    the deterministic id it is saved under
+Building and saving tiles: zoom/lod_build.py.
 """
 from __future__ import annotations
 
@@ -246,9 +249,11 @@ def covering(cell: str, level: int, r: tuple[float, float, float, float]) -> lis
 
 
 def parent_margin_px() -> int:
-    """Parent pixels a tile's build reads beyond its own edge: fine.EDGE_PX + fine.HALO_PARENT_PX + the bicubic's 2."""
+    """Parent pixels a tile's build reads beyond its own edge: its halo (fine.HALO_PARENT_PX and a pixel) and the reach
+    of its parent's river network round it (fine.TILE_REACH_PX: the courses near an edge are then the same on both
+    sides); at least fine.EDGE_PX + HALO_PARENT_PX + the bicubic's 2 (fine.check)."""
     from . import fine as ZF
-    return int(np.ceil(ZF.EDGE_PX + ZF.HALO_PARENT_PX)) + 2
+    return max(int(np.ceil(ZF.EDGE_PX + ZF.HALO_PARENT_PX)) + 2, int(np.ceil(ZF.HALO_PARENT_PX)) + 1 + ZF.TILE_REACH_PX)
 
 
 def parent_window(key: Key) -> tuple[float, float, float, float]:
@@ -269,6 +274,164 @@ def parent_sources(key: Key) -> list[Key]:
     if p is None:
         return []
     return covering(key.cell, p.level, parent_window(key))
+
+
+def _window_px(key: Key) -> tuple[int, int, int, int]:
+    """(c0, c1, r0, r1): the parent level's lattice columns and rows (from the square's west and north edges; may run
+    past the square) of a tile's stitched parent window, unclipped."""
+    p = parent(key)
+    rp, m = res_km(p.level), parent_margin_px()
+    x0, x1, y0, y1 = rect(key)
+    return (int(round((x0 + HALF) / rp)) - m, int(round((x1 + HALF) / rp)) + m,
+            int(round((HALF - y1) / rp)) - m, int(round((HALF - y0) / rp)) + m)
+
+
+def _origin_px(k: Key) -> tuple[int, int]:
+    """(column, row) of a tile's north-west pixel on its level's lattice."""
+    n = tile_px(k.level)
+    return k.tx * n, k.ty * n
+
+
+def tile_frame(key: Key) -> RG.PlaneFrame:
+    """The frame a tile is built on: its cell's plane, centred on the tile (its pixels then on its level's lattice)."""
+    return RG.PlaneFrame(frame(key.cell), *centre_xy(key))
+
+
+def plane_center(cell: str, xc: float, yc: float) -> dict:
+    """zoom.json's `center` of a window of a cell's plane centred on (xc, yc) km (regional.center_of)."""
+    fr = RG.PlaneFrame(frame(cell), xc, yc)
+    return RG.center_of(fr, *RG._latlon(fr.c))
+
+
+def _edge_fill(filled: np.ndarray) -> np.ndarray:
+    """Per pixel, the flat index of a filled pixel near it (itself where filled): rings grown a 4-neighbour at a time."""
+    ny, nx = filled.shape
+    near = np.where(filled, np.arange(nx * ny).reshape(ny, nx), -1)
+    while (near < 0).any():
+        prev = near.copy()
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            near = np.where(near < 0, RG._shift(prev, dr, dc, -1), near)
+        if np.array_equal(prev, near):
+            raise ValueError("no parent pixels in the window")
+    return near.ravel()
+
+
+def parent_mosaic(key: Key, sources: dict) -> tuple[dict, dict]:
+    """A tile's parent as one zoom (meta, decoded layers), as fine.build reads it: the window of its parent level round
+    the tile (parent_margin_px, unclipped), cut from `sources` ({parent-level Key: (meta, layers)}: parent_sources(key);
+    for level 2 the cell's level-1 section), on that level's lattice: two tiles reading a parent pixel read the same
+    values. Beyond the sources (past the square, or where a parent tile doesn't exist: more than PAD_PX of its pixels
+    outside the cell) the window is edge-filled (the nearest pixel's values, no rivers). Where two parent tiles meet, a
+    pixel whose water left its tile goes on to its lowest neighbour. The meta's falls are moved into the window's pixels,
+    the volcanoes given their lat, lon (once each); id, params and lineage are the tile's parent's."""
+    p = parent(key)
+    if p is None:
+        raise ValueError("level 1 is built from the world")
+    if p not in sources:
+        raise ValueError(f"tile {key}'s parent {p} is not built")
+    c0, c1, r0, r1 = _window_px(key)
+    nx, ny = c1 - c0, r1 - r0
+    rp = res_km(p.level)
+    names = None
+    for _, L in sources.values():
+        names = set(L) if names is None else names & set(L)
+    out = {}
+    filled = np.zeros((ny, nx), bool)
+    seam = np.zeros((ny, nx), bool)  # (pixels on the edge of the source they came from)
+    pmeta = sources[p][0]
+    falls, vols, seen = [], [], set()
+    for sk in sorted(sources):
+        meta, L = sources[sk]
+        sc, sr = (0, 0) if sk.level == min(LEVELS) else _origin_px(sk)
+        snx, sny = int(meta["nx"]), int(meta["ny"])
+        a0, a1 = max(c0, sc), min(c1, sc + snx)
+        b0, b1 = max(r0, sr), min(r1, sr + sny)
+        if a0 >= a1 or b0 >= b1:
+            continue
+        for k in sorted(names):
+            A = np.asarray(L[k])
+            if k not in out:
+                out[k] = np.zeros((ny, nx), A.dtype)
+            out[k][b0 - r0:b1 - r0, a0 - c0:a1 - c0] = A[b0 - sr:b1 - sr, a0 - sc:a1 - sc]
+        filled[b0 - r0:b1 - r0, a0 - c0:a1 - c0] = True
+        e = np.zeros((sny, snx), bool)
+        e[[0, -1], :] = True
+        e[:, [0, -1]] = True
+        seam[b0 - r0:b1 - r0, a0 - c0:a1 - c0] |= e[b0 - sr:b1 - sr, a0 - sc:a1 - sc]
+        dr, dc = sr - r0, sc - c0
+        for f in (meta.get("stats") or {}).get("falls", []) or []:
+            r_, c_ = int(f["px"][0]) + dr, int(f["px"][1]) + dc
+            if 0 <= r_ < ny and 0 <= c_ < nx:
+                g = {**f, "px": [r_, c_]}
+                for kk in ("foot_px", "pool_px"):
+                    if kk in f:
+                        g[kk] = [int(f[kk][0]) + dr, int(f[kk][1]) + dc]
+                falls.append(g)
+        sfr = RG.frame_of(meta["center"])
+        for v in (meta.get("stats") or {}).get("volcanoes", []) or []:
+            if "lat" not in v:
+                v = {**v, **dict(zip(("lat", "lon"), RG._latlon(sfr.to_sphere(np.array([v["x_km"]]),
+                                                                               np.array([v["y_km"]]))[0])))}
+            k_ = (round(float(v["lat"]), 4), round(float(v["lon"]), 4))
+            if k_ not in seen:
+                seen.add(k_)
+                vols.append({kk: vv for kk, vv in v.items() if kk not in ("x_km", "y_km")})
+    if not filled.all():
+        idx = _edge_fill(filled)
+        for k in out:
+            out[k] = out[k].ravel()[idx].reshape(ny, nx)
+        for k, v in (("discharge", 0.0), ("drainage_area", 0.0), ("river_phase", np.nan)):
+            if k in out:
+                out[k] = np.where(filled, out[k], v).astype(out[k].dtype)
+        if "receiver" in out:
+            out["receiver"] = np.where(filled, out["receiver"], RG.D8_NONE).astype(out["receiver"].dtype)
+    if "receiver" in out:  # (water leaving the window leaves the mosaic: no receiver, as at a zoom's edge)
+        s_ = np.asarray(out["receiver"]).astype(np.int64)
+        k_ = s_ + (s_ >= 4)
+        rr_, cc_ = np.mgrid[0:ny, 0:nx]
+        tr, tc = rr_ + k_ // 3 - 1, cc_ + k_ % 3 - 1
+        off = (s_ != RG.D8_NONE) & ((tr < 0) | (tr >= ny) | (tc < 0) | (tc >= nx))
+        out["receiver"] = np.where(off, RG.D8_NONE, out["receiver"]).astype(out["receiver"].dtype)
+    # where parent tiles meet: water that left its tile goes on to its lowest neighbour (in the other tile)
+    if "receiver" in out and "elevation" in out and len(sources) > 1:
+        h = np.asarray(out["elevation"], float)
+        w = np.asarray(out["water"]) if "water" in out else np.zeros(h.shape, np.uint8)
+        ws = np.where(w == 1, 0.0, np.where(w == 2, h + np.asarray(out.get("lake_depth", 0 * h), float), h))
+        slot = np.asarray(out["receiver"])
+        fix = seam & filled & (slot == RG.D8_NONE) & (w != 1)
+        if fix.any():
+            best, best_s = ws.copy(), np.full((ny, nx), RG.D8_NONE, np.int64)
+            k = 0
+            for ddr in (-1, 0, 1):
+                for ddc in (-1, 0, 1):
+                    if ddr == 0 and ddc == 0:
+                        continue
+                    nv = RG._shift(ws, ddr, ddc, np.inf)
+                    lower = nv < best
+                    best = np.where(lower, nv, best)
+                    best_s = np.where(lower, k, best_s)
+                    k += 1
+            new = np.where(fix & (best_s != RG.D8_NONE), best_s, slot).astype(slot.dtype)
+            # (a link handed across can close a loop through a tile's own routing over a filled pit: those dropped)
+            from . import kernels as ZK
+            k_ = new.astype(np.int64).ravel()
+            k_ = k_ + (k_ >= 4)
+            i_ = np.arange(nx * ny)
+            rec = np.where(new.ravel() == RG.D8_NONE, -1, (i_ // nx + k_ // 3 - 1) * nx + (i_ % nx + k_ % 3 - 1))
+            order = ZK.receiver_order(rec)
+            if len(order) < nx * ny:
+                stuck = np.ones(nx * ny, bool)
+                stuck[order] = False
+                new = np.where(fix & stuck.reshape(ny, nx), slot, new).astype(slot.dtype)
+            out["receiver"] = new
+    xc = -HALF + 0.5 * (c0 + c1) * rp
+    yc = HALF - 0.5 * (r0 + r1) * rp
+    meta = {"id": pmeta["id"], "name": pmeta.get("name", pmeta["id"]), "res_km": rp, "nx": nx, "ny": ny,
+            "center": plane_center(key.cell, xc, yc), "size_km": nx * rp, "seed": pmeta.get("seed", 1),
+            "source_world": pmeta.get("source_world"), "params": pmeta.get("params", {}),
+            "parent_zoom": pmeta.get("parent_zoom"), "stats": {"falls": falls, "volcanoes": vols},
+            "mosaic": {"sources": [str(k) for k in sorted(sources)], "window_px": [c0, c1, r0, r1]}}
+    return meta, out
 
 
 def tile_id(world_id: str, key: Key, seed: int = 1) -> str:
