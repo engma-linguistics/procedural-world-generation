@@ -4,7 +4,7 @@ title: Water-loaded isostasy for drowned continent (PW-1287 A) is built but deep
 type: task
 status: todo
 parent: null
-milestone: v1.0
+milestone: later
 subsystem: tectonics
 effort: s
 impact: med

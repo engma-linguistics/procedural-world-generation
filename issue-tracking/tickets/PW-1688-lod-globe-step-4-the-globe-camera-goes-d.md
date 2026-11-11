@@ -2,7 +2,7 @@
 id: PW-1688
 title: "LOD globe step 4: the globe camera goes down to the ground and draws level-1 and level-2 tiles on the sphere (fallback, fade, cell clipping)"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: viewer
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1198, PW-1359, PW-1341, PW-415, PW-1360]
 refs: [docs/review/zoom/lod-plan-v2.md, viewer/globe/scene.js, viewer/wheelzoom.js, "viewer/zoom3d_place.js::aeFrame", planet/zoom/lod.py, tools/viewer_perf_globe.py]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -31,4 +31,5 @@ can start alongside step 1, since level-1 sections are built by today's API (`PO
       recording), 30+ fps, renderer memory measured with tools/viewer_perf_globe.py
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 291; tilt and overlays finished by lane 299 (PW-1696).
 - 2026-11-10: Created from inbox draft draft-lod2-globe-to-ground-viewer.md (found by lane289).

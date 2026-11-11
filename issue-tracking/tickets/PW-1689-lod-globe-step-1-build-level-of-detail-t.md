@@ -2,7 +2,7 @@
 id: PW-1689
 title: "LOD globe step 1: build level-of-detail tiles on one shared grid per level, so tiles built at different times meet without a seam"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1198, PW-1299, PW-1341, PW-541, PW-391]
 refs: [docs/review/zoom/lod-plan-v2.md, planet/zoom/lod.py, "planet/zoom/fine.py::build", "planet/zoom/fine.py::_courses", "planet/zoom/fine.py::_river_phase", tests/test_zoom_lod.py, "zoom 683193", "world dba204"]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -40,5 +40,6 @@ What is left (2.2 of the plan):
 - [ ] time and peak per level re-measured (today's fine pass: 13-17 s, 3.4-3.5 GB per 500 px tile, plan 1.3)
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 290; edge criterion met by lane 293 under PW-1697's rule.
 - 2026-11-10: Lane 290 merged (b53e5c3e): lod_build.py, seam-true tiles; rivers cross with identical discharge on 97/104 pixels, rebuild bit-identical; edge steps 0.78-1.09x interior (median), not yet within 10% (xfail; PW-1694). Level costs: L1 123 s / 8.3 GB; L2-L4 tiles 11-14 s / ~3 GB / ~35 MB.
 - 2026-11-10: Created from inbox draft draft-lod2-seam-true-tiles.md (found by lane289).

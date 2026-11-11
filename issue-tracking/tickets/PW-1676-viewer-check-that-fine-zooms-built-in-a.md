@@ -4,7 +4,7 @@ title: "Viewer: check that fine zooms built in a turned parent's orientation dra
 type: task
 status: todo
 parent: PW-1299
-milestone: v1.0
+milestone: later
 subsystem: viewer
 effort: s
 impact: med
