@@ -1948,3 +1948,146 @@ The second draw of de1cc6 (seed 7) separates signal from swing:
   re-fire wait, so a sound's fate is set by how many rows feed and drain it. That is why h piled up, and why uvular r
   needed a per-row weight.
 - pf overuse on de1cc6. The High German shift (S178) has more initial p to work on now; a24559 and the second de1cc6 draw do not show it.
+
+## Lane 17 (lang-lane17, 2026-11-11): sound changes fire by their grade, back harmony rarer, open syllables still short
+
+In plain words: a sound change's naturalness grade now sets how often it happens. Before, the engine drew changes so
+often that every common change ran as soon as its 4,000-year wait let it, so grade 3, 4 and 5 changes all ran at about
+one rate, and rare changes came out 10-35 times too common next to them. Two things changed: fewer draws, and a wait
+that depends on the grade. The three hand-set row weights (uvular r, the glottal-stop prothesis, u > y) are gone, and
+those changes stay in range without them. Back vowel harmony is now rare as a new innovation. Open-syllable languages
+are still about half as common as in WALS: the tried fix did not move them. Tickets PW-1692, PW-1646, PW-1647.
+
+**Why rare changes were too common (PW-1692).** A line draws about 880 candidate changes a thousand years. Against the
+whole catalogue, a grade-5 change (weight 9) comes up about every 80 years, a grade-3 change every 700 years, and a
+grade-1 change (weight 0.11) every 6,700 years. A change that has just run must then wait 4,000 years. So grades 3-5
+all ran once per wait, whatever their grade, and only the rarest still ran in proportion to their weight. A sound's
+fate then depended on how many changes fed and drained it, not on their grades. That is why word-initial h piled up
+(nine changes lead into h, one out), and why lane 16 needed a hand-set weight for uvular r.
+
+**What changed**
+
+- **Fewer draws.** RATE_SCALE goes from 220 to 60, so a change comes up about in proportion to its weight.
+- **A wait set by the grade.** After a change runs, it waits 2,000 years divided by its draw weight. Grade 5 waits
+  about 200 years, grade 3 waits 2,000, and grade 1 waits about 18,000. Over a long stretch, each change then runs at a
+  rate in proportion to its weight. The flat 4,000-year wait still holds for the things that are not a change running
+  again: a change the word shape refused, an inserted sound being taken out again, and the hiatus repairs.
+- **The three hand-set weights are removed:** S148 r > ʁ, S042 ʔ before a stressed initial vowel, and S073 u > y. Their
+  grades now do the work (see the ʁ and ʔ rows below).
+- **Contact follows the grade too.** A neighbour takes up a change as reluctantly as it would make it: in proportion to
+  the change's catalogue weight, up to 1. Grade 3 and up spread as before, grade 2 at a third, grade 1 at a ninth. Before,
+  contact spread every change alike, and more lects got back harmony from a neighbour than made it themselves. (The old
+  hand-set weights also damped contact, so uvular r now spreads by contact about as it did under lane 16's weight.)
+- **Back vowel harmony (PW-1646): naturalness 3 -> 2.** This is a judgement on the catalogue, like S124's. Turkish-type
+  harmony is a family trait (Uralic, Turkic, Mongolic, Tungusic) and rarely arises from scratch. Once a line has it,
+  daughters inherit it as before.
+
+**How often each grade fires** (own firings per unit of catalogue weight, all lects, whole run; contact adoptions
+left out; main is the same world on main's code)
+
+| | a24559 main | a24559 branch | de1cc6 main | de1cc6 branch |
+| --- | --- | --- | --- | --- |
+| grade 1 / 2 / 3 / 4 / 5 | 1001 / 388 / 237 / 125 / 61 | 632 / 281 / 204 / 123 / 66 | 758 / 319 / 200 / 104 / 52 | 522 / 230 / 170 / 98 / 53 |
+| grade 1 vs grade 5 | 16x | 9.6x | 15x | 9.8x |
+| all firings incl. contact, grade 1 vs 5 | 21x | 6.6x | 19x | 7.0x |
+
+The ticket asked for "within 2x across grades" on this whole-run count. That bar cannot be met as written, for two
+reasons that are not saturation:
+- **Common rows run out of input.** A conditioned change such as intervocalic voicing or final devoicing changes every
+  word it can at its first firing. It can fire again only when new words bring its input back, however common it is.
+- **The engine weights common rows down on purpose.** These weights are applied for each language before the draw: a
+  change that brings in a new phoneme is drawn at 0.3, a change toward a rarer sound is damped by the ease drag, and the
+  inventory-size and stop steers apply too. Grade-5 rows end up at a median 0.19 of their grade; vowel nasalization, for
+  example, is at 0.02.
+
+So the fair measure is: per unit of the weight the draw actually uses, how often does a row fire while its input is
+there? The isolated-lect harness measures this (`scratchpad lane17/opp.py`: 64 human control protos, one daughter
+each, 10 kyr, no contact; each 0.5 kyr step tests every row on the words).
+
+| firings per kyr of opportunity per unit draw weight, by draw weight | 0.01 | 0.04 | 0.1 | 0.3 | 1 | 3 | 9 | 27 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| main | 0.43 | 0.43 | 0.37 | 0.26 | 0.17 | 0.09 | 0.035 | 0.013 |
+| branch | 0.13 | 0.14 | 0.13 | 0.10 | 0.09 | 0.07 | 0.046 | 0.021 |
+
+On main the commonest rows fire 30 times less per unit weight than the rarest. On the branch, rows from weight 0.01 to
+3 fire within 2x of each other, and the commonest within 3x up to weight 9. Above that, the line's own word shape
+refusing apocope and coda changes is most of what is left, which is the point of the anchor. By catalogue grade in the
+same harness, grades 1, 2 and 3 now fire alike per unit weight (0.12 / 0.12 / 0.12; main 0.28 / 0.19 / 0.15). Grades 4
+and 5 fire at 0.065 and 0.027, held down by the deliberate weights above.
+
+**Benchmark** (`real_inventory.py --check`, 20 seeds, +2.5 kyr): no metric worse than the stored baseline. Mean
+distance growth is 0.49 (main 0.62); 3 of 7 languages keep their character (main 3). harmony.back fires in 16% of the
+full-toolkit daughters, against main's 51%:
+
+| | English | Spanish | Swahili | Japanese | Mandarin | Hawaiian | Arabic |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| main | 40% | 50% | 55% | 50% | 60% | 55% | 50% |
+| branch | 20% | 25% | 15% | 5% | 15% | 20% | 10% |
+
+The benchmark's "harm" column counts the whole harmony family (a-umlaut, u-umlaut, metaphony, breaking, ATR harmony),
+not only Turkish-type back harmony, so it stays near 0.45.
+
+**World checks** (main -> branch, same world)
+
+| | a24559 main | a24559 branch | de1cc6 main | de1cc6 branch |
+| --- | --- | --- | --- | --- |
+| sisters recognisable (bar 0.5) | 0.561 | 0.590 | 0.476 FAIL | 0.480 FAIL |
+| overused segments | none | none | pf 12.4% FAIL | none |
+| pronoun loans (cap 0.08) | 0.063 | 0.063 | 0.076 | 0.077 |
+| living inventory sizes | ok | ok | ok | ok |
+| word starts vs NorthEuraLex | ok | ok | ok | ok |
+| horizon (target 6-10 kyr) | 17.0 FAIL | 17.0 FAIL | 6.5 | 6.5 |
+| human sound changes per kyr | 14.8 | 14.1 | 18.0 | 19.6 |
+| ʁ in living lects (consonant lists) | 10.6% (weight 0.3) | 9.1% (no weight) | 8.1% (weight 0.3) | 9.8% (no weight) |
+| r > ʁ firings, all | 53 | 24 | 23 | 26 |
+| ʔ in living lects / PHOIBLE's 38% | 1.8x | 1.7x | not in the top 8 | not in the top 8 |
+| h > ∅ firings | 1,215 | 2,229 | 1,046 | 1,960 |
+| back harmony in a living lect's own span / in its line | 51% / 91% | 32% / 58% | 49% / 89% | 29% / 54% |
+| simple syllables (WALS 12%) | 5.8% | 5.2% | 6.2% | 6.6% |
+
+**A second draw** (`--seed 7` on both worlds, main and branch) separates signal from swing:
+
+| seed 7 | a24559 main | a24559 branch | de1cc6 main | de1cc6 branch |
+| --- | --- | --- | --- | --- |
+| sisters recognisable (bar 0.5) | 0.554 | 0.556 | 0.513 | 0.487 FAIL |
+| overused segments | ɹ 10.9% FAIL | none | kʲ, ʁ 14.5%, ⁿd̪, nʲ FAIL | ʁ 18.1%, kʲ, nʲ FAIL |
+| pronoun loans (cap 0.08) | 0.067 | 0.066 | 0.115 FAIL | 0.098 FAIL |
+| word starts vs NorthEuraLex | labial 14.2%, liquid 10.6% FAIL | ok | liquid 14.0% FAIL | liquid 11.5% FAIL |
+| horizon (target 6-10 kyr) | 10.7 FAIL | 10.7 FAIL | 11.0 FAIL | 14.0 FAIL |
+| grade 1 vs grade 5, all firings | 22x | 7.0x | 19x | 7.6x |
+| back harmony in a living lect's own span / in its line | 53% / 92% | 33% / 49% | 47% / 89% | 33% / 60% |
+| simple syllables | 4.6% | 3.1% | 11.1% | 9.6% |
+
+What the four draws say:
+- **Signal:** the grade ratio (about 20x down to about 7x on every draw) and back harmony (about half of living lects
+  down to about a third, and in nearly every line down to about half) move the same way on all four. Overused segments
+  and word starts are no worse on any draw. Each of these is better on at least one draw: pf goes on de1cc6, ɹ on a24559
+  seed 7, and a24559 seed 7's word starts now pass.
+- **Swing:** de1cc6 sisters move -0.026 on seed 7 and +0.005 on the first draw. a24559 sisters move +0.029 and +0.002.
+  So the branch does not lift de1cc6 back over the bar. Pronoun loans on de1cc6 seed 7 fail on both codes.
+- **ʁ on de1cc6 seed 7** (18.1% against main's 14.5%) is mostly not sound change. 71 of the 120 living lects with ʁ
+  descend from one proto, p234, whose drawn inventory had ʁ at birth. r > ʁ itself fired 25 times on the branch (main
+  30). On the three other draws, ʁ is under the bar without the old hand-set weight.
+- **Simple syllables** fall by 0.6 to 1.5 points on three draws and rise by 0.4 on one. Fewer rare coda-losing changes
+  fire now. The open-syllable gap is unchanged in kind.
+
+**Word starts hold.** Lane 16's gains are kept. On a24559 the human-voiced median lect begins 19.9% of its words with a
+labial (main 15.7%; NorthEuraLex 10th-90th percentile 12.8-30.8%), 7.9% with a liquid (main 9.3%), 14.5% with a vowel
+(main 17.2%) and 2.3% with i (main 3.1%). No lect begins over 20% of its words with i. The median lect now has no
+h-initial words (main 2.1%; NorthEuraLex's 10th percentile is 0): h > ∅ fires twice as often, now that grade 5 runs at its
+grade. de1cc6 reads the same way, with vowel-initial words at 10.0%, near the bottom of the range (8.4%).
+
+**Open syllables (PW-1647, step 2): tried, not kept.** Lane 16's patch lets final-consonant loss (S099) be a branch's
+signature change at a split and lifts its one-off cap. I applied it and measured it on both worlds. It fired: S099
+firings went 8 -> 50 on a24559 and 2 -> 167 on de1cc6. But simple syllables moved only 4.8 -> 5.3% and 6.2 -> 6.8%,
+which is within a draw's swing. The branches that lose their final consonants keep their medial codas and clusters
+(lampa, kasta), so they become "moderate", not "simple". Polynesian lost every coda, not only the final ones. The patch
+is not in this branch.
+
+**What is left**
+
+- **Open-syllable languages (PW-1647)** are still about 5-7% of living lects, against WALS's 12%. A next step would be
+  a coda-loss signature that goes with medial coda loss and cluster simplification, as a conspiracy: the Oceanic to
+  Polynesian change, not a single law.
+- **de1cc6 sisters** are still just under the bar (0.480, main 0.476). The rate change did not move them.
+- **The a24559 horizon** (17 kyr against 6-10) is unchanged by this lane (main 17.0).
