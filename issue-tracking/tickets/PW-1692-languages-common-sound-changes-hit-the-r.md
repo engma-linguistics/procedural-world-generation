@@ -1,4 +1,5 @@
 ---
+id: PW-1692
 title: "Languages: common sound changes hit the re-fire cap, so rare ones fire about 10x more often than their weight says"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lang-lane16
 blocked_by: []
 relates: [PW-1642, PW-1686, PW-1551]
 refs: ["planet/language/lect.py::Lect.may_fire", "planet/language/lect.py::REFIRE_KYR", "planet/language/history.py::RATE_SCALE", "planet/language/history.py::RULE_WEIGHT", "planet/language/rules.py::pick_rule", planet/language/data/sound_changes.tsv, "run a24559", docs/review/language/for-daniel.md]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -36,3 +39,6 @@ sisters checks) where it is. Or make the wait depend on the weight. Then check t
 and drop the per-row overrides that become unnecessary.
 - [ ] firings per unit weight within about 2x across grades 1-5 on a24559
 - [ ] sisters, horizon and the real-language benchmark (`real_inventory.py --check`) no worse
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-rule-weight-saturation.md (found by lang-lane16).

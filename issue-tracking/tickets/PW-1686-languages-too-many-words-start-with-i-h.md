@@ -2,7 +2,7 @@
 id: PW-1686
 title: "Languages: too many words start with /i/, /h/ and /l/, too few with /m/ and /p/"
 type: task
-status: todo
+status: done
 parent: PW-767
 milestone: v4
 subsystem: peoples
@@ -40,3 +40,4 @@ benchmark (PW-1641) does not measure word starts, so nothing catches it.
 
 ## Updates
 - 2026-11-10: Created from inbox draft draft-word-initial-profile.md (found by coordinator (owner's eye, 2026-11-10)).
+- 2026-11-10: Lane 16 (merged 15b6fea2): fixed by mechanism. Word-initial weights from NorthEuraLex, lexical diffusion now actually works, h-loss and j-/w-prothesis rows S242-S245. a24559 word starts: l 10.9 > 6.5%, h 10.8 > 6.2%, i 8.2 > 4.8%, m 3.1 > 4.1%, p 2.0 > 3.1%. Lects over 20% i-initial: 39 > 7. Standing check checks.word_starts passes on a24559 and de1cc6; one de1cc6 re-roll still fails on liquids (14.0% against a 10.2% bar).
