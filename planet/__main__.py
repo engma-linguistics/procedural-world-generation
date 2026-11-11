@@ -640,8 +640,27 @@ def cmd_make(args):
 
 
 def cmd_serve(args):
-    from .server import serve
-    serve(args.port, open_browser=not args.no_open, jobs=args.jobs, threads=args.threads)
+    from . import appconfig as AC
+    from .server import JOBS, serve
+    cfg = AC.serve_defaults()  # an install's config.toml ($PLANET_CONFIG), else {}
+    jobs = args.jobs if args.jobs is not None else cfg.get("jobs", JOBS)
+    threads = args.threads if args.threads is not None else cfg.get("threads")
+    port = args.port
+    if port is None:  # not given: the config's port, else 8765; the next free one if taken
+        first = cfg.get("port", AC.DEFAULT_PORT)
+        if not AC.port_free(first) and AC.is_planet_server(first):
+            url = f"http://127.0.0.1:{first}/viewer/"
+            print(f"A viewer server is already running at {url}", flush=True)
+            if not args.no_open:
+                import webbrowser
+                webbrowser.open(url)
+            return
+        port = AC.pick_port(first)
+        if port is None:
+            sys.exit(f"planet serve: ports {first}..{first + 19} are all taken; pass --port")
+        if port != first:
+            print(f"(port {first} is taken: using {port})", flush=True)
+    serve(port, open_browser=not args.no_open, jobs=jobs, threads=threads)
 
 
 def cmd_langserve(args):
@@ -982,11 +1001,12 @@ def main():
     s.set_defaults(func=cmd_show)
 
     v = sub.add_parser("serve", help="open the 3D viewer in a browser")
-    v.add_argument("--port", type=int, default=8765)
+    v.add_argument("--port", type=int, help="default: the install's config.toml, else 8765; the next free port "
+                                             "if that one is taken (a running viewer there is just opened)")
     v.add_argument("--no-open", action="store_true")
     from .server import JOBS
     _jobs_args(v, f"jobs (zooms, time zooms, finished worlds) run at once, each in a worker process "
-                  f"(default {JOBS})", default=JOBS)
+                  f"(default: the install's config.toml, else {JOBS})")
     v.set_defaults(func=cmd_serve)
 
     ls = sub.add_parser("langserve", help="the languages viewer on its own (beside `serve`; read-only, no jobs)")
