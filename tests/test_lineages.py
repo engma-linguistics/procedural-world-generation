@@ -4208,23 +4208,98 @@ def test_live_polities_know_the_dragons_as_the_read_out_does():
     assert live == readout and {"red_dragon", "gold_dragon"} <= live and "dragonborn" not in live
 
 
-def test_live_dragon_people_seats_one_realm_however_scattered_its_range(faketz, monkeypatch):
-    """Lane 281c (round26.md): a dragon people seats one realm in the history (the read-out's one per dragon culture; a dragon kind is
-    one culture for now), keyed by the people, however many pieces its range is in. Before, one per connected piece: 290-310 realms
-    on L6 4360a3 seed 7 against the read-out's 22-25."""
+def _gc_km(g, a, b):
+    la, lo = np.radians(np.asarray(g.lat)), np.radians(np.asarray(g.lon))
+    c = np.sin(la[a]) * np.sin(la[b]) + np.cos(la[a]) * np.cos(la[b]) * np.cos(lo[a] - lo[b])
+    return 6371.0 * np.arccos(np.clip(c, -1, 1))
+
+
+def test_dragon_cultures_cut_a_range_as_the_demes_and_cultures_cut_a_dragon_kind():
+    """Lane 281d (PW-1687 B, round27.md): inside the history a dragon people's cultures are cut by the demes' and the cultures engine's
+    own rules for a dragon kind. Regions: pieces within a dragon's reach (megafauna.LINK_KM, over land and sea) are one, farther ones
+    apart, a piece under demes.MIN_KM2 goes with the nearest. Cultures: the first range is one founding culture, however many regions;
+    a piece split off by a gap waits demes.PERSIST stored frames (a crossing does not) and cultures.t_apart;
+    a region settled later is its parent's until it has stayed apart demes.PERSIST stored frames and cultures.t_apart, then a culture
+    of its own under a key it keeps; two cultures on neighbouring cells merge, the younger into the older, after MERGE_CONTACT_KYR x
+    (1 - cohesion) side by side."""
+    from planet.grid import shared_grid
+    from planet.lineages.history import polity_live as PL
+    from planet.lineages.history.megafauna import LINK_KM
+    from planet.lineages import demes as DE, cultures as CU
+    from planet.lineages.seafood import cells_for, rings_for
+    g = shared_grid(5)
+    D = PL.DragonCultures(g, {"x": 0.9})
+    assert D.r_link == rings_for(g, LINK_KM / 2) and D.min_cells == cells_for(g, DE.MIN_KM2) > 1
+    a = 0
+    d = _gc_km(g, a, np.arange(g.n))
+    blob = lambda c, km: _gc_km(g, c, np.arange(g.n)) <= km  # noqa: E731
+    near = int(np.argmin(np.abs(d - 0.6 * LINK_KM)))  # (a gap of well under LINK_KM between the two: one region)
+    far = int(np.argmin(np.abs(d - 5 * LINK_KM)))  # (far beyond it: a region of its own)
+    held = blob(a, 400) | blob(near, 300) | blob(far, 400)
+    lab, n = PL.dragon_regions(g, held, D.r_link, D.min_cells)
+    assert n == 2 and lab[a] == lab[near] == 0 and lab[far] == 1 and (lab[held] >= 0).all() and (lab[~held] < 0).all()
+    tiny = int(np.argmin(np.abs(d - 3 * LINK_KM)))  # (one cell alone, under MIN_KM2: the nearest region's, no region of its own)
+    held2 = held.copy()
+    held2[tiny] = True
+    lab2, n2 = PL.dragon_regions(g, held2, D.r_link, D.min_cells)
+    assert n2 == 2 and lab2[tiny] in (0, 1)
+    keys = lambda r: [k_ for k_, _ in r]  # noqa: E731
+    assert keys(D.step(0, "x", held, 5.0, 0.5, True, 0.6)) == ["dx"]  # (the first range: one founding culture, two regions)
+    third = int(np.argmin(np.abs(d - 10 * LINK_KM)))
+    held3 = held | blob(third, 400)
+    seen, ago = [], 4.5
+    for _ in range(6):
+        r = D.step(0, "x", held3, ago, 0.5, True, CU.T_APART_KYR["stone age"])
+        seen.append((ago, keys(r), {k_: len(c) for k_, c in r}))
+        ago -= 0.5
+    assert [s[1] for s in seen[:2]] == [["dx"]] * 2 and seen[0][2]["dx"] == int(held3.sum())  # (a crossing: its parent's for now)
+    assert seen[2][1] == ["dx", "dx.1"] and seen[5][1] == ["dx", "dx.1"]  # (apart t_apart: its own; a crossing is a deme at once)
+    bridge = blob(third, 400) | blob(far, 400)  # (the two meet: neighbouring cells, then one merged culture, the older's)
+    path = np.zeros(g.n, bool)
+    for t in np.linspace(0, 1, 600):
+        v = (1 - t) * np.asarray(g.centers)[third] + t * np.asarray(g.centers)[far]
+        path[int(np.argmax(np.asarray(g.centers) @ (v / np.linalg.norm(v))))] = True
+    held4 = held3 | bridge | path
+    r1 = D.step(0, "x", held4, 1.5, 0.1, False, 0.6)
+    r2 = D.step(0, "x", held4, 1.4, 0.1, False, 0.6)
+    assert keys(r1) == ["dx", "dx.1"] and keys(r2) == ["dx"] and len(r2[0][1]) == int(held4.sum())
+
+
+def test_live_dragon_people_seats_a_realm_per_culture(faketz, monkeypatch):
+    """Lane 281d (PW-1687 B, round27.md): a dragon people seats one realm per culture in the history (the read-out's one per dragon
+    culture), its cultures cut as the demes and cultures engine cut a dragon kind (DragonCultures), keyed by the culture and the same
+    key from step to step: the first range is one realm however scattered; a region settled far away later is a realm of its own
+    once apart demes.PERSIST stored frames and cultures.t_apart (the stone age's 0.6 kyr). Lane 281c had one per people (4-6 realms
+    against the read-out's 16-26); before that one per connected piece (290-310 against 22-25, keys moving every step)."""
     import types
+    from planet.lineages import cultures as CU
     h, env, step, land = _live_setup(faketz, monkeypatch)
     R = h.rule
+    g = h.grid
     kb = h.idx["kob"]
-    R.dragons = [kb]  # (the kobolds stand in for a dragon people: scattered pieces, hoards known)
+    R.dragons = [kb]  # (the kobolds stand in for a dragon people: hoards known)
     R.tech.known["kob"]["hoards"] = [100.0, "test", None]
+    a = int(land[310])
+    d = _gc_km(g, a, land)
+    b = int(land[np.argmax(d)])  # (the land farthest away: another region)
+    c = int(land[np.argmax(np.minimum(d, _gc_km(g, b, land)))])  # (far from both: a third, settled later)
+    assert min(_gc_km(g, a, b), _gc_km(g, a, c), _gc_km(g, b, c)) > 2 * 1500.0
     h.p[kb][:] = 0.0
-    h.p[kb][land[300:330:3]] = 0.9  # (ten pieces, a cell apart or more)
+    h.p[kb][[a, b]] = 0.9
     _sync_pm(h)
-    for ago in (1.2, 1.1):
-        h.rule.begin_step(types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1))
+    seen = []
+    for i in range(11):
+        ago = round(2.0 - 0.1 * i, 3)
+        if i == 2:
+            h.p[kb][c] = 0.9  # (a new region, far from the others)
+        st = types.SimpleNamespace(epoch="recent", ago=ago, dt=0.1, store=True)
+        h.rule.begin_step(st)
         _sync_pm(h)
-    assert [k for k in R.founded if k.startswith("d")] == ["dkob"]
+        seen.append((ago, sorted(k for k in R.founded if k.startswith("d"))))
+        h.rule.end_step(st)  # (the cultures are cut on the frame the step stores; the polities read them from the next step on)
+    assert seen[0][1] == [] and seen[1][1] == ["dkob"]  # (the founding culture: one realm, two regions)
+    late = [a_ for a_, s in seen if "dkob.1" in s]
+    assert late and max(late) == pytest.approx(1.8 - CU.T_APART_KYR["stone age"] - 0.1, abs=1e-6)
 
 
 def test_live_frontier_counts_hostile_co_subjects_only_across_a_border(faketz, monkeypatch):
