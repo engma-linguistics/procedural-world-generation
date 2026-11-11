@@ -168,8 +168,11 @@ and hundreds in mountains (`match.py` docstring, `seams-round1.md`). The tiling 
 neighbour exists is built **matched** (`match.py`: the neighbour's ground where the neighbour owns it, exact at the owner line,
 which for tiling sections is the cell edge, blended over 80 km inside; ~10% more time, `lod-plan.md`). On demand this means: when
 level 1 of a cell is built, it is matched to whichever neighbours are already built. The viewer draws each cell's tiles only
-inside the cell (the owner line), so the line is the seam, and there the two agree exactly at level 1; below level 1 both sides'
-tiles fade to their own parent at the line, which agree (*estimate* that the residual is a few metres; measured in step 3).
+inside the cell (the owner line), so the line is the seam, and there the two agree exactly at level 1. Below level 1 the cell
+edge is no tile edge, so each side carved its own ground there (lane 295 measured 29-38 m median at level 2). Level-2 tiles
+near a cell edge now fade, over their edge ramp, to ground carved once along the edge on blocks keyed by place on the lattice
+of the cell the other was matched to (the earlier: `lod_build.line_owner`), which the other cell's tiles resample: at the line
+the two then differ only as two lattices interpolating the same ground (lane 297, PW-1705; levels 3-4 and corners: inbox).
 
 Rivers across a cell edge: a river from the earlier cell into the later keeps its water (PW-1302, done); one from the later into
 the earlier keeps the earlier cell's own estimate (PW-1355: off by >25% on the practice pairs). Order-dependence is the price of
@@ -575,3 +578,61 @@ tile store 0.00 ms an index (flat, no scan) and a section find of 0.11 ms (1 til
 the tiles of that world only (~0.05 ms a tile), never with ordinary zooms. A real build's other costs are unchanged.
 **Not a lookup yet:** `lod_build._section_dir` still globs the world's tile store (planet/zoom was lane 297's); inbox
 `draft-lod-build-find-sections-by-index.md`.
+
+## State (lane 297, 11-11: PW-1705 level 2 at cell edges; PW-1698 drafted)
+
+**PW-1705, built.** A level-2 tile whose built area comes within its ramp of an edge its cell shares with a neighbour
+(`lod_build.near_lines`) fades to the ground along that edge (`line_surface`), after the fade to its own edge blocks:
+- The line: `cell_line` of the two cells, 1 km apart (`LINE_PER_EDGE` 4,000), the same points whichever cell asks.
+- Its owner (`line_owner`): the cell whose level 1 the other was matched to (zoom.json `matched_to`); the only one
+  built, if one isn't (the other will be matched to it); the first by name if both were built alone.
+- The ground: `line_blocks` on the owner's level-2 lattice, one per owner tile row (or column) the line crosses, the
+  line's stretch there plus `STRIP_PX` + ramp + 4 px round it; each carved by `carve_block` from the owner's level 1
+  (with its whole network's `river_phase`, as the owner's own tiles); blended between blocks over +-(ramp + 2) px
+  along the line. The owner's tiles read it at their own pixels; the other cell's tiles bilinearly at theirs.
+- The weight: 1 within 1.5 px of the line (both sides), 0 at ramp + 1.5 px inside (`smoothstep`); several edges
+  (a corner) average their grounds by weight. In `fine.build` (`line=`): every land pixel but lakes and pools fades
+  (held valley floors and imposed courses too: the other cell's parent drew them), with the rms-keeping mix
+  (`_fade_mix`, now shared with the edge fade); the overlays, ponds and reef changes fade out there as at a tile edge.
+  zoom.json's `tile` block lists `cell_lines` {neighbour: owner}. `tile`'s signature unchanged; `build` takes `lines`
+  (`load_lines`: the owner's level 1 loaded when it is the neighbour).
+
+**Seam at the line**, dba204, A = py.1.1 (tiles 2/0/3-4), B = py.0.1 (2/7/3-4), level 1 rebuilt on this branch's
+base in a scratch root in both orders, 1,075 land points 1 km apart, |hA - hB| bilinear at the line (lane 295's
+`line_seam`; the floor is `resampled`: the owner's tiles resampled onto the other's lattice, i.e. the same line with
+no seam, PW-1697's rule for two lattices):
+
+| Order | Main (lane 295's code), median / p90 / max | This branch | Floor | Ratio to floor (median / p90) |
+|---|---|---|---|---|
+| A first | 29.1 / 114.9 / 488 m | 3.1 / 14.8 / 92 m | 3.1 / 14.8 / 91-92 m | 1.000 / 1.000 |
+| B first | 38.2 / 173.6 / 909 m | 2.8 / 19.9 / 128 m | 2.7 / 19.7 / 89 m | 1.015 / 1.007 |
+
+Main reproduces lane 295's 29 / 115 and 38 / 174. The step between line points 1 km apart is 21-25 m (median), so
+the seam is now ~1/8 of a pixel step. In each order the tiles were built in the other cell's order (B's tiles first
+when A's level 1 was first, and the reverse): the tiles' order doesn't matter, only level 1's.
+- **Rivers** (>= 100 m3/s, `line_rivers` on the tiles, (A's side, B's side) m3/s): A first, main -> branch: 1256 ->
+  1288 both, 3618 -> 3619 / 3612, 454 -> 442 / 438, 1271 -> **1** / **1219**, 142 -> 463 both (a tributary joins);
+  B -> A: none / (1216, 1271). B first: 470 -> 495 both, 155 -> 168 / 158 -> 168, 6100 -> 3578 both (A is the later
+  cell here: its river into the earlier B keeps B's own estimate, PW-1355, as before); main's six crossings of a
+  4,876-6,101 m3/s river at 0-1 m3/s on B's side (the river running along the line) are gone.
+- **Rebuild:** py.0.1/2/7/3 (the non-owner, resampling) rebuilt in a fresh root from the same level 1: all 74 layers
+  bit-identical (zoom.json differs only in its timestamps).
+- **Time and peak** (4 tiles in one process, `NUMBA_NUM_THREADS=4`, two such processes at once, load 21-28 of 48,
+  `/usr/bin/time -v`): 18.8-24.5 s a tile, of which the cell line 3.0-3.5 s (two owner blocks); main's code on the
+  same tiles 16.0-19.0 s (the first tile 38 s with numba's warm-up). Peak 4.08-4.12 GB per process (main 4.25-4.32 GB):
+  loading the owner's level 1 for the other cell's tiles costs no measurable peak.
+- **Tests:** `tests/test_zoom_lod_cells.py` (synthetic: two cells' sections from one function of the place, 100 km
+  tiles; the seam within 10% of the floor (here equal), under half the unfaded one; a rebuild bit-identical; which
+  cell owns the line).
+
+**PW-1698, not built: drafted.** Drawing a fall across a tile edge is a new path through the gorge code (its lip,
+foot, cut, pools, wall rims, course and stats are all the tile's own pixels, and the fall's links change how the
+course is laid), not a local fix: inbox `draft-lod-falls-on-blocks-keyed-by-lip.md` has the design (carve the fall on
+a block keyed by its lip; return the held pixels before the pass; paste into every tile and edge block it touches;
+de-duplicate falls in `parent_mosaic`).
+
+**PW-1707.** `build_level1` records each section in the store's `sections.json` (`{"<world>/<cell>/<seed>": id}`);
+`_section_dir` looks it up there and scans the store only for a section the file doesn't know (then records it).
+Test: `test_a_built_section_is_looked_up_not_scanned`.
+
+**Next:** levels 3-4 at cell edges and the corners (inbox `draft-lod-cell-edges-below-level-2.md`); the falls draft.

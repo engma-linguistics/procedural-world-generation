@@ -229,6 +229,18 @@ def check(pmeta: dict, lat: float, lon: float, size_km: float, res_km: float, fr
                          f"(it must stay {EDGE_PX * rp + _halo_px(rp, res_km) * res_km:.1f} km inside its edge)")
 
 
+def _fade_mix(own, other, target, w, ramp, what: str = "", log=None) -> np.ndarray:
+    """own faded to other (w: own's share), their departures from target mixed with the rms kept by their correlation
+    over the ramp (where both count): no flattened strip where two carvings meet (lod_build's edge blocks)."""
+    a_, b_ = own - target, other - target
+    mid = ramp & (w > 0) & (w < 1)
+    rho = float(np.clip(np.corrcoef(a_[mid], b_[mid])[0, 1], 0.0, 1.0)) if mid.sum() > 2 else 1.0
+    rho = rho if np.isfinite(rho) else 1.0
+    if log is not None:
+        log(f"  {what}: faded to over {int(ramp.sum())} px, the two carvings' correlation {rho:.2f}")
+    return target + (w * a_ + (1 - w) * b_) / np.sqrt(w ** 2 + (1 - w) ** 2 + 2 * rho * w * (1 - w))
+
+
 def _halo_px(rp: float, res: float) -> int:
     return int(np.ceil(HALO_PARENT_PX * rp / res)) + 2
 
@@ -340,7 +352,8 @@ def _fall_chain(pa: _Parent, rec, ws, f: dict) -> list[int] | None:
 # The fine pass
 # ---------------------------------------------------------------------------
 def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_km: float, res_km: float,
-          seed: int = 1, log=print, frame=None, seam: bool = False, edge=None, shape=None, carve: bool = False) -> dict:
+          seed: int = 1, log=print, frame=None, seam: bool = False, edge=None, shape=None, carve: bool = False,
+          line=None) -> dict:
     """The fine zoom of `parent` ((meta, decoded layers), zoom.load) round
     (lat, lon), size_km across at res_km per pixel. world: the parent's
     source world (climate for the fine pixels). Returns a zoom dict as
@@ -356,7 +369,14 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     A tile's edge: `edge` (its built area's pixels, flat; nan where unused) is the ground carved by the same pass on
     blocks keyed by place that straddle its edges (lod_build.edge_surface): the tile fades to it over its edge ramp, so
     both sides of an edge show the same carved ground. Those blocks are built here with carve=True (the pass's ground,
-    {"hw": rows x columns of the region}, returned before the edge fade) and shape=(columns, rows) (a rectangle)."""
+    {"hw": rows x columns of the region}, returned before the edge fade) and shape=(columns, rows) (a rectangle).
+
+    A tile near its cell's edge (the owner line where two cells' tiles meet, docs/review/zoom/lod-plan-v2.md 2.3):
+    `line` = (surface, weight), both its built area's pixels, flat: the ground carved once by place along the line
+    (lod_build.line_surface) and how far the tile fades to it (1 within a pixel and a half of the line, 0 a ramp
+    inside); applied after the edge fade, so a pixel on both a tile edge and the line is the same on every side."""
+    if line is not None and not seam:
+        raise ValueError("a cell line's fade is a tile's (seam=True)")
     t0 = time.time()
     pmeta, play = parent
     check(pmeta, lat, lon, size_km, res_km, fr=frame, shape=shape)
@@ -1219,13 +1239,19 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
         ramp_px = blend & (w_in < 1)
         if np.isnan(e_[ramp_px]).any():
             raise ValueError("the edge surface doesn't cover the tile's edge ramp")
-        a_, b_ = hw - target, np.where(ramp_px, e_, hw) - target
-        mid = ramp_px & (w_in > 0)
-        rho = float(np.clip(np.corrcoef(a_[mid], b_[mid])[0, 1], 0.0, 1.0)) if mid.sum() > 2 else 1.0
-        rho = rho if np.isfinite(rho) else 1.0
-        mix = (w_in * a_ + (1 - w_in) * b_) / np.sqrt(w_in ** 2 + (1 - w_in) ** 2 + 2 * rho * w_in * (1 - w_in))
-        hw = np.where(ramp_px, np.maximum(target + mix, 0.5), hw)
-        log(f"  edge: the edge blocks' carving against the tile's own over the ramp, correlation {rho:.2f}")
+        hw = np.where(ramp_px, np.maximum(_fade_mix(hw, np.where(ramp_px, e_, hw), target, w_in, ramp_px,
+                                                    "edge blocks", log), 0.5), hw)
+        if line is not None:  # (then to the ground along the cell's edge, the same in both cells)
+            la = np.clip(np.nan_to_num(np.asarray(line[1], float).ravel()), 0.0, 1.0)
+            ls_ = np.asarray(line[0], float).ravel()
+            # (every land pixel but the lakes' and pools': a held floor or an imposed course is the other cell's
+            # parent's on its side, so it too meets the line's ground there)
+            on_l = land & ~lake & ~pool & (la > 0)
+            if np.isnan(ls_[on_l]).any():
+                raise ValueError("the cell line's surface doesn't cover its ramp")
+            hw = np.where(on_l, np.maximum(_fade_mix(hw, np.where(on_l, ls_, hw), target, 1.0 - la, on_l,
+                                                     "cell line", log), 0.5), hw)
+            w_in = np.minimum(w_in, 1.0 - la)  # (the overlays, ponds and reef changes fade out there too)
     # the gorges' walls no higher than the ground at their rims, straight out from the path (held at
     # the parent's surface through the pass, a rim stood as a ridge where the fine ground beyond it is
     # a valley)
