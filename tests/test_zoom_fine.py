@@ -563,3 +563,75 @@ def test_fine_zoom_keeps_a_turned_parents_orientation(data_root, world):
     # the conditioning works in the turned plane: the parent's means are kept as in the north-up case
     assert abs(m2["stats"]["parent_mean_bias_m"]) < 5.0
     assert abs(m2["stats"]["mean_elev_m"] - m2["stats"]["parent_mean_elev_m"]) < 5.0
+
+
+# --- the game, human-use and coast layers (fine_layers.py, PW-1679) ---------------------------------------------
+from planet import gameattrs as GA  # noqa: E402
+from planet import humanuse as HU  # noqa: E402
+from planet.zoom import coast as ZC  # noqa: E402
+
+REGIONAL_EXTRA = set(HU.NAMES) | set(GA.LAYER_SPECS) | {"coast_type", "nav_hazard", "shore_form", "barrier_island"}
+
+
+@pytest.fixture(scope="module")
+def chain(parent, fine, world):
+    """(the fine zoom, a fine zoom of it at 25 m round its fall, the fine zoom as a parent)."""
+    z1, (lat, lon) = fine
+    p1 = _as_parent(z1, parent[0], lat, lon, "fine01")
+    f1 = z1["stats"]["falls"][0]
+    z2 = ZF.build(p1, world, f1["lat"], f1["lon"], size_km=4, res_km=0.025, log=lambda *a: None)
+    return z1, z2, p1
+
+
+def test_fine_zoom_carries_the_regional_layer_set(chain):
+    """The 25 game / human-use / coast layers a regional zoom writes are on a fine zoom, and a fine zoom of it keeps them all."""
+    z1, z2, _ = chain
+    assert REGIONAL_EXTRA <= set(z1["layers"]) and len(REGIONAL_EXTRA) == 24  # (+ glacial_form, where the parent has it)
+    assert set(z1["layers"]) <= set(z2["layers"])  # (as many layers as its parent, or more: floor_m, valley_floor)
+    for z in (z1, z2):
+        for k, v in z["layers"].items():
+            assert v.shape == (z["ny"], z["nx"]), k
+            assert np.isfinite(np.asarray(v, float)).all(), k
+        assert set(z["layers"]) <= set(Z.LAYER_DOC) | set(ZC.LAYER_SPECS)  # (every one has a spec to save with)
+
+
+def test_fine_layers_agree_with_the_parent_at_the_seam(chain):
+    """Over the outer parent pixel of a rung, a pixel-scale layer's mean differs from the parent's by a fraction of its range."""
+    z1, z2, p1 = chain
+    pa = ZF._Parent(*p1)
+    n, res = z2["nx"], z2["res"]
+    c, r = np.meshgrid(np.arange(n), np.arange(n))
+    P = z2["frame"].to_sphere((c.ravel() + 0.5 - n / 2) * res, (n / 2 - r.ravel() - 0.5) * res)
+    pr, pc = pa.coords(P)
+    idx = pa.index(pr, pc)
+    ring = np.minimum.reduce([r.ravel(), c.ravel(), n - 1 - r.ravel(), n - 1 - c.ravel()]) * res < pa.rp
+    ids, inv = np.unique(idx[ring], return_inverse=True)
+    cnt = np.bincount(inv)
+    full = cnt >= 0.5 * np.median(cnt)
+    assert full.sum() > 20
+    for k, span in (("travel", 12.5), ("grazing", 5.0), ("timber", 5.0), ("fuel", 5.0), ("foraging", 5.0),
+                    ("building", 5.0), ("mud_months", 12.0), ("fresh_km", 30.0)):
+        m = np.bincount(inv, np.asarray(z2["layers"][k], float).ravel()[ring]) / cnt
+        d = (m - np.asarray(z1["layers"][k], float).ravel()[ids])[full]
+        print(k, round(float(d.mean()), 3), round(float(np.abs(d).mean()), 3))
+        assert abs(d.mean()) < 0.15 * span, (k, d.mean())
+        assert np.abs(d).mean() < 0.3 * span, (k, np.abs(d).mean())
+
+
+def test_fine_zoom_inherits_the_parents_regional_forms(parent, world):
+    """glacial_form, a barrier class and a pass are the parent's: the class on the nearest parent pixel, a pass as one mark."""
+    pmeta, play = parent
+    play = dict(play)
+    bi = np.zeros((NP, NP), np.uint8)
+    bi[30:40, 30:40] = 1  # (island on land: kept only where the fine water agrees, so none of it: all this parent is land)
+    ps, ph = np.zeros((NP, NP), np.uint8), np.zeros((NP, NP), int)
+    ps[48, 53], ph[48, 53] = 2, 1234
+    play.update({"glacial_form": np.full((NP, NP), 3, np.uint8), "barrier_island": bi, "pass": ps, "pass_height": ph})
+    lat, lon = _at(pmeta, 48, 53)
+    z = ZF.build((pmeta, play), world, lat, lon, size_km=5, res_km=0.05, log=lambda *a: None)
+    L = z["layers"]
+    assert (L["glacial_form"][L["water"] == 0] == 3).all()
+    assert (L["barrier_island"] == 0).all() or (L["water"][L["barrier_island"] == 1] == 0).all()
+    assert (L["pass"] > 0).sum() == 1 and L["pass"].max() == 2 and L["pass_height"].max() == 1234
+    r, c = np.argwhere(L["pass"] > 0)[0]
+    assert abs(r - z["ny"] / 2) < 0.5 * RP / z["res"] + 1 and abs(c - z["nx"] / 2) < 0.5 * RP / z["res"] + 1  # (inside its parent pixel)

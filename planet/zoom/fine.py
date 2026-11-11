@@ -90,7 +90,10 @@ from . import regional as Z
 from ..constants import SEC_PER_YR
 from ..geo import smoothstep
 from ..kernels import accumulate
+from . import coast as ZC
 from . import coastal as ZCL
+from . import fine_layers as FL
+from .shoreforms import LEGEND as SF_LEGEND
 from . import fine_floodplain as ZFP
 from . import fine_forms as ZFF
 from . import fine_meander as ZFM
@@ -1362,6 +1365,13 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     nu = np.zeros((vegetation.NP, npx))
     nu[:, vz["idx"]] = vz["nu"]
     tilt = float(world["meta"].get("params", {}).get("tilt", 23.4))
+    # the game and human-use layers and the coast ones (fine_layers.py, PW-1679): as many layers as the parent has
+    t_fl = time.time()
+    extra = FL.make(layers, n=nx, res=res, nu=nu, pix_lat=pix_lat, tilt=tilt, falls=fall_list, pa=pa, pr=pr, pc=pc,
+                    size_km=size_km, world=world, seed=seed, lat=lat, lon=lon, up=Z._up_list(fr), log=log)
+    layers.update({k: np.asarray(v).ravel() for k, v in extra["layers"].items()})
+    log(f"  game, human-use and coast layers: {len(extra['layers'])} [{time.time() - t_fl:.1f}s]")
+    stats["coast"] = extra["coast"]["stats"]
     sat = SAT.zoom_images({k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()}, nu, pix_lat, tilt)
     coarse = {"elevation": pa.nearest(hp, pr, pc), "precipitation": precip, "river_segs": river_segs}
     # where the fine region sits in the parent
@@ -1376,6 +1386,7 @@ def build(parent: tuple[dict, dict], world: dict, lat: float, lon: float, size_k
     return {"nx": nx, "ny": ny, "res": res, "frame": fr, "size_km": size_km,
             "layers": {k: np.asarray(v).reshape(ny, nx) for k, v in layers.items()},
             "stats": stats, "coarse": coarse, "rec": rec_out, "satellite": sat, "parent": parent_block,
+            "coast_features": extra["coast"]["features"],
             "seconds": round(time.time() - t0, 1),
             "params": {"root_seed": rseed, "iterations": ITERATIONS, "step": round(rp / res, 2), "halo_px": hb,
                        "river_area_km2": round(max(RIVER_AREA_PX * rp * rp, RIVER_AREA_MIN), 3),
@@ -1975,6 +1986,10 @@ def save(z: dict, pmeta: dict, lat: float, lon: float, size_km: float, res_km: f
     out.mkdir(parents=True, exist_ok=True)
     specs, arrays = {}, {}
     for k, v in z["layers"].items():
+        if k not in Z.LAYER_DOC:  # (the coast layers: zoom.coast's own specs, as coast.add_to_zoom writes them)
+            specs[k] = dict(ZC.LAYER_SPECS[k])
+            arrays[k] = S.encode(v, specs[k])
+            continue
         units, desc, *enc = Z.LAYER_DOC[k]
         specs[k] = {**(enc[0] if enc else {}), "units": units, "description": desc}
         arrays[k] = S.encode(v, specs[k]) if enc else v
@@ -2023,7 +2038,8 @@ def save(z: dict, pmeta: dict, lat: float, lon: float, size_km: float, res_km: f
                       "sea_level_value": int(round((0 - lo) / (hi - lo) * 65535)) if lo < 0 < hi else None,
                       "formula": "elev_m = min_m + value / 65535 * (max_m - min_m)",
                       "metres_per_step": round((hi - lo) / 65535, 4)},
-        "legend": S.legends(),
+        "legend": {**S.legends(), "barrier_island": ZC.BARRIER_LEGEND, "shore_form": SF_LEGEND},
+        "coast": {"features": z["coast_features"], "stats": z["stats"]["coast"], "created": time.strftime("%Y-%m-%d %H:%M:%S")},
         "params": z["params"],
         "stats": z["stats"],
     }
