@@ -127,3 +127,24 @@ def test_a_dead_belt_at_the_coast_spreads_seaward_and_widens_the_continent():
             assert sim.budget.get("collapse.margin", 0) > 0
     assert out["off"][0] == 0 and out["trench"][0] == 0
     assert out["on"][0] > 0, out
+
+
+def test_drowned_continent_floats_water_loaded():
+    """PW-1287 A: with wet = WET (water_loaded 1), continental crust below the sea stands rho_m / (rho_m - rho_w)
+    times its air-loaded depth (its hollow holds water); land and ocean floor are unchanged, and the two meet at
+    the shore. The numba and numpy paths agree."""
+    from planet.tectonics.isostasy import WET, elevation
+    thick = np.array([20.0, 30.0, 33.0, 36.0, 45.0, 7.0])
+    cont = np.array([True, True, True, True, True, False])
+    age = np.full(6, 50.0)
+    rock = np.zeros(6, np.int64)
+    sed = np.array([0.0, 1.0, 0.0, 0.0, 0.0, 0.5])
+    air = elevation(thick, age, cont, rock, -300.0, sed)
+    wet = elevation(thick, age, cont, rock, -300.0, sed, WET)
+    slow = elevation(thick, age.astype(np.float32), cont, rock, -300.0, sed, WET)  # (the numpy path)
+    assert np.allclose(wet, slow)
+    drowned = cont & (air < 0)
+    assert drowned.sum() >= 2 and (~drowned & cont).any()
+    assert np.allclose(wet[drowned], WET * air[drowned])
+    assert np.array_equal(wet[~drowned], air[~drowned])
+    assert 1.45 < WET < 1.46

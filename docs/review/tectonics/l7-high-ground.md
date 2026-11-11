@@ -233,3 +233,28 @@ seaward as thin extended crust, which is what the change lets the flow do. It is
 L7 seeds 1 and 2 to 1 Gyr, `collapse_margin=1`, against the on arms 2e1bc2 / 213321, medians over 600-1000 Myr
 (`l7_high_ground.py`): the area thermostat off its floor; land above 3 and 4 km down toward the off arms (6286ce,
 28d710); the Andes share of land above 3 km kept (on arms 19.2% / 24.7%).
+
+## 5. Second arm: PW-1287 option A, water-loaded drowned continent (coordinator's addition)
+
+Coordinator ruling A (correct physics), screened beside collapse_margin, each behind its own parameter
+(`water_loaded`, default 0) and in its own commit. Side measures in every arm: shelf share of the ocean (0 to
+-200 m) and the median submerged continental cell's depth, late-window medians (PW-950 baseline ~1.4% and
+~-1,500 m at L6; Earth on the L6 grid ~5.8% and -184 m).
+
+**What it changes.** `isostasy.elevation` (`_elevation_k` and the numpy path) gives continental crust standing
+below the sea `wet` x its air-loaded depth, `wet = K_SEA / K_LAND = rho_m / (rho_m - rho_w) = 1.456` with
+`water_loaded = 1` (`Simulation.wet`); the air-loaded height includes `sediment_lift`, so a drowned shelf's
+sediment lifts it at the under-water rate (K_SEA), as on the ocean floor, which is PW-1287's bookkeeping gap. The
+join at the shore is continuous (0 both sides) with a kink, which is the physics: water loading starts where the
+water does. Erosion and deposition's elevation-per-km (`earth.erode`'s `iso`, `iso_dep`) and the reefs' fill take
+the same factor on drowned continental cells, so a fill of d metres lays d / (wet x rate) km.
+
+**Expected sign, stated before the screen.** This deepens drowned margins, it does not raise them: under water each
+km of thinning sinks the column (rho_m - rho_c) / (rho_m - rho_w) ~ 220 m against 150 m in air (the standard air- to
+water-loaded conversion). PW-950's own 2026-10-28 update records lane 23 trying it at L6 (seed 1, branch code):
+submerged median -766/-875/-997 m air-loaded against -1105/-1135/-1369 m water-loaded at 200/300/400 Myr, shelf
+lower in 6 of 8 samples; and McKenzie 1978's E0 is larger under water (3.2 against 2.2 km, the ticket's 10-29
+update). PW-1287's own option text says A "raises the drowned margins"; that holds only for the sediment term
+(a km of sediment lifts a drowned shelf 1.46x more), not for the crust's depth. So A is expected to lower the shelf
+share and deepen the submerged median, and to lower sea level a little (more water held on drowned continent,
+`earth.continent_water`). It is screened as ruled; if it causes trouble it is dropped, not tuned.
