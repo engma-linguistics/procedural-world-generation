@@ -2,7 +2,7 @@
 id: PW-1679
 title: Fine zooms write 48 layers where their parent has 71, so the game and human-use overlays are blank on every zoom rung
 type: task
-status: todo
+status: done
 parent: PW-1198
 milestone: v1.0
 subsystem: zoom
@@ -39,4 +39,5 @@ travel, river_nav, harbour, shore_form, coast_type, glacial_form).
 - [ ] fine-zoom build time and RAM stay under ~2x the measured 34-53 s / 8-12 GB
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 285 merged (5d130c4f): fine zooms write 73 layers (71 + floor_m, valley_floor); docs/review/zoom/fine-layers.md.
 - 2026-11-10: Created from inbox draft draft-fine-zoom-missing-layers.md (found by lane284).

@@ -1,7 +1,8 @@
 ---
+id: PW-1681
 title: Fine-zoom travel and fertile read slope at the pixel, so a rung's travel time is 1.6-3.3 x-units above its parent's
 type: task
-status: needs-decision
+status: wontdo
 parent: PW-1198
 milestone: null
 subsystem: zoom
@@ -10,7 +11,9 @@ impact: low
 found_by: lane285
 blocked_by: []
 relates: [PW-1679, PW-206]
-refs: [planet/gameattrs.py::zoom_layers, planet/humanuse.py::analyse_zoom, planet/zoom/fine_layers.py, docs/review/zoom/fine-layers.md, "zoom 44d6d6", "zoom 01f501"]
+refs: ["planet/gameattrs.py::zoom_layers", "planet/humanuse.py::analyse_zoom", planet/zoom/fine_layers.py, docs/review/zoom/fine-layers.md, "zoom 44d6d6", "zoom 01f501"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -25,3 +28,7 @@ Options: A keep (finer ground is rougher: document it); B read slope over a fixe
 as `vegetation.cell_relief` does for relief), which removes the step but loses 25 m cliffs; C blend the two over the outer parent
 pixel at a rung's edge. Lean A, with B if the viewer's seam is judged ugly. What breaks if never done: nothing crashes; two
 overlays differ by a visible step at a rung's edge in rugged country.
+
+## Updates
+- 2026-11-10: Status needs-decision -> wontdo. Coordinator ruling 11-10: keep the pixel-scale slope. On a 25 m map, travel should reflect the slopes you actually walk; the step against a 2 km parent at the rung edge is the parent being smooth, not the rung being wrong. Revisit only if the viewer shows a distracting seam.
+- 2026-11-10: Created from inbox draft draft-fine-travel-slope-scale.md (found by lane285).

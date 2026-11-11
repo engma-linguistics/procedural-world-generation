@@ -1,4 +1,5 @@
 ---
+id: PW-1682
 title: Zoom fertile_score is stored as a percent into a 0.01-scale byte, so it saturates at 2.55 (57% of section 2a4463's pixels)
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane285
 blocked_by: []
 relates: [PW-1679, PW-099]
-refs: [planet/humanuse.py::analyse_zoom, planet/humanuse.py::LAYER_SPECS, planet/export.py, planet/zoom/peoples.py, viewer/zoom.html, "zoom 2a4463", "zoom 44d6d6", tests/test_zoom_peoples.py]
+refs: ["planet/humanuse.py::analyse_zoom", "planet/humanuse.py::LAYER_SPECS", planet/export.py, planet/zoom/peoples.py, viewer/zoom.html, "zoom 2a4463", "zoom 44d6d6", tests/test_zoom_peoples.py]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -28,3 +31,6 @@ the readers that divide by 100 (export.py:717, peoples.py:144, viewer/zoom.html:
 peoples test comment, and re-run `planet humanuse`-style recompute for existing zooms (old zooms may be deleted).
 - [ ] decoded fertile_score spans 0 to 1 (or 0 to 100 by one stated convention) on a zoom, with no ceiling pile-up
 - [ ] every reader agrees
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-zoom-fertile-score-saturates.md (found by lane285).
