@@ -347,3 +347,63 @@ Books at 1 Gyr: `collapse.margin` +9.2e3 / +9.0e3 against `andean.closed` -5.6e4
   `draft-water-loaded-isostasy-deepens-shelves.md` (needs-decision: keep A off until PW-950's margin work).
 - Scratch runs (lane 288's four baselines and lane 292's six) are still under /data/personal/scratch/lane288 and lane292: deleting them was denied by the permission system, so the coordinator deletes them (no symlinks inside); the per-checkpoint tables
   are in logs/measure_*.txt there.
+
+# Lane 296 (PW-1703): option A, seaward collapse down to 35 km
+
+Lane 296, 2026-11-11. Base: main f692572b. Parameter commit 46a94092. Scratch /data/personal/scratch/lane296.
+Attempt 2 on the area-thermostat floor (attempt 1: lane 292's `collapse_margin`, section 7).
+
+## 8. Diagnosis (written before the screen)
+
+### 8.1 Where seaward collapse stops today
+
+- `flow_and_orogeny` (`planet/tectonics/crust.py:547-592`) adds the margin edges from `margin_edges`
+  (`crust.py:594-605`) to the inland edges and runs one kernel over both, `plate_kernels.crust_flow`
+  (`plate_kernels.py:250-263`). Its rate is `k0 x mult x (x + x^3)` with `x = (max(t_a, t_b) - 40) / 10`
+  (`plate_kernels.py:258` before this lane): a margin edge moves crust only while its belt cell is over 40 km.
+- A filled ocean cell becomes continent at `BECOMES_CONT_KM` = 20 km (`margin_spread`, `crust.py:608-627`), so the
+  new edge cell is itself well under 40 km and spreads no further; the front moves on only when inland flow (40 km
+  stop) refills the old edge cell. Every belt edge cell therefore keeps 40 km and the 0-5 km between normal crust
+  (`isostasy.CONT_KM` = 35 km, `isostasy.py:37`) and 40 km is never given to the sea.
+
+### 8.2 Why 35 km is defensible
+
+Rey, Vanderhaeghe & Teyssier 2001 (Tectonophysics 342:435-449, doi:10.1016/S0040-1951(01)00174-3; abstract read
+this lane on the repository.geologyscience.ru record 123456789/26833): collapse is the relaxation of a lateral
+contrast in gravitational potential energy once the forces that held it up weaken; in the divergent regime "an
+excess in gravitational potential energy drives crustal material away from the deformed lithosphere", and with a
+fixed boundary the orogen "grows laterally at the expense of its surroundings". The excess is measured against the
+undeformed lithosphere, so collapse runs until the thickened crust is back to the region's normal thickness, not to
+a fixed 40 km. In the model, normal continental crust is `CONT_KM` = 35 km (the thickness the volume thermostat
+aims at, `crust.py:54-79`, and that stands at 250 m, `isostasy.py:261`), so 35 km is the model's own
+"undeformed" reference, not a new number.
+
+What is not sourced: (a) the rate (the same kernel and `collapse_margin` x (1 + collapse) as lane 292's arm);
+(b) that the 40 km inland stop is kept, so inland belts still stand at ~40 km (the inland stop is the kernel's
+"thick crust is weak" threshold, PW-1497, and is not this lane's to move); (c) with the margin stop at 35 km, any
+dead coast cell of 35-40 km of the same plate (not only an orogen's) creeps seaward. `dead` is true for a cell
+never folded (`record.T_FOLD` = NEVER, `record.py:73`), so this widens the mechanism from belts to every thick
+passive coast. That is the soft point: a 37 km craton coast is not an orogen with excess potential energy, it is
+only 2 km thicker than the model's normal; on Earth such margins are held by lithospheric strength. Its size is
+small either way (8.3).
+
+### 8.3 Expected give-back
+
+Measured on lane 292's seed 1 arm (4635ef, `collapse_margin=1`, 600-1000 Myr checkpoints; script
+/data/personal/scratch/lane296/estimate.py, not kept): of ~4,600-5,900 coast cells on margin edges (same plate,
+no trench), the median is 23 km thick (rifted margins), only 3-6% are over 40 km and 7-11% over 35 km. The crust
+standing above the stop in those cells is 1.9-4.3x (median ~2.1x) larger with a 35 km stop than with 40.
+
+So the expected give-back is about twice lane 292's: `collapse.margin` ~1.5-2.0e4 km x L5 cells by 1 Gyr
+(lane 292: 9.2e3) against `andean.closed` ~-5.5e4, i.e. from ~1/4-1/3 of the closed area to ~1/2-2/3 (margin cells
+are laid at 20 km, closed cells held ~35-40 km). The area books (2.3) need roughly +0.5-0.6 points of area per
+100 Myr more for the thermostat to leave its floor on seed 2 (area 38.2% against 40% with lane 292's arm) and more
+on seed 1 (38.5%). Expectation: seed 2 may leave the floor for part of the window; seed 1 probably not. Land above
+3 km should fall a little (thinner coasts), not to the off-arm level unless the thermostat lifts.
+
+### 8.4 The change
+
+`collapse_margin_km` (params, default 40.0 = today, off): `flow_and_orogeny` passes a per-edge stop to
+`crust_flow` (`ref`, new argument), `FLOW_KM` = 40 on inland edges (`crust.py:362`) and `collapse_margin_km` on the
+margin edges. Only acts with `collapse_margin` > 0 (also default off). Test:
+`tests/test_crust_belts.py::test_seaward_collapse_runs_down_to_collapse_margin_km`.
