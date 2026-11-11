@@ -125,7 +125,8 @@ def test_nonhuman_spellings_are_ascii_letters():
     assert R.romanize("a‼") == "arh" and R.romanize("aᵣ") == "avr" and R.romanize("aᴖ") == "awh"
     assert R.romanize("a˯") == "amh" and R.romanize("i˰") == "iih" and R.romanize("ʞa") == "cka"
     assert R.romanize("ma‼") == "marh" and R.romanize("ʁ‼a") == "grha"
-    assert R.romanize("ar", inventory=from_ipa("aᵣ a r")) == "arr" and R.romanize("aᵣ") != R.romanize("ar")  # purr is not the trill
+    assert R.romanize("ar", inventory=from_ipa("aᵣ a r ɾ")) == "arr" and R.romanize("aᵣ") != R.romanize("ar")  # purr is not the trill
+    assert R.romanize("ar", inventory=from_ipa("aᵣ a r")) == "ar"   # (the trill is rr only beside a tap: PW-1739)
 
 
 def test_contrasts_of():
@@ -200,7 +201,8 @@ def test_book_mode_diacritics_rare_on_generated_words():
 
 def test_rhotics_and_book_affricates():
     """Full mode tells the approximant ɹ from the tap ɾ and the trill r (owner 11-04); book mode spells ɟʝ as gy, not gyyh."""
-    full = {x: R.romanize("a" + x + "a") for x in ("ɹ", "ɾ", "r")}
+    full = {x: R.romanize("a" + x + "a", inventory=from_ipa("a ɹ ɾ r")) for x in ("ɹ", "ɾ", "r")}
+    assert R.romanize("ara".replace("r", "r"), inventory=from_ipa("a r")) == "ara"   # (no tap: the trill is plain r, PW-1739)
     assert len(set(full.values())) == 3 and full["ɾ"] == "ara" and full["r"] == "arra" and full["ɹ"] == "ařa"
     assert not R.merged("ɹ", "ɾ") and R.merged("ɾː", "r")
     b = lambda x: R.romanize(x, book=True)
@@ -279,7 +281,8 @@ def test_pinyin_aspiration_keeps_the_fricative_digraphs():
 def test_nonhuman_marks_do_not_pile_up_in_book():
     """Book mode: one non-human mark per sound, once per run of marked sounds; a growled trill is rrh, not rrrh."""
     b = lambda x: R.romanize(x, book=True)
-    assert b("a‼r‼a") == "arrha" and b("r‼a‼") == "rrarh" and b("aᴖ˯") == "awh"
+    assert b("a‼r‼a") == "a·rha" and b("r‼a‼") == "rarh" and b("aᴖ˯") == "awh"   # (no tap: a growled trill is rh)
+    assert R.romanize("a‼r‼a", inventory=from_ipa("a‼ r‼ ɾ a"), book=True) == "arrha"   # (beside a tap: rrh)
     for x in ("tɛ‼r‼i", "ku‼ɾi‼si‼li‼k", "a‼r‼a‼r‼"):
         assert not __import__("re").search(r"(rh|vr|wh|mh|ih){2}|rrrh", b(x)), b(x)
 

@@ -518,3 +518,61 @@ def test_rendaku_voices_the_generic():
     k, g, a = from_ipa("k")[0], from_ipa("g")[0], from_ipa("a")[0]
     assert PL.Habits._rendaku(L([k, g, a]), (k, a))[0] == g
     assert PL.Habits._rendaku(L([k, a]), (k, a))[0] == k
+
+
+# ---------------------------------------------------------------------------------------------- PW-1739: output slips
+def test_slip_scanner_catches_each_kind():
+    names = {"demes": {"1": {"name": {"gloss": "named after the the river (Ka)"},
+                             "places": [{"english": "Market The Black Sea", "gloss": "the land of the named after it"},
+                                        {"english": "Loyings 2", "gloss": "the river river", "roman": "Ka''u"}]}},
+             "personal": {"d1": {"bynames": [{"roman": "A" * 41, "kind": "patronymic"}]}}, "families": {}}
+    s = NM.slips(names)
+    assert all(s[k] for k in ("the_the", "doubled_word", "mid_the", "numbered", "double_apostrophe", "of_the_verb",
+                              "long_full_name", "unnamed_family")), {k: len(v) for k, v in s.items()}
+
+
+def test_glosses_never_double_the_article():
+    assert NM._the("the river") == "the river" and NM._the("black river") == "the black river"
+    assert NM._land_gloss("named after the river (Ka)") == "the land of the people named after the river"
+    assert NM._land_gloss("the real people") == "the land of the real people"
+    assert NM._land_gloss("the real people", "speech") == "the speech of the real people"
+    assert NM._poss("Zing'") == "Zing's" and NM._poss("Grim") == "Grim's"
+
+
+def test_unique_english_never_numbers():
+    from planet.language.placenames import unique_english
+    recs = [{"english": "Tezicstow", "english_how": "", "site": i, "_r": "west"} for i in range(60)]
+    recs.append({"english": "The Black Sea", "english_how": "", "id": None, "_r": "west"})
+    recs.append({"english": "The Black Sea", "english_how": "", "id": None, "_r": "west"})
+    unique_english(recs, lambda r: r["_r"], lambda r: ([("river", "Blackwater"), ("peak", "Coldfell")], ["Ayson", "Brand"]))
+    ens = [r["english"] for r in recs]
+    assert len(set(ens)) == len(ens)
+    assert not any(e.rsplit(" ", 1)[-1].isdigit() for e in ens), ens
+    assert "Tezicstow-on-Blackwater" in ens and any(e.endswith(" Ayson") for e in ens)
+    assert ens[-1].startswith("The ") and " The " not in ens[-1]
+
+
+def test_names_on_the_tiny_run_have_no_slips():
+    from test_language_history import TinyRun
+    from planet.language import history as H
+    old = (H.RATE_SCALE, H.SHIFT_K, H.WORKERS)
+    H.RATE_SCALE, H.SHIFT_K, H.WORKERS = 240.0, 1.0, 1
+    try:
+        res = H.generate(None, run=TinyRun(), analyse=True)
+    finally:
+        H.RATE_SCALE, H.SHIFT_K, H.WORKERS = old
+    a = NM.build_names(res, res["run"])
+    s = NM.slips(a)
+    assert not any(s.values()), {k: v[:3] for k, v in s.items() if v}
+    # living families and languages are named (PW-1739: the viewer showed fam0)
+    living = [l for l in res["lects"] if l.alive and l.deme is not None]
+    fams = {getattr(l, "family_scholars", None) for l in living} - {None}
+    assert fams <= set(a["families"]) and all(a["families"][f]["name"].startswith("the ") for f in fams)
+    true = {getattr(l, "family_true", None) for l in living} - {None}
+    assert true <= set(a["scholars"]) and all(a["scholars"][f]["living"] for f in true)
+    rows = (res.get("families") or {}).get("languages") or []
+    assert rows and all(not r["name"].startswith("speech of") and r.get("where") for r in rows)
+    # 20 given names where the tradition's pool allows; patronymics cut to a sane length
+    pn = a["personal"]
+    assert max(len(x["given"]) for x in pn.values()) > 6
+    assert all(len(b["roman"].replace(" ", "")) <= NM.LONG_FULL_NAME for x in pn.values() for b in x["bynames"])

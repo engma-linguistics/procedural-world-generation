@@ -13,6 +13,7 @@ Contrast-dependent choices take a set of contrast names (contrasts_of builds it 
   breve and lowered/retracted a macron below; an IPA diacritic never reaches a spelling;
 - "open_e" "open_o" "back_a" "lax_i" "lax_u" "dark_l" "beta" "breathy_h": ɛ ɔ ɑ/ɒ ɪ ʊ ɫ β ɦ are written plainly (e o a i u l
   v h) unless the lect also has the sound they would be confused with; then è ò å ì ù ll bh hh (the table's `marked` column);
+- "trill": the trill r is plain r unless the lect also has the tap ɾ; then rr (Spanish perro beside pero; PW-1739);
 - "tone": the lect is tonal, so the marked vowels use a dot below (ẹ ọ ị ụ, Yoruba and Igbo) instead of a grave.
 Non-human percepts are written in ASCII letters (growl rh, purr vr, second voice wh, sub-bass mh, ultra ih: NH_MARKS); the
 second voice's own tone (syrinx lane) is the first voice's tone mark on its w: a˦ᴖ˨˦ áw̌h, aᴖ˨ aẁh (book mode: awh).
@@ -49,7 +50,8 @@ DATA = Path(__file__).parent / "data"
 ROMANIZATION = "house/2"
 # the sounds whose presence makes a marked spelling necessary (contrast -> rivals, as IPA of the base sound)
 RIVALS = {"open_e": ("e", "e̞"), "open_o": ("o", "o̞"), "back_a": ("a", "ä", "ɐ"), "lax_i": ("i",), "lax_u": ("u",),
-          "dark_l": ("l",), "beta": ("v", "ʋ"), "breathy_h": ("h",)}
+          "dark_l": ("l",), "beta": ("v", "ʋ"), "breathy_h": ("h",),
+          "trill": ("ɾ",)}  # (the trill is rr only beside a tap, as Spanish perro/pero; PW-1739)
 ALL_CONTRASTS = frozenset(("aspiration", "schwa", "dental", "tone", "round_i", "round_e", "central_i", "shift") + tuple(RIVALS))
 # (also "pinyin", never in ALL_CONTRASTS: a lect that contrasts aspiration on its stops but has no voiced stops writes the plain
 # stops b d g and the aspirates p t k, pinyin and Korean RR style; contrasts_of gives it instead of "aspiration")
@@ -139,7 +141,7 @@ def _style(contrasts) -> tuple[dict, str]:
 
 # documented mergers: sounds that share a spelling on purpose (near-identical as heard, or a contrast almost no language makes)
 MERGES = [frozenset(x) for x in (
-    ("ɾ", "r"),  # a long tap is the trill rr (the approximant ɹ has its own ř, owner 11-04)
+    ("ɾ", "r"),  # a long tap shares rr with a trill beside a tap (the approximant ɹ has its own ř, owner 11-04)
     ("ɱ", "m"), ("ʋ", "v"), ("ɬ", "l̥"), ("ʍ", "hʷ"),
     ("c", "kʲ"), ("ɟ", "ɡʲ"), ("ɲ", "nʲ"), ("ʎ", "lʲ"), ("ç", "hʲ", "j̊"),  # palatal = palatalized, as heard
     ("ʏ", "y"), ("ɘ", "ə", "ɜ"), ("ɵ", "ø", "ɞ"), ("e̞", "e"), ("o̞", "o"), ("ɐ", "a", "ä"), ("ɶ", "œ"), ("ɑ", "ɒ"))]
@@ -892,7 +894,10 @@ def romanize(ipa: str, contrasts: set[str] | None = None, inventory: Iterable[Se
 
 
 def title_name(s: str) -> str:
-    """A proper name: the first cased letter capitalized ('aba -> 'Aba, ǃxu -> ǃXu: a click letter has no capital)."""
+    """A proper name: the first cased letter capitalized ('aba -> 'Aba, ǃxu -> ǃXu: a click letter has no capital); a doubled
+    apostrophe (a long glottal stop, or an ejective before one) is written once (PW-1739: Ka''uaju read as a typo)."""
+    while "''" in s:
+        s = s.replace("''", "'")
     g = _graphemes(unicodedata.normalize("NFC", s))
     for i, x in enumerate(g):
         if x[0].isalpha() and x[0].upper() != x[0].lower():

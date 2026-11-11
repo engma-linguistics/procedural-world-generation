@@ -99,6 +99,7 @@ EN_NOUN = {"SPRING (OF WATER)": "Well", "SALT (FOOD)": "Salt", "PEACE": "Frith",
            "LIGHT (RADIATION)": "Light", "WOOD": "Wood", "TREE": "Tree"}
 EN_QUALIFIERS = ("Great", "Little", "Upper", "Nether", "East", "West", "North", "South", "Long", "Old", "Market", "Church",
                  "High", "Low", "Bishop's", "King's", "Kirk", "Stony")
+EN_SEA_QUALIFIERS = ("Inner", "Outer", "East", "West", "North", "South", "Great", "Little")  # (The Inner Black Sea)
 _VOWELS = set("aeiouy")
 _CLASHING = ({"Great", "Little", "Mickle"}, {"Upper", "Nether", "High", "Low"}, {"Old", "Ald", "New"},
              {"Kirk", "Church", "Minster"}, {"Long", "Short"})
@@ -119,6 +120,12 @@ def _pick(rng, weights: dict) -> str | None:
 
 def _h(*key) -> int:
     return zlib.crc32(":".join(map(str, key)).encode())
+
+
+def _poss(name: str) -> str:
+    """English possessive of a local name: Grim's; a name ending in a glottal apostrophe takes only s (no doubled
+    apostrophe; PW-1739)."""
+    return f"{name}s" if name.endswith(("'", "’")) else f"{name}'s"
 
 
 def anglicize(roman: str, max_letters: int = 7) -> str:
@@ -198,9 +205,9 @@ def english(meaning: dict, key) -> tuple[str, str]:
         stem = ""
     if kind in ("founder", "possessive") and stem:
         stem = stem if stem.endswith("s") else stem + "s"
-        how = f"{sp.get('name') or stem}'s"
+        how = _poss(sp.get('name') or stem)
     elif kind in ("people_of", "descendants") and stem:
-        how = f"{sp.get('name') or stem}'s people"
+        how = f"{_poss(sp.get('name') or stem)} people"
         stem = stem + "ing" if kind == "people_of" else stem + "ings"
         if kind == "descendants":
             return stem, f"{how} (Hastings-style)"
@@ -220,11 +227,62 @@ def english(meaning: dict, key) -> tuple[str, str]:
     return name[:1].upper() + name[1:], f"{how} + -{gen.strip()} '{what}'"
 
 
-def unique_english(recs: list, region_of) -> None:
+def _feature_tags(features) -> list:
+    """English tags a place takes from the features of its land (Burton-on-Trent, Clacton-on-Sea, Ashby-under-Coldfell,
+    Weston-in-Gordano): `features` is [(kind, English name)] of the deme's river, lake, sea, peak and land."""
+    prep = {"river": "-on-", "lake": "-by-", "peak": "-under-", "land": "-in-"}
+    out = []
+    for kind, name in features or ():
+        if not name:
+            continue
+        if kind == "sea":
+            out.append("-on-Sea")
+        elif kind in prep:
+            out.append(prep[kind] + name.removeprefix("The ").replace(" ", "-"))
+    return list(dict.fromkeys(out))
+
+
+def _candidates(en: str, r: dict, features, lords):
+    """(name, what was added) in the order tried when `en` is taken: a qualifier (Great, Little, Upper, Nether...: Great
+    Newton), a feature of its land (Burton-on-Trent), both, a lord's name (Weston Turville, Stoke Mandeville), both.
+    Never a number (PW-1739)."""
+    sea = en.startswith("The ")
+    qs = EN_SEA_QUALIFIERS if sea else EN_QUALIFIERS
+    base = en.removeprefix("The ")
+    off = _h("q", r.get("site"), r.get("id"), en)
+    quals = []
+    for i in range(len(qs)):
+        q = qs[(off + i) % len(qs)]
+        if any(q in g and any(base.startswith(x) for x in g) for g in _CLASHING):
+            continue   # (no 'Great Littlecombe')
+        quals.append(q)
+    def name(q=None, tag="", lord=""):
+        x = (f"{q} " if q else "") + base + tag + (f" {lord}" if lord else "")
+        return ("The " + x) if sea else x
+    for q in quals:
+        yield name(q), q
+    if sea:
+        return
+    tags = _feature_tags(features)
+    for t in tags:
+        yield name(tag=t), t
+    for t in tags:
+        for q in quals:
+            yield name(q, t), f"{q} + {t}"
+    for lord in lords or ():
+        yield name(lord=lord), lord
+    for lord in lords or ():
+        for q in quals:
+            yield name(q, lord=lord), f"{q} + {lord}"
+
+
+def unique_english(recs: list, region_of, extras_of=None) -> None:
     """Make every record's `english` unique within its region (`region_of(rec)`), in place: a later duplicate takes a
-    qualifier (Great, Little, Upper, Nether...: Great Newton) and a spelling the guard flags takes another ending or a
-    qualifier. Records come in priority order (the first keeps the plain name). One river, lake or site keeps one name
-    in every deme on it, chosen free in every region those demes are in."""
+    qualifier (Great, Little, Upper, Nether...: Great Newton), a feature of its land (Burton-on-Trent), a lord's name
+    (Weston Turville) or a mix (`_candidates`; `extras_of(rec)` gives ([(kind, English name)] of its land's features,
+    [lords' names])), and a spelling the guard flags takes another. Records come in priority order (the first keeps the
+    plain name). One river, lake or site keeps one name in every deme on it, chosen free in every region those demes are
+    in. A record that runs out of candidates (none so far) keeps a number, which the slip scanner counts."""
     def fid_of(r):
         return (r.get("kind"), r.get("id")) if r.get("id") is not None and r.get("kind") in ("river", "lake") else \
             ("site", r.get("site")) if r.get("site") is not None else None   # (a site two demes hold: one Common name)
@@ -244,22 +302,24 @@ def unique_english(recs: list, region_of) -> None:
             continue
         regs = regions.get(fid) or {region_of(r)}
         takens = [seen.setdefault(g, set()) for g in sorted(regs, key=str)]
-        cand = en
-        i = 0
-        while any(cand.lower() in t for t in takens) or RO.offensive(cand.replace(" ", "")) is not None:
-            if i < len(EN_QUALIFIERS):
-                q = EN_QUALIFIERS[(_h("q", r.get("site"), r.get("id"), en) + i) % len(EN_QUALIFIERS)]
-                i += 1
-                if any(q in g and any(en.startswith(x) for x in g) for g in _CLASHING):
-                    continue   # (no 'Great Littlecombe')
-                cand = f"{q} {en}"
-                if RO.offensive(en.replace(" ", "")) is not None:
-                    cand = f"{q} {RO.unoffend(en)}"
+
+        def free(c):
+            return not any(c.lower() in t for t in takens) and RO.offensive(c.replace(" ", "")) is None
+        cand, added = en, None
+        if not free(cand):
+            src = RO.unoffend(en) if RO.offensive(en.replace(" ", "")) is not None else en
+            feats, lords = extras_of(r) if extras_of is not None else ((), ())
+            for c, a in _candidates(src, r, feats, lords):
+                if free(c):
+                    cand, added = c, a
+                    break
             else:
-                cand = f"{en} {i - len(EN_QUALIFIERS) + 2}"
-                i += 1
+                i = 2
+                while not free(f"{en} {i}"):
+                    i += 1
+                cand, added = f"{en} {i}", str(i)
         if cand != en:
-            note = f"'{cand.split(' ')[0]}' added to tell it from another {en}"
+            note = f"'{added}' added to tell it from another {en}"
             r["english_how"] = f"{r['english_how']}; {note}" if r.get("english_how") else note
         r["english"] = cand
         for t in takens:
@@ -443,22 +503,22 @@ class Habits:
                 gen = g.gram("GEN", bound=True) if g is not None else None
                 if gen is not None and gen.form:
                     f = tuple(GR._attach(f, tuple(gen.form), gen.side))
-                return f, f"{name}'s", {"kind": "founder", "name": name}
+                return f, f"{_poss(name)}", {"kind": "founder", "name": name}
             if kind == "people_of":
                 mk = self._people_marker(lect)
                 if mk is None:
                     return None, None, None
-                return tuple(LX.clip(f, 2)) + tuple(mk), f"{name}'s people's", {"kind": "people_of", "name": name}
+                return tuple(LX.clip(f, 2)) + tuple(mk), f"{_poss(name)} people's", {"kind": "people_of", "name": name}
             if kind == "possessive":
                 suf = self._affix(lect, "like") or self._gen(lect)
                 if suf is None:
                     return None, None, None
-                return tuple(LX.clip(f, 2)) + tuple(suf), f"{name}'s (town)", {"kind": "possessive", "name": name}
+                return tuple(LX.clip(f, 2)) + tuple(suf), f"{_poss(name)} (town)", {"kind": "possessive", "name": name}
             dim = self._affix(lect, "little") or ()
             mk = self._people_marker(lect) or ()
             if not dim and not mk:
                 return None, None, None
-            return (tuple(LX.clip(f, 2)) + tuple(dim) + tuple(mk), f"{name}'s descendants",
+            return (tuple(LX.clip(f, 2)) + tuple(dim) + tuple(mk), f"{_poss(name)} descendants",
                     {"kind": "descendants", "name": name})
         if kind in ("river", "river_adj"):
             f = tuple(LX.clip(tuple(river["form"]), 2))

@@ -28,7 +28,7 @@
 #   percussives: lip smack pk, teeth clack tk, beak knock ck.
 # Where such a spelling could be read as a sequence of the lect's other sounds, the usual hyphen separates them (a-rr).
 # book = the book-mode spelling where folding the full one letter by letter reads badly (ɟʝ would be gyyh): the IPA-kept
-# affricates take their stop's book letter, ɹ is r. Full mode keeps its own spelling (ř for ɹ: the tap is r, the trill rr).
+# affricates take their stop's book letter, ɹ is r. Full mode keeps its own spelling (ř for ɹ: the tap is r, the trill r, or rr where the lect also has the tap).
 # convention = the real orthography or transliteration followed ("house" = coined here; "merge" = a documented merger).
 ipa	spelling	alt	contrast	marked	marked_alt	marked_tonal	convention	note	book
 p	p						ascii		
@@ -59,7 +59,7 @@ n	n						ascii
 ŋ	ng						common (Tagalog, Swahili ng')	n + g that meet are written n-g	
 ɴ	nq						house	uvular nasal: n + the uvular mark q	
 ʙ	brr						house	bilabial trill (rare)	
-r	rr						Spanish rr	trill; the tap is r	
+r	r		trill	rr			Spanish rr (beside the tap r)	trill; plain r unless the lect also has the tap ɾ (PW-1739)	
 ɾ	r						Spanish r		
 ʀ	rq						house	uvular trill: r + q	
 ⱱ	ⱱ						IPA kept		

@@ -21,7 +21,9 @@ FORMAT = "procgen-languages/1"
 
 
 class Speller:
-    """Romanization with one lect's contrasts and inventory."""
+    """Romanization with one lect's contrasts and inventory: the book spelling (romanize book mode), the one the pages show
+    for names and sentences, so a lect's words, grams, paradigms and sentences read alike (PW-1739: three spellings on
+    one page)."""
 
     def __init__(self, lect):
         self.orth = orthography(lect)
@@ -32,7 +34,7 @@ class Speller:
 
     def form(self, form) -> str:
         try:
-            return self.orth.word(form)
+            return self.orth.word(form, book=True)
         except Exception as e:
             from .percepts import to_ipa
             key = f"{type(e).__name__}: {' '.join(to_ipa(s) for s in form)}"
@@ -41,7 +43,7 @@ class Speller:
 
     def ipa(self, ipa: str) -> str:
         try:
-            return self.orth.word(from_ipa(ipa))
+            return self.orth.word(from_ipa(ipa), book=True)
         except Exception:
             return ipa
 

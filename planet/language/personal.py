@@ -63,7 +63,9 @@ CLANS = ("WOLF", "BEAR", "EAGLE", "DEER", "SNAKE", "CROW", "FOX", "OX", "STONE",
 OLD_NAME_KYR = 4.0  # old names were coined in the lect's line about this long ago (or where the tradition began, if later)
 OPAQUE_KYR = 8.0  # an old name's chance of a hypocoristic clip reaches its cap at this age
 OPAQUE_CAP = 0.6
-N_OLD, N_NEW, N_BY = 3, 3, 2
+N_OLD, N_NEW, N_BY = 10, 10, 6   # given names (old, new: 20 a lect) and full names shown (PW-1739; was 3, 3, 2)
+BYNAME_LETTERS = 14   # a patronymic (or matronymic) word: its parent's name is cut until it fits (Jónsdóttir 10;
+#                       PW-1739: full names reached 61 letters). A taste call
 # Name length by tradition (PW-1546 item 14): (syllables a theme keeps, syllables a given name keeps), both times the lect's
 # length scale (names._name_caps), and themes a dithematic name joins. Chinese given names are one or two syllables, a
 # morpheme each; Germanic dithematic names two themes, about four syllables; Malagasy names long compounds of whole words
@@ -350,17 +352,29 @@ class Personal:
                 return None
             gen = g.gram("GEN") if g is not None else None
             hf = _head_final(lect)
-            if gen is not None and gen.form:
-                pw, how = GR._with_gram(tuple(parent["form"]), gen)
-                pw = [tuple(x) for x in pw]
-            else:  # (no genitive marker: the kin word and the name compound, as Mac-X or Wil-son)
-                pw, how = [self._compound(lect, tuple(kw.form), tuple(parent["form"]))], "compounded: the language has no genitive marker"
-            if gen is None or not gen.form:
-                words = pw
-            elif hf and gen.level >= 1 and len(pw) == 1:
-                words = [_repair(lect, pw[0] + tuple(kw.form))]  # (fused: Jón-s-son)
-            else:
-                words = pw + [tuple(kw.form)] if hf else [tuple(kw.form)] + pw
+
+            def build(pf):
+                if gen is not None and gen.form:
+                    pw, how = GR._with_gram(pf, gen)
+                    pw = [tuple(x) for x in pw]
+                else:  # (no genitive marker: the kin word and the name compound, as Mac-X or Wil-son)
+                    pw, how = [self._compound(lect, tuple(kw.form), pf)], "compounded: the language has no genitive marker"
+                if gen is None or not gen.form:
+                    words = pw
+                elif hf and gen.level >= 1 and len(pw) == 1:
+                    words = [_repair(lect, pw[0] + tuple(kw.form))]  # (fused: Jón-s-son)
+                else:
+                    words = pw + [tuple(kw.form)] if hf else [tuple(kw.form)] + pw
+                return words, how
+            # (the parent's name is cut, from its end, until the patronymic fits BYNAME_LETTERS: a pet form, as Wil-son)
+            pf = tuple(parent["form"])
+            words, how = build(pf)
+            n = LX.syllables(pf)
+            while n > 1 and len("".join(_roman_form(lect, w) for w in words)) > BYNAME_LETTERS + (0 if len(words) == 1 else 4):
+                n -= 1
+                pf = _repair(lect, tuple(LX.clip(pf, n)))
+                words, how = build(pf)
+                how = how + "; the name cut short in it"
             whose = "father's" if st == "patronymic" else "mother's"
             gloss = f"{me['gloss']}, {_gloss(kin)} of {parent['gloss']}"
             etym = f"the {whose} name {parent['roman']} + {_roman_form(lect, kw.form).lower()} '{_gloss(kin)}' ({how})"
@@ -399,7 +413,7 @@ class Personal:
         given = []
         for kind, n in (("old", N_OLD), ("new", N_NEW)):
             seen = {x["roman"] for x in given}
-            for i in range(n + 3):  # (a few spare draws when two come out the same)
+            for i in range(2 * n + 3):  # (spare draws when two come out the same; a small pool gives fewer)
                 if sum(1 for x in given if x["age"] == kind) >= n:
                     break
                 x = self._given(lect, t, kind, i)

@@ -2126,3 +2126,59 @@ inventories ticket (PW-1740), so I did not loosen it.
 **de1cc6 sisters: not a regression any more.** The dip came with lane 16, and lane 17 took most of it back. On the same two
 seeds: lane 15 0.530 / 0.579, main now 0.520 / 0.567. The 0.01 left is a fifth of the swing between two seeds of the same
 world. Turning lexical diffusion off did not move it (0.513 / 0.571), so that is not the cause. Nothing to fix.
+
+
+## Lane 19 (PW-1739): the slips on the first page
+
+Output-only fixes. Every check in the matrix is identical to main on all 8 draws (`matrix/lane19-branch.json`).
+The taboo item went to lane 20.
+
+**Before → after (a24559, own seed)**
+
+| what | before | after |
+|---|---|---|
+| a people named after a river | named after the the river (Jijishe) | named after the river (Jijishe) |
+| its land | the land of the named after the the river | the land of the people named after the river |
+| a river with a newcomers' word added | Sayrhalūlī, 'the river river' | Sayrhalūlī, 'the river (once the river)' |
+| two seas alike | Market The Black Sea | The Inner Black Sea (and a wider adjective pool: The Calm Sea, The Blue Sea) |
+| two ruins alike | Tezicstow 2, Tezicstow 3 | Tezicstow-in-Tezicland, Little Tezicstow-in-Tezicland |
+| | Ufudushead 2 | Upper Sjesjashead-on-Fairwater |
+| a trill with no tap beside it | Šišiširrarh, Kurryu, Zizarrazizu | Šišiširarh, Kuryu, Zizarazizu |
+| landmass names | Ndschemhtjikuksirr, Rrhugirr | Ndschemhtji, Rhugir (11 letters at most) |
+| a long patronymic | Tarhtndinyunntall Emhnnelltatndinyunntitakkhehndihllend | Tarhtndinyunntall Emhakkhehndihllend |
+| a possessive on a glottal-final name | Zing''s wall | Zing's wall |
+| a language | speech of human 105 (the east of Simath) | Leyeu (the old label kept beside it) |
+| a scholars' family | fam0 | the Ngeuweu-Tïotucheu languages |
+| a living true family | p0 | the Byei languages |
+
+**Counts over all 8 draws** (main had a24559 and 0141d1 own seeds measured; `matrix/lane19-slips.json`)
+
+| slip | main a24559 / 0141d1 | branch, 8 draws |
+|---|---|---|
+| "the the" | 400 / 236 | 0 |
+| a word twice ("river river") | 191 / 99 | 0 |
+| a capital The inside a name | 43 / 20 | 0 |
+| numbered names | 457 / 8 | 0 |
+| doubled apostrophe | 94 / 30 | 0 |
+| "of the named" | 62 / 23 | 0 |
+| unnamed living lects' families | 623 / 603 | 0 |
+| languages called "speech of ..." | 571 / 556 | 0 |
+| place names with rr | 28% / 33% | 3-6% |
+| given names per lect | 6 | 17-18 (20 where the tradition's pool has them) |
+| full names per lect | 2 | 6 |
+| longest full name | 54 / 62 | 42-55 |
+
+**Other changes**
+- Recipes now run "First, pound it in a mortar. Then bake it in the ashes until it is cooked. Then eat it with honey."
+  'Then' is the lect's word for 'after', 'until' its word for 'when' (the core list has neither; draft filed).
+- One spelling per page: words, grams and paradigms now use the book spelling, as names and sentences already did
+  (mismatches on a24559: 68,000 of 90,000 words before, 1 of 475,000 after). The full spelling stays on names only.
+  **Your call:** whether you miss the full spelling for words (draft filed; my lean is no).
+- Peaks draw from 16 adjectives (was 6), seas from 13 (was 5). PW-1656 will redo these properly.
+- A scanner (`tools/language/slips.py`, `names.slips`) counts these slips; a test keeps the tiny run at zero.
+
+**Left over**
+- Patronymics over 40 letters: 1-18 per draw. The patronymic word is cut, but a "long" naming tradition
+  (Malagasy-like) gives 25-letter given names by design, e.g. Lirsijahhdžaliigraarhdzjadil Ndžaarhjsiilil.
+- A few scholars' names are very short or numbered: "the A languages", "the Simathtï V languages" (scholars number
+  families named after one river; that habit was already there for dead families).
