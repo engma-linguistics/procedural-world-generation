@@ -2,7 +2,7 @@
 id: PW-1295
 title: With the sea-floor creep, the continents' outer cells flicker between continent and ocean floor at the 20 km bound
 type: task
-status: todo
+status: in-progress
 parent: null
 milestone: null
 subsystem: tectonics
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1292, PW-950, PW-108]
 refs: [planet/tectonics/crust.py::coherence, docs/review/tectonics/margin/pw1292-note.md, docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/tracediag.py]
 created: 2026-11-01
-updated: 2026-11-02
+updated: 2026-11-11
 ---
 
 ## Description
@@ -38,6 +38,7 @@ What to try:
 - [x] then a paired judge of the creep on top of it (judge 2 in deep-dive.md failed with 2 frozen-over worlds): not run, moved to draft-sea-creep-still-cools-with-the-flicker-cured (the screens show the cooling stays)
 
 ## Updates
+- 2026-11-11: Status todo -> in-progress. Merged lane 302 (f6c92f2f, 1a6c5bb5): shred_km=15 + keel-only dynamics cures the flicker at L5 (20 seeds) and L7 (1 pair), default off; side effects need the judge PW-1726 (queued for the next free physics slot).
 - 2026-11-02: Status in-progress -> todo. 11-02 parked (coordinator): the flicker is real but small without the sea-floor creep (141/159 quick shreds vs 1183/1134 with it), and the creep is at the back of the line (PW-1315). The 15 km bound also needs thickness-scaled keel drag and insulation (PW-1318) to avoid fewer plates. Pick up together with the creep.
 - 2026-11-02: Status done -> in-progress. 11-02: merge reverted (code only): slow test_envelopes seed 2 (L5, 400 Myr) goes 15.8 -> 28.8 C, pCO2 327 -> 3547 with SHRED_KM 15. Back to lane 115 for re-rolled draws before calling it chaos or signal.
 - 2026-11-02: Merged 7dac9049 (SHRED_KM 15). Land -1.25 points, climate unmoved; follow-up PW-1314.

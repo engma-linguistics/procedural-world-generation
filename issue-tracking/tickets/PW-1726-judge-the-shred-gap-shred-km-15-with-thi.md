@@ -1,4 +1,5 @@
 ---
+id: PW-1726
 title: Judge the shred gap (shred_km=15 with thin-margin dynamics) at L6 before flipping it on, with and without the thin-margin area fix
 type: task
 status: todo
@@ -10,7 +11,9 @@ impact: med
 found_by: lane-302
 blocked_by: []
 relates: [PW-1295, PW-1314, PW-1318, PW-1315, PW-1316]
-refs: [planet/tectonics/params.py::Params.shred_km, planet/tectonics/mantle.py::keel, planet/tectonics/crust.py::coherence, planet/tectonics/crust.py::thermostats, docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/flickdiag.py, docs/review/tectonics/margin/paired_margin.sh, tools/hard_bar.py]
+refs: ["planet/tectonics/params.py::Params.shred_km", "planet/tectonics/mantle.py::keel", "planet/tectonics/crust.py::coherence", "planet/tectonics/crust.py::thermostats", docs/review/tectonics/margin/pw1295-note.md, docs/review/tectonics/margin/flickdiag.py, docs/review/tectonics/margin/paired_margin.sh, tools/hard_bar.py]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -37,3 +40,6 @@ If never done: the flicker stays on main (small: ~13% of shreds come back within
 - [ ] the same with PW-1314 A on top (area thermostat counting only crust >= BECOMES_CONT_KM), to see whether it
   takes the land and thickness swing away; PW-1314 is a decision (A or accept), so bring both arms to it
 - [ ] flip the default only if no hard failure and the soft pass level holds
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-judge-the-shred-gap-for-a-default-flip.md (found by lane-302).
