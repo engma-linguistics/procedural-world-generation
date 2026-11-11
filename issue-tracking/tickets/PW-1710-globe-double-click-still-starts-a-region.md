@@ -2,7 +2,7 @@
 id: PW-1710
 title: "Globe: double-click still starts a regional zoom (a level change by click), against the Google Earth model"
 type: task
-status: needs-decision
+status: todo
 parent: PW-1673
 milestone: v1.0
 subsystem: viewer
@@ -32,4 +32,5 @@ Options:
 Lean: B (the globe at orbit is still where regional zooms are picked; low down it only gets in the way).
 
 ## Updates
+- 2026-11-11: Status needs-decision -> todo. Coordinator ruled A (Daniel 11-10: 'nor do I like the idea of double click here to zoom'): remove the globe double-click zoom and its hint; the zoom tab and picker keep making regional zooms. Goes to the step-5 lane.
 - 2026-11-11: Created from inbox draft draft-globe-double-click-starts-a-zoom.md (found by lane299).

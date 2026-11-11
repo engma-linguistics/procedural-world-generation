@@ -2,7 +2,7 @@
 id: PW-1693
 title: Andean closing uses up the area thermostat's only lever; on L7 seeds 1 and 2 continents end 1.4-2.5 km thicker and land above 3-4 km up to 2x Earth
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1.0
 subsystem: tectonics
@@ -43,5 +43,6 @@ What to try, in order of soundness (not built; each needs a screen and then the 
 - [ ] the paired judge, 0 hard failures, before any default change
 
 ## Updates
+- 2026-11-11: Status todo -> done. Closed with PW-1712 C1: floor accepted for v1.
 - 2026-11-11: Lane 292 merged: collapse_margin and water_loaded built, both off; neither lifts the floor. Continues in PW-1703.
 - 2026-11-10: Created from inbox draft draft-andean-area-sink-exhausts-thermostat.md (found by lane 288).

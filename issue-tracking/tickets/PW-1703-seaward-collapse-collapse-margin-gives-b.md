@@ -2,7 +2,7 @@
 id: PW-1703
 title: Seaward collapse (collapse_margin) gives back only a quarter of the Andean area loss; the area thermostat stays at its floor on L7 seeds 1 and 2
 type: task
-status: in-progress
+status: done
 parent: null
 milestone: v1.0
 subsystem: tectonics
@@ -45,6 +45,7 @@ Lean: A for one screen, then C if it does not get the thermostat off its floor.
 - [ ] decision A, B or C
 
 ## Updates
+- 2026-11-11: Status in-progress -> done. Option A built (collapse_margin_km, default 40 = off), fails the bar; floor accepted (PW-1712 C1).
 - 2026-11-11: Lane 296 screened option A (`collapse_margin_km=35`, built default 40 = off; l7-high-ground.md sections 8-10): thermostat medians x0.20 / x0.21 on L7 seeds 1 / 2 (floor), give-back x1.5 (~0.43 of the closed area), area 39.3 / 40.2%, land > 3 km 3.92 / 3.30% against 4.96 / 3.45% on lane 292's arm rerun on the same commit. Fails the bar; option C written into the doc; decision C1/C2/C3 in a needs-decision draft.
 - 2026-11-11: Status needs-decision -> in-progress. Coordinator: lane 296 screens option A (seaward spreading to 35 km), 2 seeds; if the thermostat stays on its floor, C (accept) and decide on the Andes default separately.
 - 2026-11-11: Created from inbox draft draft-area-thermostat-floor-unsolved-after-collapse-margin.md (found by lane 292).
