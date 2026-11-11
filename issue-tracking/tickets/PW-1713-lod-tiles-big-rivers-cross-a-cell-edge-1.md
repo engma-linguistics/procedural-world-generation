@@ -2,7 +2,7 @@
 id: PW-1713
 title: "LOD tiles: big rivers cross a cell edge 1-4 km apart on the two sides at levels 3-4"
 type: task
-status: todo
+status: in-progress
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -37,4 +37,5 @@ into the earlier stays the earlier's own estimate, PW-1355).
       side's within 2 px, within 20% of its discharge (or the later->earlier estimate, PW-1355)
 
 ## Updates
+- 2026-11-11: Status todo -> in-progress. Lane 303: built (see the plan's State section, lane 303): near a cell edge every tile takes the courses carved once on the owner's line blocks and joins its own to them on its own side of the line.
 - 2026-11-11: Created from inbox draft draft-lod-rivers-jog-at-cell-edges-levels-3-4.md (found by lane300).

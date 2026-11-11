@@ -139,6 +139,56 @@ def test_a_tile_at_a_cell_edge_rebuilds_bit_identical(pair):
         assert np.array_equal(np.asarray(v), np.asarray(pair["zb2"]["layers"][k]), equal_nan=True), k
 
 
+def _crossings(z, a, b, qmin):
+    """(where each course link of z from cell a into cell b crosses their edge (unit vectors), its discharge)."""
+    s = ZM.source_of(z)
+
+    def pts(idx):
+        r, c = np.divmod(idx, s["nx"])
+        return s["frame"].to_sphere((c + 0.5 - s["nx"] / 2) * s["res"], (s["ny"] / 2 - r - 0.5) * s["res"])
+    k = np.flatnonzero((s["rec"] >= 0) & (s["q"] >= qmin) & s["land"].ravel())
+    k = k[(LB._cells_of(pts(k)) == a) & (LB._cells_of(pts(s["rec"][k])) == b)]
+    P1, P2 = pts(k), pts(s["rec"][k])
+    Ln = LB._line(a, b)  # (where the link crosses the edge: a great circle between neighbouring line points)
+    i = np.minimum(np.argmax(P1 @ Ln.T, axis=1), len(Ln) - 2)
+    n = np.cross(Ln[i], Ln[i + 1])
+    n /= np.linalg.norm(n, axis=1, keepdims=True)
+    s1, s2 = (P1 * n).sum(1), (P2 * n).sum(1)
+    P = P1 + (s1 / np.where(s1 != s2, s1 - s2, 1.0))[:, None] * (P2 - P1)
+    return P / np.linalg.norm(P, axis=1, keepdims=True), s["q"][k]
+
+
+def _river_jogs(za, zb, a, b, qmin):
+    """For each river of a's tile crossing into b, and of b's into a, the distance (km) to the nearest crossing of the
+    other tile (either way) carrying at least 0.3x its water; only crossings inside both tiles."""
+    out = []
+    for z1, z2, c1, c2 in ((za, zb, a, b), (zb, za, b, a)):
+        P, q = _crossings(z1, c1, c2, qmin)
+        Q = [_crossings(z2, x, y, 0.3 * qmin) for x, y in ((c1, c2), (c2, c1))]
+        QP, Qq = np.concatenate([x[0] for x in Q]), np.concatenate([x[1] for x in Q])
+        s2 = ZM.source_of(z2)
+        for p, qq in zip(P, q):
+            x, y = s2["frame"].to_plane(p[None, :])
+            if not (abs(x[0]) < 0.45 * s2["nx"] * s2["res"] and abs(y[0]) < 0.45 * s2["ny"] * s2["res"]):
+                continue
+            ok = Qq >= 0.3 * qq
+            out.append(np.arccos(np.clip(QP[ok] @ p, -1, 1)).min() * R_KM if ok.any() else np.inf)
+    return np.array(out)
+
+
+def test_rivers_cross_a_cell_edge_at_one_place(pair):
+    """PW-1713: near the line both cells' tiles lay the courses laid once on the owner's lattice, so a river crosses
+    the line at one place on both sides (within a pixel or so: two lattices); each cell laying its own (no fade to the
+    line) they jog apart by up to several pixels."""
+    qmin = 0.7
+    jog = _river_jogs(pair["za"], pair["zb"], pair["a"], pair["b"], qmin)
+    alone = _river_jogs(pair["za0"], pair["zb0"], pair["a"], pair["b"], qmin)
+    res = L.res_km(2)
+    assert len(jog) >= 3, jog
+    assert (jog <= 1.5 * res).all() and np.median(jog) <= 0.5 * res, jog / res  # (two lattices: within a pixel or so)
+    assert (alone > 1.5 * res).any(), alone / res
+
+
 def test_the_owner_is_the_earlier_cell(data_root):
     import json
 
@@ -186,7 +236,7 @@ def pair3(world, tmp_path_factory):
     need = set(L.parent_sources(ka)) | set(L.parent_sources(kb))
     for k in (ka, kb):
         plan = LB._line_plan(k, b if k.cell == a else a, a)
-        need |= {p for bl, _ in plan[4] for p in LB._block_parents(a, 3, bl)}
+        need |= {p for bl, *_ in plan[4] for p in LB._block_parents(a, 3, bl)}
     l2 = {}
     for k in sorted(need):
         other = b if k.cell == a else a
@@ -292,3 +342,30 @@ def test_cells_meeting_at_a_corner_blend_one_ground_there(corner):
         assert seam["median"] <= 1.1 * floor["median"] + 0.5 and seam["p90"] <= 1.1 * floor["p90"] + 0.5, \
             (ab, seam, floor)
     assert max(s["p90"] for s, _ in seams.values()) < 0.5 * max(s["p90"] for s, _ in alone.values()), (seams, alone)
+
+
+def _rss_mb():
+    with open("/proc/self/status") as f:
+        for ln in f:
+            if ln.startswith("VmRSS"):
+                return int(ln.split()[1]) / 1024
+    return 0.0
+
+
+def test_tiles_built_one_after_another_stay_bounded_in_memory(world):
+    """The tile service builds tile after tile in one process (11-11: two such processes reached 102 and 37 GB and the
+    machine went down; the cause was fine_meander._ease, test_zoom_fine_meander.py). Four builds of a tile at a cell
+    edge in one process: what it holds after the second is what it holds after the fourth (within 150 MB)."""
+    import gc
+    c = xyz(np.radians(CENTRE[0]), np.radians(CENTRE[1]))
+    a = str(LB._cells_of(c[None, :])[0])
+    b = min(LB.cell_lines(a), key=lambda o: np.arccos(np.clip(LB._line(a, o) @ c, -1, 1)).min())
+    pm = LB._line(a, b)[np.argmin(np.arccos(np.clip(LB._line(a, b) @ c, -1, 1)))]
+    kb = L.tile_at(b, 2, *(float(v[0]) for v in L.frame(b).to_plane(pm[None, :])))
+    sa, sb = _section(a), _section(b)
+    rss = []
+    for _ in range(4):
+        LB.build(world, kb, sb, lines={a: (a, sa)}, log=lambda *_: None)
+        gc.collect()
+        rss.append(_rss_mb())
+    assert rss[3] - rss[1] < 150, rss

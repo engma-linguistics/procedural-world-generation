@@ -743,3 +743,64 @@ hf + 2 (drop + 200 m) / tan(wall angle) + 2 px: kilometres for a big fall, so it
 
 **Next:** the river jog at cell edges (draft); PW-1709.
 
+
+## State (lane 303, 11-11: PW-1713 rivers at cell edges; the 11-11 out-of-memory crash; PW-1709 not started)
+
+**The crash.** Two of this lane's level-4 builds (main's code, `/data/personal/scratch/lane303`) grew to 102 and 37 GB
+and took the machine down. One rebuild under `systemd-run --scope -p MemoryMax=12G` with an address-space limit gave
+the traceback: an edge block of py.1.1/4/7/151 (dba204, A first) -> `fine._courses` -> `fine_meander.train` ->
+`_ease`, `np.pad` of 3.14e9 samples (23.4 GiB): the easing window is a quarter wavelength over the median phase step,
+and a reach whose valley phase doesn't advance made it ~1.6e9. Not a leak and not the recursive owner builds: on
+main's code with the fix, one process building 12 level-4 tiles (and a level-3 parent) holds 1.9 -> 3.1 GB after each
+tile, peak 4.22 GB; 9 tiles of the B-first root peak 3.97 GB. Fixed on main's path (`_ease` caps its window at the
+samples' length, which changes no output: past it the result is their minimum). Tests:
+`tests/test_zoom_fine_meander.py` (the still-phase reach; on main's code it raises MemoryError under a 3 GB limit) and
+`test_tiles_built_one_after_another_stay_bounded_in_memory`. The service's 3.2 GB budget a tile is under the measured
+4.0-4.4 GB and no job is capped: inbox `draft-lod-tile-ram-budget-and-cap.md`.
+
+**PW-1713, built.** Near a cell edge both cells' tiles now lay the courses carved once on the owner's line blocks:
+`fine.build(carve=True)` returns the block's one-pixel courses (pixels, next pixel, bed, discharge, area, phase,
+before the width pass); `line_surface` moves each block's own stretch onto the tile's pixels (`_block_courses`,
+`_to_tile`; steps of more than a pixel between the two lattices filled in) and marks which pixels lie beyond the line
+(`_beyond`); `fine._paste_courses` drops the tile's own courses where its fade to the line is >= 0.5
+(`LINE_COURSE_W`), holds the line's there with their discharge (the owner's: PW-1355's rule unchanged), and joins a
+course of its own running into that band, or one of the line's running out of it, to the nearest course of the other
+kind carrying at least half its water within 4 ramps, never across the line. The owner's own tiles do the same (the
+same data on both sides). `line_surface` returns `(surface, weight, courses)`; `tile`'s signature unchanged.
+
+dba204, A = py.1.1, B = py.0.1, level 1 built once per order in scratch roots, the tiles of levels 2-4 built from it
+with main's code (75102cd3 plus the `_ease` fix, which changes no output) and with this branch: every course link of
+>= 100 m3/s crossing the line, where it crosses (the link cut at the line's great circle), and the distance to the
+nearest crossing on the other side carrying >= 0.3x its water, px of that level (level 2: A 2/0/3-4, B 2/7/3-4;
+level 3: A 3/0/15-16, B 3/28/15-16; level 4: A 4/7/150-152 and 163-165, B 4/284/same, at the two big rivers' crossings;
+a wide level-4 river counts each of its pixels):
+
+| Order, level | Main: n, median / p90 / max px, within 1 px | Branch: n, median / p90 / max px, within 1 px |
+|---|---|---|
+| A first, 2 | 8, 0.4 / 0.5 / 0.5, 8 of 8 | 8, 0.4 / 0.7 / 1.3, 7 of 8 |
+| A first, 3 | 4, 1.9 / 458 / 653, 0 of 4 | 4, 0.2 / 0.2 / 0.2, 4 of 4 |
+| A first, 4 | 13, 10.3 / 14.8 / 6,534, 0 of 13 | 21, 0.2 / 0.5 / 1.5, 20 of 21 |
+| B first, 2 | 5, 1.6 / 2.7 / 3.1, 1 of 5 | 6, 0.6 / 1.4 / 2.2, 5 of 6 |
+| B first, 3 | 5, 4.3 / 11.6 / 14.0, 0 of 5 | 3, 0.1 / 0.3 / 0.3, 3 of 3 |
+| B first, 4 | 93, 276 / 344 / 379, 0 of 93 | 30, 0.3 / 0.5 / 1.4, 29 of 30 |
+
+(Hundreds of px on main: the other side's river crosses the line elsewhere, or runs along it on its own side.)
+Discharge (`line_rivers`, a's last pixel / b's within 2 px, m3/s): main level 3 A first 2,874 / 140, B first
+6,101 / 0 (three crossings), level 4 B first every crossing x / 0; branch level 3 3,618 / 3,618, 2,874 / 2,919,
+3,576 / 3,576, level 4 3,618 / 3,618, 3,576 / 3,576, 2,924 / 2,925. Left over, not met: two level-2 crossings at 1.3
+and 2.2 px (A first, a 1,271 m3/s river running on the line, one pixel each lattice draws differently; B first, a
+451 m3/s tributary meeting the 495 m3/s river at the line: the two sides draw the confluence a pixel or two apart);
+the criterion's "within 1 px" holds for 12 of 14 at level 2 and 56 of 58 at levels 3-4 (the misses 1.4-1.5 px, the
+outermost pixel of a 10-13 px wide river). Not handled: corners (the courses come from the edges' blocks only).
+- **Rebuild:** py.1.1/3/0/15 (B first: the non-owner's) rebuilt in a copy of the root: all 73 layers bit-identical
+  (zoom.json differs in timestamps and timings).
+- **Time and peak** (`NUMBA_NUM_THREADS=4`, one process per root building 20 tiles, two at once, each under
+  `MemoryMax=12G`, load 15-20 of 48): level 2 20-25 s a tile, level 3 17-21 s, level 4 15-19 s; main's code on the
+  same tiles 20-23, 18-20, 14-18 s. Peak 4.42 / 4.34 GB a process (main, 12 tiles: 4.22 GB).
+- **Tests:** `tests/test_zoom_lod_cells.py::test_rivers_cross_a_cell_edge_at_one_place` (synthetic level 2: every river
+  of >= 0.7 m3/s crosses within 1.5 px, median within 0.5 px; without the fade up to 6 px apart).
+
+**PW-1709: not started** (the crash and PW-1713 took the lane). The ticket's update has the design with lane 300's two
+findings folded in (blocks carry their own clipped rims; sized to the fall's reach, cached by the lip, capped).
+
+**Next:** PW-1709; the tile service's memory cap and budget (draft).

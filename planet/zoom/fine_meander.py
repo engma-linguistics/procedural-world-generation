@@ -280,6 +280,9 @@ def _ease(r, half):
     r = np.clip(np.asarray(r, float), 0.0, 1.0)
     if len(r) < 3:
         return r
+    # (past the samples' own length the result is their minimum everywhere whatever half is: a reach whose phase
+    # doesn't advance asked for half ~1e9, a 23 GB pad, and killed the machine; PW-1713 lane 303)
+    half = int(min(half, len(r)))
     p = np.pad(r, half, mode="edge")
     m = np.lib.stride_tricks.sliding_window_view(p, 2 * half + 1).min(1)
     sg = max(0.5 * half, 0.5)
