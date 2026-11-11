@@ -2,7 +2,7 @@
 id: PW-1750
 title: "Languages: recipes say 'until' with the word for 'when' (the core list has no UNTIL or THEN)"
 type: task
-status: todo
+status: done
 parent: PW-1736
 milestone: null
 subsystem: culture
@@ -32,3 +32,4 @@ converb gram, and let texts.recipe use it when present.
 ## Updates
 - 2026-11-11: Created from inbox draft draft-language-until-then-concepts.md (found by lang-lane19).
 - 2026-11-11: Lane 20 adds THEN and UNTIL as function-word concepts (commit 9a960503, merging); close when lane 20 is in main.
+- 2026-11-11: Done in lane 20 (THEN, UNTIL concepts).

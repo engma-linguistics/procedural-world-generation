@@ -2,7 +2,7 @@
 id: PW-1738
 title: "Languages: core words (I, one-three, mother, father) are borrowed in 10-22% of languages; paradigm repair borrows before it derives"
 type: story
-status: todo
+status: done
 parent: PW-1736
 milestone: v4
 subsystem: culture
@@ -24,3 +24,4 @@ In plain words: real languages almost never borrow 'I', low numerals or mother/f
 
 ## Updates
 - 2026-11-11: Created.
+- 2026-11-11: Done in lane 20 (merged; suite 2169): paradigm repair derives first and borrows only by intensity x WOLD; Swadesh/Leipzig-Jakarta loans x0.25, hard core x0.08; no A>B>A ping-pong. Core loan shares (8 matrix cells): I 0-3.5%, ONE 1-5%, TWO 2-10%, THREE 2-8%, MOTHER/FATHER <=4%; pronoun loans 0.003-0.018. New core_loans check passes 4 of 8 (all misses numerals; cap question on the Language Desk, card n.numcap).

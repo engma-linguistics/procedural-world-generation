@@ -2,7 +2,7 @@
 id: PW-1745
 title: "Languages: things a people met late arrive as loans: gate animals by range and herd spread, add wild fauna and flora by biome, kitchen and everyday-item words"
 type: story
-status: todo
+status: done
 parent: PW-1736
 milestone: v4
 subsystem: culture
@@ -30,3 +30,4 @@ Pairs naturally with PW-1738 (core words borrowed too often): one lane can make 
 
 ## Updates
 - 2026-11-11: Created.
+- 2026-11-11: Done in lane 20: animals gated by wild range and herd spread (wild_step: loan, calque or coin, route in the etymology); 17 wild fauna/flora kinds by biome; 12 kitchen concepts; 22 tech-gated items; THEN/UNTIL. Horse: 84-90% of lects have a word, mostly loans, median arrival 4-5 kyr ago. late_loans check 8 of 8. Concepts 969 -> 1,026, pass ~+40 s, languages.json +2.4%, memory peak 21.6 -> 25.3 GB (draft filed). Follow-ups PW-1757..1759.

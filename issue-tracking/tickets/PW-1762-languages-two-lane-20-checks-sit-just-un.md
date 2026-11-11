@@ -1,8 +1,10 @@
 ---
+id: PW-1762
 title: "Languages: two lane-20 checks sit just under their bars (Swadesh-100 cross-family loans 2.4-3.0%; new things loaned 41-51%)"
 type: task
 status: todo
 parent: PW-1736
+milestone: null
 subsystem: culture
 effort: s
 impact: med
@@ -10,6 +12,8 @@ found_by: lang-lane20
 blocked_by: []
 relates: [PW-1738, PW-1745, PW-1737]
 refs: ["planet/language/checks.py::core_loans", "planet/language/checks.py::late_things", "planet/language/lexicon.py::CORE_LOAN_DAMP", "planet/language/history.py::WILD_LOAN", "planet/language/history.py::tech_step", "planet/language/history.py::food_step", "lane 20 matrix (scratch, gone): a24559 / de1cc6 cells"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -34,3 +38,7 @@ mismatch (('colex:MANY', 'rɛri') not among the word's steps), which needs chasi
 contact kinds and numeral-system loans.
 What misleads if never done: the matrix shows two red realism rows on every cell, which hides a real regression there.
 - [ ] both checks pass in >= 70% of matrix cells, no other check worse by more than one cell
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-language-core-and-late-loan-bars.md (found by lang-lane20).
+- 2026-11-11: Round 2 (merged): late loans now 8 of 8 (50-57%); core loans 4 of 8, all misses numerals (THREE 0.06 x2, TWO 0.10 on Seven Meals); cross-family Swadesh 1.6-2.0% on six draws, 2.3% on Seven Meals. Numeral cap on the Language Desk (card n.numcap). Going below damp 0.25 needs the colexification/etymology mismatch in test_root_families_in_the_document fixed first.
