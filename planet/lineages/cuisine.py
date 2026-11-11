@@ -585,6 +585,9 @@ def markdown(s: dict, era: float) -> list[str]:
         for a, v in fl["axes"].items():
             if v["level"] != "none":
                 t.append(f"  - {a}: {v['level']} ({v['value']}): because " + "; ".join(v["reasons"]))
+    if s.get("through_time"):
+        from .kitchen_time import markdown as kt_md
+        t += kt_md(s["through_time"])
     if s.get("food_fit"):
         t.append(f"- Body and food ({cu['people_name']}): {s['food_fit']['text']}")
     t.append(f"- Ways of life: farm {w.get('farm')}, herd {w.get('herd')}, wild {w.get('forage')}" + (f" ({w['note']})" if w.get("note") else "")
