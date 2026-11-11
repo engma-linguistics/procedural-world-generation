@@ -2,7 +2,7 @@
 id: PW-1698
 title: "LOD tiles: a waterfall whose gorge crosses a tile edge is still drawn by neither tile"
 type: task
-status: todo
+status: wontdo
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -36,4 +36,5 @@ fall to the tile's stats with `owner` (the tile holding the lip). The edge block
       gorge on both), no step across the edge beyond the inside steps, listed in both tiles' stats
 
 ## Updates
+- 2026-11-11: Status todo -> wontdo. Superseded by PW-1709 (design: falls carved on blocks keyed by lip), lane 297.
 - 2026-11-11: Created from inbox draft draft-lod-falls-across-tile-edges.md (found by lane293).

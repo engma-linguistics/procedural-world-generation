@@ -2,7 +2,7 @@
 id: PW-1705
 title: "LOD tiles: level-2 tiles of two cells still differ by ~30 m at their shared cell edge"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -37,4 +37,5 @@ earlier cell's parent, which the later cell's tiles resample (the later cell's l
       along the line, both build orders
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 297: level-2 cell-edge seam within 1.5% of the floor both orders (29/115 m -> 3.1/14.8 m).
 - 2026-11-11: Created from inbox draft draft-lod-level2-at-cell-edges.md (found by lane295).

@@ -1,4 +1,5 @@
 ---
+id: PW-1709
 title: "LOD tiles: draw a fall that crosses a tile edge from one gorge block keyed by its lip (design for PW-1698)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane297
 blocked_by: []
 relates: [PW-1698, PW-1695, PW-1694, PW-1705]
 refs: ["planet/zoom/fine.py::build", "planet/zoom/fine.py::_fall_chain", "planet/zoom/fine.py::_gorge_path", "planet/zoom/fine.py::_parent_gorge", "planet/zoom/lod_build.py::carve_block", "planet/zoom/lod_build.py::edge_surface", "planet/zoom/lod.py::parent_mosaic", planet/zoom/falls.py, tests/test_zoom_lod_build.py, docs/review/zoom/lod-plan-v2.md]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -48,3 +51,6 @@ Design (as the volcanoes, PW-1695, and the edge blocks, PW-1694):
       the gorge on both), no step across the edge beyond the same line with no seam (PW-1697's rule), listed once
       per tile with one `owner`, once in a child's mosaic
 - [ ] a rebuilt tile bit-identical; dba204 tiles with a fall near an edge counted before and after
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-falls-on-blocks-keyed-by-lip.md (found by lane297).

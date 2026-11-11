@@ -1,4 +1,5 @@
 ---
+id: PW-1708
 title: "LOD tiles: cell edges at levels 3-4, and where three or four cells meet"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane297
 blocked_by: []
 relates: [PW-1705, PW-1699, PW-1694]
 refs: ["planet/zoom/lod_build.py::line_surface", "planet/zoom/lod_build.py::line_blocks", "planet/zoom/lod_build.py::line_owner", "planet/zoom/lod_build.py::near_lines", "planet/zoom/lod_build.py::LINE_LEVEL", "planet/zoom/fine.py::build", tests/test_zoom_lod_cells.py, docs/review/zoom/lod-plan-v2.md, "world dba204", "cells py.1.1, py.0.1"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -33,3 +36,6 @@ What to try:
   each cell's weights are computed in its own plane from its own edges (the diagonal neighbour's edges are not seen).
 - [ ] level-3 seam at the dba204 line measured, both build orders; fixed if over 10% of the floor
 - [ ] a tile at a 3- or 4-cell corner of dba204: |A - B| along each edge within 10 km of the corner against the floor
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-cell-edges-below-level-2.md (found by lane297).

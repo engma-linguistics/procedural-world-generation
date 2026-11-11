@@ -2,7 +2,7 @@
 id: PW-1707
 title: lod_build finds a cell's level-1 section by scanning the whole tile store (it should look it up)
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -34,4 +34,5 @@ lacks the cell, then add it). Level 2-4 tiles are already found by their determi
 - [ ] `tests/test_zoom_lod_level1.py` and `tests/test_tiles.py` still pass
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 297: sections.json lookup.
 - 2026-11-11: Created from inbox draft draft-lod-build-find-sections-by-index.md (found by lane298).
