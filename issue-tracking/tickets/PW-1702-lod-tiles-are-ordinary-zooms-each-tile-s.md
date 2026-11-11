@@ -2,7 +2,7 @@
 id: PW-1702
 title: "LOD tiles are ordinary zooms: each tile save rereads every zoom, and the tiles flood the viewer's zoom lists"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -39,4 +39,5 @@ tile service has its own index) and mark them in `_zoom_item` so the listings sk
       `/api/planets` or the world's zoom list
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 298: tiles in .tiles/<world>/zooms, out of zoom lists; section find still a scan (PW-1707).
 - 2026-11-11: Created from inbox draft draft-lod-tiles-flood-the-zoom-index.md (found by lane294).

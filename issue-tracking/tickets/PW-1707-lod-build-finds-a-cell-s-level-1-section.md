@@ -1,5 +1,6 @@
 ---
-title: "lod_build finds a cell's level-1 section by scanning the whole tile store (it should look it up)"
+id: PW-1707
+title: lod_build finds a cell's level-1 section by scanning the whole tile store (it should look it up)
 type: task
 status: todo
 parent: PW-1673
@@ -10,7 +11,9 @@ impact: low
 found_by: lane298
 blocked_by: []
 relates: [PW-1702, PW-1704, PW-1690]
-refs: ["planet/zoom/lod_build.py::_section_dir", "planet/zoom/lod_build.py::find", "planet/zoom/lod_build.py::built_neighbours", "planet/zoom/lod_build.py::build_level1", "planet/store.py::tile_store", "planet/tiles.py", "docs/review/zoom/lod-plan-v2.md (State, lane 298)", "/data/personal/scratch/lane298/measure.py (deleted at the end of lane 298; 50 ordinary zooms, 20 tiles)"]
+refs: ["planet/zoom/lod_build.py::_section_dir", "planet/zoom/lod_build.py::find", "planet/zoom/lod_build.py::built_neighbours", "planet/zoom/lod_build.py::build_level1", "planet/store.py::tile_store", planet/tiles.py, "docs/review/zoom/lod-plan-v2.md (State, lane 298)", "/data/personal/scratch/lane298/measure.py (deleted at the end of lane 298; 50 ordinary zooms, 20 tiles)"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -29,3 +32,6 @@ Lane 298 could not edit `planet/zoom/`. What I'd do: keep the cell -> section-di
 lacks the cell, then add it). Level 2-4 tiles are already found by their deterministic id (`find`).
 - [ ] `_section_dir` of a built cell reads no `zoom.json` of other tiles (count file reads in a test)
 - [ ] `tests/test_zoom_lod_level1.py` and `tests/test_tiles.py` still pass
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-build-find-sections-by-index.md (found by lane298).
