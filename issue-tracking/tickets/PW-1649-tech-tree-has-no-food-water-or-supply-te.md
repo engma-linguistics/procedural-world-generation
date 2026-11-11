@@ -31,5 +31,6 @@ logistics scalar lands (sibling draft); they change no output.
 - [ ] if never done: fantasy worlds look identical to mundane ones in war reach and siege
 
 ## Updates
+- 2026-11-10: Owner 11-10 caution: magical warfare must not become a rabbit hole. Build ordinary supply (carry, store, organise) first; the magic side is optional. At the first hint of odd behaviour that can't be quickly brought to semi-reasonable, drop the magic part and park it in later. No 'realism' tuning of magic warfare.
 - 2026-11-10: Owner 11-10 D74 C (casters limit only strong spells) plus a world dial for how magical the world is (none to high fantasy) that sets how many strong casters a people has, like generals in an army. D73 C: magical supply needs magical/alchemical resources and trade goods.
 - 2026-11-10: Created from inbox draft draft-arcane-provisioning-techs.md (found by lane279).
