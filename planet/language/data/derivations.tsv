@@ -399,3 +399,5 @@ thing	EAT	MEAL	2	'eating'
 agent	PRAY	PRIEST	2	'one who prays' (faiths pass 3); Latin precator, Sanskrit hotr 'pourer'
 agent	SACRIFICE	PRIEST	2	'sacrificer': Latin sacerdos, Sanskrit yajaka
 place	PRAY	TEMPLE	2	'place of prayer': Greek proseukhe, Arabic masjid 'place of prostration'
+time	THAT	THEN	3	'at that time': English then < the that-stem, Latin tum, German dann (lane 20)
+time	ARRIVE	UNTIL	2	'the time it arrives': up-to and reach words, English until < und 'up to' + till (lane 20)

@@ -449,6 +449,11 @@ _EXTRA = [
         ("MORNING MEAL", "N", 4, None, ("MORNING", "MEAL")), ("MIDDAY MEAL", "N", 4, None, ("DAY (NOT NIGHT)", "MEAL")),
         ("EVENING MEAL", "N", 4, None, ("EVENING", "MEAL")),
     ]],
+    # 'then' and 'until' for the recipes' steps (lane 19 borrowed AFTER and WHEN for them): function words grown from
+    # 'that' + 'time' and 'arrive' + 'time' (data/derivations.tsv), from the start
+    *[(g, "FUNC", f, "core", None, True, False, False, b) for g, f, b in [
+        ("THEN", 2, ("THAT", "WHEN")), ("UNTIL", 3, ("ARRIVE", "WHEN")),
+    ]],
     # ... and the vessels, dishes and everyday things that come with a technology (TECH_CONCEPT), so a late one is often a
     # loan from the people that taught it (Wanderwörter: copper, wine, saddle)
     *[(g, "N", f, d, c, False, False, False, b) for g, f, d, c, b in [
