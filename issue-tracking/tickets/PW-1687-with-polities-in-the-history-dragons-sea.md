@@ -2,7 +2,7 @@
 id: PW-1687
 title: With polities in the history, dragons seat 4-6 realms against the read-out's 16-26; how should the history cut a dragon people into realms?
 type: task
-status: todo
+status: done
 parent: PW-661
 milestone: v4
 subsystem: peoples
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1596, PW-1671]
 refs: [docs/review/culture/polities/round26.md, docs/review/culture/polities/round26/measure.py, docs/review/culture/polities/round26/dragon_ranges.py, docs/review/culture/polities/round25.md, "planet/lineages/history/polity_live.py::LivePolities._step", "planet/lineages/polities.py::_dragon_cultures", "planet/lineages/polities.py::_core", "world 4360a3", "world 899985"]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -41,5 +41,6 @@ Lean: B, sized against the read-out on the same history (round26/measure.py's RO
 - [ ] live dragon realms within ~25 % of the read-out on the same history on the five pairs, five-step averages
 
 ## Updates
+- 2026-11-11: Status todo -> done. Live dragon realms merged (281d/e); states on by default (PW-1700).
 - 2026-11-10: Coordinator ruling 11-10: B. One realm per region of a dragon people's range, regions cut the way the cultures engine cuts a people, sized against the read-out on the same history. Not A (loses three quarters of dragon realms) and not C (two sources of truth for one map layer). Lane 281d.
 - 2026-11-10: Created from inbox draft draft-live-dragon-realms-per-people-too-few.md (found by lane281c).

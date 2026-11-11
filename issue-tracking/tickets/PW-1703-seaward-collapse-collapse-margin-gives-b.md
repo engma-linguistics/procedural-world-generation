@@ -1,7 +1,8 @@
 ---
+id: PW-1703
 title: Seaward collapse (collapse_margin) gives back only a quarter of the Andean area loss; the area thermostat stays at its floor on L7 seeds 1 and 2
 type: task
-status: needs-decision
+status: in-progress
 parent: null
 milestone: v1.0
 subsystem: tectonics
@@ -11,6 +12,8 @@ found_by: lane 292
 blocked_by: []
 relates: [PW-1683, PW-1497]
 refs: [docs/review/tectonics/l7-high-ground.md, docs/review/tectonics/mountains/l7_high_ground.py, "planet/tectonics/crust.py::margin_edges", "planet/tectonics/crust.py::margin_spread", "planet/tectonics/crust.py::flow_and_orogeny", "planet/tectonics/plate_kernels.py::crust_flow", "planet/tectonics/crust.py::thermostats", "planet/tectonics/crust.py::andean_contraction", "runs 213321 2e1bc2 28d710 6286ce (lane288 scratch, main 5411930b; to be deleted)", "runs 4635ef d4f6be eb41d6 a95c21 (lane292 scratch; to be deleted)", "Rey, Vanderhaeghe & Teyssier 2001 Tectonophysics 342:435", "Dewey 1988 Tectonics 7(6)"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -40,3 +43,7 @@ Options:
   worst seed; spend the time elsewhere.
 Lean: A for one screen, then C if it does not get the thermostat off its floor.
 - [ ] decision A, B or C
+
+## Updates
+- 2026-11-11: Status needs-decision -> in-progress. Coordinator: lane 296 screens option A (seaward spreading to 35 km), 2 seeds; if the thermostat stays on its floor, C (accept) and decide on the Andes default separately.
+- 2026-11-11: Created from inbox draft draft-area-thermostat-floor-unsolved-after-collapse-margin.md (found by lane 292).

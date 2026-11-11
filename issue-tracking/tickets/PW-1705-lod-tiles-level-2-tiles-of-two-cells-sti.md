@@ -1,4 +1,5 @@
 ---
+id: PW-1705
 title: "LOD tiles: level-2 tiles of two cells still differ by ~30 m at their shared cell edge"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane295
 blocked_by: []
 relates: [PW-1699, PW-1694, PW-1355]
 refs: [planet/zoom/lod_build.py, "planet/zoom/lod_build.py::edge_blocks", "planet/zoom/lod_build.py::line_seam", docs/review/zoom/lod-plan-v2.md, "world dba204", "tiles py.1.1/2/0/3-4, py.0.1/2/7/3-4"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -32,3 +35,6 @@ once by place (as `edge_blocks`, PW-1694), here a strip along the line built on 
 earlier cell's parent, which the later cell's tiles resample (the later cell's level 1 already equals it there).
 - [ ] level-2 tiles of py.1.1 and py.0.1 at their line: |A - B| median no more than the neighbouring-pixel step
       along the line, both build orders
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-level2-at-cell-edges.md (found by lane295).

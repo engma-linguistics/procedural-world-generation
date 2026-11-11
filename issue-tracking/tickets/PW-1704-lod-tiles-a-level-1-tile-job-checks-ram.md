@@ -1,4 +1,5 @@
 ---
+id: PW-1704
 title: "LOD tiles: a level-1 tile job checks RAM for a 3.2 GB tile, and an API section build can shadow a matched one"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane295
 blocked_by: []
 relates: [PW-1699, PW-1690]
 refs: ["planet/api.py::tile_job", "planet/api.py::TILE_PEAK_GB", "planet/api.py::_section_zoom_job", "planet/zoom/lod_build.py::_section_dir", planet/tiles.py]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -25,3 +28,6 @@ Measured (lane 295, dba204, 4 threads, two builds at once): level 1 unmatched 22
 182-188 s, peak 8.32-8.37 GB (the load fell between the pairs; CPU 570-591 s matched against 664-684 s alone).
 - [ ] `api.tile_job` checks 8.3 GB (tiles.PEAK_GB[1]) for a level-1 key; a 4 km section from POST /api/zoom of a cell
       with built neighbours is built matched (`lod_build.build_level1`), or the globe prefers the matched one
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-level1-job-ram-and-api-sections.md (found by lane295).

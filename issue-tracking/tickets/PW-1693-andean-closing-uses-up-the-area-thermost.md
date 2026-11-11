@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1683, PW-1497, PW-1680, PW-046]
 refs: [docs/review/tectonics/l7-high-ground.md, docs/review/tectonics/andes-late.md, docs/review/tectonics/mountains/area_books.py, docs/review/tectonics/mountains/l7_high_ground.py, "planet/tectonics/crust.py::thermostats", "planet/tectonics/crust.py::andean_contraction", "planet/tectonics/crust.py::subduction_erosion", "planet/tectonics/crust.py::flow_and_orogeny", "planet/tectonics/crust.py::coherence", "runs 2e1bc2 6286ce 213321 28d710 (scratch lane288, kept)", "Dewey 1988 (extensional collapse of orogens)"]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -43,4 +43,5 @@ What to try, in order of soundness (not built; each needs a screen and then the 
 - [ ] the paired judge, 0 hard failures, before any default change
 
 ## Updates
+- 2026-11-11: Lane 292 merged: collapse_margin and water_loaded built, both off; neither lifts the floor. Continues in PW-1703.
 - 2026-11-10: Created from inbox draft draft-andean-area-sink-exhausts-thermostat.md (found by lane 288).

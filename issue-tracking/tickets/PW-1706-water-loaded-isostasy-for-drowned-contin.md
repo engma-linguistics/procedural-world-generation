@@ -1,7 +1,8 @@
 ---
+id: PW-1706
 title: Water-loaded isostasy for drowned continent (PW-1287 A) is built but deepens the drowned margins by ~400 m and shrinks shelves; keep it off?
 type: task
-status: needs-decision
+status: todo
 parent: null
 milestone: v1.0
 subsystem: tectonics
@@ -11,6 +12,8 @@ found_by: lane 292
 blocked_by: []
 relates: [PW-1287, PW-950]
 refs: [docs/review/tectonics/l7-high-ground.md, "planet/tectonics/isostasy.py::elevation", "planet/tectonics/simulation.py::Simulation.wet", "planet/tectonics/earth.py::erode", "planet/tectonics/earth.py::continent_water", docs/review/tectonics/mountains/l7_high_ground.py, "runs 145d7f ea1b47 (lane292 scratch; to be deleted)", "runs 213321 2e1bc2 (lane288 scratch, main 5411930b; to be deleted)", "McKenzie 1978 EPSL 40:25"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -33,3 +36,7 @@ Options:
 - B. Keep it off until PW-950's margin work lands, then turn both on together and judge them as one.
 Lean: B.
 - [ ] decision A or B
+
+## Updates
+- 2026-11-11: Status needs-decision -> todo. Coordinator ruled B: keep water_loaded off until PW-950's margin work lands. It deepens drowned margins ~400 m and shrinks shelves (lane 292); correct sign, but no use to the shelf problem alone.
+- 2026-11-11: Created from inbox draft draft-water-loaded-isostasy-deepens-shelves.md (found by lane 292).

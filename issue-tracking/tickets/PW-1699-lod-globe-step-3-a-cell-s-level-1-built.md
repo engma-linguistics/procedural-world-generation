@@ -2,7 +2,7 @@
 id: PW-1699
 title: "LOD globe step 3: a cell's level 1 built on demand is matched to its built neighbours"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -28,4 +28,5 @@ already built, inside `lod_build.tile`, so the tile service (PW-1690) gets it wi
 - [ ] time and peak for a matched level 1 measured against unmatched
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 295: level 1 within 1% of the two-grid floor; level-2 residual at cell edges is PW-1705.
 - 2026-11-11: Created from inbox draft draft-lod-level1-matched.md (found by coordinator).

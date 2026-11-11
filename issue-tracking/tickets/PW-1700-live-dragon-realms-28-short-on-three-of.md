@@ -2,7 +2,7 @@
 id: PW-1700
 title: Live dragon realms ~28 % short on three of fifteen dates; flip POLITIES_LIVE anyway or one more mirror?
 type: task
-status: in-progress
+status: done
 parent: PW-661
 milestone: null
 subsystem: culture
@@ -40,5 +40,6 @@ Options:
 - [ ] Coordinator picks A, B or C; if A, flip in its own commit and re-run the tests and goldens.
 
 ## Updates
+- 2026-11-11: Status in-progress -> done. Flipped on main; full suite 2097 passed, goldens unchanged.
 - 2026-11-11: Status needs-decision -> in-progress. Coordinator ruled A: flip now. The mechanism (live dragon cultures following the demes' rules) is the right one; 12/15 dates within 25%, the three misses are 28-29%, just past the line; states inside their limit, same seed reproduces. B goes to later as a polish ticket if the look is off. The 25% bar was the coordinator's, not Daniel's.
 - 2026-11-11: Created from inbox draft draft-live-dragon-realms-three-dates-short.md (found by lane281e).

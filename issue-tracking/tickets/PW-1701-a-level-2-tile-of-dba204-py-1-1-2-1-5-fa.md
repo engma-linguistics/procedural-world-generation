@@ -2,7 +2,7 @@
 id: PW-1701
 title: "A level-2 tile of dba204 (py.1.1/2/1/5) fails to build: vegetation's is_land is handed the tile's land pixels, which are no sphere grid"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -38,4 +38,5 @@ not recompute it on a grid it doesn't have. Not fixed by lane 294: planet/zoom w
 - [ ] `py.1.1/2/1/5` of dba204 builds; a synthetic tile with a land pixel below sea level builds (test)
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 295: vegetation.classify takes the zoom's land mask; py.1.1/2/1/5 builds.
 - 2026-11-11: Created from inbox draft draft-lod-tile-build-crashes-in-vegetation-is-land.md (found by lane294).
