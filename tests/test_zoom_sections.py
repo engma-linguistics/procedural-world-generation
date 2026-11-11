@@ -54,6 +54,7 @@ def stub_build(monkeypatch):
     monkeypatch.setattr(Z, "save", save)
     monkeypatch.setattr(Z.ZC, "add_to_zoom", lambda *a, **k: None)  # (the steps after the save)
     monkeypatch.setattr(Z, "add_deposits", lambda *a, **k: None)
+    monkeypatch.setattr(api, "free_ram_gb", lambda: 500.0)  # (a stubbed build needs no RAM; the host's, under a test cgroup cap, must not refuse it)
     return calls
 
 
