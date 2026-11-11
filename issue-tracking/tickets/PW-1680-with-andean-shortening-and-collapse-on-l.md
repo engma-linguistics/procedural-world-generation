@@ -2,7 +2,7 @@
 id: PW-1680
 title: With Andean shortening and collapse on, land above 4 km rises late in a run (1 Gyr) where the 600 Myr screen saw it fall; check before 1-2 Gyr showcases
 type: task
-status: todo
+status: done
 parent: null
 milestone: v1.0
 subsystem: tectonics
@@ -34,4 +34,5 @@ this may be chance. The paired judge (18 draws) also shows glacial maxima 10 vs 
 - [ ] If it does: find which belts are high late (live Andean margins, or collision plateaus that collapse cannot touch)
 
 ## Updates
+- 2026-11-10: Status todo -> done. Lane 286 merged: docs/review/tectonics/andes-late.md. Late high ground at 1 Gyr is mountain-building pulses landing on the scorecard's single 1000-Myr reading, not a trend. Over 600-1000 Myr (3 seeds, L6, main 7dae542a): >3 km 2.69% on vs 3.17% off (Earth 2.4%); collapse leaves 96-99% of late >4 km in active belts. Cooling not systematic across seeds. L7 seed 2: >4 km falls to 1.29% (600-1000 Myr), ending at 0.09%; >3 km 4.3% vs Earth 2.5%, cause open (L7 crust thicker). No default change.
 - 2026-11-10: Created from inbox draft draft-andes-late-high-ground-1gyr.md (found by lane 275b).

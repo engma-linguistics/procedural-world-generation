@@ -1,4 +1,5 @@
 ---
+id: PW-1684
 title: Scorecard reads land above 4 km, ice, dry land and NPP from one 1000-Myr moment; report late-window medians too
 type: task
 status: todo
@@ -9,8 +10,10 @@ effort: s
 impact: med
 found_by: lane 286
 blocked_by: []
-relates: [PW-1497]   # and PW-1680 (on main's board, not on this lane's base)
+relates: [PW-1497]
 refs: [tools/scorecard.py, docs/scorecard.jsonl, docs/review/tectonics/andes-late.md, docs/review/tectonics/mountains/andes_late_series.py]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -29,3 +32,6 @@ field over t >= 600 Myr (or the last 40% of the run), keep `final`, and print `l
 Finer steps (every 20 Myr) would cost nothing measurable if the track is recorded inside `sim.run`.
 - [ ] scorecard.jsonl lines carry a `late` block per world; summary prints it
 - [ ] docs/overview.md / coordination.md say which to compare
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-scorecard-late-window-medians.md (found by lane 286).

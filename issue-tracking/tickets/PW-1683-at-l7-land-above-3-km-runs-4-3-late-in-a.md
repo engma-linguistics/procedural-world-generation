@@ -1,4 +1,5 @@
 ---
+id: PW-1683
 title: At L7 land above 3 km runs ~4.3% late in a 1 Gyr run (Earth 2.5% on the L7 grid); L7 continents ~2 km thicker than L6's
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane 286
 blocked_by: []
 relates: [PW-1497, PW-1446]
 refs: [docs/review/tectonics/andes-late.md, docs/review/tectonics/mountains/andes_late_series.py, docs/review/tectonics/mountains/scout7_measure.py, "planet/tectonics/crust.py::flow_and_orogeny", "planet/tectonics/crust.py::andean_contraction", "planet/tectonics/crust.py::thermostats", data/earth/L7.npz, "Amante & Eakins 2009 (ETOPO1)"]
+created: 2026-11-10
+updated: 2026-11-10
 ---
 
 ## Description
@@ -31,3 +34,6 @@ look at what sets mean continental thickness per level (the volume/area thermost
 L7, the height cap) rather than at the mountains.
 - [ ] L7 off-arm run(s) measured against the on-arm numbers above
 - [ ] cause named (PW-1497's, or L7's own), with a fix or a reason it is within bounds
+
+## Updates
+- 2026-11-10: Created from inbox draft draft-l7-land-above-3km.md (found by lane 286).
