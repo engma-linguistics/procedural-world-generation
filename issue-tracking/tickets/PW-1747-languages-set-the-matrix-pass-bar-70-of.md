@@ -1,4 +1,5 @@
 ---
+id: PW-1747
 title: "Languages: set the matrix pass bar (70% of cells per check, invariants always, no check down more than one cell)"
 type: task
 status: needs-decision
@@ -11,6 +12,8 @@ found_by: lane18
 blocked_by: []
 relates: [PW-1737, PW-1738, PW-1740]
 refs: [tools/language/matrix.py, docs/review/language/matrix/, docs/review/language/for-daniel.md]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -31,3 +34,7 @@ What misleads if never decided: lanes keep being accepted or rejected on whichev
 check that fails on half the worlds reads as "green" on a24559.
 
 Decision needed (owner): accept the bar above, or name another (e.g. 5 of 8).
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-language-matrix-pass-bar.md (found by lane18).
+- 2026-11-11: Put on the Language Desk as card m.bar (A 6 of 8 lean; B 5 of 8; C A plus an upper horizon limit ~16 kyr).

@@ -2,7 +2,7 @@
 id: PW-1737
 title: "Languages: check pass rates over several worlds and seeds run concurrently, not single draws on a24559"
 type: story
-status: todo
+status: done
 parent: PW-1736
 milestone: v4
 subsystem: culture
@@ -30,3 +30,4 @@ Same lane (honest checks, from the assessment):
 ## Updates
 - 2026-11-11: Created.
 - 2026-11-11: Lane 18: matrix tool + baseline (docs/review/language/matrix/), all checklist items done; de1cc6 sisters: lane 16 dip mostly undone by lane 17 (-0.01 vs lane 15 on paired seeds), not diffusion, no fix. Pass bar and benchmark keep-character bar filed as drafts.
+- 2026-11-11: Done in lane 18 (merged e4c31aeb; suite 2146 passed): tools/language/matrix.py (4 runs x 2 seeds, --compare), baseline docs/review/language/matrix/baseline-2026-11-11.md, horizon judged on the logistic reading (fails only < 6 kyr), check kinds labelled, doublet bar 0.5, areal fails without pairs, worker-count test, repo-relative spec path, benchmark re-recorded with absolute bars. de1cc6 sisters: not a regression after lane 17 (0.520/0.567 vs lane 15's 0.530/0.579). Pass bar on the Language Desk as card m.bar (PW-1747).

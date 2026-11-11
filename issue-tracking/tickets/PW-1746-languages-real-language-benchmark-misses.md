@@ -1,4 +1,5 @@
 ---
+id: PW-1746
 title: "Languages: real-language benchmark misses its bar, 3 of 7 languages keep their character (bar 4)"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane18
 blocked_by: []
 relates: [PW-1737, PW-1642, PW-1641]
 refs: [tools/language/real_inventory.py, tools/language/data/real_inventory_baseline.json]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -28,3 +31,6 @@ syllables and big consonant sets keep sliding toward one middle shape over time 
 
 Start: per language, which changes carry the growth (the `changes` list per daughter in `--json`), and whether
 cluster/coda simplification fires on lines whose anchor holds closed syllables.
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-benchmark-keep-character.md (found by lane18).
