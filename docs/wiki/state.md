@@ -14,7 +14,7 @@
 
 ## Lanes running (11-10 ~11:50)
 
-As of 2026-11-11. Running: 303 (PW-1713 river jog at cell edges, PW-1709 falls), 301 (LOD step 5: levels 3-4 drawn, layers on tiles, PW-1710 A, PW-1711), 302 (PW-1295 D38 margin flicker, attempt 3). States in the history ON. L7 thermostat floor accepted (PW-1712 C1). LOD steps 1-4 done; after 300/301: step 6 judge. Scratch lane288 and lane292 await Daniel (agents denied rm).
+As of 2026-11-11 midday. Running: 302b (PW-1295 L7 pair, finish), 304 (installer PW-1719/1717/1718/1716), 305 (PW-1691 2 Myr L8 split memory), 306 (LOD step 6 judge). Proposed milestones: v0.4.0 Sun 15 Nov, v0.5.0 Fri 20 Nov, v0.6.0 Wed 25 Nov (freeze), v1.0.0 Tue 1 Dec (D80). Every lane process under systemd-run MemoryMax; 8765 server is unit planet-serve-8765 (48G). Scratch lane288/lane292 await Daniel.
 v0.3.0 tagged (suite 2033 passed); server restarted. Waiting on Daniel: nothing (D73-D79 answered).
 
 ## Milestones (2026-11-09)
