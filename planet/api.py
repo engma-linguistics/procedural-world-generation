@@ -50,7 +50,10 @@ import json
 import math
 import os
 import queue
+import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -756,14 +759,70 @@ REFINE_TMP_MIN_GB = 40.0  # free /tmp kept (on the Threadripper /tmp is RAM: bel
 REFINE_LONG_MIN = 20.0  # longer than this: say "run it overnight"
 
 
-def free_ram_gb() -> float | None:
-    """Memory available to a new process, GB (Linux's MemAvailable), or None where it can't be read."""
+def parse_meminfo(text: str) -> float | None:
+    """GB available from Linux's /proc/meminfo text (MemAvailable), or None."""
+    for line in text.splitlines():
+        if line.startswith("MemAvailable:"):
+            return int(line.split()[1]) / 1e6  # (kB)
+    return None
+
+
+def parse_vm_stat(text: str) -> float | None:
+    """GB available from macOS's `vm_stat` output: free + inactive + speculative pages (psutil's
+    `available`; purgeable and file-backed pages are already among those), or None."""
+    m = re.search(r"page size of (\d+) bytes", text)
+    if not m:
+        return None
+    pages = {}
+    for line in text.splitlines():
+        k, _, v = line.partition(":")
+        v = v.strip().rstrip(".")
+        if v.isdigit():
+            pages[k.strip().strip('"')] = int(v)
+    if "Pages free" not in pages or "Pages inactive" not in pages:
+        return None
+    n = pages["Pages free"] + pages["Pages inactive"] + pages.get("Pages speculative", 0)
+    return n * int(m.group(1)) / 1e9
+
+
+MAC_FALLBACK_SHARE = 0.25  # without vm_stat: a quarter of the RAM is taken as free (conservative)
+_ram_warned: set[str] = set()
+
+
+def _warn_ram_once(msg: str) -> None:
+    if msg not in _ram_warned:
+        _ram_warned.add(msg)
+        print(f"warning: {msg}", file=sys.stderr, flush=True)
+
+
+def _run_text(cmd: list[str]) -> str | None:
     try:
-        for line in Path("/proc/meminfo").read_text().splitlines():
-            if line.startswith("MemAvailable:"):
-                return int(line.split()[1]) / 1e6  # (kB)
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=5, check=True).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def free_ram_gb() -> float | None:
+    """Memory available to a new process, GB, or None where it can't be read (the RAM guards then let jobs through).
+    Linux: /proc/meminfo's MemAvailable. macOS: vm_stat (free + inactive + speculative pages); if that fails,
+    a conservative quarter of `sysctl hw.memsize`, with a warning (PW-1716)."""
+    try:
+        return parse_meminfo(Path("/proc/meminfo").read_text())
     except (OSError, ValueError, IndexError):
         pass
+    if sys.platform == "darwin":
+        try:
+            gb = parse_vm_stat(_run_text(["vm_stat"]) or "")
+        except ValueError:
+            gb = None
+        if gb is not None:
+            return gb
+        total = _run_text(["sysctl", "-n", "hw.memsize"])
+        if total and total.strip().isdigit():
+            _warn_ram_once(f"vm_stat could not be read: taking {MAC_FALLBACK_SHARE:.0%} of the RAM as free "
+                           "for the RAM guards")
+            return int(total.strip()) * MAC_FALLBACK_SHARE / 1e9
+    _warn_ram_once("free RAM cannot be read on this system: the RAM guards are off")
     return None
 
 
