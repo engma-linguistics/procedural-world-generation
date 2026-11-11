@@ -559,6 +559,23 @@ TABOO_TRAITS = {
     "DIE": (("SLEEP",), ("GO",)), "DEATH": (("SLEEP",), ("NIGHT",)), "KILL": (("STRIKE OR BEAT",),),
     "BLOOD": (("RED",),), "STORM": (("BIG", "WIND"),), "FLOOD": (("BIG", "WATER"),), "ENEMY": (("STRANGER",),),
 }
+# Danger is relative to the speakers (owner ruling 11-11): how much of a threat each avoided animal is, 1 (vermin, a fox,
+# game) .. 3 (the biggest beasts), against the people's body size read off its voice profile's `register` (habitual
+# pitch vs human in octaves, which follows body size: Fitch 1997; -2 dragons and true giants, -1 giant-kin, +1 small
+# folk). A people of size s = -register avoids an animal's name only if its danger >= 1 + 2 * max(0, s): humans and
+# small folk avoid them all, giant-kin only the biggest beasts, dragons and true giants none (`taboo_fits`).
+TABOO_DANGER = {"LOUSE": 1, "WORM": 1, "FOX": 1, "DEER": 1, "SNAKE": 2, "WOLF": 2, "BEAR": 3, "fauna:big_cat": 3,
+                "fauna:crocodile": 3, "fauna:big_snake": 3}
+
+
+def taboo_fits(cid: str, profile=None) -> bool:
+    """Is the animal `cid` dangerous enough to the speakers (voice `profile`; None = human) for its name to be avoided?
+    Non-animal taboo concepts (die, blood, storm ...) always are."""
+    d = TABOO_DANGER.get(cid)
+    if d is None:
+        return True
+    size = -float(getattr(profile, "register", 0) or 0)
+    return d >= 1 + 2 * max(0.0, size)
 
 
 # gods.DOMAINS -> concept (planet/lineages/gods.py: water/sky/land/life/human groups)
@@ -925,7 +942,8 @@ BORROW_REF = 0.19   # the mean WOLD score over the concept list (0.19 over the 6
 # hard core of pronouns, low numerals and parent terms ~ 1%). So a Swadesh-100 / Leipzig-Jakarta meaning's loan factor
 # is x CORE_LOAN_DAMP and the hard core's x HARD_CORE_LOAN_DAMP, and both stay on the low-intensity curve (gamma 1.5): even
 # intense contact does not make 'I' an ordinary word to borrow (English 'they' stays possible, at a few percent).
-CORE_LOAN_DAMP = 0.25   # (0.35 -> 0.25, lane 20 round 2: Swadesh-100 cross-family loans in 3 kyr were 2.3-3.0%, bar 2%)
+CORE_LOAN_DAMP = 0.25  # (0.35 -> 0.25, lane 20 round 2: Swadesh-100 cross-family loans in 3 kyr 2.3-3.0% -> 1.7-2.4%; 0.2 trips
+#                         test_root_families_in_the_document on a draw-dependent colex/etym mismatch, not yet chased)
 HARD_CORE_LOAN_DAMP = 0.08
 HARD_CORE = frozenset({"I", "THOU", "WE", "WE (INCLUSIVE)", "YOU", "THEY", "ONE", "TWO", "THREE", "MOTHER", "FATHER"})
 _CORE_LOAN_LISTS = frozenset({"SW100", "LJ100"})
@@ -2506,7 +2524,7 @@ def step(rng, lex: Lexicon, n_generations: float, inv, contact_words: dict[str, 
             # a word-building source the concept cannot use (taboo for a harmless thing, compounding for a verb or
             # quality) hands its weight to derivation, the way verbs and qualities are mostly renewed; only borrowing
             # and shift are renormalised away, so a fresh root stays near its intended share
-            if not c.taboo:
+            if not c.taboo or not taboo_fits(k, profile):   # (danger relative to the speakers' size: TABOO_DANGER)
                 opts["derive"] += opts.pop("taboo")
             if sem_class(k) not in RENEW_LITTLE | RENEW_INTENS:
                 opts["derive"] += opts.pop("renew")
