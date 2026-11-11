@@ -28,7 +28,10 @@ What the history lacks, and how this cut stands in (round7.md section 2):
 - the tech calendar: the tech tree runs inside the history (history.tech_live, PW-1466, round8.md): each step it runs down to the
   history's time first, and the gates (chiefdoms, proto-writing or writing, kingship, law, the military edges, boats, a dragon's hoards)
   read what each people knew by then. output.save writes the same calendar out as meta.techtree;
-- cultures: a polity is a people's; an empire is a state whose subject peoples hold SUBJECT_SHARE of its sedentary heads.
+- cultures: a polity is a people's; an empire is a state whose subject peoples hold SUBJECT_SHARE of its sedentary heads. A dragon
+  people seats one realm per culture (the read-out's one per dragon culture; PW-1687, coordinator ruling B; round27.md), its
+  cultures cut inside the history by the demes' and the cultures engine's own rules for a dragon kind (DragonCultures: regions
+  within a dragon's reach, megafauna.LINK_KM; demes.MIN_KM2, demes.PERSIST, cultures.t_apart, merging side by side);
 This module writes polities_live.json; when a run has it, the after-run read-out (polities.derive, PW-1575) draws these polities, not
 its own: the viewer's Polities layer, the state cards and the religion read-out's rulers are this map, named and coloured by derive.
 """
@@ -104,6 +107,259 @@ def ring_pairs(off, idx, r: int):
     return seen // n, seen % n
 
 
+def dragon_regions(g, held: np.ndarray, r_link: int, min_cells: int, lab_out: np.ndarray | None = None,
+                   reach: dict | None = None) -> tuple[np.ndarray, int]:
+    """A dragon people's range cut into regions as the demes cut a dragon kind (demes.Demes._cut with mobility's terrain-free reach):
+    held cells within 2 x r_link rings of each other (megafauna.LINK_KM: a gap a dragon flies across) are one region; a region of
+    fewer than min_cells held cells (demes.MIN_KM2) goes with the nearest bigger one (straight through the grid, as demes' small
+    pieces go to the nearest deme); if none is that big, the biggest stands alone. Returns (region per cell, -1 off the range; count),
+    regions numbered by size, biggest first (ties: lowest cell). reach: a dict that gets the cells within reach ("mask": the held
+    cells and the gaps a dragon crosses, demes' reach subgraph) and their pieces ("comp", -1 off it)."""
+    from ..spread import nearest_label
+    n = g.n
+    lab = np.full(n, -1, np.int64) if lab_out is None else lab_out
+    lab[:] = -1
+    if not held.any():
+        return lab, 0
+    d = held.copy()
+    for _ in range(r_link):
+        d = d | (nbr_reduce(g, np.maximum, d[np.asarray(g.nbr_idx, np.int64)].astype(np.int8)) > 0)
+    comp, _nc = g.components(d)
+    if reach is not None:
+        reach["mask"], reach["comp"] = d, np.where(d, comp, -1).astype(np.int64)
+    hc = comp[held]
+    ids, cnt = np.unique(hc, return_counts=True)
+    cells = np.flatnonzero(held)
+    first = np.full(len(ids), n, np.int64)
+    np.minimum.at(first, np.searchsorted(ids, comp[cells]), cells)
+    order = np.lexsort((first, -cnt))
+    big = [i for i in order if cnt[i] >= min_cells] or [order[0]]
+    rank = np.full(int(comp.max()) + 1, -1, np.int64)
+    rank[ids[big]] = np.arange(len(big))
+    lab[held] = rank[hc]
+    if (lab[held] < 0).any():
+        seed = np.where(lab >= 0, lab, -1)
+        near = nearest_label(seed, np.ones(n, np.bool_), np.asarray(g.nbr_off, np.int64), np.asarray(g.nbr_idx, np.int64))
+        lab[held] = near[held]
+    return lab, len(big)
+
+
+class DragonCultures:
+    """Each dragon people's cultures followed through the history (PW-1687, coordinator ruling B, round27.md), cut as the demes and
+    the cultures engine cut a dragon kind (demes.py, cultures.py), cheaply:
+    - regions: dragon_regions each step (pieces within a dragon's reach, megafauna.LINK_KM, are one population; a piece under
+      demes.MIN_KM2 goes with the nearest region);
+    - each held cell carries a culture label, kept while held; a newly held cell takes the nearest label of its own region (a front
+      carries its parent's name). A dragon people's first range is its founding culture, whatever pieces it is in (the cultures
+      engine's one founding culture for all the first demes of a people);
+    - a region holding none of the people's labels (a crossing), or a part of a label's land in another region of at least MIN_KM2
+      (a split by a gap: the label keeps its largest part), is a piece of its parent culture; it is a culture of its own once it has
+      stayed apart demes.PERSIST stored frames and cultures.t_apart (its era's time apart), and goes back to its parent if it shares
+      a region with the parent's own cells first (flicker leaves no trace);
+    - two cultures of a people on neighbouring cells merge, the younger into the older, after cultures.MERGE_CONTACT_KYR x (1 -
+      cohesion) side by side (a dragon kind's 0.9: within a century);
+    - followed from demes.WINDOW_KYR ago, as the demes are cut (the glacial pass's steps too).
+    - a label wider than demes.SPLIT_KM x LINK_KM / JUMP_KM (its travel diameter over its cells and the gaps it crosses, a dragon
+      paying no terrain: demes.Demes._diameters) halves from the two ends of that diameter, the half with the older cells keeping it
+      (demes.Demes._halve, up to demes.SPLIT_ITER rounds a frame); the other half is a new piece, a culture after t_apart (round28.md);
+    - merges are tried smallest pair first, a culture merging at most once a frame (cultures.Cultures._contacts' order).
+    No new number. Not mirrored: the demes' fusion (FUSE_KM) and niche learning (split_adapted)."""
+
+    def __init__(self, g, coh: dict | None = None):
+        from ..seafood import cells_for
+        from .. import demes as DE
+        from .. import cultures as CU
+        from .megafauna import LINK_KM
+        self.g, self.DE, self.CU = g, DE, CU
+        self.r_link = rings_for(g, LINK_KM / 2)
+        self.min_cells = cells_for(g, DE.MIN_KM2)
+        self.src, self.dst = np.asarray(g.nbr_src, np.int64), np.asarray(g.nbr_idx, np.int64)
+        self.off = np.asarray(g.nbr_off, np.int64)
+        self.coh = coh or {}
+        self.lab: dict[int, np.ndarray] = {}  # line -> label per cell (-1 off its range)
+        self.info: dict[int, list] = {}  # line -> per label: [key (None: a piece not yet apart), born kyr ago, parent, frames, into, split off]
+        self.n_cul: dict[int, int] = {}  # line -> cultures made so far (the keys' numbers)
+        self.touch: dict[int, dict] = {}  # line -> {(a, b): kyr side by side}
+        self.since: dict[int, np.ndarray] = {}  # line -> kyr ago each held cell was settled (NaN off its range)
+        from ...geo import R_KM
+        from .params import JUMP_KM
+        self.cell_km = float(round(g.spacing * R_KM))  # (the demes' step: meta cell_size_km)
+        self.split_km = DE.SPLIT_KM * LINK_KM / JUMP_KM  # (demes.Demes.mobility: a dragon's scale, LINK_KM / JUMP_KM)
+
+    @staticmethod
+    def _into(inf, a: int) -> int:
+        while inf[a][4] is not None:
+            a = inf[a][4]
+        return a
+
+    def _res(self, inf, a: int) -> int:
+        """A label's culture: itself if a culture, else its parent's (a piece not yet apart is its parent's), through merges."""
+        a = self._into(inf, a)
+        while inf[a][0] is None and inf[a][2] is not None:
+            a = self._into(inf, inf[a][2])
+        return a
+
+    def _new(self, k, people, inf, ago, parent, src=None):
+        """A new label: a culture (no parent) or a piece of parent's culture, split off label src (None: a crossing or a first deme)."""
+        if parent is None:
+            inf.append([f"d{people}" if not inf else f"d{people}.{self.n_cul.get(k, 0)}", ago, None, 0, None, None])
+            self.n_cul[k] = self.n_cul.get(k, 0) + 1
+        else:
+            inf.append([None, ago, parent, 0, None, src])
+        return len(inf) - 1
+
+    def _halve(self, k, people, inf, lab, held, rch, since, ago):
+        """demes.Demes._diameters and _halve on the labels (in place on lab): each label's cells and the gaps it crosses (the reach
+        cells of its piece, each taking the nearest label there, demes' grow); a label whose diameter (two sweeps, a dragon's cost 1
+        a km) is over split_km halves from its two ends if both halves hold MIN_KM2; the half whose cells were settled earlier on
+        average keeps the label, the other is a new piece of its culture (no source label: it does not go back; a culture after
+        t_apart). Up to demes.SPLIT_ITER rounds, each re-measuring only the labels it touched."""
+        from .. import demes as DE
+        n = self.g.n
+        nl = len(inf)
+        one = np.ones(n)
+        hc = np.flatnonzero(held)
+        comp = rch["comp"]
+        ncp = int(comp.max()) + 2
+        u, c = np.unique(lab[hc] * ncp + comp[hc], return_counts=True)
+        lg = np.full(nl, -2, np.int64)
+        for key, _c in sorted(zip(u.tolist(), c.tolist()), key=lambda t: t[1]):
+            lg[key // ncp] = key % ncp  # (a label's piece: the one holding most of its cells)
+        f = np.where(held, lab, -1).astype(np.int64)
+        f, _ = DE.grow(f, np.zeros(n), comp, lg, one, self.cell_km, self.off, self.dst)
+        only = None
+        for _ in range(DE.SPLIT_ITER):
+            nl = len(inf)
+            ids = np.unique(f[f >= 0]) if only is None else np.array(sorted(only), np.int64)
+            sel = np.isin(f, ids)
+            grp = np.where(sel, f, -1).astype(np.int64)
+            ar = np.arange(nl, dtype=np.int64)
+            first = np.full(nl, -1, np.int64)
+            cells = np.flatnonzero(sel)
+            first[f[cells[::-1]]] = cells[::-1]
+            s = np.full(n, -1, np.int64)
+            ok = first[ids] >= 0
+            s[first[ids][ok]] = ids[ok]
+            l2, dd = DE.grow(s, np.zeros(n), grp, ar, one, self.cell_km, self.off, self.dst)
+            ea, _bv = DE.group_argmax(l2, dd, nl)
+            s = np.full(n, -1, np.int64)
+            ok = ea[ids] >= 0
+            s[ea[ids][ok]] = ids[ok]
+            l2, dd = DE.grow(s, np.zeros(n), grp, ar, one, self.cell_km, self.off, self.dst)
+            eb, bv = DE.group_argmax(l2, dd, nl)
+            wide = [int(d) for d in ids.tolist() if np.isfinite(bv[d]) and bv[d] > self.split_km]
+            if not wide:
+                return
+            tmp = {d: nl + i for i, d in enumerate(wide)}
+            lg2 = np.concatenate([ar, np.array(wide, np.int64)])
+            sw = np.isin(f, np.array(wide, np.int64))
+            s = np.full(n, -1, np.int64)
+            for d in wide:
+                if ea[d] >= 0 and eb[d] >= 0 and ea[d] != eb[d]:
+                    s[ea[d]], s[eb[d]] = d, tmp[d]
+            l3, _ = DE.grow(s, np.zeros(n), np.where(sw, f, -1).astype(np.int64), lg2, one, self.cell_km, self.off, self.dst)
+            only = set()
+            for d in wide:
+                h0, h1 = sw & (l3 == d), sw & (l3 == tmp[d])
+                n0, n1 = int((h0 & held).sum()), int((h1 & held).sum())
+                if n0 < self.min_cells or n1 < self.min_cells:
+                    continue
+                bud = h1 if np.nanmean(since[h0 & held]) >= np.nanmean(since[h1 & held]) else h0
+                nd = self._new(k, people, inf, ago, self._res(inf, d))
+                f[bud] = nd
+                lab[bud & held] = nd
+                only |= {d, nd}
+            if not only:
+                return
+
+    def step(self, k: int, people: str, held: np.ndarray, ago: float, dt: float, stored: bool, apart: float) -> list[tuple]:
+        """(key, cells) of each culture of people (line k) alive this step, oldest first."""
+        from ..spread import nearest_label
+        n = self.g.n
+        inf = self.info.setdefault(k, [])
+        lab = self.lab.get(k)
+        lab = np.full(n, -1, np.int64) if lab is None else np.where(held, lab, -1)
+        old_since = self.since.get(k)
+        since = np.where(held, ago, np.nan) if old_since is None else np.where(held, np.where(np.isnan(old_since), ago, old_since), np.nan)
+        self.since[k] = since
+        if not held.any():
+            self.lab[k], self.touch[k] = lab, {}
+            return []
+        rch: dict = {}
+        reg, nr = dragon_regions(self.g, held, self.r_link, self.min_cells, reach=rch)
+        if not (lab >= 0).any():  # (the first range, or a kind back from dying out: one culture, whatever its pieces, as the
+            f = self._new(k, people, inf, ago, None)  # cultures engine's one founding culture of a people's first demes)
+            for r in range(nr):
+                lab[reg == r] = f if r == 0 else self._new(k, people, inf, ago, f)
+                if r:
+                    inf[-1][3] = -1  # (a first deme: its founding culture's for good)
+        # newly held cells: the nearest label of their own region; a region with none is a crossing, a piece of the nearest culture
+        if (held & (lab < 0)).any():
+            for r in range(nr):
+                m = reg == r
+                if not (lab[m] < 0).any():
+                    continue
+                if (lab[m] >= 0).any():
+                    lab[m] = nearest_label(np.where(m, lab, -1), m | ~held, self.off, self.dst)[m]
+                    continue
+                anc = nearest_label(np.where(held & ~m, lab, -1), np.ones(n, np.bool_), self.off, self.dst)
+                lab[m] = self._new(k, people, inf, ago, self._res(inf, int(anc[np.flatnonzero(m)[0]])))
+        # splits by a gap: a label's land in two regions or more keeps its largest part; each other part of MIN_KM2 is a new piece
+        cells = np.flatnonzero(held)
+        u, c = np.unique(lab[cells] * (nr + 1) + reg[cells], return_counts=True)
+        ul, ur = u // (nr + 1), u % (nr + 1)
+        lu, lc = np.unique(ul, return_counts=True)
+        for a in lu[lc > 1].tolist():
+            parts = sorted(zip(c[ul == a].tolist(), ur[ul == a].tolist()), key=lambda t: (-t[0], t[1]))
+            for sz, r in parts[1:]:
+                if sz >= self.min_cells:
+                    lab[(reg == r) & (lab == a)] = self._new(k, people, inf, ago, self._res(inf, a), a)
+        # splits by distance: a label too wide halves (demes.Demes._diameters and _halve)
+        self._halve(k, people, inf, lab, held, rch, since, ago)
+        # pieces (the labels stay on the cells, as the demes' ids do: a label falling apart is a split): a piece split off a label
+        # goes back to it if it shares a region with that label's land again before it has stayed apart demes.PERSIST frames (flicker
+        # leaves no trace); a piece is a culture of its own once apart PERSIST frames (a crossing at once, as a deme) and t_apart
+        here = np.unique(lab[held]).tolist()
+        for a in here:
+            x = inf[a]
+            if x[0] is not None or x[4] is not None or x[3] < 0:
+                continue
+            x[3] += 1 if stored else 0
+            if x[5] is not None and x[3] <= self.DE.PERSIST:
+                s_ = x[5]
+                while inf[s_][0] is None and inf[s_][4] is not None:  # (a source that went back itself: the label it went back to)
+                    s_ = inf[s_][4]
+                _r, _c = np.unique(reg[held & ((lab == a) | (lab == s_))], return_counts=True)
+                if (_c >= self.min_cells).sum() < 2:  # (the label with its piece no longer in two parts of MIN_KM2: demes' `multi`)
+                    x[4] = s_
+                    lab[lab == a] = s_  # (its cells are the label's again, as a deme that never split: a later gap splits it anew)
+                    continue
+            if (x[5] is None or x[3] >= self.DE.PERSIST) and x[1] - ago >= apart - 1e-9:
+                x[0] = f"d{people}.{self.n_cul[k]}"
+                self.n_cul[k] += 1
+        # merges: two cultures on neighbouring cells, side by side MERGE_CONTACT_KYR x (1 - cohesion): the younger into the older
+        res = np.full(len(inf), -1, np.int64)
+        for a in np.unique(lab[held]).tolist():
+            res[a] = self._res(inf, a)
+        cl = np.where(lab >= 0, res[np.maximum(lab, 0)], -1)
+        cs, cd = cl[self.src], cl[self.dst]
+        e = (cs >= 0) & (cd >= 0) & (cs < cd)
+        old, now, gone = self.touch.get(k, {}), {}, set()
+        need = self.CU.MERGE_CONTACT_KYR * (1.0 - self.coh.get(people, 0.0))
+        size = np.bincount(cl[held], minlength=len(inf))
+        for a, b in sorted(set(zip(cs[e].tolist(), cd[e].tolist())), key=lambda q: (int(size[q[0]] + size[q[1]]), q)):
+            now[(a, b)] = old[(a, b)] + dt if (a, b) in old else 0.0
+            if now[(a, b)] >= need - 1e-9 and a not in gone and b not in gone:
+                keep, lose = (a, b) if inf[a][1] >= inf[b][1] else (b, a)
+                inf[lose][4] = keep
+                cl[cl == lose] = keep
+                gone |= {a, b}
+                del now[(a, b)]
+        self.touch[k], self.lab[k] = now, lab
+        alive = np.unique(cl[held]).tolist()
+        return [(inf[a][0], np.flatnonzero(cl == a)) for a in sorted(alive, key=lambda a: (-inf[a][1], a))]
+
+
 class _Rings:
     """Each cell's cells within some rings, from ring_pairs' (cell, other) pairs sorted by cell (the cell itself included): rings[c]."""
 
@@ -140,6 +396,15 @@ class LivePolities(StandIns):
         L = h.lines
         self.ppl = np.array([i for i, l in enumerate(L) if not (l.overlay or l.megafauna or l.marine)], np.int64)  # (peoples that may hold towns)
         self.dragons = [i for i, l in enumerate(L) if is_dragon(l)]
+        try:  # (the kinds' cohesion as the cultures engine reads it from meta.tree, cultures.cohesion)
+            from .. import cultures as CU, spec as SP
+            coh = CU.cohesion(SP.to_raw(h.tree), getattr(h.tree, "name", None))
+        except Exception:
+            coh = {}
+        self.dcul = DragonCultures(g, coh)  # (PW-1687: each dragon people's cultures, followed from demes.WINDOW_KYR ago)
+        self._window = self.dcul.DE.WINDOW_KYR
+        self._dc_ago = None  # (the last frame the dragon cultures were cut on)
+        self.dregions: dict = {}  # (line -> this step's cultures, DragonCultures.step)
         meta = [{"id": l.id, "group_of": l.group_of, "parents": list(l.parents or [])} for l in L]
         self.anc = IV.ancestors(meta)
         rows, self.inv_notes = IV.clean(INVASIONS, strict=False) if INVASIONS else ([], [])
@@ -195,6 +460,8 @@ class LivePolities(StandIns):
         On a step that stores a frame the tree also keeps the presence as stored, for its regions (LiveTech.at_frame, PW-1597)."""
         if step.store and hasattr(self.tech, "at_frame"):
             self.tech.at_frame()
+        if step.store and step.epoch != "deep" and float(step.ago) <= self._window + 1e-9:
+            self._dragon_cultures(step)  # (PW-1687: on the state the stored frame holds)
         if step.epoch == "recent":  # (the places are also the seats' places from the next step on, PW-1596: kept with or without the arms)
             towns = self.town_cells(float(step.ago), fresh=step.store)
             if getattr(self.tech, "towns", None) is not None:
@@ -211,6 +478,26 @@ class LivePolities(StandIns):
             self._attitudes(step)
         finally:
             self.secs += time.time() - t0
+
+    def _dragon_cultures(self, step):
+        """PW-1687: each dragon people's cultures (DragonCultures) on each frame the history stores from demes.WINDOW_KYR ago, on the
+        state the frame holds (the end of its step), chiefdoms or not: the demes and the cultures engine read the stored frames, so
+        their gaps, time apart and contacts are counted at the frames (a contact between frames is not one). The live polities read
+        the last frame's cultures, as the read-out reads the latest frame at or before each step (polities._Run.frame_of)."""
+        import time
+        t0 = time.time()
+        h = self.h
+        from .. import cultures as CU
+        ago = float(step.ago)
+        dt = (self._dc_ago - ago) if self._dc_ago is not None else 0.0
+        self._dc_ago = ago
+        T_ = getattr(self.tech, "T", None)  # (the tree inside the history; a lent calendar has none: the stone age's time apart)
+        for k in self.dragons:
+            l = h.lines[k]
+            held = h.p[k] >= EST if h.active.get(l.id) else np.zeros(self.g.n, bool)
+            era = CU.eras({"techs": list(T_["techs"].values()), "known": {l.id: self.tech.known.get(l.id) or {}}}).get(l.id) if T_ else None
+            self.dregions[k] = self.dcul.step(k, l.id, held, ago, dt, True, CU.t_apart(era, ago))
+        self.secs += time.time() - t0
 
     def _attitudes(self, step):
         """Steps each people's attitudes one century (attitudes.Attitudes.step): the memories _step set (conquest, rule, subjection),
@@ -545,25 +832,22 @@ class LivePolities(StandIns):
         # a second people's place under the lead's: on L7 899985 seed 7 about half the read-out's confederations, round25.md)
         if PO.CONFED and self.owner is not None:
             seats = self._confederations(seats, *self._ledger_places(), ago, k_, peopled, edz, sea, ice, city_min)
-        # 2. dragon realms: one per dragon people (the read-out's one per dragon culture; the history has no cultures, and a dragon
-        # kind is one culture for now), at the core of its range by the read-out's rule (polities._core: the most of its cells within
-        # two rings). Lane 281c (round26.md): one per connected piece of the range, as before, seated 290-310 realms on L6 4360a3
-        # seed 7 against the read-out's 22-25 on the same history (a dragon people's range is hundreds of scattered pieces), and its
-        # key moved with the piece's densest cell every step
+        # 2. dragon realms: one per culture of a dragon people (PW-1687, coordinator ruling B, round27.md), as the read-out's one per
+        # dragon culture, with the cultures cut inside the history as the demes and the cultures engine cut a dragon kind
+        # (DragonCultures), each at its core by the read-out's rule (polities._core: the most of its cells within two rings), keyed
+        # by its culture. Before: one per connected piece (290-310 realms on L6 4360a3 seed 7 against the read-out's 22-25, keys
+        # moving every step), then one per people (4-6 against 16-26; round26.md)
         for k in self.dragons:
             l = L[k]
             if not h.active.get(l.id) or not self.knows(l.id, "hoards", ago):
                 continue
-            cells = np.flatnonzero(h.p[k] >= EST)
-            if not len(cells):
-                continue
-            core = PO._core(cells, self._ring_of)
-            key = f"d{l.id}"
-            if self.cool.get(key, -1) >= k_:
-                continue
-            self.founded.setdefault(key, ago)
-            seats.append({"key": key, "cell": core, "people": l.id, "line": k, "uid": None, "pop": 0.0, "tier": "dragon realm", "cls": 1,
-                          "rank": len(cells) * (PO.INCUMBENT if key in self.prev_cap else 1.0), "own": cells})
+            for key, cells in self.dregions.get(k) or []:
+                if self.cool.get(key, -1) >= k_:
+                    continue
+                core = PO._core(cells, self._ring_of)
+                self.founded.setdefault(key, ago)
+                seats.append({"key": key, "cell": core, "people": l.id, "line": k, "uid": None, "pop": 0.0, "tier": "dragon realm", "cls": 1,
+                              "rank": len(cells) * (PO.INCUMBENT if key in self.prev_cap else 1.0), "own": cells})
         if IV.WAR_BAND and self.inv_rows:  # (PW-1479, D50 C: a strong row whose invaders rule only chiefdoms seats a war band, as derive)
             PO._war_bands(self, seats, self.inv_rows, ago, self.prev_cap, self.open_, self.anc)
         by_key = {s["key"]: s for s in seats}

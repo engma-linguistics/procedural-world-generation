@@ -58,3 +58,46 @@ export function halfToFloat(h) {
   if (e === 31) return f ? NaN : s * Infinity;
   return s * 2 ** (e - 15) * (1 + f / 1024);
 }
+
+// ---- which tiles the pyramid has (lod.exists): a tile comes within PAD_PX of its own pixels of its cell's outline
+// (outline: [[x, y], ...] km in the cell's plane, closed by wrapping; the tile index sends it); level 1 always
+export const PAD_PX = 8;
+function inside(poly, x, y) {
+  let c = false;
+  for (let i = 0, n = poly.length; i < n; i++) {
+    const [ax, ay] = poly[i], [bx, by] = poly[(i + 1) % n];
+    if ((ay > y) !== (by > y) && x < ax + (y - ay) * (bx - ax) / (by - ay)) c = !c;
+  }
+  return c;
+}
+// least distance (km) from the polygon's boundary to the rectangle r = [x0, x1, y0, y1] (0 where they cross)
+function segRectDist(poly, [x0, x1, y0, y1]) {
+  let best = Infinity;
+  const n = poly.length;
+  for (let i = 0; i < n; i++) {  // a segment crossing the rectangle (Liang-Barsky)
+    const [ax, ay] = poly[i], [bx, by] = poly[(i + 1) % n], dx = bx - ax, dy = by - ay;
+    let t0 = 0, t1 = 1, ok = true;
+    for (const [p, q] of [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]]) {
+      if (p === 0) { if (q < 0) ok = false; continue; }
+      const t = q / p;
+      if (p < 0) t0 = Math.max(t0, t); else t1 = Math.min(t1, t);
+    }
+    if (ok && t0 <= t1) return 0;
+  }
+  for (let i = 0; i < n; i++) {
+    const [ax, ay] = poly[i], [bx, by] = poly[(i + 1) % n], dx = bx - ax, dy = by - ay;
+    best = Math.min(best, Math.hypot(Math.max(x0 - ax, 0, ax - x1), Math.max(y0 - ay, 0, ay - y1)));
+    const L2 = Math.max(dx * dx + dy * dy, 1e-12);
+    for (const [cx, cy] of [[x0, y0], [x0, y1], [x1, y0], [x1, y1]]) {
+      const t = Math.min(1, Math.max(0, ((cx - ax) * dx + (cy - ay) * dy) / L2));
+      best = Math.min(best, Math.hypot(ax + t * dx - cx, ay + t * dy - cy));
+    }
+  }
+  return best;
+}
+export function exists(k, outline) {
+  if (k.level === 1) return true;
+  const r = rect(k), [cx, cy] = centreXY(k);
+  if (inside(outline, cx, cy)) return true;
+  return segRectDist(outline, r) <= PAD_PX * resKm(k.level);
+}

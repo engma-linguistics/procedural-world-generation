@@ -406,6 +406,35 @@ def _section_zoom_job(r: dict, progress) -> dict:
         return {"zoom": out.name, "world": world_path.stem, "section": r["section"]}
 
 
+TILE_PEAK_GB = 3.2  # a level 2-4 LOD tile (500 px fine pass): 2.9-3.2 GB measured (lod-plan-v2.md, State lane 290)
+
+
+def tile_job(req: dict, progress=lambda f, msg: None) -> dict:
+    """A level 2-4 tile of the level-of-detail globe (zoom/lod_build.tile; its parent tiles must be built), for the tile
+    service (tiles.py). req: {type: "tile", world, tile: "cell/level/tx/ty", seed}. {"zoom", "world", "tile"}."""
+    from .zoom import lod as L
+    from .zoom import lod_build as LB
+    key = L.Key.parse(str(req["tile"]))
+    seed = int(req.get("seed", 1))
+    wid = S.find_world(str(req["world"])).stem
+    d = LB.find(wid, key, seed)
+    if d is None:
+        ram = free_ram_gb()
+        if ram is not None and ram < TILE_PEAK_GB + ZOOM_RAM_SPARE_GB:
+            raise BadRequest(f"not started: not enough free memory: {ram:.0f} GB free, a tile needs about "
+                             f"{TILE_PEAK_GB:g} GB plus {ZOOM_RAM_SPARE_GB:.0f} GB to spare")
+        done = [0]
+
+        def log(msg):
+            done[0] += 1
+            progress(min(0.9, 0.05 + 0.15 * done[0]), msg.strip())
+
+        progress(0.05, f"building tile {key}")
+        d = LB.tile(wid, key, seed, log=log)
+    progress(1.0, "done")
+    return {"zoom": d.name, "world": wid, "tile": str(key)}
+
+
 @functools.lru_cache(maxsize=4)
 def _land_by_cell(path: str, mtime: float) -> tuple:
     """((cell id, land cells, all cells) ...) of a world: the tiling's land counts (cached per file version)."""
@@ -826,7 +855,7 @@ def refine_job(req: dict, progress=lambda f, msg: None) -> dict:
 
 JOBS = {"timezoom": timezoom_job, "finish": finish_job, "hlzooms": highlight_zooms_job, "make": make_job,
         "lineages": lineages_job, "enrich": enrich_job,
-        "refine": refine_job}
+        "refine": refine_job, "tile": tile_job}
 
 
 def any_job(req: dict, progress=lambda f, msg: None) -> dict:
