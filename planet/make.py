@@ -382,6 +382,12 @@ def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = Fal
                 else:
                     out["languages"] = {"living": sm.get("living"), "languages": sm.get("languages"), "secs": sm.get("generated_in_s")}
                     p(1.0, f"languages: {sm.get('living')} living lects, {sm.get('languages')} languages")
+                    try:  # (the features' names, PW-1656: a read-out of the languages; a failure leaves the run as it is)
+                        from .lineages import featnames as FN
+                        FN.write(rd)
+                    except Exception as e:  # noqa: BLE001
+                        with open(rd / "run.txt", "a") as f:
+                            f.write(f"features (PW-1656): failed, {type(e).__name__}: {e}\n")
                 save()
     except api.Cancelled:
         raise

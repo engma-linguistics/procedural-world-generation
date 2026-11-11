@@ -398,6 +398,17 @@ def cmd_languages(args):
         out = Path(args.out) / d.name if args.out else None
         sm = LR.write(d, out_dir=out, seed=args.seed, workers=args.workers)
         print(ref, "\n".join(LR.lines_for_report(sm)))
+        if out is None:  # (the features' names read the new languages: PW-1656)
+            cmd_features(argparse.Namespace(runs=[ref]))
+
+
+def cmd_features(args):
+    """Adds (or redoes) a peoples run's feature names (PW-1656): features.json (peaks, ranges, capes, bays, islands, lakes, seas,
+    regions, rivers; who named each and when), from its languages.json."""
+    from .lineages import featnames as FN
+    for ref in args.runs:
+        d = S.find_run(ref)
+        print(ref, "\n".join(FN.lines_for_report(FN.write(d))))
 
 
 def cmd_settlements(args):
@@ -955,6 +966,11 @@ def main():
     lg.add_argument("--seed", type=int, help="seed (default: the run's meta.seed)")
     lg.add_argument("--workers", type=int, default=8, help="forked processes for the lect steps (default 8; 1 = this process; same output)")
     lg.set_defaults(func=cmd_languages)
+
+    fe = sub.add_parser("features", help="add or redo a peoples run's feature names (PW-1656): peaks, ranges, capes, bays, islands, lakes, "
+                                         "seas and regions named by the peoples who lived there, kept or renamed as others came: features.json")
+    fe.add_argument("runs", nargs="+", help="peoples run ids (with languages)")
+    fe.set_defaults(func=cmd_features)
 
     se = sub.add_parser("settlements", help="add or redo a peoples run's settlement ledger: villages, towns and cities over the last ~12 kyr, "
                                              "founded when a people's technology and the land allow, abandoned (sea, ice, drought, a river moving, "
