@@ -2,7 +2,7 @@
 id: PW-1694
 title: "LOD tiles: carve the ground at tile edges in a place-keyed block, so the edge strip is neither smoother nor rougher than inside"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1689, PW-1688]
 refs: [planet/zoom/fine.py, "planet/zoom/fine.py::build", "planet/zoom/fine.py::EDGE_TEXTURE", planet/zoom/lod_build.py, tests/test_zoom_lod_build.py, docs/review/zoom/lod-plan-v2.md, "world dba204", "cell py.1.1"]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -39,4 +39,5 @@ per tile, ~+35% pixels for the landscape pass only (the rest of the build is unc
 - [ ] rebuilds stay bit-identical; per-tile time and peak re-measured
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 293 (04c27b81): edges carved on place-keyed blocks; edge ratio within 0.01-0.05 of the seamless line. Criterion question: PW-1697.
 - 2026-11-10: Created from inbox draft draft-lod-edge-carving.md (found by lane290).

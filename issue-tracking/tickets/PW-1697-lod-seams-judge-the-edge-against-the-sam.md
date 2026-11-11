@@ -1,7 +1,8 @@
 ---
+id: PW-1697
 title: "LOD seams: judge the edge against the same line with no seam, not against the ground 16-48 px away"
 type: task
-status: needs-decision
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -11,6 +12,8 @@ found_by: lane293
 blocked_by: []
 relates: [PW-1694, PW-1689]
 refs: [tests/test_zoom_lod_build.py, "planet/zoom/lod_build.py::carve_block", "planet/zoom/lod_build.py::edge_steps", docs/review/zoom/lod-plan-v2.md, "world dba204", "cell py.1.1"]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -34,3 +37,7 @@ Options:
 - C. Average the rule over many edges (all of a cell's level-2 edges): the line-to-line spread averages out, but it
   needs ~100 tiles built per check (~20 min).
 - [ ] the coordinator or Daniel picks A, B or C; PW-1694's done-when is updated to match
+
+## Updates
+- 2026-11-11: Status needs-decision -> done. Coordinator ruled A (slam dunk: B fails seamless ground, so it measures nothing; C costs ~20 min per check for the same answer). The test already does A. PW-1694 done-when reads: edge ratio within 10% of the same line with no seam.
+- 2026-11-11: Created from inbox draft draft-lod-edge-criterion.md (found by lane293).

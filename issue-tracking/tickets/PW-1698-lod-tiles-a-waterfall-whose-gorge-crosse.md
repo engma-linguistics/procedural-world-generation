@@ -1,4 +1,5 @@
 ---
+id: PW-1698
 title: "LOD tiles: a waterfall whose gorge crosses a tile edge is still drawn by neither tile"
 type: task
 status: todo
@@ -11,6 +12,8 @@ found_by: lane293
 blocked_by: []
 relates: [PW-1695, PW-1694, PW-1689]
 refs: ["planet/zoom/fine.py::build", "planet/zoom/fine.py::_fall_chain", "planet/zoom/fine.py::_gorge_path", planet/zoom/lod_build.py, tests/test_zoom_lod_build.py, docs/review/zoom/lod-plan-v2.md]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -31,3 +34,6 @@ place, like the volcano's hold disc in `build`), then copy the cut onto the tile
 fall to the tile's stats with `owner` (the tile holding the lip). The edge blocks (lod_build.edge_blocks) then draw it too.
 - [ ] a fall placed on a shared edge of two synthetic sibling tiles: drawn on both sides (its drop on the lip's side, the
       gorge on both), no step across the edge beyond the inside steps, listed in both tiles' stats
+
+## Updates
+- 2026-11-11: Created from inbox draft draft-lod-falls-across-tile-edges.md (found by lane293).

@@ -2,7 +2,7 @@
 id: PW-1695
 title: "LOD tiles: volcanoes, falls, karst and dune overlays and reef flats near a tile edge are drawn by one tile or none"
 type: task
-status: todo
+status: done
 parent: PW-1673
 milestone: v1.0
 subsystem: zoom
@@ -13,7 +13,7 @@ blocked_by: []
 relates: [PW-1689]
 refs: ["planet/zoom/fine.py::build", "planet/zoom/fine_forms.py::landform_overlay", "planet/zoom/fine_forms.py::coastal", planet/zoom/lod.py, planet/zoom/lod_build.py]
 created: 2026-11-10
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 ## Description
@@ -38,4 +38,5 @@ fade the overlays' and reef changes to zero at the edge like the carving.
       inside steps; the volcano listed in both tiles' stats
 
 ## Updates
+- 2026-11-11: Status todo -> done. Merged lane 293 (0d79a3a3): volcanoes, overlays, reefs, deposits keyed by place. Falls across edges split to PW-1698.
 - 2026-11-10: Created from inbox draft draft-lod-features-at-tile-edges.md (found by lane290).
