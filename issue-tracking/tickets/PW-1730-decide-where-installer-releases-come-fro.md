@@ -2,7 +2,7 @@
 id: PW-1730
 title: Decide where installer releases come from before curl | sh can work
 type: task
-status: needs-decision
+status: done
 parent: null
 milestone: v1.0
 subsystem: infra
@@ -31,4 +31,5 @@ fails at `git ls-remote` with an auth prompt, and the plan's headline "one comma
   `~/.local/share/procgen-world`) are the ones Daniel wants.
 
 ## Updates
+- 2026-11-11: Status needs-decision -> done. D83 A: Daniel chose GitHub with v* tags pushed at each release; main + v0.1.0-v0.3.0 pushed 11-11. Web install picks v0.3.0 (pre-installer) until v0.4.0 is tagged and pushed.
 - 2026-11-11: Created from inbox draft draft-installer-release-channel.md (found by lane304).
