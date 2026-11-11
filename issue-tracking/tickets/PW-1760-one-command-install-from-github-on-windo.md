@@ -1,16 +1,19 @@
 ---
-title: "One-command install from GitHub on Windows (native), macOS and Ubuntu, bootstrapping everything (no Python assumed), proven by a 3-OS GitHub Actions smoke test"
+id: PW-1760
+title: One-command install from GitHub on Windows (native), macOS and Ubuntu, bootstrapping everything (no Python assumed), proven by a 3-OS GitHub Actions smoke test
 type: story
 status: todo
-parent: PW-1719
+parent: null
 milestone: v1.0
 subsystem: infra
 effort: l
 impact: high
 found_by: owner
 blocked_by: []
-relates: [PW-1720, PW-1730, PW-1716]
+relates: [PW-1719, PW-1720, PW-1730, PW-1716]
 refs: [install.sh, planet/appconfig.py, planet/__main__.py, planet/api.py, planet/store.py, docs/review/plan/installer.md]
+created: 2026-11-11
+updated: 2026-11-11
 ---
 
 ## Description
@@ -28,3 +31,4 @@ To do:
 **Self-contained option (stretch):** a fully offline single-download bundle per OS (e.g. PyInstaller), which would be large because of numba/llvmlite. The uv route is self-bootstrapping and much smaller, so prefer it unless Daniel wants offline installs.
 
 ## Updates
+- 2026-11-11: Created from inbox draft draft-native-windows-macos-install.md (found by owner).
