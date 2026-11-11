@@ -600,10 +600,17 @@ def cmd_make(args):
            "require_ice": args.require_ice, "tries": args.tries, "peoples": args.peoples,
            "languages": args.languages, "language_workers": args.language_workers}
     req = {k: v for k, v in req.items() if v is not None}
+    from . import machine as MC
+    req = MC.fill_defaults(req)  # (an install's machine presets: the default level and time zoom length)
     try:
         spec = M.parse_make_request(req)
     except api.BadRequest as e:
         raise SystemExit(f"ERROR: {e}")
+    gate = MC.check(MC.make_gates(spec))  # (refused or warned by the machine presets, PW-1720)
+    for w in gate["warn"]:
+        print(f"warning: {w}", flush=True)
+    if gate["refuse"] and not args.dry_run:
+        raise SystemExit("ERROR: not started: " + "; ".join(gate["refuse"]))
     req["seed"] = spec["seed"]  # (a random one is fixed now, so it is printed and used)
     plan = M.estimate(spec)
     print(f"planet make: seed {spec['seed']}, preset {spec['preset']}, level {spec['level']}, {spec['myr']:g} Myr"
@@ -642,7 +649,10 @@ def cmd_make(args):
 def cmd_serve(args):
     from . import appconfig as AC
     from .server import JOBS, serve
+    from . import machine as MC
     cfg = AC.serve_defaults()  # an install's config.toml ($PLANET_CONFIG), else {}
+    if MC.active() and "jobs" not in cfg:  # (the machine presets' jobs, unless [serve] names some)
+        cfg["jobs"] = int(MC.current()["jobs"])
     jobs = args.jobs if args.jobs is not None else cfg.get("jobs", JOBS)
     threads = args.threads if args.threads is not None else cfg.get("threads")
     port = args.port
@@ -661,6 +671,41 @@ def cmd_serve(args):
         if port != first:
             print(f"(port {first} is taken: using {port})", flush=True)
     serve(port, open_browser=not args.no_open, jobs=jobs, threads=threads)
+
+
+def cmd_machine(args):
+    """planet machine probe | show | set: the machine-aware presets (planet/machine.py, PW-1720)."""
+    import json as _json
+    from . import appconfig as AC, machine as MC
+    path = Path(args.config) if args.config else AC.path()
+    if args.what == "set":
+        if len(args.rest) != 2:
+            raise SystemExit("usage: planet machine set GATE allow|warn|off|auto")
+        if path is None:
+            raise SystemExit("no config: give --config PATH (an install's launcher sets $PLANET_CONFIG)")
+        ov = MC.set_override(args.rest[0], args.rest[1], path)
+        print(f"overrides in {path}: {ov or 'none'}")
+        return
+    if args.what == "show":
+        cfg = AC.load() if path is None or path == AC.path() else __import__("tomllib").loads(path.read_text())
+        print(_json.dumps(MC.report(cfg), indent=1) if args.json else "\n".join(
+            f"{g['state']:<5}  {g['label']} (~{g['peak_gb']:g} GB)" + (f"  [override {g['override']}]" if g["override"] else "")
+            for g in MC.report(cfg)["gates"]))
+        return
+    p = MC.probe()
+    pr = MC.presets_for(p)
+    if args.json:
+        print(_json.dumps({"probe": p, "presets": pr}, indent=1))
+    else:
+        print("Machine probe and presets (planet/machine.py; sources in docs/review/plan/machine-presets.md):")
+        print("\n".join(MC.describe(pr)))
+        if p.get("cgroup_cap_gb") and p.get("ram_gb") and p["cgroup_cap_gb"] < p["ram_gb"]:
+            print(f"  (a memory cap of {p['cgroup_cap_gb']:g} GB applies to this process: the presets use it)")
+    if args.write:
+        if path is None:
+            raise SystemExit("no config to write: give --config PATH (an install's launcher sets $PLANET_CONFIG)")
+        MC.write(pr, path)
+        print(f"Wrote the presets into {path} (your [overrides] are kept).")
 
 
 def cmd_langserve(args):
@@ -1008,6 +1053,15 @@ def main():
     _jobs_args(v, f"jobs (zooms, time zooms, finished worlds) run at once, each in a worker process "
                   f"(default: the install's config.toml, else {JOBS})")
     v.set_defaults(func=cmd_serve)
+
+    mc = sub.add_parser("machine", help="the machine-aware presets: probe cores, RAM, disk and GPU and write what this "
+                                        "machine can hold into the install's config (probe), show them, or override a gate (set)")
+    mc.add_argument("what", choices=["probe", "show", "set"], nargs="?", default="probe")
+    mc.add_argument("rest", nargs="*", help="set: GATE allow|warn|off|auto")
+    mc.add_argument("--write", action="store_true", help="probe: write the presets into the config ([overrides] kept)")
+    mc.add_argument("--json", action="store_true")
+    mc.add_argument("--config", help="the config.toml (default: $PLANET_CONFIG, which an install's launcher sets)")
+    mc.set_defaults(func=cmd_machine)
 
     ls = sub.add_parser("langserve", help="the languages viewer on its own (beside `serve`; read-only, no jobs)")
     ls.add_argument("run", help="the peoples run whose run.json/demes.json give names and places")

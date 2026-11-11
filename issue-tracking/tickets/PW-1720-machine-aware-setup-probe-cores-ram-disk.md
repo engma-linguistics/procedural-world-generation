@@ -33,3 +33,4 @@ The tier table and its sources are in docs/review/plan/milestones-to-v1.md secti
 
 ## Updates
 - 2026-11-11: Created from inbox draft draft-machine-aware-presets.md (found by plan-v1-lane).
+- 2026-11-11: Lane 313: probe, presets, gates (server, `planet make`, refine estimate, lineages, tile service), `planet self probe`, first-run probes, `self open` capped at mem_cap_gb, Machine panel with overrides (docs/review/plan/machine-presets.md, tests/test_machine.py). Checked under a 24 GB cgroup: L8 splits off, tiles one at a time, L8 make refused with the reason. Not run: the full v1.0 walk on a 32 GB machine.
