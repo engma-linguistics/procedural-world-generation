@@ -360,6 +360,75 @@ def test_highlight_zooms_job(made):
     assert api.JOBS["hlzooms"] is api.highlight_zooms_job
 
 
+# ---------------------------------------------------------------- the memory guard says no: skip the zoom (PW-1760)
+def _short_of_memory(monkeypatch):
+    """The macOS CI runner's case (run 43124045149: 3 GB free, the 2000 km at 4 km/px zoom needs ~4 GB in all): the
+    guard's numbers are its own; only the free RAM it reads is made short."""
+    monkeypatch.setattr(api, "free_ram_gb", lambda: 0.5)
+    built = []
+    monkeypatch.setattr(api, "_build_zoom", lambda r, wp, progress: built.append(r) or {"zoom": "never", "world": wp.stem})
+    return built
+
+
+def test_a_zoom_asked_for_on_its_own_still_refuses(made, monkeypatch):
+    out, _ = made
+    built = _short_of_memory(monkeypatch)
+    hl = api.highlights({"world": out["world"]})
+    f = next(f for f in hl["features"] if f.get("zoom") is None and f.get("size_km"))  # (one not built by the chain)
+    with pytest.raises(api.NoRoom, match=r"not started: not enough free memory: 0 GB free.*to spare") as ei:
+        api.zoom_job(api.zoom_request({"world": out["world"]}, f))
+    assert isinstance(ei.value, api.BadRequest) and built == []  # (the server's 400 and `planet zoom`'s error, as before)
+
+
+def test_make_skips_a_zoom_the_memory_guard_refuses(made, monkeypatch, tmp_path):
+    """The chain's zooms stage: refused zooms are skipped with a note and the make finishes (the world is usable); a
+    zoom already on disk is still reused (no guard)."""
+    out, _ = made
+    built = _short_of_memory(monkeypatch)
+    req = {"seed": 2, "level": 4, "myr": 40, "kyr": 6, "zooms": 3, "name": "tiny make"}
+    state = tmp_path / "state.json"
+    state.write_text(json.dumps({"spec": make.parse_make_request(req), "out": {k: out[k] for k in ("run", "t_myr", "timezoom", "world")}}))
+    log = []
+    res = make.make(req, lambda f, m: log.append((f, m)), state=state, resume=True)
+    assert built == []
+    hl = api.highlights({"world": out["world"]})
+    picked = len(api.H.pick_zooms(hl["features"], 3))
+    assert res["zooms"] == out["zooms"][:1] and res["world"] == out["world"]  # (the chain's zoom, reused)
+    if picked > 1:
+        assert re.fullmatch(rf"skipped {picked - 1} of {picked} regional zooms: not enough free memory: 0 GB free, "
+                            r"the .* zoom needs about \d+ GB plus .* to spare .*", res["zooms_skipped"])
+        assert any(m == res["zooms_skipped"] for _, m in log) and log[-1][0] == 1.0
+    else:
+        assert "zooms_skipped" not in res
+
+
+def test_make_skips_its_only_zoom_and_the_cli_exits_0(made, monkeypatch, capsys):
+    """`planet make` (and so the installers' warm-up, which runs it) prints a one-line note and exits 0."""
+    out, _ = made
+    _short_of_memory(monkeypatch)
+    fake = {k: out[k] for k in ("run", "t_myr", "timezoom", "world", "highlights")}
+    seen = []
+
+    def fake_make(req, progress):  # (the chain from its zooms stage on: the real zoom_highlights, a fresh world's zoom)
+        seen.append(req)
+        hl = api.highlights({"world": out["world"]})
+        feats = [f for f in hl["features"] if f.get("zoom") is None]
+        skipped = []
+        z = api.zoom_highlights(out["world"], feats, 1, skipped=skipped)
+        assert z == [] and skipped[0]["not_made"] == skipped[0]["picked"] == 1
+        return {**fake, "zooms": z, "zooms_skipped": f"skipped 1 of 1 regional zoom: {skipped[0]['reason']}"}
+    monkeypatch.setattr(make, "make", fake_make)
+    monkeypatch.setattr(sys, "argv", ["planet", "make", "--seed", "7", "--level", "4", "--myr", "20", "--kyr", "10",
+                                      "--zooms", "1", "--name", "ci"])
+    cli.main()  # (no SystemExit: exit 0)
+    lines = capsys.readouterr().out.splitlines()
+    note = [l for l in lines if l.startswith("note: ")]
+    assert len(note) == 1 and seen
+    assert note[0].startswith("note: skipped 1 of 1 regional zoom: not enough free memory: 0 GB free")
+    assert note[0].endswith("The world is made; zoom in later from the viewer or with `planet zoom`.")
+    assert not any(l.startswith("ERROR") for l in lines)
+
+
 def test_http_cancel_route(made, http_get, monkeypatch):
     gate = threading.Event()
     jobs = api.Jobs(lambda req, progress: (gate.wait(10), {"zoom": "z"})[1])

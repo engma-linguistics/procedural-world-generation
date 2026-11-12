@@ -285,7 +285,7 @@ def log_failure(stage: str, run_id: str | None) -> str | None:
 
 def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = False) -> dict:
     """Runs the chain. Returns {"run", "timezoom", "world", "zooms": [...], "highlights": n, "peoples": run id, "languages": {living,
-    languages, secs} (PW-1634), "t_myr"};
+    languages, secs} (PW-1634), "t_myr", "zooms_skipped": why (the memory guard refused a zoom: skipped, not failed, PW-1760)};
     only what was made. progress(fraction, message). A failure names the stage and what exists so far.
     state: a file the finished stages are recorded in (the server's make jobs); with resume, a run,
     time zoom or world an earlier try of the same request finished is reused, not made again (a server
@@ -377,7 +377,13 @@ def make(req: dict, progress=lambda f, msg: None, state=None, resume: bool = Fal
             prog("highlights")(1.0, f"{out['highlights']} highlights")
         if spec["zooms"]:
             stage = "zooms"
-            out["zooms"] = api.zoom_highlights(out["world"], hl["features"], spec["zooms"], prog("zooms"))
+            skipped: list = []  # (the memory guard says no: the zoom is skipped, the world stands, PW-1760)
+            out["zooms"] = api.zoom_highlights(out["world"], hl["features"], spec["zooms"], prog("zooms"), skipped=skipped)
+            if skipped:
+                sk = skipped[0]
+                out["zooms_skipped"] = (f"skipped {sk['not_made']} of {sk['picked']} regional zoom"
+                                        f"{'s' if sk['picked'] > 1 else ''}: {sk['reason']}")
+                prog("zooms")(1.0, out["zooms_skipped"])
         if spec["peoples"]:
             stage = "peoples"
             if "peoples" in out:

@@ -226,8 +226,18 @@ def test_install_ps1_has_every_verb_of_install_sh():
 def test_windows_launcher_is_safe():
     ps = INSTALL_PS1.read_text()
     launcher = ps[ps.index("@echo off"):ps.index('"@', ps.index("@echo off"))]
-    self_line = next(l for l in launcher.splitlines() if '"self"' in l)
-    assert self_line.rstrip().endswith("& exit /b )")  # (uninstall deletes this .cmd while cmd reads it)
+    lines = [l.strip() for l in launcher.splitlines()]
+    # `self` (uninstall deletes bin\, update rewrites this .cmd) is handed to a copy in %TEMP% before it runs: started
+    # without `call`, so cmd never reads the deleted file again (CI run 43124045149: "The system cannot find the path
+    # specified." twice and exit 1 after a successful uninstall)
+    assert lines.index('if /I not "%~1"=="self" goto run') < lines.index('if /I "%~dp0"=="%TEMP%\\" goto self')
+    chain = next(l for l in lines if l.startswith("copy /y "))
+    assert chain == 'copy /y "%~f0" "%TEMP%\\procgen_world-self.cmd" >nul && "%TEMP%\\procgen_world-self.cmd" %*'
+    assert "call " not in chain
+    self_at = lines.index(":self")
+    assert lines.index(chain) == self_at - 1
+    assert "manage.ps1" in lines[self_at + 1] and lines[self_at + 2] == "goto :eof" and lines[self_at + 3] == ":run"
+    assert not any("manage.ps1" in l for l in lines[:self_at])  # (nothing runs the manager from the original file)
     assert 'set "PYTHONUTF8=1"' in launcher  # (3.14 on Windows still writes text in the ANSI code page)
     assert "Toml-Path $S.Data" in ps  # (no backslashes in the TOML string)
     assert not re.search(r"^\s*exit\b", ps.replace("if ($failed -and $ScriptFile) { exit 1 }", ""), re.M)  # (iex: never close the window)

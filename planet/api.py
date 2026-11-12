@@ -84,6 +84,11 @@ class BadRequest(ValueError):
     pass
 
 
+class NoRoom(BadRequest):
+    """A zoom refused by the memory guard (zoom_estimate's refuse): `planet make` and the installer's warm-up skip the
+    zoom on it and finish (the world is usable without one, PW-1760); a zoom asked for on its own still fails."""
+
+
 def _num(req: dict, key: str, default=None) -> float:
     v = req.get(key, default)
     try:
@@ -378,7 +383,7 @@ def _require_room(r: dict):
     """In the job, just before a build: the memory may have gone to other jobs while it waited."""
     est = zoom_estimate(r)
     if est["refuse"]:
-        raise BadRequest("not started: " + "; ".join(est["refuse"]))
+        raise NoRoom("not started: " + "; ".join(est["refuse"]))
 
 
 def section_zoom_id(r: dict, world_id: str) -> str:
@@ -674,13 +679,22 @@ def parse_highlight_zooms_request(req: dict) -> dict:
     return {"type": "hlzooms", "world": world, "n": n}
 
 
-def zoom_highlights(world: str, features: list[dict], n: int, progress=lambda f, msg: None) -> list[str]:
-    """Regional zooms (the viewer's: zoom_request) of the top n zoomable highlights; the zoom ids."""
+def zoom_highlights(world: str, features: list[dict], n: int, progress=lambda f, msg: None,
+                    skipped: list | None = None) -> list[str]:
+    """Regional zooms (the viewer's: zoom_request) of the top n zoomable highlights; the zoom ids.
+    skipped: given, a zoom the memory guard refuses (NoRoom) ends the zooms instead of failing: the reason is appended
+    to it with the number of zooms not made, as {"reason", "not_made", "picked"} (the later ones would not fit either)."""
     picks = H.pick_zooms(features, n)
     out = []
     for k, f in enumerate(picks):
-        z = zoom_job(zoom_request({"world": world}, f),
-                     lambda fr, msg, k=k, f=f: progress((k + fr) / len(picks), f"zoom {k + 1}/{len(picks)}: {f['title']}"))
+        try:
+            z = zoom_job(zoom_request({"world": world}, f),
+                         lambda fr, msg, k=k, f=f: progress((k + fr) / len(picks), f"zoom {k + 1}/{len(picks)}: {f['title']}"))
+        except NoRoom as e:
+            if skipped is None:
+                raise
+            skipped.append({"reason": str(e).removeprefix("not started: "), "not_made": len(picks) - k, "picked": len(picks)})
+            break
         out.append(z["zoom"])
     return out
 

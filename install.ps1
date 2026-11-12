@@ -396,14 +396,22 @@ function Write-Launcher {
     $bin = Join-Path $S.Root 'bin'
     if ($S.DryRun) { Say "  [dry-run] write $bin\planet.cmd"; return }
     New-Item -ItemType Directory -Force -Path $bin | Out-Null
-    # (`planet self ...` ends on the same line as its call: uninstall deletes this file while cmd is reading it)
+    # `planet self ...` runs from a copy of this file in %TEMP%: uninstall deletes bin\ (and update rewrites this file) while
+    # cmd is still reading the batch file, and cmd then fails with "The system cannot find the path specified" and exit 1.
+    # The copy is started without `call`, so cmd hands over to it and never reads this file again.
     $cmd = @"
 @echo off
 rem procgen_world launcher (written by install.ps1). "planet self ..." manages the install.
 setlocal
 set "ROOT=$($S.Root)"
 set "PLANET_CONFIG=$($S.Config)"
-if /I "%~1"=="self" ( powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\bin\manage.ps1" -Root "%ROOT%" %* & exit /b )
+if /I not "%~1"=="self" goto run
+if /I "%~dp0"=="%TEMP%\" goto self
+copy /y "%~f0" "%TEMP%\procgen_world-self.cmd" >nul && "%TEMP%\procgen_world-self.cmd" %*
+:self
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT%\bin\manage.ps1" -Root "%ROOT%" %*
+goto :eof
+:run
 set /p VER=<"%ROOT%\app\current.txt"
 set "APP=%ROOT%\app\%VER%"
 if not exist "%APP%\.venv\Scripts\python.exe" ( echo procgen_world: no current version in %ROOT%\app 1>&2 & exit /b 1 )

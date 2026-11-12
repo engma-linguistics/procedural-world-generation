@@ -651,6 +651,8 @@ def cmd_make(args):
         print(f"view: http://127.0.0.1:8765/viewer/?run={out['timezoom']}")
     if out.get("peoples"):
         print(f"peoples: http://127.0.0.1:8765/viewer/?run={out['peoples']}")
+    if out.get("zooms_skipped"):  # (not an error: the world is made and usable, PW-1760)
+        print(f"note: {out['zooms_skipped']}. The world is made; zoom in later from the viewer or with `planet zoom`.")
     if (out.get("languages") or {}).get("error"):
         print(f"languages: not made ({out['languages']['error']})")
     elif out.get("languages"):
